@@ -1,11 +1,44 @@
-# NFEP
-NetCDF4 / HDF5 Format Extension Pack
+# NFEP (NetCDF4/HDF5 Format Extension Pack)
 
-Problem: NASA's Earth Science missions generate unprecedented volumes of observational data in diverse formats. These datasets must be integrated with simulation outputs and analyzed across heterogeneous computing environments, including exascale environments. Existing approaches of data ingest are not efficient and maintainable since they either require data conversion, or separate processing pipeline for each format require, or specialized custom solution. 
+## Overview
 
-Solution: We propose enhancements to create a unified framework where the benefits of specialized formats can be retained while simultaneously enabling interoperability with the broader scientific data ecosystem through netCDF4 and HDF5 interfaces. The NetCDF4/HDF5 Format Expansion Pack (NFEP) enables access to data in non-HDF5 file formats via existing HDF5 interface and run-time pluggable capabilities. HDF5 automatically detects file in a NASA’s format at read time, loads an appropriate file format connector thus making access to data completely transparent to the user. 
+NFEP is a unified framework that enables seamless access to diverse Earth Science data formats through standard NetCDF4 and HDF5 interfaces. It eliminates the need for data conversion or format-specific processing pipelines while preserving the optimizations of specialized formats.
 
-Significance: NFEP represents a significant advancement beyond current approaches by combining the preservation of format-specific optimizations with standardized access patterns, and compatibility with existing netCDF4 and HDF5 codes. This innovative approach will dramatically improve NASA's ability to efficiently manage and analyze diverse Earth Science datasets while reducing storage requirements and computational overhead. It will allow NASA programmers to use existing science codes on GRIB2, BUFR, CDF, and GeoTIFF datasets.
+## The Problem
+
+NASA's Earth Science missions face significant challenges with data management:
+
+- **Massive data volumes**: Unprecedented amounts of observational data in diverse formats
+- **Complex integration**: Need to combine datasets with simulation outputs across heterogeneous computing environments
+- **Inefficient workflows**: Current approaches require:
+  - Data conversion between formats
+  - Separate processing pipelines for each format
+  - Specialized custom solutions for each data type
+
+## The Solution
+
+NFEP provides a transparent, runtime-pluggable solution:
+
+### Core Features
+- **Automatic format detection**: HDF5 automatically identifies NASA format files at read time
+- **Dynamic connector loading**: Appropriate file format connectors are loaded on-demand
+- **Transparent access**: Users can work with any supported format using familiar HDF5/NetCDF4 APIs
+- **No conversion required**: Direct access to original data without preprocessing
+
+### Supported Formats
+- GRIB2
+- BUFR
+- CDF
+- GeoTIFF
+- Any format with a compatible connector
+
+## Key Benefits
+
+- **Unified Interface**: Use existing NetCDF4/HDF5 code with any supported format
+- **Performance**: Preserves format-specific optimizations while providing standardized access
+- **Efficiency**: Reduces storage requirements and computational overhead
+- **Compatibility**: Works with existing scientific codebases without modification
+- **Scalability**: Designed for exascale computing environments
 
 ---
 
