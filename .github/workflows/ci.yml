@@ -89,6 +89,8 @@ jobs:
           autoreconf -i
           export CPPFLAGS=-I$GITHUB_WORKSPACE/hdf5-install/include
           export LDFLAGS=-L$GITHUB_WORKSPACE/hdf5-install/lib
+          ls -l $GITHUB_WORKSPACE/hdf5-install
+          ls -l $GITHUB_WORKSPACE/hdf5-install/bin
           ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin CC=mpicc
 
       - name: Build (Autotools)
