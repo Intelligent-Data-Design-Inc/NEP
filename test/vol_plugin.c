@@ -12,11 +12,11 @@
 
 /*
  * Purpose:     Tests basic VOL plugin operations (registration, etc.).
- *              Uses the template VOL connector which is loaded as a
+ *              Uses the GRIB2 VOL connector which is loaded as a
  *              dynamically-loaded plugin.
  */
 
-#include "template_vol_connector.h"
+#include "grib2_vol_connector.h"
 
 #include <hdf5.h>
 #include <stdlib.h>
@@ -69,17 +69,17 @@ test_registration_by_value(void)
     TESTING("VOL registration by value");
 
     /* The VOL connector should not be registered at the start of the test */
-    if((is_registered = H5VLis_connector_registered_by_name(TEMPLATE_VOL_CONNECTOR_NAME)) < 0)
+    if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0)
         TEST_ERROR;
     if(true == is_registered)
         FAIL_PUTS_ERROR("VOL connector is inappropriately registered");
 
     /* Register the connector by value */
-    if((vol_id = H5VLregister_connector_by_value(TEMPLATE_VOL_CONNECTOR_VALUE, H5P_DEFAULT)) < 0)
+    if((vol_id = H5VLregister_connector_by_value(GRIB2_VOL_CONNECTOR_VALUE, H5P_DEFAULT)) < 0)
         TEST_ERROR;
 
     /* The connector should be registered now */
-    if((is_registered = H5VLis_connector_registered_by_name(TEMPLATE_VOL_CONNECTOR_NAME)) < 0)
+    if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0)
         TEST_ERROR;
     if(false == is_registered)
         FAIL_PUTS_ERROR("VOL connector was not registered");
@@ -89,7 +89,7 @@ test_registration_by_value(void)
         TEST_ERROR;
 
     /* The connector should not be registered now */
-    if((is_registered = H5VLis_connector_registered_by_name(TEMPLATE_VOL_CONNECTOR_NAME)) < 0)
+    if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0)
         TEST_ERROR;
     if(true == is_registered)
         FAIL_PUTS_ERROR("VOL connector is inappropriately registered");
@@ -125,17 +125,17 @@ test_registration_by_name(void)
     TESTING("VOL registration by name");
 
     /* The VOL connector should not be registered at the start of the test */
-    if((is_registered = H5VLis_connector_registered_by_name(TEMPLATE_VOL_CONNECTOR_NAME)) < 0)
+    if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0)
         TEST_ERROR;
     if(true == is_registered)
         FAIL_PUTS_ERROR("VOL connector is inappropriately registered");
 
     /* Register the connector by name */
-    if((vol_id = H5VLregister_connector_by_name(TEMPLATE_VOL_CONNECTOR_NAME, H5P_DEFAULT)) < 0)
+    if((vol_id = H5VLregister_connector_by_name(GRIB2_VOL_CONNECTOR_NAME, H5P_DEFAULT)) < 0)
         TEST_ERROR;
 
     /* The connector should be registered now */
-    if((is_registered = H5VLis_connector_registered_by_name(TEMPLATE_VOL_CONNECTOR_NAME)) < 0)
+    if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0)
         TEST_ERROR;
     if(false == is_registered)
         FAIL_PUTS_ERROR("VOL connector was not registered");
@@ -145,7 +145,7 @@ test_registration_by_name(void)
         TEST_ERROR;
 
     /* The connector should not be registered now */
-    if((is_registered = H5VLis_connector_registered_by_name(TEMPLATE_VOL_CONNECTOR_NAME)) < 0)
+    if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0)
         TEST_ERROR;
     if(true == is_registered)
         FAIL_PUTS_ERROR("VOL connector is inappropriately registered");
@@ -182,19 +182,19 @@ test_multiple_registration(void)
     TESTING("registering a VOL connector multiple times");
 
     /* The VOL connector should not be registered at the start of the test */
-    if((is_registered = H5VLis_connector_registered_by_name(TEMPLATE_VOL_CONNECTOR_NAME)) < 0)
+    if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0)
         TEST_ERROR;
     if(true == is_registered)
         FAIL_PUTS_ERROR("VOL connector is inappropriately registered");
 
     /* Register the connector multiple times */
     for(i = 0; i < N_REGISTRATIONS; i++) {
-        if((vol_ids[i] = H5VLregister_connector_by_name(TEMPLATE_VOL_CONNECTOR_NAME, H5P_DEFAULT)) < 0)
+        if((vol_ids[i] = H5VLregister_connector_by_name(GRIB2_VOL_CONNECTOR_NAME, H5P_DEFAULT)) < 0)
             TEST_ERROR;
     }
 
     /* The connector should be registered now */
-    if((is_registered = H5VLis_connector_registered_by_name(TEMPLATE_VOL_CONNECTOR_NAME)) < 0)
+    if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0)
         TEST_ERROR;
     if(false == is_registered)
         FAIL_PUTS_ERROR("VOL connector was not registered");
@@ -212,7 +212,7 @@ test_multiple_registration(void)
     }
 
     /* The connector should not be registered now */
-    if((is_registered = H5VLis_connector_registered_by_name(TEMPLATE_VOL_CONNECTOR_NAME)) < 0)
+    if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0)
         TEST_ERROR;
     if(true == is_registered)
         FAIL_PUTS_ERROR("VOL connector is inappropriately registered");
@@ -249,17 +249,17 @@ test_getters(void)
     TESTING("VOL getters");
 
     /* The VOL connector should not be registered at the start of the test */
-    if((is_registered = H5VLis_connector_registered_by_name(TEMPLATE_VOL_CONNECTOR_NAME)) < 0)
+    if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0)
         TEST_ERROR;
     if(true == is_registered)
         FAIL_PUTS_ERROR("VOL connector is inappropriately registered");
 
     /* Register the connector by name */
-    if((vol_id = H5VLregister_connector_by_name(TEMPLATE_VOL_CONNECTOR_NAME, H5P_DEFAULT)) < 0)
+    if((vol_id = H5VLregister_connector_by_name(GRIB2_VOL_CONNECTOR_NAME, H5P_DEFAULT)) < 0)
         TEST_ERROR;
 
     /* Get the connector's ID by name */
-    if((vol_id_out = H5VLget_connector_id_by_name(TEMPLATE_VOL_CONNECTOR_NAME)) < 0)
+    if((vol_id_out = H5VLget_connector_id_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0)
         TEST_ERROR;
     if(vol_id != vol_id_out)
         FAIL_PUTS_ERROR("VOL connector IDs don't match");

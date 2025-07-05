@@ -18,6 +18,12 @@
 
 # Libraries
 *.lib
+
+# Build directories
+b/
+build/
+*/build/
+*/*/build/
 *.a
 *.la
 *.lo

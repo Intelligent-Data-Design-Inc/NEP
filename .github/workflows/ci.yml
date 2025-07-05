@@ -10,7 +10,7 @@
 # NOTE: If /home/ed/Downloads/hdf5-1.14.5 is not available in the CI runner,
 # you may need to upload it as an artifact or install HDF5 via apt or another method.
 
-name: CI
+name: ci_main
 
 on:
   push:

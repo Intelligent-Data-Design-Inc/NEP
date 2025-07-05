@@ -15,12 +15,12 @@
  *              connectors.
  */
 
-#ifndef _template_vol_connector_H
-#define _template_vol_connector_H
+#ifndef _grib2_vol_connector_H
+#define _grib2_vol_connector_H
 
 /* The value must be between 256 and 65535 (inclusive) */
-#define TEMPLATE_VOL_CONNECTOR_VALUE    ((H5VL_class_value_t)12202)
-#define TEMPLATE_VOL_CONNECTOR_NAME     "template_vol_connector"
+#define GRIB2_VOL_CONNECTOR_VALUE    ((H5VL_class_value_t)15555)
+#define GRIB2_VOL_CONNECTOR_NAME     "grib2_vol_connector"
 
-#endif /* _template_vol_connector_H */
+#endif /* _grib2_vol_connector_H */
 
