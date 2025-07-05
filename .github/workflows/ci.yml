@@ -31,6 +31,7 @@ jobs:
           sudo apt-get install -y mpich cmake make wget
 
       - name: Cache HDF5 install
+        id: cache-hdf5
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
