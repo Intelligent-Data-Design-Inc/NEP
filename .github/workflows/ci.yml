@@ -86,6 +86,7 @@ jobs:
       - name: Configure (Autotools)
         if: matrix.build_system == 'autotools'
         run: |
+          autoreconf -i
           ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install CC=mpicc
 
       - name: Build (Autotools)
