@@ -1,0 +1,1 @@
+/usr/bin/mpicc -fPIC -shared -Wl,-soname,libtemplate_vol_connector.so.1 -o libtemplate_vol_connector.so.1.0.0 CMakeFiles/template_vol_connector.dir/template_vol_connector.c.o 

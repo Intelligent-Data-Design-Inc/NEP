@@ -1,0 +1,1 @@
+/usr/bin/mpicc CMakeFiles/vol_plugin.dir/vol_plugin.c.o -o vol_plugin  -Wl,-rpath,/usr/local/hdf5-1.14.5_mpich/lib /usr/local/hdf5-1.14.5_mpich/lib/libhdf5.so /usr/lib/x86_64-linux-gnu/libsz.so /usr/lib/x86_64-linux-gnu/libz.so /usr/lib/x86_64-linux-gnu/libdl.a -lm 
