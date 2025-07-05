@@ -32,9 +32,9 @@ jobs:
 
       - name: Download and build HDF5 1.14.5
         run: |
-          wget https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5-1_14_5.tar.gz
-          tar -xzf hdf5-1_14_5.tar.gz
-          cd hdf5-hdf5-1_14_5
+          wget https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5-1.14.5.tar.gz
+          tar -xzf hdf5-1.14.5.tar.gz
+          cd hdf5-1.14.5
           mkdir build && cd build
           cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DHDF5_BUILD_CPP_LIB=ON ..
           make -j$(nproc)
