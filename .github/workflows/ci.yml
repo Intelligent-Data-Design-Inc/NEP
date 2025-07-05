@@ -28,15 +28,25 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y mpich libhdf5-dev cmake make
+          sudo apt-get install -y mpich cmake make wget
+
+      - name: Download and build HDF5 1.14.5
+        run: |
+          wget https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5-1_14_5.tar.gz
+          tar -xzf hdf5-1_14_5.tar.gz
+          cd hdf5-hdf5-1_14_5
+          mkdir build && cd build
+          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DHDF5_BUILD_CPP_LIB=ON ..
+          make -j$(nproc)
+          make install
 
       - name: Create build directory
         run: mkdir -p build
 
-      - name: Configure with CMake
+      - name: Configure with CMake and custom HDF5
         working-directory: build
         run: |
-          CC=mpicc cmake .. -DCMAKE_PREFIX_PATH=/usr/lib/x86_64-linux-gnu/hdf5/serial
+          CC=mpicc cmake .. -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/hdf5-install
 
       - name: Build
         working-directory: build
