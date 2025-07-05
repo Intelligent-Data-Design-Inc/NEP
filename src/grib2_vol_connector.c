@@ -16,17 +16,17 @@
  */
 
 /* This connector's header */
-#include "template_vol_connector.h"
+#include "grib2_vol_connector.h"
 
 #include <hdf5.h>
 #include <H5PLextern.h>
 #include <stdlib.h>
 
 /* The VOL class struct */
-static const H5VL_class_t template_class_g = {
+static const H5VL_class_t grib2_class_g = {
     3,                                              /* VOL class struct version */
-    TEMPLATE_VOL_CONNECTOR_VALUE,                   /* value                    */
-    TEMPLATE_VOL_CONNECTOR_NAME,                    /* name                     */
+    GRIB2_VOL_CONNECTOR_VALUE,                   /* value                    */
+    GRIB2_VOL_CONNECTOR_NAME,                    /* name                     */
     1,                                              /* version                  */
     0,                                              /* capability flags         */
     NULL,                                           /* initialize               */
@@ -137,5 +137,5 @@ static const H5VL_class_t template_class_g = {
  */
 
 H5PL_type_t H5PLget_plugin_type(void) {return H5PL_TYPE_VOL;}
-const void *H5PLget_plugin_info(void) {return &template_class_g;}
+const void *H5PLget_plugin_info(void) {return &grib2_class_g;}
 
