@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.9)
-project (template_vol VERSION 1.0.0 DESCRIPTION "template VOL connector" LANGUAGES C)
+project (grib2_vol_connector VERSION 0.0.1 DESCRIPTION "grib2 VOL connector" LANGUAGES C)
 
 # Enable testing
 enable_testing ()
