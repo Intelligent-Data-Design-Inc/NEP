@@ -1,0 +1,22 @@
+# Doxyfile.in - Template for Doxygen configuration
+# See https://www.doxygen.nl/manual/config.html for all options
+
+# Project related configuration options
+PROJECT_NAME           = "@PROJECT_NAME@"
+PROJECT_BRIEF          = "@PROJECT_BRIEF@"
+PROJECT_NUMBER         = "@PROJECT_VERSION@"
+OUTPUT_DIRECTORY       = "@CMAKE_CURRENT_BINARY_DIR@/docs/doxygen"
+INPUT                  = "@CMAKE_SOURCE_DIR@/src"
+FILE_PATTERNS          = *.c *.h
+RECURSIVE              = YES
+
+# Build related options
+GENERATE_LATEX         = NO
+GENERATE_HTML          = YES
+
+# Other useful options (edit as needed)
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = NO
+QUIET                  = YES
+WARN_IF_UNDOCUMENTED   = YES
