@@ -39,10 +39,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-1.14.5-${{ runner.os }}
-          restore-keys: |
-            hdf5-1.14.5-${{ runner.os }}-
-
+          key: hdf5-1.14.5-${{ runner.os }}-1
+      
       - name: Download and build HDF5 1.14.5
         if: steps.cache-hdf5.outputs.cache-hit != 'true'
         id: build-hdf5
@@ -52,7 +50,7 @@ jobs:
           ls -l
           cd hdf5-hdf5-1.14.5
           mkdir build && cd build
-          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DHDF5_BUILD_CPP_LIB=ON ..
+          cmake -DHDF5_ENABLE_PARALLEL=ON -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DHDF5_BUILD_CPP_LIB=ON ..
           make -j$(nproc)
           make install
 
@@ -91,7 +89,7 @@ jobs:
           export LDFLAGS=-L$GITHUB_WORKSPACE/hdf5-install/lib
           ls -l $GITHUB_WORKSPACE/hdf5-install
           ls -l $GITHUB_WORKSPACE/hdf5-install/bin
-          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin CC=mpicc
+          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin 
 
       - name: Build (Autotools)
         if: matrix.build_system == 'autotools'
