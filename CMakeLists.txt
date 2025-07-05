@@ -1,6 +1,8 @@
 cmake_minimum_required (VERSION 3.9)
 project (grib2_vol_connector VERSION 1.0.0 DESCRIPTION "GRIB2 VOL Connector for HDF5" LANGUAGES C)
 
+include(GNUInstallDirs)
+
 # Version information
 set(GRIB2_VOL_MAJOR_VERSION 1)
 set(GRIB2_VOL_MINOR_VERSION 0)
