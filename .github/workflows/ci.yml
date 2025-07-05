@@ -1,0 +1,50 @@
+# GitHub Actions CI workflow for building and testing the project
+# This workflow sets up an Ubuntu environment, installs MPI and CMake,
+# and runs the build and test commands as specified in the project documentation.
+#
+# Build command:
+#   CC=mpicc cmake .. -DCMAKE_PREFIX_PATH=/home/ed/Downloads/hdf5-1.14.5
+#
+# The workflow will also run `make` and `make test`.
+#
+# NOTE: If /home/ed/Downloads/hdf5-1.14.5 is not available in the CI runner,
+# you may need to upload it as an artifact or install HDF5 via apt or another method.
+
+name: CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mpich libhdf5-dev cmake make
+
+      - name: Create build directory
+        run: mkdir -p build
+
+      - name: Configure with CMake
+        working-directory: build
+        run: |
+          CC=mpicc cmake .. -DCMAKE_PREFIX_PATH=/usr/lib/x86_64-linux-gnu/hdf5/serial
+
+      - name: Build
+        working-directory: build
+        run: make
+
+      - name: Test
+        working-directory: build
+        run: make test
+
+# If you need to use a custom HDF5 build, consider uploading it as an artifact or adjusting the CMAKE_PREFIX_PATH accordingly.
+# Documentation last updated: 2025-07-05
