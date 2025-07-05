@@ -30,7 +30,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y mpich cmake make wget
 
+      - name: Cache HDF5 install
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/hdf5-install
+          key: hdf5-1.14.5-${{ runner.os }}
+          restore-keys: |
+            hdf5-1.14.5-${{ runner.os }}-
+
       - name: Download and build HDF5 1.14.5
+        if: steps.cache-hdf5.outputs.cache-hit != 'true'
+        id: build-hdf5
         run: |
           wget https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5-1.14.5.tar.gz &> /dev/null
           tar -xzf hdf5-1.14.5.tar.gz
