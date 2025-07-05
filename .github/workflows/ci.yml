@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y mpich cmake make wget
+          sudo apt-get install -y mpich cmake make wget doxygen graphviz
 
       - name: Cache HDF5 install
         id: cache-hdf5

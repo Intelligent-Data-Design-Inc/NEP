@@ -7,3 +7,8 @@ set_target_properties (${GRIB2_VOL_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
 set_target_properties (${GRIB2_VOL_NAME} PROPERTIES SOVERSION 1)
 set_target_properties (${GRIB2_VOL_NAME} PROPERTIES PUBLIC_HEADER "${GRIB2_VOL_NAME}.h")
 
+# Install the library and public header using GNUInstallDirs
+install(TARGETS ${GRIB2_VOL_NAME}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
