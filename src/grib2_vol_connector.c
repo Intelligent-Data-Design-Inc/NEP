@@ -1,18 +1,12 @@
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * Copyright by The HDF Group.                                               *
- * All rights reserved.                                                      *
- *                                                                           *
- * This file is part of HDF5.  The full HDF5 copyright notice, including     *
- * terms governing use, modification, and redistribution, is contained in    *
- * the COPYING file, which can be found at the root of the source code       *
- * distribution tree, or in https://support.hdfgroup.org/ftp/HDF5/releases.  *
- * If you do not have access to either file, you may request a copy from     *
- * help@hdfgroup.org.                                                        *
- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-
-/* Purpose:     A simple virtual object layer (VOL) connector with almost no
- *              functionality that can serve as a template for creating other
- *              connectors.
+/**
+ * @file grib2_vol_connector.c
+ * @brief Implementation of a simple virtual object layer (VOL) connector for HDF5.
+ *
+ * Copyright Intelligent Data Design, Inc.
+ * All rights reserved.
+ *
+ * Purpose: A simple virtual object layer (VOL) connector with almost no
+ * functionality that can serve as a template for creating other connectors.
  */
 
 /* This connector's header */
@@ -132,8 +126,8 @@ static const H5VL_class_t grib2_class_g = {
     NULL                                            /* optional     */
 };
 
-/* These two functions are necessary to load this plugin using
- * the HDF5 library.
+/**
+ * @brief These two functions are necessary to load this plugin using the HDF5 library.
  */
 
 H5PL_type_t H5PLget_plugin_type(void) {return H5PL_TYPE_VOL;}
