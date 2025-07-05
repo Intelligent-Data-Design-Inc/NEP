@@ -21,6 +21,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        build_system: [cmake, autotools]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -52,21 +56,45 @@ jobs:
           make -j$(nproc)
           make install
 
-      - name: Create build directory
+            # --- CMake build ---------------------------------------------------
+      - name: Create build directory (CMake)
+        if: matrix.build_system == 'cmake'
         run: mkdir -p build
 
       - name: Configure with CMake and custom HDF5
+        if: matrix.build_system == 'cmake'
         working-directory: build
         run: |
           CC=mpicc cmake .. -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/hdf5-install
 
-      - name: Build
+      - name: Build (CMake)
+        if: matrix.build_system == 'cmake'
         working-directory: build
-        run: make
+        run: make -j$(nproc)
 
-      - name: Test
+      - name: Test (CTest)
+        if: matrix.build_system == 'cmake'
         working-directory: build
         run: make test
+
+      # --- Autotools build ---------------------------------------------
+      - name: Bootstrap (Autotools)
+        if: matrix.build_system == 'autotools'
+        run: |
+          ./bootstrap || true
+
+      - name: Configure (Autotools)
+        if: matrix.build_system == 'autotools'
+        run: |
+          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install CC=mpicc
+
+      - name: Build (Autotools)
+        if: matrix.build_system == 'autotools'
+        run: make -j$(nproc)
+
+      - name: Test (make check)
+        if: matrix.build_system == 'autotools'
+        run: make check
 
 # If you need to use a custom HDF5 build, consider uploading it as an artifact or adjusting the CMAKE_PREFIX_PATH accordingly.
 # Documentation last updated: 2025-07-05
