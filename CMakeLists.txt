@@ -15,6 +15,8 @@ set (LINK_LIBS ${LINK_LIBS} ${HDF5_C_${LIB_TYPE}_LIBRARY})
 # wrong. Turn this on for added confirmation that you got it right.
 #message (DEPRECATION "Include: ${HDF5_INCLUDE_DIR}")
 
+include(GNUInstallDirs)
 add_subdirectory (src)
 add_subdirectory (test)
+
 
