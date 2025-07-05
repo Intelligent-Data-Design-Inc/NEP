@@ -1,5 +1,14 @@
 cmake_minimum_required (VERSION 3.9)
-project (template_vol VERSION 1.0.0 DESCRIPTION "template VOL connector" LANGUAGES C)
+project (grib2_vol_connector VERSION 1.0.0 DESCRIPTION "GRIB2 VOL Connector for HDF5" LANGUAGES C)
+
+# Version information
+set(GRIB2_VOL_MAJOR_VERSION 1)
+set(GRIB2_VOL_MINOR_VERSION 0)
+set(GRIB2_VOL_PATCH_VERSION 0)
+set(GRIB2_VOL_VERSION ${GRIB2_VOL_MAJOR_VERSION}.${GRIB2_VOL_MINOR_VERSION}.${GRIB2_VOL_PATCH_VERSION})
+
+# Options
+option(BUILD_DOCS "Build documentation" ON)
 
 # Enable testing
 enable_testing ()
@@ -17,4 +26,38 @@ set (LINK_LIBS ${LINK_LIBS} ${HDF5_C_${LIB_TYPE}_LIBRARY})
 
 add_subdirectory (src)
 add_subdirectory (test)
+
+# Documentation
+if(BUILD_DOCS)
+    # Find Doxygen
+    find_package(Doxygen
+        REQUIRED dot
+        COMPONENTS dot
+    )
+
+    if(DOXYGEN_FOUND)
+        # Configure Doxyfile
+        configure_file(
+            ${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile.in
+            ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY
+        )
+
+        # Add custom target for documentation
+        add_custom_target(docs
+            COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            COMMENT "Generating API documentation with Doxygen"
+            VERBATIM
+        )
+
+        # Install documentation
+        install(
+            DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doxygen/html
+            DESTINATION ${CMAKE_INSTALL_DOCDIR}
+            OPTIONAL
+        )
+    else()
+        message(WARNING "Doxygen not found - documentation will not be built")
+    endif()
+endif()
 

@@ -1,28 +1,40 @@
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * Copyright by The HDF Group.                                               *
- * All rights reserved.                                                      *
- *                                                                           *
- * This file is part of HDF5.  The full HDF5 copyright notice, including     *
- * terms governing use, modification, and redistribution, is contained in    *
- * the COPYING file, which can be found at the root of the source code       *
- * distribution tree, or in https://support.hdfgroup.org/ftp/HDF5/releases.  *
- * If you do not have access to either file, you may request a copy from     *
- * help@hdfgroup.org.                                                        *
- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-
-/* Purpose:     A simple virtual object layer (VOL) connector with almost no
- *              functionality that can serve as a template for creating other
- *              connectors.
+/**
+ * @file    grib2_vol_connector.c
+ * @brief   Implementation of the GRIB2 VOL Connector for HDF5
+ *
+ * @details This file implements the GRIB2 VOL connector for HDF5, which provides
+ *          a bridge between HDF5 and GRIB2 file formats. The connector implements
+ *          the HDF5 Virtual Object Layer (VOL) interface to enable HDF5 applications
+ *          to work with GRIB2 files transparently.
+ *
+ *          The implementation includes the VOL class structure initialization
+ *          and the necessary plugin interface functions required by HDF5.
+ *
+ * @copyright Copyright Intelligent Data Design, Inc.
+ *            All rights reserved.
+ *
  */
 
 /* This connector's header */
 #include "grib2_vol_connector.h"
 
+/* HDF5 headers */
 #include <hdf5.h>
 #include <H5PLextern.h>
+
+/* Standard library headers */
 #include <stdlib.h>
 
-/* The VOL class struct */
+/**
+ * @brief The GRIB2 VOL class structure
+ *
+ * This structure defines the GRIB2 VOL connector's class and contains function
+ * pointers to all the VOL callback functions. The structure is initialized with
+ * NULL values for most callbacks, indicating that the default HDF5 behavior
+ * should be used.
+ *
+ * The structure follows the H5VL_class_t type definition from the HDF5 VOL API.
+ */
 static const H5VL_class_t grib2_class_g = {
     3,                                              /* VOL class struct version */
     GRIB2_VOL_CONNECTOR_VALUE,                   /* value                    */
@@ -132,10 +144,35 @@ static const H5VL_class_t grib2_class_g = {
     NULL                                            /* optional     */
 };
 
-/* These two functions are necessary to load this plugin using
- * the HDF5 library.
+/**
+ * @name Plugin Interface Functions
+ *
+ * These functions are required for the HDF5 plugin system to load and
+ * identify this VOL connector. They provide the necessary entry points
+ * for HDF5 to discover and initialize the connector.
+ */
+/**@{*/
+
+/**
+ * @brief Get the plugin type
+ *
+ * This function is called by the HDF5 library to determine the type of plugin.
+ * For VOL connectors, it should return H5PL_TYPE_VOL.
+ *
+ * @return The plugin type (H5PL_TYPE_VOL for VOL connectors)
  */
 
-H5PL_type_t H5PLget_plugin_type(void) {return H5PL_TYPE_VOL;}
-const void *H5PLget_plugin_info(void) {return &grib2_class_g;}
+H5PL_type_t H5PLget_plugin_type(void)
+{
+    return H5PL_TYPE_VOL;
+}
 
+/**
+ * @brief Get plugin information
+ *
+ * This function is called by the HDF5 library to get information about
+ * the plugin. It should set the plugin's VOL class structure.
+ *
+ * @param[out] info Pointer to the plugin info structure to be filled
+ */
+void H5PLget_plugin_info(void) {return &grib2_class_g;}
