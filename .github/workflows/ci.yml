@@ -89,7 +89,7 @@ jobs:
           export LDFLAGS=-L$GITHUB_WORKSPACE/hdf5-install/lib
           ls -l $GITHUB_WORKSPACE/hdf5-install
           ls -l $GITHUB_WORKSPACE/hdf5-install/bin
-          export CC=h5pcc
+          export CC=h5cc
           ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin 
 
       - name: Build (Autotools)
