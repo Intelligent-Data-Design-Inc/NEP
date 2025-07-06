@@ -32,7 +32,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y mpich cmake make wget doxygen graphviz
+          sudo apt-get install -y mpich cmake make wget doxygen graphviz zlib1g-dev
 
       - name: Cache HDF5 install
         id: cache-hdf5
@@ -45,10 +45,10 @@ jobs:
         if: steps.cache-hdf5.outputs.cache-hit != 'true'
         id: build-hdf5
         run: |
-          wget https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5-1.14.5.tar.gz &> /dev/null
-          tar -xzf hdf5-1.14.5.tar.gz
+          wget https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5-1.14.6.tar.gz &> /dev/null
+          tar -xzf hdf5-1.14.6.tar.gz
           ls -l
-          cd hdf5-hdf5-1.14.5
+          cd hdf5-hdf5-1.14.6
           mkdir build && cd build
           cmake -DHDF5_ENABLE_PARALLEL=ON -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON ..
           make -j$(nproc)
@@ -89,6 +89,7 @@ jobs:
           export LDFLAGS=-L$GITHUB_WORKSPACE/hdf5-install/lib
           ls -l $GITHUB_WORKSPACE/hdf5-install
           ls -l $GITHUB_WORKSPACE/hdf5-install/bin
+          export CC=h5pcc
           ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin 
 
       - name: Build (Autotools)
