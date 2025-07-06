@@ -21,6 +21,11 @@ AC_CHECK_HEADERS([stdlib.h])
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T
 
+# Check for g2c library and header
+AC_CHECK_HEADERS([grib2.h], [], [AC_MSG_ERROR([Unable to find grib2.h (g2c header)])])
+AC_CHECK_LIB([g2c], [g2_info], [G2C_LIBS="-lg2c"], [AC_MSG_ERROR([Unable to find g2c library])])
+AC_SUBST([G2C_LIBS])
+
 # Initialize Automake
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AM_SILENT_RULES([yes])

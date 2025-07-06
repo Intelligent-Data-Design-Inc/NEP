@@ -11,5 +11,5 @@ include_HEADERS = template_vol_connector.h
 lib_LTLIBRARIES = libtemplate_vol_connector.la
 libtemplate_vol_connector_la_SOURCES = template_vol_connector.c
 libtemplate_vol_connector_la_LDFLAGS = $(AM_LDFLAGS) $(HDF5_LDFLAGS) -avoid-version -module -shared -export-dynamic
-libtemplate_vol_connector_la_LIBADD = $(HDF5_LIBS)
+libtemplate_vol_connector_la_LIBADD = $(HDF5_LIBS) $(G2C_LIBS)
 

@@ -54,6 +54,25 @@ jobs:
           make -j$(nproc)
           make install
 
+            # Cache g2c install
+      - name: Cache g2c install
+        id: cache-g2c
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/g2c-install
+          key: g2c-latest-${{ runner.os }}-1
+
+      - name: Download and build g2c (latest release)
+        if: steps.cache-g2c.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/NOAA-EMC/NCEPLIBS-g2c/archive/refs/tags/v1.7.0.tar.gz -O g2c.tar.gz &> /dev/null
+          tar -xzf g2c.tar.gz
+          cd NCEPLIBS-g2c-1.7.0
+          mkdir build && cd build
+          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/g2c-install -DBUILD_SHARED_LIBS=ON ..
+          make -j$(nproc)
+          make install
+
             # --- CMake build ---------------------------------------------------
       - name: Create build directory (CMake)
         if: matrix.build_system == 'cmake'
@@ -63,7 +82,7 @@ jobs:
         if: matrix.build_system == 'cmake'
         working-directory: build
         run: |
-          CC=mpicc cmake .. -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/hdf5-install
+          CC=mpicc cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/g2c-install"
 
       - name: Build (CMake)
         if: matrix.build_system == 'cmake'
@@ -85,8 +104,8 @@ jobs:
         if: matrix.build_system == 'autotools'
         run: |
           autoreconf -i
-          export CPPFLAGS=-I$GITHUB_WORKSPACE/hdf5-install/include
-          export LDFLAGS=-L$GITHUB_WORKSPACE/hdf5-install/lib
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/g2c-install/include"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib"
           ls -l $GITHUB_WORKSPACE/hdf5-install
           ls -l $GITHUB_WORKSPACE/hdf5-install/bin
           export CC=h5cc
