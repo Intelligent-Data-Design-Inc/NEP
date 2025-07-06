@@ -32,7 +32,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y mpich cmake make wget doxygen graphviz zlib1g-dev libpng-dev libjasper-dev
+          sudo apt-get install -y mpich cmake make wget doxygen graphviz zlib1g-dev libpng-dev libjasper-dev libaec-dev
 
       - name: Cache HDF5 install
         id: cache-hdf5
