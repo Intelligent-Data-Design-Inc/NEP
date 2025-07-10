@@ -31,10 +31,30 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo add-apt-repository 'deb http://security.ubuntu.com/ubuntu xenial-security main'
-          sudo apt-key adv --refresh-keys --keyserver keyserver.ubuntu.com
           sudo apt-get update
-          sudo apt-get install -y mpich cmake make wget doxygen graphviz zlib1g-dev libpng-dev libjasper1 libjasper-dev libaec-dev
+          sudo apt-get install -y mpich cmake make wget doxygen graphviz zlib1g-dev libpng-dev libaec-dev
+
+      - name: Cache Jasper install
+        id: cache-jasper
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/jasper-install
+          key: jasper-4.2.5-${{ runner.os }}-1
+
+      - name: Download and build Jasper 4.2.5
+        if: steps.cache-jasper.outputs.cache-hit != 'true'
+        run: |
+          JASPER_VERSION=4.2.5
+          JASPER_URL="https://github.com/jasper-software/jasper/releases/download/version-${JASPER_VERSION}/jasper-${JASPER_VERSION}.tar.gz"
+          INSTALL_PREFIX="$GITHUB_WORKSPACE/jasper-install"
+
+          wget -q "$JASPER_URL" -O jasper.tar.gz
+          tar -xzf jasper.tar.gz
+          cd jasper-${JASPER_VERSION}
+          mkdir build && cd build
+          cmake -DCMAKE_INSTALL_PREFIX="$INSTALL_PREFIX" -DBUILD_SHARED_LIBS=ON ..
+          make -j$(nproc)
+          make install
 
       - name: Cache HDF5 install
         id: cache-hdf5
@@ -84,7 +104,7 @@ jobs:
         if: matrix.build_system == 'cmake'
         working-directory: build
         run: |
-          CC=mpicc cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/g2c-install"
+          CC=mpicc cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/g2c-install;$GITHUB_WORKSPACE/jasper-install"
 
       - name: Build (CMake)
         if: matrix.build_system == 'cmake'
