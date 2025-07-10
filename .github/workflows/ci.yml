@@ -32,6 +32,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo add-apt-repository 'deb http://security.ubuntu.com/ubuntu xenial-security main'
+          sudo apt-key adv --refresh-keys --keyserver keyserver.ubuntu.com
           sudo apt-get update
           sudo apt-get install -y mpich cmake make wget doxygen graphviz zlib1g-dev libpng-dev libjasper1 libjasper-dev libaec-dev
 
