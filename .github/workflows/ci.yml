@@ -48,7 +48,7 @@ jobs:
           wget -q "$JASPER_URL" -O jasper.tar.gz
           tar -xzf jasper.tar.gz
           cd jasper-${JASPER_VERSION}
-          mkdir ../build_jasper && cd build_jasper
+          mkdir ../build_jasper && cd ../build_jasper
           cmake -DCMAKE_INSTALL_PREFIX="$JASPER_INSTALL_PREFIX" -DBUILD_SHARED_LIBS=ON ../jasper-${JASPER_VERSION}
           make -j$(nproc)
           make install
