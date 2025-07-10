@@ -140,6 +140,18 @@ jobs:
           make check
           make install
 
+      - name: Show test-suite.log on failure
+        if: always()
+        run: |
+          if [ -f test/test-suite.log ]; then
+            echo "==== BEGIN test/test-suite.log ===="
+            cat test/test-suite.log
+            echo "==== END test/test-suite.log ===="
+          else
+            echo "test/test-suite.log not found"
+          fi
+        working-directory: ${{ github.workspace }}/test
+
 
 # If you need to use a custom HDF5 build, consider uploading it as an artifact or adjusting the CMAKE_PREFIX_PATH accordingly.
 # Documentation last updated: 2025-07-05
