@@ -29,10 +29,10 @@ TEST_BIN=$ABS_BUILDDIR/$TEST_NAME
 FROM_DIR=$ABS_TOP_BUILDDIR/src/.libs
 case $(uname) in
     CYGWIN* )
-        TEMPLATE_VOL_PLUGIN="$FROM_DIR/cygtemplate_vol_connector*"
+        TEMPLATE_VOL_PLUGIN="$FROM_DIR/cyggrib2_vol_connector*"
         ;;
     *)
-        TEMPLATE_VOL_PLUGIN="$FROM_DIR/libtemplate_vol_connector*"
+        TEMPLATE_VOL_PLUGIN="$FROM_DIR/libgrib2_vol_connector*"
         ;;
 esac
 TEMP_PLUGIN_DIR=template_vol_plugin_dir

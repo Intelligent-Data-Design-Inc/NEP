@@ -131,13 +131,11 @@ jobs:
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/g2c-install/include"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib"
-          export LD_LIBRARY_PATH="$JASPER_INSTALL_PREFIX/lib:$LD_LIBRARY_PATH"
+          export LD_LIBRARY_PATH="$JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$LD_LIBRARY_PATH"
           ls -l $GITHUB_WORKSPACE/hdf5-install
           ls -l $GITHUB_WORKSPACE/hdf5-install/bin
           export CC=h5cc
           ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc 
           make -j$(nproc)
+          make VERBOSE=1 check
 
-
-# If you need to use a custom HDF5 build, consider uploading it as an artifact or adjusting the CMAKE_PREFIX_PATH accordingly.
-# Documentation last updated: 2025-07-05
