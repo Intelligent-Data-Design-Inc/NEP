@@ -31,8 +31,9 @@ jobs:
 
       - name: Install dependencies
         run: |
+          sudo add-apt-repository 'deb http://security.ubuntu.com/ubuntu xenial-security main'
           sudo apt-get update
-          sudo apt-get install -y mpich cmake make wget doxygen graphviz zlib1g-dev libpng-dev libjasper-dev libaec-dev
+          sudo apt-get install -y mpich cmake make wget doxygen graphviz zlib1g-dev libpng-dev libjasper1 libjasper-dev libaec-dev
 
       - name: Cache HDF5 install
         id: cache-hdf5
