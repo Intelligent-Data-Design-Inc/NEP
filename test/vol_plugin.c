@@ -282,7 +282,7 @@ error:
      htri_t  is_registered   = FAIL;
      hid_t   vol_id          = H5I_INVALID_HID;
  
-     TESTING("VOL registration by name");
+     TESTING("file open/close with VOL");
  
      /* The VOL connector should not be registered at the start of the test */
      if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0)
