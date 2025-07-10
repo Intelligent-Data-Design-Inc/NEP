@@ -46,13 +46,13 @@ jobs:
         run: |
           JASPER_VERSION=4.2.5
           JASPER_URL="https://github.com/jasper-software/jasper/releases/download/version-${JASPER_VERSION}/jasper-${JASPER_VERSION}.tar.gz"
-          INSTALL_PREFIX="$GITHUB_WORKSPACE/jasper-install"
+          JASPER_INSTALL_PREFIX="$GITHUB_WORKSPACE/jasper-install"
 
           wget -q "$JASPER_URL" -O jasper.tar.gz
           tar -xzf jasper.tar.gz
           cd jasper-${JASPER_VERSION}
           mkdir build && cd build
-          cmake -DCMAKE_INSTALL_PREFIX="$INSTALL_PREFIX" -DBUILD_SHARED_LIBS=ON ..
+          cmake -DCMAKE_INSTALL_PREFIX="$JASPER_INSTALL_PREFIX" -DBUILD_SHARED_LIBS=ON ..
           make -j$(nproc)
           make install
 
@@ -103,8 +103,10 @@ jobs:
       - name: Configure with CMake and custom HDF5
         if: matrix.build_system == 'cmake'
         working-directory: build
+        env:
+          JASPER_INSTALL_PREFIX: $GITHUB_WORKSPACE/jasper-install
         run: |
-          CC=mpicc cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/g2c-install;$GITHUB_WORKSPACE/jasper-install"
+          CC=mpicc cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/g2c-install;$JASPER_INSTALL_PREFIX"
 
       - name: Build (CMake)
         if: matrix.build_system == 'cmake'
