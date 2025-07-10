@@ -7,9 +7,6 @@
 #
 # The workflow will also run `make` and `make test`.
 #
-# NOTE: If /home/ed/Downloads/hdf5-1.14.5 is not available in the CI runner,
-# you may need to upload it as an artifact or install HDF5 via apt or another method.
-
 name: ci_main
 
 on:
@@ -21,6 +18,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      JASPER_INSTALL_PREFIX: ${{ github.workspace }}/jasper-install
+    strategy:
+      fail-fast: false
+      matrix:
+        build_system: [cmake, autotools]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -28,45 +31,113 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y mpich cmake make wget doxygen graphviz
+          sudo apt-get install -y mpich cmake make wget doxygen graphviz zlib1g-dev libpng-dev libaec-dev libjpeg-dev 
+
+      - name: Cache Jasper install
+        id: cache-jasper
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/jasper-install
+          key: jasper-4.2.5-${{ runner.os }}-1
+
+      - name: Download and build Jasper 4.2.5
+        if: steps.cache-jasper.outputs.cache-hit != 'true'
+        run: |
+          JASPER_VERSION=4.2.5
+          JASPER_URL="https://github.com/jasper-software/jasper/releases/download/version-${JASPER_VERSION}/jasper-${JASPER_VERSION}.tar.gz"
+
+          wget -q "$JASPER_URL" -O jasper.tar.gz
+          tar -xzf jasper.tar.gz
+          cd jasper-${JASPER_VERSION}
+          mkdir ../build_jasper && cd ../build_jasper
+          cmake -DCMAKE_INSTALL_PREFIX="$JASPER_INSTALL_PREFIX" -DBUILD_SHARED_LIBS=ON ../jasper-${JASPER_VERSION}
+          make -j$(nproc)
+          make install
 
       - name: Cache HDF5 install
         id: cache-hdf5
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-1.14.5-${{ runner.os }}
-          restore-keys: |
-            hdf5-1.14.5-${{ runner.os }}-
-
+          key: hdf5-1.14.5-${{ runner.os }}-1
+      
       - name: Download and build HDF5 1.14.5
         if: steps.cache-hdf5.outputs.cache-hit != 'true'
         id: build-hdf5
         run: |
-          wget https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5-1.14.5.tar.gz &> /dev/null
-          tar -xzf hdf5-1.14.5.tar.gz
+          wget https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5-1.14.6.tar.gz &> /dev/null
+          tar -xzf hdf5-1.14.6.tar.gz
           ls -l
-          cd hdf5-hdf5-1.14.5
+          cd hdf5-hdf5-1.14.6
           mkdir build && cd build
-          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DHDF5_BUILD_CPP_LIB=ON ..
+          cmake -DHDF5_ENABLE_PARALLEL=ON -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON ..
           make -j$(nproc)
           make install
 
-      - name: Create build directory
+            # Cache g2c install
+      - name: Cache g2c install
+        id: cache-g2c
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/g2c-install
+          key: g2c-latest-${{ runner.os }}-1
+
+      - name: Download and build g2c (latest release)
+        if: steps.cache-g2c.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/NOAA-EMC/NCEPLIBS-g2c/archive/refs/tags/v1.7.0.tar.gz -O g2c.tar.gz &> /dev/null
+          tar -xzf g2c.tar.gz
+          cd NCEPLIBS-g2c-1.7.0
+          mkdir build && cd build
+          echo $JASPER_INSTALL_PREFIX
+          ls -l $JASPER_INSTALL_PREFIX
+          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/g2c-install -DBUILD_SHARED_LIBS=ON .. -DCMAKE_PREFIX_PATH="$JASPER_INSTALL_PREFIX"
+          make -j$(nproc)
+          make install
+
+            # --- CMake build ---------------------------------------------------
+      - name: Create build directory (CMake)
+        if: matrix.build_system == 'cmake'
         run: mkdir -p build
 
       - name: Configure with CMake and custom HDF5
+        if: matrix.build_system == 'cmake'
         working-directory: build
+        env:
+          JASPER_INSTALL_PREFIX: $GITHUB_WORKSPACE/jasper-install
         run: |
-          CC=mpicc cmake .. -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/hdf5-install
+          CC=mpicc cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/g2c-install;$JASPER_INSTALL_PREFIX"
 
-      - name: Build
+      - name: Build (CMake)
+        if: matrix.build_system == 'cmake'
         working-directory: build
-        run: make
+        run: make -j$(nproc)
 
-      - name: Test
+      - name: Test (CTest)
+        if: matrix.build_system == 'cmake'
         working-directory: build
         run: make test
+
+      # --- Autotools build ---------------------------------------------
+      - name: Bootstrap (Autotools)
+        if: matrix.build_system == 'autotools'
+        run: |
+          ./bootstrap || true
+
+      - name: Configure (Autotools)
+        if: matrix.build_system == 'autotools'
+        run: |
+          autoreconf -i
+          export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/g2c-install/include"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib"
+          export LD_LIBRARY_PATH="$JASPER_INSTALL_PREFIX/lib:$LD_LIBRARY_PATH"
+          ls -l $GITHUB_WORKSPACE/hdf5-install
+          ls -l $GITHUB_WORKSPACE/hdf5-install/bin
+          export CC=h5cc
+          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc 
+          make -j$(nproc)
+
 
 # If you need to use a custom HDF5 build, consider uploading it as an artifact or adjusting the CMAKE_PREFIX_PATH accordingly.
 # Documentation last updated: 2025-07-05

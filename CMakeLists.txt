@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.9)
-project (template_vol VERSION 1.0.0 DESCRIPTION "template VOL connector" LANGUAGES C)
+project (grib2_vol_connector VERSION 0.0.1 DESCRIPTION "grib2 VOL connector" LANGUAGES C)
 
 # Enable testing
 enable_testing ()
@@ -10,6 +10,12 @@ find_package (HDF5 1.13 COMPONENTS C REQUIRED)
 link_directories (${HDF5_LIBRARY_DIRS})
 include_directories (${HDF5_INCLUDE_DIR})
 set (LINK_LIBS ${LINK_LIBS} ${HDF5_C_${LIB_TYPE}_LIBRARY})
+
+# Find g2c (NCEPLIBS-g2c) library
+find_library (G2C_LIBRARY NAMES g2c REQUIRED)
+find_path (G2C_INCLUDE_DIR grib2.h)
+include_directories (${G2C_INCLUDE_DIR})
+set (LINK_LIBS ${LINK_LIBS} ${G2C_LIBRARY})
 
 # It's really easy to pick up the wrong HDF5 library if you set the path
 # wrong. Turn this on for added confirmation that you got it right.
