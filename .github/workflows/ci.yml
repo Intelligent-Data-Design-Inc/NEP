@@ -136,14 +136,10 @@ jobs:
           ls -l $GITHUB_WORKSPACE/hdf5-install/bin
           export CC=h5cc
           ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc 
+          make -j$(nproc)
+          make check
+          make install
 
-      - name: Build (Autotools)
-        if: matrix.build_system == 'autotools'
-        run: make -j$(nproc)
-
-      - name: Test (make check)
-        if: matrix.build_system == 'autotools'
-        run: make check
 
 # If you need to use a custom HDF5 build, consider uploading it as an artifact or adjusting the CMAKE_PREFIX_PATH accordingly.
 # Documentation last updated: 2025-07-05
