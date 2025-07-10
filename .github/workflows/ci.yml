@@ -18,6 +18,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      JASPER_INSTALL_PREFIX: ${{ github.workspace }}/jasper-install
     strategy:
       fail-fast: false
       matrix:
@@ -43,7 +45,6 @@ jobs:
         run: |
           JASPER_VERSION=4.2.5
           JASPER_URL="https://github.com/jasper-software/jasper/releases/download/version-${JASPER_VERSION}/jasper-${JASPER_VERSION}.tar.gz"
-          JASPER_INSTALL_PREFIX="$GITHUB_WORKSPACE/jasper-install"
 
           wget -q "$JASPER_URL" -O jasper.tar.gz
           tar -xzf jasper.tar.gz
