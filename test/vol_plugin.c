@@ -1,15 +1,3 @@
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * Copyright by The HDF Group.                                               *
- * All rights reserved.                                                      *
- *                                                                           *
- * This file is part of HDF5.  The full HDF5 copyright notice, including     *
- * terms governing use, modification, and redistribution, is contained in    *
- * the COPYING file, which can be found at the root of the source code       *
- * distribution tree, or in https://support.hdfgroup.org/ftp/HDF5/releases.  *
- * If you do not have access to either file, you may request a copy from     *
- * help@hdfgroup.org.                                                        *
- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-
 /*
  * Purpose:     Tests basic VOL plugin operations (registration, etc.).
  *              Uses the GRIB2 VOL connector which is loaded as a
@@ -163,6 +151,60 @@ error:
 
 
 /*-------------------------------------------------------------------------
+ * Function:    test_open_close()
+ *
+ * Purpose:     Tests if we can open and close a GRIB2 file with a VOL connector.
+ *
+ * Return:      SUCCEED/FAIL
+ *
+ *-------------------------------------------------------------------------
+ */
+ static herr_t
+ test_open_close(void)
+ {
+     htri_t  is_registered   = FAIL;
+     hid_t   vol_id          = H5I_INVALID_HID;
+ 
+     TESTING("VOL registration by name");
+ 
+     /* The VOL connector should not be registered at the start of the test */
+     if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0)
+         TEST_ERROR;
+     if(true == is_registered)
+         FAIL_PUTS_ERROR("VOL connector is inappropriately registered");
+ 
+     /* Register the connector by name */
+     if((vol_id = H5VLregister_connector_by_name(GRIB2_VOL_CONNECTOR_NAME, H5P_DEFAULT)) < 0)
+         TEST_ERROR;
+ 
+     /* The connector should be registered now */
+     if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0)
+         TEST_ERROR;
+     if(false == is_registered)
+         FAIL_PUTS_ERROR("VOL connector was not registered");
+ 
+     /* Unregister the connector */
+     if(H5VLunregister_connector(vol_id) < 0)
+         TEST_ERROR;
+ 
+     /* The connector should not be registered now */
+     if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0)
+         TEST_ERROR;
+     if(true == is_registered)
+         FAIL_PUTS_ERROR("VOL connector is inappropriately registered");
+ 
+     PASSED();
+     return SUCCEED;
+ 
+ error:
+     H5E_BEGIN_TRY {
+         H5VLunregister_connector(vol_id);
+     } H5E_END_TRY;
+     return FAIL;
+ 
+ } /* end test_open_close() */
+ 
+/*-------------------------------------------------------------------------
  * Function:    test_multiple_registration()
  *
  * Purpose:     Tests if we can register a VOL connector multiple times.
@@ -308,6 +350,7 @@ main(void)
     nerrors += test_registration_by_value() < 0         ? 1 : 0;
     nerrors += test_multiple_registration() < 0         ? 1 : 0;
     nerrors += test_getters() < 0                       ? 1 : 0;
+    nerrors += test_open_close() < 0                    ? 1 : 0;
 
     if (nerrors) {
         printf("***** %d VOL connector plugin TEST%s FAILED! *****\n",
