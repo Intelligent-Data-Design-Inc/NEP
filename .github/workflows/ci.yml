@@ -140,16 +140,14 @@ jobs:
           make check
           make install
 
-      - name: Show test-suite.log on failure
+      - name: Print all .log files after test
         if: always()
         run: |
-          if [ -f test/test-suite.log ]; then
-            echo "==== BEGIN test/test-suite.log ===="
-            cat test/test-suite.log
-            echo "==== END test/test-suite.log ===="
-          else
-            echo "test/test-suite.log not found"
-          fi
+          find . -name '*.log' -exec echo "==== {} ====" \; -exec cat {} \; || true
+
+      - name: Debug test script directly
+        if: failure()
+        run: bash -x test/test_vol_plugin.sh
         working-directory: ${{ github.workspace }}/test
 
 
