@@ -2,8 +2,8 @@
 ##
 
 AC_PREREQ([2.69])
-AC_INIT([TEMPLATE VOL], [1.0.0], [help@hdfgroup.org])
-AC_CONFIG_SRCDIR([src/template_vol_connector.c])
+AC_INIT([GRIB2 VOL], [0.0.1], [help@intelligentdatadesign.com])
+AC_CONFIG_SRCDIR([src/grib2_vol_connector.c])
 AC_CONFIG_HEADERS([config.h])
 
 # Dump all the weird scripts in bin/
@@ -20,6 +20,11 @@ AC_CHECK_HEADERS([stdlib.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T
+
+# Check for g2c library and header
+AC_CHECK_HEADERS([grib2.h], [], [AC_MSG_ERROR([Unable to find grib2.h (g2c header)])])
+AC_CHECK_LIB([g2c], [g2_info], [G2C_LIBS="-lg2c"], [AC_MSG_ERROR([Unable to find g2c library])])
+AC_SUBST([G2C_LIBS])
 
 # Initialize Automake
 AM_INIT_AUTOMAKE([foreign subdir-objects])
