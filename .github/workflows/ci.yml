@@ -116,7 +116,7 @@ jobs:
       - name: Test (CTest)
         if: matrix.build_system == 'cmake'
         working-directory: build
-        run: make VERBOSE=1 test
+        run: ctest --verbose
 
       # --- Autotools build ---------------------------------------------
       - name: Bootstrap (Autotools)
