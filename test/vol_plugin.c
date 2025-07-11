@@ -149,6 +149,59 @@ error:
 
 } /* end test_registration_by_name() */
 
+ /*-------------------------------------------------------------------------
+ * Function:    test_open_close()
+ *
+ * Purpose:     Tests if we can open and close a GRIB2 file with a VOL connector.
+ *
+ * Return:      SUCCEED/FAIL
+ *
+ *-------------------------------------------------------------------------
+ */
+ static herr_t
+ test_open_close(void)
+ {
+     htri_t  is_registered   = FAIL;
+     hid_t   vol_id          = H5I_INVALID_HID;
+ 
+     TESTING("file open/close with VOL");
+ 
+     /* The VOL connector should not be registered at the start of the test */
+     if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0)
+         TEST_ERROR;
+     if(true == is_registered)
+         FAIL_PUTS_ERROR("VOL connector is inappropriately registered");
+ 
+     /* Register the connector by name */
+     if((vol_id = H5VLregister_connector_by_name(GRIB2_VOL_CONNECTOR_NAME, H5P_DEFAULT)) < 0)
+         TEST_ERROR;
+ 
+     /* The connector should be registered now */
+     if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0)
+         TEST_ERROR;
+     if(false == is_registered)
+         FAIL_PUTS_ERROR("VOL connector was not registered");
+ 
+     /* Unregister the connector */
+     if(H5VLunregister_connector(vol_id) < 0)
+         TEST_ERROR;
+ 
+     /* The connector should not be registered now */
+     if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0)
+         TEST_ERROR;
+     if(true == is_registered)
+         FAIL_PUTS_ERROR("VOL connector is inappropriately registered");
+ 
+     PASSED();
+     return SUCCEED;
+ 
+ error:
+     H5E_BEGIN_TRY {
+         H5VLunregister_connector(vol_id);
+     } H5E_END_TRY;
+     return FAIL;
+ 
+ } /* end test_open_close() */
  
 /*-------------------------------------------------------------------------
  * Function:    test_multiple_registration()
@@ -267,59 +320,7 @@ error:
 
 } /* end test_getters() */
 
-/*-------------------------------------------------------------------------
- * Function:    test_open_close()
- *
- * Purpose:     Tests if we can open and close a GRIB2 file with a VOL connector.
- *
- * Return:      SUCCEED/FAIL
- *
- *-------------------------------------------------------------------------
- */
- static herr_t
- test_open_close(void)
- {
-     htri_t  is_registered   = FAIL;
-     hid_t   vol_id          = H5I_INVALID_HID;
- 
-     TESTING("file open/close with VOL");
- 
-     /* The VOL connector should not be registered at the start of the test */
-     if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0)
-         TEST_ERROR;
-     if(true == is_registered)
-         FAIL_PUTS_ERROR("VOL connector is inappropriately registered");
- 
-     /* Register the connector by name */
-     if((vol_id = H5VLregister_connector_by_name(GRIB2_VOL_CONNECTOR_NAME, H5P_DEFAULT)) < 0)
-         TEST_ERROR;
- 
-     /* The connector should be registered now */
-     if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0)
-         TEST_ERROR;
-     if(false == is_registered)
-         FAIL_PUTS_ERROR("VOL connector was not registered");
- 
-     /* Unregister the connector */
-     if(H5VLunregister_connector(vol_id) < 0)
-         TEST_ERROR;
- 
-     /* The connector should not be registered now */
-     if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0)
-         TEST_ERROR;
-     if(true == is_registered)
-         FAIL_PUTS_ERROR("VOL connector is inappropriately registered");
- 
-     PASSED();
-     return SUCCEED;
- 
- error:
-     H5E_BEGIN_TRY {
-         H5VLunregister_connector(vol_id);
-     } H5E_END_TRY;
-     return FAIL;
- 
- } /* end test_open_close() */
+
 
 /*-------------------------------------------------------------------------
  * Function:    main
