@@ -1,6 +1,15 @@
 cmake_minimum_required (VERSION 3.9)
 project (grib2_vol_connector VERSION 0.0.1 DESCRIPTION "grib2 VOL connector" LANGUAGES C)
 
+# Add option for debug build
+option(DEBUG "Build with debugging symbols" OFF)
+
+# Set compiler flags based on DEBUG option
+if(DEBUG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
+    message(STATUS "Debug mode enabled: Adding -g flag")
+endif()
+
 # Enable testing
 enable_testing ()
 include (CTest)
