@@ -10,6 +10,20 @@ check_PROGRAMS = vol_plugin
 vol_plugin_LDFLAGS = $(AM_LDFLAGS) $(HDF5_LDFLAGS)
 vol_plugin_LDADD = $(HDF5_LIBS)
 
+# Test data file
+TEST_DATA = gdaswave.t00z.wcoast.0p16.f000.grib2
+
 TESTS = test_vol_plugin.sh
 
 DISTCLEANFILES = test_vol_plugin.sh
+
+# Install test data to the build directory during 'make all' or 'make check'
+all-local:
+	$(MKDIR_P) $(builddir)
+	$(INSTALL_DATA) $(srcdir)/$(TEST_DATA) $(builddir)/$(TEST_DATA)
+
+# Also copy during 'make check' in case user skipped 'make all'
+check-local:
+	$(MKDIR_P) $(builddir)
+	$(INSTALL_DATA) $(srcdir)/$(TEST_DATA) $(builddir)/$(TEST_DATA)
+

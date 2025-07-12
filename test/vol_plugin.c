@@ -1,21 +1,3 @@
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * Copyright by The HDF Group.                                               *
- * All rights reserved.                                                      *
- *                                                                           *
- * This file is part of HDF5.  The full HDF5 copyright notice, including     *
- * terms governing use, modification, and redistribution, is contained in    *
- * the COPYING file, which can be found at the root of the source code       *
- * distribution tree, or in https://support.hdfgroup.org/ftp/HDF5/releases.  *
- * If you do not have access to either file, you may request a copy from     *
- * help@hdfgroup.org.                                                        *
- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-
-/*
- * Purpose:     Tests basic VOL plugin operations (registration, etc.).
- *              Uses the GRIB2 VOL connector which is loaded as a
- *              dynamically-loaded plugin.
- */
-
 #include "grib2_vol_connector.h"
 
 #include <hdf5.h>
@@ -43,7 +25,8 @@
 #define H5_WARNING()        {puts("*WARNING*"); fflush(stdout);}                    
 #define SKIPPED()           {puts(" -SKIP-"); fflush(stdout);}                         
 #define PUTS_ERROR(s)       {puts(s); AT(); goto error;}                           
-#define TEST_ERROR          {H5_FAILED(); AT(); goto error;}                         
+#define TEST_ERROR          {H5_FAILED(); AT(); goto error;}   
+#define ERR                 {H5_FAILED(); AT(); goto error;}                         
 #define STACK_ERROR         {H5Eprint2(H5E_DEFAULT, stdout); goto error;}            
 #define FAIL_STACK_ERROR    {H5_FAILED(); AT(); H5Eprint2(H5E_DEFAULT, stdout); goto error;}
 #define FAIL_PUTS_ERROR(s)  {H5_FAILED(); AT(); puts(s); goto error;} 
@@ -176,6 +159,7 @@ test_file_open_close(void)
 {
     htri_t  is_registered   = FAIL;
     hid_t   vol_id          = H5I_INVALID_HID;
+#define GRIB2_TEST_FILE "gdaswave.t00z.wcoast.0p16.f000"
 
     TESTING("VOL file open/close");
 
@@ -194,6 +178,46 @@ test_file_open_close(void)
         TEST_ERROR;
     if(false == is_registered)
         FAIL_PUTS_ERROR("VOL connector was not registered");
+
+
+    /* Open our test GRIB2 file. */
+    printf("\n*** Checking GRIB2 file open and close...");
+    {
+        ssize_t objs;
+        hid_t fileid, access_plist, access_plist2;
+        #define FILE_NAME "tst_vol_plugin.h5"
+
+        printf("\nabout to create HDF5 file.\n");
+        /* Set the access list so that closes will fail if something is
+         * still open in the file. */
+        if ((access_plist = H5Pcreate(H5P_FILE_ACCESS)) < 0) ERR;
+        if (H5Pset_fclose_degree(access_plist, H5F_CLOSE_SEMI)) ERR;
+
+        /* Create file. */
+        if ((fileid = H5Fcreate(FILE_NAME, H5F_ACC_TRUNC, H5P_DEFAULT,
+                                access_plist)) < 0) ERR;
+
+        /* Turn off HDF5 error messages. */
+        /* if (H5Eset_auto1(NULL, NULL) < 0) ERR; */
+
+        /* Now close the file. */
+        if (H5Fclose(fileid) < 0) ERR;
+
+        printf("about to open HDF5 file.\n");
+        /* Open the file. */
+        if ((fileid = H5Fopen(FILE_NAME, H5F_ACC_RDONLY, H5P_DEFAULT)) < 0) ERR;
+
+        /* Now close the file. */
+        if (H5Fclose(fileid) < 0) ERR;
+
+        printf("about to create new access plist\n");
+        if ((access_plist2 = H5Pcreate(H5P_FILE_ACCESS)) < 0) ERR;
+
+     }
+  
+
+    
+    /* Close the GRIB2 file. */
 
     /* Unregister the connector */
     if(H5VLunregister_connector(vol_id) < 0)
