@@ -10,22 +10,25 @@ check_PROGRAMS = vol_plugin
 vol_plugin_LDFLAGS = $(AM_LDFLAGS) $(HDF5_LDFLAGS)
 vol_plugin_LDADD = $(HDF5_LIBS)
 
-# Test data file - we'll handle it with custom rules, not with automake's installation mechanism
+# Test data file - declare it as noinst_HEADERS which won't be installed but will be distributed
 TEST_DATA_FILE = gdaswave.t00z.wcoast.0p16.f000.grib2
+noinst_DATA = $(TEST_DATA_FILE)
 
 TESTS = test_vol_plugin.sh
 
 DISTCLEANFILES = test_vol_plugin.sh
 
-# Include test data file in distribution
-dist_noinst_DATA = $(TEST_DATA_FILE)
-
 # Install test data to the build directory during 'make all' or 'make check'
+# but only if we're doing an out-of-tree build
 all-local:
-	$(MKDIR_P) $(builddir)
-	$(INSTALL_DATA) $(srcdir)/$(TEST_DATA_FILE) $(builddir)/$(TEST_DATA_FILE)
+	if test "$(srcdir)" != "$(builddir)" ; then \
+		$(MKDIR_P) $(builddir); \
+		$(INSTALL_DATA) $(srcdir)/$(TEST_DATA_FILE) $(builddir)/$(TEST_DATA_FILE); \
+	fi
 
 # Also copy during 'make check' in case user skipped 'make all'
 check-local:
-	$(MKDIR_P) $(builddir)
-	$(INSTALL_DATA) $(srcdir)/$(TEST_DATA_FILE) $(builddir)/$(TEST_DATA_FILE)
+	if test "$(srcdir)" != "$(builddir)" ; then \
+		$(MKDIR_P) $(builddir); \
+		$(INSTALL_DATA) $(srcdir)/$(TEST_DATA_FILE) $(builddir)/$(TEST_DATA_FILE); \
+	fi
