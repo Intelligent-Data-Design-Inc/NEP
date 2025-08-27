@@ -120,7 +120,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/bufr-install
-          key: bufr-v12.2.0-${{ runner.os }}-1
+          key: bufr-v12.2.0-${{ runner.os }}-2
 
       - name: Download and build NCEPLIBS-bufr
         if: steps.cache-bufr.outputs.cache-hit != 'true'
@@ -132,6 +132,9 @@ jobs:
           cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/bufr-install -DBUILD_SHARED_LIBS=ON ..
           make -j$(nproc)
           make install
+          ls -l $GITHUB_WORKSPACE/bufr-install
+          ls -l $GITHUB_WORKSPACE/bufr-install/bin
+          ls -l $GITHUB_WORKSPACE/bufr-install/include
 
 
       # Cache NASA CDF install
