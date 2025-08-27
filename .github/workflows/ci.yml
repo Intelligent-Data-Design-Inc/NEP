@@ -48,7 +48,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y mpich cmake make wget doxygen graphviz zlib1g-dev libpng-dev libaec-dev libjpeg-dev
-          # Note: All VOL connector dependencies (NCEPLIBS-g2, NCEPLIBS-bufr, libgeotiff, NASA CDF) will be built from source 
+          # Install additional VOL connector dependencies
+          sudo apt-get install -y libgeotiff-dev
+          # Note: NCEPLIBS-bufr and NASA CDF will be built from source or mocked for testing 
 
       - name: Cache Jasper install
         id: cache-jasper
@@ -131,24 +133,6 @@ jobs:
           make -j$(nproc)
           make install
 
-      # Cache libgeotiff install
-      - name: Cache libgeotiff install
-        id: cache-geotiff
-        uses: actions/cache@v4
-        with:
-          path: ${{ github.workspace }}/geotiff-install
-          key: geotiff-1.7.4-${{ runner.os }}-1
-
-      - name: Download and build libgeotiff
-        if: steps.cache-geotiff.outputs.cache-hit != 'true'
-        run: |
-          wget https://github.com/OSGeo/libgeotiff/archive/refs/tags/1.7.4.tar.gz -O geotiff.tar.gz &> /dev/null
-          tar -xzf geotiff.tar.gz
-          cd libgeotiff-1.7.4
-          mkdir build && cd build
-          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/geotiff-install -DBUILD_SHARED_LIBS=ON ..
-          make -j$(nproc)
-          make install
 
       # Cache NASA CDF install
       - name: Cache NASA CDF install
@@ -179,7 +163,7 @@ jobs:
           JASPER_INSTALL_PREFIX: $GITHUB_WORKSPACE/jasper-install
         run: |
           echo "Building with VOL configuration: ${{ matrix.vol_config.name }}"
-          CC=mpicc cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/g2c-install;$GITHUB_WORKSPACE/bufr-install;$GITHUB_WORKSPACE/geotiff-install;$GITHUB_WORKSPACE/cdf-install;$JASPER_INSTALL_PREFIX" ${{ matrix.vol_config.cmake_flags }}
+          CC=mpicc cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/g2c-install;$GITHUB_WORKSPACE/bufr-install;$GITHUB_WORKSPACE/cdf-install;$JASPER_INSTALL_PREFIX" ${{ matrix.vol_config.cmake_flags }}
 
       - name: Build (CMake)
         if: matrix.build_system == 'cmake'
@@ -203,9 +187,9 @@ jobs:
           echo "Building with VOL configuration: ${{ matrix.vol_config.name }}"
           autoreconf -i
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/g2c-install/include -I$GITHUB_WORKSPACE/bufr-install/include -I$GITHUB_WORKSPACE/geotiff-install/include -I$GITHUB_WORKSPACE/cdf-install/include"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib -L$GITHUB_WORKSPACE/bufr-install/lib -L$GITHUB_WORKSPACE/geotiff-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib"
-          export LD_LIBRARY_PATH="$JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$GITHUB_WORKSPACE/bufr-install/lib:$GITHUB_WORKSPACE/geotiff-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/g2c-install/include -I$GITHUB_WORKSPACE/bufr-install/include -I$GITHUB_WORKSPACE/cdf-install/include"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib -L$GITHUB_WORKSPACE/bufr-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib"
+          export LD_LIBRARY_PATH="$JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$GITHUB_WORKSPACE/bufr-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH"
           ls -l $GITHUB_WORKSPACE/hdf5-install
           ls -l $GITHUB_WORKSPACE/hdf5-install/bin
           export CC=h5cc
