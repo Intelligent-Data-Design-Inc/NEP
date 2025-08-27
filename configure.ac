@@ -67,8 +67,8 @@ AC_SUBST([G2C_LIBS])
 
 # Check for BUFR dependencies if enabled
 if test "x$enable_bufr" = "xyes"; then
-    AC_CHECK_HEADERS([bufrlib.h], [bufr_header=yes], [bufr_header=no])
-    AC_CHECK_LIB([bufr], [openbf], [BUFR_LIBS="-lbufr"; bufr_lib=yes], [bufr_lib=no])
+    AC_CHECK_HEADERS([bufr_interface.h], [bufr_header=yes], [bufr_header=no])
+    AC_CHECK_LIB([bufr], [openbf_c], [BUFR_LIBS="-lbufr"; bufr_lib=yes], [bufr_lib=no])
     
     if test "x$bufr_header" = "xyes" && test "x$bufr_lib" = "xyes"; then
         HAVE_BUFR=yes
