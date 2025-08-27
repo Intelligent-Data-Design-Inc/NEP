@@ -198,7 +198,7 @@ jobs:
           ls -l $GITHUB_WORKSPACE/hdf5-install
           ls -l $GITHUB_WORKSPACE/hdf5-install/bin
           export CC=h5cc
-          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc ${{ matrix.vol_config.autotools_flags }}
+          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc ${{ matrix.vol_config.autotools_flags }} || (echo "Configure failed. Printing config.log:"; cat config.log; exit 1)
           make -j$(nproc)
           make VERBOSE=1 check
 
