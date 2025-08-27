@@ -28,7 +28,38 @@
 ### v0.2 (Month 2)
 - GRIB2 format reader implementation
 
-### v0.1 (Month 1)
+### v0.1.1
+#### Sprint 1: Add New VOLs to Build Systems
+- **VOL Connector Integration**: Add BUFR, GeoTIFF, and CDF VOL connectors to both CMake and Autotools build systems
+  - Each connector compiles as a separate shared library (.so/.dll)
+  - Dynamic loading at runtime using dlopen() or platform equivalent
+  - Isolated dependency management per connector
+- **Dependencies Integration**:
+  - GRIB2: NCEPLIBS-g2 (NOAA/NCEP libraries)
+  - BUFR: NCEPLIBS-bufr (NOAA/NCEP libraries) 
+  - GeoTIFF: libgeotiff (OSGeo project)
+  - CDF: NASA CDF library from https://cdf.gsfc.nasa.gov/html/sw_and_docs.html
+- **Build Configuration Options**:
+  - CMake: `-DENABLE_GRIB2/BUFR/GEOTIFF/CDF=ON/OFF` (default: ON)
+  - Autotools: `--enable/disable-grib2/bufr/geotiff/cdf` (default: enabled)
+  - Automatic dependency detection with graceful fallback
+  - Clear error messages for missing dependencies
+- **Documentation Updates**: Updated docs/prd.md and docs/design.md with shared library architecture and dependency specifications
+
+#### Sprint 2: Installs
+- The install targets work for both build systems.
+- docs/prd.md and docs/design.md are updated.
+
+#### Sprint 3: Documentation with Doxygen
+- Doxygen is add to the builds.
+- An initial Doxygen configuration file is added.
+- gh-pages is used to display the main branch doxygen build.
+- docs/prd.md and docs/design.md are updated.
+
+### v0.1.0 
 - Initial NFEP framework setup
-- Build system implementation
+- Empty GRIB vol connector
+- Build system implementation, Cmake and autotools
+- Unit tests
+- CI testing
 
