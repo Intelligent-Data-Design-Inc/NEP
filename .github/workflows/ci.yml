@@ -120,11 +120,12 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/bufr-install
-          key: bufr-v12.2.0-${{ runner.os }}-2
+          key: bufr-v12.2.0-${{ runner.os }}-3
 
       - name: Download and build NCEPLIBS-bufr
         if: steps.cache-bufr.outputs.cache-hit != 'true'
         run: |
+          set -x
           wget https://github.com/NOAA-EMC/NCEPLIBS-bufr/archive/refs/tags/v12.2.0.tar.gz -O bufr.tar.gz &> /dev/null
           tar -xzf bufr.tar.gz
           cd NCEPLIBS-bufr-12.2.0
@@ -133,8 +134,9 @@ jobs:
           make -j$(nproc)
           make install
           ls -l $GITHUB_WORKSPACE/bufr-install
-          ls -l $GITHUB_WORKSPACE/bufr-install/bin
+          ls -l $GITHUB_WORKSPACE/bufr-install/lib
           ls -l $GITHUB_WORKSPACE/bufr-install/include
+          ls -l $GITHUB_WORKSPACE/bufr-install/include/bufr_4
 
 
       # Cache NASA CDF install
