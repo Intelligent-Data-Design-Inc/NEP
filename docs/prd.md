@@ -158,7 +158,7 @@ The NetCDF4/HDF5 Format Extension Pack (NFEP) is a dynamic connector system that
 - NCEPLIBS-g2 (for GRIB2)
 - NCEPLIBS-bufr (for BUFR)
 - libgeotiff (for GeoTIFF)
-- NASA CDF library from https://cdf.gsfc.nasa.gov/html/sw_and_docs.html (for CDF)
+- NASA CDF library from https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/cdf39_1-dist-all.tar.gz (for CDF)
 
 ### 5.4 Build System Requirements (v0.1.1)
 

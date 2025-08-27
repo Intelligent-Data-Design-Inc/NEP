@@ -50,7 +50,7 @@
   - GRIB2: NCEPLIBS-g2 (NOAA/NCEP libraries)
   - BUFR: NCEPLIBS-bufr (NOAA/NCEP libraries) 
   - GeoTIFF: libgeotiff (OSGeo project)
-  - CDF: NASA CDF library from https://cdf.gsfc.nasa.gov/html/sw_and_docs.html
+  - CDF: NASA CDF library from https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/cdf39_1-dist-all.tar.gz
 - **Build Configuration Options**:
   - CMake: `-DENABLE_GRIB2/BUFR/GEOTIFF/CDF=ON/OFF` (default: ON)
   - Autotools: `--enable/disable-grib2/bufr/geotiff/cdf` (default: enabled)

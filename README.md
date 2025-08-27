@@ -26,11 +26,13 @@ NFEP provides a transparent, runtime-pluggable solution:
 - **No conversion required**: Direct access to original data without preprocessing
 
 ### Supported Formats
-- GRIB2
-- BUFR
-- CDF
-- GeoTIFF
-- Any format with a compatible connector
+
+| Format | Library |
+|--------|---------|
+| GRIB2 | [NCEPLIBS-g2](https://github.com/NOAA-EMC/NCEPLIBS-g2) |
+| BUFR | [NCEPLIBS-bufr](https://github.com/NOAA-EMC/NCEPLIBS-bufr) |
+| CDF | [NASA CDF](https://cdf.gsfc.nasa.gov/html/sw_and_docs.html) |
+| GeoTIFF | [libgeotiff](https://github.com/OSGeo/libgeotiff) |
 
 ## Key Benefits
 

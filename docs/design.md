@@ -132,7 +132,7 @@ src/
 | GRIB2 | NCEPLIBS-g2 | NOAA/NCEP libraries |
 | BUFR | NCEPLIBS-bufr | NOAA/NCEP libraries |
 | GeoTIFF | libgeotiff | OSGeo project |
-| CDF | NASA CDF | https://cdf.gsfc.nasa.gov/html/sw_and_docs.html |
+| CDF | NASA CDF | https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/cdf39_1-dist-all.tar.gz |
 
 ## Requirements and Performance Considerations
 

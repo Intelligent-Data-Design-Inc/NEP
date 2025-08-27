@@ -48,9 +48,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y mpich cmake make wget doxygen graphviz zlib1g-dev libpng-dev libaec-dev libjpeg-dev
-          # Install additional VOL connector dependencies
-          sudo apt-get install -y libgeotiff-dev
-          # Note: NCEPLIBS-bufr and NASA CDF will be built from source or mocked for testing 
+          # Note: All VOL connector dependencies (NCEPLIBS-g2, NCEPLIBS-bufr, libgeotiff, NASA CDF) will be built from source 
 
       - name: Cache Jasper install
         id: cache-jasper
@@ -114,6 +112,61 @@ jobs:
           make -j$(nproc)
           make install
 
+      # Cache BUFR install
+      - name: Cache BUFR install
+        id: cache-bufr
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/bufr-install
+          key: bufr-v12.2.0-${{ runner.os }}-1
+
+      - name: Download and build NCEPLIBS-bufr
+        if: steps.cache-bufr.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/NOAA-EMC/NCEPLIBS-bufr/archive/refs/tags/v12.2.0.tar.gz -O bufr.tar.gz &> /dev/null
+          tar -xzf bufr.tar.gz
+          cd NCEPLIBS-bufr-12.2.0
+          mkdir build && cd build
+          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/bufr-install -DBUILD_SHARED_LIBS=ON ..
+          make -j$(nproc)
+          make install
+
+      # Cache libgeotiff install
+      - name: Cache libgeotiff install
+        id: cache-geotiff
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/geotiff-install
+          key: geotiff-1.7.4-${{ runner.os }}-1
+
+      - name: Download and build libgeotiff
+        if: steps.cache-geotiff.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/OSGeo/libgeotiff/archive/refs/tags/1.7.4.tar.gz -O geotiff.tar.gz &> /dev/null
+          tar -xzf geotiff.tar.gz
+          cd libgeotiff-1.7.4
+          mkdir build && cd build
+          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/geotiff-install -DBUILD_SHARED_LIBS=ON ..
+          make -j$(nproc)
+          make install
+
+      # Cache NASA CDF install
+      - name: Cache NASA CDF install
+        id: cache-cdf
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/cdf-install
+          key: cdf-39_1-${{ runner.os }}-1
+
+      - name: Download and build NASA CDF
+        if: steps.cache-cdf.outputs.cache-hit != 'true'
+        run: |
+          wget https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/cdf39_1-dist-all.tar.gz -O cdf.tar.gz &> /dev/null
+          tar -xzf cdf.tar.gz
+          cd cdf39_1-dist
+          make OS=linux ENV=gnu CURSES=yes FORTRAN=no UCOPTIONS=-O2 SHARED=yes all
+          make INSTALLDIR=$GITHUB_WORKSPACE/cdf-install install
+
             # --- CMake build ---------------------------------------------------
       - name: Create build directory (CMake)
         if: matrix.build_system == 'cmake'
@@ -126,7 +179,7 @@ jobs:
           JASPER_INSTALL_PREFIX: $GITHUB_WORKSPACE/jasper-install
         run: |
           echo "Building with VOL configuration: ${{ matrix.vol_config.name }}"
-          CC=mpicc cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/g2c-install;$JASPER_INSTALL_PREFIX" ${{ matrix.vol_config.cmake_flags }}
+          CC=mpicc cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/g2c-install;$GITHUB_WORKSPACE/bufr-install;$GITHUB_WORKSPACE/geotiff-install;$GITHUB_WORKSPACE/cdf-install;$JASPER_INSTALL_PREFIX" ${{ matrix.vol_config.cmake_flags }}
 
       - name: Build (CMake)
         if: matrix.build_system == 'cmake'
@@ -150,9 +203,9 @@ jobs:
           echo "Building with VOL configuration: ${{ matrix.vol_config.name }}"
           autoreconf -i
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/g2c-install/include"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib"
-          export LD_LIBRARY_PATH="$JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$LD_LIBRARY_PATH"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/g2c-install/include -I$GITHUB_WORKSPACE/bufr-install/include -I$GITHUB_WORKSPACE/geotiff-install/include -I$GITHUB_WORKSPACE/cdf-install/include"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib -L$GITHUB_WORKSPACE/bufr-install/lib -L$GITHUB_WORKSPACE/geotiff-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib"
+          export LD_LIBRARY_PATH="$JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$GITHUB_WORKSPACE/bufr-install/lib:$GITHUB_WORKSPACE/geotiff-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH"
           ls -l $GITHUB_WORKSPACE/hdf5-install
           ls -l $GITHUB_WORKSPACE/hdf5-install/bin
           export CC=h5cc
