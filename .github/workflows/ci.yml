@@ -24,6 +24,22 @@ jobs:
       fail-fast: false
       matrix:
         build_system: [cmake, autotools]
+        vol_config:
+          - name: "all_enabled"
+            cmake_flags: "-DENABLE_GRIB2=ON -DENABLE_BUFR=ON -DENABLE_GEOTIFF=ON -DENABLE_CDF=ON"
+            autotools_flags: "--enable-grib2 --enable-bufr --enable-geotiff --enable-cdf"
+          - name: "grib2_only"
+            cmake_flags: "-DENABLE_GRIB2=ON -DENABLE_BUFR=OFF -DENABLE_GEOTIFF=OFF -DENABLE_CDF=OFF"
+            autotools_flags: "--enable-grib2 --disable-bufr --disable-geotiff --disable-cdf"
+          - name: "bufr_only"
+            cmake_flags: "-DENABLE_GRIB2=OFF -DENABLE_BUFR=ON -DENABLE_GEOTIFF=OFF -DENABLE_CDF=OFF"
+            autotools_flags: "--disable-grib2 --enable-bufr --disable-geotiff --disable-cdf"
+          - name: "geotiff_only"
+            cmake_flags: "-DENABLE_GRIB2=OFF -DENABLE_BUFR=OFF -DENABLE_GEOTIFF=ON -DENABLE_CDF=OFF"
+            autotools_flags: "--disable-grib2 --disable-bufr --enable-geotiff --disable-cdf"
+          - name: "cdf_only"
+            cmake_flags: "-DENABLE_GRIB2=OFF -DENABLE_BUFR=OFF -DENABLE_GEOTIFF=OFF -DENABLE_CDF=ON"
+            autotools_flags: "--disable-grib2 --disable-bufr --disable-geotiff --enable-cdf"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -31,7 +47,10 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y mpich cmake make wget doxygen graphviz zlib1g-dev libpng-dev libaec-dev libjpeg-dev 
+          sudo apt-get install -y mpich cmake make wget doxygen graphviz zlib1g-dev libpng-dev libaec-dev libjpeg-dev
+          # Install additional VOL connector dependencies
+          sudo apt-get install -y libgeotiff-dev
+          # Note: NCEPLIBS-bufr and NASA CDF will be built from source or mocked for testing 
 
       - name: Cache Jasper install
         id: cache-jasper
@@ -106,7 +125,8 @@ jobs:
         env:
           JASPER_INSTALL_PREFIX: $GITHUB_WORKSPACE/jasper-install
         run: |
-          CC=mpicc cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/g2c-install;$JASPER_INSTALL_PREFIX"
+          echo "Building with VOL configuration: ${{ matrix.vol_config.name }}"
+          CC=mpicc cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/g2c-install;$JASPER_INSTALL_PREFIX" ${{ matrix.vol_config.cmake_flags }}
 
       - name: Build (CMake)
         if: matrix.build_system == 'cmake'
@@ -127,6 +147,7 @@ jobs:
       - name: Configure (Autotools)
         if: matrix.build_system == 'autotools'
         run: |
+          echo "Building with VOL configuration: ${{ matrix.vol_config.name }}"
           autoreconf -i
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/g2c-install/include"
@@ -135,7 +156,7 @@ jobs:
           ls -l $GITHUB_WORKSPACE/hdf5-install
           ls -l $GITHUB_WORKSPACE/hdf5-install/bin
           export CC=h5cc
-          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc 
+          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc ${{ matrix.vol_config.autotools_flags }}
           make -j$(nproc)
           make VERBOSE=1 check
 

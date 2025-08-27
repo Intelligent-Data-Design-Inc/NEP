@@ -1,8 +1,8 @@
-## Process this file with autoconf to produce configure.
-##
+# This is the configure.ac file for the NFEP project.
+# Edward Hartnett 8/27/25
 
 AC_PREREQ([2.69])
-AC_INIT([GRIB2 VOL], [0.0.1], [help@intelligentdatadesign.com])
+AC_INIT([NFEP], [0.1.1], [help@intelligentdatadesign.com])
 AC_CONFIG_SRCDIR([src/grib2_vol_connector.c])
 AC_CONFIG_HEADERS([config.h])
 
@@ -21,10 +21,110 @@ AC_CHECK_HEADERS([stdlib.h])
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T
 
-# Check for g2c library and header
-AC_CHECK_HEADERS([grib2.h], [], [AC_MSG_ERROR([Unable to find grib2.h (g2c header)])])
-AC_CHECK_LIB([g2c], [g2_info], [G2C_LIBS="-lg2c"], [AC_MSG_ERROR([Unable to find g2c library])])
+# VOL connector enable/disable options
+AC_ARG_ENABLE([grib2],
+    AS_HELP_STRING([--enable-grib2], [Enable GRIB2 VOL connector (default: yes)]),
+    [enable_grib2=$enableval],
+    [enable_grib2=yes])
+
+AC_ARG_ENABLE([bufr],
+    AS_HELP_STRING([--enable-bufr], [Enable BUFR VOL connector (default: yes)]),
+    [enable_bufr=$enableval],
+    [enable_bufr=yes])
+
+AC_ARG_ENABLE([geotiff],
+    AS_HELP_STRING([--enable-geotiff], [Enable GeoTIFF VOL connector (default: yes)]),
+    [enable_geotiff=$enableval],
+    [enable_geotiff=yes])
+
+AC_ARG_ENABLE([cdf],
+    AS_HELP_STRING([--enable-cdf], [Enable CDF VOL connector (default: yes)]),
+    [enable_cdf=$enableval],
+    [enable_cdf=yes])
+
+# Initialize variables
+ENABLED_VOLS=""
+HAVE_GRIB2=no
+HAVE_BUFR=no
+HAVE_GEOTIFF=no
+HAVE_CDF=no
+
+# Check for GRIB2 dependencies if enabled
+if test "x$enable_grib2" = "xyes"; then
+    AC_CHECK_HEADERS([grib2.h], [grib2_header=yes], [grib2_header=no])
+    AC_CHECK_LIB([g2c], [g2_info], [G2C_LIBS="-lg2c"; grib2_lib=yes], [grib2_lib=no])
+    
+    if test "x$grib2_header" = "xyes" && test "x$grib2_lib" = "xyes"; then
+        HAVE_GRIB2=yes
+        ENABLED_VOLS="$ENABLED_VOLS GRIB2"
+        AC_DEFINE([HAVE_GRIB2], [1], [Define if GRIB2 VOL connector is enabled])
+        AC_MSG_NOTICE([GRIB2 VOL connector enabled])
+    else
+        AC_MSG_ERROR([GRIB2 VOL connector enabled but NCEPLIBS-g2 not found. Install NCEPLIBS-g2 or disable with --disable-grib2])
+    fi
+fi
 AC_SUBST([G2C_LIBS])
+
+# Check for BUFR dependencies if enabled
+if test "x$enable_bufr" = "xyes"; then
+    AC_CHECK_HEADERS([bufrlib.h], [bufr_header=yes], [bufr_header=no])
+    AC_CHECK_LIB([bufr], [openbf], [BUFR_LIBS="-lbufr"; bufr_lib=yes], [bufr_lib=no])
+    
+    if test "x$bufr_header" = "xyes" && test "x$bufr_lib" = "xyes"; then
+        HAVE_BUFR=yes
+        ENABLED_VOLS="$ENABLED_VOLS BUFR"
+        AC_DEFINE([HAVE_BUFR], [1], [Define if BUFR VOL connector is enabled])
+        AC_MSG_NOTICE([BUFR VOL connector enabled])
+    else
+        AC_MSG_ERROR([BUFR VOL connector enabled but NCEPLIBS-bufr not found. Install NCEPLIBS-bufr or disable with --disable-bufr])
+    fi
+fi
+AC_SUBST([BUFR_LIBS])
+
+# Check for GeoTIFF dependencies if enabled
+if test "x$enable_geotiff" = "xyes"; then
+    AC_CHECK_HEADERS([geotiff.h], [geotiff_header=yes], [geotiff_header=no])
+    AC_CHECK_LIB([geotiff], [GTIFNew], [GEOTIFF_LIBS="-lgeotiff"; geotiff_lib=yes], [geotiff_lib=no])
+    
+    if test "x$geotiff_header" = "xyes" && test "x$geotiff_lib" = "xyes"; then
+        HAVE_GEOTIFF=yes
+        ENABLED_VOLS="$ENABLED_VOLS GeoTIFF"
+        AC_DEFINE([HAVE_GEOTIFF], [1], [Define if GeoTIFF VOL connector is enabled])
+        AC_MSG_NOTICE([GeoTIFF VOL connector enabled])
+    else
+        AC_MSG_ERROR([GeoTIFF VOL connector enabled but libgeotiff not found. Install libgeotiff or disable with --disable-geotiff])
+    fi
+fi
+AC_SUBST([GEOTIFF_LIBS])
+
+# Check for CDF dependencies if enabled
+if test "x$enable_cdf" = "xyes"; then
+    AC_CHECK_HEADERS([cdf.h], [cdf_header=yes], [cdf_header=no])
+    AC_CHECK_LIB([cdf], [CDFopen], [CDF_LIBS="-lcdf"; cdf_lib=yes], [cdf_lib=no])
+    
+    if test "x$cdf_header" = "xyes" && test "x$cdf_lib" = "xyes"; then
+        HAVE_CDF=yes
+        ENABLED_VOLS="$ENABLED_VOLS CDF"
+        AC_DEFINE([HAVE_CDF], [1], [Define if CDF VOL connector is enabled])
+        AC_MSG_NOTICE([CDF VOL connector enabled])
+    else
+        AC_MSG_ERROR([CDF VOL connector enabled but NASA CDF library not found. Install NASA CDF library or disable with --disable-cdf])
+    fi
+fi
+AC_SUBST([CDF_LIBS])
+
+# Check that at least one VOL connector is enabled
+if test "x$HAVE_GRIB2" = "xno" && test "x$HAVE_BUFR" = "xno" && test "x$HAVE_GEOTIFF" = "xno" && test "x$HAVE_CDF" = "xno"; then
+    AC_MSG_ERROR([No VOL connectors enabled. Enable at least one with --enable-<vol>])
+fi
+
+# Set up conditionals for Makefile.am
+AM_CONDITIONAL([HAVE_GRIB2], [test "x$HAVE_GRIB2" = "xyes"])
+AM_CONDITIONAL([HAVE_BUFR], [test "x$HAVE_BUFR" = "xyes"])
+AM_CONDITIONAL([HAVE_GEOTIFF], [test "x$HAVE_GEOTIFF" = "xyes"])
+AM_CONDITIONAL([HAVE_CDF], [test "x$HAVE_CDF" = "xyes"])
+
+AC_MSG_NOTICE([Enabled VOL connectors:$ENABLED_VOLS])
 
 # Initialize Automake
 AM_INIT_AUTOMAKE([foreign subdir-objects])

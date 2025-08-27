@@ -28,7 +28,19 @@
 ### v0.2 (Month 2)
 - GRIB2 format reader implementation
 
-### v0.1.1
+### v0.1.2 Documentation
+#### Sprint 1: Documentation with Doxygen
+- Doxygen is add to the builds.
+- An initial Doxygen configuration file is added.
+- Warnings are turned on.
+
+#### Sprint 2: CI and gh-pages
+- The CI system is used to test documentation builds without warnings.
+- gh-pages is used to display the main branch doxygen build.
+- docs/prd.md and docs/design.md are updated.
+
+
+### v0.1.1 Build System(s) Improvement
 #### Sprint 1: Add New VOLs to Build Systems
 - **VOL Connector Integration**: Add BUFR, GeoTIFF, and CDF VOL connectors to both CMake and Autotools build systems
   - Each connector compiles as a separate shared library (.so/.dll)
@@ -42,19 +54,13 @@
 - **Build Configuration Options**:
   - CMake: `-DENABLE_GRIB2/BUFR/GEOTIFF/CDF=ON/OFF` (default: ON)
   - Autotools: `--enable/disable-grib2/bufr/geotiff/cdf` (default: enabled)
-  - Automatic dependency detection with graceful fallback
+  - Automatic dependency detection, if dependency is missing, configuration errors out.
   - Clear error messages for missing dependencies
 - **Documentation Updates**: Updated docs/prd.md and docs/design.md with shared library architecture and dependency specifications
 
 #### Sprint 2: Installs
 - The install targets work for both build systems.
-- docs/prd.md and docs/design.md are updated.
 
-#### Sprint 3: Documentation with Doxygen
-- Doxygen is add to the builds.
-- An initial Doxygen configuration file is added.
-- gh-pages is used to display the main branch doxygen build.
-- docs/prd.md and docs/design.md are updated.
 
 ### v0.1.0 
 - Initial NFEP framework setup

@@ -1,3 +1,6 @@
+# Build file for the test directory of the NFEP project.
+# Edward Hartnett 8/27/25
+
 # Build the test
 add_executable (vol_plugin vol_plugin.c)
 target_include_directories (vol_plugin PRIVATE "${PROJECT_SOURCE_DIR}/src")
