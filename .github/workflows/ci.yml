@@ -45,10 +45,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y mpich cmake make wget doxygen graphviz zlib1g-dev libpng-dev libaec-dev libjpeg-dev
-          # Install additional VOL connector dependencies
+          sudo apt-get install -y cmake make wget doxygen graphviz zlib1g-dev libpng-dev libaec-dev libjpeg-dev
           sudo apt-get install -y libgeotiff-dev
-          # Note: NCEPLIBS-bufr and NASA CDF will be built from source or mocked for testing 
 
       - name: Cache Jasper install
         id: cache-jasper

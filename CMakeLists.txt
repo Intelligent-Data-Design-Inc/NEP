@@ -51,11 +51,16 @@ endif()
 
 # Find BUFR dependencies if enabled
 if(ENABLE_BUFR)
+    message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
     find_library(BUFR_LIBRARY NAMES bufr)
-    find_path(BUFR_INCLUDE_DIR bufrlib.h)
+    find_path(BUFR_INCLUDE_DIR bufrlib.h PATH_SUFFIXES bufr_4)
+    
+    message(STATUS "BUFR_LIBRARY search result: ${BUFR_LIBRARY}")
+    message(STATUS "BUFR_INCLUDE_DIR search result: ${BUFR_INCLUDE_DIR}")
     
     if(BUFR_LIBRARY AND BUFR_INCLUDE_DIR)
         message(STATUS "Found NCEPLIBS-bufr: ${BUFR_LIBRARY}")
+        message(STATUS "Found NCEPLIBS-bufr headers: ${BUFR_INCLUDE_DIR}")
         list(APPEND ENABLED_VOLS "BUFR")
         list(APPEND VOL_LIBRARIES ${BUFR_LIBRARY})
         list(APPEND VOL_INCLUDE_DIRS ${BUFR_INCLUDE_DIR})
