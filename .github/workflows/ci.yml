@@ -1,8 +1,4 @@
-# GitHub Actions CI workflow for building and testing the project
-# This workflow sets up an Ubuntu environment, installs MPI and CMake,
-# and runs the build and test commands as specified in the project documentation.
-#
-# The workflow will also run `make` and `make test`.
+# GitHub Actions CI workflow for building and testing the NFEP project with cmake and autotools.
 #
 # Edward Hartnett 8/28/25
 name: ci_main
@@ -193,7 +189,6 @@ jobs:
           export LD_LIBRARY_PATH="$JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$GITHUB_WORKSPACE/bufr-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH"
           ls -l $GITHUB_WORKSPACE/hdf5-install
           ls -l $GITHUB_WORKSPACE/hdf5-install/bin
-          export CC=h5cc
           ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc ${{ matrix.vol_config.autotools_flags }} || (echo "Configure failed. Printing config.log:"; cat config.log; exit 1)
           make -j$(nproc)
           make VERBOSE=1 check
