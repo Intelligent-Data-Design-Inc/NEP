@@ -70,7 +70,7 @@ The NetCDF4/HDF5 Format Extension Pack (NFEP) is a dynamic connector system that
   - Reference implementation examples
   - Connector validation tools
 
-#### FR-009: Build System Integration (v0.1.1)
+#### FR-009: Build System Integration (v0.1.1 Sprint 1)
 - **Description**: Complete integration of all VOL connectors into build systems
 - **Acceptance Criteria**:
   - All VOL connectors compile successfully in both CMake and Autotools
@@ -78,6 +78,18 @@ The NetCDF4/HDF5 Format Extension Pack (NFEP) is a dynamic connector system that
   - Dependencies are properly detected and linked
   - Build fails gracefully with clear messages when required dependencies are missing
   - Default configuration enables all VOL types when dependencies are available
+
+#### FR-010: Installation System (v0.1.1 Sprint 2)
+- **Description**: Complete installation target implementation for both build systems
+- **Acceptance Criteria**:
+  - Install targets work correctly in both CMake and Autotools build systems
+  - VOL connector shared libraries (.so files) are installed to configurable path
+  - Single installation path for all components as set by configure options
+  - CMake config files generated and installed for find_package() support
+  - No dependency verification during installation (assumes dependencies already present)
+  - Linux/Unix platform support only
+  - Uninstall targets provided in both build systems
+  - Installation respects standard configure prefix options (--prefix, CMAKE_INSTALL_PREFIX)
 
 ### 3.2 Supported Formats
 
@@ -249,11 +261,19 @@ Both build systems must provide enable/disable options for each VOL type:
 
 ## 9. Timeline and Milestones
 
-### v0.1.1 - Build System Enhancement (Sprint 1)
+### v0.1.1 - Build System Enhancement
+#### Sprint 1: VOL Connector Integration
 - VOL connector build system integration
 - Dependency management for all format libraries
 - Configurable enable/disable options for each VOL type
 - Enhanced build documentation
+
+#### Sprint 2: Installation System
+- Complete installation target implementation for both build systems
+- VOL connector shared library installation
+- CMake config file generation and installation
+- Uninstall target implementation
+- Configurable installation paths via standard prefix options
 
 ### v0.1 - Framework Foundation (Month 1)
 - NFEP framework setup
