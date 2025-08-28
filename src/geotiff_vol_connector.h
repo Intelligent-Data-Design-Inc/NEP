@@ -13,13 +13,13 @@
 
 /* The value must be between 256 and 65535 (inclusive) */
 /**
- * @def geotiff_VOL_CONNECTOR_VALUE
+ * @def GEOTIFF_VOL_CONNECTOR_VALUE
  * @brief The VOL connector value (between 256 and 65535).
  */
 #define GEOTIFF_VOL_CONNECTOR_VALUE    ((H5VL_class_value_t)15555)
 
 /**
- * @def geotiff_VOL_CONNECTOR_NAME
+ * @def GEOTIFF_VOL_CONNECTOR_NAME
  * @brief The VOL connector name string.
  */
 #define GEOTIFF_VOL_CONNECTOR_NAME     "geotiff_vol_connector"

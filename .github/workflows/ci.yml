@@ -188,7 +188,7 @@ jobs:
         working-directory: build
         run: |
           echo "Building documentation with CMake..."
-          make doc 2>&1 | tee doc_build.log
+          make docs 2>&1 | tee doc_build.log
           # Check for warnings in documentation build
           if grep -i "warning" doc_build.log; then
             echo "Documentation build contains warnings - failing build"
@@ -245,7 +245,7 @@ jobs:
         if: matrix.build_system == 'autotools' && matrix.doc_build == 'enabled'
         run: |
           echo "Building documentation with Autotools..."
-          make doc 2>&1 | tee doc_build.log
+          make docs 2>&1 | tee doc_build.log
           # Check for warnings in documentation build
           if grep -i "warning" doc_build.log; then
             echo "Documentation build contains warnings - failing build"

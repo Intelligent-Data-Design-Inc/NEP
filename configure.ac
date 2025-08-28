@@ -173,7 +173,8 @@ fi
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
-                 test/Makefile])
+                 test/Makefile
+                 Doxyfile])
 
 AC_CONFIG_FILES([test/test_vol_plugin.sh],
                 [chmod +x test/test_vol_plugin.sh])
