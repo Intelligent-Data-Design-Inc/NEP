@@ -91,7 +91,7 @@ The project uses GitHub Actions for CI/CD with comprehensive documentation integ
   - Documentation build matrix for both CMake and Autotools build systems
   - Zero-warning enforcement (documentation warnings treated as build failures)
   - Documentation artifacts uploaded and preserved for 30 days
-  - Build options: `-DBUILD_DOCUMENTATION=ON/OFF` (CMake), `--enable/disable-documentation` (Autotools)
+  - Build options: `-DBUILD_DOCUMENTATION=ON/OFF` (CMake), `--enable/disable-docs` (Autotools)
   - GitHub Pages deployment planned for future release
 
 

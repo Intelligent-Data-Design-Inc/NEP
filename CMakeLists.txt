@@ -12,6 +12,9 @@ option(ENABLE_BUFR "Enable BUFR VOL connector" ON)
 option(ENABLE_GEOTIFF "Enable GeoTIFF VOL connector" ON)
 option(ENABLE_CDF "Enable CDF VOL connector" ON)
 
+# Documentation option
+option(BUILD_DOCUMENTATION "Build documentation with Doxygen" ON)
+
 # Set compiler flags based on DEBUG option
 if(DEBUG)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
@@ -164,19 +167,24 @@ install(EXPORT NFEPTargets
 
 
 # Doxygen documentation build
-find_package(Doxygen)
-if(DOXYGEN_FOUND)
-    set(DOXYGEN_IN ${CMAKE_SOURCE_DIR}/docs/Doxyfile.in)
-    set(DOXYGEN_OUT ${CMAKE_BINARY_DIR}/Doxyfile)
-    configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
-    add_custom_target(doxygen
-        COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Generating API documentation with Doxygen"
-        VERBATIM
-    )
+if(BUILD_DOCUMENTATION)
+    find_package(Doxygen)
+    if(DOXYGEN_FOUND)
+        set(DOXYGEN_IN ${CMAKE_SOURCE_DIR}/docs/Doxyfile.in)
+        set(DOXYGEN_OUT ${CMAKE_BINARY_DIR}/Doxyfile)
+        configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+        add_custom_target(doc
+            COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            COMMENT "Generating API documentation with Doxygen"
+            VERBATIM
+        )
+        message(STATUS "Documentation generation enabled with doxygen")
+    else()
+        message(FATAL_ERROR "Documentation enabled but doxygen not found. Install doxygen or disable with -DBUILD_DOCUMENTATION=OFF")
+    endif()
 else()
-    message(STATUS "Doxygen not found. Documentation target will not be available.")
+    message(STATUS "Documentation generation disabled")
 endif()
 
 

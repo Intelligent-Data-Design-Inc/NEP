@@ -231,9 +231,9 @@ jobs:
           ls -l $GITHUB_WORKSPACE/hdf5-install/lib
           DOC_FLAG=""
           if [ "${{ matrix.doc_build }}" = "enabled" ]; then
-            DOC_FLAG="--enable-documentation"
+            DOC_FLAG="--enable-docs"
           else
-            DOC_FLAG="--disable-documentation"
+            DOC_FLAG="--disable-docs"
           fi
           ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc ${{ matrix.vol_config.autotools_flags }} $DOC_FLAG || (echo "Configure failed. Printing config.log:"; cat config.log; exit 1)
 

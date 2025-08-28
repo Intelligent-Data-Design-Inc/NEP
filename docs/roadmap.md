@@ -28,6 +28,16 @@
 ### v0.2 (Month 2)
 - GRIB2 format reader implementation
 
+### v0.1.6 BUFR File Open/Close
+- Add a small, simple BUFR test file in test/data.
+- Add file open/close to the BUFR vol connector.
+- Add a test which opens/closes the file.
+
+### v0.1.5 GeoTIFF File Open/Close
+- Add a small, simple GeoTIFF test file in test/data.
+- Add file open/close to the GeoTIFF vol connector.
+- Add a test which opens/closes the file.
+
 ### v0.1.4 cdf File Open/Close
 - Add a small, simple cdf test file in test/data.
 - Add file open/close to the cdf vol connector.
@@ -43,7 +53,7 @@
 - **Doxygen Build Integration**: Add Doxygen documentation generation to both CMake and Autotools build systems
   - CMake: `doc` target using `find_package(Doxygen)` with conditional building
   - Autotools: `make doc` target with Doxygen detection in configure.ac
-  - Build options: `-DBUILD_DOCUMENTATION=ON/OFF` (CMake), `--enable/disable-documentation` (Autotools)
+  - Build options: `-DBUILD_DOCUMENTATION=ON/OFF` (CMake), `--enable/disable-docs` (Autotools)
 - **Doxygen Configuration**: Create comprehensive Doxyfile.in template with variable substitution
   - Project metadata (version, description, author) automatically populated
   - Input/output paths configured relative to build directory
@@ -65,7 +75,7 @@
   - Zero-warning enforcement implemented (documentation warnings treated as build failures)
   - Documentation artifacts uploaded and preserved for 30 days
   - Build matrix optimized to test documentation builds with all_enabled VOL configuration only
-  - Build options: `-DBUILD_DOCUMENTATION=ON/OFF` (CMake), `--enable/disable-documentation` (Autotools)
+  - Build options: `-DBUILD_DOCUMENTATION=ON/OFF` (CMake), `--enable/disable-docs` (Autotools)
 - **Documentation Updates**: Project documentation updated with new architecture
   - Updated `docs/prd.md` with FR-012: CI Documentation Integration requirements
   - Updated `docs/design.md` with comprehensive CI and documentation architecture section
