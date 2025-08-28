@@ -49,11 +49,17 @@
   - Clean documentation generation for all existing source files in `src/`
   - Generated documentation placed in `docs/html/` directory
 
-#### Sprint 2: CI and gh-pages
-- The CI system is used to test documentation builds without warnings.
-- gh-pages is used to display the main branch doxygen build.
-- docs/prd.md and docs/design.md are updated.
-
+#### Sprint 2: CI 
+- **CI Documentation Integration**: CI pipeline enhanced with documentation build matrix
+  - Documentation build steps added for both CMake and Autotools build systems
+  - Zero-warning enforcement implemented (documentation warnings treated as build failures)
+  - Documentation artifacts uploaded and preserved for 30 days
+  - Build matrix optimized to test documentation builds with all_enabled VOL configuration only
+  - Build options: `-DBUILD_DOCUMENTATION=ON/OFF` (CMake), `--enable/disable-documentation` (Autotools)
+- **Documentation Updates**: Project documentation updated with new architecture
+  - Updated `docs/prd.md` with FR-012: CI Documentation Integration requirements
+  - Updated `docs/design.md` with comprehensive CI and documentation architecture section
+- **GitHub Pages Deployment**: Removed from this release, planned for future versionment
 
 ### v0.1.1 Build System(s) Improvement
 #### Sprint 1: Add New VOLs to Build Systems

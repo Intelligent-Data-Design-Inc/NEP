@@ -112,6 +112,17 @@ The NetCDF4/HDF5 Format Extension Pack (NFEP) is a dynamic connector system that
   - Clean documentation build with zero warnings
   - Documentation covers all existing source files in `src/` directory
 
+#### FR-012: CI Documentation Integration (v0.1.2 Sprint 2)
+- **Description**: Integrate documentation builds into CI pipeline with artifact generation
+- **Acceptance Criteria**:
+  - CI pipeline includes documentation build matrix for both CMake and Autotools
+  - Documentation builds enforced with zero-warning policy (warnings treated as failures)
+  - Documentation build artifacts uploaded and preserved for 30 days
+  - CI matrix optimized to test documentation builds with all_enabled VOL configuration only
+  - Documentation builds run in parallel with existing build configurations
+  - Build system configuration options: `-DBUILD_DOCUMENTATION=ON/OFF` (CMake), `--enable/disable-documentation` (Autotools)
+  - GitHub Pages deployment planned for future release
+
 ### 3.2 Supported Formats
 
 #### FR-005: GRIB2 Support
