@@ -30,9 +30,24 @@
 
 ### v0.1.2 Documentation
 #### Sprint 1: Documentation with Doxygen
-- Doxygen is add to the builds.
-- An initial Doxygen configuration file is added.
-- Warnings are turned on.
+- **Doxygen Build Integration**: Add Doxygen documentation generation to both CMake and Autotools build systems
+  - CMake: `doc` target using `find_package(Doxygen)` with conditional building
+  - Autotools: `make doc` target with Doxygen detection in configure.ac
+  - Build options: `-DBUILD_DOCUMENTATION=ON/OFF` (CMake), `--enable/disable-documentation` (Autotools)
+- **Doxygen Configuration**: Create comprehensive Doxyfile.in template with variable substitution
+  - Project metadata (version, description, author) automatically populated
+  - Input/output paths configured relative to build directory
+  - Warning levels set to maximum with warnings treated as errors
+  - HTML output generation enabled, other formats optional
+- **API Documentation Standards**: Establish and implement documentation requirements
+  - All public API functions documented with Doxygen comments
+  - Parameter descriptions, return values, and usage examples required
+  - Code examples must be compilable and tested
+  - Architecture overview and installation guides included
+- **Documentation Quality Assurance**: Implement zero-warning documentation builds
+  - Documentation warnings treated as build failures
+  - Clean documentation generation for all existing source files in `src/`
+  - Generated documentation placed in `docs/html/` directory
 
 #### Sprint 2: CI and gh-pages
 - The CI system is used to test documentation builds without warnings.

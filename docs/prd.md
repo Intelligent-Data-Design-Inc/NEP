@@ -96,6 +96,22 @@ The NetCDF4/HDF5 Format Extension Pack (NFEP) is a dynamic connector system that
   - ✅ Proper RPATH/RUNPATH configuration for installed shared libraries
   - ✅ Standard directory structure following platform conventions
 
+#### FR-011: Doxygen Documentation System (v0.1.2 Sprint 1)
+- **Description**: Integrate Doxygen documentation generation into build systems with comprehensive API documentation
+- **Acceptance Criteria**:
+  - Doxygen configuration file (Doxyfile) added to project root
+  - Documentation build targets integrated into both CMake and Autotools build systems
+  - All public API functions, structures, and macros documented with Doxygen comments
+  - Documentation warnings enabled and treated as build failures
+  - Generated documentation includes:
+    - API reference for all VOL connectors
+    - Code examples and usage patterns
+    - Architecture overview diagrams
+    - Installation and configuration guides
+  - Documentation build produces HTML output in `docs/html/` directory
+  - Clean documentation build with zero warnings
+  - Documentation covers all existing source files in `src/` directory
+
 ### 3.2 Supported Formats
 
 #### FR-005: GRIB2 Support
@@ -289,10 +305,43 @@ ${PREFIX}/
 │   └── cmake/NFEP/
 │       ├── NFEPConfig.cmake
 │       └── NFEPConfigVersion.cmake
-└── include/
-    └── nfep/
-        └── [header files]
+├── include/
+│   └── nfep/
+│       └── [header files]
+└── share/doc/nfep/
+    └── html/
+        └── [Doxygen generated documentation]
 ```
+
+#### 5.4.7 Documentation Build System (v0.1.2)
+**Doxygen Integration Architecture:**
+
+**Build System Integration:**
+- CMake: `doc` target for documentation generation using `find_package(Doxygen)`
+- Autotools: `make doc` target with Doxygen detection in configure.ac
+- Documentation build optional but recommended (warns if Doxygen not found)
+- Documentation warnings treated as errors when building documentation
+
+**Configuration Management:**
+- Doxyfile.in template with CMake/Autotools variable substitution
+- Project version, paths, and build options automatically configured
+- Conditional documentation generation based on Doxygen availability
+- Integration with existing build system variables and paths
+
+**Documentation Build Options:**
+```bash
+# CMake documentation control
+-DBUILD_DOCUMENTATION=ON/OFF (default: ON if Doxygen found)
+
+# Autotools documentation control
+--enable-documentation/--disable-documentation (default: enabled if Doxygen found)
+```
+
+**Quality Standards:**
+- All public API functions must have complete Doxygen documentation
+- Documentation includes parameter descriptions, return values, and usage examples
+- Code examples must be compilable and tested
+- Architecture diagrams generated from source comments where applicable
 
 ## 6. Quality Assurance
 
