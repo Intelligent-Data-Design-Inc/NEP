@@ -159,7 +159,7 @@ jobs:
           JASPER_INSTALL_PREFIX: $GITHUB_WORKSPACE/jasper-install
         run: |
           echo "Building with VOL configuration: ${{ matrix.vol_config.name }}"
-          cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/g2c-install;$GITHUB_WORKSPACE/bufr-install;$GITHUB_WORKSPACE/cdf-install;$JASPER_INSTALL_PREFIX" ${{ matrix.vol_config.cmake_flags }}
+          cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/g2c-install;$GITHUB_WORKSPACE/bufr-install;$GITHUB_WORKSPACE/cdf-install;$JASPER_INSTALL_PREFIX;/usr/include/geotiff" ${{ matrix.vol_config.cmake_flags }}
 
       - name: Build (CMake)
         if: matrix.build_system == 'cmake'
