@@ -40,7 +40,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt-get update
           sudo apt-get install -y cmake make wget doxygen graphviz zlib1g-dev libpng-dev libaec-dev libjpeg-dev
           sudo apt-get install -y libgeotiff-dev
 
@@ -182,6 +181,7 @@ jobs:
         if: matrix.build_system == 'autotools'
         run: |
           echo "Building with VOL configuration: ${{ matrix.vol_config.name }}"
+          find /usr -name '*geotiff*'
           autoreconf -i
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/g2c-install/include -I$GITHUB_WORKSPACE/bufr-install/include/bufr_4 -I$GITHUB_WORKSPACE/cdf-install/include"
