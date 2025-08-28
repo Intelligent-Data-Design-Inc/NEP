@@ -58,8 +58,16 @@
   - Clear error messages for missing dependencies
 - **Documentation Updates**: Updated docs/prd.md and docs/design.md with shared library architecture and dependency specifications
 
-#### Sprint 2: Installs
-- The install targets work for both build systems.
+#### Sprint 2: Installation System
+- **Install Targets**: Complete implementation of install targets for both CMake and Autotools build systems
+- **Shared Library Installation**: VOL connector shared libraries (.so files) installed to configurable path
+- **Installation Path Configuration**: Single installation path for all components, configurable via:
+  - CMake: `CMAKE_INSTALL_PREFIX` variable
+  - Autotools: `--prefix` configure option
+- **CMake Integration**: Generate and install CMake config files for `find_package()` support
+- **Platform Support**: Linux/Unix platforms only
+- **Uninstall Support**: Implement uninstall targets in both build systems (no manifest tracking)
+- **Dependency Assumptions**: No dependency verification during installation - assumes all required libraries are already present
 
 
 ### v0.1.0 

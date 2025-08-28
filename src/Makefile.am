@@ -47,3 +47,24 @@ libcdf_vol_connector_la_LDFLAGS = $(AM_LDFLAGS) $(HDF5_LDFLAGS) -avoid-version -
 libcdf_vol_connector_la_LIBADD = $(HDF5_LIBS) $(CDF_LIBS)
 endif
 
+# Uninstall target
+uninstall-local:
+	@echo "Uninstalling NFEP VOL connectors..."
+if HAVE_GRIB2
+	-rm -f $(DESTDIR)$(libdir)/libgrib2_vol_connector.*
+	-rm -f $(DESTDIR)$(includedir)/grib2_vol_connector.h
+endif
+if HAVE_BUFR
+	-rm -f $(DESTDIR)$(libdir)/libbufr_vol_connector.*
+	-rm -f $(DESTDIR)$(includedir)/bufr_vol_connector.h
+endif
+if HAVE_GEOTIFF
+	-rm -f $(DESTDIR)$(libdir)/libgeotiff_vol_connector.*
+	-rm -f $(DESTDIR)$(includedir)/geotiff_vol_connector.h
+endif
+if HAVE_CDF
+	-rm -f $(DESTDIR)$(libdir)/libcdf_vol_connector.*
+	-rm -f $(DESTDIR)$(includedir)/cdf_vol_connector.h
+endif
+	@echo "NFEP uninstall complete."
+

@@ -169,7 +169,9 @@ jobs:
       - name: Test (CTest)
         if: matrix.build_system == 'cmake'
         working-directory: build
-        run: ctest --verbose
+        run: |
+          ctest --verbose
+          sudo make install
 
       # --- Autotools build ---------------------------------------------
       - name: Bootstrap (Autotools)
@@ -192,4 +194,5 @@ jobs:
           ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc ${{ matrix.vol_config.autotools_flags }} || (echo "Configure failed. Printing config.log:"; cat config.log; exit 1)
           make -j$(nproc)
           make VERBOSE=1 check
+          sudo make install
 

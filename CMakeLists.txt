@@ -130,6 +130,39 @@ include(GNUInstallDirs)
 add_subdirectory (src)
 add_subdirectory (test)
 
+# Generate and install CMake config files
+include(CMakePackageConfigHelpers)
+
+# Configure the config file
+configure_package_config_file(
+    "${CMAKE_SOURCE_DIR}/NFEPConfig.cmake.in"
+    "${CMAKE_BINARY_DIR}/NFEPConfig.cmake"
+    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/NFEP"
+    PATH_VARS CMAKE_INSTALL_LIBDIR CMAKE_INSTALL_INCLUDEDIR
+)
+
+# Generate version file
+write_basic_package_version_file(
+    "${CMAKE_BINARY_DIR}/NFEPConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+# Install config files
+install(FILES
+    "${CMAKE_BINARY_DIR}/NFEPConfig.cmake"
+    "${CMAKE_BINARY_DIR}/NFEPConfigVersion.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/NFEP"
+)
+
+# Install the export set for use with the install-tree
+install(EXPORT NFEPTargets
+    FILE NFEPTargets.cmake
+    NAMESPACE NFEP::
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/NFEP"
+)
+
+
 # Doxygen documentation build
 find_package(Doxygen)
 if(DOXYGEN_FOUND)

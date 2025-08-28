@@ -9,10 +9,15 @@ if(HAVE_GRIB2)
     set(GRIB2_VOL_NAME grib2_vol_connector)
     add_library(${GRIB2_VOL_NAME} SHARED grib2_vol_connector.c)
     target_link_libraries(${GRIB2_VOL_NAME} PRIVATE ${HDF5_C_${LIB_TYPE}_LIBRARY} ${G2C_LIBRARY})
-    set_target_properties(${GRIB2_VOL_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
-    set_target_properties(${GRIB2_VOL_NAME} PROPERTIES SOVERSION 1)
-    set_target_properties(${GRIB2_VOL_NAME} PROPERTIES PUBLIC_HEADER "${GRIB2_VOL_NAME}.h")
+    set_target_properties(${GRIB2_VOL_NAME} PROPERTIES 
+        VERSION ${PROJECT_VERSION}
+        SOVERSION 1
+        PUBLIC_HEADER "${GRIB2_VOL_NAME}.h"
+        INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
+        INSTALL_RPATH_USE_LINK_PATH TRUE
+    )
     install(TARGETS ${GRIB2_VOL_NAME}
+        EXPORT NFEPTargets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
@@ -24,10 +29,15 @@ if(HAVE_BUFR)
     set(BUFR_VOL_NAME bufr_vol_connector)
     add_library(${BUFR_VOL_NAME} SHARED bufr_vol_connector.c)
     target_link_libraries(${BUFR_VOL_NAME} PRIVATE ${HDF5_C_${LIB_TYPE}_LIBRARY} ${BUFR_LIBRARY})
-    set_target_properties(${BUFR_VOL_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
-    set_target_properties(${BUFR_VOL_NAME} PROPERTIES SOVERSION 1)
-    set_target_properties(${BUFR_VOL_NAME} PROPERTIES PUBLIC_HEADER "${BUFR_VOL_NAME}.h")
+    set_target_properties(${BUFR_VOL_NAME} PROPERTIES 
+        VERSION ${PROJECT_VERSION}
+        SOVERSION 1
+        PUBLIC_HEADER "${BUFR_VOL_NAME}.h"
+        INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
+        INSTALL_RPATH_USE_LINK_PATH TRUE
+    )
     install(TARGETS ${BUFR_VOL_NAME}
+        EXPORT NFEPTargets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
@@ -39,10 +49,15 @@ if(HAVE_GEOTIFF)
     set(GEOTIFF_VOL_NAME geotiff_vol_connector)
     add_library(${GEOTIFF_VOL_NAME} SHARED geotiff_vol_connector.c)
     target_link_libraries(${GEOTIFF_VOL_NAME} PRIVATE ${HDF5_C_${LIB_TYPE}_LIBRARY} ${GEOTIFF_LIBRARY})
-    set_target_properties(${GEOTIFF_VOL_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
-    set_target_properties(${GEOTIFF_VOL_NAME} PROPERTIES SOVERSION 1)
-    set_target_properties(${GEOTIFF_VOL_NAME} PROPERTIES PUBLIC_HEADER "${GEOTIFF_VOL_NAME}.h")
+    set_target_properties(${GEOTIFF_VOL_NAME} PROPERTIES 
+        VERSION ${PROJECT_VERSION}
+        SOVERSION 1
+        PUBLIC_HEADER "${GEOTIFF_VOL_NAME}.h"
+        INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
+        INSTALL_RPATH_USE_LINK_PATH TRUE
+    )
     install(TARGETS ${GEOTIFF_VOL_NAME}
+        EXPORT NFEPTargets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
@@ -54,10 +69,15 @@ if(HAVE_CDF)
     set(CDF_VOL_NAME cdf_vol_connector)
     add_library(${CDF_VOL_NAME} SHARED cdf_vol_connector.c)
     target_link_libraries(${CDF_VOL_NAME} PRIVATE ${HDF5_C_${LIB_TYPE}_LIBRARY} ${CDF_LIBRARY})
-    set_target_properties(${CDF_VOL_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
-    set_target_properties(${CDF_VOL_NAME} PROPERTIES SOVERSION 1)
-    set_target_properties(${CDF_VOL_NAME} PROPERTIES PUBLIC_HEADER "${CDF_VOL_NAME}.h")
+    set_target_properties(${CDF_VOL_NAME} PROPERTIES 
+        VERSION ${PROJECT_VERSION}
+        SOVERSION 1
+        PUBLIC_HEADER "${CDF_VOL_NAME}.h"
+        INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
+        INSTALL_RPATH_USE_LINK_PATH TRUE
+    )
     install(TARGETS ${CDF_VOL_NAME}
+        EXPORT NFEPTargets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
