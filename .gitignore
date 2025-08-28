@@ -87,3 +87,5 @@ m4/lt~obsolete.m4
 # Test artifacts
 test_vol_plugin.sh
 vol_plugin
+
+*~

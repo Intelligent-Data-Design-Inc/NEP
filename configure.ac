@@ -52,7 +52,7 @@ HAVE_CDF=no
 # Check for GRIB2 dependencies if enabled
 if test "x$enable_grib2" = "xyes"; then
     AC_CHECK_HEADERS([grib2.h], [grib2_header=yes], [grib2_header=no])
-    AC_CHECK_LIB([g2c], [g2_info], [G2C_LIBS="-lg2c"; grib2_lib=yes], [grib2_lib=no])
+    AC_SEARCH_LIBS([g2_info], [g2c], [G2C_LIBS="-lg2c"; grib2_lib=yes], [grib2_lib=no])
     
     if test "x$grib2_header" = "xyes" && test "x$grib2_lib" = "xyes"; then
         HAVE_GRIB2=yes
@@ -68,7 +68,7 @@ AC_SUBST([G2C_LIBS])
 # Check for BUFR dependencies if enabled
 if test "x$enable_bufr" = "xyes"; then
     AC_CHECK_HEADERS([bufrlib.h], [bufr_header=yes], [bufr_header=no])
-    AC_CHECK_LIB([bufr_4], [openbf_c], [BUFR_LIBS="-lbufr_4"; bufr_lib=yes], [bufr_lib=no])
+    AC_SEARCH_LIBS([openbf_], [bufr_4], [BUFR_LIBS="-lbufr_4"; bufr_lib=yes], [bufr_lib=no], [-lgfortran -lm])
     
     if test "x$bufr_header" = "xyes" && test "x$bufr_lib" = "xyes"; then
         HAVE_BUFR=yes
@@ -84,7 +84,7 @@ AC_SUBST([BUFR_LIBS])
 # Check for GeoTIFF dependencies if enabled
 if test "x$enable_geotiff" = "xyes"; then
     AC_CHECK_HEADERS([geotiff.h], [geotiff_header=yes], [geotiff_header=no])
-    AC_CHECK_LIB([geotiff], [GTIFNew], [GEOTIFF_LIBS="-lgeotiff"; geotiff_lib=yes], [geotiff_lib=no])
+    AC_SEARCH_LIBS([GTIFNew], [geotiff], [GEOTIFF_LIBS="-lgeotiff"; geotiff_lib=yes], [geotiff_lib=no])
     
     if test "x$geotiff_header" = "xyes" && test "x$geotiff_lib" = "xyes"; then
         HAVE_GEOTIFF=yes
@@ -100,7 +100,7 @@ AC_SUBST([GEOTIFF_LIBS])
 # Check for CDF dependencies if enabled
 if test "x$enable_cdf" = "xyes"; then
     AC_CHECK_HEADERS([cdf.h], [cdf_header=yes], [cdf_header=no])
-    AC_CHECK_LIB([cdf], [CDFopen], [CDF_LIBS="-lcdf"; cdf_lib=yes], [cdf_lib=no])
+    AC_SEARCH_LIBS([CDFopen], [cdf], [CDF_LIBS="-lcdf"; cdf_lib=yes], [cdf_lib=no])
     
     if test "x$cdf_header" = "xyes" && test "x$cdf_lib" = "xyes"; then
         HAVE_CDF=yes
