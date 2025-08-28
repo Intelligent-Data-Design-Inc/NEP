@@ -184,7 +184,7 @@ jobs:
           find /usr -name '*geotiff*'
           autoreconf -i
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/g2c-install/include -I$GITHUB_WORKSPACE/bufr-install/include/bufr_4 -I$GITHUB_WORKSPACE/cdf-install/include"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/g2c-install/include -I$GITHUB_WORKSPACE/bufr-install/include/bufr_4 -I$GITHUB_WORKSPACE/cdf-install/include -I/usr/include/geotiff"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib -L$GITHUB_WORKSPACE/bufr-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib"
           export LD_LIBRARY_PATH="$JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$GITHUB_WORKSPACE/bufr-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH"
           ls -l $GITHUB_WORKSPACE/hdf5-install
