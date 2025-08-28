@@ -70,26 +70,31 @@ The NetCDF4/HDF5 Format Extension Pack (NFEP) is a dynamic connector system that
   - Reference implementation examples
   - Connector validation tools
 
-#### FR-009: Build System Integration (v0.1.1 Sprint 1)
+#### FR-009: Build System Integration (v0.1.1 Sprint 1) ✅ COMPLETED
 - **Description**: Complete integration of all VOL connectors into build systems
 - **Acceptance Criteria**:
-  - All VOL connectors compile successfully in both CMake and Autotools
-  - Enable/disable options work correctly for each VOL type
-  - Dependencies are properly detected and linked
-  - Build fails gracefully with clear messages when required dependencies are missing
-  - Default configuration enables all VOL types when dependencies are available
+  - ✅ All VOL connectors compile successfully in both CMake and Autotools
+  - ✅ Enable/disable options work correctly for each VOL type
+  - ✅ Dependencies are properly detected and linked
+  - ✅ Build fails gracefully with clear messages when required dependencies are missing
+  - ✅ Default configuration enables all VOL types when dependencies are available
+  - ✅ Comprehensive Find modules implemented for all dependencies
+  - ✅ CI/CD build matrix testing for all VOL connector combinations
+  - ✅ Cross-platform compatibility validated
 
-#### FR-010: Installation System (v0.1.1 Sprint 2)
+#### FR-010: Installation System (v0.1.1 Sprint 2) ✅ COMPLETED
 - **Description**: Complete installation target implementation for both build systems
 - **Acceptance Criteria**:
-  - Install targets work correctly in both CMake and Autotools build systems
-  - VOL connector shared libraries (.so files) are installed to configurable path
-  - Single installation path for all components as set by configure options
-  - CMake config files generated and installed for find_package() support
-  - No dependency verification during installation (assumes dependencies already present)
-  - Linux/Unix platform support only
-  - Uninstall targets provided in both build systems
-  - Installation respects standard configure prefix options (--prefix, CMAKE_INSTALL_PREFIX)
+  - ✅ Install targets work correctly in both CMake and Autotools build systems
+  - ✅ VOL connector shared libraries (.so files) are installed to configurable path
+  - ✅ Single installation path for all components as set by configure options
+  - ✅ CMake config files generated and installed for find_package() support
+  - ✅ No dependency verification during installation (assumes dependencies already present)
+  - ✅ Linux/Unix platform support only
+  - ✅ Uninstall targets provided in both build systems
+  - ✅ Installation respects standard configure prefix options (--prefix, CMAKE_INSTALL_PREFIX)
+  - ✅ Proper RPATH/RUNPATH configuration for installed shared libraries
+  - ✅ Standard directory structure following platform conventions
 
 ### 3.2 Supported Formats
 
@@ -174,41 +179,120 @@ The NetCDF4/HDF5 Format Extension Pack (NFEP) is a dynamic connector system that
 
 ### 5.4 Build System Requirements (v0.1.1)
 
-#### 5.4.1 VOL Connector Integration
+#### 5.4.1 Dual Build System Architecture
+NFEP implements comprehensive support for both modern and traditional build systems:
+
+**CMake Build System (Primary):**
+- Modern CMake 3.12+ with advanced features and best practices
+- Modular compilation with each VOL connector as independent shared library
+- Comprehensive Find modules for automatic dependency detection
+- Cross-platform support (Linux, Unix, Windows)
+- Complete install/uninstall target implementation
+- Generated CMake config files for downstream project integration
+
+**Autotools Build System (Legacy Compatibility):**
+- Traditional GNU autotools configure/make workflow
+- Parallel feature parity with CMake system
+- Legacy system compatibility for older computing environments
+- Standard GNU coding standards compliance
+- Portable shell script compatibility
+
+#### 5.4.2 VOL Connector Integration
 Each VOL connector is compiled as a separate shared library that is dynamically loaded at runtime:
 
-- **GRIB2 Connector**: Requires NCEPLIBS-g2 library
-- **BUFR Connector**: Requires NCEPLIBS-bufr library
-- **GeoTIFF Connector**: Requires libgeotiff library
-- **CDF Connector**: Requires NASA CDF library
+- **GRIB2 Connector**: `libnfep_grib2_vol.so` - Requires NCEPLIBS-g2 library
+- **BUFR Connector**: `libnfep_bufr_vol.so` - Requires NCEPLIBS-bufr library
+- **GeoTIFF Connector**: `libnfep_geotiff_vol.so` - Requires libgeotiff library
+- **CDF Connector**: `libnfep_cdf_vol.so` - Requires NASA CDF library
 
-#### 5.4.2 Shared Library Architecture
-VOL connectors are implemented as dynamically loadable shared libraries:
+#### 5.4.3 Shared Library Architecture
+VOL connectors are implemented as dynamically loadable shared libraries with advanced features:
+
+**Dynamic Loading Framework:**
 - Each connector compiles to a separate `.so` file (Linux/Unix) or `.dll` file (Windows)
 - Runtime loading via `dlopen()` or equivalent platform-specific mechanisms
 - Connector registration and discovery through standardized entry points
 - Memory management and cleanup handled by the connector framework
+- Proper RPATH/RUNPATH configuration for installed libraries
 
-#### 5.4.3 Configurable Build Options
-Both build systems must provide enable/disable options for each VOL type:
+**Dependency Isolation:**
+- Format-specific dependencies contained within respective connectors
+- Independent compilation units prevent dependency conflicts
+- Modular loading allows selective format support
 
-**CMake Options:**
-- `-DENABLE_GRIB2=ON/OFF` (default: ON)
-- `-DENABLE_BUFR=ON/OFF` (default: ON)
-- `-DENABLE_GEOTIFF=ON/OFF` (default: ON)
-- `-DENABLE_CDF=ON/OFF` (default: ON)
+#### 5.4.4 Configurable Build Options
+Both build systems provide comprehensive configuration control:
+
+**CMake Configuration Options:**
+```bash
+# Individual VOL connector control (default: ON)
+-DENABLE_GRIB2=ON/OFF
+-DENABLE_BUFR=ON/OFF
+-DENABLE_GEOTIFF=ON/OFF
+-DENABLE_CDF=ON/OFF
+
+# Installation path configuration
+-DCMAKE_INSTALL_PREFIX=/path/to/install
+```
 
 **Autotools Configure Flags:**
-- `--enable-grib2/--disable-grib2` (default: enabled)
-- `--enable-bufr/--disable-bufr` (default: enabled)
-- `--enable-geotiff/--disable-geotiff` (default: enabled)
-- `--enable-cdf/--disable-cdf` (default: enabled)
+```bash
+# Individual VOL connector control (default: enabled)
+--enable-grib2/--disable-grib2
+--enable-bufr/--disable-bufr
+--enable-geotiff/--disable-geotiff
+--enable-cdf/--disable-cdf
 
-#### 5.4.4 Dependency Detection
-- Automatic detection of required libraries
+# Installation path configuration
+--prefix=/path/to/install
+```
+
+#### 5.4.5 Advanced Dependency Detection
+**Automatic Library Discovery:**
+- Multi-method detection: pkg-config, CMake Find modules, autotools macros
+- Version compatibility validation
+- Support for non-standard library installation paths
+- Custom dependency path specification via environment variables
+
+**Error Handling:**
 - Graceful handling when dependencies are missing
-- Clear error messages for missing required dependencies
-- Optional dependency paths via configuration variables
+- Clear, actionable error messages for missing required dependencies
+- Helpful suggestions for dependency installation
+- Build fails fast with comprehensive diagnostic information
+
+**Detection Methods by Library:**
+| Library | CMake Detection | Autotools Detection | pkg-config Support |
+|---------|----------------|--------------------|-----------------|
+| NCEPLIBS-g2 | FindNCEPLIBS-g2.cmake | AC_CHECK_LIB macro | Yes |
+| NCEPLIBS-bufr | FindNCEPLIBS-bufr.cmake | AC_CHECK_LIB macro | Yes |
+| libgeotiff | FindLibGeoTIFF.cmake | AC_CHECK_LIB macro | Yes |
+| NASA CDF | FindNASACDF.cmake | Custom macro | No |
+
+#### 5.4.6 Installation System Architecture
+**Installation Requirements:**
+- Single installation path for all components
+- Configurable installation prefix via standard options
+- Shared library installation with proper RPATH configuration
+- CMake config file generation for `find_package()` support
+- Complete uninstall functionality in both build systems
+- Linux/Unix platform support with standard directory conventions
+- No dependency verification during installation (assumes dependencies present)
+
+**Installation Structure:**
+```
+${PREFIX}/
+├── lib/
+│   ├── libnfep_grib2_vol.so
+│   ├── libnfep_bufr_vol.so
+│   ├── libnfep_geotiff_vol.so
+│   ├── libnfep_cdf_vol.so
+│   └── cmake/NFEP/
+│       ├── NFEPConfig.cmake
+│       └── NFEPConfigVersion.cmake
+└── include/
+    └── nfep/
+        └── [header files]
+```
 
 ## 6. Quality Assurance
 

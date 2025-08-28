@@ -88,51 +88,105 @@ The project uses GitHub Actions for CI/CD with:
 
 ### Dual Build System Support
 
-NFEP supports both CMake and Autotools build systems to ensure maximum compatibility:
+NFEP provides comprehensive support for both CMake and Autotools build systems to ensure maximum compatibility across diverse computing environments:
 
 #### CMake Build System
-- Modern CMake 3.12+ configuration
-- Modular VOL connector compilation
-- Automatic dependency detection
-- Configurable build options for each VOL type
+- **Modern CMake 3.12+**: Leverages contemporary CMake features and best practices
+- **Modular VOL Connector Compilation**: Each connector builds as an independent shared library
+- **Advanced Dependency Detection**: Automatic discovery with comprehensive Find modules
+- **Configurable Build Options**: Fine-grained control over VOL connector inclusion
+- **Cross-Platform Support**: Unified build configuration across Linux, Unix, and Windows
+- **Installation Integration**: Complete install/uninstall target implementation
 
 #### Autotools Build System
-- Traditional configure/make workflow
-- Cross-platform compatibility
-- Legacy system support
-- Parallel configuration options with CMake
+- **Traditional Configure/Make Workflow**: Standard GNU autotools compatibility
+- **Legacy System Support**: Ensures compatibility with older computing environments
+- **Parallel Configuration**: Maintains feature parity with CMake system
+- **Portable Build Scripts**: Cross-platform shell script compatibility
+- **Standard Installation Paths**: Follows GNU coding standards for installation
 
 ### VOL Connector Build Integration
 
-Each VOL connector is compiled as a separate shared library:
+Each VOL connector is compiled as a separate shared library with isolated dependencies:
 
 ```
 src/
-├── bufr_vol_connector.c     # BUFR connector (requires NCEPLIBS-bufr)
-├── bufr_vol_connector.h
-├── cdf_vol_connector.c      # CDF connector (requires NASA CDF library)
-├── cdf_vol_connector.h
-├── grib2_vol_connector.c    # GRIB2 connector (requires NCEPLIBS-g2)
-├── grib2_vol_connector.h
-├── geotiff_vol_connector.c  # GeoTIFF connector (requires libgeotiff)
-└── geotiff_vol_connector.h
+├── bufr_vol_connector.c     # BUFR connector → libnfep_bufr_vol.so
+├── bufr_vol_connector.h     # (requires NCEPLIBS-bufr)
+├── cdf_vol_connector.c      # CDF connector → libnfep_cdf_vol.so
+├── cdf_vol_connector.h      # (requires NASA CDF library)
+├── grib2_vol_connector.c    # GRIB2 connector → libnfep_grib2_vol.so
+├── grib2_vol_connector.h    # (requires NCEPLIBS-g2)
+├── geotiff_vol_connector.c  # GeoTIFF connector → libnfep_geotiff_vol.so
+└── geotiff_vol_connector.h  # (requires libgeotiff)
 ```
 
 ### Shared Library Architecture
 
-- **Dynamic Loading**: VOL connectors are loaded at runtime using `dlopen()`
-- **Separate Compilation**: Each connector builds to its own shared library
-- **Dependency Isolation**: Format-specific dependencies are contained within each connector
-- **Runtime Discovery**: Connectors register themselves with the NFEP framework
+#### Dynamic Loading Framework
+- **Runtime Loading**: VOL connectors loaded on-demand using `dlopen()` or platform equivalent
+- **Separate Compilation Units**: Each connector compiles to independent `.so`/`.dll` files
+- **Dependency Isolation**: Format-specific libraries contained within respective connectors
+- **Plugin Registration**: Standardized entry points for connector discovery and initialization
+- **Memory Management**: Proper cleanup and resource management for loaded connectors
+
+#### Build Configuration Options
+
+**CMake Configuration:**
+```bash
+# Enable/disable individual VOL connectors (default: ON)
+cmake -DENABLE_GRIB2=ON -DENABLE_BUFR=OFF -DENABLE_GEOTIFF=ON -DENABLE_CDF=ON
+```
+
+**Autotools Configuration:**
+```bash
+# Configure with specific VOL connectors (default: enabled)
+./configure --enable-grib2 --disable-bufr --enable-geotiff --enable-cdf
+```
 
 ### Dependency Management
 
-| VOL Connector | Required Library | Source |
-|---------------|------------------|--------|
-| GRIB2 | NCEPLIBS-g2 | NOAA/NCEP libraries |
-| BUFR | NCEPLIBS-bufr | NOAA/NCEP libraries |
-| GeoTIFF | libgeotiff | OSGeo project |
-| CDF | NASA CDF | https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/cdf39_1-dist-all.tar.gz |
+#### Library Requirements
+
+| VOL Connector | Required Library | Source | Detection Method |
+|---------------|------------------|--------|------------------|
+| GRIB2 | NCEPLIBS-g2 | NOAA/NCEP libraries | pkg-config, FindNCEPLIBS-g2.cmake |
+| BUFR | NCEPLIBS-bufr | NOAA/NCEP libraries | pkg-config, FindNCEPLIBS-bufr.cmake |
+| GeoTIFF | libgeotiff | OSGeo project | pkg-config, FindLibGeoTIFF.cmake |
+| CDF | NASA CDF | https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/cdf39_1-dist-all.tar.gz | FindNASACDF.cmake |
+
+#### Dependency Detection
+- **Automatic Discovery**: Build systems automatically locate required libraries
+- **Graceful Degradation**: Missing dependencies result in clear error messages
+- **Version Validation**: Compatibility checking for library versions
+- **Custom Paths**: Support for non-standard library installation locations
+
+### Installation System
+
+#### Installation Architecture
+- **Single Installation Path**: All components install to unified, configurable location
+- **Shared Library Installation**: VOL connectors installed with proper RPATH configuration
+- **CMake Integration**: Generated config files enable `find_package(NFEP)` support
+- **Standard Paths**: Follows platform conventions for library installation
+
+#### Installation Configuration
+**CMake:**
+```bash
+cmake -DCMAKE_INSTALL_PREFIX=/opt/nfep
+make install
+```
+
+**Autotools:**
+```bash
+./configure --prefix=/opt/nfep
+make install
+```
+
+#### Uninstall Support
+Both build systems provide complete uninstall functionality:
+```bash
+make uninstall  # Removes all installed files
+```
 
 ## Requirements and Performance Considerations
 
