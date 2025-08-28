@@ -8,7 +8,7 @@ EXTRA_DIST = autogen.sh
 # Documentation target
 if HAVE_DOXYGEN
 docs:
-	$(DOXYGEN) Doxyfile
+	$(DOXYGEN) docs/Doxyfile
 
 clean-local:
 	rm -rf docs/html

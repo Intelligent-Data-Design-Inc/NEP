@@ -171,7 +171,7 @@ if(BUILD_DOCUMENTATION)
     find_package(Doxygen)
     if(DOXYGEN_FOUND)
         set(DOXYGEN_IN ${CMAKE_SOURCE_DIR}/docs/Doxyfile.in)
-        set(DOXYGEN_OUT ${CMAKE_BINARY_DIR}/Doxyfile)
+        set(DOXYGEN_OUT ${CMAKE_BINARY_DIR}/docs/Doxyfile)
         configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
         add_custom_target(docs
             COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
