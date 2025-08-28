@@ -2,7 +2,7 @@
 # Edward Hartnett 8/27/25
 
 # Build the test only if BUFR is enabled
-if(HAVE_BUFR)
+if(HAVE_GRIB2)
     add_executable (test_grib2_vol test_grib2_vol.c)
     target_include_directories (test_grib2_vol PRIVATE "${PROJECT_SOURCE_DIR}/src")
     target_link_libraries (test_grib2_vol ${HDF5_C_LIBRARIES})

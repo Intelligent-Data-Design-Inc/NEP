@@ -24,7 +24,7 @@ nerrors=0
 verbose=yes
 exit_code=$EXIT_SUCCESS
 
-TEST_NAME=vol_plugin
+TEST_NAME=test_grib2_vol
 TEST_BIN=$ABS_BUILDDIR/$TEST_NAME
 FROM_DIR=$ABS_TOP_BUILDDIR/src/.libs
 case $(uname) in
