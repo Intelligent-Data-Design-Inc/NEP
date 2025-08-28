@@ -28,6 +28,16 @@
 ### v0.2 (Month 2)
 - GRIB2 format reader implementation
 
+### v0.1.4 cdf File Open/Close
+- Add a small, simple cdf test file in test/data.
+- Add file open/close to the cdf vol connector.
+- Add a test which opens/closes the file.
+
+### v0.1.3 GRIB2 File Open/Close
+- We have existing test test/test_grib2_vol. But it only creates a HDF5 file.
+- Instead it should open and close our test GRIB2 file.
+- Logging should be tried.
+
 ### v0.1.2 Documentation
 #### Sprint 1: Documentation with Doxygen
 - **Doxygen Build Integration**: Add Doxygen documentation generation to both CMake and Autotools build systems
