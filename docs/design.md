@@ -60,12 +60,20 @@ Each VOL connector implements the H5VL_class_t interface defined by HDF5, includ
 
 ### Current Implementation Status
 
-As of 2025-07-10, the project has implemented:
+As of 2025-08-27, the project has implemented:
 
 1. **GRIB2 VOL Connector**: Initial implementation with:
    - Basic VOL connector structure
    - Registration with HDF5
    - Core file detection capabilities
+
+2. **BUFR VOL Connector**: Skeleton implementation with:
+   - Basic connector framework
+   - Placeholder for NCEPLIBS-bufr integration
+
+3. **CDF VOL Connector**: Initial structure with:
+   - Foundation for NASA CDF library integration
+   - Basic connector interface
 
 ## Continuous Integration
 
@@ -76,6 +84,56 @@ The project uses GitHub Actions for CI/CD with:
 - Test execution via CMake
 
 
+## Build System Architecture (v0.1.1)
+
+### Dual Build System Support
+
+NFEP supports both CMake and Autotools build systems to ensure maximum compatibility:
+
+#### CMake Build System
+- Modern CMake 3.12+ configuration
+- Modular VOL connector compilation
+- Automatic dependency detection
+- Configurable build options for each VOL type
+
+#### Autotools Build System
+- Traditional configure/make workflow
+- Cross-platform compatibility
+- Legacy system support
+- Parallel configuration options with CMake
+
+### VOL Connector Build Integration
+
+Each VOL connector is compiled as a separate shared library:
+
+```
+src/
+├── bufr_vol_connector.c     # BUFR connector (requires NCEPLIBS-bufr)
+├── bufr_vol_connector.h
+├── cdf_vol_connector.c      # CDF connector (requires NASA CDF library)
+├── cdf_vol_connector.h
+├── grib2_vol_connector.c    # GRIB2 connector (requires NCEPLIBS-g2)
+├── grib2_vol_connector.h
+├── geotiff_vol_connector.c  # GeoTIFF connector (requires libgeotiff)
+└── geotiff_vol_connector.h
+```
+
+### Shared Library Architecture
+
+- **Dynamic Loading**: VOL connectors are loaded at runtime using `dlopen()`
+- **Separate Compilation**: Each connector builds to its own shared library
+- **Dependency Isolation**: Format-specific dependencies are contained within each connector
+- **Runtime Discovery**: Connectors register themselves with the NFEP framework
+
+### Dependency Management
+
+| VOL Connector | Required Library | Source |
+|---------------|------------------|--------|
+| GRIB2 | NCEPLIBS-g2 | NOAA/NCEP libraries |
+| BUFR | NCEPLIBS-bufr | NOAA/NCEP libraries |
+| GeoTIFF | libgeotiff | OSGeo project |
+| CDF | NASA CDF | https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/cdf39_1-dist-all.tar.gz |
+
 ## Requirements and Performance Considerations
 
 The implementation must maintain:
@@ -84,3 +142,4 @@ The implementation must maintain:
 - Support for parallel I/O operations where possible
 - Memory efficiency for large datasets
 - Compatibility with existing NetCDF4/HDF5 applications
+- Efficient dynamic loading of shared libraries

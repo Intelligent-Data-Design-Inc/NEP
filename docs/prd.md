@@ -43,7 +43,6 @@ The NetCDF4/HDF5 Format Extension Pack (NFEP) is a dynamic connector system that
 ### 3.1 Core Functionality
 
 #### FR-001: Automatic Format Detection
-- **Priority**: High
 - **Description**: System must automatically identify file formats without user intervention
 - **Acceptance Criteria**:
   - Detect GRIB2, BUFR, CDF, and GeoTIFF formats with >99% accuracy
@@ -51,7 +50,6 @@ The NetCDF4/HDF5 Format Extension Pack (NFEP) is a dynamic connector system that
   - Graceful fallback for unrecognized formats
 
 #### FR-002: Dynamic Connector Loading
-- **Priority**: High
 - **Description**: Load format-specific connectors on demand at runtime
 - **Acceptance Criteria**:
   - Connectors loaded only when needed
@@ -59,7 +57,6 @@ The NetCDF4/HDF5 Format Extension Pack (NFEP) is a dynamic connector system that
   - Connector loading time <500ms
 
 #### FR-003: Unified API Access
-- **Priority**: High
 - **Description**: Provide standard NetCDF4 and HDF5 API compatibility
 - **Acceptance Criteria**:
   - 100% API compatibility with NetCDF4 library v4.8+
@@ -67,34 +64,38 @@ The NetCDF4/HDF5 Format Extension Pack (NFEP) is a dynamic connector system that
   - All existing function signatures preserved
 
 #### FR-004: Extensible Connector Framework
-- **Priority**: Medium
 - **Description**: Well-defined API for developing custom format connectors
 - **Acceptance Criteria**:
   - Documented connector development API
   - Reference implementation examples
   - Connector validation tools
 
+#### FR-009: Build System Integration (v0.1.1)
+- **Description**: Complete integration of all VOL connectors into build systems
+- **Acceptance Criteria**:
+  - All VOL connectors compile successfully in both CMake and Autotools
+  - Enable/disable options work correctly for each VOL type
+  - Dependencies are properly detected and linked
+  - Build fails gracefully with clear messages when required dependencies are missing
+  - Default configuration enables all VOL types when dependencies are available
+
 ### 3.2 Supported Formats
 
 #### FR-005: GRIB2 Support
-- **Priority**: High
 - **Description**: Full read/write support for GRIB2 meteorological data
-- **Dependencies**: ECCODES library integration
+- **Dependencies**: NCEPLIBS-g2 library integration
 
 #### FR-006: BUFR Support
-- **Priority**: High
 - **Description**: Complete BUFR format support for observational data
-- **Dependencies**: ECCODES library integration
+- **Dependencies**: NCEPLIBS-bufr library integration
 
 #### FR-007: CDF Support
-- **Priority**: High
 - **Description**: NASA Common Data Format support
 - **Dependencies**: CDF library integration
 
 #### FR-008: GeoTIFF Support
-- **Priority**: Medium
 - **Description**: Geospatial TIFF format support
-- **Dependencies**: GDAL library integration
+- **Dependencies**: libgeotiff library integration
 
 ## 4. Non-Functional Requirements
 
@@ -103,46 +104,38 @@ The NetCDF4/HDF5 Format Extension Pack (NFEP) is a dynamic connector system that
 #### NFR-001: Minimal Overhead
 - **Requirement**: <5% performance overhead compared to native format access
 - **Measurement**: Benchmark against native library performance
-- **Priority**: High
 
 #### NFR-002: Memory Efficiency
 - **Requirement**: Support datasets up to available system memory
 - **Measurement**: Memory usage profiling with large datasets
-- **Priority**: High
 
 #### NFR-003: Parallel I/O
 - **Requirement**: Support MPI-based parallel I/O operations
 - **Measurement**: Scalability testing on HPC systems
-- **Priority**: Medium
 
 ### 4.2 Compatibility Requirements
 
 #### NFR-004: Backward Compatibility
 - **Requirement**: Zero breaking changes to existing applications
 - **Measurement**: Regression testing with existing codebases
-- **Priority**: Critical
 
 #### NFR-005: Cross-Platform Support
 - **Requirement**: Support Linux, Unix, and Windows platforms
 - **Measurement**: Automated testing on target platforms
-- **Priority**: High
 
 #### NFR-006: HPC Environment Support
 - **Requirement**: Compatible with common HPC schedulers and environments
 - **Measurement**: Testing on representative HPC systems
-- **Priority**: High
 
 ### 4.3 Scalability Requirements
 
 #### NFR-007: Exascale Support
 - **Requirement**: Efficient operation in exascale computing environments
 - **Measurement**: Performance testing on large-scale systems
-- **Priority**: Medium
 
 #### NFR-008: Concurrent Access
 - **Requirement**: Support multiple simultaneous file operations
 - **Measurement**: Multi-threaded stress testing
-- **Priority**: Medium
 
 ## 5. Technical Architecture
 
@@ -162,9 +155,48 @@ The NetCDF4/HDF5 Format Extension Pack (NFEP) is a dynamic connector system that
 ### 5.3 Dependencies
 - NetCDF4 library (v4.8+)
 - HDF5 library (v1.12+)
-- ECCODES (for GRIB2/BUFR)
-- CDF library (for NASA CDF)
-- GDAL (for GeoTIFF)
+- NCEPLIBS-g2 (for GRIB2)
+- NCEPLIBS-bufr (for BUFR)
+- libgeotiff (for GeoTIFF)
+- NASA CDF library from https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/cdf39_1-dist-all.tar.gz (for CDF)
+
+### 5.4 Build System Requirements (v0.1.1)
+
+#### 5.4.1 VOL Connector Integration
+Each VOL connector is compiled as a separate shared library that is dynamically loaded at runtime:
+
+- **GRIB2 Connector**: Requires NCEPLIBS-g2 library
+- **BUFR Connector**: Requires NCEPLIBS-bufr library
+- **GeoTIFF Connector**: Requires libgeotiff library
+- **CDF Connector**: Requires NASA CDF library
+
+#### 5.4.2 Shared Library Architecture
+VOL connectors are implemented as dynamically loadable shared libraries:
+- Each connector compiles to a separate `.so` file (Linux/Unix) or `.dll` file (Windows)
+- Runtime loading via `dlopen()` or equivalent platform-specific mechanisms
+- Connector registration and discovery through standardized entry points
+- Memory management and cleanup handled by the connector framework
+
+#### 5.4.3 Configurable Build Options
+Both build systems must provide enable/disable options for each VOL type:
+
+**CMake Options:**
+- `-DENABLE_GRIB2=ON/OFF` (default: ON)
+- `-DENABLE_BUFR=ON/OFF` (default: ON)
+- `-DENABLE_GEOTIFF=ON/OFF` (default: ON)
+- `-DENABLE_CDF=ON/OFF` (default: ON)
+
+**Autotools Configure Flags:**
+- `--enable-grib2/--disable-grib2` (default: enabled)
+- `--enable-bufr/--disable-bufr` (default: enabled)
+- `--enable-geotiff/--disable-geotiff` (default: enabled)
+- `--enable-cdf/--disable-cdf` (default: enabled)
+
+#### 5.4.4 Dependency Detection
+- Automatic detection of required libraries
+- Graceful handling when dependencies are missing
+- Clear error messages for missing required dependencies
+- Optional dependency paths via configuration variables
 
 ## 6. Quality Assurance
 
@@ -216,6 +248,12 @@ The NetCDF4/HDF5 Format Extension Pack (NFEP) is a dynamic connector system that
 - Bug report and resolution metrics
 
 ## 9. Timeline and Milestones
+
+### v0.1.1 - Build System Enhancement (Sprint 1)
+- VOL connector build system integration
+- Dependency management for all format libraries
+- Configurable enable/disable options for each VOL type
+- Enhanced build documentation
 
 ### v0.1 - Framework Foundation (Month 1)
 - NFEP framework setup

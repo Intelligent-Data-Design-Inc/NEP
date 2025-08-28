@@ -1,0 +1,16 @@
+#ifndef NFEP_CONFIG_H
+#define NFEP_CONFIG_H
+
+/* VOL connector availability */
+#cmakedefine HAVE_GRIB2
+#cmakedefine HAVE_BUFR
+#cmakedefine HAVE_GEOTIFF
+#cmakedefine HAVE_CDF
+
+/* Project version */
+#define NFEP_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+#define NFEP_VERSION_MINOR @PROJECT_VERSION_MINOR@
+#define NFEP_VERSION_PATCH @PROJECT_VERSION_PATCH@
+#define NFEP_VERSION "@PROJECT_VERSION@"
+
+#endif /* NFEP_CONFIG_H */

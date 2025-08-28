@@ -1,19 +1,13 @@
-# GitHub Actions CI workflow for building and testing the project
-# This workflow sets up an Ubuntu environment, installs MPI and CMake,
-# and runs the build and test commands as specified in the project documentation.
+# GitHub Actions CI workflow for building and testing the NFEP project with cmake and autotools.
 #
-# Build command:
-#   CC=mpicc cmake .. -DCMAKE_PREFIX_PATH=/home/ed/Downloads/hdf5-1.14.5
-#
-# The workflow will also run `make` and `make test`.
-#
+# Edward Hartnett 8/28/25
 name: ci_main
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "main", "master" ]
+    branches: [ "main" ]
 
 jobs:
   build:
@@ -24,14 +18,30 @@ jobs:
       fail-fast: false
       matrix:
         build_system: [cmake, autotools]
+        vol_config:
+          - name: "all_enabled"
+            cmake_flags: "-DENABLE_GRIB2=ON -DENABLE_BUFR=ON -DENABLE_GEOTIFF=ON -DENABLE_CDF=ON"
+            autotools_flags: "--enable-grib2 --enable-bufr --enable-geotiff --enable-cdf"
+          - name: "grib2_only"
+            cmake_flags: "-DENABLE_GRIB2=ON -DENABLE_BUFR=OFF -DENABLE_GEOTIFF=OFF -DENABLE_CDF=OFF"
+            autotools_flags: "--enable-grib2 --disable-bufr --disable-geotiff --disable-cdf"
+          - name: "bufr_only"
+            cmake_flags: "-DENABLE_GRIB2=OFF -DENABLE_BUFR=ON -DENABLE_GEOTIFF=OFF -DENABLE_CDF=OFF"
+            autotools_flags: "--disable-grib2 --enable-bufr --disable-geotiff --disable-cdf"
+          - name: "geotiff_only"
+            cmake_flags: "-DENABLE_GRIB2=OFF -DENABLE_BUFR=OFF -DENABLE_GEOTIFF=ON -DENABLE_CDF=OFF"
+            autotools_flags: "--disable-grib2 --disable-bufr --enable-geotiff --disable-cdf"
+          - name: "cdf_only"
+            cmake_flags: "-DENABLE_GRIB2=OFF -DENABLE_BUFR=OFF -DENABLE_GEOTIFF=OFF -DENABLE_CDF=ON"
+            autotools_flags: "--disable-grib2 --disable-bufr --disable-geotiff --enable-cdf"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y mpich cmake make wget doxygen graphviz zlib1g-dev libpng-dev libaec-dev libjpeg-dev 
+          sudo apt-get install -y cmake make wget doxygen graphviz zlib1g-dev libpng-dev libaec-dev libjpeg-dev
+          sudo apt-get install -y libgeotiff-dev
 
       - name: Cache Jasper install
         id: cache-jasper
@@ -50,7 +60,7 @@ jobs:
           tar -xzf jasper.tar.gz
           cd jasper-${JASPER_VERSION}
           mkdir ../build_jasper && cd ../build_jasper
-          cmake -DCMAKE_INSTALL_PREFIX="$JASPER_INSTALL_PREFIX" -DBUILD_SHARED_LIBS=ON ../jasper-${JASPER_VERSION}
+          cmake -DCMAKE_INSTALL_PREFIX="$JASPER_INSTALL_PREFIX" -DBUILD_SHARED_LIBS=ON ../jasper-${JASPER_VERSION} -DBUILD_TESTING=OFF 
           make -j$(nproc)
           make install
 
@@ -59,7 +69,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-1.14.5-${{ runner.os }}-1
+          key: hdf5-1.14.5-${{ runner.os }}-2
       
       - name: Download and build HDF5 1.14.5
         if: steps.cache-hdf5.outputs.cache-hit != 'true'
@@ -70,7 +80,7 @@ jobs:
           ls -l
           cd hdf5-hdf5-1.14.6
           mkdir build && cd build
-          cmake -DHDF5_ENABLE_PARALLEL=ON -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON ..
+          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF ..
           make -j$(nproc)
           make install
 
@@ -91,9 +101,51 @@ jobs:
           mkdir build && cd build
           echo $JASPER_INSTALL_PREFIX
           ls -l $JASPER_INSTALL_PREFIX
-          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/g2c-install -DBUILD_SHARED_LIBS=ON .. -DCMAKE_PREFIX_PATH="$JASPER_INSTALL_PREFIX"
+          cmake .. -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/g2c-install -DBUILD_SHARED_LIBS=ON -DCMAKE_PREFIX_PATH="$JASPER_INSTALL_PREFIX" -DBUILD_TESTING=OFF 
           make -j$(nproc)
           make install
+
+      # Cache BUFR install
+      - name: Cache BUFR install
+        id: cache-bufr
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/bufr-install
+          key: bufr-v12.2.0-${{ runner.os }}-4
+
+      - name: Download and build NCEPLIBS-bufr
+        if: steps.cache-bufr.outputs.cache-hit != 'true'
+        run: |
+          set -x
+          wget https://github.com/NOAA-EMC/NCEPLIBS-bufr/archive/refs/tags/v12.2.0.tar.gz -O bufr.tar.gz &> /dev/null
+          tar -xzf bufr.tar.gz
+          cd NCEPLIBS-bufr-12.2.0
+          mkdir build && cd build
+          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/bufr-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF ..
+          make -j$(nproc)
+          make install
+          ls -l $GITHUB_WORKSPACE/bufr-install
+          ls -l $GITHUB_WORKSPACE/bufr-install/lib
+          ls -l $GITHUB_WORKSPACE/bufr-install/include
+          ls -l $GITHUB_WORKSPACE/bufr-install/include/bufr_4
+
+
+      # Cache NASA CDF install
+      - name: Cache NASA CDF install
+        id: cache-cdf
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/cdf-install
+          key: cdf-39_1-${{ runner.os }}-1
+
+      - name: Download and build NASA CDF
+        if: steps.cache-cdf.outputs.cache-hit != 'true'
+        run: |
+          wget https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/cdf39_1-dist-all.tar.gz -O cdf.tar.gz &> /dev/null
+          tar -xzf cdf.tar.gz
+          cd cdf39_1-dist
+          make OS=linux ENV=gnu CURSES=yes FORTRAN=no UCOPTIONS=-O2 SHARED=yes all
+          make INSTALLDIR=$GITHUB_WORKSPACE/cdf-install install
 
             # --- CMake build ---------------------------------------------------
       - name: Create build directory (CMake)
@@ -106,7 +158,8 @@ jobs:
         env:
           JASPER_INSTALL_PREFIX: $GITHUB_WORKSPACE/jasper-install
         run: |
-          CC=mpicc cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/g2c-install;$JASPER_INSTALL_PREFIX"
+          echo "Building with VOL configuration: ${{ matrix.vol_config.name }}"
+          cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/g2c-install;$GITHUB_WORKSPACE/bufr-install;$GITHUB_WORKSPACE/cdf-install;$JASPER_INSTALL_PREFIX;/usr/include/geotiff" ${{ matrix.vol_config.cmake_flags }}
 
       - name: Build (CMake)
         if: matrix.build_system == 'cmake'
@@ -127,15 +180,16 @@ jobs:
       - name: Configure (Autotools)
         if: matrix.build_system == 'autotools'
         run: |
+          echo "Building with VOL configuration: ${{ matrix.vol_config.name }}"
+          find /usr -name '*geotiff*'
           autoreconf -i
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/g2c-install/include"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib"
-          export LD_LIBRARY_PATH="$JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$LD_LIBRARY_PATH"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/g2c-install/include -I$GITHUB_WORKSPACE/bufr-install/include/bufr_4 -I$GITHUB_WORKSPACE/cdf-install/include -I/usr/include/geotiff"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib -L$GITHUB_WORKSPACE/bufr-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib"
+          export LD_LIBRARY_PATH="$JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$GITHUB_WORKSPACE/bufr-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH"
           ls -l $GITHUB_WORKSPACE/hdf5-install
           ls -l $GITHUB_WORKSPACE/hdf5-install/bin
-          export CC=h5cc
-          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc 
+          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc ${{ matrix.vol_config.autotools_flags }} || (echo "Configure failed. Printing config.log:"; cat config.log; exit 1)
           make -j$(nproc)
           make VERBOSE=1 check
 
