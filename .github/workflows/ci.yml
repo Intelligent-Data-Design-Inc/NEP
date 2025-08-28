@@ -67,7 +67,7 @@ jobs:
           tar -xzf jasper.tar.gz
           cd jasper-${JASPER_VERSION}
           mkdir ../build_jasper && cd ../build_jasper
-          cmake -DCMAKE_INSTALL_PREFIX="$JASPER_INSTALL_PREFIX" -DBUILD_SHARED_LIBS=ON ../jasper-${JASPER_VERSION}
+          cmake -DCMAKE_INSTALL_PREFIX="$JASPER_INSTALL_PREFIX" -DBUILD_SHARED_LIBS=ON ../jasper-${JASPER_VERSION} -DBUILD_TESTING=OFF 
           make -j$(nproc)
           make install
 
@@ -87,7 +87,7 @@ jobs:
           ls -l
           cd hdf5-hdf5-1.14.6
           mkdir build && cd build
-          cmake -DHDF5_ENABLE_PARALLEL=ON -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON ..
+          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF ..
           make -j$(nproc)
           make install
 
@@ -108,7 +108,7 @@ jobs:
           mkdir build && cd build
           echo $JASPER_INSTALL_PREFIX
           ls -l $JASPER_INSTALL_PREFIX
-          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/g2c-install -DBUILD_SHARED_LIBS=ON .. -DCMAKE_PREFIX_PATH="$JASPER_INSTALL_PREFIX"
+          cmake .. -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/g2c-install -DBUILD_SHARED_LIBS=ON -DCMAKE_PREFIX_PATH="$JASPER_INSTALL_PREFIX" -DBUILD_TESTING=OFF 
           make -j$(nproc)
           make install
 
@@ -128,7 +128,7 @@ jobs:
           tar -xzf bufr.tar.gz
           cd NCEPLIBS-bufr-12.2.0
           mkdir build && cd build
-          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/bufr-install -DBUILD_SHARED_LIBS=ON ..
+          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/bufr-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF ..
           make -j$(nproc)
           make install
           ls -l $GITHUB_WORKSPACE/bufr-install
