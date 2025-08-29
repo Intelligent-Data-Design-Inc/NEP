@@ -130,7 +130,8 @@ The NetCDF4/HDF5 Format Extension Pack (NFEP) is a dynamic connector system that
   - Glue code functions created with proper HDF5 VOL API signatures for file operations
   - Modified test_grib2_vol test to open and close actual GRIB2 file instead of creating HDF5 file
   - Simple g2c logging integration: call g2c_set_log_level(3) at test start, g2c_set_log_level(0) at test end
-  - Test uses existing `test/gdaswave.t00z.wcoast.0p16.f000.grib2` file or equivalent GRIB2 test data
+  - Test uses existing `test/data/gdaswave.t00z.wcoast.0p16.f000.grib2` file or equivalent GRIB2 test data
+  - Test data files copied from `test/data/` to build directory in both CMake and Autotools builds so tests can find them
   - Error handling returns appropriate HDF5 VOL API status codes without printing error messages
   - File operations return appropriate HDF5 VOL API status codes
   - Memory management and resource cleanup in file close operations
@@ -285,8 +286,10 @@ typedef struct H5VL_class_t {
 - Integration with existing build system test targets
 
 **Test Data Management:**
-- Small, representative test files for each format in `test/data/`
+- Small, representative test files for each format in `test/data/` directory
 - Test files should be minimal but valid examples of each format
+- Test data files automatically copied from `test/data/` to build directory during build process
+- Both CMake and Autotools build systems handle test data copying for out-of-tree builds
 - Version control considerations for binary test data files
 
 ### 5.5 Build System Requirements (v0.1.1)

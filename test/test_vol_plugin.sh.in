@@ -63,6 +63,8 @@ if [ $? != 0 ]; then
 fi
 
 # setup plugin path
+echo ${TEMP_PLUGIN_DIR}
+ls -l ${TEMP_PLUGIN_DIR}
 ENVCMD="env HDF5_PLUGIN_PATH=${TEMP_PLUGIN_DIR}"
 
 # Run the test

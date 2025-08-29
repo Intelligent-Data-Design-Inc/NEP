@@ -14,8 +14,8 @@ check_PROGRAMS = test_grib2_vol
 test_grib2_vol_LDFLAGS = $(AM_LDFLAGS) $(HDF5_LDFLAGS)
 test_grib2_vol_LDADD = $(HDF5_LIBS)
 test_grib2_vol_SOURCES = test_grib2_vol.c
-# Test data file - declare it as noinst_HEADERS which won't be installed but will be distributed
-TEST_DATA_FILE = gdaswave.t00z.wcoast.0p16.f000.grib2
+# Test data file - declare it as noinst_DATA which won't be installed but will be distributed
+TEST_DATA_FILE = data/gdaswave.t00z.wcoast.0p16.f000.grib2
 noinst_DATA = $(TEST_DATA_FILE)
 TESTS = test_vol_plugin.sh
 DISTCLEANFILES = test_vol_plugin.sh

@@ -35,7 +35,7 @@
  */
 typedef struct grib2_file_t {
     char *filename;     /* Name of the GRIB2 file */
-    FILE *fp;          /* File pointer for GRIB2 file */
+    int g2cid;          /* ID of the open GRIB2 file */
     int is_open;       /* Flag indicating if file is open */
 } grib2_file_t;
 
@@ -173,7 +173,8 @@ grib2_file_open(const char *name, unsigned flags, hid_t fapl_id,
                 hid_t dxpl_id, void **req)
 {
     grib2_file_t *grib2_file = NULL;
-    FILE *fp = NULL;
+    int g2cid;
+    int ret;
     
     /* Unused parameters */
     (void)flags;
@@ -187,28 +188,13 @@ grib2_file_open(const char *name, unsigned flags, hid_t fapl_id,
     }
     
     /* Attempt to open the GRIB2 file */
-    fp = fopen(name, "rb");
-    if (!fp) {
-        return NULL;
-    }
-    
-    /* Basic GRIB2 file validation - check for GRIB magic number */
-    char magic[4];
-    if (fread(magic, 1, 4, fp) != 4 || strncmp(magic, "GRIB", 4) != 0) {
-        fclose(fp);
-        return NULL;
-    }
-    
-    /* Reset file pointer to beginning */
-    if (fseek(fp, 0, SEEK_SET) != 0) {
-        fclose(fp);
-        return NULL;
-    }
-    
+    ret = g2c_open(name, 0, &g2cid);
+    if (!ret)
+        return NULL;	
+
     /* Allocate and initialize grib2_file_t structure */
     grib2_file = (grib2_file_t *)malloc(sizeof(grib2_file_t));
     if (!grib2_file) {
-        fclose(fp);
         return NULL;
     }
     
@@ -216,11 +202,10 @@ grib2_file_open(const char *name, unsigned flags, hid_t fapl_id,
     grib2_file->filename = strdup(name);
     if (!grib2_file->filename) {
         free(grib2_file);
-        fclose(fp);
         return NULL;
     }
     
-    grib2_file->fp = fp;
+    grib2_file->g2cid = g2cid;
     grib2_file->is_open = 1;
     
     return (void *)grib2_file;
@@ -249,9 +234,8 @@ grib2_file_close(void *file, hid_t dxpl_id, void **req)
     }
     
     /* Close file if open */
-    if (grib2_file->fp && grib2_file->is_open) {
-        fclose(grib2_file->fp);
-        grib2_file->fp = NULL;
+    if (grib2_file->g2cid && grib2_file->is_open) {
+        g2c_close(grib2_file->g2cid);
         grib2_file->is_open = 0;
     }
     

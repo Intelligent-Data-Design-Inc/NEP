@@ -38,22 +38,26 @@
 - Add a small, simple BUFR test file in test/data.
 - Add file open/close to the BUFR vol connector.
 - Add a test which opens/closes the file.
+- Ensure test data files are copied to build directory for both CMake and Autotools builds.
 
 #### Sprint 3: GeoTIFF File Open/Close
 - Add a small, simple GeoTIFF test file in test/data.
 - Add file open/close to the GeoTIFF vol connector.
 - Add a test which opens/closes the file.
+- Ensure test data files are copied to build directory for both CMake and Autotools builds.
 
 #### Sprint 2: cdf File Open/Close
 - Add a small, simple cdf test file in test/data.
 - Add file open/close to the cdf vol connector.
 - Add a test which opens/closes the file.
+- Ensure test data files are copied to build directory for both CMake and Autotools builds.
 
 #### Sprint 1: GRIB2 File Open/Close
 - **H5VL_class_t Implementation**: Populate file_open and file_close function pointers in GRIB2 VOL connector H5VL_class_t structure (currently NULL)
 - **Glue Code Functions**: Create wrapper functions with proper HDF5 VOL API signatures that interface with NCEPLIBS-g2 library
 - **Test Enhancement**: Modify existing `test/test_grib2_vol` test to open and close actual GRIB2 file instead of creating HDF5 file
-- **Test Data**: Use existing `test/gdaswave.t00z.wcoast.0p16.f000.grib2` file for file operations testing
+- **Test Data**: Use existing `test/data/gdaswave.t00z.wcoast.0p16.f000.grib2` file for file operations testing
+- **Test Data Build Integration**: Ensure test data files are copied from `test/data/` to build directory for both CMake and Autotools builds so tests can find them
 - **g2c Logging Integration**: Simple logging - call g2c_set_log_level(3) at test start, g2c_set_log_level(0) at test end
 - **Error Handling**: Return appropriate HDF5 VOL API error codes without printing error messages
 - **Resource Management**: Proper memory management and cleanup in file close operations
