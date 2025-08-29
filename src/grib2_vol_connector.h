@@ -14,7 +14,6 @@
 #include <H5Opublic.h>
 #include <H5Lpublic.h>
 #include <H5VLpublic.h>
-#include <H5VLconnector.h>
 
 /* The value must be between 256 and 65535 (inclusive) */
 /**

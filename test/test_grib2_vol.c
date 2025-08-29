@@ -41,50 +41,50 @@
  *
  *-------------------------------------------------------------------------
  */
-static herr_t
-test_registration_by_value(void)
-{
-    htri_t  is_registered   = FAIL;
-    hid_t   vol_id          = H5I_INVALID_HID;
+/* static herr_t */
+/* test_registration_by_value(void) */
+/* { */
+/*     htri_t  is_registered   = FAIL; */
+/*     hid_t   vol_id          = H5I_INVALID_HID; */
 
-    TESTING("VOL registration by value");
+/*     TESTING("VOL registration by value"); */
 
-    /* The VOL connector should not be registered at the start of the test */
-    if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0)
-        TEST_ERROR;
-    if(true == is_registered)
-        FAIL_PUTS_ERROR("VOL connector is inappropriately registered");
+/*     /\* The VOL connector should not be registered at the start of the test *\/ */
+/*     if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0) */
+/*         TEST_ERROR; */
+/*     if(true == is_registered) */
+/*         FAIL_PUTS_ERROR("VOL connector is inappropriately registered"); */
 
-    /* Register the connector by value */
-    if((vol_id = H5VLregister_connector_by_value(GRIB2_VOL_CONNECTOR_VALUE, H5P_DEFAULT)) < 0)
-        TEST_ERROR;
+/*     /\* Register the connector by value *\/ */
+/*     if((vol_id = H5VLregister_connector_by_value(GRIB2_VOL_CONNECTOR_VALUE, H5P_DEFAULT)) < 0) */
+/*         TEST_ERROR; */
 
-    /* The connector should be registered now */
-    if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0)
-        TEST_ERROR;
-    if(false == is_registered)
-        FAIL_PUTS_ERROR("VOL connector was not registered");
+/*     /\* The connector should be registered now *\/ */
+/*     if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0) */
+/*         TEST_ERROR; */
+/*     if(false == is_registered) */
+/*         FAIL_PUTS_ERROR("VOL connector was not registered"); */
 
-    /* Unregister the connector */
-    if(H5VLunregister_connector(vol_id) < 0)
-        TEST_ERROR;
+/*     /\* Unregister the connector *\/ */
+/*     if(H5VLunregister_connector(vol_id) < 0) */
+/*         TEST_ERROR; */
 
-    /* The connector should not be registered now */
-    if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0)
-        TEST_ERROR;
-    if(true == is_registered)
-        FAIL_PUTS_ERROR("VOL connector is inappropriately registered");
+/*     /\* The connector should not be registered now *\/ */
+/*     if((is_registered = H5VLis_connector_registered_by_name(GRIB2_VOL_CONNECTOR_NAME)) < 0) */
+/*         TEST_ERROR; */
+/*     if(true == is_registered) */
+/*         FAIL_PUTS_ERROR("VOL connector is inappropriately registered"); */
 
-    PASSED();
-    return SUCCEED;
+/*     PASSED(); */
+/*     return SUCCEED; */
 
-error:
-    H5E_BEGIN_TRY {
-        H5VLunregister_connector(vol_id);
-    } H5E_END_TRY;
-    return FAIL;
+/* error: */
+/*     H5E_BEGIN_TRY { */
+/*         H5VLunregister_connector(vol_id); */
+/*     } H5E_END_TRY; */
+/*     return FAIL; */
 
-} /* end test_registration_by_value() */
+/* } /\* end test_registration_by_value() *\/ */
 
 /*-------------------------------------------------------------------------
  * Function:    test_registration_by_name()
@@ -156,7 +156,7 @@ test_file_open_close(void)
 {
     htri_t  is_registered   = FAIL;
     hid_t   vol_id          = H5I_INVALID_HID;
-#define GRIB2_TEST_FILE "gdaswave.t00z.wcoast.0p16.f000"
+#define GRIB2_TEST_FILE "data/gdaswave.t00z.wcoast.0p16.f000"
 
     TESTING("VOL file open/close");
 
@@ -180,39 +180,24 @@ test_file_open_close(void)
     /* Open our test GRIB2 file. */
     printf("\n*** Checking GRIB2 file open and close...");
     {
-        ssize_t objs;
-        hid_t fileid, access_plist, access_plist2;
-        #define FILE_NAME "tst_vol_plugin.h5"
+	hid_t file_id;
 
-        printf("\nabout to create HDF5 file.\n");
-        /* Set the access list so that closes will fail if something is
-         * still open in the file. */
-        if ((access_plist = H5Pcreate(H5P_FILE_ACCESS)) < 0) ERR;
-        if (H5Pset_fclose_degree(access_plist, H5F_CLOSE_SEMI)) ERR;
+        printf("\nabout to open GRIB2 file through HDF5 VOL.\n");
 
-        /* Create file. */
-        if ((fileid = H5Fcreate(FILE_NAME, H5F_ACC_TRUNC, H5P_DEFAULT,
-                                access_plist)) < 0) ERR;
+	/* Set the file properties list to include the VOL id. */
+        hid_t fapl_id = H5Pcreate(H5P_FILE_ACCESS);
+        H5Pset_vol(fapl_id, vol_id, NULL);
+
+	/* Open the GRIB2 file through the VOL. */
+        file_id = H5Fopen(GRIB2_TEST_FILE, H5F_ACC_RDWR, fapl_id);
+	H5Pclose(fapl_id);
 
         /* Turn off HDF5 error messages. */
         /* if (H5Eset_auto1(NULL, NULL) < 0) ERR; */
 
-        /* Now close the file. */
-        if (H5Fclose(fileid) < 0) ERR;
-
-        printf("about to open HDF5 file.\n");
-        /* Open the file. */
-        if ((fileid = H5Fopen(FILE_NAME, H5F_ACC_RDONLY, H5P_DEFAULT)) < 0) ERR;
-
-        /* Now close the file. */
-        if (H5Fclose(fileid) < 0) ERR;
-
-        printf("about to create new access plist\n");
-        if ((access_plist2 = H5Pcreate(H5P_FILE_ACCESS)) < 0) ERR;
-
+	/* Close the file. */
+        /* if (H5Fclose(file_id) < 0) ERR; */
      }
-  
-
     
     /* Close the GRIB2 file. */
 

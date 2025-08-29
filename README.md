@@ -66,6 +66,14 @@ NFEP requires the following dependencies:
   - GeoTIFF: [libgeotiff](https://github.com/OSGeo/libgeotiff)
   - CDF: [NASA CDF library](https://cdf.gsfc.nasa.gov/html/sw_and_docs.html)
 
+### Test Data
+
+NFEP includes test data files in the `test/data/` directory for validation:
+- **GRIB2**: `gdaswave.t00z.wcoast.0p16.f000.grib2` - Sample meteorological data file
+- Additional test files will be added for BUFR, CDF, and GeoTIFF formats in future releases
+
+The build system automatically copies test data files to the build directory so tests can access them during both in-tree and out-of-tree builds.
+
 ### CMake Build and Installation
 
 ```bash

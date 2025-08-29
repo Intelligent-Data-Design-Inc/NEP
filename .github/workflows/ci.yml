@@ -14,6 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       JASPER_INSTALL_PREFIX: ${{ github.workspace }}/jasper-install
+      LD_LIBRARY_PATH: $JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$GITHUB_WORKSPACE/bufr-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH
     strategy:
       fail-fast: false
       matrix:
@@ -80,9 +81,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-1.14.5-${{ runner.os }}-2
+          key: hdf5-1.14.6-${{ runner.os }}-3
       
-      - name: Download and build HDF5 1.14.5
+      - name: Download and build HDF5 1.14.6
         if: steps.cache-hdf5.outputs.cache-hit != 'true'
         id: build-hdf5
         run: |
@@ -181,7 +182,14 @@ jobs:
       - name: Build (CMake)
         if: matrix.build_system == 'cmake'
         working-directory: build
-        run: make -j$(nproc)
+        run: |
+          set -x
+          pwd
+          ls -l
+          echo "Building with CMake..."
+          export PATH=$GITHUB_WORKSPACE/hdf5-install/bin:$PATH
+          export LD_LIBRARY_PATH=$GITHUB_WORKSPACE/hdf5-install/lib:$LD_LIBRARY_PATH
+          make -j$(nproc)
 
       - name: Build Documentation (CMake)
         if: matrix.build_system == 'cmake' && matrix.doc_build == 'enabled'
@@ -203,6 +211,10 @@ jobs:
         if: matrix.build_system == 'cmake'
         working-directory: build
         run: |
+          export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/g2c-install/include -I$GITHUB_WORKSPACE/bufr-install/include/bufr_4 -I$GITHUB_WORKSPACE/cdf-install/include -I/usr/include/geotiff"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib -L$GITHUB_WORKSPACE/bufr-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib -L$JASPER_INSTALL_PREFIX/lib"
+          export LD_LIBRARY_PATH="$JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$GITHUB_WORKSPACE/bufr-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH"
           ctest --verbose
           sudo make install
 
