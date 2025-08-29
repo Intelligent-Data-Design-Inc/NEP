@@ -14,6 +14,7 @@
 
 #include <hdf5.h>
 #include <H5PLextern.h>
+#include <H5PLpublic.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -265,6 +266,6 @@ grib2_file_close(void *file, hid_t dxpl_id, void **req)
     return SUCCEED;
 }
 
-H5PL_type_t H5PLget_plugin_type(void) {return H5PL_TYPE_VL;}
+H5PL_type_t H5PLget_plugin_type(void) {return H5PL_TYPE_VOL;}
 const void *H5PLget_plugin_info(void) {return &grib2_class_g;}
 
