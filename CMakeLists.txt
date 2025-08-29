@@ -170,6 +170,8 @@ install(EXPORT NFEPTargets
 if(BUILD_DOCUMENTATION)
     find_package(Doxygen)
     if(DOXYGEN_FOUND)
+        set(abs_top_srcdir "${CMAKE_SOURCE_DIR}")
+        set(abs_top_builddir "${CMAKE_BINARY_DIR}")
         set(DOXYGEN_IN ${CMAKE_SOURCE_DIR}/docs/Doxyfile.in)
         set(DOXYGEN_OUT ${CMAKE_BINARY_DIR}/docs/Doxyfile)
         configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
