@@ -14,6 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       JASPER_INSTALL_PREFIX: ${{ github.workspace }}/jasper-install
+      LD_LIBRARY_PATH: $JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$GITHUB_WORKSPACE/bufr-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH
     strategy:
       fail-fast: false
       matrix:
