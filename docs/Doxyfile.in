@@ -94,7 +94,7 @@ WARN_AS_ERROR          = YES
 WARN_FORMAT            = "$file:$line: $text"
 WARN_LOGFILE           = 
 
-INPUT                  = @abs_top_srcdir@/src
+INPUT                  = @abs_top_srcdir@/src @abs_top_srcdir@/README.md
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          = *.c *.h
 RECURSIVE              = YES
@@ -110,7 +110,7 @@ INPUT_FILTER           =
 FILTER_PATTERNS        = 
 FILTER_SOURCE_FILES    = NO
 FILTER_SOURCE_PATTERNS = 
-USE_MDFILE_AS_MAINPAGE = 
+USE_MDFILE_AS_MAINPAGE = @abs_top_srcdir@/README.md
 
 SOURCE_BROWSER         = NO
 INLINE_SOURCES         = NO

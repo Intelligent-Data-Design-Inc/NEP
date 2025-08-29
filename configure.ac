@@ -66,7 +66,7 @@ if test "x$enable_grib2" = "xyes"; then
         AC_DEFINE([HAVE_GRIB2], [1], [Define if GRIB2 VOL connector is enabled])
         AC_MSG_NOTICE([GRIB2 VOL connector enabled])
     else
-        AC_MSG_ERROR([GRIB2 VOL connector enabled but NCEPLIBS-g2 not found. Install NCEPLIBS-g2 or disable with --disable-grib2])
+        AC_MSG_ERROR([GRIB2 VOL connector enabled but NCEPLIBS-g2c not found. Install NCEPLIBS-g2c or disable with --disable-grib2])
     fi
 fi
 AC_SUBST([G2C_LIBS])
