@@ -28,25 +28,35 @@
 ### v0.2 (Month 2)
 - GRIB2 format reader implementation
 
-### v0.1.6 BUFR File Open/Close
+### v0.1.3: Sample Open/Close
+- In this release, all four VOLs get basic file open/close capability.
+- For each VOL there is a H5VL_class_t struct which contains pointers to functions. The file open and close functions are in these structs.
+- Currently these pointers point to NULL, in this release, the file open/close pointers will be filled for all 4 VOLS.
+- Each VOL will get some glue code which has the signature required for the file open/close pointers.
+
+#### Sprint 4: BUFR File Open/Close
 - Add a small, simple BUFR test file in test/data.
 - Add file open/close to the BUFR vol connector.
 - Add a test which opens/closes the file.
 
-### v0.1.5 GeoTIFF File Open/Close
+#### Sprint 3: GeoTIFF File Open/Close
 - Add a small, simple GeoTIFF test file in test/data.
 - Add file open/close to the GeoTIFF vol connector.
 - Add a test which opens/closes the file.
 
-### v0.1.4 cdf File Open/Close
+#### Sprint 2: cdf File Open/Close
 - Add a small, simple cdf test file in test/data.
 - Add file open/close to the cdf vol connector.
 - Add a test which opens/closes the file.
 
-### v0.1.3 GRIB2 File Open/Close
-- We have existing test test/test_grib2_vol. But it only creates a HDF5 file.
-- Instead it should open and close our test GRIB2 file.
-- Logging should be tried.
+#### Sprint 1: GRIB2 File Open/Close
+- **H5VL_class_t Implementation**: Populate file_open and file_close function pointers in GRIB2 VOL connector H5VL_class_t structure (currently NULL)
+- **Glue Code Functions**: Create wrapper functions with proper HDF5 VOL API signatures that interface with NCEPLIBS-g2 library
+- **Test Enhancement**: Modify existing `test/test_grib2_vol` test to open and close actual GRIB2 file instead of creating HDF5 file
+- **Test Data**: Use existing `test/gdaswave.t00z.wcoast.0p16.f000.grib2` file for file operations testing
+- **g2c Logging Integration**: Simple logging - call g2c_set_log_level(3) at test start, g2c_set_log_level(0) at test end
+- **Error Handling**: Return appropriate HDF5 VOL API error codes without printing error messages
+- **Resource Management**: Proper memory management and cleanup in file close operations
 
 ### v0.1.2 Documentation
 #### Sprint 1: Documentation with Doxygen

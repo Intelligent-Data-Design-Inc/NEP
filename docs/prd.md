@@ -123,6 +123,18 @@ The NetCDF4/HDF5 Format Extension Pack (NFEP) is a dynamic connector system that
   - ✅ Build system configuration options: `-DBUILD_DOCUMENTATION=ON/OFF` (CMake), `--enable/disable-docs` (Autotools)
   - ✅ GitHub Pages deployment prepared for future release
 
+#### FR-013: VOL Connector File Operations (v0.1.3 Sprint 1)
+- **Description**: Implement basic file open/close functionality for GRIB2 VOL connector through H5VL_class_t function pointer implementation
+- **Acceptance Criteria**:
+  - GRIB2 VOL connector H5VL_class_t struct file_open and file_close function pointers implemented (no longer NULL)
+  - Glue code functions created with proper HDF5 VOL API signatures for file operations
+  - Modified test_grib2_vol test to open and close actual GRIB2 file instead of creating HDF5 file
+  - Simple g2c logging integration: call g2c_set_log_level(3) at test start, g2c_set_log_level(0) at test end
+  - Test uses existing `test/gdaswave.t00z.wcoast.0p16.f000.grib2` file or equivalent GRIB2 test data
+  - Error handling returns appropriate HDF5 VOL API status codes without printing error messages
+  - File operations return appropriate HDF5 VOL API status codes
+  - Memory management and resource cleanup in file close operations
+
 ### 3.2 Supported Formats
 
 #### FR-005: GRIB2 Support
@@ -204,7 +216,80 @@ The NetCDF4/HDF5 Format Extension Pack (NFEP) is a dynamic connector system that
 - libgeotiff (for GeoTIFF)
 - NASA CDF library from https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/cdf39_1-dist-all.tar.gz (for CDF)
 
-### 5.4 Build System Requirements (v0.1.1)
+### 5.4 VOL Connector File Operations Architecture (v0.1.3)
+
+#### 5.4.1 H5VL_class_t Function Pointer Implementation
+Each VOL connector implements the HDF5 VOL API through a `H5VL_class_t` structure containing function pointers for various HDF5 operations:
+
+**Current State (v0.1.2 and earlier):**
+- All VOL connectors have `H5VL_class_t` structures with NULL function pointers
+- File operations are not implemented, limiting functionality to build system integration only
+
+**Target State (v0.1.3):**
+- File open and close function pointers populated with actual implementation functions
+- Glue code functions created with proper HDF5 VOL API signatures
+- Each VOL connector capable of basic file access operations
+
+**Function Pointer Structure:**
+```c
+typedef struct H5VL_class_t {
+    // ... other fields ...
+    struct {
+        herr_t (*open)(const char *name, unsigned flags, hid_t fapl_id, 
+                       hid_t dxpl_id, void **req);
+        herr_t (*close)(void *file, hid_t dxpl_id, void **req);
+        // ... other file operations ...
+    } file_cls;
+    // ... other operation classes ...
+} H5VL_class_t;
+```
+
+#### 5.4.2 Format-Specific Implementation Requirements
+
+**GRIB2 VOL Connector (Sprint 1):**
+- Integrate with NCEPLIBS-g2 library for GRIB2 file access
+- Simple g2c logging: call g2c_set_log_level(3) at test start, g2c_set_log_level(0) at test end
+- Handle GRIB2-specific file validation and metadata extraction
+- Support for existing test data: `test/gdaswave.t00z.wcoast.0p16.f000.grib2`
+
+**CDF VOL Connector (Sprint 2):**
+- Integrate with NASA CDF library for file operations
+- Handle CDF-specific file format validation
+- Create simple test CDF file in `test/data/` directory
+
+**GeoTIFF VOL Connector (Sprint 3):**
+- Integrate with libgeotiff library for geospatial TIFF access
+- Handle GeoTIFF metadata and projection information
+- Create simple test GeoTIFF file in `test/data/` directory
+
+**BUFR VOL Connector (Sprint 4):**
+- Integrate with NCEPLIBS-bufr library for observational data access
+- Handle BUFR message parsing and validation
+- Create simple test BUFR file in `test/data/` directory
+
+#### 5.4.3 Error Handling and Resource Management
+**Error Code Mapping:**
+- Map format-specific error codes to appropriate HDF5 VOL API return values
+- Return error codes without printing error messages
+- Handle cases where underlying format libraries are unavailable
+
+**Resource Management:**
+- Proper cleanup of format-specific file handles in close operations
+- Memory management for format-specific metadata structures
+- Thread-safety considerations for concurrent file operations
+
+#### 5.4.4 Testing Framework Integration
+**Test Structure:**
+- Each VOL connector requires dedicated test file in `test/` directory
+- Tests validate both successful operations and error conditions
+- Integration with existing build system test targets
+
+**Test Data Management:**
+- Small, representative test files for each format in `test/data/`
+- Test files should be minimal but valid examples of each format
+- Version control considerations for binary test data files
+
+### 5.5 Build System Requirements (v0.1.1)
 
 #### 5.4.1 Dual Build System Architecture
 NFEP implements comprehensive support for both modern and traditional build systems:
@@ -404,6 +489,40 @@ ${PREFIX}/
 - Bug report and resolution metrics
 
 ## 9. Timeline and Milestones
+
+### v0.1.3 - VOL Connector File Operations
+#### Sprint 1: GRIB2 File Open/Close
+- Implement H5VL_class_t file_open and file_close function pointers for GRIB2 VOL connector
+- Create glue code functions with proper HDF5 VOL API signatures
+- Modify existing test_grib2_vol test to perform actual GRIB2 file operations
+- Integrate g2c logging system for operation tracing and debugging
+- Comprehensive error handling and resource management
+
+#### Sprint 2: CDF File Open/Close
+- Add small, simple CDF test file in test/data directory
+- Implement file open/close functionality for CDF VOL connector
+- Create test suite for CDF file operations
+
+#### Sprint 3: GeoTIFF File Open/Close
+- Add small, simple GeoTIFF test file in test/data directory
+- Implement file open/close functionality for GeoTIFF VOL connector
+- Create test suite for GeoTIFF file operations
+
+#### Sprint 4: BUFR File Open/Close
+- Add small, simple BUFR test file in test/data directory
+- Implement file open/close functionality for BUFR VOL connector
+- Create test suite for BUFR file operations
+
+### v0.1.2 - Documentation System
+#### Sprint 1: Doxygen Integration
+- Doxygen build system integration for both CMake and Autotools
+- Comprehensive API documentation with zero-warning builds
+- Documentation quality assurance and standards implementation
+
+#### Sprint 2: CI Documentation Integration
+- CI pipeline documentation build matrix implementation
+- Documentation artifact generation and preservation
+- GitHub Pages deployment preparation
 
 ### v0.1.1 - Build System Enhancement
 #### Sprint 1: VOL Connector Integration
