@@ -96,32 +96,32 @@ The NetCDF4/HDF5 Format Extension Pack (NFEP) is a dynamic connector system that
   - ✅ Proper RPATH/RUNPATH configuration for installed shared libraries
   - ✅ Standard directory structure following platform conventions
 
-#### FR-011: Doxygen Documentation System (v0.1.2 Sprint 1)
+#### FR-011: Doxygen Documentation System (v0.1.2 Sprint 1) ✅ COMPLETED
 - **Description**: Integrate Doxygen documentation generation into build systems with comprehensive API documentation
 - **Acceptance Criteria**:
-  - Doxygen configuration file (Doxyfile) added to project root
-  - Documentation build targets integrated into both CMake and Autotools build systems
-  - All public API functions, structures, and macros documented with Doxygen comments
-  - Documentation warnings enabled and treated as build failures
-  - Generated documentation includes:
+  - ✅ Doxygen configuration file (Doxyfile.in) added with template variable substitution
+  - ✅ Documentation build targets integrated into both CMake and Autotools build systems
+  - ✅ All public API functions, structures, and macros documented with Doxygen comments
+  - ✅ Documentation warnings enabled and treated as build failures
+  - ✅ Generated documentation includes:
     - API reference for all VOL connectors
     - Code examples and usage patterns
     - Architecture overview diagrams
     - Installation and configuration guides
-  - Documentation build produces HTML output in `docs/html/` directory
-  - Clean documentation build with zero warnings
-  - Documentation covers all existing source files in `src/` directory
+  - ✅ Documentation build produces HTML output in `docs/html/` directory
+  - ✅ Clean documentation build with zero warnings
+  - ✅ Documentation covers all existing source files in `src/` directory
 
-#### FR-012: CI Documentation Integration (v0.1.2 Sprint 2)
+#### FR-012: CI Documentation Integration (v0.1.2 Sprint 2) ✅ COMPLETED
 - **Description**: Integrate documentation builds into CI pipeline with artifact generation
 - **Acceptance Criteria**:
-  - CI pipeline includes documentation build matrix for both CMake and Autotools
-  - Documentation builds enforced with zero-warning policy (warnings treated as failures)
-  - Documentation build artifacts uploaded and preserved for 30 days
-  - CI matrix optimized to test documentation builds with all_enabled VOL configuration only
-  - Documentation builds run in parallel with existing build configurations
-  - Build system configuration options: `-DBUILD_DOCUMENTATION=ON/OFF` (CMake), `--enable/disable-documentation` (Autotools)
-  - GitHub Pages deployment planned for future release
+  - ✅ CI pipeline includes documentation build matrix for both CMake and Autotools
+  - ✅ Documentation builds enforced with zero-warning policy (warnings treated as failures)
+  - ✅ Documentation build artifacts uploaded and preserved for 30 days
+  - ✅ CI matrix optimized to test documentation builds with all_enabled VOL configuration only
+  - ✅ Documentation builds run in parallel with existing build configurations
+  - ✅ Build system configuration options: `-DBUILD_DOCUMENTATION=ON/OFF` (CMake), `--enable/disable-docs` (Autotools)
+  - ✅ GitHub Pages deployment prepared for future release
 
 ### 3.2 Supported Formats
 

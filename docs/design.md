@@ -87,12 +87,16 @@ The project uses GitHub Actions for CI/CD with comprehensive documentation integ
 - Matrix testing across all VOL connector configurations
 
 ### Documentation Integration (v0.1.2)
+- **Doxygen Build System Integration**: Complete documentation generation integrated into both build systems
+  - CMake: `make docs` target using `find_package(Doxygen)` with conditional building
+  - Autotools: `make docs` target with Doxygen detection in configure.ac
+  - Template configuration: `Doxyfile.in` with automatic variable substitution
+  - Build options: `-DBUILD_DOCUMENTATION=ON/OFF` (CMake), `--enable/disable-docs` (Autotools)
 - **CI Documentation Builds**: Integrated documentation generation in CI pipeline
   - Documentation build matrix for both CMake and Autotools build systems
   - Zero-warning enforcement (documentation warnings treated as build failures)
   - Documentation artifacts uploaded and preserved for 30 days
-  - Build options: `-DBUILD_DOCUMENTATION=ON/OFF` (CMake), `--enable/disable-docs` (Autotools)
-  - GitHub Pages deployment planned for future release
+  - GitHub Pages deployment prepared for future release
 
 
 ## Build System Architecture (v0.1.1)
