@@ -92,3 +92,6 @@ vol_plugin
 /docs/html/
 *.trs 
 *.log 
+*.bak
+Doxyfile
+
