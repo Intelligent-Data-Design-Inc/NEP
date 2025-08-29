@@ -31,8 +31,6 @@
 #define FAIL_STACK_ERROR    {H5_FAILED(); AT(); H5Eprint2(H5E_DEFAULT, stdout); goto error;}
 #define FAIL_PUTS_ERROR(s)  {H5_FAILED(); AT(); puts(s); goto error;} 
 
-
-
 /*-------------------------------------------------------------------------
  * Function:    test_registration_by_value()
  *
@@ -88,7 +86,6 @@ error:
 
 } /* end test_registration_by_value() */
 
-
 /*-------------------------------------------------------------------------
  * Function:    test_registration_by_name()
  *
@@ -144,7 +141,7 @@ error:
 
 } /* end test_registration_by_name() */
 
-/*-------------------------------------------------------------------------
+/*-------------------------------------------------------------------------
  * Function:    test_registration_by_name()
  *
  * Purpose:     Tests if we can load, register, and close a VOL

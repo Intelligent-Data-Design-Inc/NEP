@@ -13,13 +13,13 @@
 
 /* The value must be between 256 and 65535 (inclusive) */
 /**
- * @def bufr_VOL_CONNECTOR_VALUE
+ * @def BUFR_VOL_CONNECTOR_VALUE
  * @brief The VOL connector value (between 256 and 65535).
  */
 #define BUFR_VOL_CONNECTOR_VALUE    ((H5VL_class_value_t)15555)
 
 /**
- * @def bufr_VOL_CONNECTOR_NAME
+ * @def BUFR_VOL_CONNECTOR_NAME
  * @brief The VOL connector name string.
  */
 #define BUFR_VOL_CONNECTOR_NAME     "bufr_vol_connector"

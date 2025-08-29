@@ -89,3 +89,9 @@ test_vol_plugin.sh
 vol_plugin
 
 *~
+/docs/html/
+*.trs 
+*.log 
+*.bak
+Doxyfile
+

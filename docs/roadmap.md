@@ -28,17 +28,58 @@
 ### v0.2 (Month 2)
 - GRIB2 format reader implementation
 
+### v0.1.6 BUFR File Open/Close
+- Add a small, simple BUFR test file in test/data.
+- Add file open/close to the BUFR vol connector.
+- Add a test which opens/closes the file.
+
+### v0.1.5 GeoTIFF File Open/Close
+- Add a small, simple GeoTIFF test file in test/data.
+- Add file open/close to the GeoTIFF vol connector.
+- Add a test which opens/closes the file.
+
+### v0.1.4 cdf File Open/Close
+- Add a small, simple cdf test file in test/data.
+- Add file open/close to the cdf vol connector.
+- Add a test which opens/closes the file.
+
+### v0.1.3 GRIB2 File Open/Close
+- We have existing test test/test_grib2_vol. But it only creates a HDF5 file.
+- Instead it should open and close our test GRIB2 file.
+- Logging should be tried.
+
 ### v0.1.2 Documentation
 #### Sprint 1: Documentation with Doxygen
-- Doxygen is add to the builds.
-- An initial Doxygen configuration file is added.
-- Warnings are turned on.
+- **Doxygen Build Integration**: Add Doxygen documentation generation to both CMake and Autotools build systems
+  - CMake: `doc` target using `find_package(Doxygen)` with conditional building
+  - Autotools: `make doc` target with Doxygen detection in configure.ac
+  - Build options: `-DBUILD_DOCUMENTATION=ON/OFF` (CMake), `--enable/disable-docs` (Autotools)
+- **Doxygen Configuration**: Create comprehensive Doxyfile.in template with variable substitution
+  - Project metadata (version, description, author) automatically populated
+  - Input/output paths configured relative to build directory
+  - Warning levels set to maximum with warnings treated as errors
+  - HTML output generation enabled, other formats optional
+- **API Documentation Standards**: Establish and implement documentation requirements
+  - All public API functions documented with Doxygen comments
+  - Parameter descriptions, return values, and usage examples required
+  - Code examples must be compilable and tested
+  - Architecture overview and installation guides included
+- **Documentation Quality Assurance**: Implement zero-warning documentation builds
+  - Documentation warnings treated as build failures
+  - Clean documentation generation for all existing source files in `src/`
+  - Generated documentation placed in `docs/html/` directory
 
-#### Sprint 2: CI and gh-pages
-- The CI system is used to test documentation builds without warnings.
-- gh-pages is used to display the main branch doxygen build.
-- docs/prd.md and docs/design.md are updated.
-
+#### Sprint 2: CI 
+- **CI Documentation Integration**: CI pipeline enhanced with documentation build matrix
+  - Documentation build steps added for both CMake and Autotools build systems
+  - Zero-warning enforcement implemented (documentation warnings treated as build failures)
+  - Documentation artifacts uploaded and preserved for 30 days
+  - Build matrix optimized to test documentation builds with all_enabled VOL configuration only
+  - Build options: `-DBUILD_DOCUMENTATION=ON/OFF` (CMake), `--enable/disable-docs` (Autotools)
+- **Documentation Updates**: Project documentation updated with new architecture
+  - Updated `docs/prd.md` with FR-012: CI Documentation Integration requirements
+  - Updated `docs/design.md` with comprehensive CI and documentation architecture section
+- **GitHub Pages Deployment**: Removed from this release, planned for future versionment
 
 ### v0.1.1 Build System(s) Improvement
 #### Sprint 1: Add New VOLs to Build Systems

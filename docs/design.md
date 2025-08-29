@@ -75,13 +75,24 @@ As of 2025-08-27, the project has implemented:
    - Foundation for NASA CDF library integration
    - Basic connector interface
 
-## Continuous Integration
+## Continuous Integration and Documentation
 
-The project uses GitHub Actions for CI/CD with:
-- Automatic builds on Ubuntu
-- Installation of dependencies (MPICH, CMake, etc.)
-- Custom HDF5 1.14.5 build with caching
-- Test execution via CMake
+The project uses GitHub Actions for CI/CD with comprehensive documentation integration:
+
+### Build and Test Pipeline
+- Automatic builds on Ubuntu for both CMake and Autotools
+- Installation of dependencies (HDF5, NCEPLIBS, libgeotiff, NASA CDF, Doxygen, etc.)
+- Custom dependency builds with caching for performance
+- Test execution via CMake (CTest) and Autotools
+- Matrix testing across all VOL connector configurations
+
+### Documentation Integration (v0.1.2)
+- **CI Documentation Builds**: Integrated documentation generation in CI pipeline
+  - Documentation build matrix for both CMake and Autotools build systems
+  - Zero-warning enforcement (documentation warnings treated as build failures)
+  - Documentation artifacts uploaded and preserved for 30 days
+  - Build options: `-DBUILD_DOCUMENTATION=ON/OFF` (CMake), `--enable/disable-docs` (Autotools)
+  - GitHub Pages deployment planned for future release
 
 
 ## Build System Architecture (v0.1.1)

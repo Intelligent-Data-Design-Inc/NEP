@@ -18,6 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         build_system: [cmake, autotools]
+        doc_build: [enabled, disabled]
         vol_config:
           - name: "all_enabled"
             cmake_flags: "-DENABLE_GRIB2=ON -DENABLE_BUFR=ON -DENABLE_GEOTIFF=ON -DENABLE_CDF=ON"
@@ -34,6 +35,16 @@ jobs:
           - name: "cdf_only"
             cmake_flags: "-DENABLE_GRIB2=OFF -DENABLE_BUFR=OFF -DENABLE_GEOTIFF=OFF -DENABLE_CDF=ON"
             autotools_flags: "--disable-grib2 --disable-bufr --disable-geotiff --enable-cdf"
+        exclude:
+          # Reduce matrix size by only testing documentation with all_enabled configuration
+          - vol_config: { name: "grib2_only" }
+            doc_build: enabled
+          - vol_config: { name: "bufr_only" }
+            doc_build: enabled
+          - vol_config: { name: "geotiff_only" }
+            doc_build: enabled
+          - vol_config: { name: "cdf_only" }
+            doc_build: enabled
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -90,14 +101,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/g2c-install
-          key: g2c-latest-${{ runner.os }}-1
+          key: g2c-latest-${{ runner.os }}-2
 
       - name: Download and build g2c (latest release)
         if: steps.cache-g2c.outputs.cache-hit != 'true'
         run: |
-          wget https://github.com/NOAA-EMC/NCEPLIBS-g2c/archive/refs/tags/v1.7.0.tar.gz -O g2c.tar.gz &> /dev/null
+          wget https://github.com/NOAA-EMC/NCEPLIBS-g2c/archive/refs/tags/v2.1.0.tar.gz -O g2c.tar.gz &> /dev/null
           tar -xzf g2c.tar.gz
-          cd NCEPLIBS-g2c-1.7.0
+          cd NCEPLIBS-g2c-2.1.0
           mkdir build && cd build
           echo $JASPER_INSTALL_PREFIX
           ls -l $JASPER_INSTALL_PREFIX
@@ -159,12 +170,34 @@ jobs:
           JASPER_INSTALL_PREFIX: $GITHUB_WORKSPACE/jasper-install
         run: |
           echo "Building with VOL configuration: ${{ matrix.vol_config.name }}"
-          cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/g2c-install;$GITHUB_WORKSPACE/bufr-install;$GITHUB_WORKSPACE/cdf-install;$JASPER_INSTALL_PREFIX;/usr/include/geotiff" ${{ matrix.vol_config.cmake_flags }}
+          DOC_FLAG=""
+          if [ "${{ matrix.doc_build }}" = "enabled" ]; then
+            DOC_FLAG="-DBUILD_DOCUMENTATION=ON"
+          else
+            DOC_FLAG="-DBUILD_DOCUMENTATION=OFF"
+          fi
+          cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/g2c-install;$GITHUB_WORKSPACE/bufr-install;$GITHUB_WORKSPACE/cdf-install;$JASPER_INSTALL_PREFIX;/usr/include/geotiff" ${{ matrix.vol_config.cmake_flags }} $DOC_FLAG
 
       - name: Build (CMake)
         if: matrix.build_system == 'cmake'
         working-directory: build
         run: make -j$(nproc)
+
+      - name: Build Documentation (CMake)
+        if: matrix.build_system == 'cmake' && matrix.doc_build == 'enabled'
+        working-directory: build
+        run: |
+          set -x
+          pwd
+          ls -l
+          echo "Building documentation with CMake..."
+          make docs 2>&1 | tee doc_build.log
+          # Check for warnings in documentation build
+          if grep -i "warning" doc_build.log; then
+            echo "Documentation build contains warnings - failing build"
+            exit 1
+          fi
+          echo "Documentation built successfully without warnings"
 
       - name: Test (CTest)
         if: matrix.build_system == 'cmake'
@@ -172,6 +205,14 @@ jobs:
         run: |
           ctest --verbose
           sudo make install
+
+      - name: Upload Documentation Artifacts (CMake)
+        if: matrix.build_system == 'cmake' && matrix.doc_build == 'enabled'
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-cmake-${{ matrix.vol_config.name }}
+          path: build/docs/html/
+          retention-days: 30
 
       # --- Autotools build ---------------------------------------------
       - name: Bootstrap (Autotools)
@@ -182,17 +223,56 @@ jobs:
       - name: Configure (Autotools)
         if: matrix.build_system == 'autotools'
         run: |
+          set -x
           echo "Building with VOL configuration: ${{ matrix.vol_config.name }}"
           find /usr -name '*geotiff*'
           autoreconf -i
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/g2c-install/include -I$GITHUB_WORKSPACE/bufr-install/include/bufr_4 -I$GITHUB_WORKSPACE/cdf-install/include -I/usr/include/geotiff"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib -L$GITHUB_WORKSPACE/bufr-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib -L$GITHUB_WORKSPACE/bufr-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib -L$JASPER_INSTALL_PREFIX/lib"
           export LD_LIBRARY_PATH="$JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$GITHUB_WORKSPACE/bufr-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH"
-          ls -l $GITHUB_WORKSPACE/hdf5-install
-          ls -l $GITHUB_WORKSPACE/hdf5-install/bin
-          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc ${{ matrix.vol_config.autotools_flags }} || (echo "Configure failed. Printing config.log:"; cat config.log; exit 1)
-          make -j$(nproc)
+          ls -l $GITHUB_WORKSPACE/hdf5-install/lib
+          DOC_FLAG=""
+          if [ "${{ matrix.doc_build }}" = "enabled" ]; then
+            DOC_FLAG="--enable-docs"
+          else
+            DOC_FLAG="--disable-docs"
+          fi
+          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc ${{ matrix.vol_config.autotools_flags }} $DOC_FLAG || (echo "Configure failed. Printing config.log:"; cat config.log; exit 1)
+
+      - name: Build (Autotools)
+        if: matrix.build_system == 'autotools'
+        run: make -j$(nproc)
+
+      - name: Build Documentation (Autotools)
+        if: matrix.build_system == 'autotools' && matrix.doc_build == 'enabled'
+        run: |
+          set -x
+          echo "Building documentation with Autotools..."
+          pwd
+          make docs 2>&1 | tee doc_build.log
+          # Check for warnings in documentation build
+          if grep -i "warning" doc_build.log; then
+            echo "Documentation build contains warnings - failing build"
+            exit 1
+          fi
+          echo "Documentation built successfully without warnings"
+
+      - name: Test (Autotools)
+        if: matrix.build_system == 'autotools'
+        run: |
+          export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/g2c-install/include -I$GITHUB_WORKSPACE/bufr-install/include/bufr_4 -I$GITHUB_WORKSPACE/cdf-install/include -I/usr/include/geotiff"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib -L$GITHUB_WORKSPACE/bufr-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib -L$JASPER_INSTALL_PREFIX/lib"
+          export LD_LIBRARY_PATH="$JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$GITHUB_WORKSPACE/bufr-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH"
           make VERBOSE=1 check
           sudo make install
+
+      - name: Upload Documentation Artifacts (Autotools)
+        if: matrix.build_system == 'autotools' && matrix.doc_build == 'enabled'
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-autotools-${{ matrix.vol_config.name }}
+          path: docs/html/
+          retention-days: 30
 

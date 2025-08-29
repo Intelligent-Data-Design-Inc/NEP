@@ -13,13 +13,13 @@
 
 /* The value must be between 256 and 65535 (inclusive) */
 /**
- * @def cdf_VOL_CONNECTOR_VALUE
+ * @def CDF_VOL_CONNECTOR_VALUE
  * @brief The VOL connector value (between 256 and 65535).
  */
 #define CDF_VOL_CONNECTOR_VALUE    ((H5VL_class_value_t)15555)
 
 /**
- * @def cdf_VOL_CONNECTOR_NAME
+ * @def CDF_VOL_CONNECTOR_NAME
  * @brief The VOL connector name string.
  */
 #define CDF_VOL_CONNECTOR_NAME     "cdf_vol_connector"

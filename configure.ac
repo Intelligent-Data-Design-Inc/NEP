@@ -1,8 +1,8 @@
 # This is the configure.ac file for the NFEP project.
 # Edward Hartnett 8/27/25
 
-AC_PREREQ([2.69])
-AC_INIT([NFEP], [0.1.1], [help@intelligentdatadesign.com])
+AC_PREREQ([2.71])
+AC_INIT([NFEP],[0.1.1],[help@intelligentdatadesign.com])
 AC_CONFIG_SRCDIR([src/grib2_vol_connector.c])
 AC_CONFIG_HEADERS([config.h])
 
@@ -42,17 +42,23 @@ AC_ARG_ENABLE([cdf],
     [enable_cdf=$enableval],
     [enable_cdf=yes])
 
+AC_ARG_ENABLE([docs],
+    AS_HELP_STRING([--enable-docs], [Enable documentation generation with Doxygen (default: yes if Doxygen found)]),
+    [enable_docs=$enableval],
+    [enable_docs=auto])
+
 # Initialize variables
 ENABLED_VOLS=""
 HAVE_GRIB2=no
 HAVE_BUFR=no
 HAVE_GEOTIFF=no
 HAVE_CDF=no
+HAVE_DOXYGEN=no
 
 # Check for GRIB2 dependencies if enabled
 if test "x$enable_grib2" = "xyes"; then
     AC_CHECK_HEADERS([grib2.h], [grib2_header=yes], [grib2_header=no])
-    AC_SEARCH_LIBS([g2_info], [g2c], [G2C_LIBS="-lg2c"; grib2_lib=yes], [grib2_lib=no])
+    AC_SEARCH_LIBS([g2c_inq], [g2c], [G2C_LIBS="-lg2c"; grib2_lib=yes], [grib2_lib=no], [-ljasper])
     
     if test "x$grib2_header" = "xyes" && test "x$grib2_lib" = "xyes"; then
         HAVE_GRIB2=yes
@@ -60,7 +66,7 @@ if test "x$enable_grib2" = "xyes"; then
         AC_DEFINE([HAVE_GRIB2], [1], [Define if GRIB2 VOL connector is enabled])
         AC_MSG_NOTICE([GRIB2 VOL connector enabled])
     else
-        AC_MSG_ERROR([GRIB2 VOL connector enabled but NCEPLIBS-g2 not found. Install NCEPLIBS-g2 or disable with --disable-grib2])
+        AC_MSG_ERROR([GRIB2 VOL connector enabled but NCEPLIBS-g2c not found. Install NCEPLIBS-g2c or disable with --disable-grib2])
     fi
 fi
 AC_SUBST([G2C_LIBS])
@@ -113,6 +119,23 @@ if test "x$enable_cdf" = "xyes"; then
 fi
 AC_SUBST([CDF_LIBS])
 
+# Check for Doxygen if documentation is enabled
+if test "x$enable_docs" != "xno"; then
+    AC_CHECK_PROG([DOXYGEN], [doxygen], [doxygen])
+    if test "x$DOXYGEN" = "x"; then
+        if test "x$enable_docs" = "xyes"; then
+            AC_MSG_ERROR([Documentation enabled but doxygen not found. Install doxygen or disable with --disable-docs])
+        else
+            AC_MSG_WARN([Doxygen not found - documentation will not be built])
+            enable_docs=no
+        fi
+    else
+        HAVE_DOXYGEN=yes
+        enable_docs=yes
+        AC_MSG_NOTICE([Documentation generation enabled with doxygen])
+    fi
+fi
+
 # Check that at least one VOL connector is enabled
 if test "x$HAVE_GRIB2" = "xno" && test "x$HAVE_BUFR" = "xno" && test "x$HAVE_GEOTIFF" = "xno" && test "x$HAVE_CDF" = "xno"; then
     AC_MSG_ERROR([No VOL connectors enabled. Enable at least one with --enable-<vol>])
@@ -123,6 +146,7 @@ AM_CONDITIONAL([HAVE_GRIB2], [test "x$HAVE_GRIB2" = "xyes"])
 AM_CONDITIONAL([HAVE_BUFR], [test "x$HAVE_BUFR" = "xyes"])
 AM_CONDITIONAL([HAVE_GEOTIFF], [test "x$HAVE_GEOTIFF" = "xyes"])
 AM_CONDITIONAL([HAVE_CDF], [test "x$HAVE_CDF" = "xyes"])
+AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$HAVE_DOXYGEN" = "xyes"])
 
 AC_MSG_NOTICE([Enabled VOL connectors:$ENABLED_VOLS])
 
@@ -149,7 +173,8 @@ fi
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
-                 test/Makefile])
+                 test/Makefile
+                 docs/Doxyfile])
 
 AC_CONFIG_FILES([test/test_vol_plugin.sh],
                 [chmod +x test/test_vol_plugin.sh])
