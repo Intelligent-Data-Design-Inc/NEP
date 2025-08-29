@@ -80,9 +80,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-1.14.5-${{ runner.os }}-2
+          key: hdf5-1.14.6-${{ runner.os }}-3
       
-      - name: Download and build HDF5 1.14.5
+      - name: Download and build HDF5 1.14.6
         if: steps.cache-hdf5.outputs.cache-hit != 'true'
         id: build-hdf5
         run: |
@@ -181,7 +181,14 @@ jobs:
       - name: Build (CMake)
         if: matrix.build_system == 'cmake'
         working-directory: build
-        run: make -j$(nproc)
+        run: |
+          set -x
+          pwd
+          ls -l
+          echo "Building with CMake..."
+          export PATH=$GITHUB_WORKSPACE/hdf5-install/bin:$PATH
+          export LD_LIBRARY_PATH=$GITHUB_WORKSPACE/hdf5-install/lib:$LD_LIBRARY_PATH
+          make -j$(nproc)
 
       - name: Build Documentation (CMake)
         if: matrix.build_system == 'cmake' && matrix.doc_build == 'enabled'
