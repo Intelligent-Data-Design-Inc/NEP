@@ -1,8 +1,8 @@
-# NFEP (NetCDF4/HDF5 Format Extension Pack)
+# NFEP (NetCDF4/HDF5 Extension Pack)
 
 ## Overview
 
-NFEP is a unified framework that enables seamless access to diverse Earth Science data formats through standard NetCDF4 and HDF5 interfaces. It eliminates the need for data conversion or format-specific processing pipelines while preserving the optimizations of specialized formats.
+NEP is a unified framework that provides additional compression and enables seamless access to diverse Earth Science data formats through standard NetCDF4 and HDF5 interfaces. It eliminates the need for data conversion or format-specific processing pipelines while preserving the optimizations of specialized formats.
 
 ## The Problem
 
@@ -17,7 +17,7 @@ NASA's Earth Science missions face significant challenges with data management:
 
 ## The Solution
 
-NFEP provides a transparent, runtime-pluggable solution:
+NEP provides a transparent, runtime-pluggable solution:
 
 ### Core Features
 - **Automatic format detection**: HDF5 automatically identifies NASA format files at read time
@@ -46,10 +46,10 @@ NFEP provides a transparent, runtime-pluggable solution:
 
 ### Visual Overview
 
-![NFEP with VOLs for HDF5 Users](docs/images/NFEP%20with%20VOLs%20for%20HDF5%20Users.png)
+![NEP with VOLs for HDF5 Users](docs/images/NFEP%20with%20VOLs%20for%20HDF5%20Users.png)
 *Figure 1: NFEP with VOLs for HDF5 Users*
 
-![NFEP with VOLs for NetCDF Users](docs/images/NFEP%20with%20VOLs%20for%20NetCDF%20Users.png)
+![NEP with VOLs for NetCDF Users](docs/images/NFEP%20with%20VOLs%20for%20NetCDF%20Users.png)
 *Figure 2: NFEP with VOLs for NetCDF Users*
 
 ## Installation

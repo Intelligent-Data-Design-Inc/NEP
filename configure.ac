@@ -1,8 +1,8 @@
-# This is the configure.ac file for the NFEP project.
+# This is the configure.ac file for the NEP project.
 # Edward Hartnett 8/27/25
 
 AC_PREREQ([2.71])
-AC_INIT([NFEP],[0.1.1],[help@intelligentdatadesign.com])
+AC_INIT([NEP],[1.0.0],[help@intelligentdatadesign.com])
 AC_CONFIG_SRCDIR([src/grib2_vol_connector.c])
 AC_CONFIG_HEADERS([config.h])
 
