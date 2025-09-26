@@ -2,9 +2,10 @@
 # Edward Hartnett 8/27/25
 
 ACLOCAL_AMFLAGS = -I m4
+AM_CPPFLAGS = -I$(top_builddir)/include -I$(top_srcdir)/include -I$(top_builddir) -I$(top_srcdir)
 
 # Adjust as needed
-AM_CPPFLAGS = $(HDF5_CPPFLAGS) -I$(top_srcdir)/src -I$(top_builddir)/src
+AM_CPPFLAGS += $(HDF5_CPPFLAGS)
 AM_CFLAGS = -g -Wall -Wextra $(HDF5_CFLAGS)
 
 check_SCRIPTS = test_vol_plugin.sh

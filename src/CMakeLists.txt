@@ -1,8 +1,11 @@
 # This is the build file for the src directory of the NEP project.
 # Edward Hartnett 8/27/25
 
-# Include the generated config header
+# Include directories to match Makefile.am AM_CPPFLAGS
+include_directories(${CMAKE_BINARY_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_BINARY_DIR})
+include_directories(${CMAKE_SOURCE_DIR})
 
 # Build GRIB2 VOL connector if enabled
 if(HAVE_GRIB2)

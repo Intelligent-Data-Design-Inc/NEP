@@ -1,6 +1,12 @@
 # Build file for the test directory of the NEP project.
 # Edward Hartnett 8/27/25
 
+# Include directories to match Makefile.am AM_CPPFLAGS
+include_directories(${CMAKE_BINARY_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_BINARY_DIR})
+include_directories(${CMAKE_SOURCE_DIR})
+
 # Build the test only if BUFR is enabled
 if(HAVE_GRIB2)
     add_executable (test_grib2_vol test_grib2_vol.c)
