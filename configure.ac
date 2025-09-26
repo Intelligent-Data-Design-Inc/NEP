@@ -2,7 +2,7 @@
 # Edward Hartnett 8/27/25
 
 AC_PREREQ([2.71])
-AC_INIT([NEP],[1.0.0],[help@intelligentdatadesign.com])
+AC_INIT([NEP],[0.1.1],[help@intelligentdatadesign.com])
 AC_CONFIG_SRCDIR([src/grib2_vol_connector.c])
 AC_CONFIG_HEADERS([config.h])
 
@@ -21,26 +21,71 @@ AC_CHECK_HEADERS([stdlib.h])
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T
 
+# If the env. variable HDF5_PLUGIN_PATH is set, or if
+# --with-hdf5-plugin-dir=<directory>, use it.
+AC_MSG_CHECKING([where to put HDF5 plugins])
+AC_ARG_WITH([hdf5-plugin-path],
+            [AS_HELP_STRING([--with-hdf5-plugin-path=<directory>],
+                            [specify HDF5 plugin directory (defaults to /usr/local/hdf5/lib/plugin, or value of HDF5_PLUGIN_PATH, if set)])],
+            [HDF5_PLUGIN_PATH=$with_hdf5_plugin_path])
+HDF5_PLUGIN_PATH=${HDF5_PLUGIN_PATH-.}
+AC_MSG_RESULT($HDF5_PLUGIN_PATH)
+
+# Does the user want BZIP2?
+AC_MSG_CHECKING([whether BZIP2 filter library should be built and installed])
+AC_ARG_ENABLE([bzip2],
+              [AS_HELP_STRING([--disable-bzip2],
+                              [Disable the build and install of bzip2 filter library.])])
+test "x$enable_bzip2" = xno || enable_bzip2=yes
+AC_MSG_RESULT($enable_bzip2)
+AM_CONDITIONAL(BUILD_BZIP2, [test "x$enable_bzip2" = xyes])
+
+# Does the user want LZ4?
+AC_MSG_CHECKING([whether LZ4 filter library should be built and installed])
+AC_ARG_ENABLE([lz4],
+              [AS_HELP_STRING([--disable-lz4],
+                              [Disable the build and install of lz4 filter library.])])
+test "x$enable_lz4" = xno || enable_lz4=yes
+AC_MSG_RESULT($enable_lz4)
+AM_CONDITIONAL(BUILD_LZ4, [test "x$enable_lz4" = xyes])
+
+# Does the user want JPEG?
+AC_MSG_CHECKING([whether JPEG filter library should be built and installed])
+AC_ARG_ENABLE([jpeg],
+              [AS_HELP_STRING([--disable-jpeg],
+                              [Disable the build and install of jpeg filter library.])])
+test "x$enable_jpeg" = xno || enable_jpeg=yes
+AC_MSG_RESULT($enable_jpeg)
+AM_CONDITIONAL(BUILD_JPEG, [test "x$enable_jpeg" = xyes])
+
+# Does the user want LZF?
+AC_MSG_CHECKING([whether LZF filter library should be built and installed])
+AC_ARG_ENABLE([lzf],
+              [AS_HELP_STRING([--disable-lzf],
+                              [Disable the build and install of lzf filter library.])])
+test "x$enable_lzf" = xno || enable_lzf=yes
+AC_MSG_RESULT($enable_lzf)
+AM_CONDITIONAL(BUILD_LZF, [test "x$enable_lzf" = xyes])
+
+# Build the filter libraries as desired.
+if test "x$enable_bzip2" = xyes; then
+   AC_CONFIG_SUBDIRS([BZIP2])
+fi
+if test "x$enable_lz4" = xyes; then
+   AC_CONFIG_SUBDIRS([LZ4])
+fi
+if test "x$enable_jpeg" = xyes; then
+   AC_CONFIG_SUBDIRS([JPEG])
+fi
+if test "x$enable_lzf" = xyes; then
+   AC_CONFIG_SUBDIRS([LZF])
+fi
+
 # VOL connector enable/disable options
 AC_ARG_ENABLE([grib2],
     AS_HELP_STRING([--enable-grib2], [Enable GRIB2 VOL connector (default: yes)]),
     [enable_grib2=$enableval],
     [enable_grib2=yes])
-
-AC_ARG_ENABLE([bufr],
-    AS_HELP_STRING([--enable-bufr], [Enable BUFR VOL connector (default: yes)]),
-    [enable_bufr=$enableval],
-    [enable_bufr=yes])
-
-AC_ARG_ENABLE([geotiff],
-    AS_HELP_STRING([--enable-geotiff], [Enable GeoTIFF VOL connector (default: yes)]),
-    [enable_geotiff=$enableval],
-    [enable_geotiff=yes])
-
-AC_ARG_ENABLE([cdf],
-    AS_HELP_STRING([--enable-cdf], [Enable CDF VOL connector (default: yes)]),
-    [enable_cdf=$enableval],
-    [enable_cdf=yes])
 
 AC_ARG_ENABLE([docs],
     AS_HELP_STRING([--enable-docs], [Enable documentation generation with Doxygen (default: yes if Doxygen found)]),
@@ -70,54 +115,6 @@ if test "x$enable_grib2" = "xyes"; then
     fi
 fi
 AC_SUBST([G2C_LIBS])
-
-dnl # Check for BUFR dependencies if enabled
-dnl if test "x$enable_bufr" = "xyes"; then
-dnl     AC_CHECK_HEADERS([bufrlib.h], [bufr_header=yes], [bufr_header=no])
-dnl     AC_SEARCH_LIBS([openbf_], [bufr_4], [BUFR_LIBS="-lbufr_4"; bufr_lib=yes], [bufr_lib=no], [-lgfortran -lm])
-    
-dnl     if test "x$bufr_header" = "xyes" && test "x$bufr_lib" = "xyes"; then
-dnl         HAVE_BUFR=yes
-dnl         ENABLED_VOLS="$ENABLED_VOLS BUFR"
-dnl         AC_DEFINE([HAVE_BUFR], [1], [Define if BUFR VOL connector is enabled])
-dnl         AC_MSG_NOTICE([BUFR VOL connector enabled])
-dnl     else
-dnl         AC_MSG_ERROR([BUFR VOL connector enabled but NCEPLIBS-bufr not found. Install NCEPLIBS-bufr or disable with --disable-bufr])
-dnl     fi
-dnl fi
-dnl AC_SUBST([BUFR_LIBS])
-
-dnl # Check for GeoTIFF dependencies if enabled
-dnl if test "x$enable_geotiff" = "xyes"; then
-dnl     AC_CHECK_HEADERS([geotiff.h], [geotiff_header=yes], [geotiff_header=no])
-dnl     AC_SEARCH_LIBS([GTIFNew], [geotiff], [GEOTIFF_LIBS="-lgeotiff"; geotiff_lib=yes], [geotiff_lib=no])
-    
-dnl     if test "x$geotiff_header" = "xyes" && test "x$geotiff_lib" = "xyes"; then
-dnl         HAVE_GEOTIFF=yes
-dnl         ENABLED_VOLS="$ENABLED_VOLS GeoTIFF"
-dnl         AC_DEFINE([HAVE_GEOTIFF], [1], [Define if GeoTIFF VOL connector is enabled])
-dnl         AC_MSG_NOTICE([GeoTIFF VOL connector enabled])
-dnl     else
-dnl         AC_MSG_ERROR([GeoTIFF VOL connector enabled but libgeotiff not found. Install libgeotiff or disable with --disable-geotiff])
-dnl     fi
-dnl fi
-dnl AC_SUBST([GEOTIFF_LIBS])
-
-dnl # Check for CDF dependencies if enabled
-dnl if test "x$enable_cdf" = "xyes"; then
-dnl     AC_CHECK_HEADERS([cdf.h], [cdf_header=yes], [cdf_header=no])
-dnl     AC_SEARCH_LIBS([CDFope], [cdf], [CDF_LIBS="-lcdf"; cdf_lib=yes], [cdf_lib=no])
-    
-dnl     if test "x$cdf_header" = "xyes" && test "x$cdf_lib" = "xyes"; then
-dnl         HAVE_CDF=yes
-dnl         ENABLED_VOLS="$ENABLED_VOLS CDF"
-dnl         AC_DEFINE([HAVE_CDF], [1], [Define if CDF VOL connector is enabled])
-dnl         AC_MSG_NOTICE([CDF VOL connector enabled])
-dnl     else
-dnl         AC_MSG_ERROR([CDF VOL connector enabled but NASA CDF library not found. Install NASA CDF library or disable with --disable-cdf])
-dnl     fi
-dnl fi
-dnl AC_SUBST([CDF_LIBS])
 
 # Check for Doxygen if documentation is enabled
 if test "x$enable_docs" != "xno"; then
@@ -169,6 +166,11 @@ AX_LIB_HDF5()
 # AX_LIB_HDF5([parallel])
 if test "$with_hdf5" = "no"; then
     AC_MSG_ERROR([Unable to find HDF5])
+fi
+
+# We need our own, fixed, copy of the LZ4 plugin.
+if test "x$enable_lz4" = xyes; then
+   AC_CONFIG_SUBDIRS([hdf5_plugins])
 fi
 
 AC_CONFIG_FILES([Makefile

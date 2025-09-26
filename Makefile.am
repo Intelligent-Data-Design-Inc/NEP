@@ -1,5 +1,7 @@
 # This is the Makefile.am file for the root directory of the NFEP project.
+#
 # Edward Hartnett 8/27/25
+# Copyright Intelligent Data Design, Inc. All rights reserved.
 
 ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = src test

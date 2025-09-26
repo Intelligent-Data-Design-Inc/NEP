@@ -1,8 +1,7 @@
-# NEP – GRIB2 VOL Connector
-
+# NEP – NetCDF/HDF5 Expansion Pack
 ## Project Overview
 
-The NetCDF4/HDF5 Format Extension Pack (NEP) is a unified framework that enables seamless access to diverse Earth Science data formats through standard NetCDF4 and HDF5 interfaces. This framework eliminates the need for data conversion or format-specific processing pipelines while preserving the optimizations of specialized formats.
+The NetCDF4/HDF5 Extension Pack (NEP) adds new compression and binary data formats to netCDF and HDF5.
 
 ## Architecture
 
@@ -35,6 +34,9 @@ NEP uses the Virtual Object Layer (VOL) connector architecture of HDF5 to provid
 The project is structured as follows:
 - `/src` - All VOL connector source code
 - `/test` - Unit tests for validation
+- `/test/data` - Test data files
+- `/test/fsrc` - Fortran source code
+- `/test/ftest` - Fortran tests
 - `/docs` - Project documentation
 - `/bin` - Compiled binaries and executable tools
 - `/.github/workflows` - CI/CD pipeline configurations

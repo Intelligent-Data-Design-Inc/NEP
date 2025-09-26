@@ -126,8 +126,34 @@ message(STATUS "Enabled VOL connectors: ${ENABLED_VOLS}")
 # wrong. Turn this on for added confirmation that you got it right.
 #message (DEPRECATION "Include: ${HDF5_INCLUDE_DIR}")
 
+# Set package information variables for config.h (matching autotools)
+set(PACKAGE "nep")
+set(PACKAGE_NAME "NEP")
+set(PACKAGE_STRING "NEP ${PROJECT_VERSION}")
+set(PACKAGE_TARNAME "nep")
+set(PACKAGE_VERSION "${PROJECT_VERSION}")
+set(PACKAGE_BUGREPORT "help@intelligentdatadesign.com")
+set(PACKAGE_URL "")
+set(VERSION "${PROJECT_VERSION}")
+
+# Set HDF5 availability
+set(HAVE_HDF5 TRUE)
+
+# Set standard header availability (these are typically available on modern systems)
+set(STDC_HEADERS 1)
+set(HAVE_STDIO_H 1)
+set(HAVE_STDLIB_H 1)
+set(HAVE_STRING_H 1)
+set(HAVE_STRINGS_H 1)
+set(HAVE_INTTYPES_H 1)
+set(HAVE_STDINT_H 1)
+set(HAVE_UNISTD_H 1)
+set(HAVE_SYS_STAT_H 1)
+set(HAVE_SYS_TYPES_H 1)
+set(HAVE_DLFCN_H 1)
+
 # Pass configuration to source directory
-configure_file(${CMAKE_SOURCE_DIR}/nep_config.h.in ${CMAKE_BINARY_DIR}/nep_config.h)
+configure_file(${CMAKE_SOURCE_DIR}/config.h.in ${CMAKE_BINARY_DIR}/config.h)
 
 include(GNUInstallDirs)
 add_subdirectory (src)
