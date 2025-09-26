@@ -1,25 +1,7 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
-/* Define if BUFR VOL connector is enabled */
-#undef HAVE_BUFR
-
-/* Define to 1 if you have the <bufrlib.h> header file. */
-#undef HAVE_BUFRLIB_H
-
-/* Define if CDF VOL connector is enabled */
-#undef HAVE_CDF
-
-/* Define to 1 if you have the <cdf.h> header file. */
-#undef HAVE_CDF_H
-
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
-
-/* Define if GeoTIFF VOL connector is enabled */
-#undef HAVE_GEOTIFF
-
-/* Define to 1 if you have the <geotiff.h> header file. */
-#undef HAVE_GEOTIFF_H
 
 /* Define if GRIB2 VOL connector is enabled */
 #undef HAVE_GRIB2

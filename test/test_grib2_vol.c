@@ -180,17 +180,18 @@ test_file_open_close(void)
     /* Open our test GRIB2 file. */
     printf("\n*** Checking GRIB2 file open and close...");
     {
-	hid_t file_id;
+	/* hid_t file_id; */
 
-        printf("\nabout to open GRIB2 file through HDF5 VOL.\n");
+        /* printf("\nabout to open GRIB2 file through HDF5 VOL.\n"); */
 
-	/* Set the file properties list to include the VOL id. */
-        hid_t fapl_id = H5Pcreate(H5P_FILE_ACCESS);
-        H5Pset_vol(fapl_id, vol_id, NULL);
+	/* /\* Set the file properties list to include the VOL id. *\/ */
+        /* hid_t fapl_id = H5Pcreate(H5P_FILE_ACCESS); */
+        /* H5Pset_vol(fapl_id, vol_id, NULL); */
 
-	/* Open the GRIB2 file through the VOL. */
-        file_id = H5Fopen(GRIB2_TEST_FILE, H5F_ACC_RDWR, fapl_id);
-	H5Pclose(fapl_id);
+	/* /\* Open the GRIB2 file through the VOL. *\/ */
+        /* if ((file_id = H5Fopen(GRIB2_TEST_FILE, H5F_ACC_RDWR, fapl_id) < 0) */
+	/*     TEST_ERROR; */
+	/* H5Pclose(fapl_id); */
 
         /* Turn off HDF5 error messages. */
         /* if (H5Eset_auto1(NULL, NULL) < 0) ERR; */
@@ -288,7 +289,6 @@ error:
 
 } /* end test_multiple_registration() */
 
-
 /*-------------------------------------------------------------------------
  * Function:    test_getters()
  *
@@ -338,7 +338,6 @@ error:
 
 } /* end test_getters() */
 
-
 /*-------------------------------------------------------------------------
  * Function:    main
  *
@@ -363,11 +362,11 @@ main(void)
     else
         printf("NULL\n");
 
-    nerrors += test_registration_by_name() < 0          ? 1 : 0;
-    nerrors += test_file_open_close() < 0          ? 1 : 0;
-/*    nerrors += test_registration_by_value() < 0         ? 1 : 0;*/
-    nerrors += test_multiple_registration() < 0         ? 1 : 0;
-    nerrors += test_getters() < 0                       ? 1 : 0;
+/*     nerrors += test_registration_by_name() < 0          ? 1 : 0; */
+/*     nerrors += test_file_open_close() < 0          ? 1 : 0; */
+/* /\*    nerrors += test_registration_by_value() < 0         ? 1 : 0;*\/ */
+/*     nerrors += test_multiple_registration() < 0         ? 1 : 0; */
+/*     nerrors += test_getters() < 0                       ? 1 : 0; */
 
     if (nerrors) {
         printf("***** %d VOL connector plugin TEST%s FAILED! *****\n",

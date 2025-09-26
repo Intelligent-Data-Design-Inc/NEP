@@ -71,53 +71,53 @@ if test "x$enable_grib2" = "xyes"; then
 fi
 AC_SUBST([G2C_LIBS])
 
-# Check for BUFR dependencies if enabled
-if test "x$enable_bufr" = "xyes"; then
-    AC_CHECK_HEADERS([bufrlib.h], [bufr_header=yes], [bufr_header=no])
-    AC_SEARCH_LIBS([openbf_], [bufr_4], [BUFR_LIBS="-lbufr_4"; bufr_lib=yes], [bufr_lib=no], [-lgfortran -lm])
+dnl # Check for BUFR dependencies if enabled
+dnl if test "x$enable_bufr" = "xyes"; then
+dnl     AC_CHECK_HEADERS([bufrlib.h], [bufr_header=yes], [bufr_header=no])
+dnl     AC_SEARCH_LIBS([openbf_], [bufr_4], [BUFR_LIBS="-lbufr_4"; bufr_lib=yes], [bufr_lib=no], [-lgfortran -lm])
     
-    if test "x$bufr_header" = "xyes" && test "x$bufr_lib" = "xyes"; then
-        HAVE_BUFR=yes
-        ENABLED_VOLS="$ENABLED_VOLS BUFR"
-        AC_DEFINE([HAVE_BUFR], [1], [Define if BUFR VOL connector is enabled])
-        AC_MSG_NOTICE([BUFR VOL connector enabled])
-    else
-        AC_MSG_ERROR([BUFR VOL connector enabled but NCEPLIBS-bufr not found. Install NCEPLIBS-bufr or disable with --disable-bufr])
-    fi
-fi
-AC_SUBST([BUFR_LIBS])
+dnl     if test "x$bufr_header" = "xyes" && test "x$bufr_lib" = "xyes"; then
+dnl         HAVE_BUFR=yes
+dnl         ENABLED_VOLS="$ENABLED_VOLS BUFR"
+dnl         AC_DEFINE([HAVE_BUFR], [1], [Define if BUFR VOL connector is enabled])
+dnl         AC_MSG_NOTICE([BUFR VOL connector enabled])
+dnl     else
+dnl         AC_MSG_ERROR([BUFR VOL connector enabled but NCEPLIBS-bufr not found. Install NCEPLIBS-bufr or disable with --disable-bufr])
+dnl     fi
+dnl fi
+dnl AC_SUBST([BUFR_LIBS])
 
-# Check for GeoTIFF dependencies if enabled
-if test "x$enable_geotiff" = "xyes"; then
-    AC_CHECK_HEADERS([geotiff.h], [geotiff_header=yes], [geotiff_header=no])
-    AC_SEARCH_LIBS([GTIFNew], [geotiff], [GEOTIFF_LIBS="-lgeotiff"; geotiff_lib=yes], [geotiff_lib=no])
+dnl # Check for GeoTIFF dependencies if enabled
+dnl if test "x$enable_geotiff" = "xyes"; then
+dnl     AC_CHECK_HEADERS([geotiff.h], [geotiff_header=yes], [geotiff_header=no])
+dnl     AC_SEARCH_LIBS([GTIFNew], [geotiff], [GEOTIFF_LIBS="-lgeotiff"; geotiff_lib=yes], [geotiff_lib=no])
     
-    if test "x$geotiff_header" = "xyes" && test "x$geotiff_lib" = "xyes"; then
-        HAVE_GEOTIFF=yes
-        ENABLED_VOLS="$ENABLED_VOLS GeoTIFF"
-        AC_DEFINE([HAVE_GEOTIFF], [1], [Define if GeoTIFF VOL connector is enabled])
-        AC_MSG_NOTICE([GeoTIFF VOL connector enabled])
-    else
-        AC_MSG_ERROR([GeoTIFF VOL connector enabled but libgeotiff not found. Install libgeotiff or disable with --disable-geotiff])
-    fi
-fi
-AC_SUBST([GEOTIFF_LIBS])
+dnl     if test "x$geotiff_header" = "xyes" && test "x$geotiff_lib" = "xyes"; then
+dnl         HAVE_GEOTIFF=yes
+dnl         ENABLED_VOLS="$ENABLED_VOLS GeoTIFF"
+dnl         AC_DEFINE([HAVE_GEOTIFF], [1], [Define if GeoTIFF VOL connector is enabled])
+dnl         AC_MSG_NOTICE([GeoTIFF VOL connector enabled])
+dnl     else
+dnl         AC_MSG_ERROR([GeoTIFF VOL connector enabled but libgeotiff not found. Install libgeotiff or disable with --disable-geotiff])
+dnl     fi
+dnl fi
+dnl AC_SUBST([GEOTIFF_LIBS])
 
-# Check for CDF dependencies if enabled
-if test "x$enable_cdf" = "xyes"; then
-    AC_CHECK_HEADERS([cdf.h], [cdf_header=yes], [cdf_header=no])
-    AC_SEARCH_LIBS([CDFope], [cdf], [CDF_LIBS="-lcdf"; cdf_lib=yes], [cdf_lib=no])
+dnl # Check for CDF dependencies if enabled
+dnl if test "x$enable_cdf" = "xyes"; then
+dnl     AC_CHECK_HEADERS([cdf.h], [cdf_header=yes], [cdf_header=no])
+dnl     AC_SEARCH_LIBS([CDFope], [cdf], [CDF_LIBS="-lcdf"; cdf_lib=yes], [cdf_lib=no])
     
-    if test "x$cdf_header" = "xyes" && test "x$cdf_lib" = "xyes"; then
-        HAVE_CDF=yes
-        ENABLED_VOLS="$ENABLED_VOLS CDF"
-        AC_DEFINE([HAVE_CDF], [1], [Define if CDF VOL connector is enabled])
-        AC_MSG_NOTICE([CDF VOL connector enabled])
-    else
-        AC_MSG_ERROR([CDF VOL connector enabled but NASA CDF library not found. Install NASA CDF library or disable with --disable-cdf])
-    fi
-fi
-AC_SUBST([CDF_LIBS])
+dnl     if test "x$cdf_header" = "xyes" && test "x$cdf_lib" = "xyes"; then
+dnl         HAVE_CDF=yes
+dnl         ENABLED_VOLS="$ENABLED_VOLS CDF"
+dnl         AC_DEFINE([HAVE_CDF], [1], [Define if CDF VOL connector is enabled])
+dnl         AC_MSG_NOTICE([CDF VOL connector enabled])
+dnl     else
+dnl         AC_MSG_ERROR([CDF VOL connector enabled but NASA CDF library not found. Install NASA CDF library or disable with --disable-cdf])
+dnl     fi
+dnl fi
+dnl AC_SUBST([CDF_LIBS])
 
 # Check for Doxygen if documentation is enabled
 if test "x$enable_docs" != "xno"; then
