@@ -113,3 +113,7 @@ vol_plugin
 Doxyfile
 
 test_grib2_vol
+tst_jpeg
+tst_lz4
+tst_perf
+tst_bzip2

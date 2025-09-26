@@ -1,0 +1,31 @@
+# This script runs the tests in the CCR project.
+#
+# Ed Hartnett 11/18/20
+set -x
+set -e
+
+# This will find the zstd filter with the netcdf-c install.
+export HDF5_PLUGIN_PATH=@MY_HDF5_PLUGIN_PATH@
+
+# If bzip2 was built, run the bzip2 test.
+if test "@BUILD_BZIP2@" = "yes"; then
+    ./tst_bzip2
+fi
+
+# If lz4 was built, run the lz4 test. We have our own version of the lz4 plugin.
+if test "@BUILD_LZ4@" = "yes"; then
+    export HDF5_PLUGIN_PATH="../hdf5_plugins/LZ4/src/.libs:$HDF5_PLUGIN_PATH"
+    ./tst_lz4
+fi
+
+# If jpeg was built, run the jpeg test.
+if test "@BUILD_JPEG@" = "yes"; then
+    ./tst_jpeg
+fi
+
+# Always run the performance test.
+echo "$HDF5_PLUGIN_PATH"
+./tst_perf
+
+
+
