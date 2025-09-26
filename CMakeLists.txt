@@ -1,7 +1,7 @@
-# This is the build file for the root directory of the NFEP project.
+# This is the build file for the root directory of the NEP project.
 # Edward Hartnett 8/27/25
 cmake_minimum_required(VERSION 3.9)
-project (NFEP VERSION 0.1.1 DESCRIPTION "NetCDF4/HDF5 Format Extension Pack" LANGUAGES C)
+project (NEP VERSION 0.1.1 DESCRIPTION "NetCDF4/HDF5 Format Extension Pack" LANGUAGES C)
 
 # Add option for debug build
 option(DEBUG "Build with debugging symbols" OFF)
@@ -126,43 +126,68 @@ message(STATUS "Enabled VOL connectors: ${ENABLED_VOLS}")
 # wrong. Turn this on for added confirmation that you got it right.
 #message (DEPRECATION "Include: ${HDF5_INCLUDE_DIR}")
 
+# Set package information variables for config.h (matching autotools)
+set(PACKAGE "nep")
+set(PACKAGE_NAME "NEP")
+set(PACKAGE_STRING "NEP ${PROJECT_VERSION}")
+set(PACKAGE_TARNAME "nep")
+set(PACKAGE_VERSION "${PROJECT_VERSION}")
+set(PACKAGE_BUGREPORT "help@intelligentdatadesign.com")
+set(PACKAGE_URL "")
+set(VERSION "${PROJECT_VERSION}")
+
+# Set HDF5 availability
+set(HAVE_HDF5 TRUE)
+
+# Set standard header availability (these are typically available on modern systems)
+set(STDC_HEADERS 1)
+set(HAVE_STDIO_H 1)
+set(HAVE_STDLIB_H 1)
+set(HAVE_STRING_H 1)
+set(HAVE_STRINGS_H 1)
+set(HAVE_INTTYPES_H 1)
+set(HAVE_STDINT_H 1)
+set(HAVE_UNISTD_H 1)
+set(HAVE_SYS_STAT_H 1)
+set(HAVE_SYS_TYPES_H 1)
+set(HAVE_DLFCN_H 1)
+
 # Pass configuration to source directory
-configure_file(${CMAKE_SOURCE_DIR}/src/nfep_config.h.in ${CMAKE_BINARY_DIR}/nfep_config.h)
+configure_file(${CMAKE_SOURCE_DIR}/config.h.cmake.in ${CMAKE_BINARY_DIR}/config.h)
 
 include(GNUInstallDirs)
 add_subdirectory (src)
 add_subdirectory (test)
-
 # Generate and install CMake config files
 include(CMakePackageConfigHelpers)
 
 # Configure the config file
 configure_package_config_file(
-    "${CMAKE_SOURCE_DIR}/NFEPConfig.cmake.in"
-    "${CMAKE_BINARY_DIR}/NFEPConfig.cmake"
-    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/NFEP"
+    "${CMAKE_SOURCE_DIR}/NEPConfig.cmake.in"
+    "${CMAKE_BINARY_DIR}/NEPConfig.cmake"
+    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/NEP"
     PATH_VARS CMAKE_INSTALL_LIBDIR CMAKE_INSTALL_INCLUDEDIR
 )
 
 # Generate version file
 write_basic_package_version_file(
-    "${CMAKE_BINARY_DIR}/NFEPConfigVersion.cmake"
+    "${CMAKE_BINARY_DIR}/NEPConfigVersion.cmake"
     VERSION ${PROJECT_VERSION}
     COMPATIBILITY SameMajorVersion
 )
 
 # Install config files
 install(FILES
-    "${CMAKE_BINARY_DIR}/NFEPConfig.cmake"
-    "${CMAKE_BINARY_DIR}/NFEPConfigVersion.cmake"
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/NFEP"
+    "${CMAKE_BINARY_DIR}/NEPConfig.cmake"
+    "${CMAKE_BINARY_DIR}/NEPConfigVersion.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/NEP"
 )
 
 # Install the export set for use with the install-tree
-install(EXPORT NFEPTargets
-    FILE NFEPTargets.cmake
-    NAMESPACE NFEP::
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/NFEP"
+install(EXPORT NEPTargets
+    FILE NEPTargets.cmake
+    NAMESPACE NEP::
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/NEP"
 )
 
 

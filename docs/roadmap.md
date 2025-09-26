@@ -1,44 +1,38 @@
-# NFEP Development Roadmap
+# NEP Development Roadmap
 
-| Version | Project Month | Notes |
+| Version | Project Week | Notes |
 |---------|---------------|-------|
-| v0.1    | 1             | NFEP framework, build system. |
+| v0.1    | 1             | NEP framework, build system. |
+| v0.1.1  | 1             | Add compression plugins, LZ4, LZF, JPEG. |
 | v0.2    | 2             | GRIB2 reader. |
-| v0.3    | 3             | Add BUFR reader. |
-| v0.4    | 4             | Add GeoTIFF reader. |
-| v0.5    | 5             | Add CDF reader. |
-| v1.0    | 6             | Full release. |
+| v0.3    | 3             | Add GeoTIFF reader. |
+| v0.4    | 4             | Add CDF reader. |
+| v1.0    | 5             | Full release. |
 
 ## Version Details
 
-### v1.0 (Month 6)
+### v1.0 (Week 6)
 - Full production release
 - Comprehensive documentation
 - Performance validation
 - Community release
 
-### v0.4 (Month 5)
+### v0.4 (Week 5)
 - CDF format reader implementation
 - Performance optimizations
 
-### v0.3 (Month 3)
+### v0.3 (Week 3)
 - GeoTIFF format reader implementation
 - Enhanced format detection system
 
-### v0.2 (Month 2)
+### v0.2 (Week 2)
 - GRIB2 format reader implementation
 
-### v0.1.3: Sample Open/Close
+### v0.1.5: Sample Open/Close
 - In this release, all four VOLs get basic file open/close capability.
 - For each VOL there is a H5VL_class_t struct which contains pointers to functions. The file open and close functions are in these structs.
 - Currently these pointers point to NULL, in this release, the file open/close pointers will be filled for all 4 VOLS.
 - Each VOL will get some glue code which has the signature required for the file open/close pointers.
-
-#### Sprint 4: BUFR File Open/Close
-- Add a small, simple BUFR test file in test/data.
-- Add file open/close to the BUFR vol connector.
-- Add a test which opens/closes the file.
-- Ensure test data files are copied to build directory for both CMake and Autotools builds.
 
 #### Sprint 3: GeoTIFF File Open/Close
 - Add a small, simple GeoTIFF test file in test/data.
@@ -62,7 +56,7 @@
 - **Error Handling**: Return appropriate HDF5 VOL API error codes without printing error messages
 - **Resource Management**: Proper memory management and cleanup in file close operations
 
-### v0.1.2 Documentation
+### v0.1.3 Documentation
 #### Sprint 1: Documentation with Doxygen
 - **Doxygen Build Integration**: Add Doxygen documentation generation to both CMake and Autotools build systems
   - CMake: `doc` target using `find_package(Doxygen)` with conditional building
@@ -82,6 +76,13 @@
   - Documentation warnings treated as build failures
   - Clean documentation generation for all existing source files in `src/`
   - Generated documentation placed in `docs/html/` directory
+
+### v0.1.2 Add Compression Plugins
+#### Sprint 1: Add LZ4 Compression Plugin
+- Add hdf5_plugin subdirectory, and a hdf5_plugin/LZ4 directory.
+ - The hdf5_plugin/LZ4 directory will contain contents of /home/ed/hdf5_plugins/LZ4.
+ - The hdf5_plugin directory will contain the build files from /home/ed/hdf5_plugins.
+ - The build files in hdf5_plugin will be modified so that only the LZ4 plugin is built. All other plugin code will be removed.
 
 #### Sprint 2: CI 
 - **CI Documentation Integration**: CI pipeline enhanced with documentation build matrix
@@ -126,7 +127,7 @@
 
 
 ### v0.1.0 
-- Initial NFEP framework setup
+- Initial NEP framework setup
 - Empty GRIB vol connector
 - Build system implementation, Cmake and autotools
 - Unit tests

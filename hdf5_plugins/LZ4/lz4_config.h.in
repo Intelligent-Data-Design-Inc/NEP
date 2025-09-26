@@ -1,19 +1,34 @@
-/* config.h.in.  Generated from configure.ac by autoheader.  */
+/* lz4_config.h.in.  Generated from configure.ac by autoheader.  */
+
+/* Define to 1 if you have the <arpa/inet.h> header file. */
+#undef HAVE_ARPA_INET_H
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
-/* Define if GRIB2 VOL connector is enabled */
-#undef HAVE_GRIB2
+/* Define to 1 if you don't have `vprintf' but do have `_doprnt.' */
+#undef HAVE_DOPRNT
 
-/* Define to 1 if you have the <grib2.h> header file. */
-#undef HAVE_GRIB2_H
+/* Define to 1 if you have the <fcntl.h> header file. */
+#undef HAVE_FCNTL_H
 
-/* Defined if you have HDF5 support */
-#undef HAVE_HDF5
+/* Define to 1 if you have the <hdf5.h> header file. */
+#undef HAVE_HDF5_H
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have the `lz4' library (-llz4). */
+#undef HAVE_LIBLZ4
+
+/* Define to 1 if you have the `m' library (-lm). */
+#undef HAVE_LIBM
+
+/* Define to 1 if you have the <lz4.h> header file. */
+#undef HAVE_LZ4_H
+
+/* Define to 1 if you have the `memset' function. */
+#undef HAVE_MEMSET
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
@@ -38,6 +53,9 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
+
+/* Define to 1 if you have the `vprintf' function. */
+#undef HAVE_VPRINTF
 
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
@@ -70,6 +88,9 @@
 
 /* Version number of package */
 #undef VERSION
+
+/* Define to empty if `const' does not conform to ANSI C. */
+#undef const
 
 /* Define to `unsigned int' if <sys/types.h> does not define. */
 #undef size_t

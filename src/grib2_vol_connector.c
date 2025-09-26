@@ -10,6 +10,7 @@
  */
 
 /* This connector's header */
+#include "config.h"
 #include "grib2_vol_connector.h"
 
 #include <hdf5.h>

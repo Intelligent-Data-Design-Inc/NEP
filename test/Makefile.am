@@ -2,9 +2,10 @@
 # Edward Hartnett 8/27/25
 
 ACLOCAL_AMFLAGS = -I m4
+AM_CPPFLAGS = -I$(top_builddir)/include -I$(top_srcdir)/include -I$(top_builddir) -I$(top_srcdir)
 
 # Adjust as needed
-AM_CPPFLAGS = $(HDF5_CPPFLAGS) -I$(top_srcdir)/src -I$(top_builddir)/src
+AM_CPPFLAGS += $(HDF5_CPPFLAGS)
 AM_CFLAGS = -g -Wall -Wextra $(HDF5_CFLAGS)
 
 check_SCRIPTS = test_vol_plugin.sh
@@ -20,18 +21,10 @@ noinst_DATA = $(TEST_DATA_FILE)
 TESTS = test_vol_plugin.sh
 DISTCLEANFILES = test_vol_plugin.sh
 
-# Install test data to the build directory during 'make all' or 'make check'
-# but only if we're doing an out-of-tree build
-all-local:
-	if test "$(srcdir)" != "$(builddir)" ; then \
-		$(MKDIR_P) $(builddir); \
-		$(INSTALL_DATA) $(srcdir)/$(TEST_DATA_FILE) $(builddir)/$(TEST_DATA_FILE); \
-	fi
-
-# Also copy during 'make check' in case user skipped 'make all'
+# Copy test data to build directory only for out-of-tree builds and only during check
 check-local:
 	if test "$(srcdir)" != "$(builddir)" ; then \
-		$(MKDIR_P) $(builddir); \
+		$(MKDIR_P) $(builddir)/data; \
 		$(INSTALL_DATA) $(srcdir)/$(TEST_DATA_FILE) $(builddir)/$(TEST_DATA_FILE); \
 	fi
 endif

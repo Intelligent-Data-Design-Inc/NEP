@@ -1,9 +1,9 @@
-# NFEP (NetCDF4/HDF5 Format Extension Pack) - Product Requirements Document
+# NEP (NetCDF4/HDF5 Format Extension Pack) - Product Requirements Document
 
 ## 1. Executive Summary
 
 ### 1.1 Product Overview
-The NetCDF4/HDF5 Format Extension Pack (NFEP) is a dynamic connector system that enables seamless access to diverse NASA Earth Science data formats through standardized NetCDF4 and HDF5 APIs. The system provides automatic format detection and runtime-pluggable connectors for formats including GRIB2, BUFR, CDF, and GeoTIFF.
+The NetCDF4/HDF5 Format Extension Pack (NEP) is a dynamic connector system that enables seamless access to diverse NASA Earth Science data formats through standardized NetCDF4 and HDF5 APIs. The system provides automatic format detection and runtime-pluggable connectors for formats including GRIB2, BUFR, CDF, and GeoTIFF.
 
 ### 1.2 Business Objectives
 - Unify access to heterogeneous NASA Earth Science data formats
@@ -295,7 +295,7 @@ typedef struct H5VL_class_t {
 ### 5.5 Build System Requirements (v0.1.1)
 
 #### 5.4.1 Dual Build System Architecture
-NFEP implements comprehensive support for both modern and traditional build systems:
+NEP implements comprehensive support for both modern and traditional build systems:
 
 **CMake Build System (Primary):**
 - Modern CMake 3.12+ with advanced features and best practices
@@ -315,10 +315,10 @@ NFEP implements comprehensive support for both modern and traditional build syst
 #### 5.4.2 VOL Connector Integration
 Each VOL connector is compiled as a separate shared library that is dynamically loaded at runtime:
 
-- **GRIB2 Connector**: `libnfep_grib2_vol.so` - Requires NCEPLIBS-g2 library
-- **BUFR Connector**: `libnfep_bufr_vol.so` - Requires NCEPLIBS-bufr library
-- **GeoTIFF Connector**: `libnfep_geotiff_vol.so` - Requires libgeotiff library
-- **CDF Connector**: `libnfep_cdf_vol.so` - Requires NASA CDF library
+- **GRIB2 Connector**: `libnep_grib2_vol.so` - Requires NCEPLIBS-g2 library
+- **BUFR Connector**: `libnep_bufr_vol.so` - Requires NCEPLIBS-bufr library
+- **GeoTIFF Connector**: `libnep_geotiff_vol.so` - Requires libgeotiff library
+- **CDF Connector**: `libnep_cdf_vol.so` - Requires NASA CDF library
 
 #### 5.4.3 Shared Library Architecture
 VOL connectors are implemented as dynamically loadable shared libraries with advanced features:
@@ -397,17 +397,17 @@ Both build systems provide comprehensive configuration control:
 ```
 ${PREFIX}/
 ├── lib/
-│   ├── libnfep_grib2_vol.so
-│   ├── libnfep_bufr_vol.so
-│   ├── libnfep_geotiff_vol.so
-│   ├── libnfep_cdf_vol.so
-│   └── cmake/NFEP/
-│       ├── NFEPConfig.cmake
-│       └── NFEPConfigVersion.cmake
+│   ├── libnep_grib2_vol.so
+│   ├── libnep_bufr_vol.so
+│   ├── libnep_geotiff_vol.so
+│   ├── libnep_cdf_vol.so
+│   └── cmake/NEP/
+│       ├── NEPConfig.cmake
+│       └── NEPConfigVersion.cmake
 ├── include/
-│   └── nfep/
+│   └── nep/
 │       └── [header files]
-└── share/doc/nfep/
+└── share/doc/nep/
     └── html/
         └── [Doxygen generated documentation]
 ```
@@ -542,7 +542,7 @@ ${PREFIX}/
 - Configurable installation paths via standard prefix options
 
 ### v0.1 - Framework Foundation (Month 1)
-- NFEP framework setup
+- NEP framework setup
 - Build system implementation (CMake and Autotools)
 - Core connector architecture
 - Basic format detection engine

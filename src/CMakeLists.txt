@@ -1,8 +1,11 @@
-# This is the build file for the src directory of the NFEP project.
+# This is the build file for the src directory of the NEP project.
 # Edward Hartnett 8/27/25
 
-# Include the generated config header
+# Include directories to match Makefile.am AM_CPPFLAGS
+include_directories(${CMAKE_BINARY_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_BINARY_DIR})
+include_directories(${CMAKE_SOURCE_DIR})
 
 # Build GRIB2 VOL connector if enabled
 if(HAVE_GRIB2)
@@ -12,12 +15,12 @@ if(HAVE_GRIB2)
     set_target_properties(${GRIB2_VOL_NAME} PROPERTIES 
         VERSION ${PROJECT_VERSION}
         SOVERSION 1
-        PUBLIC_HEADER "${GRIB2_VOL_NAME}.h"
+        PUBLIC_HEADER "${CMAKE_SOURCE_DIR}/include/${GRIB2_VOL_NAME}.h"
         INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
         INSTALL_RPATH_USE_LINK_PATH TRUE
     )
     install(TARGETS ${GRIB2_VOL_NAME}
-        EXPORT NFEPTargets
+        EXPORT NEPTargets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
@@ -32,12 +35,12 @@ if(HAVE_BUFR)
     set_target_properties(${BUFR_VOL_NAME} PROPERTIES 
         VERSION ${PROJECT_VERSION}
         SOVERSION 1
-        PUBLIC_HEADER "${BUFR_VOL_NAME}.h"
+        PUBLIC_HEADER "${CMAKE_SOURCE_DIR}/include/${BUFR_VOL_NAME}.h"
         INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
         INSTALL_RPATH_USE_LINK_PATH TRUE
     )
     install(TARGETS ${BUFR_VOL_NAME}
-        EXPORT NFEPTargets
+        EXPORT NEPTargets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
@@ -52,12 +55,12 @@ if(HAVE_GEOTIFF)
     set_target_properties(${GEOTIFF_VOL_NAME} PROPERTIES 
         VERSION ${PROJECT_VERSION}
         SOVERSION 1
-        PUBLIC_HEADER "${GEOTIFF_VOL_NAME}.h"
+        PUBLIC_HEADER "${CMAKE_SOURCE_DIR}/include/${GEOTIFF_VOL_NAME}.h"
         INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
         INSTALL_RPATH_USE_LINK_PATH TRUE
     )
     install(TARGETS ${GEOTIFF_VOL_NAME}
-        EXPORT NFEPTargets
+        EXPORT NEPTargets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
@@ -72,12 +75,12 @@ if(HAVE_CDF)
     set_target_properties(${CDF_VOL_NAME} PROPERTIES 
         VERSION ${PROJECT_VERSION}
         SOVERSION 1
-        PUBLIC_HEADER "${CDF_VOL_NAME}.h"
+        PUBLIC_HEADER "${CMAKE_SOURCE_DIR}/include/${CDF_VOL_NAME}.h"
         INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
         INSTALL_RPATH_USE_LINK_PATH TRUE
     )
     install(TARGETS ${CDF_VOL_NAME}
-        EXPORT NFEPTargets
+        EXPORT NEPTargets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )

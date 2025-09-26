@@ -1,0 +1,16 @@
+#ifndef NEP_CONFIG_H
+#define NEP_CONFIG_H
+
+/* VOL connector availability */
+#cmakedefine HAVE_GRIB2
+#cmakedefine HAVE_BUFR
+#cmakedefine HAVE_GEOTIFF
+#cmakedefine HAVE_CDF
+
+/* Project version */
+#define NEP_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+#define NEP_VERSION_MINOR @PROJECT_VERSION_MINOR@
+#define NEP_VERSION_PATCH @PROJECT_VERSION_PATCH@
+#define NEP_VERSION "@PROJECT_VERSION@"
+
+#endif /* NEP_CONFIG_H */

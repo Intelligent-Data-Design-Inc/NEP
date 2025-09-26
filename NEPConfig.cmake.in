@@ -1,0 +1,94 @@
+# NEPConfig.cmake.in - CMake configuration file for NEP
+# Generated from NEPConfig.cmake.in by CMake
+
+@PACKAGE_INIT@
+
+set(NEP_VERSION "@PROJECT_VERSION@")
+
+# Set the installation prefix
+set(NEP_INSTALL_PREFIX "@CMAKE_INSTALL_PREFIX@")
+
+# Library installation directory
+set(NEP_LIBRARY_DIR "@CMAKE_INSTALL_FULL_LIBDIR@")
+
+# Include directory
+set(NEP_INCLUDE_DIR "@CMAKE_INSTALL_FULL_INCLUDEDIR@")
+
+# Available VOL connectors (set during build)
+set(NEP_HAVE_GRIB2 @HAVE_GRIB2@)
+set(NEP_HAVE_BUFR @HAVE_BUFR@)
+set(NEP_HAVE_GEOTIFF @HAVE_GEOTIFF@)
+set(NEP_HAVE_CDF @HAVE_CDF@)
+
+# Initialize target list
+set(NEP_LIBRARIES "")
+set(NEP_VOL_CONNECTORS "")
+
+# Define imported targets for available VOL connectors
+if(NEP_HAVE_GRIB2)
+    if(NOT TARGET NEP::grib2_vol_connector)
+        add_library(NEP::grib2_vol_connector SHARED IMPORTED)
+        set_target_properties(NEP::grib2_vol_connector PROPERTIES
+            IMPORTED_LOCATION "${NEP_LIBRARY_DIR}/libgrib2_vol_connector.so"
+            INTERFACE_INCLUDE_DIRECTORIES "${NEP_INCLUDE_DIR}"
+        )
+        list(APPEND NEP_LIBRARIES NEP::grib2_vol_connector)
+        list(APPEND NEP_VOL_CONNECTORS "GRIB2")
+    endif()
+endif()
+
+if(NEP_HAVE_BUFR)
+    if(NOT TARGET NEP::bufr_vol_connector)
+        add_library(NEP::bufr_vol_connector SHARED IMPORTED)
+        set_target_properties(NEP::bufr_vol_connector PROPERTIES
+            IMPORTED_LOCATION "${NEP_LIBRARY_DIR}/libbufr_vol_connector.so"
+            INTERFACE_INCLUDE_DIRECTORIES "${NEP_INCLUDE_DIR}"
+        )
+        list(APPEND NEP_LIBRARIES NEP::bufr_vol_connector)
+        list(APPEND NEP_VOL_CONNECTORS "BUFR")
+    endif()
+endif()
+
+if(NEP_HAVE_GEOTIFF)
+    if(NOT TARGET NEP::geotiff_vol_connector)
+        add_library(NEP::geotiff_vol_connector SHARED IMPORTED)
+        set_target_properties(NEP::geotiff_vol_connector PROPERTIES
+            IMPORTED_LOCATION "${NEP_LIBRARY_DIR}/libgeotiff_vol_connector.so"
+            INTERFACE_INCLUDE_DIRECTORIES "${NEP_INCLUDE_DIR}"
+        )
+        list(APPEND NEP_LIBRARIES NEP::geotiff_vol_connector)
+        list(APPEND NEP_VOL_CONNECTORS "GeoTIFF")
+    endif()
+endif()
+
+if(NEP_HAVE_CDF)
+    if(NOT TARGET NEP::cdf_vol_connector)
+        add_library(NEP::cdf_vol_connector SHARED IMPORTED)
+        set_target_properties(NEP::cdf_vol_connector PROPERTIES
+            IMPORTED_LOCATION "${NEP_LIBRARY_DIR}/libcdf_vol_connector.so"
+            INTERFACE_INCLUDE_DIRECTORIES "${NEP_INCLUDE_DIR}"
+        )
+        list(APPEND NEP_LIBRARIES NEP::cdf_vol_connector)
+        list(APPEND NEP_VOL_CONNECTORS "CDF")
+    endif()
+endif()
+
+# Provide summary information
+message(STATUS "Found NEP version ${NEP_VERSION}")
+message(STATUS "NEP VOL connectors available: ${NEP_VOL_CONNECTORS}")
+
+# Check for requested components
+if(NEP_FIND_COMPONENTS)
+    foreach(component ${NEP_FIND_COMPONENTS})
+        string(TOUPPER ${component} component_upper)
+        if(NOT NEP_HAVE_${component_upper})
+            if(NEP_FIND_REQUIRED_${component})
+                message(FATAL_ERROR "NEP component ${component} not available")
+            else()
+                message(STATUS "NEP component ${component} not available (optional)")
+            endif()
+        endif()
+    endforeach()
+endif()
+
+check_required_components(NEP)
