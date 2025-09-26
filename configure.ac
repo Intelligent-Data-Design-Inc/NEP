@@ -133,11 +133,6 @@ if test "x$enable_docs" != "xno"; then
     fi
 fi
 
-# Check that at least one VOL connector is enabled
-if test "x$HAVE_GRIB2" = "xno" && test "x$HAVE_BUFR" = "xno" && test "x$HAVE_GEOTIFF" = "xno" && test "x$HAVE_CDF" = "xno"; then
-    AC_MSG_ERROR([No VOL connectors enabled. Enable at least one with --enable-<vol>])
-fi
-
 # Set up conditionals for Makefile.am
 AM_CONDITIONAL([HAVE_GRIB2], [test "x$HAVE_GRIB2" = "xyes"])
 AM_CONDITIONAL([HAVE_BUFR], [test "x$HAVE_BUFR" = "xyes"])
