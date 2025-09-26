@@ -56,9 +56,9 @@ AC_SUBST([BUILD_LZ4], [$enable_lz4])
 # Does the user want JPEG?
 AC_MSG_CHECKING([whether JPEG filter library should be built and installed])
 AC_ARG_ENABLE([jpeg],
-              [AS_HELP_STRING([--disable-jpeg],
-                              [Disable the build and install of jpeg filter library.])])
-test "x$enable_jpeg" = xno || enable_jpeg=yes
+              [AS_HELP_STRING([--enable-jpeg],
+                              [Enable the build and install of jpeg filter library.])])
+test "x$enable_jpeg" = xyes || enable_jpeg=no
 AC_MSG_RESULT($enable_jpeg)
 AM_CONDITIONAL(BUILD_JPEG, [test "x$enable_jpeg" = xyes])
 if test "x$enable_jpeg" = xyes; then
