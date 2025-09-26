@@ -29,7 +29,7 @@ AC_ARG_WITH([hdf5-plugin-path],
             [MY_HDF5_PLUGIN_PATH=$with_hdf5_plugin_path])
 AC_MSG_RESULT($MY_HDF5_PLUGIN_PATH)
 AC_DEFINE([MY_HDF5_PLUGIN_PATH], [$MY_HDF5_PLUGIN_PATH], [HDF5 plugin path])
-AC_SUBST([MY_HDF5_PLUGIN_PATH])
+AC_SUBST([MY_HDF5_PLUGIN_PATH], [$MY_HDF5_PLUGIN_PATH])
 
 # Does the user want BZIP2?
 AC_MSG_CHECKING([whether BZIP2 filter library should be built and installed])
