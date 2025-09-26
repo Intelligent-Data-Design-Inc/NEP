@@ -153,7 +153,7 @@ set(HAVE_SYS_TYPES_H 1)
 set(HAVE_DLFCN_H 1)
 
 # Pass configuration to source directory
-configure_file(${CMAKE_SOURCE_DIR}/config.h.in ${CMAKE_BINARY_DIR}/config.h)
+configure_file(${CMAKE_SOURCE_DIR}/config.h.cmake.in ${CMAKE_BINARY_DIR}/config.h)
 
 include(GNUInstallDirs)
 add_subdirectory (src)
