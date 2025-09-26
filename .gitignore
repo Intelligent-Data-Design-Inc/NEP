@@ -112,3 +112,4 @@ vol_plugin
 *.bak
 Doxyfile
 
+test_grib2_vol

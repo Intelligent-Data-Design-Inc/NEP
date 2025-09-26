@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       JASPER_INSTALL_PREFIX: ${{ github.workspace }}/jasper-install
-      LD_LIBRARY_PATH: $JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$GITHUB_WORKSPACE/bufr-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH
+      LD_LIBRARY_PATH: $JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$GITHUB_WORKSPACE/bufr-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH
     strategy:
       fail-fast: false
       matrix:
@@ -22,37 +22,29 @@ jobs:
         doc_build: [enabled, disabled]
         vol_config:
           - name: "all_enabled"
-            cmake_flags: "-DENABLE_GRIB2=ON -DENABLE_BUFR=ON -DENABLE_GEOTIFF=ON -DENABLE_CDF=ON"
-            autotools_flags: "--enable-grib2 --enable-bufr --enable-geotiff --enable-cdf"
+            cmake_flags: "-DENABLE_GRIB2=ON -DENABLE_LZ4=ON"
+            autotools_flags: "--enable-grib2 --enable-lz4"
           - name: "grib2_only"
-            cmake_flags: "-DENABLE_GRIB2=ON -DENABLE_BUFR=OFF -DENABLE_GEOTIFF=OFF -DENABLE_CDF=OFF"
-            autotools_flags: "--enable-grib2 --disable-bufr --disable-geotiff --disable-cdf"
-          - name: "bufr_only"
-            cmake_flags: "-DENABLE_GRIB2=OFF -DENABLE_BUFR=ON -DENABLE_GEOTIFF=OFF -DENABLE_CDF=OFF"
-            autotools_flags: "--disable-grib2 --enable-bufr --disable-geotiff --disable-cdf"
-          - name: "geotiff_only"
-            cmake_flags: "-DENABLE_GRIB2=OFF -DENABLE_BUFR=OFF -DENABLE_GEOTIFF=ON -DENABLE_CDF=OFF"
-            autotools_flags: "--disable-grib2 --disable-bufr --enable-geotiff --disable-cdf"
-          - name: "cdf_only"
-            cmake_flags: "-DENABLE_GRIB2=OFF -DENABLE_BUFR=OFF -DENABLE_GEOTIFF=OFF -DENABLE_CDF=ON"
-            autotools_flags: "--disable-grib2 --disable-bufr --disable-geotiff --enable-cdf"
+            cmake_flags: "-DENABLE_GRIB2=ON -DLZ4=OFF"
+            autotools_flags: "--enable-grib2 --disable-lz4"
+          - name: "lz4_only"
+            cmake_flags: "-DENABLE_GRIB2=OFF -DENABLE_LZ4=ON"
+            autotools_flags: "--disable-grib2 --enable-lz4"
         exclude:
           # Reduce matrix size by only testing documentation with all_enabled configuration
+          - vol_config: { name: "all_enabled" }
+            doc_build: enabled
           - vol_config: { name: "grib2_only" }
-            doc_build: enabled
-          - vol_config: { name: "bufr_only" }
-            doc_build: enabled
-          - vol_config: { name: "geotiff_only" }
-            doc_build: enabled
-          - vol_config: { name: "cdf_only" }
-            doc_build: enabled
+            doc_build: disabled
+          - vol_config: { name: "lz4_only" }
+            doc_build: disabled
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
-          sudo apt-get install -y cmake make wget doxygen graphviz zlib1g-dev libpng-dev libaec-dev libjpeg-dev
+          sudo apt-get install -y cmake make wget doxygen graphviz zlib1g-dev libpng-dev libaec-dev libjpeg-dev liblz4-dev wget libbz2-dev libjpeg-dev liblzf-dev
           sudo apt-get install -y libgeotiff-dev
 
       - name: Cache Jasper install
@@ -159,6 +151,28 @@ jobs:
           make OS=linux ENV=gnu CURSES=yes FORTRAN=no UCOPTIONS=-O2 SHARED=yes all
           make INSTALLDIR=$GITHUB_WORKSPACE/cdf-install install
 
+      # Cache NetCDF-Fortran install
+      - name: Cache NetCDF-Fortran install
+        id: cache-netcdf-fortran
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/netcdf-fortran-install
+          key: netcdf-fortran-4.5.4-${{ runner.os }}-1
+
+      - name: Download and build NetCDF-Fortran
+        if: steps.cache-netcdf-fortran.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/Unidata/netcdf-fortran/archive/v4.5.4.tar.gz &> /dev/null
+          tar -xzf v4.5.4.tar.gz
+          cd netcdf-fortran-4.5.4
+          export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib"
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$LD_LIBRARY_PATH"
+          ./configure --prefix=$GITHUB_WORKSPACE/netcdf-fortran-install
+          make -j$(nproc)
+          make install
+
             # --- CMake build ---------------------------------------------------
       - name: Create build directory (CMake)
         if: matrix.build_system == 'cmake'
@@ -177,7 +191,7 @@ jobs:
           else
             DOC_FLAG="-DBUILD_DOCUMENTATION=OFF"
           fi
-          cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/g2c-install;$GITHUB_WORKSPACE/bufr-install;$GITHUB_WORKSPACE/cdf-install;$JASPER_INSTALL_PREFIX;/usr/include/geotiff" ${{ matrix.vol_config.cmake_flags }} $DOC_FLAG
+          cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/g2c-install;$GITHUB_WORKSPACE/bufr-install;$GITHUB_WORKSPACE/cdf-install;$GITHUB_WORKSPACE/netcdf-fortran-install;$JASPER_INSTALL_PREFIX;/usr/include/geotiff" ${{ matrix.vol_config.cmake_flags }} $DOC_FLAG
 
       - name: Build (CMake)
         if: matrix.build_system == 'cmake'
@@ -188,7 +202,7 @@ jobs:
           ls -l
           echo "Building with CMake..."
           export PATH=$GITHUB_WORKSPACE/hdf5-install/bin:$PATH
-          export LD_LIBRARY_PATH=$GITHUB_WORKSPACE/hdf5-install/lib:$LD_LIBRARY_PATH
+          export LD_LIBRARY_PATH=$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH
           make -j$(nproc)
 
       - name: Build Documentation (CMake)
@@ -212,9 +226,9 @@ jobs:
         working-directory: build
         run: |
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/g2c-install/include -I$GITHUB_WORKSPACE/bufr-install/include/bufr_4 -I$GITHUB_WORKSPACE/cdf-install/include -I/usr/include/geotiff"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib -L$GITHUB_WORKSPACE/bufr-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib -L$JASPER_INSTALL_PREFIX/lib"
-          export LD_LIBRARY_PATH="$JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$GITHUB_WORKSPACE/bufr-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/g2c-install/include -I$GITHUB_WORKSPACE/bufr-install/include/bufr_4 -I$GITHUB_WORKSPACE/cdf-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include -I/usr/include/geotiff"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib -L$GITHUB_WORKSPACE/bufr-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib -L$JASPER_INSTALL_PREFIX/lib"
+          export LD_LIBRARY_PATH="$JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$GITHUB_WORKSPACE/bufr-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
           ctest --verbose
           sudo make install
 
@@ -240,9 +254,9 @@ jobs:
           find /usr -name '*geotiff*'
           autoreconf -i
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/g2c-install/include -I$GITHUB_WORKSPACE/bufr-install/include/bufr_4 -I$GITHUB_WORKSPACE/cdf-install/include -I/usr/include/geotiff"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib -L$GITHUB_WORKSPACE/bufr-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib -L$JASPER_INSTALL_PREFIX/lib"
-          export LD_LIBRARY_PATH="$JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$GITHUB_WORKSPACE/bufr-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/g2c-install/include -I$GITHUB_WORKSPACE/bufr-install/include/bufr_4 -I$GITHUB_WORKSPACE/cdf-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include -I/usr/include/geotiff"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib -L$GITHUB_WORKSPACE/bufr-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib -L$JASPER_INSTALL_PREFIX/lib"
+          export LD_LIBRARY_PATH="$JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$GITHUB_WORKSPACE/bufr-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
           ls -l $GITHUB_WORKSPACE/hdf5-install/lib
           DOC_FLAG=""
           if [ "${{ matrix.doc_build }}" = "enabled" ]; then
@@ -274,9 +288,9 @@ jobs:
         if: matrix.build_system == 'autotools'
         run: |
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/g2c-install/include -I$GITHUB_WORKSPACE/bufr-install/include/bufr_4 -I$GITHUB_WORKSPACE/cdf-install/include -I/usr/include/geotiff"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib -L$GITHUB_WORKSPACE/bufr-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib -L$JASPER_INSTALL_PREFIX/lib"
-          export LD_LIBRARY_PATH="$JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$GITHUB_WORKSPACE/bufr-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/g2c-install/include -I$GITHUB_WORKSPACE/bufr-install/include/bufr_4 -I$GITHUB_WORKSPACE/cdf-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include -I/usr/include/geotiff"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib -L$GITHUB_WORKSPACE/bufr-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib -L$JASPER_INSTALL_PREFIX/lib"
+          export LD_LIBRARY_PATH="$JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$GITHUB_WORKSPACE/bufr-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
           make VERBOSE=1 check
           sudo make install
 
