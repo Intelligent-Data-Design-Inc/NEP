@@ -21,18 +21,10 @@ noinst_DATA = $(TEST_DATA_FILE)
 TESTS = test_vol_plugin.sh
 DISTCLEANFILES = test_vol_plugin.sh
 
-# Install test data to the build directory during 'make all' or 'make check'
-# but only if we're doing an out-of-tree build
-all-local:
-	if test "$(srcdir)" != "$(builddir)" ; then \
-		$(MKDIR_P) $(builddir); \
-		$(INSTALL_DATA) $(srcdir)/$(TEST_DATA_FILE) $(builddir)/$(TEST_DATA_FILE); \
-	fi
-
-# Also copy during 'make check' in case user skipped 'make all'
+# Copy test data to build directory only for out-of-tree builds and only during check
 check-local:
 	if test "$(srcdir)" != "$(builddir)" ; then \
-		$(MKDIR_P) $(builddir); \
+		$(MKDIR_P) $(builddir)/data; \
 		$(INSTALL_DATA) $(srcdir)/$(TEST_DATA_FILE) $(builddir)/$(TEST_DATA_FILE); \
 	fi
 endif
