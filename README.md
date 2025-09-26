@@ -1,4 +1,4 @@
-# NFEP (NetCDF4/HDF5 Extension Pack)
+# NEP (NetCDF4/HDF5 Extension Pack)
 
 ## Overview
 
@@ -47,16 +47,16 @@ NEP provides a transparent, runtime-pluggable solution:
 ### Visual Overview
 
 ![NEP with VOLs for HDF5 Users](docs/images/NFEP%20with%20VOLs%20for%20HDF5%20Users.png)
-*Figure 1: NFEP with VOLs for HDF5 Users*
+*Figure 1: NEP with VOLs for HDF5 Users*
 
 ![NEP with VOLs for NetCDF Users](docs/images/NFEP%20with%20VOLs%20for%20NetCDF%20Users.png)
-*Figure 2: NFEP with VOLs for NetCDF Users*
+*Figure 2: NEP with VOLs for NetCDF Users*
 
 ## Installation
 
 ### Prerequisites
 
-NFEP requires the following dependencies:
+NEP requires the following dependencies:
 
 - **HDF5 library** (v1.12+)
 - **CMake** (v3.9+) or **Autotools** for building
@@ -68,7 +68,7 @@ NFEP requires the following dependencies:
 
 ### Test Data
 
-NFEP includes test data files in the `test/data/` directory for validation:
+NEP includes test data files in the `test/data/` directory for validation:
 - **GRIB2**: `gdaswave.t00z.wcoast.0p16.f000.grib2` - Sample meteorological data file
 - Additional test files will be added for BUFR, CDF, and GeoTIFF formats in future releases
 
@@ -125,13 +125,13 @@ Both build systems support enable/disable options for each VOL connector:
 | `-DENABLE_GEOTIFF=ON/OFF` | `--enable-geotiff/--disable-geotiff` | ON/enabled | GeoTIFF VOL connector |
 | `-DENABLE_CDF=ON/OFF` | `--enable-cdf/--disable-cdf` | ON/enabled | CDF VOL connector |
 
-### Using NFEP in Your Project
+### Using NEP in Your Project
 
-After installation, you can use NFEP in your CMake projects:
+After installation, you can use NEP in your CMake projects:
 
 ```cmake
-find_package(NFEP REQUIRED)
-target_link_libraries(your_target PRIVATE NFEP::grib2_vol_connector)
+find_package(NEP REQUIRED)
+target_link_libraries(your_target PRIVATE NEP::grib2_vol_connector)
 ```
 
 Or link directly with the installed shared libraries:

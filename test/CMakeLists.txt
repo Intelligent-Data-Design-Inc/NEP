@@ -1,4 +1,4 @@
-# Build file for the test directory of the NFEP project.
+# Build file for the test directory of the NEP project.
 # Edward Hartnett 8/27/25
 
 # Build the test only if BUFR is enabled

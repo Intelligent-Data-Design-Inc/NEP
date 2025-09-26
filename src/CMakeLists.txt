@@ -1,4 +1,4 @@
-# This is the build file for the src directory of the NFEP project.
+# This is the build file for the src directory of the NEP project.
 # Edward Hartnett 8/27/25
 
 # Include the generated config header
@@ -17,7 +17,7 @@ if(HAVE_GRIB2)
         INSTALL_RPATH_USE_LINK_PATH TRUE
     )
     install(TARGETS ${GRIB2_VOL_NAME}
-        EXPORT NFEPTargets
+        EXPORT NEPTargets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
@@ -37,7 +37,7 @@ if(HAVE_BUFR)
         INSTALL_RPATH_USE_LINK_PATH TRUE
     )
     install(TARGETS ${BUFR_VOL_NAME}
-        EXPORT NFEPTargets
+        EXPORT NEPTargets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
@@ -57,7 +57,7 @@ if(HAVE_GEOTIFF)
         INSTALL_RPATH_USE_LINK_PATH TRUE
     )
     install(TARGETS ${GEOTIFF_VOL_NAME}
-        EXPORT NFEPTargets
+        EXPORT NEPTargets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
@@ -77,7 +77,7 @@ if(HAVE_CDF)
         INSTALL_RPATH_USE_LINK_PATH TRUE
     )
     install(TARGETS ${CDF_VOL_NAME}
-        EXPORT NFEPTargets
+        EXPORT NEPTargets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )

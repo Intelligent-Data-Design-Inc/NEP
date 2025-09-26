@@ -1,8 +1,8 @@
-# NFEP Development Roadmap
+# NEP Development Roadmap
 
 | Version | Project Month | Notes |
 |---------|---------------|-------|
-| v0.1    | 1             | NFEP framework, build system. |
+| v0.1    | 1             | NEP framework, build system. |
 | v0.2    | 2             | GRIB2 reader. |
 | v0.3    | 3             | Add BUFR reader. |
 | v0.4    | 4             | Add GeoTIFF reader. |
@@ -126,7 +126,7 @@
 
 
 ### v0.1.0 
-- Initial NFEP framework setup
+- Initial NEP framework setup
 - Empty GRIB vol connector
 - Build system implementation, Cmake and autotools
 - Unit tests
