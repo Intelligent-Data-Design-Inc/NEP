@@ -39,6 +39,10 @@ AC_ARG_ENABLE([bzip2],
 test "x$enable_bzip2" = xno || enable_bzip2=yes
 AC_MSG_RESULT($enable_bzip2)
 AM_CONDITIONAL(BUILD_BZIP2, [test "x$enable_bzip2" = xyes])
+if test "x$enable_bzip2" = xyes; then
+   AC_DEFINE([BUILD_BZIP2], 1, [If true, build with bzip2 filter.])
+fi
+AC_SUBST([BUILD_BZIP2], [$enable_bzip2])
 
 # Does the user want LZ4?
 AC_MSG_CHECKING([whether LZ4 filter library should be built and installed])
@@ -76,6 +80,7 @@ AM_CONDITIONAL(BUILD_LZF, [test "x$enable_lzf" = xyes])
 if test "x$enable_lzf" = xyes; then
    AC_DEFINE([BUILD_LZF], 1, [If true, build with lzf filter.])
 fi
+AC_SUBST([BUILD_LZF], [$enable_lzf])
 
 dnl if test "x$enable_lz4" = xyes; then
 dnl    AC_CONFIG_SUBDIRS([LZ4])

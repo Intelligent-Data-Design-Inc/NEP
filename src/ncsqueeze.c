@@ -96,7 +96,7 @@ nc_inq_var_bzip2(int ncid, int varid, int *bzip2p, int *levelp)
     {
 	size_t nfilters;
 	unsigned int *filterids;
-	int f;
+	size_t f;
 	
 	/* Get filter information. */
 	if ((ret = nc_inq_var_filter_ids(ncid, varid, &nfilters, NULL)))

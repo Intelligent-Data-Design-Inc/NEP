@@ -1,5 +1,8 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* If true, build with bzip2 filter. */
+#undef BUILD_BZIP2
+
 /* If true, build with jpeg filter. */
 #undef BUILD_JPEG
 
