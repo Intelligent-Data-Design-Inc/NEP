@@ -7,8 +7,6 @@
  */
 
 /**
- * @mainpage ncsqueeze
- *
  * ncsqueeze supports compression filters for netCDF/HDF5 files which
  * are not natively supported by the netCDF C library.
  *
