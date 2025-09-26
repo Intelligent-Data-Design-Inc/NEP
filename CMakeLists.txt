@@ -127,7 +127,7 @@ message(STATUS "Enabled VOL connectors: ${ENABLED_VOLS}")
 #message (DEPRECATION "Include: ${HDF5_INCLUDE_DIR}")
 
 # Pass configuration to source directory
-configure_file(${CMAKE_SOURCE_DIR}/src/nep_config.h.in ${CMAKE_BINARY_DIR}/nep_config.h)
+configure_file(${CMAKE_SOURCE_DIR}/nep_config.h.in ${CMAKE_BINARY_DIR}/nep_config.h)
 
 include(GNUInstallDirs)
 add_subdirectory (src)
