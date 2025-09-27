@@ -286,7 +286,7 @@ jobs:
           else
             DOC_FLAG="--disable-docs"
           fi
-          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc ${{ matrix.vol_config.autotools_flags }} $DOC_FLAG || (echo "Configure failed. Printing config.log:"; cat config.log; exit 1)
+          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc ${{ matrix.vol_config.autotools_flags }} $DOC_FLAG || (echo "Configure failed. Printing config.log:"; cat config.log; echo "hdf5_plugins/config.log:"; cat hdf5_plugins/config.log; exit 1)
 
       - name: Build (Autotools)
         if: matrix.build_system == 'autotools'
