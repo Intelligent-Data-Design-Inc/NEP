@@ -154,6 +154,7 @@ jobs:
         run: |
           export HDF5_PLUGIN_PATH=$GITHUB_WORKSPACE/netcdf-c-install/hdf5/lib/plugin
           # Clone and build hdf5_plugins
+          rm -rf hdf5_plugins
           git clone https://github.com/captainkirk99/hdf5_plugins hdf5_plugins
           pushd hdf5_plugins
           git checkout e1
