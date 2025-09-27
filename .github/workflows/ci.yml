@@ -153,6 +153,10 @@ jobs:
         if: steps.cache-netcdf-c.outputs.cache-hit != 'true'
         run: |
           export HDF5_PLUGIN_PATH=$GITHUB_WORKSPACE/netcdf-c-install/hdf5/lib/plugin
+          export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib"
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$LD_LIBRARY_PATH"
           # Clone and build hdf5_plugins
           rm -rf hdf5_plugins
           git clone https://github.com/captainkirk99/hdf5_plugins hdf5_plugins
