@@ -6,8 +6,6 @@
 /* Define if GRIB2 VOL connector is enabled */
 #cmakedefine HAVE_GRIB2
 
-/* Define if BUFR VOL connector is enabled */
-#cmakedefine HAVE_BUFR
 
 /* Define if GeoTIFF VOL connector is enabled */
 #cmakedefine HAVE_GEOTIFF

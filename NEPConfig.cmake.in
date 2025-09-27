@@ -16,7 +16,6 @@ set(NEP_INCLUDE_DIR "@CMAKE_INSTALL_FULL_INCLUDEDIR@")
 
 # Available VOL connectors (set during build)
 set(NEP_HAVE_GRIB2 @HAVE_GRIB2@)
-set(NEP_HAVE_BUFR @HAVE_BUFR@)
 set(NEP_HAVE_GEOTIFF @HAVE_GEOTIFF@)
 set(NEP_HAVE_CDF @HAVE_CDF@)
 
@@ -37,17 +36,6 @@ if(NEP_HAVE_GRIB2)
     endif()
 endif()
 
-if(NEP_HAVE_BUFR)
-    if(NOT TARGET NEP::bufr_vol_connector)
-        add_library(NEP::bufr_vol_connector SHARED IMPORTED)
-        set_target_properties(NEP::bufr_vol_connector PROPERTIES
-            IMPORTED_LOCATION "${NEP_LIBRARY_DIR}/libbufr_vol_connector.so"
-            INTERFACE_INCLUDE_DIRECTORIES "${NEP_INCLUDE_DIR}"
-        )
-        list(APPEND NEP_LIBRARIES NEP::bufr_vol_connector)
-        list(APPEND NEP_VOL_CONNECTORS "BUFR")
-    endif()
-endif()
 
 if(NEP_HAVE_GEOTIFF)
     if(NOT TARGET NEP::geotiff_vol_connector)

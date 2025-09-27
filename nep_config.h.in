@@ -3,7 +3,6 @@
 
 /* VOL connector availability */
 #cmakedefine HAVE_GRIB2
-#cmakedefine HAVE_BUFR
 #cmakedefine HAVE_GEOTIFF
 #cmakedefine HAVE_CDF
 

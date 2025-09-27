@@ -100,7 +100,6 @@ AC_ARG_ENABLE([docs],
 # Initialize variables
 ENABLED_VOLS=""
 HAVE_GRIB2=no
-HAVE_BUFR=no
 HAVE_GEOTIFF=no
 HAVE_CDF=no
 HAVE_DOXYGEN=no
@@ -147,7 +146,6 @@ fi
 
 # Set up conditionals for Makefile.am
 AM_CONDITIONAL([HAVE_GRIB2], [test "x$HAVE_GRIB2" = "xyes"])
-AM_CONDITIONAL([HAVE_BUFR], [test "x$HAVE_BUFR" = "xyes"])
 AM_CONDITIONAL([HAVE_GEOTIFF], [test "x$HAVE_GEOTIFF" = "xyes"])
 AM_CONDITIONAL([HAVE_CDF], [test "x$HAVE_CDF" = "xyes"])
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$HAVE_DOXYGEN" = "xyes"])

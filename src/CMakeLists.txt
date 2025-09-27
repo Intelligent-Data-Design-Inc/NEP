@@ -27,25 +27,6 @@ if(HAVE_GRIB2)
     message(STATUS "Building GRIB2 VOL connector: ${GRIB2_VOL_NAME}")
 endif()
 
-# Build BUFR VOL connector if enabled
-if(HAVE_BUFR)
-    set(BUFR_VOL_NAME bufr_vol_connector)
-    add_library(${BUFR_VOL_NAME} SHARED bufr_vol_connector.c)
-    target_link_libraries(${BUFR_VOL_NAME} PRIVATE ${HDF5_C_${LIB_TYPE}_LIBRARY} ${BUFR_LIBRARY})
-    set_target_properties(${BUFR_VOL_NAME} PROPERTIES 
-        VERSION ${PROJECT_VERSION}
-        SOVERSION 1
-        PUBLIC_HEADER "${CMAKE_SOURCE_DIR}/include/${BUFR_VOL_NAME}.h"
-        INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
-        INSTALL_RPATH_USE_LINK_PATH TRUE
-    )
-    install(TARGETS ${BUFR_VOL_NAME}
-        EXPORT NEPTargets
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    )
-    message(STATUS "Building BUFR VOL connector: ${BUFR_VOL_NAME}")
-endif()
 
 # Build GeoTIFF VOL connector if enabled
 if(HAVE_GEOTIFF)
