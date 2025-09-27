@@ -83,6 +83,6 @@ else
 fi
 
 # Clean up temporary files/directories and leave
-$RM $TEMP_PLUGIN_DIR
+#$RM $TEMP_PLUGIN_DIR
 
 exit $exit_code
