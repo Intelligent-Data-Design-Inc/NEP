@@ -1,0 +1,21 @@
+# This script runs the HDF5 tests in the ncsqueeze project.
+#
+# Edward Hartnett, Intelligent Data Design, 9/10/25
+set -x
+set -e
+
+# This will find the zstd filter with the netcdf-c install.
+export HDF5_PLUGIN_PATH=@MY_HDF5_PLUGIN_PATH@
+
+if test "@BUILD_BZIP2@" = "yes"; then
+    # Run the HDF5 test.
+    ./tst_h_bzip2
+fi
+
+if test "@BUILD_LZ4@" = "yes"; then
+    # Set the plugin path to find plugin.
+    export HDF5_PLUGIN_PATH="../hdf5_plugins/LZ4/src/.libs:$HDF5_PLUGIN_PATH"
+
+    # Run the HDF5 test.
+    ./tst_h_lz4
+fi

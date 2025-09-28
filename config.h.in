@@ -1,5 +1,17 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* If true, build with bzip2 filter. */
+#undef BUILD_BZIP2
+
+/* If true, build with jpeg filter. */
+#undef BUILD_JPEG
+
+/* If true, build with lz4 filter. */
+#undef BUILD_LZ4
+
+/* If true, build with lzf filter. */
+#undef BUILD_LZF
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
@@ -14,6 +26,12 @@
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have the <netcdf.h> header file. */
+#undef HAVE_NETCDF_H
+
+/* Define to 1 if you have the <netcdf_meta.h> header file. */
+#undef HAVE_NETCDF_META_H
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
@@ -41,6 +59,9 @@
 
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
+
+/* HDF5 plugin path */
+#undef MY_HDF5_PLUGIN_PATH
 
 /* Name of package */
 #undef PACKAGE

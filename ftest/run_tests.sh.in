@@ -1,0 +1,22 @@
+# This script runs the Fortran tests in the NCSQUEEZE project.
+#
+# Edward Hartnett, Intelligent Data Design, Inc., 9/9/25
+set -x
+set -e
+
+# If bzip2 was built, run the bzip2 test.
+if test "@BUILD_BZIP2@" = "yes"; then
+    export HDF5_PLUGIN_PATH="../hdf5_plugins/BZIP2/src/.libs:$HDF5_PLUGIN_PATH"
+    ./ftst_ncsqueeze_bzip2
+fi
+
+# If lz4 was built, run the lz4 test.
+if test "@BUILD_LZ4@" = "yes"; then
+    export HDF5_PLUGIN_PATH="../hdf5_plugins/LZ4/src/.libs:$HDF5_PLUGIN_PATH"
+    ./ftst_ncsqueeze_lz4
+fi
+
+
+
+
+

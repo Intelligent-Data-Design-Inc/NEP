@@ -7,7 +7,7 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_SOURCE_DIR})
 
-# Build the test only if BUFR is enabled
+# Build the test only if GRIB2 is enabled
 if(HAVE_GRIB2)
     add_executable (test_grib2_vol test_grib2_vol.c)
     target_include_directories (test_grib2_vol PRIVATE "${PROJECT_SOURCE_DIR}/src")
