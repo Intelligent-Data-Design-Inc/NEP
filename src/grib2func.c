@@ -15,7 +15,7 @@
  * @param ncid File ID (ignored).
  * @param pe Processor element (ignored).
  *
- * @return ::NC_ENOTNC3 Not a netCDF classic format file.
+ * @return NC_ENOTNC3 Not a netCDF classic format file.
  * @author Ed Hartnett
  */
 int
@@ -31,7 +31,7 @@ GRIB2_set_base_pe(int ncid, int pe)
  * @param pe Pointer to processor element. Ignored if NULL. Gets a 0
  * if present.
  *
- * @return ::NC_ENOTNC3 Not a netCDF classic format file.
+ * @return NC_ENOTNC3 Not a netCDF classic format file.
  * @author Ed Hartnett
  */
 int
@@ -47,8 +47,8 @@ GRIB2_inq_base_pe(int ncid, int *pe)
  * @param ncid File ID (ignored).
  * @param formatp Pointer that gets the constant indicating format.
 
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
  * @author Ed Hartnett
  */
 int
@@ -85,8 +85,8 @@ GRIB2_inq_format(int ncid, int *formatp)
  * @param modep a pointer that gets the open/create mode associated with
  * this file. Ignored if NULL.
 
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
  * @author Ed Hartnett
  */
 int

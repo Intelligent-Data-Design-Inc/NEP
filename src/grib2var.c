@@ -15,7 +15,7 @@
  * @param mem_nc_type The type of these data after it is read into memory.
  * @param is_long Ignored for HDF4.
  * @param data pointer that gets the data.
- * @returns ::NC_NOERR for success
+ * @returns NC_NOERR for success
  * @author Ed Hartnett
  */
 /* static int */
@@ -59,7 +59,7 @@
  * @param ip pointer that gets the data.
  * @param memtype The type of these data after it is read into memory.
 
- * @returns ::NC_NOERR for success
+ * @returns NC_NOERR for success
  * @author Ed Hartnett, Dennis Heimbigner
  */
 int

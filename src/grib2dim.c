@@ -16,7 +16,7 @@
 /*  * @param len Ignored. */
 /*  * @param idp Ignored. */
 /*  * */
-/*  * @return ::NC_EPERM Can't define dims. */
+/*  * @return NC_EPERM Can't define dims. */
 /*  * @author Ed Hartnett */
 /*  *\/ */
 /* int */
@@ -32,7 +32,7 @@
 /*  * @param dimid Ignored. */
 /*  * @param name Ignored. */
 /*  * */
-/*  * @return ::NC_NEPERM Can't write to AB file. */
+/*  * @return NC_NEPERM Can't write to AB file. */
 /*  * @author Ed Hartnett */
 /*  *\/ */
 /* int */

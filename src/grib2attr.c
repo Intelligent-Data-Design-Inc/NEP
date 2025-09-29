@@ -24,7 +24,7 @@
 /*  * @param name Ignored. */
 /*  * @param newname Ignored. */
 /*  * */
-/*  * @return ::NC_EPERM Not allowed for AB. */
+/*  * @return NC_EPERM Not allowed for AB. */
 /*  * @author Ed Hartnett */
 /*  *\/ */
 /* int */
@@ -40,7 +40,7 @@
 /*  * @param varid Ignored. */
 /*  * @param name Ignored. */
 /*  * */
-/*  * @return ::NC_EPERM Not allowed with AB. */
+/*  * @return NC_EPERM Not allowed with AB. */
 /*  * @author Ed Hartnett */
 /*  *\/ */
 /* int */
@@ -60,7 +60,7 @@
 /*  * @param data Attribute data. */
 /*  * @param memtype Type of data in memory. */
 /*  * */
-/*  * @return ::NC_EPERM Not allowed with AB. */
+/*  * @return NC_EPERM Not allowed with AB. */
 /*  * @author Ed Hartnett */
 /*  *\/ */
 /* int */

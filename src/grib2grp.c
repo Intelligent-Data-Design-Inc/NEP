@@ -1,7 +1,7 @@
 /**
  * @file 
  * @internal This file handles groups for the GRIB2 dispatch layer. All
- * functions return ::NC_ENOTNC4.
+ * functions return NC_ENOTNC4.
  * 
  * @author Ed Hartnett
 */
@@ -16,10 +16,10 @@
  * @param name Name of new group.
  * @param new_ncid Pointer that gets ncid for new group.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
- * @return ::NC_ESTRICTNC3 Classic model in use for this file.
- * @return ::NC_ENOTNC4 Not a netCDF-4 file.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
+ * @return NC_ESTRICTNC3 Classic model in use for this file.
+ * @return NC_ENOTNC4 Not a netCDF-4 file.
  * @author Ed Hartnett
 */
 int
@@ -34,13 +34,13 @@ GRIB2_def_grp(int parent_ncid, const char *name, int *new_ncid)
  * @param grpid Group ID.
  * @param name New name for group.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
- * @return ::NC_ENOTNC4 Not a netCDF-4 file.
- * @return ::NC_EPERM File opened read-only.
- * @return ::NC_EBADGRPID Renaming root forbidden.
- * @return ::NC_EHDFERR HDF5 function returned error.
- * @return ::NC_ENOMEM Out of memory.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
+ * @return NC_ENOTNC4 Not a netCDF-4 file.
+ * @return NC_EPERM File opened read-only.
+ * @return NC_EBADGRPID Renaming root forbidden.
+ * @return NC_EHDFERR HDF5 function returned error.
+ * @return NC_ENOMEM Out of memory.
  * @author Ed Hartnett
 */
 int

@@ -28,8 +28,8 @@
  * @param dispatch Pointer to the dispatch tgrib2le for this file.
  * @param ncid The ncid.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EINVAL Invalid input.
+ * @return NC_NOERR No error.
+ * @return NC_EINVAL Invalid input.
  * @author Ed Hartnett
  */
 int
@@ -96,9 +96,9 @@ NC_GRIB2_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
  *
  * @param ncid File ID.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
- * @return ::NC_EHDFERR Error from HDF4 layer.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
+ * @return NC_EHDFERR Error from HDF4 layer.
  * @author Ed Hartnett
  */
 int
@@ -113,8 +113,8 @@ NC_GRIB2_abort(int ncid)
  * @param ncid File ID.
  * @param ignore Just ignore me.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
  * @author Ed Hartnett
  */
 int

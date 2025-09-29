@@ -31,10 +31,10 @@
  * @param name Name of the type.
  * @param typeidp Gets the type ID.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
- * @return ::NC_EMAXNAME Name is too long.
- * @return ::NC_EBADNAME Name breaks netCDF name rules.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
+ * @return NC_EMAXNAME Name is too long.
+ * @return NC_EBADNAME Name breaks netCDF name rules.
  * @author Ed Hartnett
 */
 int
@@ -52,10 +52,10 @@ GRIB2_def_compound(int ncid, size_t size, const char *name, nc_type *typeidp)
  * @param offset Offset of field.
  * @param field_typeid Field type ID.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
- * @return ::NC_EMAXNAME Name is too long.
- * @return ::NC_EBADNAME Name breaks netCDF name rules.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
+ * @return NC_EMAXNAME Name is too long.
+ * @return NC_EBADNAME Name breaks netCDF name rules.
  * @author Ed Hartnett
 */
 int
@@ -76,10 +76,10 @@ GRIB2_insert_compound(int ncid, nc_type typeid1, const char *name, size_t offset
  * @param ndims Number of dims for field.
  * @param dim_sizesp Array of dim sizes.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
- * @return ::NC_EMAXNAME Name is too long.
- * @return ::NC_EBADNAME Name breaks netCDF name rules.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
+ * @return NC_EMAXNAME Name is too long.
+ * @return NC_EBADNAME Name breaks netCDF name rules.
  * @author Ed Hartnett
 */
 extern int
@@ -103,8 +103,8 @@ GRIB2_insert_array_compound(int ncid, int typeid1, const char *name,
  * @param ndimsp Gets number of dims for this field.
  * @param dim_sizesp Gets the dim sizes for this field.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
  * @author Ed Hartnett
 */
 int
@@ -123,10 +123,10 @@ GRIB2_inq_compound_field(int ncid, nc_type typeid1, int fieldid, char *name,
  * @param name Name of field.
  * @param fieldidp Pointer that gets new field ID.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
- * @return ::NC_EBADTYPE Type not found.
- * @return ::NC_EBADFIELD Field not found.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
+ * @return NC_EBADTYPE Type not found.
+ * @return NC_EBADFIELD Field not found.
  * @author Ed Hartnett
 */
 int
@@ -145,10 +145,10 @@ GRIB2_inq_compound_fieldindex(int ncid, nc_type typeid1, const char *name, int *
  * @param name Name of new vlen type.
  * @param typeidp Pointer that gets new type ID.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
- * @return ::NC_EMAXNAME Name is too long.
- * @return ::NC_EBADNAME Name breaks netCDF name rules.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
+ * @return NC_EMAXNAME Name is too long.
+ * @return NC_EBADNAME Name breaks netCDF name rules.
  * @author Ed Hartnett
 */
 int
@@ -166,10 +166,10 @@ GRIB2_def_opaque(int ncid, size_t datum_size, const char *name,
  * @param base_typeid Base type of vlen.
  * @param typeidp Pointer that gets new type ID.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
- * @return ::NC_EMAXNAME Name is too long.
- * @return ::NC_EBADNAME Name breaks netCDF name rules.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
+ * @return NC_EMAXNAME Name is too long.
+ * @return NC_EBADNAME Name breaks netCDF name rules.
  * @author Ed Hartnett
 */
 int
@@ -188,9 +188,9 @@ GRIB2_def_vlen(int ncid, const char *name, nc_type base_typeid,
  * @param name Name of new vlen type.
  * @param typeidp Pointer that gets new type ID.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EMAXNAME Name is too long.
- * @return ::NC_EBADNAME Name breaks netCDF name rules.
+ * @return NC_NOERR No error.
+ * @return NC_EMAXNAME Name is too long.
+ * @return NC_EBADNAME Name breaks netCDF name rules.
  * @author Ed Hartnett
 */
 int
@@ -210,10 +210,10 @@ GRIB2_def_enum(int ncid, nc_type base_typeid, const char *name,
  * @param value Value of enum.
  * @param identifier Gets the identifier for this enum value.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
- * @return ::NC_EBADTYPE Type not found.
- * @return ::NC_EINVAL Invalid type data.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
+ * @return NC_EBADTYPE Type not found.
+ * @return NC_EINVAL Invalid type data.
  * @author Ed Hartnett
 */
 int
@@ -232,10 +232,10 @@ GRIB2_inq_enum_ident(int ncid, nc_type xtype, long long value, char *identifier)
  * @param identifier Gets the identifier.
  * @param value Gets the enum value.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
- * @return ::NC_EBADTYPE Type not found.
- * @return ::NC_EINVAL Bad idx.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
+ * @return NC_EBADTYPE Type not found.
+ * @return NC_EINVAL Bad idx.
  * @author Ed Hartnett
 */
 int
@@ -255,10 +255,10 @@ GRIB2_inq_enum_member(int ncid, nc_type typeid1, int idx, char *identifier,
  * @param identifier Name of this enum value.
  * @param value Value of enum.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
- * @return ::NC_EBADTYPE Type not found.
- * @return ::NC_ETYPDEFINED Type already defined.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
+ * @return NC_EBADTYPE Type not found.
+ * @return NC_ETYPDEFINED Type already defined.
  * @author Ed Hartnett
 */
 int
@@ -278,7 +278,7 @@ GRIB2_insert_enum(int ncid, nc_type typeid1, const char *identifier,
  * @param len Length of element in bytes.
  * @param data Element data.
  *
- * @return ::NC_NOERR No error.
+ * @return NC_NOERR No error.
  * @author Ed Hartnett
 */
 int
@@ -298,7 +298,7 @@ GRIB2_put_vlen_element(int ncid, int typeid1, void *vlen_element,
  * @param len Length of element in bytes.
  * @param data Element data.
  *
- * @return ::NC_NOERR No error.
+ * @return NC_NOERR No error.
  * @author Ed Hartnett
 */
 int
