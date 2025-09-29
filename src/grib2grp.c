@@ -7,6 +7,7 @@
 */
 #include "nc4internal.h"
 #include "grib2dispatch.h"
+#include "grib2logging.h"
 
 /**
  * @internal Create a group. Its ncid is returned in the new_ncid

@@ -5,6 +5,7 @@
 #include <config.h>
 #include <netcdf.h>
 #include "grib2dispatch.h"
+#include "grib2logging.h"
 #include <nc4dispatch.h>
 #include <stdio.h>
 
@@ -124,11 +125,11 @@ main()
    /* size_t dim_len[NDIMS3] = {124, 258, 175}; */
    /* char att_value[MAX_B_LINE_LEN + 1]; */
    /* float *att_data[NUM_AB_VAR_ATTS] = {time, span, min, max}; */
-   /* int ret; */
+   int ret;
    
-   /* printf("\nTesting GRIB2 format dispatch layer..."); */
-   /* if ((ret = nc_def_user_format(NC_UF0, &GRIB2_dispatcher, NULL))) */
-   /*    return ret; */
+   printf("\nTesting GRIB2 format dispatch layer...");
+   if ((ret = nc_def_user_format(NC_UDF0, &GRIB2_dispatcher, NULL)))
+      return ret;
    /* grib2_set_log_level(5); */
    /* nc_set_log_level(3); */
 

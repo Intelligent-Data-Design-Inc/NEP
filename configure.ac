@@ -35,6 +35,30 @@ AC_MSG_RESULT($MY_HDF5_PLUGIN_PATH)
 AC_DEFINE([MY_HDF5_PLUGIN_PATH], [$MY_HDF5_PLUGIN_PATH], [HDF5 plugin path])
 AC_SUBST([MY_HDF5_PLUGIN_PATH], [$MY_HDF5_PLUGIN_PATH])
 
+# Does the user want to enable netcdf-4 logging?
+AC_MSG_CHECKING([whether logging is enabled])
+AC_ARG_ENABLE([logging],
+              [AS_HELP_STRING([--enable-logging],
+                              [enable logging capability (only applies when netCDF-4 is built). \
+			      This debugging features is only of interest to netCDF developers. \
+			      Ignored if netCDF-4 is not enabled.])])
+test "x$enable_logging" = xyes || enable_logging=no
+AC_MSG_RESULT([$enable_logging])
+if test "x$enable_logging" = xyes; then
+   enable_set_log_level_func=yes
+   enable_set_log_level=yes
+   AC_DEFINE([NETCDF_ENABLE_SET_LOG_LEVEL], 1, [If true, enable nc_set_log_level function.])
+else
+   enable_set_log_level_func=no
+   enable_set_log_level=no
+fi
+if test "x$enable_logging" = xyes; then
+   AC_DEFINE([LOGGING], 1, [If true, turn on logging.])
+   AC_DEFINE([GRIB2_LOGGING], 1, [If true, turn on logging.])
+fi
+AM_CONDITIONAL(USE_LOGGING, [test "x$enable_logging" = xyes])
+AC_SUBST(HAS_LOGGING, [$enable_logging])
+
 # Does the user want BZIP2?
 AC_MSG_CHECKING([whether BZIP2 filter library should be built and installed])
 AC_ARG_ENABLE([bzip2],

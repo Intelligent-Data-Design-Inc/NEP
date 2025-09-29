@@ -15,4 +15,5 @@ AM_CFLAGS = -g -Wall -Wextra $(HDF5_CFLAGS)
 # Run the test program.
 check_PROGRAMS = tst_read1
 TESTS = tst_read1
+tst_read1_LDADD = -lnetcdf ${top_builddir}/src/libncgrib2.la
 

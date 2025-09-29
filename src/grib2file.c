@@ -12,6 +12,7 @@
 #include "nc4internal.h"
 #include "hdf5internal.h"
 #include "grib2dispatch.h"
+#include "grib2logging.h"
 #include <strings.h>
 #include <math.h>
 #include <libgen.h>
@@ -42,8 +43,8 @@ NC_GRIB2_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
    /* Check inputs. */
    assert(path);
 
-   LOG((1, "%s: path %s mode %d params %x", __func__, path, mode,
-        parameters));
+   /* LOG((1, "%s: path %s mode %d params %x", __func__, path, mode, */
+   /*      parameters)); */
 
     /* Find pointer to NC. */
     if ((retval = NC_check_id(ncid, &nc)))
@@ -126,7 +127,7 @@ NC_GRIB2_close(int ncid, void *ignore)
    GRIB2_FILE_INFO_T *grib2_file;
    int ret;
 
-   LOG((1, "%s: ncid 0x%x", __func__, ncid));
+   /* LOG((1, "%s: ncid 0x%x", __func__, ncid)); */
 
    /* /\* Find our metadata for this file. *\/ */
    /* if ((ret = nc4_find_nc_grp_h5(ncid, &nc, &grp, &h5))) */
