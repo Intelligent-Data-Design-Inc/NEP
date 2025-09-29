@@ -141,6 +141,11 @@ configure_file(${CMAKE_SOURCE_DIR}/config.h.cmake.in ${CMAKE_BINARY_DIR}/config.
 include(GNUInstallDirs)
 add_subdirectory (src)
 add_subdirectory (test)
+
+# If GRIB2 layer has been built, test it.
+if(HAVE_GRIB2)
+    add_subdirectory (test_grib2)
+endif()
 # Generate and install CMake config files
 include(CMakePackageConfigHelpers)
 

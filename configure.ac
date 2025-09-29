@@ -242,6 +242,7 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  include/Makefile
                  test/Makefile
+                 test_grib2/Makefile
                  docs/Doxyfile])
 
 AC_OUTPUT
