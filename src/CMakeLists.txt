@@ -9,7 +9,7 @@ include_directories(${CMAKE_SOURCE_DIR})
 
 # Build the main ncsqueeze library
 add_library(ncsqueeze SHARED ncsqueeze.c)
-target_link_libraries(ncsqueeze PRIVATE ${HDF5_C_${LIB_TYPE}_LIBRARY})
+target_link_libraries(ncsqueeze PRIVATE ${HDF5_C_${LIB_TYPE}_LIBRARY} ${NETCDF_LIBRARIES})
 set_target_properties(ncsqueeze PROPERTIES 
     VERSION ${PROJECT_VERSION}
     SOVERSION 1

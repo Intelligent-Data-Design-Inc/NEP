@@ -34,6 +34,13 @@ link_directories (${HDF5_LIBRARY_DIRS})
 include_directories (${HDF5_INCLUDE_DIR})
 set (LINK_LIBS ${LINK_LIBS} ${HDF5_C_${LIB_TYPE}_LIBRARY})
 
+# Find NetCDF-C
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(NETCDF REQUIRED netcdf)
+include_directories(${NETCDF_INCLUDE_DIRS})
+link_directories(${NETCDF_LIBRARY_DIRS})
+set (LINK_LIBS ${LINK_LIBS} ${NETCDF_LIBRARIES})
+
 # Initialize variables for enabled VOL connectors
 set(ENABLED_VOLS "")
 set(VOL_LIBRARIES "")

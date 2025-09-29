@@ -14,7 +14,7 @@ include_directories(${HDF5_INCLUDE_DIR})
 add_executable(tst_read1 tst_read1.c)
 
 # Link against ncsqueeze library (matches AM_LDFLAGS and LDADD)
-target_link_libraries(tst_read1 ncsqueeze ${HDF5_C_${LIB_TYPE}_LIBRARY})
+target_link_libraries(tst_read1 ncsqueeze ${HDF5_C_${LIB_TYPE}_LIBRARY} ${NETCDF_LIBRARIES})
 
 # Add the test (matches TESTS = tst_read1)
 add_test(NAME tst_read1 COMMAND tst_read1)
