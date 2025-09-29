@@ -22,6 +22,9 @@ AC_CHECK_HEADERS([stdlib.h])
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T
 
+# We are using HDF5.
+AC_DEFINE([USE_HDF5], [yes], [Always needed])
+
 MY_HDF5_PLUGIN_PATH=${HDF5_PLUGIN_PATH-.}
 AC_MSG_CHECKING([where to put HDF5 plugins])
 AC_ARG_WITH([hdf5-plugin-path],

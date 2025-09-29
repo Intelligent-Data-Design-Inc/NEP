@@ -89,6 +89,9 @@
    backward compatibility; new code need not use it. */
 #undef STDC_HEADERS
 
+/* Always needed */
+#undef USE_HDF5
+
 /* Version number of package */
 #undef VERSION
 

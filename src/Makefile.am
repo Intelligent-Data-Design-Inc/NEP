@@ -19,7 +19,7 @@ libncsqueeze_la_SOURCES = ncsqueeze.c
 
 # GRIB2 VOL connector
 if HAVE_GRIB2
-lib_LTLIBRARIES = libncgrib2.la
+lib_LTLIBRARIES += libncgrib2.la
 libncgrib2_la_LDFLAGS = -version-info 1:0:0
 libncgrib2_la_SOURCES = grib2dispatch.c grib2attr.c grib2dim.c grib2file.c grib2grp.c	\
 grib2type.c grib2var.c grib2func.c grib2logging.c
