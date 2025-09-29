@@ -65,7 +65,7 @@ grib2_log(int severity, const char *fmt, ...)
  *
  * @param new_level The new logging level.
  *
- * @return ::NC_NOERR No error.
+ * @return NC_NOERR No error.
  * @author Ed Hartnett
  */
 int
