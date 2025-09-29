@@ -12,6 +12,9 @@
 /* If true, build with lzf filter. */
 #undef BUILD_LZF
 
+/* If true, turn on logging. */
+#undef GRIB2_LOGGING
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
@@ -57,11 +60,17 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
+/* If true, turn on logging. */
+#undef LOGGING
+
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
 
 /* HDF5 plugin path */
 #undef MY_HDF5_PLUGIN_PATH
+
+/* If true, enable nc_set_log_level function. */
+#undef NETCDF_ENABLE_SET_LOG_LEVEL
 
 /* Name of package */
 #undef PACKAGE

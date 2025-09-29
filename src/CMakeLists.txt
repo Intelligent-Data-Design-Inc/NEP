@@ -7,6 +7,22 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_SOURCE_DIR})
 
+# Build the main ncsqueeze library
+add_library(ncsqueeze SHARED ncsqueeze.c)
+target_link_libraries(ncsqueeze PRIVATE ${HDF5_C_${LIB_TYPE}_LIBRARY} ${NETCDF_LIBRARIES})
+set_target_properties(ncsqueeze PROPERTIES 
+    VERSION ${PROJECT_VERSION}
+    SOVERSION 1
+    PUBLIC_HEADER "${CMAKE_SOURCE_DIR}/include/ncsqueeze.h"
+    INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
+    INSTALL_RPATH_USE_LINK_PATH TRUE
+)
+install(TARGETS ncsqueeze
+    EXPORT NEPTargets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
 # Build GRIB2 VOL connector if enabled
 if(HAVE_GRIB2)
     set(GRIB2_VOL_NAME grib2_vol_connector)
@@ -25,6 +41,24 @@ if(HAVE_GRIB2)
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
     message(STATUS "Building GRIB2 VOL connector: ${GRIB2_VOL_NAME}")
+
+    # Build GRIB2 library (matches libncgrib2.la)
+    set(GRIB2_LIB_NAME ncgrib2)
+    add_library(${GRIB2_LIB_NAME} SHARED 
+        grib2dispatch.c grib2attr.c grib2dim.c grib2file.c grib2grp.c
+        grib2type.c grib2var.c grib2func.c grib2logging.c)
+    target_link_libraries(${GRIB2_LIB_NAME} PRIVATE ${HDF5_C_${LIB_TYPE}_LIBRARY} ${G2C_LIBRARY})
+    set_target_properties(${GRIB2_LIB_NAME} PROPERTIES 
+        VERSION ${PROJECT_VERSION}
+        SOVERSION 1
+        INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
+        INSTALL_RPATH_USE_LINK_PATH TRUE
+    )
+    install(TARGETS ${GRIB2_LIB_NAME}
+        EXPORT NEPTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
+    message(STATUS "Building GRIB2 library: ${GRIB2_LIB_NAME}")
 endif()
 
 

@@ -22,9 +22,6 @@ AM_CFLAGS = -g -Wall -Wextra $(HDF5_CFLAGS)
 # test_grib2_vol_LDADD = $(HDF5_LIBS)
 # test_grib2_vol_SOURCES = test_grib2_vol.c
 
-# # Test data file - declare it as noinst_DATA which won't be installed but will be distributed
-# TEST_DATA_FILE = data/gdaswave.t00z.wcoast.0p16.f000.grib2
-# noinst_DATA = $(TEST_DATA_FILE)
 # TESTS += test_vol_plugin.sh
 
 # # Copy test data to build directory only for out-of-tree builds and only during check

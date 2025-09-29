@@ -69,8 +69,8 @@ GRIB2_get_vara(int ncid, int varid, const size_t *startp,
    NC *nc;
    /* NC_HDF5_FILE_INFO_T* h5; */
 
-   LOG((2, "%s: ncid 0x%x varid %d memtype %d", __func__, ncid, varid,
-        memtype));
+   /* LOG((2, "%s: ncid 0x%x varid %d memtype %d", __func__, ncid, varid, */
+   /*      memtype)); */
 
    /* if (!(nc = nc4_find_nc_file(ncid, &h5))) */
    /*    return NC_EBADID; */

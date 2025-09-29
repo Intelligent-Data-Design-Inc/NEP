@@ -4,7 +4,13 @@
 # Copyright Intelligent Data Design, Inc. All rights reserved.
 
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = include src test
+
+# If GRIB2 layer has been built, test it.
+if HAVE_GRIB2
+TEST_GRIB2 = test_grib2
+endif
+
+SUBDIRS = include src test ${TEST_GRIB2}
 EXTRA_DIST = autogen.sh
 
 # Documentation target

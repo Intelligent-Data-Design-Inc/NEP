@@ -6,6 +6,7 @@
  * @author Ed Hartnett
 */
 
+#include "grib2logging.h"
 #include "nc4internal.h"
 #include "nc4dispatch.h"
 

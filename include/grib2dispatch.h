@@ -38,11 +38,11 @@ extern "C" {
 
     extern int NC_GRIB2_close(int ncid, void *);
 
-    extern int NC_GRIB2_inq_format(int ncid, int *formatp);
+    extern int GRIB2_inq_format(int ncid, int *formatp);
 
-    extern int NC_GRIB2_inq_format_extended(int ncid, int *formatp, int *modep);
+    extern int GRIB2_inq_format_extended(int ncid, int *formatp, int *modep);
 
-    extern int NC_GRIB2_get_vara(int ncid, int varid, const size_t *start, const size_t *count,
+    extern int GRIB2_get_vara(int ncid, int varid, const size_t *start, const size_t *count,
 				 void *value, nc_type);
 
     extern int nc_grib2_set_log_level(int new_level);
