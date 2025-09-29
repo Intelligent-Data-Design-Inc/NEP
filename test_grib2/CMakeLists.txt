@@ -10,9 +10,9 @@ include_directories(${CMAKE_SOURCE_DIR})
 # Add HDF5 include directories to match AM_CPPFLAGS += $(HDF5_CPPFLAGS)
 include_directories(${HDF5_INCLUDE_DIR})
 
-# Test data file - copy to build directory (matches noinst_DATA)
+# Test data file - copy to build directory preserving data/ subdirectory (matches noinst_DATA)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/gdaswave.t00z.wcoast.0p16.f000.grib2 
-               ${CMAKE_CURRENT_BINARY_DIR}/gdaswave.t00z.wcoast.0p16.f000.grib2 COPYONLY)
+               ${CMAKE_CURRENT_BINARY_DIR}/data/gdaswave.t00z.wcoast.0p16.f000.grib2 COPYONLY)
 
 # Build the test program (matches check_PROGRAMS = tst_grib2)
 add_executable(tst_grib2 tst_grib2.c)
