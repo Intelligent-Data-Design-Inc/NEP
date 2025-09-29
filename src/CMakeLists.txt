@@ -7,6 +7,22 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_SOURCE_DIR})
 
+# Build the main ncsqueeze library
+add_library(ncsqueeze SHARED ncsqueeze.c)
+target_link_libraries(ncsqueeze PRIVATE ${HDF5_C_${LIB_TYPE}_LIBRARY})
+set_target_properties(ncsqueeze PROPERTIES 
+    VERSION ${PROJECT_VERSION}
+    SOVERSION 1
+    PUBLIC_HEADER "${CMAKE_SOURCE_DIR}/include/ncsqueeze.h"
+    INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
+    INSTALL_RPATH_USE_LINK_PATH TRUE
+)
+install(TARGETS ncsqueeze
+    EXPORT NEPTargets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
 # Build GRIB2 VOL connector if enabled
 if(HAVE_GRIB2)
     set(GRIB2_VOL_NAME grib2_vol_connector)
