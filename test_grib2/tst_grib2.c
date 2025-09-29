@@ -135,8 +135,8 @@ main()
    
     printf("\nTesting GRIB2 format dispatch layer...");
     if ((ret = nc_def_user_format(NC_UDF0, &GRIB2_dispatcher, NULL))) NCERR(ret);
-    grib2_set_log_level(5);
-    nc_set_log_level(3);
+    /* grib2_set_log_level(5); */
+    /* nc_set_log_level(3); */
 
     if ((ret = nc_open(TEST_FILE, NC_UDF0, &ncid))) NCERR(ret);
     /* if ((ret = nc_inq(ncid, &ndims, &nvars, &natts, &unlimdimid))) NCERR(ret); */
