@@ -1,15 +1,16 @@
 /* Test read of GRIB2 format with netCDF. 
-*
-* Ed Hartnett */
+ *
+ * Ed Hartnett */
 
 #include <config.h>
 #include <netcdf.h>
 #include "grib2dispatch.h"
 #include "grib2logging.h"
 #include <nc4dispatch.h>
+#include "ncsqueeze_test.h"
 #include <stdio.h>
 
-#define TEST_FILE "surtmp_100l.b"
+#define TEST_FILE "data/gdaswave.t00z.wcoast.0p16.f000.grib2"
 #define NDIMS3 3
 #define VAR_NAME "surtmp"
 #define NUM_AB_VAR_ATTS 4
@@ -27,6 +28,11 @@
 #define EPSILON .0000001
    
 extern NC_Dispatch GRIB2_dispatcher;
+
+/* Err is used to keep track of errors within each set of tests,
+ * total_err is the number of errors in the entire test program, which
+ * generally cosists of several sets of tests. */
+static int total_err = 0, err = 0;
 
 /* float time[T_LEN] = {36495.500000, 36495.750000, 36496.000000, 36496.250000, 36496.500000, */
 /*                      36496.750000, 36497.000000, 36497.250000, 36497.500000, 36497.750000, */
@@ -111,33 +117,30 @@ extern NC_Dispatch GRIB2_dispatcher;
 int
 main()
 {
-   /* int ncid; */
-   /* int ndims, nvars, natts, unlimdimid; */
-   /* int varid, coord_varid; */
-   /* char var_name_in[NC_MAX_NAME + 1]; */
-   /* int xtype_in; */
-   /* size_t len_in; */
-   /* int ndims_in, natts_in; */
-   /* int dimids_in[NDIMS3]; */
-   /* char dim_name[NDIMS3][NC_MAX_NAME + 1] = {TIME_NAME, I_NAME, J_NAME}; */
-   /* char att_name[NUM_AB_VAR_ATTS][NC_MAX_NAME + 1] = {TIME_NAME, SPAN_NAME, */
-   /*                                                    MIN_NAME, MAX_NAME}; */
-   /* size_t dim_len[NDIMS3] = {124, 258, 175}; */
-   /* char att_value[MAX_B_LINE_LEN + 1]; */
-   /* float *att_data[NUM_AB_VAR_ATTS] = {time, span, min, max}; */
-   int ret;
+    int ncid;
+    int ndims, nvars, natts, unlimdimid;
+    /* int varid, coord_varid; */
+    /* char var_name_in[NC_MAX_NAME + 1]; */
+    /* int xtype_in; */
+    /* size_t len_in; */
+    /* int ndims_in, natts_in; */
+    /* int dimids_in[NDIMS3]; */
+    /* char dim_name[NDIMS3][NC_MAX_NAME + 1] = {TIME_NAME, I_NAME, J_NAME}; */
+    /* char att_name[NUM_AB_VAR_ATTS][NC_MAX_NAME + 1] = {TIME_NAME, SPAN_NAME, */
+    /*                                                    MIN_NAME, MAX_NAME}; */
+    /* size_t dim_len[NDIMS3] = {124, 258, 175}; */
+    /* char att_value[MAX_B_LINE_LEN + 1]; */
+    /* float *att_data[NUM_AB_VAR_ATTS] = {time, span, min, max}; */
+    int ret;
    
-   printf("\nTesting GRIB2 format dispatch layer...");
-   if ((ret = nc_def_user_format(NC_UDF0, &GRIB2_dispatcher, NULL)))
-      return ret;
-   /* grib2_set_log_level(5); */
-   /* nc_set_log_level(3); */
+    printf("\nTesting GRIB2 format dispatch layer...");
+    if ((ret = nc_def_user_format(NC_UDF0, &GRIB2_dispatcher, NULL))) NCERR(ret);
+    grib2_set_log_level(5);
+    nc_set_log_level(3);
 
-/*    if ((ret = nc_open(TEST_FILE, NC_UF0, &ncid))) */
-/*       return ret; */
-/*    if ((ret = nc_inq(ncid, &ndims, &nvars, &natts, &unlimdimid))) */
-/*       return ret; */
-/*    printf("ndims %d nvars %d natts %d unlimdimid %d\n", ndims, nvars, natts, unlimdimid); */
+    if ((ret = nc_open(TEST_FILE, NC_UDF0, &ncid))) NCERR(ret);
+    /* if ((ret = nc_inq(ncid, &ndims, &nvars, &natts, &unlimdimid))) NCERR(ret); */
+    /* printf("ndims %d nvars %d natts %d unlimdimid %d\n", ndims, nvars, natts, unlimdimid); */
 /*    if (ndims != 3 || nvars != 2 ||natts != 1 || unlimdimid != -1) */
 /*        return 111; */
 
@@ -211,7 +214,7 @@ main()
 /*    if ((ret = nc_close(ncid))) */
 /*       return ret; */
 
-   printf("SUCCESS!\n");
-   return 0;
+    printf("SUCCESS!\n");
+    return 0;
 }
 
