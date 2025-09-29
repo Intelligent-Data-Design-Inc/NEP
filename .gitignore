@@ -121,4 +121,4 @@ tst_*.nc
 tst_*.h5
 run_tests.sh
 *.lai
-tst_read1
+tst_grib2
