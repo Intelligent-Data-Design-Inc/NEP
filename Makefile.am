@@ -4,7 +4,7 @@
 # Copyright Intelligent Data Design, Inc. All rights reserved.
 
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = src test
+SUBDIRS = include src test
 EXTRA_DIST = autogen.sh
 
 # Documentation target

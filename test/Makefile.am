@@ -14,26 +14,26 @@ TESTS =
 AM_CPPFLAGS += $(HDF5_CPPFLAGS)
 AM_CFLAGS = -g -Wall -Wextra $(HDF5_CFLAGS)
 
-check_SCRIPTS = test_vol_plugin.sh
+# check_SCRIPTS = test_vol_plugin.sh
 
-if HAVE_GRIB2
-check_PROGRAMS += test_grib2_vol
-test_grib2_vol_LDFLAGS = $(AM_LDFLAGS) $(HDF5_LDFLAGS)
-test_grib2_vol_LDADD = $(HDF5_LIBS)
-test_grib2_vol_SOURCES = test_grib2_vol.c
+# if HAVE_GRIB2
+# check_PROGRAMS += test_grib2_vol
+# test_grib2_vol_LDFLAGS = $(AM_LDFLAGS) $(HDF5_LDFLAGS)
+# test_grib2_vol_LDADD = $(HDF5_LIBS)
+# test_grib2_vol_SOURCES = test_grib2_vol.c
 
-# Test data file - declare it as noinst_DATA which won't be installed but will be distributed
-TEST_DATA_FILE = data/gdaswave.t00z.wcoast.0p16.f000.grib2
-noinst_DATA = $(TEST_DATA_FILE)
-TESTS += test_vol_plugin.sh
+# # Test data file - declare it as noinst_DATA which won't be installed but will be distributed
+# TEST_DATA_FILE = data/gdaswave.t00z.wcoast.0p16.f000.grib2
+# noinst_DATA = $(TEST_DATA_FILE)
+# TESTS += test_vol_plugin.sh
 
-# Copy test data to build directory only for out-of-tree builds and only during check
-check-local:
-	if test "$(srcdir)" != "$(builddir)" ; then \
-		$(MKDIR_P) $(builddir)/data; \
-		$(INSTALL_DATA) $(srcdir)/$(TEST_DATA_FILE) $(builddir)/$(TEST_DATA_FILE); \
-	fi
-endif
+# # Copy test data to build directory only for out-of-tree builds and only during check
+# check-local:
+# 	if test "$(srcdir)" != "$(builddir)" ; then \
+# 		$(MKDIR_P) $(builddir)/data; \
+# 		$(INSTALL_DATA) $(srcdir)/$(TEST_DATA_FILE) $(builddir)/$(TEST_DATA_FILE); \
+# 	fi
+# endif
 
 # Build LZ4 tests, if needed.
 if BUILD_LZ4

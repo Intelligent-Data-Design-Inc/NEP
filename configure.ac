@@ -1,9 +1,10 @@
 # This is the configure.ac file for the NEP project.
 # Edward Hartnett 8/27/25
+# Copyright Intelligent Data Design, Inc. All rights reserved.
 
 AC_PREREQ([2.71])
-AC_INIT([NEP],[0.1.1],[help@intelligentdatadesign.com])
-AC_CONFIG_SRCDIR([src/grib2_vol_connector.c])
+AC_INIT([NEP],[1.0.0],[help@intelligentdatadesign.com])
+AC_CONFIG_SRCDIR([src/ncsqueeze.c])
 AC_CONFIG_HEADERS([config.h])
 
 # Dump all the weird scripts in bin/
@@ -20,6 +21,9 @@ AC_CHECK_HEADERS([stdlib.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T
+
+# We are using HDF5.
+AC_DEFINE([USE_HDF5], [yes], [Always needed])
 
 MY_HDF5_PLUGIN_PATH=${HDF5_PLUGIN_PATH-.}
 AC_MSG_CHECKING([where to put HDF5 plugins])
@@ -192,24 +196,6 @@ if test "x$have_472" = xyes; then
    AC_MSG_ERROR([cannot build with netcdf-c-4.7.2, please upgrade your netCDF version.])
 fi
 
-dnl # Do we have a parallel build of netCDF-4? (Really we should be
-dnl # checking NC_HAS_PARALLEL4, but that was only recently introduced, so
-dnl # we will go with NC_HAS_PARALLEL.)
-dnl AC_COMPILE_IFELSE([AC_LANG_PROGRAM([#include "netcdf_meta.h"],
-dnl [[#if !NC_HAS_PARALLEL
-dnl # error
-dnl #endif]
-dnl ])], [have_netcdf_par=yes], [have_netcdf_par=no])
-dnl AC_MSG_CHECKING([whether netCDF provides parallel I/O for netCDF/HDF5])
-dnl AC_MSG_RESULT([${have_netcdf_par}])
-dnl AC_SUBST(HAS_NETCDF_PAR,[$have_netcdf_par])
-dnl AM_CONDITIONAL(HAVE_NETCDF_PAR, [test "x$have_netcdf_par" = xyes])
-
-dnl # If user asked for parallel tests, and parallel is not available, error.
-dnl if test "x$enable_parallel_tests" = xyes -a "x$have_netcdf_par" != xyes; then
-dnl    AC_MSG_ERROR([parallel tests requested, but netcdf-c does not provide parallel I/O.])
-dnl fi
-
 # Do we have szip?
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([#include "netcdf_meta.h"],
 [[#if !NC_HAS_SZIP_WRITE
@@ -218,19 +204,6 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([#include "netcdf_meta.h"],
 ])], [have_szip_write=yes], [have_szip_write=no])
 AC_MSG_CHECKING([whether netCDF provides szip write capability])
 AC_MSG_RESULT([${have_szip_write}])
-
-dnl # Do we have parallel filter support?
-dnl AC_COMPILE_IFELSE([AC_LANG_PROGRAM([#include "netcdf_meta.h"],
-dnl [[#if !NC_HAS_PAR_FILTERS
-dnl # error
-dnl #endif]
-dnl ])], [have_par_filters=yes], [have_par_filters=no])
-dnl AC_MSG_CHECKING([whether netCDF provides parallel filter support])
-dnl AC_MSG_RESULT([${have_par_filters}])
-dnl if test "x$have_par_filters" = xyes ; then
-dnl    AC_DEFINE([HAVE_PAR_FILTERS], [1], [if true, netCDF-C supports filters with parallel I/O])
-dnl fi
-dnl AC_SUBST(HAS_PAR_FILTERS,[$have_par_filters])
 
 # Does netcdf-c support zstd?
 AC_MSG_CHECKING([if netCDF handles zstd])
@@ -262,13 +235,12 @@ fi
 
 AC_CONFIG_FILES([test/test_vol_plugin.sh], [chmod +x test/test_vol_plugin.sh])
 AC_CONFIG_FILES([test/run_tests.sh], [chmod ugo+x test/run_tests.sh])
-#AC_CONFIG_FILES([test/run_par_tests.sh], [chmod ugo+x test/run_par_tests.sh])
-#AC_CONFIG_FILES([test/run_benchmarks.sh], [chmod ugo+x test/run_benchmarks.sh])
 AC_CONFIG_FILES([ftest/run_tests.sh], [chmod ugo+x ftest/run_tests.sh])
 AC_CONFIG_FILES([test_h5/run_tests.sh], [chmod ugo+x test_h5/run_tests.sh])
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
+                 include/Makefile
                  test/Makefile
                  docs/Doxyfile])
 

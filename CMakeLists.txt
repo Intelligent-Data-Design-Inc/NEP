@@ -6,6 +6,10 @@ project (NEP VERSION 0.1.1 DESCRIPTION "NetCDF4/HDF5 Format Extension Pack" LANG
 # Add option for debug build
 option(DEBUG "Build with debugging symbols" OFF)
 
+# Define global preprocessor symbol to mirror Autotools AC_DEFINE([USE_HDF5],[yes])
+# Use add_definitions for compatibility with CMake 3.9
+add_definitions(-DUSE_HDF5=yes)
+
 # VOL connector enable/disable options
 option(ENABLE_GRIB2 "Enable GRIB2 VOL connector" ON)
 option(ENABLE_GEOTIFF "Enable GeoTIFF VOL connector" ON)
