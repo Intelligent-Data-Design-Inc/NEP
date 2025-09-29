@@ -1,5 +1,6 @@
 /**
- * @file Logging function for the GRIB2 dispatch layer library.
+ * @file
+ * Logging function for the GRIB2 dispatch layer library.
  *
  * @author Ed Hartnett
 */
