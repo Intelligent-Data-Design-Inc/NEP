@@ -16,16 +16,17 @@
 #include <assert.h>
 #include "grib2logging.h"
 
-/* This is the metadata we need to keep track of for each
-   netcdf-4/HDF5 file. */
-typedef struct  GRIB2_FILE_INFO
+/* Stuff below is for grib2 files. */
+typedef struct NC_VAR_GRIB2_INFO
 {
-    FILE *a_file;
-    FILE *b_file;
-} GRIB2_FILE_INFO_T;
+    int sdsid;
+    int grib2_data_type;
+} NC_VAR_GRIB2_INFO_T;
 
-#define MAX_B_LINE_LEN 80
-#define MAX_HEADER_ATTS 10
+typedef struct NC_GRIB2_FILE_INFO
+{
+    int sdid;
+} NC_GRIB2_FILE_INFO_T;
 
 #if defined(__cplusplus)
 extern "C" {
