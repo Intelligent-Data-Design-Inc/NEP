@@ -39,7 +39,7 @@
 #define MAX_COMPRESSION_STR 6
 
 #define NX_BIG 500
-#define NY_BIG 100
+#define NY_BIG 1000
 #define NUM_REC 10
 
 #define MIN_ZSTD 0
