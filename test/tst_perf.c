@@ -45,7 +45,7 @@
 #define MIN_ZSTD 0
 #define MAX_ZSTD 9
 #define MIN_ZLIB 1
-#define MIN_LZ4 1
+#define MIN_LZ4 2
 
 #define UNCOMPRESSED 0
 #define COMPRESS_ZSTD 1
