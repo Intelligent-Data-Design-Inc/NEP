@@ -1,20 +1,20 @@
 # NEP Development Roadmap
 
-### v3.0 GeoTIFF
+### v4.0 GeoTIFF
 #### Sprint 1: GeoTIFF File Open/Close
 - Add a small, simple GeoTIFF test file in test/data.
 - Add file open/close to the GeoTIFF UDF handler.
 - Add a test which opens/closes the file.
 - Ensure test data files are copied to build directory for both CMake and Autotools builds.
 
-### v2.0: CDF
+### v3.0: CDF
 #### Sprint 1: cdf File Open/Close
 - Add a small, simple cdf test file in test/data.
 - Add file open/close to the cdf UDF handler.
 - Add a test which opens/closes the file.
 - Ensure test data files are copied to build directory for both CMake and Autotools builds.
 
-### v1.0.0: GRIB2
+### v2.0.0: GRIB2
 #### Sprint 1: GRIB2 File Open/Close
 - **NC_Dispatch Implementation**: Populate file_open and file_close function pointers in GRIB2 UDF handler NC_Dispatch structure
 - **Glue Code Functions**: Create wrapper functions with proper NetCDF dispatch API signatures that interface with NCEPLIBS-g2 library
@@ -30,6 +30,11 @@
 #### Sprint 3: Reading Data
 
 #### Sprint 4: Var Metadata
+
+### v1.0.0 LZ4 Compression
+#### Sprint 1: LZ4 Compression Plugin
+- More tests.
+- Documentation on GitHub.
 
 ### v0.1.3 Documentation
 #### Sprint 1: Documentation with Doxygen
