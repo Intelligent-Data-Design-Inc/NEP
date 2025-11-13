@@ -15,16 +15,6 @@ on:
   # Trigger on release publication
   release:
     types: [published]
-  
-  # Trigger on pushes to main that affect documentation
-  push:
-    branches: [main]
-    paths:
-      - 'src/**'
-      - 'include/**'
-      - 'docs/**'
-      - 'Doxyfile.in'
-      - '.github/workflows/deploy-docs.yml'
 
 # Required permissions for GitHub Pages deployment
 permissions:
