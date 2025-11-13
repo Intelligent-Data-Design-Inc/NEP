@@ -14,28 +14,33 @@ set(NEP_LIBRARY_DIR "@CMAKE_INSTALL_FULL_LIBDIR@")
 # Include directory
 set(NEP_INCLUDE_DIR "@CMAKE_INSTALL_FULL_INCLUDEDIR@")
 
+# GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
+# Will be re-enabled in v2.0.0 for GRIB2 UDF support
 # GRIB2 UDF support availability
-set(NEP_HAVE_GRIB2 @HAVE_GRIB2@)
+# set(NEP_HAVE_GRIB2 @HAVE_GRIB2@)
 
 # Initialize target list
 set(NEP_LIBRARIES "")
 
+# GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
+# Will be re-enabled in v2.0.0 for GRIB2 UDF support
 # Define imported target for GRIB2 library if available
-if(NEP_HAVE_GRIB2)
-    if(NOT TARGET NEP::ncgrib2)
-        add_library(NEP::ncgrib2 SHARED IMPORTED)
-        set_target_properties(NEP::ncgrib2 PROPERTIES
-            IMPORTED_LOCATION "${NEP_LIBRARY_DIR}/libncgrib2.so"
-            INTERFACE_INCLUDE_DIRECTORIES "${NEP_INCLUDE_DIR}"
-        )
-        list(APPEND NEP_LIBRARIES NEP::ncgrib2)
-    endif()
-endif()
+# if(NEP_HAVE_GRIB2)
+#     if(NOT TARGET NEP::ncgrib2)
+#         add_library(NEP::ncgrib2 SHARED IMPORTED)
+#         set_target_properties(NEP::ncgrib2 PROPERTIES
+#             IMPORTED_LOCATION "${NEP_LIBRARY_DIR}/libncgrib2.so"
+#             INTERFACE_INCLUDE_DIRECTORIES "${NEP_INCLUDE_DIR}"
+#         )
+#         list(APPEND NEP_LIBRARIES NEP::ncgrib2)
+#     endif()
+# endif()
 
 # Provide summary information
-message(STATUS "Found NEP version ${NEP_VERSION}")
-if(NEP_HAVE_GRIB2)
-    message(STATUS "NEP GRIB2 UDF support available")
-endif()
+message(STATUS "Found NEP version ${NEP_VERSION} - LZ4 compression support")
+# GRIB2 UDF Handler - Disabled for v1.0.0
+# if(NEP_HAVE_GRIB2)
+#     message(STATUS "NEP GRIB2 UDF support available")
+# endif()
 
 check_required_components(NEP)

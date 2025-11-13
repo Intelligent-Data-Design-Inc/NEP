@@ -17,13 +17,16 @@ on:
 
 # Required permissions for GitHub Pages deployment
 permissions:
-  contents: write      # Required to push to gh-pages branch
+  contents: read       # Required to checkout code
   pages: write         # Required for GitHub Pages deployment
   id-token: write      # Required for GitHub Pages authentication
 
 jobs:
   deploy-docs:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     
     steps:
       - name: Checkout code
@@ -53,12 +56,11 @@ jobs:
           echo "Documentation build successful"
           ls -lh build/docs/html/
       
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build/docs/html
-          publish_branch: gh-pages
-          commit_message: 'Deploy documentation from ${{ github.sha }}'
-          user_name: 'github-actions[bot]'
-          user_email: 'github-actions[bot]@users.noreply.github.com'
+          path: ./build/docs/html
+      
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

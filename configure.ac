@@ -114,11 +114,13 @@ dnl if test "x$enable_lz4" = xyes; then
 dnl    AC_CONFIG_SUBDIRS([LZ4])
 dnl fi
 
+# GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
+# Will be re-enabled in v2.0.0 for GRIB2 UDF support
 # GRIB2 UDF enable/disable option
-AC_ARG_ENABLE([grib2],
-    AS_HELP_STRING([--enable-grib2], [Enable GRIB2 UDF support (default: yes)]),
-    [enable_grib2=$enableval],
-    [enable_grib2=yes])
+# AC_ARG_ENABLE([grib2],
+#     AS_HELP_STRING([--enable-grib2], [Enable GRIB2 UDF support (default: yes)]),
+#     [enable_grib2=$enableval],
+#     [enable_grib2=yes])
 
 AC_ARG_ENABLE([docs],
     AS_HELP_STRING([--enable-docs], [Enable documentation generation with Doxygen (default: yes if Doxygen found)]),
@@ -129,20 +131,22 @@ AC_ARG_ENABLE([docs],
 HAVE_GRIB2=no
 HAVE_DOXYGEN=no
 
+# GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
+# Will be re-enabled in v2.0.0 for GRIB2 UDF support
 # Check for GRIB2 dependencies if enabled
-if test "x$enable_grib2" = "xyes"; then
-    AC_CHECK_HEADERS([grib2.h], [grib2_header=yes], [grib2_header=no])
-    AC_SEARCH_LIBS([g2c_inq], [g2c], [G2C_LIBS="-lg2c"; grib2_lib=yes], [grib2_lib=no], [-ljasper])
-    
-    if test "x$grib2_header" = "xyes" && test "x$grib2_lib" = "xyes"; then
-        HAVE_GRIB2=yes
-        AC_DEFINE([HAVE_GRIB2], [1], [Define if GRIB2 UDF support is enabled])
-        AC_MSG_NOTICE([GRIB2 UDF support enabled])
-    else
-        AC_MSG_ERROR([GRIB2 UDF enabled but NCEPLIBS-g2c not found. Install NCEPLIBS-g2c or disable with --disable-grib2])
-    fi
-fi
-AC_SUBST([G2C_LIBS])
+# if test "x$enable_grib2" = "xyes"; then
+#     AC_CHECK_HEADERS([grib2.h], [grib2_header=yes], [grib2_header=no])
+#     AC_SEARCH_LIBS([g2c_inq], [g2c], [G2C_LIBS="-lg2c"; grib2_lib=yes], [grib2_lib=no], [-ljasper])
+#     
+#     if test "x$grib2_header" = "xyes" && test "x$grib2_lib" = "xyes"; then
+#         HAVE_GRIB2=yes
+#         AC_DEFINE([HAVE_GRIB2], [1], [Define if GRIB2 UDF support is enabled])
+#         AC_MSG_NOTICE([GRIB2 UDF support enabled])
+#     else
+#         AC_MSG_ERROR([GRIB2 UDF enabled but NCEPLIBS-g2c not found. Install NCEPLIBS-g2c or disable with --disable-grib2])
+#     fi
+# fi
+# AC_SUBST([G2C_LIBS])
 
 # Check for Doxygen if documentation is enabled
 if test "x$enable_docs" != "xno"; then
@@ -169,7 +173,9 @@ if test "x$enable_fortran" = xyes; then
 fi
 
 # Set up conditionals for Makefile.am
-AM_CONDITIONAL([HAVE_GRIB2], [test "x$HAVE_GRIB2" = "xyes"])
+# GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
+# Will be re-enabled in v2.0.0 for GRIB2 UDF support
+# AM_CONDITIONAL([HAVE_GRIB2], [test "x$HAVE_GRIB2" = "xyes"])
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$HAVE_DOXYGEN" = "xyes"])
 
 # Initialize Automake

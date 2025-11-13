@@ -18,12 +18,6 @@
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
-/* Define if GRIB2 VOL connector is enabled */
-#undef HAVE_GRIB2
-
-/* Define to 1 if you have the <grib2.h> header file. */
-#undef HAVE_GRIB2_H
-
 /* Defined if you have HDF5 support */
 #undef HAVE_HDF5
 

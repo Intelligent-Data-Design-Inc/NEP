@@ -10,8 +10,9 @@ option(DEBUG "Build with debugging symbols" OFF)
 # Use add_definitions for compatibility with CMake 3.9
 add_definitions(-DUSE_HDF5=yes)
 
-# GRIB2 UDF enable/disable option
-option(ENABLE_GRIB2 "Enable GRIB2 UDF support" ON)
+# GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
+# Will be re-enabled in v2.0.0 for GRIB2 UDF support
+# option(ENABLE_GRIB2 "Enable GRIB2 UDF support" ON)
 
 # Documentation option
 option(BUILD_DOCUMENTATION "Build documentation with Doxygen" ON)
@@ -50,20 +51,22 @@ if(NOT DOCS_ONLY)
     set (LINK_LIBS ${LINK_LIBS} ${NETCDF_LIBRARIES})
 endif()
 
+# GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
+# Will be re-enabled in v2.0.0 for GRIB2 UDF support
 # Find GRIB2 dependencies if enabled
-if(ENABLE_GRIB2)
-    find_library(G2C_LIBRARY NAMES g2c)
-    find_path(G2C_INCLUDE_DIR grib2.h)
-    
-    if(G2C_LIBRARY AND G2C_INCLUDE_DIR)
-        message(STATUS "Found NCEPLIBS-g2: ${G2C_LIBRARY}")
-        include_directories(${G2C_INCLUDE_DIR})
-        set(HAVE_GRIB2 TRUE)
-        message(STATUS "GRIB2 UDF support enabled")
-    else()
-        message(FATAL_ERROR "GRIB2 UDF enabled but NCEPLIBS-g2 not found. Install NCEPLIBS-g2 or disable with -DENABLE_GRIB2=OFF")
-    endif()
-endif()
+# if(ENABLE_GRIB2)
+#     find_library(G2C_LIBRARY NAMES g2c)
+#     find_path(G2C_INCLUDE_DIR grib2.h)
+#     
+#     if(G2C_LIBRARY AND G2C_INCLUDE_DIR)
+#         message(STATUS "Found NCEPLIBS-g2: ${G2C_LIBRARY}")
+#         include_directories(${G2C_INCLUDE_DIR})
+#         set(HAVE_GRIB2 TRUE)
+#         message(STATUS "GRIB2 UDF support enabled")
+#     else()
+#         message(FATAL_ERROR "GRIB2 UDF enabled but NCEPLIBS-g2 not found. Install NCEPLIBS-g2 or disable with -DENABLE_GRIB2=OFF")
+#     endif()
+# endif()
 
 # It's really easy to pick up the wrong HDF5 library if you set the path
 # wrong. Turn this on for added confirmation that you got it right.
@@ -105,10 +108,12 @@ if(NOT DOCS_ONLY)
     add_subdirectory (src)
     add_subdirectory (test)
 
+    # GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
+    # Will be re-enabled in v2.0.0 for GRIB2 UDF support
     # If GRIB2 layer has been built, test it.
-    if(HAVE_GRIB2)
-        add_subdirectory (test_grib2)
-    endif()
+    # if(HAVE_GRIB2)
+    #     add_subdirectory (test_grib2)
+    # endif()
 
     # Generate and install CMake config files
     include(CMakePackageConfigHelpers)

@@ -44,6 +44,7 @@ Example: `/roadmap v0.4.0 sprint 3`
    - Verify integration with native format libraries (NCEPLIBS-g2, libgeotiff, NASA CDF)
    - Provide suggested answers, labeled with letters, so that the question can be answered with just a letter
    - Recommend an answer and provide a justification for your recommendation
+   - **ASK QUESTIONS NOW**
    - **Wait for user responses before proceeding**
 
 5. **Update roadmap with clarifications**
