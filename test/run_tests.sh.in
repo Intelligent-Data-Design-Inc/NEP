@@ -14,7 +14,11 @@ fi
 
 # If lz4 was built, run the lz4 test. We have our own version of the lz4 plugin.
 if test "@BUILD_LZ4@" = "yes"; then
-    export HDF5_PLUGIN_PATH="../hdf5_plugins/LZ4/src/.libs:$HDF5_PLUGIN_PATH"
+    # For autotools builds, prepend the relative path to the built plugin
+    # For CMake builds, the path is already in MY_HDF5_PLUGIN_PATH
+    if test -d "../hdf5_plugins/LZ4/src/.libs"; then
+        export HDF5_PLUGIN_PATH="../hdf5_plugins/LZ4/src/.libs:$HDF5_PLUGIN_PATH"
+    fi
     ./tst_lz4
 fi
 

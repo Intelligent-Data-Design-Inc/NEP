@@ -30,26 +30,25 @@ add_executable(tst_perf tst_perf.c tst_utils.c)
 target_link_libraries(tst_perf PRIVATE ncsqueeze ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
 target_include_directories(tst_perf PRIVATE ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
 
-# Add tests with proper HDF5_PLUGIN_PATH environment
-# Include both our built LZ4 plugin and NetCDF-C's BZIP2 plugin
-set(PLUGIN_PATH "${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin:${NETCDF_PREFIX}/hdf5/lib/plugin")
+# Configure run_tests.sh script with proper paths
+# For CMake builds, point to the installed plugin location
+set(MY_HDF5_PLUGIN_PATH "${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin:${NETCDF_PREFIX}/hdf5/lib/plugin")
+set(BUILD_LZ4 "yes")
+set(BUILD_BZIP2 "yes")
+set(BUILD_JPEG "no")
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/run_tests.sh.in 
+               ${CMAKE_CURRENT_BINARY_DIR}/run_tests.sh @ONLY)
 
-add_test(NAME test_bzip2 COMMAND tst_bzip2)
-set_tests_properties(test_bzip2 PROPERTIES
-    ENVIRONMENT "HDF5_PLUGIN_PATH=${PLUGIN_PATH}"
-)
+# Make the script executable
+file(CHMOD ${CMAKE_CURRENT_BINARY_DIR}/run_tests.sh 
+     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
-add_test(NAME test_lz4 COMMAND tst_lz4)
-set_tests_properties(test_lz4 PROPERTIES
-    ENVIRONMENT "HDF5_PLUGIN_PATH=${PLUGIN_PATH}"
-)
+# Add single test that runs the test script (like autotools)
+# The script sets HDF5_PLUGIN_PATH itself from MY_HDF5_PLUGIN_PATH
+add_test(NAME run_tests 
+         COMMAND ${CMAKE_CURRENT_BINARY_DIR}/run_tests.sh
+         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
-add_test(NAME test_perf COMMAND tst_perf)
-set_tests_properties(test_perf PROPERTIES
-    ENVIRONMENT "HDF5_PLUGIN_PATH=${PLUGIN_PATH}"
-)
-
-# Make tests depend on hdf5_plugins being built
-add_dependencies(tst_lz4 hdf5_plugins)
-add_dependencies(tst_bzip2 hdf5_plugins)
-add_dependencies(tst_perf hdf5_plugins)
+# Make test script depend on hdf5_plugins being built
+add_custom_target(test_executables ALL DEPENDS tst_lz4 tst_bzip2 tst_perf)
+add_dependencies(test_executables hdf5_plugins)

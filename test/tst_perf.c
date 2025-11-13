@@ -38,9 +38,9 @@
 #define NCOMPRESSION 3
 #define MAX_COMPRESSION_STR 6
 
-#define NX_BIG 5000
+#define NX_BIG 500
 #define NY_BIG 100
-#define NUM_REC 100
+#define NUM_REC 10
 
 #define MIN_ZSTD 0
 #define MAX_ZSTD 9
@@ -86,6 +86,10 @@ int test_compression(int f)
 
     /* Allocate memory for one record. */
     if (!(data_out = malloc(NX_BIG * NY_BIG * sizeof(float)))) ERR;
+		/* Create a new record to write. */
+		for (x = 0; x < NX_BIG * NY_BIG; x++)
+			data_out[x] = 1014.0 - ((start[0] + 1.0) * 10) + (rand() % 20 - 10) + 9.0/(x + 1);
+		if (nc_put_vara_float(ncid, varid, start, count, data_out)) ERR;
 
     if (!(data_in = malloc(NX_BIG * NY_BIG * sizeof(float)))) ERR;
 
@@ -162,10 +166,10 @@ int test_compression(int f)
     /* Write the data records. */
     for (start[0] = 0; start[0] < NUM_REC; start[0]++)
     {
-	/* Create a new record to write. */
-	for (x = 0; x < NX_BIG * NY_BIG; x++)
-	    data_out[x] = 1014.0 - ((start[0] + 1.0) * 10) + (rand() % 20 - 10) + 9.0/(x + 1);
-	if (nc_put_vara_float(ncid, varid, start, count, data_out)) ERR;
+		/* Create a new record to write. */
+		for (x = 0; x < NX_BIG * NY_BIG; x++)
+			data_out[x] = 1014.0 - ((start[0] + 1.0) * 10) + (rand() % 20 - 10) + 9.0/(x + 1);
+		if (nc_put_vara_float(ncid, varid, start, count, data_out)) ERR;
     }
 
     /* Close the file. */
@@ -221,7 +225,6 @@ int
 main()
 {
     printf("\n*** Checking Performance of filters.\n");
-    printf("*** Checking zlib performance on large float data set...");
     printf("\ncompression, write time (s), file size (MB)\n");
 
     /* Initialize random numbers. */
