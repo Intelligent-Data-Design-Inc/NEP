@@ -48,6 +48,12 @@
   - Release-specific documentation snapshots preserved
 - **Verification**: Ensure documentation is accessible and properly formatted on GitHub Pages
 
+#### Sprint 2: CI and Build System Improvements
+ - Comment out GRIB2 and other format options from autotools/cmake. 
+ - LZ4 is the only valid option for version 1.0.
+ - Save the info for the other formats (GRIB2, cdf, GeoTIFF), we will need them for future versions.
+ - Change the CI so that only the LZ4 and doc builds are tested, other format builds can wait.
+
 #### Sprint 2: Comprehensive LZ4 Testing
 - **Performance Benchmarking Tests**: Create comprehensive performance comparison tests
   - Compare LZ4 compression speed vs DEFLATE compression
