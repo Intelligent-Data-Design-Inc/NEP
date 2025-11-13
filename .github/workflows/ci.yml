@@ -21,7 +21,7 @@ jobs:
       matrix:
         build_system: [cmake, autotools]
         doc_build: [enabled, disabled]
-        vol_config:
+        udf_config:
           - name: "all_enabled"
             cmake_flags: "-DENABLE_GRIB2=ON -DENABLE_LZ4=ON"
             autotools_flags: "--enable-grib2 --enable-lz4"
@@ -33,11 +33,11 @@ jobs:
             autotools_flags: "--disable-grib2 --enable-lz4"
         exclude:
           # Reduce matrix size by only testing documentation with all_enabled configuration
-          - vol_config: { name: "all_enabled" }
+          - udf_config: { name: "all_enabled" }
             doc_build: enabled
-          - vol_config: { name: "grib2_only" }
+          - udf_config: { name: "grib2_only" }
             doc_build: disabled
-          - vol_config: { name: "lz4_only" }
+          - udf_config: { name: "lz4_only" }
             doc_build: disabled
     steps:
       - name: Checkout code
@@ -203,14 +203,14 @@ jobs:
         env:
           JASPER_INSTALL_PREFIX: $GITHUB_WORKSPACE/jasper-install
         run: |
-          echo "Building with VOL configuration: ${{ matrix.vol_config.name }}"
+          echo "Building with UDF configuration: ${{ matrix.udf_config.name }}"
           DOC_FLAG=""
           if [ "${{ matrix.doc_build }}" = "enabled" ]; then
             DOC_FLAG="-DBUILD_DOCUMENTATION=ON"
           else
             DOC_FLAG="-DBUILD_DOCUMENTATION=OFF"
           fi
-          cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/g2c-install;$GITHUB_WORKSPACE/cdf-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install;$JASPER_INSTALL_PREFIX;/usr/include/geotiff;/usr/include/liblzf" ${{ matrix.vol_config.cmake_flags }} $DOC_FLAG
+          cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/g2c-install;$GITHUB_WORKSPACE/cdf-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install;$JASPER_INSTALL_PREFIX;/usr/include/geotiff;/usr/include/liblzf" ${{ matrix.udf_config.cmake_flags }} $DOC_FLAG
 
       - name: Build (CMake)
         if: matrix.build_system == 'cmake'
@@ -257,7 +257,7 @@ jobs:
         if: matrix.build_system == 'cmake' && matrix.doc_build == 'enabled'
         uses: actions/upload-artifact@v4
         with:
-          name: documentation-cmake-${{ matrix.vol_config.name }}
+          name: documentation-cmake-${{ matrix.udf_config.name }}
           path: build/docs/html/
           retention-days: 30
 
@@ -271,7 +271,7 @@ jobs:
         if: matrix.build_system == 'autotools'
         run: |
           set -x
-          echo "Building with VOL configuration: ${{ matrix.vol_config.name }}"
+          echo "Building with UDF configuration: ${{ matrix.udf_config.name }}"
           find /usr -name '*geotiff*'
           autoreconf -i
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
@@ -286,7 +286,7 @@ jobs:
           else
             DOC_FLAG="--disable-docs"
           fi
-          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc ${{ matrix.vol_config.autotools_flags }} $DOC_FLAG || (echo "Configure failed. Printing config.log:"; cat config.log; echo "hdf5_plugins/config.log:"; cat hdf5_plugins/config.log; exit 1)
+          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc ${{ matrix.udf_config.autotools_flags }} $DOC_FLAG || (echo "Configure failed. Printing config.log:"; cat config.log; echo "hdf5_plugins/config.log:"; cat hdf5_plugins/config.log; exit 1)
 
       - name: Build (Autotools)
         if: matrix.build_system == 'autotools'
@@ -323,7 +323,7 @@ jobs:
         if: matrix.build_system == 'autotools' && matrix.doc_build == 'enabled'
         uses: actions/upload-artifact@v4
         with:
-          name: documentation-autotools-${{ matrix.vol_config.name }}
+          name: documentation-autotools-${{ matrix.udf_config.name }}
           path: docs/html/
           retention-days: 30
 
