@@ -1,9 +1,9 @@
-# NEP (NetCDF4/HDF5 Format Extension Pack) - Product Requirements Document
+# NEP (NetCDF Extension Pack) - Product Requirements Document
 
 ## 1. Executive Summary
 
 ### 1.1 Product Overview
-The NetCDF4/HDF5 Format Extension Pack (NEP) is a dynamic connector system that enables seamless access to diverse NASA Earth Science data formats through standardized NetCDF4 and HDF5 APIs. The system provides automatic format detection and runtime-pluggable connectors for formats including GRIB2, BUFR, CDF, and GeoTIFF.
+The NetCDF Extension Pack (NEP) is a User Defined Format (UDF) system that enables seamless access to diverse NASA Earth Science data formats through the standard NetCDF API. The system provides automatic format detection and runtime-pluggable UDF handlers for formats including GRIB2, CDF, and GeoTIFF. Additionally, NEP includes high-performance LZ4 compression support for HDF5/NetCDF-4 files, providing fast lossless compression optimized for speed-critical scientific workflows.
 
 ### 1.2 Business Objectives
 - Unify access to heterogeneous NASA Earth Science data formats
@@ -13,9 +13,10 @@ The NetCDF4/HDF5 Format Extension Pack (NEP) is a dynamic connector system that 
 - Maintain backward compatibility with existing codebases
 
 ### 1.3 Success Metrics
-- Zero breaking changes to existing NetCDF4/HDF5 applications
+- Zero breaking changes to existing NetCDF applications
 - <5% performance overhead compared to native format access
-- Support for 4+ major Earth Science data formats at launch
+- Support for 3+ major Earth Science data formats at launch
+- LZ4 compression demonstrating >2x speed improvement over DEFLATE
 - Successful deployment in HPC environments
 
 ## 2. Product Description
@@ -26,17 +27,19 @@ The NetCDF4/HDF5 Format Extension Pack (NEP) is a dynamic connector system that 
 - **Tertiary**: HPC system administrators and data center operators
 
 ### 2.2 Use Cases
-1. **Multi-format Data Analysis**: Researchers accessing GRIB2, BUFR, CDF, and GeoTIFF data through unified APIs
-2. **Legacy Application Migration**: Existing NetCDF4/HDF5 applications accessing new formats without code changes
-3. **Custom Format Integration**: Organizations adding proprietary format support via connector plugins
+1. **Multi-format Data Analysis**: Researchers accessing GRIB2, CDF, and GeoTIFF data through unified NetCDF API
+2. **Legacy Application Migration**: Existing NetCDF applications accessing new formats without code changes
+3. **Custom Format Integration**: Organizations adding proprietary format support via UDF handlers
 4. **Exascale Computing**: Large-scale parallel processing of diverse Earth Science datasets
+5. **High-Performance Data Compression**: Scientists compressing large NetCDF-4/HDF5 datasets with LZ4 for fast I/O operations while maintaining data integrity
 
 ### 2.3 Key Features
-- Automatic format detection at file open
-- Runtime-pluggable connector architecture
-- Unified NetCDF4/HDF5 API access
+- Automatic format detection via magic numbers
+- Runtime-pluggable UDF handler architecture via nc_def_user_format()
+- Unified NetCDF API access
 - Zero-recompilation format extension
 - Performance-optimized data translation
+- LZ4 lossless compression for HDF5/NetCDF-4 files with superior speed characteristics
 
 ## 3. Functional Requirements
 
@@ -45,7 +48,7 @@ The NetCDF4/HDF5 Format Extension Pack (NEP) is a dynamic connector system that 
 #### FR-001: Automatic Format Detection
 - **Description**: System must automatically identify file formats without user intervention
 - **Acceptance Criteria**:
-  - Detect GRIB2, BUFR, CDF, and GeoTIFF formats with >99% accuracy
+  - Detect GRIB2, CDF, and GeoTIFF formats with >99% accuracy
   - Format detection completes within 100ms for files up to 1GB
   - Graceful fallback for unrecognized formats
 
@@ -57,11 +60,11 @@ The NetCDF4/HDF5 Format Extension Pack (NEP) is a dynamic connector system that 
   - Connector loading time <500ms
 
 #### FR-003: Unified API Access
-- **Description**: Provide standard NetCDF4 and HDF5 API compatibility
+- **Description**: Provide standard NetCDF API compatibility
 - **Acceptance Criteria**:
-  - 100% API compatibility with NetCDF4 library v4.8+
-  - 100% API compatibility with HDF5 library v1.12+
+  - 100% API compatibility with NetCDF-C library v4.9+
   - All existing function signatures preserved
+  - Support for nc_open(), nc_def_user_format(), and standard NetCDF operations
 
 #### FR-004: Extensible Connector Framework
 - **Description**: Well-defined API for developing custom format connectors
@@ -71,22 +74,22 @@ The NetCDF4/HDF5 Format Extension Pack (NEP) is a dynamic connector system that 
   - Connector validation tools
 
 #### FR-009: Build System Integration (v0.1.1 Sprint 1) ✅ COMPLETED
-- **Description**: Complete integration of all VOL connectors into build systems
+- **Description**: Complete integration of all UDF handlers into build systems
 - **Acceptance Criteria**:
-  - ✅ All VOL connectors compile successfully in both CMake and Autotools
-  - ✅ Enable/disable options work correctly for each VOL type
+  - ✅ All UDF handlers compile successfully in both CMake and Autotools
+  - ✅ Enable/disable options work correctly for each format handler
   - ✅ Dependencies are properly detected and linked
   - ✅ Build fails gracefully with clear messages when required dependencies are missing
-  - ✅ Default configuration enables all VOL types when dependencies are available
+  - ✅ Default configuration enables all format handlers when dependencies are available
   - ✅ Comprehensive Find modules implemented for all dependencies
-  - ✅ CI/CD build matrix testing for all VOL connector combinations
+  - ✅ CI/CD build matrix testing for all UDF handler combinations
   - ✅ Cross-platform compatibility validated
 
 #### FR-010: Installation System (v0.1.1 Sprint 2) ✅ COMPLETED
 - **Description**: Complete installation target implementation for both build systems
 - **Acceptance Criteria**:
   - ✅ Install targets work correctly in both CMake and Autotools build systems
-  - ✅ VOL connector shared libraries (.so files) are installed to configurable path
+  - ✅ UDF handler shared libraries (.so files) are installed to configurable path
   - ✅ Single installation path for all components as set by configure options
   - ✅ CMake config files generated and installed for find_package() support
   - ✅ No dependency verification during installation (assumes dependencies already present)
@@ -104,7 +107,7 @@ The NetCDF4/HDF5 Format Extension Pack (NEP) is a dynamic connector system that 
   - ✅ All public API functions, structures, and macros documented with Doxygen comments
   - ✅ Documentation warnings enabled and treated as build failures
   - ✅ Generated documentation includes:
-    - API reference for all VOL connectors
+    - API reference for all UDF handlers
     - Code examples and usage patterns
     - Architecture overview diagrams
     - Installation and configuration guides
@@ -118,22 +121,22 @@ The NetCDF4/HDF5 Format Extension Pack (NEP) is a dynamic connector system that 
   - ✅ CI pipeline includes documentation build matrix for both CMake and Autotools
   - ✅ Documentation builds enforced with zero-warning policy (warnings treated as failures)
   - ✅ Documentation build artifacts uploaded and preserved for 30 days
-  - ✅ CI matrix optimized to test documentation builds with all_enabled VOL configuration only
+  - ✅ CI matrix optimized to test documentation builds with all_enabled UDF configuration only
   - ✅ Documentation builds run in parallel with existing build configurations
   - ✅ Build system configuration options: `-DBUILD_DOCUMENTATION=ON/OFF` (CMake), `--enable/disable-docs` (Autotools)
   - ✅ GitHub Pages deployment prepared for future release
 
-#### FR-013: VOL Connector File Operations (v0.1.3 Sprint 1)
-- **Description**: Implement basic file open/close functionality for GRIB2 VOL connector through H5VL_class_t function pointer implementation
+#### FR-013: UDF Handler File Operations (v0.1.3 Sprint 1)
+- **Description**: Implement basic file open/close functionality for GRIB2 UDF handler through NC_Dispatch function pointer implementation
 - **Acceptance Criteria**:
-  - GRIB2 VOL connector H5VL_class_t struct file_open and file_close function pointers implemented (no longer NULL)
-  - Glue code functions created with proper HDF5 VOL API signatures for file operations
-  - Modified test_grib2_vol test to open and close actual GRIB2 file instead of creating HDF5 file
+  - GRIB2 UDF handler NC_Dispatch struct file_open and file_close function pointers implemented
+  - Glue code functions created with proper NetCDF dispatch API signatures for file operations
+  - Modified test_grib2_udf test to open and close actual GRIB2 file using nc_open() with NC_UDF0 mode
   - Simple g2c logging integration: call g2c_set_log_level(3) at test start, g2c_set_log_level(0) at test end
   - Test uses existing `test/data/gdaswave.t00z.wcoast.0p16.f000.grib2` file or equivalent GRIB2 test data
   - Test data files copied from `test/data/` to build directory in both CMake and Autotools builds so tests can find them
-  - Error handling returns appropriate HDF5 VOL API status codes without printing error messages
-  - File operations return appropriate HDF5 VOL API status codes
+  - Error handling returns appropriate NetCDF error codes (NC_NOERR, NC_EINVAL, etc.) without printing error messages
+  - File operations return appropriate NetCDF status codes
   - Memory management and resource cleanup in file close operations
 
 ### 3.2 Supported Formats
@@ -142,17 +145,31 @@ The NetCDF4/HDF5 Format Extension Pack (NEP) is a dynamic connector system that 
 - **Description**: Full read/write support for GRIB2 meteorological data
 - **Dependencies**: NCEPLIBS-g2 library integration
 
-#### FR-006: BUFR Support
-- **Description**: Complete BUFR format support for observational data
-- **Dependencies**: NCEPLIBS-bufr library integration
-
-#### FR-007: CDF Support
+#### FR-006: CDF Support
 - **Description**: NASA Common Data Format support
 - **Dependencies**: CDF library integration
 
-#### FR-008: GeoTIFF Support
+#### FR-007: GeoTIFF Support
 - **Description**: Geospatial TIFF format support
 - **Dependencies**: libgeotiff library integration
+
+#### FR-008: LZ4 Compression Support
+- **Description**: High-performance lossless compression for HDF5/NetCDF-4 files using LZ4 algorithm
+- **Technical Details**:
+  - LZ4 is a lossless data compression algorithm from the LZ77 family of byte-oriented compression schemes
+  - Focused on compression and decompression speed rather than maximum compression ratio
+  - Provides excellent trade-off between speed and compression ratio for scientific data
+- **Performance Characteristics**:
+  - Compression speed similar to LZO and several times faster than DEFLATE
+  - Decompression speed significantly faster than LZO
+  - Compression ratio typically smaller than DEFLATE but sufficient for most scientific datasets
+  - Optimized for speed-critical workflows in HPC environments
+- **Dependencies**: LZ4 library integration as HDF5 filter plugin
+- **Acceptance Criteria**:
+  - Seamless integration with HDF5/NetCDF-4 file format
+  - Compression/decompression operations transparent to NetCDF API users
+  - Performance benchmarks demonstrate speed advantages over traditional compression methods
+  - Maintains data integrity with lossless compression guarantee
 
 ## 4. Non-Functional Requirements
 
@@ -197,11 +214,11 @@ The NetCDF4/HDF5 Format Extension Pack (NEP) is a dynamic connector system that 
 ## 5. Technical Architecture
 
 ### 5.1 System Components
-1. **Format Detection Engine**: Automatic file format identification
-2. **Connector Manager**: Dynamic loading and management of format connectors
-3. **API Translation Layer**: NetCDF4/HDF5 API compatibility layer
+1. **Format Detection Engine**: Automatic file format identification via magic numbers
+2. **UDF Handler Manager**: Dynamic registration via nc_def_user_format()
+3. **API Translation Layer**: NetCDF dispatch layer for format-specific operations
 4. **Performance Optimization Layer**: Format-specific optimizations
-5. **Plugin Interface**: Standardized connector development API
+5. **Plugin Interface**: NC_Dispatch structure for UDF handler development
 
 ### 5.2 Technology Stack
 - **Core Language**: C (for performance and compatibility)
@@ -210,67 +227,63 @@ The NetCDF4/HDF5 Format Extension Pack (NEP) is a dynamic connector system that 
 - **Documentation**: Doxygen for API docs
 
 ### 5.3 Dependencies
-- NetCDF4 library (v4.8+)
-- HDF5 library (v1.12+)
-- NCEPLIBS-g2 (for GRIB2)
-- NCEPLIBS-bufr (for BUFR)
-- libgeotiff (for GeoTIFF)
-- NASA CDF library from https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/cdf39_1-dist-all.tar.gz (for CDF)
+- NetCDF-C library (v4.9+) with User Defined Format support
+- HDF5 library (v1.12+) for NetCDF-4 backend
+- NCEPLIBS-g2 (for GRIB2 UDF handler)
+- libgeotiff (for GeoTIFF UDF handler)
+- NASA CDF library from https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/cdf39_1-dist-all.tar.gz (for CDF UDF handler)
 
-### 5.4 VOL Connector File Operations Architecture (v0.1.3)
+### 5.4 UDF Handler File Operations Architecture (v0.1.3)
 
-#### 5.4.1 H5VL_class_t Function Pointer Implementation
-Each VOL connector implements the HDF5 VOL API through a `H5VL_class_t` structure containing function pointers for various HDF5 operations:
+#### 5.4.1 NC_Dispatch Function Pointer Implementation
+Each UDF handler implements the NetCDF dispatch API through an `NC_Dispatch` structure containing function pointers for various NetCDF operations:
 
 **Current State (v0.1.2 and earlier):**
-- All VOL connectors have `H5VL_class_t` structures with NULL function pointers
-- File operations are not implemented, limiting functionality to build system integration only
+- UDF handlers have basic NC_Dispatch structures
+- File operations are minimal, limiting functionality to build system integration only
 
 **Target State (v0.1.3):**
 - File open and close function pointers populated with actual implementation functions
-- Glue code functions created with proper HDF5 VOL API signatures
-- Each VOL connector capable of basic file access operations
+- Glue code functions created with proper NetCDF dispatch API signatures
+- Each UDF handler capable of basic file access operations via nc_open()
 
 **Function Pointer Structure:**
 ```c
-typedef struct H5VL_class_t {
-    // ... other fields ...
-    struct {
-        herr_t (*open)(const char *name, unsigned flags, hid_t fapl_id, 
-                       hid_t dxpl_id, void **req);
-        herr_t (*close)(void *file, hid_t dxpl_id, void **req);
-        // ... other file operations ...
-    } file_cls;
-    // ... other operation classes ...
-} H5VL_class_t;
+typedef struct NC_Dispatch {
+    int model; /* NC_FORMATX_UDF0, etc. */
+    
+    int (*open)(const char *path, int mode, int basepe, size_t *chunksizehintp,
+                void *parameters, const struct NC_Dispatch *dispatch, int ncid);
+    int (*close)(int ncid, void *params);
+    
+    // ... other operations (create, redef, inq, etc.) ...
+} NC_Dispatch;
 ```
 
 #### 5.4.2 Format-Specific Implementation Requirements
 
-**GRIB2 VOL Connector (Sprint 1):**
+**GRIB2 UDF Handler (Sprint 1):**
 - Integrate with NCEPLIBS-g2 library for GRIB2 file access
 - Simple g2c logging: call g2c_set_log_level(3) at test start, g2c_set_log_level(0) at test end
 - Handle GRIB2-specific file validation and metadata extraction
 - Support for existing test data: `test/gdaswave.t00z.wcoast.0p16.f000.grib2`
+- Register with nc_def_user_format(NC_UDF0, &grib2_dispatcher, magic_number)
 
-**CDF VOL Connector (Sprint 2):**
+**CDF UDF Handler (Sprint 2):**
 - Integrate with NASA CDF library for file operations
 - Handle CDF-specific file format validation
 - Create simple test CDF file in `test/data/` directory
+- Register with nc_def_user_format(NC_UDF1, &cdf_dispatcher, magic_number)
 
-**GeoTIFF VOL Connector (Sprint 3):**
+**GeoTIFF UDF Handler (Sprint 3):**
 - Integrate with libgeotiff library for geospatial TIFF access
 - Handle GeoTIFF metadata and projection information
 - Create simple test GeoTIFF file in `test/data/` directory
-
-**BUFR VOL Connector (Sprint 4):**
-- Integrate with NCEPLIBS-bufr library for observational data access
-- Handle BUFR message parsing and validation
-- Create simple test BUFR file in `test/data/` directory
+- Register with nc_def_user_format(NC_UDF2, &geotiff_dispatcher, magic_number)
 
 #### 5.4.3 Error Handling and Resource Management
 **Error Code Mapping:**
-- Map format-specific error codes to appropriate HDF5 VOL API return values
+- Map format-specific error codes to appropriate NetCDF error codes (NC_NOERR, NC_EINVAL, NC_ENOTNC, etc.)
 - Return error codes without printing error messages
 - Handle cases where underlying format libraries are unavailable
 
@@ -281,8 +294,9 @@ typedef struct H5VL_class_t {
 
 #### 5.4.4 Testing Framework Integration
 **Test Structure:**
-- Each VOL connector requires dedicated test file in `test/` directory
+- Each UDF handler requires dedicated test file in `test/` directory
 - Tests validate both successful operations and error conditions
+- Tests use nc_open() with appropriate NC_UDFx mode flag
 - Integration with existing build system test targets
 
 **Test Data Management:**
@@ -294,12 +308,12 @@ typedef struct H5VL_class_t {
 
 ### 5.5 Build System Requirements (v0.1.1)
 
-#### 5.4.1 Dual Build System Architecture
+#### 5.5.1 Dual Build System Architecture
 NEP implements comprehensive support for both modern and traditional build systems:
 
 **CMake Build System (Primary):**
 - Modern CMake 3.12+ with advanced features and best practices
-- Modular compilation with each VOL connector as independent shared library
+- Modular compilation with each UDF handler as independent shared library
 - Comprehensive Find modules for automatic dependency detection
 - Cross-platform support (Linux, Unix, Windows)
 - Complete install/uninstall target implementation
@@ -312,37 +326,35 @@ NEP implements comprehensive support for both modern and traditional build syste
 - Standard GNU coding standards compliance
 - Portable shell script compatibility
 
-#### 5.4.2 VOL Connector Integration
-Each VOL connector is compiled as a separate shared library that is dynamically loaded at runtime:
+#### 5.5.2 UDF Handler Integration
+Each UDF handler is compiled as a separate shared library that is registered at runtime via nc_def_user_format():
 
-- **GRIB2 Connector**: `libnep_grib2_vol.so` - Requires NCEPLIBS-g2 library
-- **BUFR Connector**: `libnep_bufr_vol.so` - Requires NCEPLIBS-bufr library
-- **GeoTIFF Connector**: `libnep_geotiff_vol.so` - Requires libgeotiff library
-- **CDF Connector**: `libnep_cdf_vol.so` - Requires NASA CDF library
+- **GRIB2 Handler**: `libnep_grib2_udf.so` - Requires NCEPLIBS-g2 library
+- **GeoTIFF Handler**: `libnep_geotiff_udf.so` - Requires libgeotiff library
+- **CDF Handler**: `libnep_cdf_udf.so` - Requires NASA CDF library
 
-#### 5.4.3 Shared Library Architecture
-VOL connectors are implemented as dynamically loadable shared libraries with advanced features:
+#### 5.5.3 Shared Library Architecture
+UDF handlers are implemented as dynamically loadable shared libraries with advanced features:
 
 **Dynamic Loading Framework:**
-- Each connector compiles to a separate `.so` file (Linux/Unix) or `.dll` file (Windows)
-- Runtime loading via `dlopen()` or equivalent platform-specific mechanisms
-- Connector registration and discovery through standardized entry points
-- Memory management and cleanup handled by the connector framework
+- Each handler compiles to a separate `.so` file (Linux/Unix) or `.dll` file (Windows)
+- Runtime registration via `nc_def_user_format()` NetCDF API
+- Handler registration associates magic numbers with NC_Dispatch structures
+- Memory management and cleanup handled by the NetCDF library
 - Proper RPATH/RUNPATH configuration for installed libraries
 
 **Dependency Isolation:**
-- Format-specific dependencies contained within respective connectors
+- Format-specific dependencies contained within respective handlers
 - Independent compilation units prevent dependency conflicts
-- Modular loading allows selective format support
+- Modular registration allows selective format support
 
-#### 5.4.4 Configurable Build Options
+#### 5.5.4 Configurable Build Options
 Both build systems provide comprehensive configuration control:
 
 **CMake Configuration Options:**
 ```bash
-# Individual VOL connector control (default: ON)
+# Individual UDF handler control (default: ON)
 -DENABLE_GRIB2=ON/OFF
--DENABLE_BUFR=ON/OFF
 -DENABLE_GEOTIFF=ON/OFF
 -DENABLE_CDF=ON/OFF
 
@@ -352,9 +364,8 @@ Both build systems provide comprehensive configuration control:
 
 **Autotools Configure Flags:**
 ```bash
-# Individual VOL connector control (default: enabled)
+# Individual UDF handler control (default: enabled)
 --enable-grib2/--disable-grib2
---enable-bufr/--disable-bufr
 --enable-geotiff/--disable-geotiff
 --enable-cdf/--disable-cdf
 
@@ -379,7 +390,6 @@ Both build systems provide comprehensive configuration control:
 | Library | CMake Detection | Autotools Detection | pkg-config Support |
 |---------|----------------|--------------------|-----------------|
 | NCEPLIBS-g2 | FindNCEPLIBS-g2.cmake | AC_CHECK_LIB macro | Yes |
-| NCEPLIBS-bufr | FindNCEPLIBS-bufr.cmake | AC_CHECK_LIB macro | Yes |
 | libgeotiff | FindLibGeoTIFF.cmake | AC_CHECK_LIB macro | Yes |
 | NASA CDF | FindNASACDF.cmake | Custom macro | No |
 
@@ -398,7 +408,6 @@ Both build systems provide comprehensive configuration control:
 ${PREFIX}/
 ├── lib/
 │   ├── libnep_grib2_vol.so
-│   ├── libnep_bufr_vol.so
 │   ├── libnep_geotiff_vol.so
 │   ├── libnep_cdf_vol.so
 │   └── cmake/NEP/
@@ -478,7 +487,7 @@ ${PREFIX}/
 ## 8. Success Criteria
 
 ### 8.1 Launch Criteria
-- [ ] Support for all 4 target formats (GRIB2, BUFR, CDF, GeoTIFF)
+- [ ] Support for all 3 target formats (GRIB2, CDF, GeoTIFF)
 - [ ] <5% performance overhead demonstrated
 - [ ] 100% backward compatibility with existing applications
 - [ ] Complete API documentation
@@ -493,90 +502,83 @@ ${PREFIX}/
 
 ## 9. Timeline and Milestones
 
-### v0.1.3 - VOL Connector File Operations
-#### Sprint 1: GRIB2 File Open/Close
-- Implement H5VL_class_t file_open and file_close function pointers for GRIB2 VOL connector
-- Create glue code functions with proper HDF5 VOL API signatures
-- Modify existing test_grib2_vol test to perform actual GRIB2 file operations
-- Integrate g2c logging system for operation tracing and debugging
-- Comprehensive error handling and resource management
-
-#### Sprint 2: CDF File Open/Close
-- Add small, simple CDF test file in test/data directory
-- Implement file open/close functionality for CDF VOL connector
-- Create test suite for CDF file operations
-
-#### Sprint 3: GeoTIFF File Open/Close
+### v4.0 - GeoTIFF UDF Support
+#### Sprint 1: GeoTIFF File Open/Close
 - Add small, simple GeoTIFF test file in test/data directory
-- Implement file open/close functionality for GeoTIFF VOL connector
+- Implement file open/close functionality for GeoTIFF UDF handler
 - Create test suite for GeoTIFF file operations
+- Ensure test data files are copied to build directory for both CMake and Autotools builds
 
-#### Sprint 4: BUFR File Open/Close
-- Add small, simple BUFR test file in test/data directory
-- Implement file open/close functionality for BUFR VOL connector
-- Create test suite for BUFR file operations
+### v3.0 - CDF UDF Support
+#### Sprint 1: CDF File Open/Close
+- Add small, simple CDF test file in test/data directory
+- Implement file open/close functionality for CDF UDF handler
+- Create test suite for CDF file operations
+- Ensure test data files are copied to build directory for both CMake and Autotools builds
 
-### v0.1.2 - Documentation System
-#### Sprint 1: Doxygen Integration
-- Doxygen build system integration for both CMake and Autotools
-- Comprehensive API documentation with zero-warning builds
-- Documentation quality assurance and standards implementation
+### v2.0.0 - GRIB2 UDF Support
+#### Sprint 1: GRIB2 File Open/Close
+- **NC_Dispatch Implementation**: Populate file_open and file_close function pointers in GRIB2 UDF handler NC_Dispatch structure
+- **Glue Code Functions**: Create wrapper functions with proper NetCDF dispatch API signatures that interface with NCEPLIBS-g2 library
+- **Test Enhancement**: Modify existing `test/test_grib2_udf` test to open and close actual GRIB2 file using NetCDF API
+- **Test Data**: Use existing `test/data/gdaswave.t00z.wcoast.0p16.f000.grib2` file for file operations testing
+- **Test Data Build Integration**: Ensure test data files are copied from `test/data/` to build directory for both CMake and Autotools builds
+- **g2c Logging Integration**: Simple logging - call g2c_set_log_level(3) at test start, g2c_set_log_level(0) at test end
+- **Error Handling**: Return appropriate NetCDF error codes without printing error messages
+- **Resource Management**: Proper memory management and cleanup in file close operations
+
+#### Sprint 2: File Metadata
+- Implement metadata reading functionality for GRIB2 files
+- Extract and expose GRIB2 metadata through NetCDF API
+
+#### Sprint 3: Reading Data
+- Implement data reading functionality for GRIB2 files
+- Support for reading GRIB2 data arrays through NetCDF API
+
+#### Sprint 4: Var Metadata
+- Implement variable metadata functionality
+- Complete GRIB2 variable information access
+
+### v1.0.0 - LZ4 Compression
+#### Sprint 1: LZ4 Compression Plugin
+- Add hdf5_plugin subdirectory with LZ4 plugin
+- Integrate LZ4 compression filter for HDF5/NetCDF4 files
+- More comprehensive tests for LZ4 compression
+- Documentation on GitHub for LZ4 usage
+
+### v0.1.3 - Documentation System
+#### Sprint 1: Documentation with Doxygen
+- **Doxygen Build Integration**: Add Doxygen documentation generation to both CMake and Autotools build systems
+- **Doxygen Configuration**: Create comprehensive Doxyfile.in template with variable substitution
+- **API Documentation Standards**: Establish and implement documentation requirements for all public APIs
+- **Documentation Quality Assurance**: Implement zero-warning documentation builds
 
 #### Sprint 2: CI Documentation Integration
-- CI pipeline documentation build matrix implementation
-- Documentation artifact generation and preservation
-- GitHub Pages deployment preparation
+- **CI Documentation Integration**: CI pipeline enhanced with documentation build matrix
+- Documentation build steps added for both CMake and Autotools build systems
+- Zero-warning enforcement implemented (documentation warnings treated as build failures)
+- Documentation artifacts uploaded and preserved for 30 days
+
+### v0.1.2 - Add Compression Plugins
+#### Sprint 1: Add LZ4 Compression Plugin
+- Add hdf5_plugin subdirectory and hdf5_plugin/LZ4 directory
+- The hdf5_plugin/LZ4 directory contains contents of LZ4 plugin
+- Build files modified so that only the LZ4 plugin is built
+- All other plugin code removed
 
 ### v0.1.1 - Build System Enhancement
-#### Sprint 1: VOL Connector Integration
-- VOL connector build system integration
+#### Sprint 1: UDF Handler Integration
+- UDF handler build system integration
 - Dependency management for all format libraries
-- Configurable enable/disable options for each VOL type
+- Configurable enable/disable options for each format handler
 - Enhanced build documentation
 
 #### Sprint 2: Installation System
 - Complete installation target implementation for both build systems
-- VOL connector shared library installation
+- UDF handler shared library installation
 - CMake config file generation and installation
 - Uninstall target implementation
 - Configurable installation paths via standard prefix options
-
-### v0.1 - Framework Foundation (Month 1)
-- NEP framework setup
-- Build system implementation (CMake and Autotools)
-- Core connector architecture
-- Basic format detection engine
-
-### v0.2 - GRIB2 Support (Month 2)
-- GRIB2 format reader implementation
-- ECCODES library integration
-- Initial NetCDF4/HDF5 API translation layer
-- Basic testing framework
-
-### v0.3 - BUFR Integration (Month 3)
-- BUFR format reader implementation
-- Enhanced format detection system
-- Connector loading mechanisms
-- Integration testing
-
-### v0.4 - GeoTIFF Support (Month 4)
-- GeoTIFF format reader implementation
-- GDAL library integration
-- Performance optimization pass
-- Cross-platform testing
-
-### v0.5 - CDF Completion (Month 5)
-- CDF format reader implementation
-- NASA CDF library integration
-- Parallel I/O support implementation
-- Comprehensive performance validation
-
-### v1.0 - Production Release (Month 6)
-- Full production release
-- Complete API documentation
-- HPC environment validation
-- Community release preparation
-- Final performance benchmarking
 
 ## 10. Risk Assessment
 

@@ -10,10 +10,8 @@ option(DEBUG "Build with debugging symbols" OFF)
 # Use add_definitions for compatibility with CMake 3.9
 add_definitions(-DUSE_HDF5=yes)
 
-# VOL connector enable/disable options
-option(ENABLE_GRIB2 "Enable GRIB2 VOL connector" ON)
-option(ENABLE_GEOTIFF "Enable GeoTIFF VOL connector" ON)
-option(ENABLE_CDF "Enable CDF VOL connector" ON)
+# GRIB2 UDF enable/disable option
+option(ENABLE_GRIB2 "Enable GRIB2 UDF support" ON)
 
 # Documentation option
 option(BUILD_DOCUMENTATION "Build documentation with Doxygen" ON)
@@ -41,11 +39,6 @@ include_directories(${NETCDF_INCLUDE_DIRS})
 link_directories(${NETCDF_LIBRARY_DIRS})
 set (LINK_LIBS ${LINK_LIBS} ${NETCDF_LIBRARIES})
 
-# Initialize variables for enabled VOL connectors
-set(ENABLED_VOLS "")
-set(VOL_LIBRARIES "")
-set(VOL_INCLUDE_DIRS "")
-
 # Find GRIB2 dependencies if enabled
 if(ENABLE_GRIB2)
     find_library(G2C_LIBRARY NAMES g2c)
@@ -53,64 +46,13 @@ if(ENABLE_GRIB2)
     
     if(G2C_LIBRARY AND G2C_INCLUDE_DIR)
         message(STATUS "Found NCEPLIBS-g2: ${G2C_LIBRARY}")
-        list(APPEND ENABLED_VOLS "GRIB2")
-        list(APPEND VOL_LIBRARIES ${G2C_LIBRARY})
-        list(APPEND VOL_INCLUDE_DIRS ${G2C_INCLUDE_DIR})
+        include_directories(${G2C_INCLUDE_DIR})
         set(HAVE_GRIB2 TRUE)
+        message(STATUS "GRIB2 UDF support enabled")
     else()
-        message(FATAL_ERROR "GRIB2 VOL connector enabled but NCEPLIBS-g2 not found. Install NCEPLIBS-g2 or disable with -DENABLE_GRIB2=OFF")
+        message(FATAL_ERROR "GRIB2 UDF enabled but NCEPLIBS-g2 not found. Install NCEPLIBS-g2 or disable with -DENABLE_GRIB2=OFF")
     endif()
 endif()
-
-
-# Find GeoTIFF dependencies if enabled
-if(ENABLE_GEOTIFF)
-    find_library(GEOTIFF_LIBRARY NAMES geotiff)
-    find_path(GEOTIFF_INCLUDE_DIR geotiff.h)
-    
-    if(GEOTIFF_LIBRARY AND GEOTIFF_INCLUDE_DIR)
-        message(STATUS "Found libgeotiff: ${GEOTIFF_LIBRARY}")
-        list(APPEND ENABLED_VOLS "GeoTIFF")
-        list(APPEND VOL_LIBRARIES ${GEOTIFF_LIBRARY})
-        list(APPEND VOL_INCLUDE_DIRS ${GEOTIFF_INCLUDE_DIR})
-        set(HAVE_GEOTIFF TRUE)
-    else()
-        message(FATAL_ERROR "GeoTIFF VOL connector enabled but libgeotiff not found. Install libgeotiff or disable with -DENABLE_GEOTIFF=OFF")
-    endif()
-endif()
-
-# Find CDF dependencies if enabled
-if(ENABLE_CDF)
-    find_library(CDF_LIBRARY NAMES cdf)
-    find_path(CDF_INCLUDE_DIR cdf.h)
-    
-    if(CDF_LIBRARY AND CDF_INCLUDE_DIR)
-        message(STATUS "Found NASA CDF: ${CDF_LIBRARY}")
-        list(APPEND ENABLED_VOLS "CDF")
-        list(APPEND VOL_LIBRARIES ${CDF_LIBRARY})
-        list(APPEND VOL_INCLUDE_DIRS ${CDF_INCLUDE_DIR})
-        set(HAVE_CDF TRUE)
-    else()
-        message(FATAL_ERROR "CDF VOL connector enabled but NASA CDF library not found. Install NASA CDF library or disable with -DENABLE_CDF=OFF")
-    endif()
-endif()
-
-# Check that at least one VOL connector is enabled
-list(LENGTH ENABLED_VOLS NUM_ENABLED_VOLS)
-if(NUM_ENABLED_VOLS EQUAL 0)
-    message(FATAL_ERROR "No VOL connectors enabled. Enable at least one with -DENABLE_<VOL>=ON")
-endif()
-
-# Include directories for found dependencies
-if(VOL_INCLUDE_DIRS)
-    include_directories(${VOL_INCLUDE_DIRS})
-endif()
-
-# Set up link libraries
-set(LINK_LIBS ${LINK_LIBS} ${VOL_LIBRARIES})
-
-# Print summary of enabled VOL connectors
-message(STATUS "Enabled VOL connectors: ${ENABLED_VOLS}")
 
 # It's really easy to pick up the wrong HDF5 library if you set the path
 # wrong. Turn this on for added confirmation that you got it right.
@@ -153,6 +95,7 @@ add_subdirectory (test)
 if(HAVE_GRIB2)
     add_subdirectory (test_grib2)
 endif()
+
 # Generate and install CMake config files
 include(CMakePackageConfigHelpers)
 

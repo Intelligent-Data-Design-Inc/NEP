@@ -114,9 +114,9 @@ dnl if test "x$enable_lz4" = xyes; then
 dnl    AC_CONFIG_SUBDIRS([LZ4])
 dnl fi
 
-# VOL connector enable/disable options
+# GRIB2 UDF enable/disable option
 AC_ARG_ENABLE([grib2],
-    AS_HELP_STRING([--enable-grib2], [Enable GRIB2 VOL connector (default: yes)]),
+    AS_HELP_STRING([--enable-grib2], [Enable GRIB2 UDF support (default: yes)]),
     [enable_grib2=$enableval],
     [enable_grib2=yes])
 
@@ -126,10 +126,7 @@ AC_ARG_ENABLE([docs],
     [enable_docs=auto])
 
 # Initialize variables
-ENABLED_VOLS=""
 HAVE_GRIB2=no
-HAVE_GEOTIFF=no
-HAVE_CDF=no
 HAVE_DOXYGEN=no
 
 # Check for GRIB2 dependencies if enabled
@@ -139,11 +136,10 @@ if test "x$enable_grib2" = "xyes"; then
     
     if test "x$grib2_header" = "xyes" && test "x$grib2_lib" = "xyes"; then
         HAVE_GRIB2=yes
-        ENABLED_VOLS="$ENABLED_VOLS GRIB2"
-        AC_DEFINE([HAVE_GRIB2], [1], [Define if GRIB2 VOL connector is enabled])
-        AC_MSG_NOTICE([GRIB2 VOL connector enabled])
+        AC_DEFINE([HAVE_GRIB2], [1], [Define if GRIB2 UDF support is enabled])
+        AC_MSG_NOTICE([GRIB2 UDF support enabled])
     else
-        AC_MSG_ERROR([GRIB2 VOL connector enabled but NCEPLIBS-g2c not found. Install NCEPLIBS-g2c or disable with --disable-grib2])
+        AC_MSG_ERROR([GRIB2 UDF enabled but NCEPLIBS-g2c not found. Install NCEPLIBS-g2c or disable with --disable-grib2])
     fi
 fi
 AC_SUBST([G2C_LIBS])
@@ -174,11 +170,7 @@ fi
 
 # Set up conditionals for Makefile.am
 AM_CONDITIONAL([HAVE_GRIB2], [test "x$HAVE_GRIB2" = "xyes"])
-AM_CONDITIONAL([HAVE_GEOTIFF], [test "x$HAVE_GEOTIFF" = "xyes"])
-AM_CONDITIONAL([HAVE_CDF], [test "x$HAVE_CDF" = "xyes"])
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$HAVE_DOXYGEN" = "xyes"])
-
-AC_MSG_NOTICE([Enabled VOL connectors:$ENABLED_VOLS])
 
 # Initialize Automake
 AM_INIT_AUTOMAKE([foreign subdir-objects])

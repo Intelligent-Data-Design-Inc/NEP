@@ -17,7 +17,7 @@ lib_LTLIBRARIES += libncsqueeze.la
 libncsqueeze_la_LDFLAGS = -version-info 1:0:0
 libncsqueeze_la_SOURCES = ncsqueeze.c
 
-# GRIB2 VOL connector
+# GRIB2 library (netCDF UDF support)
 if HAVE_GRIB2
 lib_LTLIBRARIES += libncgrib2.la
 libncgrib2_la_LDFLAGS = -version-info 1:0:0

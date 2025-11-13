@@ -1,10 +1,8 @@
 #ifndef NEP_CONFIG_H
 #define NEP_CONFIG_H
 
-/* VOL connector availability */
+/* GRIB2 UDF support availability */
 #cmakedefine HAVE_GRIB2
-#cmakedefine HAVE_GEOTIFF
-#cmakedefine HAVE_CDF
 
 /* Project version */
 #define NEP_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
