@@ -1,4 +1,6 @@
-# NEP (NetCDF Extension Pack)
+# NEP (NetCDF Expansion Pack)
+
+**[📚 Full Documentation](https://intelligent-data-design-inc.github.io/NEP/)**
 
 ## v1.0.0: High-Performance Compression
 
@@ -44,7 +46,7 @@ NEP provides high-performance compression options as HDF5 filter plugins:
 
 ## Compression Performance
 
-The following benchmarks compare compression methods on a 150 MB NetCDF-4 dataset:
+The following benchmarks compare compression methods on a 150 MB NetCDF-4 dataset. For comparison, I include ZSTD, which was recently added to NetCDF and provides better performance than ZLIB, though not as fast as LZ4:
 
 ### All Compression Methods
 
@@ -66,8 +68,9 @@ For better visualization of the faster compression methods:
 
 **Key Insights:**
 - **LZ4** offers the best balance: 2.2× compression with minimal performance impact (79% write speed, 88% read speed)
+- **ZSTD** (recently added to NetCDF) provides excellent compression (4.3×) with moderate performance impact (41% write speed, 54% read speed)
+- **ZLIB** (standard DEFLATE) shows 3.6× compression but is slower than both LZ4 and ZSTD
 - **BZIP2** achieves the highest compression ratio (6.7×) but is significantly slower (1% write speed, 2% read speed)
-- **ZSTD** provides excellent compression (4.3×) with moderate performance impact (41% write speed, 54% read speed)
 - **Read performance** generally mirrors write performance, with LZ4 being fastest and BZIP2 slowest
 
 ---
