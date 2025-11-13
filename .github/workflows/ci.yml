@@ -244,7 +244,9 @@ jobs:
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib"
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
           ls -l "${HDF5_PLUGIN_PATH}"
-          make VERBOSE=1 check
+          make VERBOSE=1 check || (echo "Tests failed. Printing test logs:"; cat test/test-suite.log; cat test/run_tests.sh.log; exit 1)
+          echo "Tests passed. Showing test output:"
+          cat test/run_tests.sh.log
           sudo make install
 
       - name: Upload Documentation Artifacts (Autotools)
