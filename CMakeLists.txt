@@ -22,22 +22,33 @@ if(DEBUG)
     message(STATUS "Debug mode enabled: Adding -g flag")
 endif()
 
-# Enable testing
-enable_testing ()
-include (CTest)
+# Determine if we're doing a documentation-only build
+set(DOCS_ONLY OFF)
+if(BUILD_DOCUMENTATION AND NOT BUILD_TESTING)
+    set(DOCS_ONLY ON)
+    message(STATUS "Documentation-only build - skipping dependencies")
+endif()
 
-# Find HDF5
-find_package(HDF5 1.10 REQUIRED COMPONENTS C)
-link_directories (${HDF5_LIBRARY_DIRS})
-include_directories (${HDF5_INCLUDE_DIR})
-set (LINK_LIBS ${LINK_LIBS} ${HDF5_C_${LIB_TYPE}_LIBRARY})
+# Enable testing (skip if documentation-only build)
+if(NOT DOCS_ONLY)
+    enable_testing ()
+    include (CTest)
+endif()
 
-# Find NetCDF-C
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(NETCDF REQUIRED netcdf)
-include_directories(${NETCDF_INCLUDE_DIRS})
-link_directories(${NETCDF_LIBRARY_DIRS})
-set (LINK_LIBS ${LINK_LIBS} ${NETCDF_LIBRARIES})
+# Find HDF5 (skip if documentation-only build)
+if(NOT DOCS_ONLY)
+    find_package(HDF5 1.10 REQUIRED COMPONENTS C)
+    link_directories (${HDF5_LIBRARY_DIRS})
+    include_directories (${HDF5_INCLUDE_DIR})
+    set (LINK_LIBS ${LINK_LIBS} ${HDF5_C_${LIB_TYPE}_LIBRARY})
+
+    # Find NetCDF-C
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(NETCDF REQUIRED netcdf)
+    include_directories(${NETCDF_INCLUDE_DIRS})
+    link_directories(${NETCDF_LIBRARY_DIRS})
+    set (LINK_LIBS ${LINK_LIBS} ${NETCDF_LIBRARIES})
+endif()
 
 # Find GRIB2 dependencies if enabled
 if(ENABLE_GRIB2)
@@ -68,8 +79,10 @@ set(PACKAGE_BUGREPORT "help@intelligentdatadesign.com")
 set(PACKAGE_URL "")
 set(VERSION "${PROJECT_VERSION}")
 
-# Set HDF5 availability
-set(HAVE_HDF5 TRUE)
+# Set HDF5 availability (only if not docs-only build)
+if(NOT DOCS_ONLY)
+    set(HAVE_HDF5 TRUE)
+endif()
 
 # Set standard header availability (these are typically available on modern systems)
 set(STDC_HEADERS 1)
@@ -84,55 +97,59 @@ set(HAVE_SYS_STAT_H 1)
 set(HAVE_SYS_TYPES_H 1)
 set(HAVE_DLFCN_H 1)
 
-# Pass configuration to source directory
-configure_file(${CMAKE_SOURCE_DIR}/config.h.cmake.in ${CMAKE_BINARY_DIR}/config.h)
+# Pass configuration to source directory (skip if docs-only build)
+if(NOT DOCS_ONLY)
+    configure_file(${CMAKE_SOURCE_DIR}/config.h.cmake.in ${CMAKE_BINARY_DIR}/config.h)
 
-include(GNUInstallDirs)
-add_subdirectory (src)
-add_subdirectory (test)
+    include(GNUInstallDirs)
+    add_subdirectory (src)
+    add_subdirectory (test)
 
-# If GRIB2 layer has been built, test it.
-if(HAVE_GRIB2)
-    add_subdirectory (test_grib2)
+    # If GRIB2 layer has been built, test it.
+    if(HAVE_GRIB2)
+        add_subdirectory (test_grib2)
+    endif()
+
+    # Generate and install CMake config files
+    include(CMakePackageConfigHelpers)
+
+    # Configure the config file
+    configure_package_config_file(
+        "${CMAKE_SOURCE_DIR}/NEPConfig.cmake.in"
+        "${CMAKE_BINARY_DIR}/NEPConfig.cmake"
+        INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/NEP"
+        PATH_VARS CMAKE_INSTALL_LIBDIR CMAKE_INSTALL_INCLUDEDIR
+    )
+
+    # Generate version file
+    write_basic_package_version_file(
+        "${CMAKE_BINARY_DIR}/NEPConfigVersion.cmake"
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY SameMajorVersion
+    )
+
+    # Install config files
+    install(FILES
+        "${CMAKE_BINARY_DIR}/NEPConfig.cmake"
+        "${CMAKE_BINARY_DIR}/NEPConfigVersion.cmake"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/NEP"
+    )
+
+    # Install the export set for use with the install-tree
+    install(EXPORT NEPTargets
+        FILE NEPTargets.cmake
+        NAMESPACE NEP::
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/NEP"
+    )
 endif()
-
-# Generate and install CMake config files
-include(CMakePackageConfigHelpers)
-
-# Configure the config file
-configure_package_config_file(
-    "${CMAKE_SOURCE_DIR}/NEPConfig.cmake.in"
-    "${CMAKE_BINARY_DIR}/NEPConfig.cmake"
-    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/NEP"
-    PATH_VARS CMAKE_INSTALL_LIBDIR CMAKE_INSTALL_INCLUDEDIR
-)
-
-# Generate version file
-write_basic_package_version_file(
-    "${CMAKE_BINARY_DIR}/NEPConfigVersion.cmake"
-    VERSION ${PROJECT_VERSION}
-    COMPATIBILITY SameMajorVersion
-)
-
-# Install config files
-install(FILES
-    "${CMAKE_BINARY_DIR}/NEPConfig.cmake"
-    "${CMAKE_BINARY_DIR}/NEPConfigVersion.cmake"
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/NEP"
-)
-
-# Install the export set for use with the install-tree
-install(EXPORT NEPTargets
-    FILE NEPTargets.cmake
-    NAMESPACE NEP::
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/NEP"
-)
 
 
 # Doxygen documentation build
 if(BUILD_DOCUMENTATION)
     find_package(Doxygen)
     if(DOXYGEN_FOUND)
+        # Add build date for documentation
+        string(TIMESTAMP BUILD_DATE "%Y-%m-%d %H:%M:%S UTC" UTC)
         set(abs_top_srcdir "${CMAKE_SOURCE_DIR}")
         set(abs_top_builddir "${CMAKE_BINARY_DIR}")
         set(DOXYGEN_IN ${CMAKE_SOURCE_DIR}/docs/Doxyfile.in)

@@ -37,7 +37,7 @@ jobs:
       - name: Configure and build documentation
         run: |
           mkdir build && cd build
-          cmake -DBUILD_DOCUMENTATION=ON ..
+          cmake -DBUILD_DOCUMENTATION=ON -DBUILD_TESTING=OFF -DENABLE_GRIB2=OFF -DENABLE_LZ4=OFF ..
           cmake --build . --target docs
       
       - name: Verify documentation build

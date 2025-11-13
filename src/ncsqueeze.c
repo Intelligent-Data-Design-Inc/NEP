@@ -2,7 +2,7 @@
  * @file
  * This is the code file for ncsqueeze.
  *
- * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @author Edward Hartnett
  * @date Nov 13, 2025
  * @copyright Intelligent Data Design, Inc. All rights reserved.
  */
@@ -46,7 +46,7 @@
  * when compressing. (bzip2 default level is 9).
  *
  * @return 0 for success, error code otherwise.
- * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @author Edward Hartnett
  */
 int
 nc_def_var_bzip2(int ncid, int varid, int level)
@@ -82,7 +82,7 @@ nc_def_var_bzip2(int ncid, int varid, int level)
  * bzip2 is in use. Ignored if NULL.
  *
  * @return 0 for success, error code otherwise.
- * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @author Edward Hartnett
  */
 int
 nc_inq_var_bzip2(int ncid, int varid, int *bzip2p, int *levelp)
@@ -165,7 +165,7 @@ nc_inq_var_bzip2(int ncid, int varid, int *bzip2p, int *levelp)
  * when compressing. (lz4 default level is 9).
  *
  * @return 0 for success, error code otherwise.
- * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @author Edward Hartnett
  */
 int
 nc_def_var_lz4(int ncid, int varid, int level)
@@ -202,7 +202,7 @@ nc_def_var_lz4(int ncid, int varid, int level)
  * Ignored if NULL.
  *
  * @return 0 for success, error code otherwise.
- * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @author Edward Hartnett
  */
 int
 nc_inq_var_lz4(int ncid, int varid, int *lz4p, int *levelp)
@@ -264,7 +264,7 @@ nc_inq_var_lz4(int ncid, int varid, int *lz4p, int *levelp)
  * nx * ny bytes for rgb = 0, or nx * xy * 3 if rgb = 1.
  *
  * @return 0 for success, error code otherwise.
- * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @author Edward Hartnett
  */
 int
 nc_def_var_jpeg(int ncid, int varid, int quality_factor, int nx,
@@ -315,7 +315,7 @@ nc_def_var_jpeg(int ncid, int varid, int quality_factor, int nx,
  * MONO. Ignored if NULL.
  *
  * @return 0 for success, error code otherwise.
- * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @author Edward Hartnett
  */
 int
 nc_inq_var_jpeg(int ncid, int varid, int *jpegp, int *quality_factorp, int *nxp,
@@ -378,7 +378,7 @@ nc_inq_var_jpeg(int ncid, int varid, int *jpegp, int *quality_factorp, int *nxp,
  * @param varid Variable ID.
  *
  * @return 0 for success, error code otherwise.
- * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @author Edward Hartnett
  */
 int
 nc_def_var_lzf(int ncid, int varid)
@@ -407,7 +407,7 @@ nc_def_var_lzf(int ncid, int varid)
  * var, and a 1 if it is. Ignored if NULL.
  *
  * @return 0 for success, error code otherwise.
- * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @author Edward Hartnett
  */
 int
 nc_inq_var_lzf(int ncid, int varid, int *lzfp)
