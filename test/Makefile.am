@@ -60,5 +60,5 @@ CLEANFILES = tst_*.nc
 
 EXTRA_DIST = run_tests.sh.in
 
-DISTCLEANFILES = test_vol_plugin.sh run_tests.sh
+DISTCLEANFILES = run_tests.sh
 

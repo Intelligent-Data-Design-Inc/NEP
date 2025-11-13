@@ -62,6 +62,34 @@ NEP provides a transparent, runtime-pluggable solution:
 - **Compatibility**: Works with existing scientific codebases without modification
 - **Scalability**: Designed for exascale computing environments
 
+## Compression Performance
+
+The following benchmarks compare compression methods on a 150 MB NetCDF-4 dataset:
+
+### All Compression Methods
+
+![Compression Performance](docs/compression_performance.svg)
+
+### Fast Compression Methods (Excluding BZIP2)
+
+For better visualization of the faster compression methods:
+
+![Fast Compression Performance](docs/compression_performance_fast.svg)
+
+| Method | Write Time (s) | File Size (MB) | Read Time (s) | Compression Ratio | Write Speed | Read Speed |
+|--------|----------------|----------------|---------------|-------------------|-------------|------------|
+| none   | 0.27          | 150.01         | 0.14          | 1.0×              | 1.0×        | 1.0×       |
+| lz4    | 0.34          | 68.95          | 0.16          | 2.2×              | 0.79×       | 0.88×      |
+| zstd   | 0.66          | 34.94          | 0.26          | 4.3×              | 0.41×       | 0.54×      |
+| zlib   | 1.83          | 41.78          | 0.59          | 3.6×              | 0.15×       | 0.24×      |
+| bzip2  | 22.14         | 22.39          | 5.90          | 6.7×              | 0.01×       | 0.02×      |
+
+**Key Insights:**
+- **LZ4** offers the best balance: 2.2× compression with minimal performance impact (79% write speed, 88% read speed)
+- **BZIP2** achieves the highest compression ratio (6.7×) but is significantly slower (1% write speed, 2% read speed)
+- **ZSTD** provides excellent compression (4.3×) with moderate performance impact (41% write speed, 54% read speed)
+- **Read performance** generally mirrors write performance, with LZ4 being fastest and BZIP2 slowest
+
 ---
 
 ## Installation

@@ -33,7 +33,6 @@ jobs:
       fail-fast: false
       matrix:
         build_system: [cmake, autotools]
-        doc_build: [enabled, disabled]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -162,7 +161,7 @@ jobs:
           make -j$(nproc)
 
       - name: Build Documentation (CMake)
-        if: matrix.build_system == 'cmake' && matrix.doc_build == 'enabled'
+        if: matrix.build_system == 'cmake'
         working-directory: build
         run: |
           set -x
@@ -178,7 +177,7 @@ jobs:
           echo "Documentation built successfully without warnings"
 
       - name: Test (CTest)
-        if: matrix.build_system == 'cmake' && matrix.doc_build == 'disabled'
+        if: matrix.build_system == 'cmake'
         working-directory: build
         run: |
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
@@ -190,7 +189,7 @@ jobs:
           sudo make install
 
       - name: Upload Documentation Artifacts (CMake)
-        if: matrix.build_system == 'cmake' && matrix.doc_build == 'enabled'
+        if: matrix.build_system == 'cmake'
         uses: actions/upload-artifact@v4
         with:
           name: documentation-cmake-lz4
@@ -215,20 +214,14 @@ jobs:
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib"
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
           ls -l $GITHUB_WORKSPACE/hdf5-install/lib
-          DOC_FLAG=""
-          if [ "${{ matrix.doc_build }}" = "enabled" ]; then
-            DOC_FLAG="--enable-docs"
-          else
-            DOC_FLAG="--disable-docs"
-          fi
-          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc --enable-lz4 $DOC_FLAG || (echo "Configure failed. Printing config.log:"; cat config.log; echo "hdf5_plugins/config.log:"; cat hdf5_plugins/config.log; exit 1)
+          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc --enable-lz4 --enable-docs || (echo "Configure failed. Printing config.log:"; cat config.log; echo "hdf5_plugins/config.log:"; cat hdf5_plugins/config.log; exit 1)
 
       - name: Build (Autotools)
         if: matrix.build_system == 'autotools'
         run: make -j$(nproc)
 
       - name: Build Documentation (Autotools)
-        if: matrix.build_system == 'autotools' && matrix.doc_build == 'enabled'
+        if: matrix.build_system == 'autotools'
         run: |
           set -x
           echo "Building documentation with Autotools..."
@@ -242,7 +235,7 @@ jobs:
           echo "Documentation built successfully without warnings"
 
       - name: Test (Autotools)
-        if: matrix.build_system == 'autotools' && matrix.doc_build == 'disabled'
+        if: matrix.build_system == 'autotools'
         run: |
           set -x
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
@@ -251,11 +244,13 @@ jobs:
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib"
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
           ls -l "${HDF5_PLUGIN_PATH}"
-          make VERBOSE=1 check
+          make VERBOSE=1 check || (echo "Tests failed. Printing test logs:"; cat test/test-suite.log; cat test/run_tests.sh.log; exit 1)
+          echo "Tests passed. Showing test output:"
+          cat test/run_tests.sh.log
           sudo make install
 
       - name: Upload Documentation Artifacts (Autotools)
-        if: matrix.build_system == 'autotools' && matrix.doc_build == 'enabled'
+        if: matrix.build_system == 'autotools'
         uses: actions/upload-artifact@v4
         with:
           name: documentation-autotools-lz4

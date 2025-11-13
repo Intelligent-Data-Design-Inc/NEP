@@ -82,42 +82,11 @@
   - Clear v1.0.0 scope focusing on LZ4 compression
   - All format handler infrastructure preserved for future versions
 
-#### Sprint 3: Comprehensive LZ4 Testing
-- **Performance Benchmarking Tests**: Create comprehensive performance comparison tests
-  - Compare LZ4 compression speed vs DEFLATE compression
-  - Measure compression/decompression throughput (MB/s)
-  - Validate >2x speed improvement requirement over DEFLATE
-  - Test with various scientific dataset types and sizes
-- **Compression Ratio Tests**: Validate compression effectiveness
-  - Test compression ratios across different data patterns
-  - Compare against DEFLATE compression ratios
-  - Document trade-offs between speed and compression ratio
-- **Data Integrity Tests**: Ensure lossless compression guarantee
-  - Verify bit-for-bit data integrity after compression/decompression cycles
-  - Test with various data types (float, double, int, etc.)
-  - Validate metadata preservation
-- **Integration Tests**: End-to-end NetCDF-4 workflow testing
-  - Test LZ4 filter with nc_def_var_deflate() equivalent API
-  - Verify transparent operation with NetCDF-4 API
-  - Test chunking and compression parameter combinations
-- **Edge Case Tests**: Boundary condition and error handling
-  - Test with empty datasets, single values, and maximum size data
-  - Verify proper error handling for invalid compression parameters
-  - Test memory limits and large dataset handling
-- **Cross-Platform Tests**: Validate portability
-  - Test on Linux and Unix platforms
-  - Verify HDF5 plugin discovery and loading
-  - Test with different HDF5 and NetCDF-C versions
-- **Documentation Tests**: Validate example code
-  - Ensure all documentation code examples compile and run
-  - Test usage examples from Doxygen documentation
-  - Verify installation and configuration instructions
-
-#### Sprint 4: Spack Support
+#### Sprint 3: Spack Support
 - Add spack support.
 - It can be tested like NCEPLIBS-g2c.
 
-#### Sprint 5: Update Docs
+#### Sprint 4: Update Docs
 - Make sure all docs in the docs directory correctly describe v1.0.
 
 ### v0.1.3 Documentation
