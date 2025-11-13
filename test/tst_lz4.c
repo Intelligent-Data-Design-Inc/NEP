@@ -1,9 +1,11 @@
-/* This is part of the NCSQUEEZE package. Copyright 2020.
-
-   Test LZ4 compression.
-
-   Edward Hartnett, Intelligent Data Design, Inc, 9/17/25
-*/
+/**
+ * @file
+ * Test LZ4 compression.
+ *
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @date Nov 13, 2025
+ * @copyright Intelligent Data Design, Inc. All rights reserved.
+ */
 
 #include "config.h"
 #include "ncsqueeze.h"

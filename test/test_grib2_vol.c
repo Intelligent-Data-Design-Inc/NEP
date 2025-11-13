@@ -1,3 +1,12 @@
+/**
+ * @file
+ * Test GRIB2 VOL connector.
+ *
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @date Nov 13, 2025
+ * @copyright Intelligent Data Design, Inc. All rights reserved.
+ */
+
 #include "grib2_vol_connector.h"
 
 #include <hdf5.h>

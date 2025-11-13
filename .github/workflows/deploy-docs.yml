@@ -1,10 +1,9 @@
 # GitHub Actions workflow for deploying Doxygen documentation to GitHub Pages
 #
 # This workflow builds the project documentation using Doxygen and deploys it
-# to GitHub Pages. It triggers on releases, manual dispatch, and pushes to main
-# that modify documentation-related files.
+# to GitHub Pages. It triggers on releases and manual dispatch.
 #
-# Edward Hartnett, 11/13/24
+# Edward Hartnett, Intelligent Data Design, Inc., Nov 13, 2025
 
 name: deploy_documentation
 

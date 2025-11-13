@@ -1,10 +1,10 @@
-/*
- * This is a test in the ncsqueeze project.
- *
+/**
+ * @file
  * This test checks the LZ4 filter.
  *
- * Ed Hartnett
- * 9/9/25
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @date Nov 13, 2025
+ * @copyright Intelligent Data Design, Inc. All rights reserved.
  */
 
 #include "config.h"

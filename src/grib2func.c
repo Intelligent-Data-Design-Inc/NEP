@@ -3,8 +3,10 @@
  * This file handles the (useless) *_base_pe() functions, and the
  * inq_format functions.
  *
- * @author Ed Hartnett
-*/
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @date Nov 13, 2025
+ * @copyright Intelligent Data Design, Inc. All rights reserved.
+ */
 
 #include "grib2logging.h"
 #include "nc4internal.h"
