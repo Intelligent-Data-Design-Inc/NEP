@@ -242,7 +242,7 @@ jobs:
           echo "Documentation built successfully without warnings"
 
       - name: Test (CTest)
-        if: matrix.build_system == 'cmake'
+        if: matrix.build_system == 'cmake' && matrix.doc_build == 'disabled'
         working-directory: build
         run: |
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
@@ -307,7 +307,7 @@ jobs:
           echo "Documentation built successfully without warnings"
 
       - name: Test (Autotools)
-        if: matrix.build_system == 'autotools'
+        if: matrix.build_system == 'autotools' && matrix.doc_build == 'disabled'
         run: |
           set -x
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
