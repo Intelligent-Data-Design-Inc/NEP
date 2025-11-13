@@ -86,11 +86,9 @@ int test_compression(int f)
 
     /* Allocate memory for one record. */
     if (!(data_out = malloc(NX_BIG * NY_BIG * sizeof(float)))) ERR;
-		/* Create a new record to write. */
-		for (x = 0; x < NX_BIG * NY_BIG; x++)
-			data_out[x] = 1014.0 - ((start[0] + 1.0) * 10) + (rand() % 20 - 10) + 9.0/(x + 1);
-		if (nc_put_vara_float(ncid, varid, start, count, data_out)) ERR;
-
+    /* Create a new record to write. */
+    for (x = 0; x < NX_BIG * NY_BIG; x++)
+		data_out[x] = 1014.0 - ((start[0] + 1.0) * 10) + (rand() % 20 - 10) + 9.0/(x + 1);
     if (!(data_in = malloc(NX_BIG * NY_BIG * sizeof(float)))) ERR;
 
     if (!f)
@@ -166,9 +164,7 @@ int test_compression(int f)
     /* Write the data records. */
     for (start[0] = 0; start[0] < NUM_REC; start[0]++)
     {
-		/* Create a new record to write. */
-		for (x = 0; x < NX_BIG * NY_BIG; x++)
-			data_out[x] = 1014.0 - ((start[0] + 1.0) * 10) + (rand() % 20 - 10) + 9.0/(x + 1);
+		/* Write a record. */
 		if (nc_put_vara_float(ncid, varid, start, count, data_out)) ERR;
     }
 
