@@ -3,7 +3,7 @@
 ## 1. Executive Summary
 
 ### 1.1 Product Overview
-The NetCDF Extension Pack (NEP) is a User Defined Format (UDF) system that enables seamless access to diverse NASA Earth Science data formats through the standard NetCDF API. The system provides automatic format detection and runtime-pluggable UDF handlers for formats including GRIB2, CDF, and GeoTIFF. Additionally, NEP includes high-performance LZ4 compression support for HDF5/NetCDF-4 files, providing fast lossless compression optimized for speed-critical scientific workflows.
+The NetCDF Extension Pack (NEP) is a User Defined Format (UDF) system that enables seamless access to diverse NASA Earth Science data formats through the standard NetCDF API. The system provides automatic format detection and runtime-pluggable UDF handlers for formats including GRIB2, CDF, and GeoTIFF. Additionally, NEP includes high-performance compression support for HDF5/NetCDF-4 files with LZ4 (optimized for speed) and BZIP2 (optimized for compression ratio), providing flexible lossless compression for diverse scientific workflows.
 
 ### 1.2 Business Objectives
 - Unify access to heterogeneous NASA Earth Science data formats
@@ -31,7 +31,7 @@ The NetCDF Extension Pack (NEP) is a User Defined Format (UDF) system that enabl
 2. **Legacy Application Migration**: Existing NetCDF applications accessing new formats without code changes
 3. **Custom Format Integration**: Organizations adding proprietary format support via UDF handlers
 4. **Exascale Computing**: Large-scale parallel processing of diverse Earth Science datasets
-5. **High-Performance Data Compression**: Scientists compressing large NetCDF-4/HDF5 datasets with LZ4 for fast I/O operations while maintaining data integrity
+5. **High-Performance Data Compression**: Scientists compressing large NetCDF-4/HDF5 datasets with LZ4 for fast I/O operations or BZIP2 for maximum compression ratios while maintaining data integrity
 
 ### 2.3 Key Features
 - Automatic format detection via magic numbers
@@ -40,6 +40,7 @@ The NetCDF Extension Pack (NEP) is a User Defined Format (UDF) system that enabl
 - Zero-recompilation format extension
 - Performance-optimized data translation
 - LZ4 lossless compression for HDF5/NetCDF-4 files with superior speed characteristics
+- BZIP2 lossless compression for HDF5/NetCDF-4 files with superior compression ratios
 
 ## 3. Functional Requirements
 
@@ -153,8 +154,10 @@ The NetCDF Extension Pack (NEP) is a User Defined Format (UDF) system that enabl
 - **Description**: Geospatial TIFF format support
 - **Dependencies**: libgeotiff library integration
 
-#### FR-008: LZ4 Compression Support
-- **Description**: High-performance lossless compression for HDF5/NetCDF-4 files using LZ4 algorithm
+#### FR-008: Compression Support (LZ4 and BZIP2)
+- **Description**: High-performance lossless compression for HDF5/NetCDF-4 files with complementary algorithms
+
+**LZ4 Compression:**
 - **Technical Details**:
   - LZ4 is a lossless data compression algorithm from the LZ77 family of byte-oriented compression schemes
   - Focused on compression and decompression speed rather than maximum compression ratio
@@ -165,11 +168,25 @@ The NetCDF Extension Pack (NEP) is a User Defined Format (UDF) system that enabl
   - Compression ratio typically smaller than DEFLATE but sufficient for most scientific datasets
   - Optimized for speed-critical workflows in HPC environments
 - **Dependencies**: LZ4 library integration as HDF5 filter plugin
-- **Acceptance Criteria**:
+
+**BZIP2 Compression:**
+- **Technical Details**:
+  - BZIP2 is a lossless data compression algorithm using the Burrows-Wheeler block sorting algorithm
+  - Focused on achieving high compression ratios for archival and storage optimization
+  - Block-sorting algorithm particularly effective for repetitive scientific data patterns
+- **Performance Characteristics**:
+  - Compression ratios typically better than DEFLATE and significantly better than LZ4
+  - Slower compression/decompression than LZ4 but better than most high-ratio algorithms
+  - Ideal for archival storage where compression ratio is prioritized over speed
+  - Effective for datasets with repetitive patterns common in scientific data
+- **Dependencies**: BZIP2 library integration as HDF5 filter plugin
+
+**Common Acceptance Criteria**:
   - Seamless integration with HDF5/NetCDF-4 file format
   - Compression/decompression operations transparent to NetCDF API users
-  - Performance benchmarks demonstrate speed advantages over traditional compression methods
+  - Performance benchmarks demonstrate advantages over traditional compression methods
   - Maintains data integrity with lossless compression guarantee
+  - Users can choose compression algorithm based on workflow requirements
 
 ## 4. Non-Functional Requirements
 

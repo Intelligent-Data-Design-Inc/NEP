@@ -49,12 +49,40 @@
 - **Verification**: Ensure documentation is accessible and properly formatted on GitHub Pages
 
 #### Sprint 2: CI and Build System Improvements
- - Comment out GRIB2 and other format options from autotools/cmake. 
- - LZ4 is the only valid option for version 1.0.
- - Save the info for the other formats (GRIB2, cdf, GeoTIFF), we will need them for future versions.
- - Change the CI so that only the LZ4 and doc builds are tested, other format builds can wait.
+- **CMake Build System Simplification**: Comment out GRIB2, CDF, and GeoTIFF format handler options
+  - Comment out `option(ENABLE_GRIB2)`, `option(ENABLE_CDF)`, `option(ENABLE_GEOTIFF)` in CMakeLists.txt
+  - Comment out UDF handler library builds in src/CMakeLists.txt
+  - Add clear version-specific comments (v2.0.0, v3.0, v4.0) for future restoration
+  - Preserve all code structure for future re-enablement
+- **Autotools Build System Simplification**: Comment out format handler configuration
+  - Comment out `AC_ARG_ENABLE` sections for GRIB2, CDF, and GeoTIFF in configure.ac
+  - Comment out dependency checks for NCEPLIBS-g2, NASA CDF, and libgeotiff
+  - Comment out library build rules in src/Makefile.am
+  - Maintain code structure with restoration markers
+- **CI Pipeline Optimization**: Reduce build matrix and dependencies
+  - Simplify build matrix from 10 configurations to 2 (cmake/autotools with LZ4 only)
+  - Remove NCEPLIBS-g2, NASA CDF, and libgeotiff installation steps
+  - Keep core dependencies: HDF5, NetCDF-C, NetCDF-Fortran, LZ4, Doxygen
+  - Update environment variables (LD_LIBRARY_PATH, CPPFLAGS, LDFLAGS) to remove format handler paths
+  - Remove format handler test execution steps
+  - Add v1.0.0 scope comment to workflow file
+- **Configuration File Updates**: Update config headers for v1.0.0 scope
+  - Comment out HAVE_GRIB2, HAVE_CDF, HAVE_GEOTIFF in config.h.cmake.in
+  - Comment out format handler macros in nep_config.h.in
+  - Update NEPConfig.cmake.in to show only LZ4 component
+  - Add version-specific comments throughout
+- **Documentation Updates**: Clarify v1.0.0 scope and future roadmap
+  - Update README.md to emphasize LZ4-only scope for v1.0.0
+  - Update docs/design.md with current implementation status
+  - Update docs/prd.md with v1.0.0 deliverables and postponed features
+  - Create docs/releases/v1.0.0.md with release notes
+- **Expected Benefits**: Reduced complexity and faster builds
+  - 30-40% reduction in build time (fewer dependencies)
+  - 50% reduction in CI execution time (simplified matrix)
+  - Clear v1.0.0 scope focusing on LZ4 compression
+  - All format handler infrastructure preserved for future versions
 
-#### Sprint 2: Comprehensive LZ4 Testing
+#### Sprint 3: Comprehensive LZ4 Testing
 - **Performance Benchmarking Tests**: Create comprehensive performance comparison tests
   - Compare LZ4 compression speed vs DEFLATE compression
   - Measure compression/decompression throughput (MB/s)
@@ -85,11 +113,11 @@
   - Test usage examples from Doxygen documentation
   - Verify installation and configuration instructions
 
-#### Sprint 3: Spack Support
+#### Sprint 4: Spack Support
 - Add spack support.
 - It can be tested like NCEPLIBS-g2c.
 
-#### Sprint 4: Update Docs
+#### Sprint 5: Update Docs
 - Make sure all docs in the docs directory correctly describe v1.0.
 
 ### v0.1.3 Documentation

@@ -17,14 +17,16 @@ lib_LTLIBRARIES += libncsqueeze.la
 libncsqueeze_la_LDFLAGS = -version-info 1:0:0
 libncsqueeze_la_SOURCES = ncsqueeze.c
 
+# GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
+# Will be re-enabled in v2.0.0 for GRIB2 UDF support
 # GRIB2 library (netCDF UDF support)
-if HAVE_GRIB2
-lib_LTLIBRARIES += libncgrib2.la
-libncgrib2_la_LDFLAGS = -version-info 1:0:0
-libncgrib2_la_SOURCES = grib2dispatch.c grib2attr.c grib2dim.c grib2file.c grib2grp.c	\
-grib2type.c grib2var.c grib2func.c grib2logging.c
-libncgrib2_la_LIBADD = $(HDF5_LIBS) $(G2C_LIBS)
-endif
+# if HAVE_GRIB2
+# lib_LTLIBRARIES += libncgrib2.la
+# libncgrib2_la_LDFLAGS = -version-info 1:0:0
+# libncgrib2_la_SOURCES = grib2dispatch.c grib2attr.c grib2dim.c grib2file.c grib2grp.c	\
+# grib2type.c grib2var.c grib2func.c grib2logging.c
+# libncgrib2_la_LIBADD = $(HDF5_LIBS) $(G2C_LIBS)
+# endif
 
 
 

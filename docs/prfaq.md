@@ -4,9 +4,9 @@
 
 **FOR IMMEDIATE RELEASE**
 
-### NetCDF Extension Pack (NEP) v1.0.0 Delivers High-Performance LZ4 Compression for Scientific Data
+### NetCDF Extension Pack (NEP) v1.0.0 Delivers High-Performance Compression for Scientific Data
 
-*Open-source framework provides blazing-fast compression and unified access to diverse scientific data formats*
+*Open-source framework provides flexible compression options (LZ4 and BZIP2) and unified access to diverse scientific data formats*
 
 **November 2025** - The scientific computing community today gains access to NEP (NetCDF Extension Pack) v1.0.0, a powerful open-source framework that dramatically accelerates data compression and simplifies access to multiple scientific data formats through the standard NetCDF API.
 
@@ -16,14 +16,23 @@ Large-scale scientific data producers across meteorology, space physics, geospat
 
 #### The Solution
 
-NEP v1.0.0 introduces high-performance LZ4 compression for HDF5/NetCDF-4 files, delivering compression and decompression speeds several times faster than traditional DEFLATE compression while maintaining excellent compression ratios. This breakthrough enables scientists to:
+NEP v1.0.0 introduces high-performance compression for HDF5/NetCDF-4 files with two complementary algorithms:
 
+**LZ4**: Blazing-fast compression delivering 2-3x faster speeds than DEFLATE, ideal for real-time workflows and HPC environments.
+
+**BZIP2**: Superior compression ratios exceeding DEFLATE, perfect for archival storage and bandwidth-constrained scenarios.
+
+This dual-algorithm approach enables scientists to:
+
+- **Choose the right tool**: Select LZ4 for speed or BZIP2 for compression ratio based on workflow needs
 - **Process data faster**: LZ4 compression/decompression is 2-3x faster than DEFLATE
-- **Reduce I/O bottlenecks**: Speed-optimized compression ideal for HPC environments
-- **Maintain data integrity**: Lossless compression guarantees no data loss
+- **Maximize storage efficiency**: BZIP2 achieves better compression ratios than DEFLATE
+- **Reduce I/O bottlenecks**: Speed-optimized LZ4 ideal for HPC environments
+- **Optimize archival storage**: BZIP2 ideal for long-term data retention
+- **Maintain data integrity**: Both algorithms provide lossless compression
 - **Work seamlessly**: Transparent integration with existing NetCDF-4 applications
 
-"NEP transforms how scientists handle large-scale data," said Ed Hartnett, Principal Architect. "With LZ4 compression in v1.0.0, researchers can significantly reduce I/O time without sacrificing compression quality. This is just the beginning—future releases will add transparent access to GRIB2, CDF, and GeoTIFF formats through the same familiar NetCDF API."
+"NEP transforms how scientists handle large-scale data," said Ed Hartnett, Principal Architect. "With both LZ4 and BZIP2 compression in v1.0.0, researchers can choose the optimal algorithm for their workflow—LZ4 for speed-critical operations or BZIP2 for storage optimization. This is just the beginning—future releases will add transparent access to GRIB2, CDF, and GeoTIFF formats through the same familiar NetCDF API."
 
 #### Looking Ahead
 
@@ -45,7 +54,7 @@ NEP v1.0.0 is available now as open-source software. Visit the project repositor
 ### General Questions
 
 #### Q: What is NEP?
-**A:** NEP (NetCDF Extension Pack) is an open-source framework that provides high-performance LZ4 compression and enables seamless access to diverse scientific data formats through the standard NetCDF API using User Defined Formats (UDF).
+**A:** NEP (NetCDF Extension Pack) is an open-source framework that provides high-performance compression (LZ4 and BZIP2) and enables seamless access to diverse scientific data formats through the standard NetCDF API using User Defined Formats (UDF).
 
 #### Q: Who should use NEP?
 **A:** NEP is designed for:
@@ -57,24 +66,32 @@ NEP v1.0.0 is available now as open-source software. Visit the project repositor
 
 #### Q: What problem does NEP solve?
 **A:** NEP addresses three major challenges:
-1. **Slow compression**: Traditional DEFLATE compression creates I/O bottlenecks
+1. **Inflexible compression**: Traditional DEFLATE offers poor speed/ratio trade-offs
 2. **Format fragmentation**: Different data formats require separate tools and workflows
 3. **Integration complexity**: Combining datasets from multiple formats is difficult and error-prone
 
 ### Technical Questions
 
-#### Q: What is LZ4 compression and why is it better?
-**A:** LZ4 is a lossless compression algorithm from the LZ77 family that prioritizes speed over maximum compression ratio. Key advantages:
-- **Speed**: 2-3x faster compression/decompression than DEFLATE
-- **Efficiency**: Good compression ratios suitable for scientific data
-- **Scalability**: Optimized for HPC and exascale computing environments
-- **Reliability**: Lossless compression guarantees data integrity
+#### Q: What compression algorithms does NEP support?
+**A:** NEP v1.0.0 supports two complementary lossless compression algorithms:
 
-#### Q: How does LZ4 compare to other compression methods?
-**A:** 
-- **vs DEFLATE**: LZ4 is several times faster with slightly lower compression ratios
-- **vs LZO**: LZ4 has similar compression speed but significantly faster decompression
-- **Trade-off**: LZ4 optimizes for speed-critical workflows where I/O time matters more than maximum compression
+**LZ4 Compression:**
+- **Purpose**: Speed-optimized for real-time and HPC workflows
+- **Speed**: 2-3x faster compression/decompression than DEFLATE
+- **Ratio**: Good compression ratios, slightly lower than DEFLATE
+- **Use Case**: Real-time data processing, HPC I/O optimization, speed-critical workflows
+
+**BZIP2 Compression:**
+- **Purpose**: Compression ratio-optimized for archival storage
+- **Ratio**: Better compression ratios than DEFLATE
+- **Speed**: Slower than LZ4 but faster than most high-ratio algorithms
+- **Use Case**: Long-term archival, bandwidth-constrained transfers, storage optimization
+
+#### Q: When should I use LZ4 vs BZIP2?
+**A:**
+- **Use LZ4 when**: I/O speed is critical, working with real-time data, running on HPC systems, need fast decompression
+- **Use BZIP2 when**: Storage space is limited, archiving data long-term, transferring over slow networks, compression ratio matters most
+- **Both are lossless**: Choose based on your workflow priorities—speed or compression ratio
 
 #### Q: What are User Defined Formats (UDF)?
 **A:** UDFs are a NetCDF feature that allows registration of custom format handlers at runtime. NEP uses UDFs to provide transparent access to non-NetCDF formats (GRIB2, CDF, GeoTIFF) through the standard NetCDF API without requiring data conversion.
@@ -83,16 +100,16 @@ NEP v1.0.0 is available now as open-source software. Visit the project repositor
 **A:** NEP uses magic numbers (unique byte sequences at the beginning of files) to automatically identify file formats. When you open a file with NetCDF, NEP detects the format and loads the appropriate UDF handler transparently.
 
 #### Q: Do I need to modify my existing NetCDF code?
-**A:** No! For LZ4 compression, it works transparently with existing NetCDF-4 applications. For UDF handlers (v2.0.0+), you simply use the standard nc_open() function—NEP handles format detection and translation automatically.
+**A:** No! For LZ4 and BZIP2 compression, they work transparently with existing NetCDF-4 applications. For UDF handlers (v2.0.0+), you simply use the standard nc_open() function—NEP handles format detection and translation automatically.
 
 ### Installation and Usage
 
 #### Q: What are the system requirements?
 **A:** 
 - **Operating System**: Linux or Unix
-- **Required Libraries**: NetCDF-C (v4.9+), HDF5 (v1.12+), LZ4
+- **Required Libraries**: NetCDF-C (v4.9+), HDF5 (v1.12+), LZ4, BZIP2
 - **Build Tools**: CMake (v3.9+) or Autotools
-- **Optional Libraries**: NCEPLIBS-g2 (GRIB2), libgeotiff (GeoTIFF), NASA CDF library
+- **Optional Libraries**: NCEPLIBS-g2 (GRIB2, v2.0.0+), libgeotiff (GeoTIFF, v4.0+), NASA CDF library (v3.0+)
 
 #### Q: How do I install NEP?
 **A:** Installation is straightforward with either CMake or Autotools. See the README for detailed instructions.

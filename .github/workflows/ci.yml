@@ -1,4 +1,18 @@
-# GitHub Actions CI workflow for building and testing the NFEP project with cmake and autotools.
+# GitHub Actions CI workflow for building and testing the NEP project with cmake and autotools.
+#
+# NEP CI Pipeline - v1.0.0 Configuration
+#
+# v1.0.0 Scope: LZ4 Compression Support Only
+# This CI configuration is simplified for the v1.0.0 release which focuses
+# exclusively on LZ4 compression for HDF5/NetCDF-4 files.
+#
+# Future Versions:
+# - v2.0.0: GRIB2 UDF handler support will be restored
+# - v3.0: CDF UDF handler support will be restored
+# - v4.0: GeoTIFF UDF handler support will be restored
+#
+# The build matrix and dependencies will be expanded in future releases
+# to support additional format handlers.
 #
 # Edward Hartnett, Intelligent Data Design, Inc., Nov 13, 2025
 name: ci_main
@@ -13,32 +27,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      JASPER_INSTALL_PREFIX: ${{ github.workspace }}/jasper-install
       HDF5_PLUGIN_PATH: ${{ github.workspace }}/netcdf-c-install/hdf5/lib/plugin
-      LD_LIBRARY_PATH: $JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH
+      LD_LIBRARY_PATH: $GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH
     strategy:
       fail-fast: false
       matrix:
         build_system: [cmake, autotools]
         doc_build: [enabled, disabled]
-        udf_config:
-          - name: "all_enabled"
-            cmake_flags: "-DENABLE_GRIB2=ON -DENABLE_LZ4=ON"
-            autotools_flags: "--enable-grib2 --enable-lz4"
-          - name: "grib2_only"
-            cmake_flags: "-DENABLE_GRIB2=ON -DLZ4=OFF"
-            autotools_flags: "--enable-grib2 --disable-lz4"
-          - name: "lz4_only"
-            cmake_flags: "-DENABLE_GRIB2=OFF -DENABLE_LZ4=ON"
-            autotools_flags: "--disable-grib2 --enable-lz4"
-        exclude:
-          # Reduce matrix size by only testing documentation with all_enabled configuration
-          - udf_config: { name: "all_enabled" }
-            doc_build: enabled
-          - udf_config: { name: "grib2_only" }
-            doc_build: disabled
-          - udf_config: { name: "lz4_only" }
-            doc_build: disabled
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -46,28 +41,9 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get install -y cmake make wget doxygen graphviz zlib1g-dev libpng-dev libaec-dev libjpeg-dev liblz4-dev wget libbz2-dev libjpeg-dev liblzf-dev
-          sudo apt-get install -y libgeotiff-dev
 
-      - name: Cache Jasper install
-        id: cache-jasper
-        uses: actions/cache@v4
-        with:
-          path: ${{ github.workspace }}/jasper-install
-          key: jasper-4.2.5-${{ runner.os }}-1
-
-      - name: Download and build Jasper 4.2.5
-        if: steps.cache-jasper.outputs.cache-hit != 'true'
-        run: |
-          JASPER_VERSION=4.2.5
-          JASPER_URL="https://github.com/jasper-software/jasper/releases/download/version-${JASPER_VERSION}/jasper-${JASPER_VERSION}.tar.gz"
-
-          wget -q "$JASPER_URL" -O jasper.tar.gz
-          tar -xzf jasper.tar.gz
-          cd jasper-${JASPER_VERSION}
-          mkdir ../build_jasper && cd ../build_jasper
-          cmake -DCMAKE_INSTALL_PREFIX="$JASPER_INSTALL_PREFIX" -DBUILD_SHARED_LIBS=ON ../jasper-${JASPER_VERSION} -DBUILD_TESTING=OFF 
-          make -j$(nproc)
-          make install
+      # GRIB2/CDF dependencies removed for v1.0.0 (LZ4 compression only)
+      # Jasper, g2c, and NASA CDF will be restored in v2.0.0+
 
       - name: Cache HDF5 install
         id: cache-hdf5
@@ -88,44 +64,6 @@ jobs:
           cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF ..
           make -j$(nproc)
           make install
-
-            # Cache g2c install
-      - name: Cache g2c install
-        id: cache-g2c
-        uses: actions/cache@v4
-        with:
-          path: ${{ github.workspace }}/g2c-install
-          key: g2c-latest-${{ runner.os }}-2
-
-      - name: Download and build g2c (latest release)
-        if: steps.cache-g2c.outputs.cache-hit != 'true'
-        run: |
-          wget https://github.com/NOAA-EMC/NCEPLIBS-g2c/archive/refs/tags/v2.1.0.tar.gz -O g2c.tar.gz &> /dev/null
-          tar -xzf g2c.tar.gz
-          cd NCEPLIBS-g2c-2.1.0
-          mkdir build && cd build
-          echo $JASPER_INSTALL_PREFIX
-          ls -l $JASPER_INSTALL_PREFIX
-          cmake .. -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/g2c-install -DBUILD_SHARED_LIBS=ON -DCMAKE_PREFIX_PATH="$JASPER_INSTALL_PREFIX" -DBUILD_TESTING=OFF 
-          make -j$(nproc)
-          make install
-
-      # Cache NASA CDF install
-      - name: Cache NASA CDF install
-        id: cache-cdf
-        uses: actions/cache@v4
-        with:
-          path: ${{ github.workspace }}/cdf-install
-          key: cdf-39_1-${{ runner.os }}-1
-
-      - name: Download and build NASA CDF
-        if: steps.cache-cdf.outputs.cache-hit != 'true'
-        run: |
-          wget https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/cdf39_1-dist-all.tar.gz -O cdf.tar.gz &> /dev/null
-          tar -xzf cdf.tar.gz
-          cd cdf39_1-dist
-          make OS=linux ENV=gnu CURSES=yes FORTRAN=no UCOPTIONS=-O2 SHARED=yes all
-          make INSTALLDIR=$GITHUB_WORKSPACE/cdf-install install
 
       # Cache NetCDF-C install
       - name: Cache NetCDF-C install
@@ -200,17 +138,15 @@ jobs:
       - name: Configure with CMake and custom HDF5
         if: matrix.build_system == 'cmake'
         working-directory: build
-        env:
-          JASPER_INSTALL_PREFIX: $GITHUB_WORKSPACE/jasper-install
         run: |
-          echo "Building with UDF configuration: ${{ matrix.udf_config.name }}"
+          echo "Building NEP v1.0.0 - LZ4 compression only"
           DOC_FLAG=""
           if [ "${{ matrix.doc_build }}" = "enabled" ]; then
             DOC_FLAG="-DBUILD_DOCUMENTATION=ON"
           else
             DOC_FLAG="-DBUILD_DOCUMENTATION=OFF"
           fi
-          cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/g2c-install;$GITHUB_WORKSPACE/cdf-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install;$JASPER_INSTALL_PREFIX;/usr/include/geotiff;/usr/include/liblzf" ${{ matrix.udf_config.cmake_flags }} $DOC_FLAG
+          cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install;/usr/include/liblzf" $DOC_FLAG
 
       - name: Build (CMake)
         if: matrix.build_system == 'cmake'
@@ -247,9 +183,9 @@ jobs:
         run: |
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
           export HDF5_PLUGIN_PATH="$GITHUB_WORKSPACE/netcdf-c-install/hdf5/lib/plugin"
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/g2c-install/include -I$GITHUB_WORKSPACE/cdf-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include -I/usr/include/geotiff -I/usr/include/liblzf"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib -L$JASPER_INSTALL_PREFIX/lib"
-          export LD_LIBRARY_PATH="$JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include -I/usr/include/liblzf"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib"
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
           ctest --verbose
           sudo make install
 
@@ -257,7 +193,7 @@ jobs:
         if: matrix.build_system == 'cmake' && matrix.doc_build == 'enabled'
         uses: actions/upload-artifact@v4
         with:
-          name: documentation-cmake-${{ matrix.udf_config.name }}
+          name: documentation-cmake-lz4
           path: build/docs/html/
           retention-days: 30
 
@@ -271,14 +207,13 @@ jobs:
         if: matrix.build_system == 'autotools'
         run: |
           set -x
-          echo "Building with UDF configuration: ${{ matrix.udf_config.name }}"
-          find /usr -name '*geotiff*'
+          echo "Building NEP v1.0.0 - LZ4 compression only"
           autoreconf -i
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
           export HDF5_PLUGIN_PATH="$GITHUB_WORKSPACE/netcdf-c-install/hdf5/lib/plugin"
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/g2c-install/include -I$GITHUB_WORKSPACE/cdf-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include -I/usr/include/geotiff -I/usr/include/liblzf"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib -L$JASPER_INSTALL_PREFIX/lib"
-          export LD_LIBRARY_PATH="$JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include -I/usr/include/liblzf"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib"
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
           ls -l $GITHUB_WORKSPACE/hdf5-install/lib
           DOC_FLAG=""
           if [ "${{ matrix.doc_build }}" = "enabled" ]; then
@@ -286,7 +221,7 @@ jobs:
           else
             DOC_FLAG="--disable-docs"
           fi
-          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc ${{ matrix.udf_config.autotools_flags }} $DOC_FLAG || (echo "Configure failed. Printing config.log:"; cat config.log; echo "hdf5_plugins/config.log:"; cat hdf5_plugins/config.log; exit 1)
+          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc --enable-lz4 $DOC_FLAG || (echo "Configure failed. Printing config.log:"; cat config.log; echo "hdf5_plugins/config.log:"; cat hdf5_plugins/config.log; exit 1)
 
       - name: Build (Autotools)
         if: matrix.build_system == 'autotools'
@@ -312,9 +247,9 @@ jobs:
           set -x
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
           export HDF5_PLUGIN_PATH="$GITHUB_WORKSPACE/netcdf-c-install/hdf5/lib/plugin"
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/g2c-install/include -I$GITHUB_WORKSPACE/cdf-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include -I/usr/include/geotiff -I/usr/include/liblzf"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib -L$JASPER_INSTALL_PREFIX/lib"
-          export LD_LIBRARY_PATH="$JASPER_INSTALL_PREFIX/lib:$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include -I/usr/include/liblzf"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib"
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
           ls -l "${HDF5_PLUGIN_PATH}"
           make VERBOSE=1 check
           sudo make install
@@ -323,7 +258,7 @@ jobs:
         if: matrix.build_system == 'autotools' && matrix.doc_build == 'enabled'
         uses: actions/upload-artifact@v4
         with:
-          name: documentation-autotools-${{ matrix.udf_config.name }}
+          name: documentation-autotools-lz4
           path: docs/html/
           retention-days: 30
 

@@ -1,8 +1,10 @@
 #ifndef NEP_CONFIG_H
 #define NEP_CONFIG_H
 
+/* GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only) */
+/* Will be re-enabled in v2.0.0 for GRIB2 UDF support */
 /* GRIB2 UDF support availability */
-#cmakedefine HAVE_GRIB2
+/* #cmakedefine HAVE_GRIB2 */
 
 /* Project version */
 #define NEP_VERSION_MAJOR @PROJECT_VERSION_MAJOR@

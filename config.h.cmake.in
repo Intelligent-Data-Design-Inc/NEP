@@ -3,8 +3,10 @@
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #cmakedefine HAVE_DLFCN_H @HAVE_DLFCN_H@
 
+/* GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only) */
+/* Will be re-enabled in v2.0.0 for GRIB2 UDF support */
 /* Define if GRIB2 UDF support is enabled */
-#cmakedefine HAVE_GRIB2
+/* #cmakedefine HAVE_GRIB2 */
 
 /* Defined if you have HDF5 support */
 #cmakedefine HAVE_HDF5

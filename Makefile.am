@@ -5,12 +5,14 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
+# GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
+# Will be re-enabled in v2.0.0 for GRIB2 UDF support
 # If GRIB2 layer has been built, test it.
-if HAVE_GRIB2
-TEST_GRIB2 = test_grib2
-endif
+# if HAVE_GRIB2
+# TEST_GRIB2 = test_grib2
+# endif
 
-SUBDIRS = include src test ${TEST_GRIB2}
+SUBDIRS = include src test
 EXTRA_DIST = autogen.sh
 
 # Documentation target
