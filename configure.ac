@@ -255,7 +255,6 @@ if test "x$enable_lz4" = xyes; then
    AC_CONFIG_SUBDIRS([hdf5_plugins])
 fi
 
-AC_CONFIG_FILES([test/test_vol_plugin.sh], [chmod +x test/test_vol_plugin.sh])
 AC_CONFIG_FILES([test/run_tests.sh], [chmod ugo+x test/run_tests.sh])
 AC_CONFIG_FILES([ftest/run_tests.sh], [chmod ugo+x ftest/run_tests.sh])
 AC_CONFIG_FILES([test_h5/run_tests.sh], [chmod ugo+x test_h5/run_tests.sh])
