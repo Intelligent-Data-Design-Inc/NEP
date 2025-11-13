@@ -4,7 +4,7 @@
   !! netCDF. This started as an example nc4_pres_temp_4D_wr.f90 from
   !! the netcdf-fortran project.
   !!
-  !! @author Edward Hartnett, Intelligent Data Design, Inc.
+  !! @author Edward Hartnett
   !! @date Nov 13, 2025
   !! @copyright Intelligent Data Design, Inc. All rights reserved.
 

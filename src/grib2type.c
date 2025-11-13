@@ -5,7 +5,7 @@
  * This file handles the nc4 user-defined type functions
  * (i.e. compound and opaque types).
  *
- * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @author Edward Hartnett
  * @date Nov 13, 2025
  * @copyright Intelligent Data Design, Inc. All rights reserved.
  */

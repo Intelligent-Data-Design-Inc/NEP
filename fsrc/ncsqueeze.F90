@@ -2,7 +2,7 @@
 !!
 !! This is the Fortran wrapper for the NCCOMPRESS library.
 !!
-!! @author Edward Hartnett, Intelligent Data Design, Inc.
+!! @author Edward Hartnett
 !! @date Nov 13, 2025
 !! @copyright Intelligent Data Design, Inc. All rights reserved.
 
