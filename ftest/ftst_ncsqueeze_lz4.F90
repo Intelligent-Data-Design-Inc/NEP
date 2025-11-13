@@ -1,8 +1,12 @@
-  ! This is a test program for the NCCOMPRESS LZ4 compression filter for
-  ! netCDF. This started as an example nc4_pres_temp_4D_wr.f90 from
-  ! the netcdf-fortran project.
-
-  ! Ed Hartnett 1/23/20
+  !> @file
+  !!
+  !! This is a test program for the NCCOMPRESS LZ4 compression filter for
+  !! netCDF. This started as an example nc4_pres_temp_4D_wr.f90 from
+  !! the netcdf-fortran project.
+  !!
+  !! @author Edward Hartnett, Intelligent Data Design, Inc.
+  !! @date Nov 13, 2025
+  !! @copyright Intelligent Data Design, Inc. All rights reserved.
 
 program ftst_nccompress_lz4
   use netcdf

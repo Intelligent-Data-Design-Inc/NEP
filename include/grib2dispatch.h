@@ -3,7 +3,9 @@
  * This header file contains the prototypes for the GRIB2 versions
  * of the netCDF functions.
  *
- * Ed Hartnett
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @date Nov 13, 2025
+ * @copyright Intelligent Data Design, Inc. All rights reserved.
  */
 #ifndef _GRIB2DISPATCH_H
 #define _GRIB2DISPATCH_H

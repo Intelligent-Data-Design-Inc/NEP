@@ -1,5 +1,9 @@
 /**
  * @file
+ *
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @date Nov 13, 2025
+ * @copyright Intelligent Data Design, Inc. All rights reserved.
  */
 
 #include <nc4internal.h>

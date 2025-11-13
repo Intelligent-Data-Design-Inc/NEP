@@ -1,7 +1,11 @@
-/* Test the bzip2 compression in ncsqueeze.
-
-   Edward Hartnett, Intelligent Data Design, Inc., 2025
-*/
+/**
+ * @file
+ * Test the bzip2 compression in ncsqueeze.
+ *
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @date Nov 13, 2025
+ * @copyright Intelligent Data Design, Inc. All rights reserved.
+ */
 
 #include "config.h"
 #include "ncsqueeze.h"

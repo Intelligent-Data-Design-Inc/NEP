@@ -1,9 +1,11 @@
-/*! \file Utility functions for tests.
-
-\internal
-Copyright 2025, Intelligent Data Design, Inc. 
-
-*/
+/**
+ * @file
+ * Utility functions for tests.
+ *
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @date Nov 13, 2025
+ * @copyright Intelligent Data Design, Inc. All rights reserved.
+ */
 
 #include "config.h"
 #include "ncsqueeze_test.h"

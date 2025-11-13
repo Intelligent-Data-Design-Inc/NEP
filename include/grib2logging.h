@@ -1,8 +1,10 @@
 /**
  * @file Header file for logging for the GRIB2 dispatch layer library.
  *
- * @author Ed Hartnett
-*/
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @date Nov 13, 2025
+ * @copyright Intelligent Data Design, Inc. All rights reserved.
+ */
 
 #ifndef _GRIB2LOGGING_
 #define _GRIB2LOGGING_

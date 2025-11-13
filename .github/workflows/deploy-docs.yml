@@ -1,0 +1,64 @@
+# GitHub Actions workflow for deploying Doxygen documentation to GitHub Pages
+#
+# This workflow builds the project documentation using Doxygen and deploys it
+# to GitHub Pages. It triggers on releases and manual dispatch.
+#
+# Edward Hartnett, Intelligent Data Design, Inc., Nov 13, 2025
+
+name: deploy_documentation
+
+on:
+  # Allow manual triggering from Actions tab
+  workflow_dispatch:
+  
+  # Trigger on release publication
+  release:
+    types: [published]
+
+# Required permissions for GitHub Pages deployment
+permissions:
+  contents: write      # Required to push to gh-pages branch
+  pages: write         # Required for GitHub Pages deployment
+  id-token: write      # Required for GitHub Pages authentication
+
+jobs:
+  deploy-docs:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install Doxygen and dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen graphviz cmake
+      
+      - name: Configure and build documentation
+        run: |
+          mkdir build && cd build
+          cmake -DBUILD_DOCUMENTATION=ON ..
+          cmake --build . --target docs
+      
+      - name: Verify documentation build
+        run: |
+          if [ ! -d "build/docs/html" ]; then
+            echo "Error: Documentation not generated"
+            exit 1
+          fi
+          if [ ! -f "build/docs/html/index.html" ]; then
+            echo "Error: Documentation index.html missing"
+            exit 1
+          fi
+          echo "Documentation build successful"
+          ls -lh build/docs/html/
+      
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/docs/html
+          publish_branch: gh-pages
+          commit_message: 'Deploy documentation from ${{ github.sha }}'
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'

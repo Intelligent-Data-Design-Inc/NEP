@@ -1,6 +1,11 @@
-/* Test read of GRIB2 format with netCDF. 
+/**
+ * @file
+ * Test read of GRIB2 format with netCDF.
  *
- * Ed Hartnett */
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @date Nov 13, 2025
+ * @copyright Intelligent Data Design, Inc. All rights reserved.
+ */
 
 #include <config.h>
 #include <netcdf.h>

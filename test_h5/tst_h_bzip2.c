@@ -1,10 +1,11 @@
-/*
- * This is a test in ncsqueeze.
- *
+/**
+ * @file
  * This test checks the bzip2 filter.
  *
- * Edward Hartnett, Intelligent Data Design, Inc., 9/10/25
-*/
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @date Nov 13, 2025
+ * @copyright Intelligent Data Design, Inc. All rights reserved.
+ */
 
 #include "config.h"
 #include "ncsqueeze_test.h"

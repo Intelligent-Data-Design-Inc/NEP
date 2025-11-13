@@ -1,9 +1,11 @@
 /**
+ * @file
  * Header file for test code as part of the NetCDF Community Codec
  * Repository.
  *
- * @author Ed Hartnett
- * 12/24/19
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @date Nov 13, 2025
+ * @copyright Intelligent Data Design, Inc. All rights reserved.
  */
 #ifndef _NCSQUEEZE_TEST_H
 #define _NCSQUEEZE_TEST_H

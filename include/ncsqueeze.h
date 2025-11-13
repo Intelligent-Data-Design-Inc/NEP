@@ -1,7 +1,10 @@
-/* Header file for data from the NetCDF Community Codec Repository library.
+/**
+ * @file
+ * Header file for data from the NetCDF Community Codec Repository library.
  *
- * Ed Hartnett
- * 12/24/19
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @date Nov 13, 2025
+ * @copyright Intelligent Data Design, Inc. All rights reserved.
  */
 #ifndef _NCCOMPRESS_H
 #define _NCCOMPRESS_H

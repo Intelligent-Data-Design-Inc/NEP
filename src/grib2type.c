@@ -5,7 +5,9 @@
  * This file handles the nc4 user-defined type functions
  * (i.e. compound and opaque types).
  *
- * @author Ed Hartnett
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @date Nov 13, 2025
+ * @copyright Intelligent Data Design, Inc. All rights reserved.
  */
 #include "nc4internal.h"
 #include "nc4dispatch.h"
