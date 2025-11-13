@@ -105,7 +105,30 @@ if(NOT DOCS_ONLY)
     configure_file(${CMAKE_SOURCE_DIR}/config.h.cmake.in ${CMAKE_BINARY_DIR}/config.h)
 
     include(GNUInstallDirs)
+    include(ExternalProject)
+    
     add_subdirectory (src)
+    
+    # Build HDF5 filter plugins using Autotools (LZ4 and BZIP2 for v1.0.0)
+    # The hdf5_plugins directory uses Autotools, so we use ExternalProject to build it
+    # Use h5cc wrapper which handles all HDF5 flags automatically
+    ExternalProject_Add(hdf5_plugins
+        SOURCE_DIR ${CMAKE_SOURCE_DIR}/hdf5_plugins
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env
+            "CC=${HDF5_C_COMPILER_EXECUTABLE}"
+            ${CMAKE_SOURCE_DIR}/hdf5_plugins/configure
+            --prefix=${CMAKE_BINARY_DIR}/hdf5_plugins_install
+            --with-hdf5-plugin-path=${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin
+            --enable-lz4
+            --enable-bzip2
+            --disable-jpeg
+            --disable-lzf
+        BUILD_COMMAND make
+        INSTALL_COMMAND make install
+        BUILD_IN_SOURCE 1
+    )
+    
+    # Make tests depend on plugins being built
     add_subdirectory (test)
 
     # GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
