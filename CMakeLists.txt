@@ -114,17 +114,12 @@ if(NOT DOCS_ONLY)
     # Use h5cc wrapper which handles all HDF5 flags automatically
     ExternalProject_Add(hdf5_plugins
         SOURCE_DIR ${CMAKE_SOURCE_DIR}/hdf5_plugins
-        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/hdf5_plugins
+            ${CMAKE_COMMAND} -E env
             "CC=${HDF5_C_COMPILER_EXECUTABLE}"
-            ${CMAKE_SOURCE_DIR}/hdf5_plugins/configure
-            --prefix=${CMAKE_BINARY_DIR}/hdf5_plugins_install
-            --with-hdf5-plugin-path=${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin
-            --enable-lz4
-            --enable-bzip2
-            --disable-jpeg
-            --disable-lzf
-        BUILD_COMMAND make
-        INSTALL_COMMAND make install
+            /bin/sh -c "test -f configure || autoreconf -if && ./configure --prefix=${CMAKE_BINARY_DIR}/hdf5_plugins_install --with-hdf5-plugin-path=${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin --enable-lz4 --enable-bzip2 --disable-jpeg --disable-lzf"
+        BUILD_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/hdf5_plugins make
+        INSTALL_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/hdf5_plugins make install
         BUILD_IN_SOURCE 1
     )
     
