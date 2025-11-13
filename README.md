@@ -153,6 +153,6 @@ For more detailed information about the project:
 - **[PR/FAQ](docs/prfaq.md)** - Press release and frequently asked questions
 - **[Roadmap](docs/roadmap.md)** - Development roadmap and release schedule
 - **[Product Requirements](docs/prd_1.md)** - Detailed product requirements and specifications (v1.0.0)
-- **[Design Document](docs/design.md)** - Technical architecture and design details
+- **[Design Document](docs/design_1.md)** - Technical architecture and design details (v1.0.0)
 
 ---
