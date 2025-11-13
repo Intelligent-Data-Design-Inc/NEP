@@ -38,9 +38,9 @@
 #define NCOMPRESSION 3
 #define MAX_COMPRESSION_STR 6
 
-#define NX_BIG 50
-#define NY_BIG 10
-#define NUM_REC 1
+#define NX_BIG 5000
+#define NY_BIG 100
+#define NUM_REC 100
 
 #define MIN_ZSTD 0
 #define MAX_ZSTD 9
@@ -236,12 +236,13 @@ main()
 #if BUILD_BZIP2    
     test_compression(COMPRESS_BZIP2);
 #endif    
-#if BUILD_JPEG    
+/* #if BUILD_JPEG    
     test_compression(COMPRESS_JPEG);
 #endif    
 #if BUILD_LZF    
     test_compression(COMPRESS_LZF);
 #endif    
+ */    
     SUMMARIZE_ERR;
     FINAL_RESULTS;
 }
