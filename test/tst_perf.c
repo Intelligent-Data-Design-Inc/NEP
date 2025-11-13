@@ -47,6 +47,7 @@
 #define MIN_ZLIB 1
 #define MIN_LZ4 1
 
+
 #define UNCOMPRESSED 0
 #define COMPRESS_ZSTD 1
 #define COMPRESS_ZLIB 2
@@ -81,7 +82,7 @@ int test_compression(int f)
     size_t count[NDIM3] = {1, NX_BIG, NY_BIG};
     size_t chunksizes[NDIM3] = {1, NX_BIG, NY_BIG};
     struct timeval start_time, end_time, diff_time;
-    int meta_write_us;
+    int meta_write_us, meta_read_us;
     int ret;
 
     /* Allocate memory for one record. */
@@ -174,7 +175,7 @@ int test_compression(int f)
     if (nc4_timeval_subtract(&diff_time, &end_time, &start_time)) ERR;
     meta_write_us = (int)diff_time.tv_sec * MILLION + (int)diff_time.tv_usec;
     stat(file_name, &st);
-    printf("%s, %.2f, %.2f\n", (f ? compression : "none"), (float)meta_write_us/MILLION,
+    printf("%s, %.2f, %.2f, ", (f ? compression : "none"), (float)meta_write_us/MILLION,
 	   (float)st.st_size/MILLION);
 	    
     /* Check file. */
@@ -199,6 +200,7 @@ int test_compression(int f)
 	/* { */
 	/*     if (deflate) ERR; */
 	/* } */
+	if (gettimeofday(&start_time, NULL)) ERR;
 	for (start[0] = 0; start[0] < NUM_REC; start[0]++)
 	{
 	    if (nc_get_vara_float(ncid, varid, start, count, data_in)) ERR;
@@ -209,6 +211,10 @@ int test_compression(int f)
 		    ERR;
 		}
 	}
+	if (gettimeofday(&end_time, NULL)) ERR;
+    if (nc4_timeval_subtract(&diff_time, &end_time, &start_time)) ERR;
+    meta_read_us = (int)diff_time.tv_sec * MILLION + (int)diff_time.tv_usec;
+	printf("%.2f\n", (float)meta_read_us/MILLION);
 	if (nc_close(ncid)) ERR;
     }
 
@@ -221,7 +227,7 @@ int
 main()
 {
     printf("\n*** Checking Performance of filters.\n");
-    printf("\ncompression, write time (s), file size (MB)\n");
+    printf("\ncompression, write time (s), file size (MB, read time (s)\n");
 
     /* Initialize random numbers. */
     srand(time(NULL));

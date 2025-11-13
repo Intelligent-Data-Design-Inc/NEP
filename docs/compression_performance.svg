@@ -1,0 +1,96 @@
+<svg width="1600" height="500" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="500" fill="white"/>
+  
+  <!-- Write Time Chart -->
+  <line x1="60" y1="60.0" x2="513" y2="60.0" stroke="#cccccc" stroke-width="1" stroke-dasharray="5,5"/>
+<line x1="60" y1="155.0" x2="513" y2="155.0" stroke="#cccccc" stroke-width="1" stroke-dasharray="5,5"/>
+<line x1="60" y1="250.0" x2="513" y2="250.0" stroke="#cccccc" stroke-width="1" stroke-dasharray="5,5"/>
+<line x1="60" y1="345.0" x2="513" y2="345.0" stroke="#cccccc" stroke-width="1" stroke-dasharray="5,5"/>
+<line x1="60" y1="440.0" x2="513" y2="440.0" stroke="#cccccc" stroke-width="1" stroke-dasharray="5,5"/>
+<text x="50" y="65.0" text-anchor="end" font-size="10">24.4</text>
+<text x="50" y="160.0" text-anchor="end" font-size="10">18.3</text>
+<text x="50" y="255.0" text-anchor="end" font-size="10">12.2</text>
+<text x="50" y="350.0" text-anchor="end" font-size="10">6.1</text>
+<text x="50" y="445.0" text-anchor="end" font-size="10">0.0</text>
+<line x1="60" y1="60" x2="60" y2="440" stroke="black" stroke-width="2"/>
+<line x1="60" y1="440" x2="513" y2="440" stroke="black" stroke-width="2"/>
+<rect x="82" y="435.78713968957874" width="45" height="4.212860310421286" fill="#808080" stroke="black" stroke-width="1.5"/>
+<text x="104.5" y="430.78713968957874" text-anchor="middle" font-size="12" font-weight="bold">0.27s</text>
+<text x="104.5" y="460" text-anchor="middle" font-size="12" font-weight="bold">none</text>
+<rect x="172" y="429.7018970189702" width="45" height="10.29810298102981" fill="#FF6B6B" stroke="black" stroke-width="1.5"/>
+<text x="194.5" y="424.7018970189702" text-anchor="middle" font-size="12" font-weight="bold">0.66s</text>
+<text x="194.5" y="460" text-anchor="middle" font-size="12" font-weight="bold">zstd</text>
+<rect x="262" y="411.44616900714465" width="45" height="28.553830992855378" fill="#4ECDC4" stroke="black" stroke-width="1.5"/>
+<text x="284.5" y="406.44616900714465" text-anchor="middle" font-size="12" font-weight="bold">1.83s</text>
+<text x="284.5" y="460" text-anchor="middle" font-size="12" font-weight="bold">zlib</text>
+<rect x="352" y="434.69491664613616" width="45" height="5.305083353863841" fill="#45B7D1" stroke="black" stroke-width="1.5"/>
+<text x="374.5" y="429.69491664613616" text-anchor="middle" font-size="12" font-weight="bold">0.34s</text>
+<text x="374.5" y="460" text-anchor="middle" font-size="12" font-weight="bold">lz4</text>
+<rect x="442" y="94.54545454545456" width="45" height="345.45454545454544" fill="#FFA07A" stroke="black" stroke-width="1.5"/>
+<text x="464.5" y="89.54545454545456" text-anchor="middle" font-size="12" font-weight="bold">22.14s</text>
+<text x="464.5" y="460" text-anchor="middle" font-size="12" font-weight="bold">bzip2</text>
+<text x="286.5" y="30" text-anchor="middle" font-size="16" font-weight="bold">Compression Write Time</text>
+<text x="10" y="250.0" text-anchor="middle" font-size="12" font-weight="bold" transform="rotate(-90 10 250.0)">Write Time (seconds)</text>
+  
+  <!-- File Size Chart -->
+  <line x1="573" y1="60.0" x2="1026" y2="60.0" stroke="#cccccc" stroke-width="1" stroke-dasharray="5,5"/>
+<line x1="573" y1="155.0" x2="1026" y2="155.0" stroke="#cccccc" stroke-width="1" stroke-dasharray="5,5"/>
+<line x1="573" y1="250.0" x2="1026" y2="250.0" stroke="#cccccc" stroke-width="1" stroke-dasharray="5,5"/>
+<line x1="573" y1="345.0" x2="1026" y2="345.0" stroke="#cccccc" stroke-width="1" stroke-dasharray="5,5"/>
+<line x1="573" y1="440.0" x2="1026" y2="440.0" stroke="#cccccc" stroke-width="1" stroke-dasharray="5,5"/>
+<text x="563" y="65.0" text-anchor="end" font-size="10">165</text>
+<text x="563" y="160.0" text-anchor="end" font-size="10">124</text>
+<text x="563" y="255.0" text-anchor="end" font-size="10">83</text>
+<text x="563" y="350.0" text-anchor="end" font-size="10">41</text>
+<text x="563" y="445.0" text-anchor="end" font-size="10">0</text>
+<line x1="573" y1="60" x2="573" y2="440" stroke="black" stroke-width="2"/>
+<line x1="573" y1="440" x2="1026" y2="440" stroke="black" stroke-width="2"/>
+<rect x="595" y="94.54545454545456" width="45" height="345.45454545454544" fill="#808080" stroke="black" stroke-width="1.5"/>
+<text x="617.5" y="89.54545454545456" text-anchor="middle" font-size="12" font-weight="bold">150.0 MB</text>
+<text x="617.5" y="460" text-anchor="middle" font-size="12" font-weight="bold">none</text>
+<rect x="685" y="359.53748537976253" width="45" height="80.46251462023744" fill="#FF6B6B" stroke="black" stroke-width="1.5"/>
+<text x="707.5" y="354.53748537976253" text-anchor="middle" font-size="12" font-weight="bold">34.9 MB</text>
+<text x="707.5" y="460" text-anchor="middle" font-size="12" font-weight="bold">zstd</text>
+<rect x="775" y="343.785808218846" width="45" height="96.21419178115399" fill="#4ECDC4" stroke="black" stroke-width="1.5"/>
+<text x="797.5" y="338.785808218846" text-anchor="middle" font-size="12" font-weight="bold">41.8 MB</text>
+<text x="797.5" y="460" text-anchor="middle" font-size="12" font-weight="bold">zlib</text>
+<rect x="865" y="281.21664616298307" width="45" height="158.78335383701693" fill="#45B7D1" stroke="black" stroke-width="1.5"/>
+<text x="887.5" y="276.21664616298307" text-anchor="middle" font-size="12" font-weight="bold">69.0 MB</text>
+<text x="887.5" y="460" text-anchor="middle" font-size="12" font-weight="bold">lz4</text>
+<rect x="955" y="388.4385889425553" width="45" height="51.56141105744465" fill="#FFA07A" stroke="black" stroke-width="1.5"/>
+<text x="977.5" y="383.4385889425553" text-anchor="middle" font-size="12" font-weight="bold">22.4 MB</text>
+<text x="977.5" y="460" text-anchor="middle" font-size="12" font-weight="bold">bzip2</text>
+<text x="799.5" y="30" text-anchor="middle" font-size="16" font-weight="bold">Compressed File Size</text>
+<text x="523" y="250.0" text-anchor="middle" font-size="12" font-weight="bold" transform="rotate(-90 523 250.0)">File Size (MB)</text>
+  
+  <!-- Read Time Chart -->
+  <line x1="1086" y1="60.0" x2="1539" y2="60.0" stroke="#cccccc" stroke-width="1" stroke-dasharray="5,5"/>
+<line x1="1086" y1="155.0" x2="1539" y2="155.0" stroke="#cccccc" stroke-width="1" stroke-dasharray="5,5"/>
+<line x1="1086" y1="250.0" x2="1539" y2="250.0" stroke="#cccccc" stroke-width="1" stroke-dasharray="5,5"/>
+<line x1="1086" y1="345.0" x2="1539" y2="345.0" stroke="#cccccc" stroke-width="1" stroke-dasharray="5,5"/>
+<line x1="1086" y1="440.0" x2="1539" y2="440.0" stroke="#cccccc" stroke-width="1" stroke-dasharray="5,5"/>
+<text x="1076" y="65.0" text-anchor="end" font-size="10">6.5</text>
+<text x="1076" y="160.0" text-anchor="end" font-size="10">4.9</text>
+<text x="1076" y="255.0" text-anchor="end" font-size="10">3.2</text>
+<text x="1076" y="350.0" text-anchor="end" font-size="10">1.6</text>
+<text x="1076" y="445.0" text-anchor="end" font-size="10">0.0</text>
+<line x1="1086" y1="60" x2="1086" y2="440" stroke="black" stroke-width="2"/>
+<line x1="1086" y1="440" x2="1539" y2="440" stroke="black" stroke-width="2"/>
+<rect x="1108" y="431.80277349768875" width="45" height="8.197226502311247" fill="#808080" stroke="black" stroke-width="1.5"/>
+<text x="1130.5" y="426.80277349768875" text-anchor="middle" font-size="12" font-weight="bold">0.14s</text>
+<text x="1130.5" y="460" text-anchor="middle" font-size="12" font-weight="bold">none</text>
+<rect x="1198" y="424.77657935285055" width="45" height="15.223420647149458" fill="#FF6B6B" stroke="black" stroke-width="1.5"/>
+<text x="1220.5" y="419.77657935285055" text-anchor="middle" font-size="12" font-weight="bold">0.26s</text>
+<text x="1220.5" y="460" text-anchor="middle" font-size="12" font-weight="bold">zstd</text>
+<rect x="1288" y="405.4545454545455" width="45" height="34.54545454545453" fill="#4ECDC4" stroke="black" stroke-width="1.5"/>
+<text x="1310.5" y="400.4545454545455" text-anchor="middle" font-size="12" font-weight="bold">0.59s</text>
+<text x="1310.5" y="460" text-anchor="middle" font-size="12" font-weight="bold">zlib</text>
+<rect x="1378" y="430.6317411402157" width="45" height="9.368258859784282" fill="#45B7D1" stroke="black" stroke-width="1.5"/>
+<text x="1400.5" y="425.6317411402157" text-anchor="middle" font-size="12" font-weight="bold">0.16s</text>
+<text x="1400.5" y="460" text-anchor="middle" font-size="12" font-weight="bold">lz4</text>
+<rect x="1468" y="94.54545454545462" width="45" height="345.4545454545454" fill="#FFA07A" stroke="black" stroke-width="1.5"/>
+<text x="1490.5" y="89.54545454545462" text-anchor="middle" font-size="12" font-weight="bold">5.90s</text>
+<text x="1490.5" y="460" text-anchor="middle" font-size="12" font-weight="bold">bzip2</text>
+<text x="1312.5" y="30" text-anchor="middle" font-size="16" font-weight="bold">Decompression Read Time</text>
+<text x="1036" y="250.0" text-anchor="middle" font-size="12" font-weight="bold" transform="rotate(-90 1036 250.0)">Read Time (seconds)</text>
+</svg>
