@@ -6,13 +6,13 @@
 
 ### NetCDF Extension Pack (NEP) v1.0.0 Delivers High-Performance Compression for Scientific Data
 
-*Open-source framework provides flexible compression options (LZ4 and BZIP2) and unified access to diverse scientific data formats*
+*Open-source framework provides flexible compression options (LZ4 and BZIP2) for HDF5/NetCDF-4 files*
 
-**November 2025** - The scientific computing community today gains access to NEP (NetCDF Extension Pack) v1.0.0, a powerful open-source framework that dramatically accelerates data compression and simplifies access to multiple scientific data formats through the standard NetCDF API.
+**November 2025** - The scientific computing community today gains access to NEP (NetCDF Extension Pack) v1.0.0, a powerful open-source framework that provides high-performance compression options for HDF5/NetCDF-4 files.
 
 #### The Challenge
 
-Large-scale scientific data producers across meteorology, space physics, geospatial sciences, and other domains face mounting challenges with data management. Massive data volumes in diverse formats require costly data conversion, separate processing pipelines for each format, and specialized custom solutions. These inefficiencies create significant storage and computational overhead, hindering scientific progress.
+Large-scale scientific data producers face mounting challenges with data storage and I/O performance. Massive data volumes require efficient compression that balances storage savings with processing speed. Traditional DEFLATE compression is often too slow for real-time workflows, while offering limited flexibility in choosing optimal compression strategies.
 
 #### The Solution
 
@@ -32,16 +32,8 @@ This dual-algorithm approach enables scientists to:
 - **Maintain data integrity**: Both algorithms provide lossless compression
 - **Work seamlessly**: Transparent integration with existing NetCDF-4 applications
 
-"NEP transforms how scientists handle large-scale data," said Ed Hartnett, Principal Architect. "With both LZ4 and BZIP2 compression in v1.0.0, researchers can choose the optimal algorithm for their workflow—LZ4 for speed-critical operations or BZIP2 for storage optimization. This is just the beginning—future releases will add transparent access to GRIB2, CDF, and GeoTIFF formats through the same familiar NetCDF API."
+"NEP transforms how scientists handle large-scale data," said Ed Hartnett, Principal Architect. "With both LZ4 and BZIP2 compression in v1.0.0, researchers can choose the optimal algorithm for their workflow—LZ4 for speed-critical operations or BZIP2 for storage optimization. This flexibility enables scientists to optimize their data workflows based on specific requirements."
 
-#### Looking Ahead
-
-The NEP roadmap includes:
-- **v2.0.0**: GRIB2 User Defined Format (UDF) handler for meteorological data
-- **v3.0**: CDF UDF handler for space physics and satellite data
-- **v4.0**: GeoTIFF UDF handler for geospatial and remote sensing data
-
-Each format will be accessible through the standard NetCDF API, eliminating the need for data conversion or format-specific code.
 
 #### Availability
 
@@ -54,21 +46,21 @@ NEP v1.0.0 is available now as open-source software. Visit the project repositor
 ### General Questions
 
 #### Q: What is NEP?
-**A:** NEP (NetCDF Extension Pack) is an open-source framework that provides high-performance compression (LZ4 and BZIP2) and enables seamless access to diverse scientific data formats through the standard NetCDF API using User Defined Formats (UDF).
+**A:** NEP (NetCDF Extension Pack) is an open-source framework that provides high-performance compression (LZ4 and BZIP2) for HDF5/NetCDF-4 files through HDF5 filter plugins.
 
 #### Q: Who should use NEP?
 **A:** NEP is designed for:
-- Scientific researchers working with large datasets
-- Data center operators managing diverse data formats
+- Scientific researchers working with large NetCDF-4/HDF5 datasets
+- Data center operators optimizing storage efficiency
 - HPC system administrators optimizing I/O performance
 - Software developers building scientific applications
-- Anyone working with NetCDF-4/HDF5, GRIB2, CDF, or GeoTIFF data
+- Anyone needing flexible compression options for NetCDF-4 files
 
 #### Q: What problem does NEP solve?
-**A:** NEP addresses three major challenges:
-1. **Inflexible compression**: Traditional DEFLATE offers poor speed/ratio trade-offs
-2. **Format fragmentation**: Different data formats require separate tools and workflows
-3. **Integration complexity**: Combining datasets from multiple formats is difficult and error-prone
+**A:** NEP addresses key compression challenges:
+1. **Limited compression options**: NetCDF-4 traditionally relies on DEFLATE, which is slow for large datasets
+2. **Speed vs ratio trade-offs**: No easy way to choose between fast compression and high compression ratios
+3. **I/O bottlenecks**: Compression overhead can limit performance in HPC environments
 
 ### Technical Questions
 
@@ -93,14 +85,8 @@ NEP v1.0.0 is available now as open-source software. Visit the project repositor
 - **Use BZIP2 when**: Storage space is limited, archiving data long-term, transferring over slow networks, compression ratio matters most
 - **Both are lossless**: Choose based on your workflow priorities—speed or compression ratio
 
-#### Q: What are User Defined Formats (UDF)?
-**A:** UDFs are a NetCDF feature that allows registration of custom format handlers at runtime. NEP uses UDFs to provide transparent access to non-NetCDF formats (GRIB2, CDF, GeoTIFF) through the standard NetCDF API without requiring data conversion.
-
-#### Q: How does automatic format detection work?
-**A:** NEP uses magic numbers (unique byte sequences at the beginning of files) to automatically identify file formats. When you open a file with NetCDF, NEP detects the format and loads the appropriate UDF handler transparently.
-
 #### Q: Do I need to modify my existing NetCDF code?
-**A:** No! For LZ4 and BZIP2 compression, they work transparently with existing NetCDF-4 applications. For UDF handlers (v2.0.0+), you simply use the standard nc_open() function—NEP handles format detection and translation automatically.
+**A:** No! LZ4 and BZIP2 compression work transparently with existing NetCDF-4 applications. Simply set the HDF5_PLUGIN_PATH environment variable and use standard NetCDF-4 compression APIs.
 
 ### Installation and Usage
 
@@ -109,13 +95,13 @@ NEP v1.0.0 is available now as open-source software. Visit the project repositor
 - **Operating System**: Linux or Unix
 - **Required Libraries**: NetCDF-C (v4.9+), HDF5 (v1.12+), LZ4, BZIP2
 - **Build Tools**: CMake (v3.9+) or Autotools
-- **Optional Libraries**: NCEPLIBS-g2 (GRIB2, v2.0.0+), libgeotiff (GeoTIFF, v4.0+), NASA CDF library (v3.0+)
+- **Optional**: Doxygen (for building documentation)
 
 #### Q: How do I install NEP?
 **A:** Installation is straightforward with either CMake or Autotools. See the README for detailed instructions.
 
 #### Q: Can I enable only specific features?
-**A:** Yes! Use build options to control which features are compiled. Both CMake and Autotools support enable/disable flags for each UDF handler.
+**A:** Yes! Use build options to control which compression algorithms are compiled. Both CMake and Autotools support enable/disable flags for LZ4 and BZIP2.
 
 #### Q: How do I use LZ4 compression in my NetCDF files?
 **A:** LZ4 compression is available as an HDF5 filter. Once NEP is installed, the LZ4 filter is automatically available to NetCDF-4 applications through the HDF5_PLUGIN_PATH mechanism.
@@ -127,8 +113,8 @@ NEP v1.0.0 is available now as open-source software. Visit the project repositor
 
 #### Q: What is the performance overhead?
 **A:** 
-- **LZ4 Compression**: Faster than DEFLATE—actually improves performance
-- **UDF Handlers**: Designed for less than 5% overhead compared to native format access
+- **LZ4 Compression**: 2-3x faster than DEFLATE—actually improves I/O performance
+- **BZIP2 Compression**: Slower than LZ4 but provides better compression ratios
 - **Overall**: Performance improvements from reduced I/O time typically outweigh any overhead
 
 #### Q: Does NEP support parallel I/O?
@@ -137,23 +123,15 @@ NEP v1.0.0 is available now as open-source software. Visit the project repositor
 #### Q: Can I use NEP on Windows?
 **A:** Currently, NEP targets Linux and Unix platforms. Windows support may be added in future releases based on community demand.
 
-### Format Support
+### Compression Algorithms
 
-#### Q: What formats does NEP currently support?
-**A:** 
-- **v1.0.0 (Released)**: LZ4 compression for NetCDF-4/HDF5 files
-- **v2.0.0 (In Development)**: GRIB2 format via UDF handler
-- **v3.0 (Planned)**: CDF format via UDF handler
-- **v4.0 (Planned)**: GeoTIFF format via UDF handler
+#### Q: What compression algorithms does NEP v1.0.0 support?
+**A:** NEP v1.0.0 supports two lossless compression algorithms:
+- **LZ4**: High-speed compression for real-time and HPC workflows
+- **BZIP2**: High-ratio compression for archival storage and bandwidth-constrained scenarios
 
-#### Q: When will GRIB2 support be available?
-**A:** GRIB2 UDF handler is currently in development for v2.0.0. Sprint 1 focuses on file open/close operations. Follow the project roadmap for updates.
-
-#### Q: Why was BUFR support removed?
-**A:** BUFR support was removed to focus development resources on the most widely-used formats. The project prioritizes GRIB2, CDF, and GeoTIFF based on community needs.
-
-#### Q: Can I add support for my own custom format?
-**A:** Yes! NEP's UDF architecture is extensible. You can implement the NC_Dispatch interface for your format and register it with nc_def_user_format(). Documentation and examples will be provided in future releases.
+#### Q: Can I use both LZ4 and BZIP2 in the same application?
+**A:** Yes! You can choose different compression algorithms for different variables or files based on your specific requirements.
 
 ### Development and Community
 
@@ -171,15 +149,11 @@ NEP v1.0.0 is available now as open-source software. Visit the project repositor
 #### Q: Where can I get help?
 **A:** Check the project documentation, GitHub issues, and community forums. File bug reports and feature requests through the GitHub issue tracker.
 
-#### Q: What is the release schedule?
-**A:** NEP follows a versioned release model:
-- v1.0.0 (Released): LZ4 compression
-- v2.0.0 (In Development): GRIB2 UDF with multiple sprints
-- v3.0 (Planned): CDF UDF
-- v4.0 (Planned): GeoTIFF UDF
+#### Q: What is the current version?
+**A:** NEP v1.0.0 is the current release, providing LZ4 and BZIP2 compression support for HDF5/NetCDF-4 files.
 
 #### Q: How stable is NEP?
-**A:** v1.0.0 is production-ready for LZ4 compression. UDF handlers in development (v2.0.0+) will undergo thorough testing before release. Each feature is released when it meets quality and performance standards.
+**A:** NEP v1.0.0 is production-ready and has undergone thorough testing. Both LZ4 and BZIP2 compression filters are stable and ready for use in production environments.
 
 ### Use Cases
 
@@ -187,16 +161,16 @@ NEP v1.0.0 is available now as open-source software. Visit the project repositor
 **A:** 
 - **Weather forecasting**: Fast compression of large meteorological datasets
 - **Climate modeling**: Efficient storage and access to simulation outputs
-- **Satellite data processing**: Unified access to multiple data formats
-- **Geospatial analysis**: Transparent access to GeoTIFF data via NetCDF API
-- **Space physics**: Working with CDF data through familiar NetCDF interface
-- **HPC workflows**: Reducing I/O bottlenecks with fast compression
+- **Satellite data processing**: Optimizing storage for large observation datasets
+- **Ocean modeling**: Reducing I/O bottlenecks in simulation workflows
+- **HPC workflows**: Improving I/O performance with fast compression
+- **Data archival**: Maximizing storage efficiency with high-ratio compression
 
 #### Q: Can NEP handle real-time data streams?
 **A:** Yes! LZ4's high-speed compression makes it ideal for real-time or near-real-time data processing where low latency is critical.
 
 #### Q: Is NEP suitable for archival storage?
-**A:** LZ4 provides good compression ratios suitable for many archival scenarios. For maximum compression (at the cost of speed), traditional methods like DEFLATE may be more appropriate. NEP allows you to choose the right tool for your use case.
+**A:** Yes! BZIP2 provides excellent compression ratios ideal for archival storage. LZ4 provides good compression ratios suitable for many scenarios. NEP allows you to choose the right algorithm based on your priorities—speed or compression ratio.
 
 #### Q: How does NEP benefit HPC environments?
 **A:** NEP reduces I/O bottlenecks through fast compression, supports parallel I/O operations, and is designed for exascale computing environments. The performance improvements can significantly reduce job completion times.
