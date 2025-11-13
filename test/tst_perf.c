@@ -38,9 +38,9 @@
 #define NCOMPRESSION 3
 #define MAX_COMPRESSION_STR 6
 
-#define NX_BIG 500
+#define NX_BIG 750
 #define NY_BIG 1000
-#define NUM_REC 10
+#define NUM_REC 50
 
 #define MIN_ZSTD 0
 #define MAX_ZSTD 9
