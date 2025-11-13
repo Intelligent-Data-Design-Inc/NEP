@@ -1,4 +1,6 @@
-# NEP (NetCDF Extension Pack)
+# NEP (NetCDF Expansion Pack)
+
+**[📚 Full Documentation](https://intelligent-data-design-inc.github.io/NEP/)**
 
 ## v1.0.0: High-Performance Compression
 
