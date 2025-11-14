@@ -109,9 +109,6 @@
   - Variant usage examples
   - Integration with other Spack packages
 
-#### Sprint 4: Update Docs
-- Make sure all docs in the docs directory correctly describe v1.0.
-
 ### v0.1.3 Documentation
 #### Sprint 1: Documentation with Doxygen
 - **Doxygen Build Integration**: Add Doxygen documentation generation to both CMake and Autotools build systems
