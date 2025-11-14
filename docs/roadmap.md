@@ -83,11 +83,31 @@
   - All format handler infrastructure preserved for future versions
 
 #### Sprint 3: Spack Support
-- Add spack support.
-- It can be tested like NCEPLIBS-g2c.
-
-#### Sprint 4: Update Docs
-- Make sure all docs in the docs directory correctly describe v1.0.
+- **Spack Package Creation**: Create package.py file for NEP following Spack package conventions
+  - Define package metadata: name, homepage, URL, description, maintainers
+  - Specify version information with checksums for releases
+  - Support both CMake and Autotools build systems
+  - Define package variants for build options
+- **Dependency Specification**: Declare all required and optional dependencies
+  - Required: netcdf-c, hdf5, lz4, bzip2
+  - Optional: doxygen (for documentation builds)
+  - Specify version constraints for each dependency
+- **Build System Integration**: Configure both CMake and Autotools build methods
+  - CMake: Define cmake_args() method with proper flags
+  - Autotools: Define configure_args() method with enable/disable options
+  - Handle installation prefix and library paths
+- **Variant Configuration**: Define Spack variants for NEP features
+  - +docs/-docs: Enable/disable documentation building
+  - +lz4/-lz4: Enable/disable LZ4 compression support
+  - +bzip2/-bzip2: Enable/disable BZIP2 compression support
+- **Testing Integration**: Add install and smoke tests
+  - Verify installed libraries exist
+  - Check HDF5 plugin installation
+  - Test basic functionality similar to NCEPLIBS-g2c testing approach
+- **Documentation**: Add package documentation and usage examples
+  - Installation instructions via spack install nep
+  - Variant usage examples
+  - Integration with other Spack packages
 
 ### v0.1.3 Documentation
 #### Sprint 1: Documentation with Doxygen

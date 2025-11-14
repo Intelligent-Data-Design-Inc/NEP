@@ -88,6 +88,16 @@ NEP v1.0.0 requires the following dependencies:
 - **BZIP2 library** for BZIP2 compression support
 - **Doxygen** (optional, for building documentation)
 
+### Spack Installation
+
+NEP can be installed using Spack for simplified dependency management:
+
+```bash
+spack install nep
+```
+
+For more details on Spack installation options and variants, see **[Spack Installation Guide](docs/spack.md)**.
+
 ### Test Data
 
 NEP v1.0.0 includes comprehensive LZ4 and BZIP2 compression tests with sample NetCDF-4 datasets.
