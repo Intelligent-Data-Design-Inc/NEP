@@ -8,7 +8,7 @@
 
 module ncsqueeze
 
-#ifdef BUILD_BZIP2
+#if BUILD_BZIP2
 
   !> Interface to C function to set BZIP2 compression.
   interface
@@ -29,7 +29,7 @@ module ncsqueeze
 
 #endif
 
-#ifdef BUILD_LZ4
+#if BUILD_LZ4
 
   !> Interface to C function to set LZ4 compression.
   interface
@@ -85,7 +85,7 @@ module ncsqueeze
   ! end interface
 
 contains
-#ifdef BUILD_BZIP2
+#if BUILD_BZIP2
   !> Set BZIP2 compression for a variable.
   !!
   !! @param ncid File or group ID.
@@ -125,7 +125,7 @@ contains
   end function nf90_inq_var_bzip2
 #endif
 
-#ifdef BUILD_LZ4
+#if BUILD_LZ4
   !> Set LZ4 compression for a variable.
   !!
   !! @param ncid File or group ID.
