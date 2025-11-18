@@ -1,4 +1,4 @@
-![NEP Logo](docs/images/logo_1024x1024.png)
+![NEP Logo](docs/images/logo_small.png)
 
 # NEP (NetCDF Expansion Pack)
 
