@@ -31,6 +31,11 @@
 
 #### Sprint 4: Var Metadata
 
+### v1.2.0 Spack Support
+#### Sprint 1: Spack CI Testing and Spack Integration
+- Set up testing of the spack file just like NCEPLIBS-g2c has.
+- Submit spack file to spack repo.
+
 ### v1.1.0 Fortran Wrappers
 #### Sprint 1: Add Fortran Wrappers for Compression Functions
 - Add Fortran-callable wrappers for existing v1.0.0 compression functions without changing C API behavior.
