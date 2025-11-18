@@ -31,6 +31,17 @@
 
 #### Sprint 4: Var Metadata
 
+### v1.1.0 Fortran Wrappers
+#### Sprint 1: Add Fortran Wrappers for Compression Functions
+- Add Fortran-callable wrappers for existing v1.0.0 compression functions without changing C API behavior.
+- Integrate Fortran wrappers into both build systems:
+  - CMake: build Fortran wrappers by default; add `-DENABLE_FORTRAN=ON/OFF` option.
+  - Autotools: build Fortran wrappers by default; add `--enable-fortran/--disable-fortran` options.
+  - When Fortran is disabled, do not build/install any Fortran libraries or modules and do not build/run Fortran tests.
+- Keep Fortran source code in `fsrc/` and Fortran tests in `ftest/`.
+- Add smoke tests in `ftest/` for each exposed Fortran wrapper and hook them into CI when Fortran is enabled.
+- Ensure enabling Fortran wrappers does not change behavior of existing C-only workflows, and disabling Fortran has no impact on C builds or tests.
+
 ### v1.0.0 LZ4 Compression
 #### Sprint 1: GitHub Pages Documentation Deployment
 - **GitHub Actions Workflow**: Create automated workflow for Doxygen documentation deployment to GitHub Pages
