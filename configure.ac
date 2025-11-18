@@ -110,6 +110,13 @@ if test "x$enable_lzf" = xyes; then
 fi
 AC_SUBST([BUILD_LZF], [$enable_lzf])
 
+# Numeric build flags for Fortran compilation
+AS_IF([test "x$enable_lz4" = "xyes"],  [BUILD_LZ4_DEF=1], [BUILD_LZ4_DEF=0])
+AS_IF([test "x$enable_bzip2" = "xyes"], [BUILD_BZIP2_DEF=1], [BUILD_BZIP2_DEF=0])
+
+AC_SUBST([BUILD_LZ4_DEF])
+AC_SUBST([BUILD_BZIP2_DEF])
+
 dnl if test "x$enable_lz4" = xyes; then
 dnl    AC_CONFIG_SUBDIRS([LZ4])
 dnl fi

@@ -9,6 +9,10 @@ option(DEBUG "Build with debugging symbols" OFF)
 # Add option to control building Fortran wrappers and tests
 option(ENABLE_FORTRAN "Build Fortran wrappers and related tests" ON)
 
+# Build options for compression filters (mirror autotools options)
+option(BUILD_LZ4 "Enable LZ4 filter support" ON)
+option(BUILD_BZIP2 "Enable BZIP2 filter support" ON)
+
 # Define global preprocessor symbol to mirror Autotools AC_DEFINE([USE_HDF5],[yes])
 # Use add_definitions for compatibility with CMake 3.9
 add_definitions(-DUSE_HDF5=yes)

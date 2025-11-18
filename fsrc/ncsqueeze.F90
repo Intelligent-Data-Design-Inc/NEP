@@ -8,6 +8,8 @@
 
 module ncsqueeze
 
+#ifdef BUILD_BZIP2
+
   !> Interface to C function to set BZIP2 compression.
   interface
      function nc_def_var_bzip2(ncid, varid, level) bind(c)
@@ -25,6 +27,10 @@ module ncsqueeze
      end function nc_inq_var_bzip2
   end interface
 
+#endif
+
+#ifdef BUILD_LZ4
+
   !> Interface to C function to set LZ4 compression.
   interface
      function nc_def_var_lz4(ncid, varid, level) bind(c)
@@ -41,6 +47,8 @@ module ncsqueeze
        integer(C_INT), intent(inout):: lz4p, levelp
      end function nc_inq_var_lz4
   end interface
+
+#endif
 
   ! !> Interface to C function to set JPEG compression.
   ! interface
@@ -77,6 +85,7 @@ module ncsqueeze
   ! end interface
 
 contains
+#ifdef BUILD_BZIP2
   !> Set BZIP2 compression for a variable.
   !!
   !! @param ncid File or group ID.
@@ -114,7 +123,9 @@ contains
     ! C varids start at 0, fortran at 1.
     status = nc_inq_var_bzip2(ncid, varid - 1, bzip2p, levelp)
   end function nf90_inq_var_bzip2
+#endif
 
+#ifdef BUILD_LZ4
   !> Set LZ4 compression for a variable.
   !!
   !! @param ncid File or group ID.
