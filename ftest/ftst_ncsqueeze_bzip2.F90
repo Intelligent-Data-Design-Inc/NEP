@@ -1,6 +1,6 @@
   !> @file
   !!
-  !! This is a test program for the NCCOMPRESS BZIP2 compression filter for
+  !! This is a test program for the ncsqueeze BZIP2 compression filter for
   !! netCDF. This started as an example nc4_pres_temp_4D_wr.f90 from
   !! the netcdf-fortran project.
   !!
@@ -8,13 +8,13 @@
   !! @date Nov 13, 2025
   !! @copyright Intelligent Data Design, Inc. All rights reserved.
 
-program ftst_nccompress_bzip2
+program ftst_ncsqueeze_bzip2
   use netcdf
   use nccompress
   implicit none
 
   ! This is the name of the data file we will create.
-  character (len = *), parameter :: FILE_NAME = "ftst_nccompress_bzip2.nc"
+  character (len = *), parameter :: FILE_NAME = "ftst_ncsqueeze_bzip2.nc"
   integer :: ncid
 
   ! We are writing 4D data.
