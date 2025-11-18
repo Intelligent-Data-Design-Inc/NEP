@@ -163,6 +163,7 @@ contains
     ! C varids start at 0, fortran at 1.
     status = nc_inq_var_lz4(ncid, varid - 1, lz4p, levelp)
   end function nf90_inq_var_lz4
+#endif
 
   ! !> Set JPEG compression for a variable.
   ! !!
