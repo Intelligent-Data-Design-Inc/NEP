@@ -13,8 +13,12 @@ AM_FCFLAGS = -DBUILD_LZ4=$(BUILD_LZ4_DEF) -DBUILD_BZIP2=$(BUILD_BZIP2_DEF)
 LDADD = ${top_builddir}/fsrc/libncsqueezef.la ${top_builddir}/src/libncsqueeze.la -lnetcdff
 
 # Build our test programs.
-check_PROGRAMS = ftst_ncsqueeze_bzip2
+check_PROGRAMS =
+
+if BUILD_BZIP2
+check_PROGRAMS += ftst_ncsqueeze_bzip2
 ftst_ncsqueeze_bzip2_SOURCES = ftst_ncsqueeze_bzip2.F90
+endif
 
 # Build the LZ4 tests?
 if BUILD_LZ4
