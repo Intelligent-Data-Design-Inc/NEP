@@ -50,6 +50,7 @@ NEP requires:
 - HDF5 library (v1.12+) and its dependencies
 - LZ4 library
 - BZIP2 library
+- NetCDF-Fortran library (when Fortran support is enabled)
 
 Build with CMake or Autotools:
 
@@ -90,6 +91,11 @@ The API documentation is generated directly from the C and Fortran source code.
 
 - **Versioned API docs**: Documentation is published per release (for example, `/NEP/v1.2.0/api/`).
 - **Latest API docs**: A `latest` alias points to the most recent release documentation.
+
+Key API reference pages:
+
+- [C API (ncsqueeze.c)](ncsqueeze_8c.html)
+- [Fortran API (ncsqueeze.F90)](ncsqueeze_8F90.html)
 
 Refer to the documentation header for the exact version of NEP corresponding to this build.
 

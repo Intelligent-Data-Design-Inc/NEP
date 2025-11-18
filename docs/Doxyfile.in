@@ -54,7 +54,7 @@ PROJECT_NUMBER         = @PACKAGE_VERSION@
 # for a project that appears at the top of each page and should give viewer a
 # quick idea about the purpose of the project. Keep the description short.
 
-PROJECT_BRIEF          = "NetCDF Extension Pack: compression and format extensions for NetCDF"
+PROJECT_BRIEF          = "NetCDF Extension Pack: compression extensions for NetCDF"
 
 # With the PROJECT_LOGO tag one can specify a logo or an icon that is included
 # in the documentation. The maximum height of the logo should not exceed 55
@@ -933,7 +933,9 @@ WARN_LOGFILE           =
 # spaces. See also FILE_PATTERNS and EXTENSION_MAPPING
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  = @abs_top_srcdir@/src \
+INPUT                  = @abs_top_srcdir@/src/ncsqueeze.c \
+                         @abs_top_srcdir@/include/ncsqueeze.h \
+                         @abs_top_srcdir@/fsrc/ncsqueeze.F90 \
                          @abs_top_srcdir@/docs/mainpage.md \
                          @abs_top_srcdir@/docs/build-options.md
 
