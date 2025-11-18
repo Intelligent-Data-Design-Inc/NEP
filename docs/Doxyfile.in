@@ -54,7 +54,7 @@ PROJECT_NUMBER         = @PACKAGE_VERSION@
 # for a project that appears at the top of each page and should give viewer a
 # quick idea about the purpose of the project. Keep the description short.
 
-PROJECT_BRIEF          = "NetCDF4/HDF5 Format Extension Pack"
+PROJECT_BRIEF          = "NetCDF Extension Pack: compression and format extensions for NetCDF"
 
 # With the PROJECT_LOGO tag one can specify a logo or an icon that is included
 # in the documentation. The maximum height of the logo should not exceed 55
@@ -934,7 +934,8 @@ WARN_LOGFILE           =
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  = @abs_top_srcdir@/src \
-                         @abs_top_srcdir@/docs/mainpage.md
+                         @abs_top_srcdir@/docs/mainpage.md \
+                         @abs_top_srcdir@/docs/build-options.md
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses

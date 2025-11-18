@@ -1,8 +1,8 @@
-# NEP (NetCDF Extension Pack) v1.0.0
+# NEP (NetCDF Extension Pack)
 
 ## Overview
 
-NEP (NetCDF Extension Pack) provides high-performance compression for HDF5/NetCDF-4 files with two complementary algorithms: LZ4 (optimized for speed) and BZIP2 (optimized for compression ratio). This release delivers flexible lossless compression options for diverse scientific data workflows.
+NEP (NetCDF Extension Pack) provides high-performance compression for NetCDF-4 data with two complementary algorithms: LZ4 (optimized for speed) and BZIP2 (optimized for compression ratio). NEP extends the NetCDF ecosystem with flexible lossless compression options for diverse scientific data workflows.
 
 ## Compression Algorithms
 
@@ -14,8 +14,7 @@ LZ4 is a lossless data compression algorithm from the LZ77 family of byte-orient
 - **High-Speed Compression**: 2-3x faster compression/decompression than DEFLATE
 - **Lossless**: Guarantees data integrity with no data loss
 - **Optimized for HPC**: Designed for speed-critical workflows in high-performance computing environments
-- **Transparent Integration**: Works seamlessly with existing NetCDF-4/HDF5 applications
-- **HDF5 Filter Plugin**: Automatically available through HDF5_PLUGIN_PATH mechanism
+- **Transparent Integration**: Works seamlessly with existing NetCDF-4 applications
 
 **Performance Characteristics:**
 - **Compression Speed**: Similar to LZO, several times faster than DEFLATE
@@ -31,8 +30,7 @@ BZIP2 is a lossless data compression algorithm using the Burrows-Wheeler block s
 - **Superior Compression Ratios**: Better compression than DEFLATE and significantly better than LZ4
 - **Lossless**: Guarantees data integrity with no data loss
 - **Block-Sorting Algorithm**: Particularly effective for repetitive patterns in scientific data
-- **Transparent Integration**: Works seamlessly with existing NetCDF-4/HDF5 applications
-- **HDF5 Filter Plugin**: Automatically available through HDF5_PLUGIN_PATH mechanism
+- **Transparent Integration**: Works seamlessly with existing NetCDF-4 applications
 
 **Performance Characteristics:**
 - **Compression Ratio**: Exceeds DEFLATE, ideal for storage optimization
@@ -49,7 +47,7 @@ BZIP2 is a lossless data compression algorithm using the Burrows-Wheeler block s
 
 NEP requires:
 - NetCDF-C library (v4.9+)
-- HDF5 library (v1.12+)
+- HDF5 library (v1.12+) and its dependencies
 - LZ4 library
 - BZIP2 library
 
@@ -69,18 +67,31 @@ make install
 
 ## Usage
 
-Once installed, both LZ4 and BZIP2 compression filters are automatically available to NetCDF-4 applications through the HDF5 plugin system. No code changes are required to use either compression algorithm with your existing NetCDF-4 files. Choose the algorithm that best fits your workflow requirements—LZ4 for speed or BZIP2 for compression ratio.
+Once installed, both LZ4 and BZIP2 compression filters are available to NetCDF-4 applications through the configured NEP libraries. Choose the algorithm that best fits your workflow requirements—LZ4 for speed or BZIP2 for compression ratio.
 
-## Future Releases
+## Features and Options
 
-Future versions of NEP will add User Defined Format (UDF) handlers for:
-- **v2.0.0**: GRIB2 format support
-- **v3.0**: CDF format support
-- **v4.0**: GeoTIFF format support
+- **Compression Algorithms**:
+  - LZ4: speed-optimized lossless compression.
+  - BZIP2: high-ratio lossless compression.
+- **Configurable Compression Support**:
+  - LZ4 and BZIP2 support can be enabled or disabled at build time.
+- **Fortran Support**:
+  - Optional Fortran wrappers for NEP compression functions.
+  - When Fortran is enabled, the `netcdf-fortran` library is required.
+
+See the dedicated build and configuration page for full details on CMake and Autotools options:
+
+- `docs/build-options.md`
 
 ## API Documentation
 
-This documentation covers the internal API for NEP v1.0.0. For general usage information, see the project README.
+The API documentation is generated directly from the C and Fortran source code.
+
+- **Versioned API docs**: Documentation is published per release (for example, `/NEP/v1.2.0/api/`).
+- **Latest API docs**: A `latest` alias points to the most recent release documentation.
+
+Refer to the documentation header for the exact version of NEP corresponding to this build.
 
 ## License
 
