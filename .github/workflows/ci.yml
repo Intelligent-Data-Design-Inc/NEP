@@ -142,11 +142,9 @@ jobs:
         working-directory: build
         run: |
           echo "Building NEP v1.0.0 - LZ4 compression only"
-          DOC_FLAG=""
-          if [ "${{ matrix.doc_build }}" = "enabled" ]; then
+          DOC_FLAG="-DBUILD_DOCUMENTATION=OFF"
+          if [ "${{ matrix.fortran }}" = "on" ] && [ "${{ matrix.compression }}" = "all" ]; then
             DOC_FLAG="-DBUILD_DOCUMENTATION=ON"
-          else
-            DOC_FLAG="-DBUILD_DOCUMENTATION=OFF"
           fi
           FORTRAN_FLAG="-DENABLE_FORTRAN=ON"
           if [ "${{ matrix.fortran }}" = "off" ]; then
@@ -168,7 +166,7 @@ jobs:
           make -j$(nproc)
 
       - name: Build Documentation (CMake)
-        if: matrix.build_system == 'cmake'
+        if: matrix.build_system == 'cmake' && matrix.fortran == 'on' && matrix.compression == 'all'
         working-directory: build
         run: |
           set -x
@@ -236,14 +234,19 @@ jobs:
             LZ4_FLAG="--disable-lz4"
           fi
 
-          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc $LZ4_FLAG $BZIP2_FLAG --enable-docs $FORTRAN_FLAG || (echo "Configure failed. Printing config.log:"; cat config.log; echo "hdf5_plugins/config.log:"; cat hdf5_plugins/config.log; exit 1)
+          DOCS_FLAG="--disable-docs"
+          if [ "${{ matrix.fortran }}" = "on" ] && [ "${{ matrix.compression }}" = "all" ]; then
+            DOCS_FLAG="--enable-docs"
+          fi
+
+          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc $LZ4_FLAG $BZIP2_FLAG $DOCS_FLAG $FORTRAN_FLAG || (echo "Configure failed. Printing config.log:"; cat config.log; echo "hdf5_plugins/config.log:"; cat hdf5_plugins/config.log; exit 1)
 
       - name: Build (Autotools)
         if: matrix.build_system == 'autotools'
         run: make -j$(nproc)
 
       - name: Build Documentation (Autotools)
-        if: matrix.build_system == 'autotools'
+        if: matrix.build_system == 'autotools' && matrix.fortran == 'on' && matrix.compression == 'all'
         run: |
           set -x
           echo "Building documentation with Autotools..."

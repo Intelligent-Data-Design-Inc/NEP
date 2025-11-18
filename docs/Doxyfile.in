@@ -935,7 +935,7 @@ WARN_LOGFILE           =
 
 INPUT                  = @abs_top_srcdir@/src/ncsqueeze.c \
                          @abs_top_srcdir@/include/ncsqueeze.h \
-                         @abs_top_srcdir@/fsrc/ncsqueeze.f90 \
+                         @abs_top_srcdir@/fsrc/ncsqueeze.F90 \
                          @abs_top_srcdir@/docs/mainpage.md \
                          @abs_top_srcdir@/docs/build-options.md
 
