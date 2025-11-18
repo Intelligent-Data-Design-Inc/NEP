@@ -1,3 +1,5 @@
+![NEP Logo](docs/images/logo_1024x1024.png)
+
 # NEP (NetCDF Expansion Pack)
 
 **[📚 Full Documentation](https://intelligent-data-design-inc.github.io/NEP/)**
