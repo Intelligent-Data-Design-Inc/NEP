@@ -12,7 +12,11 @@ ACLOCAL_AMFLAGS = -I m4
 # TEST_GRIB2 = test_grib2
 # endif
 
+if ENABLE_FORTRAN
+SUBDIRS = include src fsrc test ftest
+else
 SUBDIRS = include src test
+endif
 EXTRA_DIST = autogen.sh
 
 # Documentation target

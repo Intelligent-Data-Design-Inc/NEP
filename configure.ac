@@ -165,7 +165,17 @@ if test "x$enable_docs" != "xno"; then
     fi
 fi
 
-# Check for netCDF Fortran library.
+# Fortran wrapper support (v1.1.0)
+AC_MSG_CHECKING([whether Fortran wrappers should be built])
+AC_ARG_ENABLE([fortran],
+              [AS_HELP_STRING([--enable-fortran],
+                              [Enable Fortran wrappers and tests (default: yes)])])
+test "x$enable_fortran" = xno || enable_fortran=yes
+AC_MSG_RESULT([$enable_fortran])
+AM_CONDITIONAL([ENABLE_FORTRAN], [test "x$enable_fortran" = xyes])
+AC_SUBST([ENABLE_FORTRAN], [$enable_fortran])
+
+# Check for netCDF Fortran library when Fortran support is enabled.
 if test "x$enable_fortran" = xyes; then
    AC_LANG_PUSH(Fortran)
    AC_SEARCH_LIBS([nf_create], [netcdff], [], [AC_MSG_ERROR([Can't find or link to the netCDF Fortran library, set CPPFLAGS/LDFLAGS.])])
@@ -263,6 +273,8 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  include/Makefile
                  test/Makefile
+                 fsrc/Makefile
+                 ftest/Makefile
                  test_grib2/Makefile
                  docs/Doxyfile])
 

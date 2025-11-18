@@ -6,6 +6,9 @@ project (NEP VERSION 0.1.1 DESCRIPTION "NetCDF4/HDF5 Format Extension Pack" LANG
 # Add option for debug build
 option(DEBUG "Build with debugging symbols" OFF)
 
+# Add option to control building Fortran wrappers and tests
+option(ENABLE_FORTRAN "Build Fortran wrappers and related tests" ON)
+
 # Define global preprocessor symbol to mirror Autotools AC_DEFINE([USE_HDF5],[yes])
 # Use add_definitions for compatibility with CMake 3.9
 add_definitions(-DUSE_HDF5=yes)
@@ -106,7 +109,12 @@ if(NOT DOCS_ONLY)
 
     include(GNUInstallDirs)
     include(ExternalProject)
-    
+
+    if(ENABLE_FORTRAN)
+        enable_language(Fortran)
+        add_subdirectory(fsrc)
+    endif()
+
     add_subdirectory (src)
     
     # Build HDF5 filter plugins using Autotools (LZ4 and BZIP2 for v1.0.0)
