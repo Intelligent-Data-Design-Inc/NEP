@@ -4,11 +4,11 @@
 
 **FOR IMMEDIATE RELEASE**
 
-### NetCDF Extension Pack (NEP) v1.0.0 Delivers High-Performance Compression for Scientific Data
+### NetCDF Extension Pack (NEP) v1.1.0 Brings High-Performance Compression to Fortran Applications
 
-*Open-source framework provides flexible compression options (LZ4 and BZIP2) for HDF5/NetCDF-4 files*
+*Open-source framework provides flexible compression options (LZ4 and BZIP2) for HDF5/NetCDF-4 files, now with Fortran 90 wrappers*
 
-**November 2025** - The scientific computing community today gains access to NEP (NetCDF Extension Pack) v1.0.0, a powerful open-source framework that provides high-performance compression options for HDF5/NetCDF-4 files.
+**November 2025** - The scientific computing community today gains access to NEP (NetCDF Extension Pack) v1.1.0, a powerful open-source framework that extends high-performance compression options for HDF5/NetCDF-4 files to both C and Fortran applications.
 
 #### The Challenge
 
@@ -16,13 +16,13 @@ Large-scale scientific data producers face mounting challenges with data storage
 
 #### The Solution
 
-NEP v1.0.0 introduces high-performance compression for HDF5/NetCDF-4 files with two complementary algorithms:
+NEP introduces high-performance compression for HDF5/NetCDF-4 files with two complementary algorithms, and with v1.1.0 adds first-class Fortran support through thin wrappers around the existing C APIs:
 
 **LZ4**: Blazing-fast compression delivering 2-3x faster speeds than DEFLATE, ideal for real-time workflows and HPC environments.
 
 **BZIP2**: Superior compression ratios exceeding DEFLATE, perfect for archival storage and bandwidth-constrained scenarios.
 
-This dual-algorithm approach enables scientists to:
+This dual-algorithm approach, now available from both C and Fortran, enables scientists to:
 
 - **Choose the right tool**: Select LZ4 for speed or BZIP2 for compression ratio based on workflow needs
 - **Process data faster**: LZ4 compression/decompression is 2-3x faster than DEFLATE
@@ -32,12 +32,12 @@ This dual-algorithm approach enables scientists to:
 - **Maintain data integrity**: Both algorithms provide lossless compression
 - **Work seamlessly**: Transparent integration with existing NetCDF-4 applications
 
-"NEP transforms how scientists handle large-scale data," said Ed Hartnett, Principal Architect. "With both LZ4 and BZIP2 compression in v1.0.0, researchers can choose the optimal algorithm for their workflow—LZ4 for speed-critical operations or BZIP2 for storage optimization. This flexibility enables scientists to optimize their data workflows based on specific requirements."
+"NEP transforms how scientists handle large-scale data," said Ed Hartnett, Principal Architect. "With both LZ4 and BZIP2 compression, researchers can choose the optimal algorithm for their workflow—LZ4 for speed-critical operations or BZIP2 for storage optimization. With v1.1.0, those same capabilities are now directly available from Fortran codes via simple `nf90_*` functions. This flexibility enables scientists to optimize their data workflows based on specific requirements, regardless of whether they use C or Fortran."
 
 
 #### Availability
 
-NEP v1.0.0 is available now as open-source software. Visit the project repository for documentation and installation instructions.
+NEP v1.1.0 is available now as open-source software. Visit the project repository for documentation and installation instructions.
 
 ---
 
@@ -46,7 +46,7 @@ NEP v1.0.0 is available now as open-source software. Visit the project repositor
 ### General Questions
 
 #### Q: What is NEP?
-**A:** NEP (NetCDF Extension Pack) is an open-source framework that provides high-performance compression (LZ4 and BZIP2) for HDF5/NetCDF-4 files through HDF5 filter plugins.
+**A:** NEP (NetCDF Extension Pack) is an open-source framework that provides high-performance compression (LZ4 and BZIP2) for HDF5/NetCDF-4 files through HDF5 filter plugins, with both C and Fortran APIs.
 
 #### Q: Who should use NEP?
 **A:** NEP is designed for:
@@ -65,7 +65,7 @@ NEP v1.0.0 is available now as open-source software. Visit the project repositor
 ### Technical Questions
 
 #### Q: What compression algorithms does NEP support?
-**A:** NEP v1.0.0 supports two complementary lossless compression algorithms:
+**A:** NEP supports two complementary lossless compression algorithms:
 
 **LZ4 Compression:**
 - **Purpose**: Speed-optimized for real-time and HPC workflows
@@ -93,7 +93,8 @@ NEP v1.0.0 is available now as open-source software. Visit the project repositor
 #### Q: What are the system requirements?
 **A:** 
 - **Operating System**: Linux or Unix
-- **Required Libraries**: NetCDF-C (v4.9+), HDF5 (v1.12+), LZ4, BZIP2
+- **Required Libraries (C)**: NetCDF-C (v4.9+), HDF5 (v1.12+), LZ4, BZIP2
+- **Additional Fortran Support**: NetCDF-Fortran (v4.5.4+) when building the Fortran wrappers
 - **Build Tools**: CMake (v3.9+) or Autotools
 - **Optional**: Doxygen (for building documentation)
 
@@ -125,8 +126,8 @@ NEP v1.0.0 is available now as open-source software. Visit the project repositor
 
 ### Compression Algorithms
 
-#### Q: What compression algorithms does NEP v1.0.0 support?
-**A:** NEP v1.0.0 supports two lossless compression algorithms:
+#### Q: What compression algorithms does NEP v1.1.0 support?
+**A:** NEP v1.1.0 supports two lossless compression algorithms:
 - **LZ4**: High-speed compression for real-time and HPC workflows
 - **BZIP2**: High-ratio compression for archival storage and bandwidth-constrained scenarios
 
@@ -149,8 +150,11 @@ NEP v1.0.0 is available now as open-source software. Visit the project repositor
 #### Q: Where can I get help?
 **A:** Check the project documentation, GitHub issues, and community forums. File bug reports and feature requests through the GitHub issue tracker.
 
+#### Q: Does NEP support Fortran applications?
+**A:** Yes. NEP v1.1.0 adds Fortran 90 wrappers (module `ncsqueeze`) around the existing C compression APIs. Fortran applications can call `nf90_def_var_lz4`, `nf90_inq_var_lz4`, `nf90_def_var_bzip2`, and `nf90_inq_var_bzip2` to enable and query compression, using the standard NetCDF Fortran API alongside NEP.
+
 #### Q: What is the current version?
-**A:** NEP v1.0.0 is the current release, providing LZ4 and BZIP2 compression support for HDF5/NetCDF-4 files.
+**A:** NEP v1.1.0 is the current release, providing LZ4 and BZIP2 compression support for HDF5/NetCDF-4 files for both C and Fortran applications.
 
 #### Q: How stable is NEP?
 **A:** NEP v1.0.0 is production-ready and has undergone thorough testing. Both LZ4 and BZIP2 compression filters are stable and ready for use in production environments.
@@ -183,8 +187,9 @@ For more information:
 - **Documentation**: See docs/ directory in the repository
 - **Installation Guide**: README.md
 - **Technical Details**: docs/design.md and docs/prd.md
+- **Release Notes**: docs/releases/
 - **Roadmap**: docs/roadmap.md
 
 ---
 
-*Last Updated: November 2025*
+*Last Updated: November 2025 (v1.1.0)*
