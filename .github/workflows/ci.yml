@@ -150,7 +150,7 @@ jobs:
           if [ "${{ matrix.fortran }}" = "off" ]; then
             FORTRAN_FLAG="-DENABLE_FORTRAN=OFF"
           fi
-          cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install;/usr/include/liblzf" $DOC_FLAG $FORTRAN_FLAG
+          cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install;/usr/include/liblzf" -DBUILD_TESTING=ON $DOC_FLAG $FORTRAN_FLAG
 
       - name: Build (CMake)
         if: matrix.build_system == 'cmake'

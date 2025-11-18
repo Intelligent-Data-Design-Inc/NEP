@@ -26,8 +26,6 @@
  * - nf90_def_var_bzip2()
  * - nf90_inq_var_bzip2()
  *
- * @image html NetCDF_Filters.png
- *
  */
 
 #include "config.h"
