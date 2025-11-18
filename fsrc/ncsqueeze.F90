@@ -86,13 +86,18 @@ module ncsqueeze
 
 contains
 #if BUILD_BZIP2
-  !> Set BZIP2 compression for a variable.
+  !> Turn on BZIP2 compression for a variable.
+  !!
+  !! This is the Fortran wrapper for the C function `nc_def_var_bzip2`,
+  !! which enables BZIP2 compression for a variable in a netCDF-4/HDF5 file.
   !!
   !! @param ncid File or group ID.
-  !! @param varid Variable ID.
-  !! @param level The compression level.
+  !! @param varid Variable ID (1-based Fortran indexing).
+  !! @param level Compression level, from 1 to 9. Sets the block size to
+  !!              100k, 200k, ..., 900k when compressing (9 is the BZIP2
+  !!              default).
   !!
-  !! @return 0 for success, error code otherwise.
+  !! @return 0 for success, netCDF error code otherwise.
   function nf90_def_var_bzip2(ncid, varid, level) result(status)
     use iso_c_binding
     implicit none
@@ -103,16 +108,19 @@ contains
     status = nc_def_var_bzip2(ncid, varid - 1, level)
   end function nf90_def_var_bzip2
 
-  !> Inquire about BZIP2 compression for a variable.
+  !> Learn whether BZIP2 compression is on for a variable, and, if so,
+  !! the compression level.
   !!
-  !! @param ncid File or group ID.
-  !! @param varid Variable ID.
-  !! @param bzip2p Pointer that gets 1 if BZIP2 is in use, 0
-  !! otherwise. Ignored if NULL.
-  !! @param levelp Pointer that gets compression level, if BZIP2 is in
-  !! use. Ignored if NULL.
+  !! This is the Fortran wrapper for the C function `nc_inq_var_bzip2`.
   !!
-  !! @return 0 for success, error code otherwise.
+  !! @param ncid   File or group ID.
+  !! @param varid  Variable ID (1-based Fortran indexing).
+  !! @param bzip2p On return, set to 1 if BZIP2 is in use for this
+  !!               variable, and 0 otherwise.
+  !! @param levelp On return, set to the compression level (from 1 to 9)
+  !!               if BZIP2 is in use.
+  !!
+  !! @return 0 for success, netCDF error code otherwise.
   function nf90_inq_var_bzip2(ncid, varid, bzip2p, levelp) result(status)
     use iso_c_binding
     implicit none
@@ -126,13 +134,17 @@ contains
 #endif
 
 #if BUILD_LZ4
-  !> Set LZ4 compression for a variable.
+  !> Turn on LZ4 compression for a variable.
   !!
-  !! @param ncid File or group ID.
-  !! @param varid Variable ID.
-  !! @param level The acceleration, from 1 to 9 (larger means faster and less compressive).
+  !! This is the Fortran wrapper for the C function `nc_def_var_lz4`,
+  !! which enables LZ4 compression for a variable in a netCDF-4/HDF5 file.
   !!
-  !! @return 0 for success, error code otherwise.
+  !! @param ncid  File or group ID.
+  !! @param varid Variable ID (1-based Fortran indexing).
+  !! @param level Acceleration setting, from 1 to 9 (larger means faster
+  !!              and less compressive).
+  !!
+  !! @return 0 for success, netCDF error code otherwise.
   function nf90_def_var_lz4(ncid, varid, level) result(status)
     use iso_c_binding
     implicit none
@@ -143,16 +155,19 @@ contains
     status = nc_def_var_lz4(ncid, varid - 1, level)
   end function nf90_def_var_lz4
 
-  !> Inquire about LZ4 compression for a variable.
+  !> Learn whether LZ4 compression is on for a variable, and, if so,
+  !! the acceleration level.
   !!
-  !! @param ncid File or group ID.
-  !! @param varid Variable ID.
-  !! @param lz4p Pointer that gets 1 if LZ4 is in use, 0
-  !! otherwise. Ignored if NULL.
-  !! @param levelp Pointer that gets compression level, if LZ4 is in
-  !! use. Ignored if NULL.
+  !! This is the Fortran wrapper for the C function `nc_inq_var_lz4`.
   !!
-  !! @return 0 for success, error code otherwise.
+  !! @param ncid  File or group ID.
+  !! @param varid Variable ID (1-based Fortran indexing).
+  !! @param lz4p  On return, set to 1 if LZ4 is in use for this
+  !!              variable, and 0 otherwise.
+  !! @param levelp On return, set to the acceleration level (from 1 to 9)
+  !!               if LZ4 is in use.
+  !!
+  !! @return 0 for success, netCDF error code otherwise.
   function nf90_inq_var_lz4(ncid, varid, lz4p, levelp) result(status)
     use iso_c_binding
     implicit none
