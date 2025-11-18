@@ -10,10 +10,10 @@ name: deploy_documentation
 on:
   # Allow manual triggering from Actions tab
   workflow_dispatch:
-  
-  # Trigger on release publication
+
+  # Deploy docs automatically on release publication
   release:
-    types: [published]
+    types: [ published ]
 
 # Required permissions for GitHub Pages deployment
 permissions:

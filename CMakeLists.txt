@@ -3,6 +3,11 @@
 cmake_minimum_required(VERSION 3.9)
 project (NEP VERSION 0.1.1 DESCRIPTION "NetCDF4/HDF5 Format Extension Pack" LANGUAGES C)
 
+# Read documentation/package version from version.txt so that documentation
+# and installed package metadata reflect the release version configured there.
+file(READ "${CMAKE_SOURCE_DIR}/version.txt" NEP_VERSION_FROM_FILE_RAW)
+string(STRIP "${NEP_VERSION_FROM_FILE_RAW}" NEP_VERSION_FROM_FILE)
+
 # Add option for debug build
 option(DEBUG "Build with debugging symbols" OFF)
 
@@ -79,15 +84,17 @@ endif()
 # wrong. Turn this on for added confirmation that you got it right.
 #message (DEPRECATION "Include: ${HDF5_INCLUDE_DIR}")
 
-# Set package information variables for config.h (matching autotools)
+# Set package information variables for config.h (matching autotools).
+# Use NEP_VERSION_FROM_FILE so documentation and package metadata use the
+# version configured in version.txt.
 set(PACKAGE "nep")
 set(PACKAGE_NAME "NEP")
-set(PACKAGE_STRING "NEP ${PROJECT_VERSION}")
+set(PACKAGE_STRING "NEP ${NEP_VERSION_FROM_FILE}")
 set(PACKAGE_TARNAME "nep")
-set(PACKAGE_VERSION "${PROJECT_VERSION}")
+set(PACKAGE_VERSION "${NEP_VERSION_FROM_FILE}")
 set(PACKAGE_BUGREPORT "help@intelligentdatadesign.com")
 set(PACKAGE_URL "")
-set(VERSION "${PROJECT_VERSION}")
+set(VERSION "${NEP_VERSION_FROM_FILE}")
 
 # Set HDF5 availability (only if not docs-only build)
 if(NOT DOCS_ONLY)
