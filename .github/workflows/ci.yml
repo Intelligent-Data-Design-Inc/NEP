@@ -25,6 +25,7 @@ on:
 
 jobs:
   build:
+    name: build (${{ matrix.build_system }}, Fortran ${{ matrix.fortran }})
     runs-on: ubuntu-latest
     env:
       HDF5_PLUGIN_PATH: ${{ github.workspace }}/netcdf-c-install/hdf5/lib/plugin
