@@ -1,6 +1,6 @@
   !> @file
   !!
-  !! This is a test program for the NCCOMPRESS LZ4 compression filter for
+  !! This is a test program for the NCSQUEEZE LZ4 compression filter for
   !! netCDF. This started as an example nc4_pres_temp_4D_wr.f90 from
   !! the netcdf-fortran project.
   !!
@@ -8,13 +8,13 @@
   !! @date Nov 13, 2025
   !! @copyright Intelligent Data Design, Inc. All rights reserved.
 
-program ftst_nccompress_lz4
+program ftst_ncsqueeze_lz4
   use netcdf
-  use nccompress
+  use ncsqueeze
   implicit none
 
   ! This is the name of the data file we will create.
-  character (len = *), parameter :: FILE_NAME = "ftst_nccompress_lz4.nc"
+  character (len = *), parameter :: FILE_NAME = "ftst_ncsqueeze_lz4.nc"
   integer :: ncid
 
   ! We are writing 4D data.
@@ -63,7 +63,7 @@ program ftst_nccompress_lz4
   real, dimension(:,:,:), allocatable :: pres_in
   real, dimension(:,:,:), allocatable :: temp_in
 
-  print *, '*** Testing NCCOMPRESS Fortran library...'
+  print *, '*** Testing NCSQUEEZE Fortran library...'
 
   ! Allocate memory.
   allocate(pres_out(NLONS, NLATS, NLVLS))
@@ -182,4 +182,4 @@ contains
       stop 2
     end if
   end subroutine check
-end program ftst_nccompress_lz4
+end program ftst_ncsqueeze_lz4

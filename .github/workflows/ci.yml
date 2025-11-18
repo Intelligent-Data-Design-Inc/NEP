@@ -25,6 +25,7 @@ on:
 
 jobs:
   build:
+    name: build (${{ matrix.build_system }}, Fortran ${{ matrix.fortran }}, compression ${{ matrix.compression }})
     runs-on: ubuntu-latest
     env:
       HDF5_PLUGIN_PATH: ${{ github.workspace }}/netcdf-c-install/hdf5/lib/plugin
@@ -33,6 +34,8 @@ jobs:
       fail-fast: false
       matrix:
         build_system: [cmake, autotools]
+        fortran: [on, off]
+        compression: [all, no-bzip2, no-lz4]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -145,7 +148,11 @@ jobs:
           else
             DOC_FLAG="-DBUILD_DOCUMENTATION=OFF"
           fi
-          cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install;/usr/include/liblzf" $DOC_FLAG
+          FORTRAN_FLAG="-DENABLE_FORTRAN=ON"
+          if [ "${{ matrix.fortran }}" = "off" ]; then
+            FORTRAN_FLAG="-DENABLE_FORTRAN=OFF"
+          fi
+          cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install;/usr/include/liblzf" $DOC_FLAG $FORTRAN_FLAG
 
       - name: Build (CMake)
         if: matrix.build_system == 'cmake'
@@ -189,7 +196,7 @@ jobs:
           sudo make install
 
       - name: Upload Documentation Artifacts (CMake)
-        if: matrix.build_system == 'cmake'
+        if: matrix.build_system == 'cmake' && matrix.fortran == 'on' && matrix.compression == 'all'
         uses: actions/upload-artifact@v4
         with:
           name: documentation-cmake-lz4
@@ -214,7 +221,22 @@ jobs:
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib"
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
           ls -l $GITHUB_WORKSPACE/hdf5-install/lib
-          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc --enable-lz4 --enable-docs || (echo "Configure failed. Printing config.log:"; cat config.log; echo "hdf5_plugins/config.log:"; cat hdf5_plugins/config.log; exit 1)
+          FORTRAN_FLAG="--enable-fortran"
+          if [ "${{ matrix.fortran }}" = "off" ]; then
+            FORTRAN_FLAG="--disable-fortran"
+          fi
+
+          BZIP2_FLAG=""
+          LZ4_FLAG="--enable-lz4"
+          if [ "${{ matrix.compression }}" = "no-bzip2" ]; then
+            BZIP2_FLAG="--disable-bzip2"
+            LZ4_FLAG="--enable-lz4"
+          elif [ "${{ matrix.compression }}" = "no-lz4" ]; then
+            BZIP2_FLAG=""
+            LZ4_FLAG="--disable-lz4"
+          fi
+
+          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc $LZ4_FLAG $BZIP2_FLAG --enable-docs $FORTRAN_FLAG || (echo "Configure failed. Printing config.log:"; cat config.log; echo "hdf5_plugins/config.log:"; cat hdf5_plugins/config.log; exit 1)
 
       - name: Build (Autotools)
         if: matrix.build_system == 'autotools'
@@ -248,12 +270,3 @@ jobs:
           echo "Tests passed. Showing test output:"
           cat test/run_tests.sh.log
           sudo make install
-
-      - name: Upload Documentation Artifacts (Autotools)
-        if: matrix.build_system == 'autotools'
-        uses: actions/upload-artifact@v4
-        with:
-          name: documentation-autotools-lz4
-          path: docs/html/
-          retention-days: 30
-
