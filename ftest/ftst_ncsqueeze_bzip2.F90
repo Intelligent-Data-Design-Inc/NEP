@@ -10,7 +10,7 @@
 
 program ftst_ncsqueeze_bzip2
   use netcdf
-  use nccompress
+  use ncsqueeze
   implicit none
 
   ! This is the name of the data file we will create.
@@ -63,7 +63,7 @@ program ftst_ncsqueeze_bzip2
   real, dimension(:,:,:), allocatable :: pres_in
   real, dimension(:,:,:), allocatable :: temp_in
 
-  print *, '*** Testing NCCOMPRESS Fortran library...'
+  print *, '*** Testing NCSQUEEZE Fortran library...'
 
   ! Allocate memory.
   allocate(pres_out(NLONS, NLATS, NLVLS))
@@ -190,4 +190,4 @@ contains
       stop 2
     end if
   end subroutine check
-end program ftst_nccompress_bzip2
+end program ftst_ncsqueeze_bzip2
