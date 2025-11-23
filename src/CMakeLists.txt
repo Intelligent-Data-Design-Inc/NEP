@@ -44,3 +44,24 @@ install(TARGETS ncsqueeze
 #     )
 #     message(STATUS "Building GRIB2 UDF library: ${GRIB2_LIB_NAME}")
 # endif()
+
+# CDF UDF Handler - v1.3.0 Sprint 3
+# Build CDF library if enabled (netCDF UDF support)
+if(HAVE_CDF)
+    set(CDF_LIB_NAME nccdf)
+    add_library(${CDF_LIB_NAME} SHARED 
+        cdfdispatch.c cdffile.c cdffunc.c cdfvar.c)
+    target_link_libraries(${CDF_LIB_NAME} PRIVATE 
+        ${HDF5_C_${LIB_TYPE}_LIBRARY} ${NETCDF_LIBRARIES} ${CDF_LIBRARY})
+    set_target_properties(${CDF_LIB_NAME} PROPERTIES 
+        VERSION ${PROJECT_VERSION}
+        SOVERSION 1
+        INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
+        INSTALL_RPATH_USE_LINK_PATH TRUE
+    )
+    install(TARGETS ${CDF_LIB_NAME}
+        EXPORT NEPTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
+    message(STATUS "Building CDF UDF library: ${CDF_LIB_NAME}")
+endif()
