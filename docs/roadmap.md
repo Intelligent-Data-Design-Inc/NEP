@@ -61,11 +61,16 @@
   - Add CDF component to `NEPConfig.cmake.in` when enabled
   - Document CDF as optional dependency in build documentation
 
-#### Sprint 2: Add UDF for CDF
+#### Sprint 2: CDF Data File and Program
+- Find small CDF data file, put it in repo in test/data
+- Write a small test program to open the file and print metadata, using NASA CDF library. Only build if CDF is enabled.
+- Add to CI.
+
+#### Sprint 3: Add UDF for CDF
 - Add UDF for CDF
 - Hello-world functionality.
 
-#### Sprint 3: Open the Test File
+#### Sprint 4: Open the Test File
 - Write a test which opens the test CDF file.
 - Check netCDF metadata for correctness.
 - Check data for correctness.

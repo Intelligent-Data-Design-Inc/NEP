@@ -308,6 +308,7 @@ AC_CONFIG_FILES([Makefile
                  fsrc/Makefile
                  ftest/Makefile
                  test_grib2/Makefile
+                 test_cdf/Makefile
                  docs/Doxyfile])
 
 AC_OUTPUT

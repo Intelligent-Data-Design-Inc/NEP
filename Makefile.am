@@ -12,10 +12,15 @@ ACLOCAL_AMFLAGS = -I m4
 # TEST_GRIB2 = test_grib2
 # endif
 
+# CDF test - v1.3.0 Sprint 2: CDF library integration test
+if HAVE_CDF
+TEST_CDF = test_cdf
+endif
+
 if ENABLE_FORTRAN
-SUBDIRS = include src fsrc test ftest
+SUBDIRS = include src fsrc test ftest $(TEST_CDF)
 else
-SUBDIRS = include src test
+SUBDIRS = include src test $(TEST_CDF)
 endif
 EXTRA_DIST = autogen.sh
 
