@@ -19,6 +19,7 @@
 #include <assert.h>
 #include <netcdf.h>
 #include "cdfdispatch.h"
+#include "cdf.h"
 
 #define TEST_FILE "tst_cdf_simple.cdf"
 #define EXPECTED_VAR_NAME "temperature"
@@ -29,9 +30,152 @@
 #define DIM_SIZE 10
 
 /**
+ * @brief Create test CDF file
+ * 
+ * Creates a minimal CDF file with test data for validation.
+ * 
+ * @return 0 on success, non-zero on failure
+ */
+static int create_test_file(void)
+{
+    CDFid id;
+    CDFstatus status;
+    long dimSizes[1] = {DIM_SIZE};
+    long varNum;
+    long attrNum;
+    long recNum = 0;
+    long indices[1] = {0};
+    long intervals[1] = {1};
+    long counts[1] = {DIM_SIZE};
+    float data[DIM_SIZE];
+    int i;
+    char error_text[CDF_STATUSTEXT_LEN+1];
+
+    printf("Creating test CDF file: %s\n", TEST_FILE);
+
+    /* Remove existing file if it exists */
+    remove(TEST_FILE);
+
+    /* Initialize test data */
+    for (i = 0; i < DIM_SIZE; i++) {
+        data[i] = 20.0f + (float)i * 0.5f;  /* Temperature values 20.0 to 24.5 */
+    }
+
+    /* Create the CDF file */
+    status = CDFcreateCDF(TEST_FILE, &id);
+    if (status != CDF_OK) {
+        CDFgetStatusText(status, error_text);
+        fprintf(stderr, "ERROR: Failed to create CDF: %s\n", error_text);
+        return 1;
+    }
+
+    /* Add global attribute: title */
+    status = CDFcreateAttr(id, "title", GLOBAL_SCOPE, &attrNum);
+    if (status != CDF_OK) {
+        CDFgetStatusText(status, error_text);
+        fprintf(stderr, "ERROR: Failed to create title attribute: %s\n", error_text);
+        CDFcloseCDF(id);
+        return 1;
+    }
+    
+    const char *title = EXPECTED_TITLE;
+    status = CDFputAttrgEntry(id, attrNum, 0, CDF_CHAR, strlen(title), (void *)title);
+    if (status != CDF_OK) {
+        CDFgetStatusText(status, error_text);
+        fprintf(stderr, "ERROR: Failed to write title attribute: %s\n", error_text);
+        CDFcloseCDF(id);
+        return 1;
+    }
+
+    /* Add global attribute: institution */
+    status = CDFcreateAttr(id, "institution", GLOBAL_SCOPE, &attrNum);
+    if (status != CDF_OK) {
+        CDFgetStatusText(status, error_text);
+        fprintf(stderr, "ERROR: Failed to create institution attribute: %s\n", error_text);
+        CDFcloseCDF(id);
+        return 1;
+    }
+    
+    const char *institution = EXPECTED_INSTITUTION;
+    status = CDFputAttrgEntry(id, attrNum, 0, CDF_CHAR, strlen(institution), (void *)institution);
+    if (status != CDF_OK) {
+        CDFgetStatusText(status, error_text);
+        fprintf(stderr, "ERROR: Failed to write institution attribute: %s\n", error_text);
+        CDFcloseCDF(id);
+        return 1;
+    }
+
+    /* Create a zVariable (temperature) */
+    status = CDFcreatezVar(id, EXPECTED_VAR_NAME, CDF_FLOAT, 1, 1L, dimSizes, 
+                           VARY, dimSizes, &varNum);
+    if (status != CDF_OK) {
+        CDFgetStatusText(status, error_text);
+        fprintf(stderr, "ERROR: Failed to create zVariable: %s\n", error_text);
+        CDFcloseCDF(id);
+        return 1;
+    }
+
+    /* Add variable attribute: units */
+    status = CDFcreateAttr(id, "units", VARIABLE_SCOPE, &attrNum);
+    if (status != CDF_OK) {
+        CDFgetStatusText(status, error_text);
+        fprintf(stderr, "ERROR: Failed to create units attribute: %s\n", error_text);
+        CDFcloseCDF(id);
+        return 1;
+    }
+    
+    const char *units = EXPECTED_UNITS;
+    status = CDFputAttrzEntry(id, attrNum, varNum, CDF_CHAR, strlen(units), (void *)units);
+    if (status != CDF_OK) {
+        CDFgetStatusText(status, error_text);
+        fprintf(stderr, "ERROR: Failed to write units attribute: %s\n", error_text);
+        CDFcloseCDF(id);
+        return 1;
+    }
+
+    /* Add variable attribute: long_name */
+    status = CDFcreateAttr(id, "long_name", VARIABLE_SCOPE, &attrNum);
+    if (status != CDF_OK) {
+        CDFgetStatusText(status, error_text);
+        fprintf(stderr, "ERROR: Failed to create long_name attribute: %s\n", error_text);
+        CDFcloseCDF(id);
+        return 1;
+    }
+    
+    const char *long_name = EXPECTED_LONG_NAME;
+    status = CDFputAttrzEntry(id, attrNum, varNum, CDF_CHAR, strlen(long_name), (void *)long_name);
+    if (status != CDF_OK) {
+        CDFgetStatusText(status, error_text);
+        fprintf(stderr, "ERROR: Failed to write long_name attribute: %s\n", error_text);
+        CDFcloseCDF(id);
+        return 1;
+    }
+
+    /* Write data to the variable */
+    status = CDFhyperPutzVarData(id, varNum, recNum, 1L, 1L, indices, counts, intervals, data);
+    if (status != CDF_OK) {
+        CDFgetStatusText(status, error_text);
+        fprintf(stderr, "ERROR: Failed to write variable data: %s\n", error_text);
+        CDFcloseCDF(id);
+        return 1;
+    }
+
+    /* Close the CDF file */
+    status = CDFcloseCDF(id);
+    if (status != CDF_OK) {
+        CDFgetStatusText(status, error_text);
+        fprintf(stderr, "ERROR: Failed to close CDF: %s\n", error_text);
+        return 1;
+    }
+
+    printf("  ✓ Successfully created test file\n\n");
+    return 0;
+}
+
+/**
  * @brief Main test function
  * 
- * Opens CDF file via NetCDF API, validates dimensions, variables, and attributes.
+ * Creates CDF file, then opens via NetCDF API and validates dimensions, variables, and attributes.
  * 
  * @return 0 on success, non-zero on failure
  */
@@ -64,15 +208,11 @@ int main(void)
     }
     printf("  ✓ CDF UDF handler registered\n\n");
     
-    /* Copy the test file from test_cdf directory */
-    printf("Copying test CDF file...\n");
-    retval = system("cp ../test_cdf/tst_cdf_simple.cdf .");
-    if (retval != 0) {
-        fprintf(stderr, "ERROR: Failed to copy test CDF file\n");
-        fprintf(stderr, "       Run 'cd ../test_cdf && make check' first to create the file\n");
+    /* Create the test file using CDF API */
+    if (create_test_file() != 0) {
+        fprintf(stderr, "ERROR: Failed to create test CDF file\n");
         return 1;
     }
-    printf("  ✓ Test file copied\n\n");
     
     /* Open the CDF file using NetCDF API */
     printf("Opening CDF file via NetCDF API: %s\n", TEST_FILE);
