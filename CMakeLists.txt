@@ -170,6 +170,11 @@ if(NOT DOCS_ONLY)
     #     add_subdirectory (test_grib2)
     # endif()
 
+    # CDF test - v1.3.0 Sprint 2: CDF library integration test
+    if(HAVE_CDF)
+        add_subdirectory (test_cdf)
+    endif()
+
     # Generate and install CMake config files
     include(CMakePackageConfigHelpers)
 
