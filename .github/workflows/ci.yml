@@ -58,11 +58,28 @@ jobs:
       - name: Download and build NASA CDF library
         if: steps.cache-cdf.outputs.cache-hit != 'true'
         run: |
-          wget https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/cdf39_1/linux/cdf39_1-dist-all.tar.gz &> /dev/null
-          tar -xzf cdf39_1-dist-all.tar.gz
+          wget https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/cdf39_1/cdf39_1-dist-cdf.tar.gz &> /dev/null
+          tar -xzf cdf39_1-dist-cdf.tar.gz
           cd cdf39_1-dist
           make OS=linux ENV=gnu all
           make INSTALLDIR=$GITHUB_WORKSPACE/cdf-install install
+          echo "CDF installation contents:"
+          ls -la $GITHUB_WORKSPACE/cdf-install/
+          ls -la $GITHUB_WORKSPACE/cdf-install/lib/ || true
+          echo "Checking for CDF library files:"
+          find $GITHUB_WORKSPACE/cdf-install -name "*cdf*" -o -name "*.a" -o -name "*.so*" || true
+
+      - name: Verify CDF installation
+        run: |
+          echo "=== CDF Installation Verification ==="
+          echo "Installation directory structure:"
+          ls -la $GITHUB_WORKSPACE/cdf-install/ || echo "cdf-install directory not found"
+          echo "Library directory contents:"
+          ls -la $GITHUB_WORKSPACE/cdf-install/lib/ || echo "lib directory not found"
+          echo "Include directory contents:"
+          ls -la $GITHUB_WORKSPACE/cdf-install/include/ || echo "include directory not found"
+          echo "All CDF-related files:"
+          find $GITHUB_WORKSPACE/cdf-install -type f 2>/dev/null || echo "No files found"
 
       - name: Cache HDF5 install
         id: cache-hdf5
