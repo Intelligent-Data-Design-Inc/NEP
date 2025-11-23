@@ -293,12 +293,14 @@ int main(void)
     printf("  ✓ Successfully closed CDF file\n\n");
 
     /* Clean up test file */
-    printf("\nCleaning up test file...\n");
+    /* Commented out for Sprint 4 - keep file for UDF testing */
+    /* printf("\nCleaning up test file...\n");
     if (remove(TEST_FILE) != 0) {
         fprintf(stderr, "WARNING: Failed to remove test file %s\n", TEST_FILE);
     } else {
         printf("  ✓ Test file removed\n");
-    }
+    } */
+    printf("\nKeeping test file for UDF testing: %s\n", TEST_FILE);
 
     /* Print test summary */
     printf("\n=== Test Summary ===\n");

@@ -117,8 +117,13 @@ tst_jpeg
 tst_lz4
 tst_perf
 tst_bzip2
+tst_cdf_udf
 tst_*.nc
 tst_*.h5
+tst_*.cdf
 run_tests.sh
 *.lai
 tst_grib2
+ftst_ncsqueeze_bzip2
+ftst_ncsqueeze_lz4
+tst_cdf_basic

@@ -18,6 +18,9 @@
 /* Define if CDF library is found */
 #undef HAVE_CDF
 
+/* Define to 1 if you have the <cdf.h> header file. */
+#undef HAVE_CDF_H
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
