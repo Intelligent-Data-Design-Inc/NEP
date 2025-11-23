@@ -26,6 +26,9 @@ add_definitions(-DUSE_HDF5=yes)
 # Will be re-enabled in v2.0.0 for GRIB2 UDF support
 # option(ENABLE_GRIB2 "Enable GRIB2 UDF support" ON)
 
+# CDF library detection (v1.3.0) - default OFF, library detection only, no UDF yet
+option(ENABLE_CDF "Enable CDF library detection" OFF)
+
 # Documentation option
 option(BUILD_DOCUMENTATION "Build documentation with Doxygen" ON)
 
@@ -79,6 +82,21 @@ endif()
 #         message(FATAL_ERROR "GRIB2 UDF enabled but NCEPLIBS-g2 not found. Install NCEPLIBS-g2 or disable with -DENABLE_GRIB2=OFF")
 #     endif()
 # endif()
+
+# CDF library detection (v1.3.0) - library detection only, no UDF implementation yet
+if(ENABLE_CDF)
+    find_library(CDF_LIBRARY NAMES cdf)
+    find_path(CDF_INCLUDE_DIR cdf.h)
+    
+    if(CDF_LIBRARY AND CDF_INCLUDE_DIR)
+        message(STATUS "Found NASA CDF library: ${CDF_LIBRARY}")
+        include_directories(${CDF_INCLUDE_DIR})
+        set(HAVE_CDF TRUE)
+        message(STATUS "CDF library detection enabled (library location only, no UDF yet)")
+    else()
+        message(FATAL_ERROR "CDF enabled but NASA CDF library not found. Install NASA CDF library or disable with -DENABLE_CDF=OFF")
+    endif()
+endif()
 
 # It's really easy to pick up the wrong HDF5 library if you set the path
 # wrong. Turn this on for added confirmation that you got it right.

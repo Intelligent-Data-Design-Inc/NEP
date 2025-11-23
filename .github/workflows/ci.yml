@@ -1,14 +1,13 @@
 # GitHub Actions CI workflow for building and testing the NEP project with cmake and autotools.
 #
-# NEP CI Pipeline - v1.0.0 Configuration
+# NEP CI Pipeline - v1.3.0 Configuration
 #
-# v1.0.0 Scope: LZ4 Compression Support Only
-# This CI configuration is simplified for the v1.0.0 release which focuses
-# exclusively on LZ4 compression for HDF5/NetCDF-4 files.
+# v1.3.0 Scope: LZ4/BZIP2 Compression + CDF Library Detection
+# This CI configuration includes LZ4/BZIP2 compression for HDF5/NetCDF-4 files
+# and adds NASA CDF library detection (library location only, no UDF yet).
 #
 # Future Versions:
 # - v2.0.0: GRIB2 UDF handler support will be restored
-# - v3.0: CDF UDF handler support will be restored
 # - v4.0: GeoTIFF UDF handler support will be restored
 #
 # The build matrix and dependencies will be expanded in future releases
@@ -29,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       HDF5_PLUGIN_PATH: ${{ github.workspace }}/netcdf-c-install/hdf5/lib/plugin
-      LD_LIBRARY_PATH: $GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH
+      LD_LIBRARY_PATH: $GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH
     strategy:
       fail-fast: false
       matrix:
@@ -44,8 +43,43 @@ jobs:
         run: |
           sudo apt-get install -y cmake make wget doxygen graphviz zlib1g-dev libpng-dev libaec-dev libjpeg-dev liblz4-dev wget libbz2-dev libjpeg-dev liblzf-dev
 
-      # GRIB2/CDF dependencies removed for v1.0.0 (LZ4 compression only)
-      # Jasper, g2c, and NASA CDF will be restored in v2.0.0+
+      # GRIB2 dependencies removed for v1.0.0 (LZ4 compression only)
+      # Jasper and g2c will be restored in v2.0.0
+      # CDF library detection added in v1.3.0
+
+      # Cache NASA CDF install (v1.3.0+)
+      - name: Cache NASA CDF install
+        id: cache-cdf
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/cdf-install
+          key: cdf-3.9.1-${{ runner.os }}-1
+
+      - name: Download and build NASA CDF library
+        if: steps.cache-cdf.outputs.cache-hit != 'true'
+        run: |
+          wget https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/cdf39_1/cdf39_1-dist-cdf.tar.gz &> /dev/null
+          tar -xzf cdf39_1-dist-cdf.tar.gz
+          cd cdf39_1-dist
+          make OS=linux ENV=gnu all
+          make INSTALLDIR=$GITHUB_WORKSPACE/cdf-install install
+          echo "CDF installation contents:"
+          ls -la $GITHUB_WORKSPACE/cdf-install/
+          ls -la $GITHUB_WORKSPACE/cdf-install/lib/ || true
+          echo "Checking for CDF library files:"
+          find $GITHUB_WORKSPACE/cdf-install -name "*cdf*" -o -name "*.a" -o -name "*.so*" || true
+
+      - name: Verify CDF installation
+        run: |
+          echo "=== CDF Installation Verification ==="
+          echo "Installation directory structure:"
+          ls -la $GITHUB_WORKSPACE/cdf-install/ || echo "cdf-install directory not found"
+          echo "Library directory contents:"
+          ls -la $GITHUB_WORKSPACE/cdf-install/lib/ || echo "lib directory not found"
+          echo "Include directory contents:"
+          ls -la $GITHUB_WORKSPACE/cdf-install/include/ || echo "include directory not found"
+          echo "All CDF-related files:"
+          find $GITHUB_WORKSPACE/cdf-install -type f 2>/dev/null || echo "No files found"
 
       - name: Cache HDF5 install
         id: cache-hdf5
@@ -141,7 +175,7 @@ jobs:
         if: matrix.build_system == 'cmake'
         working-directory: build
         run: |
-          echo "Building NEP v1.0.0 - LZ4 compression only"
+          echo "Building NEP v1.3.0 - LZ4/BZIP2 compression + CDF library detection"
           DOC_FLAG="-DBUILD_DOCUMENTATION=OFF"
           if [ "${{ matrix.fortran }}" = "on" ] && [ "${{ matrix.compression }}" = "all" ]; then
             DOC_FLAG="-DBUILD_DOCUMENTATION=ON"
@@ -150,7 +184,11 @@ jobs:
           if [ "${{ matrix.fortran }}" = "off" ]; then
             FORTRAN_FLAG="-DENABLE_FORTRAN=OFF"
           fi
-          cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install;/usr/include/liblzf" -DBUILD_TESTING=ON $DOC_FLAG $FORTRAN_FLAG
+          CDF_FLAG="-DENABLE_CDF=OFF"
+          if [ "${{ matrix.fortran }}" = "on" ] && [ "${{ matrix.compression }}" = "all" ]; then
+            CDF_FLAG="-DENABLE_CDF=ON"
+          fi
+          cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install;$GITHUB_WORKSPACE/cdf-install;/usr/include/liblzf" -DBUILD_TESTING=ON $DOC_FLAG $FORTRAN_FLAG $CDF_FLAG
 
       - name: Build (CMake)
         if: matrix.build_system == 'cmake'
@@ -187,9 +225,9 @@ jobs:
         run: |
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
           export HDF5_PLUGIN_PATH="$GITHUB_WORKSPACE/netcdf-c-install/hdf5/lib/plugin"
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include -I/usr/include/liblzf"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib"
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include -I$GITHUB_WORKSPACE/cdf-install/include -I/usr/include/liblzf"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib"
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH"
           ctest --verbose
           sudo make install
 
@@ -211,13 +249,13 @@ jobs:
         if: matrix.build_system == 'autotools'
         run: |
           set -x
-          echo "Building NEP v1.0.0 - LZ4 compression only"
+          echo "Building NEP v1.3.0 - LZ4/BZIP2 compression + CDF library detection"
           autoreconf -i
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
           export HDF5_PLUGIN_PATH="$GITHUB_WORKSPACE/netcdf-c-install/hdf5/lib/plugin"
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include -I/usr/include/liblzf"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib"
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include -I$GITHUB_WORKSPACE/cdf-install/include -I/usr/include/liblzf"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib"
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH"
           ls -l $GITHUB_WORKSPACE/hdf5-install/lib
           FORTRAN_FLAG="--enable-fortran"
           if [ "${{ matrix.fortran }}" = "off" ]; then
@@ -239,7 +277,12 @@ jobs:
             DOCS_FLAG="--enable-docs"
           fi
 
-          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc $LZ4_FLAG $BZIP2_FLAG $DOCS_FLAG $FORTRAN_FLAG || (echo "Configure failed. Printing config.log:"; cat config.log; echo "hdf5_plugins/config.log:"; cat hdf5_plugins/config.log; exit 1)
+          CDF_FLAG="--disable-cdf"
+          if [ "${{ matrix.fortran }}" = "on" ] && [ "${{ matrix.compression }}" = "all" ]; then
+            CDF_FLAG="--enable-cdf"
+          fi
+
+          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc $LZ4_FLAG $BZIP2_FLAG $DOCS_FLAG $FORTRAN_FLAG $CDF_FLAG || (echo "Configure failed. Printing config.log:"; cat config.log; echo "hdf5_plugins/config.log:"; cat hdf5_plugins/config.log; exit 1)
 
       - name: Build (Autotools)
         if: matrix.build_system == 'autotools'
@@ -265,9 +308,9 @@ jobs:
           set -x
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
           export HDF5_PLUGIN_PATH="$GITHUB_WORKSPACE/netcdf-c-install/hdf5/lib/plugin"
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include -I/usr/include/liblzf"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib"
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include -I$GITHUB_WORKSPACE/cdf-install/include -I/usr/include/liblzf"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib"
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH"
           ls -l "${HDF5_PLUGIN_PATH}"
           make VERBOSE=1 check || (echo "Tests failed. Printing test logs:"; cat test/test-suite.log; cat test/run_tests.sh.log; exit 1)
           echo "Tests passed. Showing test output:"

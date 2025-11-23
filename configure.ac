@@ -134,8 +134,17 @@ AC_ARG_ENABLE([docs],
     [enable_docs=$enableval],
     [enable_docs=auto])
 
+# CDF library detection (v1.3.0) - library detection only, no UDF yet
+AC_MSG_CHECKING([whether CDF library detection should be enabled])
+AC_ARG_ENABLE([cdf],
+              [AS_HELP_STRING([--enable-cdf],
+                              [Enable CDF library detection (default: no)])])
+test "x$enable_cdf" = xyes || enable_cdf=no
+AC_MSG_RESULT([$enable_cdf])
+
 # Initialize variables
 HAVE_GRIB2=no
+HAVE_CDF=no
 HAVE_DOXYGEN=no
 
 # GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
@@ -154,6 +163,21 @@ HAVE_DOXYGEN=no
 #     fi
 # fi
 # AC_SUBST([G2C_LIBS])
+
+# CDF library detection (v1.3.0) - library detection only, no UDF implementation yet
+if test "x$enable_cdf" = "xyes"; then
+    AC_CHECK_HEADERS([cdf.h], [cdf_header=yes], [cdf_header=no])
+    AC_CHECK_LIB([cdf], [CDFlib], [cdf_lib=yes; CDF_LIBS="-lcdf"], [cdf_lib=no])
+    
+    if test "x$cdf_header" = "xyes" && test "x$cdf_lib" = "xyes"; then
+        HAVE_CDF=yes
+        AC_DEFINE([HAVE_CDF], [1], [Define if CDF library is found])
+        AC_MSG_NOTICE([CDF library detection enabled (library location only, no UDF yet)])
+    else
+        AC_MSG_ERROR([CDF enabled but NASA CDF library not found. Install NASA CDF library or disable with --disable-cdf])
+    fi
+fi
+AC_SUBST([CDF_LIBS])
 
 # Check for Doxygen if documentation is enabled
 if test "x$enable_docs" != "xno"; then
@@ -193,6 +217,7 @@ fi
 # GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
 # Will be re-enabled in v2.0.0 for GRIB2 UDF support
 # AM_CONDITIONAL([HAVE_GRIB2], [test "x$HAVE_GRIB2" = "xyes"])
+AM_CONDITIONAL([HAVE_CDF], [test "x$HAVE_CDF" = "xyes"])
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$HAVE_DOXYGEN" = "xyes"])
 
 # Initialize Automake

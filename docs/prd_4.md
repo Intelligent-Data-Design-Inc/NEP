@@ -8,7 +8,7 @@ NEP v4.0.0 will extend the NetCDF Extension Pack to support GeoTIFF geospatial d
 ### 1.2 Business Objectives
 - Enable seamless access to GeoTIFF geospatial and remote sensing data
 - Eliminate need for data conversion from GeoTIFF to NetCDF
-- Maintain backward compatibility with v1.0.0, v2.0.0, and v3.0.0 features
+- Maintain backward compatibility with v1.0.0, v1.1.0, v1.2.0, v1.3.0, and v2.0.0 features
 - Support geospatial analysis workflows
 
 ### 1.3 Success Metrics
@@ -34,7 +34,7 @@ NEP v4.0.0 will extend the NetCDF Extension Pack to support GeoTIFF geospatial d
 
 ### 3.2 Dependencies
 - libgeotiff library
-- All v1.0.0, v2.0.0, and v3.0.0 dependencies
+- All v1.0.0, v1.1.0, v1.2.0, v1.3.0, and v2.0.0 dependencies
 
 ## 4. Timeline (Planned)
 

@@ -7,13 +7,6 @@
 - Add a test which opens/closes the file.
 - Ensure test data files are copied to build directory for both CMake and Autotools builds.
 
-### v3.0: CDF
-#### Sprint 1: cdf File Open/Close
-- Add a small, simple cdf test file in test/data.
-- Add file open/close to the cdf UDF handler.
-- Add a test which opens/closes the file.
-- Ensure test data files are copied to build directory for both CMake and Autotools builds.
-
 ### v2.0.0: GRIB2
 #### Sprint 1: GRIB2 File Open/Close
 - **NC_Dispatch Implementation**: Populate file_open and file_close function pointers in GRIB2 UDF handler NC_Dispatch structure
@@ -31,10 +24,51 @@
 
 #### Sprint 4: Var Metadata
 
-### v1.3.0 Spack Support
+### v1.4.0 Spack Support
 #### Sprint 1: Spack CI Testing and Spack Integration
 - Set up testing of the spack file just like NCEPLIBS-g2c has.
 - Submit spack file to spack repo.
+
+### v1.3.0 CDF Support
+#### Sprint 1: Add CDF Library Detection to Build Systems
+- **NASA CDF Library Integration**: Add NASA CDF library v3.9.x to CI
+  - Download and build from source: https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/
+  - CI installation path: `$GITHUB_WORKSPACE/cdf-install`
+  - Cache CDF build in GitHub Actions for faster CI runs
+- **Build System Configuration**: Add CDF library detection to both CMake and Autotools
+  - CMake: Add `-DENABLE_CDF=ON/OFF` option (default: OFF)
+  - Autotools: Add `--enable-cdf/--disable-cdf` configure option (default: disabled)
+  - When enabled, locate CDF library and headers
+  - Dependency detection mirrors GRIB2 pattern: AC_CHECK_HEADERS + AC_SEARCH_LIBS in configure.ac
+  - CMake uses find_library for CDF detection
+  - Error message if CDF enabled but library not found
+  - Set HAVE_CDF macro when library found
+  - No UDF implementation in this sprint - only library detection
+- **Environment Configuration**: Set up CDF paths in CI
+  - Add CDF include path to CPPFLAGS: `-I$GITHUB_WORKSPACE/cdf-install/include`
+  - Add CDF library path to LDFLAGS: `-L$GITHUB_WORKSPACE/cdf-install/lib`
+  - Update LD_LIBRARY_PATH: `$GITHUB_WORKSPACE/cdf-install/lib`
+  - Update CMAKE_PREFIX_PATH to include CDF installation
+- **CI Integration**: Exercise CDF detection in both build systems
+  - Add CDF build step with caching (key: `cdf-3.9.x-${{ runner.os }}`)
+  - Test CDF-enabled builds for both CMake and Autotools
+  - Verify library detection succeeds when enabled
+  - Verify builds succeed when disabled (default)
+  - Reuse existing dependency setup pattern from HDF5/NetCDF-C
+- **Configuration Files**: Update config headers for CDF support
+  - Add `HAVE_CDF` macro to `config.h.cmake.in` and `config.h.in`
+  - Add HAVE_CDF to `nep_config.h.in`
+  - Add CDF component to `NEPConfig.cmake.in` when enabled
+  - Document CDF as optional dependency in build documentation
+
+#### Sprint 2: Add UDF for CDF
+- Add UDF for CDF
+- Hello-world functionality.
+
+#### Sprint 3: Open the Test File
+- Write a test which opens the test CDF file.
+- Check netCDF metadata for correctness.
+- Check data for correctness.
 
 
 ### v1.2.0 Documentation Improvements

@@ -8,6 +8,10 @@
 /* Define if GRIB2 UDF support is enabled */
 /* #cmakedefine HAVE_GRIB2 */
 
+/* CDF library detection (v1.3.0) - library detection only, no UDF yet */
+/* Define if CDF library is found */
+#cmakedefine HAVE_CDF
+
 /* Defined if you have HDF5 support */
 #cmakedefine HAVE_HDF5
 
