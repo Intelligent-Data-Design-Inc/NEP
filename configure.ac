@@ -167,7 +167,7 @@ HAVE_DOXYGEN=no
 # CDF library detection (v1.3.0) - library detection only, no UDF implementation yet
 if test "x$enable_cdf" = "xyes"; then
     AC_CHECK_HEADERS([cdf.h], [cdf_header=yes], [cdf_header=no])
-    AC_SEARCH_LIBS([CDFopen], [cdf], [CDF_LIBS="-lcdf"; cdf_lib=yes], [cdf_lib=no])
+    AC_CHECK_LIB([cdf], [CDFlib], [cdf_lib=yes; CDF_LIBS="-lcdf"], [cdf_lib=no])
     
     if test "x$cdf_header" = "xyes" && test "x$cdf_lib" = "xyes"; then
         HAVE_CDF=yes
