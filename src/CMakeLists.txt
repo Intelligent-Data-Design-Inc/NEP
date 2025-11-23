@@ -51,6 +51,7 @@ if(HAVE_CDF)
     set(CDF_LIB_NAME nccdf)
     add_library(${CDF_LIB_NAME} SHARED 
         cdfdispatch.c cdffile.c cdffunc.c cdfvar.c)
+    target_include_directories(${CDF_LIB_NAME} PRIVATE ${CDF_INCLUDE_DIR})
     target_link_libraries(${CDF_LIB_NAME} PRIVATE 
         ${HDF5_C_${LIB_TYPE}_LIBRARY} ${NETCDF_LIBRARIES} ${CDF_LIBRARY})
     set_target_properties(${CDF_LIB_NAME} PROPERTIES 

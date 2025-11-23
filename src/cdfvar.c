@@ -11,7 +11,7 @@
 #include <nc4internal.h>
 #include "cdfdispatch.h"
 #include "nc4dispatch.h"
-#include <mfhdf.h>
+#include <cdf.h>
 
 /**
  * Read an array of values. This is called by nc_get_vara() for

@@ -10,8 +10,8 @@
 
 #include "config.h"
 #include "nc4internal.h"
-#include "dispatch.h"
-#include <mfhdf.h>
+#include "cdfdispatch.h"
+#include <cdf.h>
 
 #define NUM_TYPES 12 /**< Number of netCDF atomic types. */
 
@@ -69,7 +69,7 @@ cdf_rec_grp_del(NC_GRP_INFO_T *grp)
  * @author Ed Hartnett
  */
 static int
-cdf_type_info(NC_FILE_INFO_T *h5, int32 cdf_typeid, nc_type* xtypep,
+cdf_type_info(NC_FILE_INFO_T *h5, int cdf_typeid, nc_type* xtypep,
                int *endiannessp, size_t *type_sizep, char *type_name)
 {
     /* Function body commented out for v1.3.0 Sprint 3 - UDF skeleton only */

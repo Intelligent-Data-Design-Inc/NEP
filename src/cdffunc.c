@@ -9,7 +9,7 @@
 #include "config.h"
 #include "nc4internal.h"
 #include "cdfdispatch.h"
-#include <mfhdf.h>
+#include <cdf.h>
 
 /**
  * @internal Get the format (i.e. NC_FORMAT_NC_CDF) of an open CDF
