@@ -52,6 +52,13 @@ endif
 check_PROGRAMS += tst_perf
 tst_perf_SOURCES = tst_perf.c tst_utils.c
 
+# Build CDF UDF tests, if CDF is enabled.
+if HAVE_CDF
+check_PROGRAMS += tst_cdf_udf
+tst_cdf_udf_LDADD = ${top_builddir}/src/libnccdf.la ${top_builddir}/src/libncsqueeze.la -lcdf
+TESTS += tst_cdf_udf
+endif
+
 # Run all the appropriate tests in this script.
 TESTS += run_tests.sh
 

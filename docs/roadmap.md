@@ -119,10 +119,88 @@
   - Note that CDF UDF is build-only in this sprint (no functional implementation)
   - Document that Sprint 4 will add functional tests and implementation
 
-### Sprint 4: Open the Test File
-- Write a test which opens the test CDF file.
-- Check netCDF metadata for correctness.
-- Check data for correctness.
+#### Sprint 4: Open the CDF Test File
+- **NC_CDF_open() Implementation**: Complete implementation of file open with full metadata mapping
+  - Open CDF file using CDFopen() from NASA CDF library
+  - Store CDF file ID in NC_CDF_FILE_INFO_T structure
+  - Query CDF file metadata (number of variables, dimensions, attributes)
+  - Build complete internal NetCDF metadata structures (NC_FILE_INFO_T, NC_GRP_INFO_T)
+  - Map CDF dimensions to NetCDF dimensions
+  - Map CDF variables to NetCDF variables with correct types
+  - Map CDF attributes to NetCDF attributes (global and variable)
+  - Reference implementation pattern: `/home/ed/netcdf-c/libhdf4` for NetCDF internal metadata structures
+- **CDF Type Mapping**: Implement cdf_type_info() function for type conversion
+  - Create lookup table mapping CDF types to NetCDF types:
+    - CDF_INT1/CDF_BYTE → NC_BYTE
+    - CDF_INT2 → NC_SHORT
+    - CDF_INT4 → NC_INT
+    - CDF_INT8 → NC_INT64
+    - CDF_UINT1 → NC_UBYTE
+    - CDF_UINT2 → NC_USHORT
+    - CDF_UINT4 → NC_UINT
+    - CDF_REAL4/CDF_FLOAT → NC_FLOAT
+    - CDF_REAL8/CDF_DOUBLE → NC_DOUBLE
+    - CDF_CHAR/CDF_UCHAR → NC_CHAR
+  - Handle endianness detection and conversion
+  - Set type size correctly for each mapped type
+  - Support all common CDF types from the start
+- **Metadata Helper Functions**: Implement stubbed functions in cdffile.c
+  - `cdf_rec_grp_del()`: Recursively delete group metadata (for cleanup)
+  - `cdf_type_info()`: Map CDF types to NetCDF types with size and endianness
+  - `nc4_set_var_type()`: Set NetCDF variable type information
+  - Additional helper functions as needed for dimension/variable/attribute creation
+- **NC_CDF_close() Implementation**: Complete file close with proper cleanup
+  - Close CDF file using CDFclose()
+  - Free all allocated metadata structures
+  - Clean up NC_CDF_FILE_INFO_T and NC_VAR_CDF_INFO_T structures
+  - Ensure no memory leaks
+- **Minimal Data Reading**: Implement basic NC_CDF_get_vara() for validation
+  - Support reading scalar values and simple arrays
+  - Use CDFgetVarData() or CDFhyperGetVarData() from NASA CDF library
+  - Handle type conversion from CDF to NetCDF types
+  - Validate data path works correctly
+  - Full array slicing and advanced features can be deferred to future sprints
+- **Error Handling**: Standard error handling for robustness
+  - Validate file exists and is accessible
+  - Check CDFopen() return status, return NC_ENOTNC4 if not a valid CDF file
+  - Detect and reject unsupported CDF features (e.g., rVariables if not supported)
+  - Map CDF error codes to appropriate NetCDF error codes
+  - Return NC_NOERR on success
+  - No error message printing (return codes only)
+- **Test Program**: Create tst_cdf_udf.c to validate UDF functionality
+  - Open CDF test file using NetCDF API (nc_open) via UDF dispatch
+  - Query and validate file metadata using nc_inq functions:
+    - Number of dimensions (nc_inq_ndims)
+    - Number of variables (nc_inq_nvars)
+    - Number of global attributes (nc_inq_natts)
+    - Dimension names and sizes (nc_inq_dim)
+    - Variable names, types, and dimensions (nc_inq_var)
+    - Attribute names, types, and values (nc_inq_att, nc_get_att)
+  - Use assertion-based validation with specific expected values
+  - Read minimal data from each variable using nc_get_var or nc_get_vara
+  - Validate data values match expected values from CDF file
+  - Close file using nc_close
+  - Return 0 on success, non-zero on failure
+  - Test builds conditionally when CDF enabled in both CMake and Autotools
+  - Integrate into CI test suites (CTest and make check)
+- **Metadata Validation Strategy**: Assertion-based testing for automated validation
+  - Test asserts specific metadata values (e.g., assert(ndims == 3))
+  - Validate dimension names and sizes match CDF file
+  - Validate variable names, types, and shapes match CDF file
+  - Validate attribute names, types, and values match CDF file
+  - Provide clear error messages on assertion failures
+  - Automated pass/fail criteria for CI integration
+- **Build System Integration**: Ensure test builds and runs in both systems
+  - CMake: Add tst_cdf_udf to test/CMakeLists.txt when ENABLE_CDF=ON
+  - Autotools: Add tst_cdf_udf to test/Makefile.am when HAVE_CDF=yes
+  - Link test against NetCDF-C library (uses UDF, not direct CDF library)
+  - Register test with CTest and make check
+  - Test uses existing CDF test file from Sprint 2 (test/data/)
+- **CI Integration**: Validate UDF works in CI environment
+  - CI runs tst_cdf_udf for CDF-enabled builds
+  - Test execution for both CMake and Autotools builds
+  - Verify test passes and produces expected output
+  - No changes to CI workflow needed (test runs automatically when CDF enabled)
 
 
 ### v1.2.0 Documentation Improvements

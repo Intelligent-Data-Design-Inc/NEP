@@ -57,6 +57,14 @@ extern "C" {
     NC_CDF_get_vara(int ncid, int varid, const size_t *start, const size_t *count,
                      void *value, nc_type);
 
+    extern int
+    NC_CDF_initialize(void);
+
+    extern int
+    NC_CDF_finalize(void);
+
+    extern const NC_Dispatch *CDF_dispatch_table;
+
 #if defined(__cplusplus)
 }
 #endif
