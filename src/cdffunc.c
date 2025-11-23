@@ -8,7 +8,7 @@
 
 #include "config.h"
 #include "nc4internal.h"
-#include "hdf4dispatch.h"
+#include "cdfdispatch.h"
 #include <mfhdf.h>
 
 /**

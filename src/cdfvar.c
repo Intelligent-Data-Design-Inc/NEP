@@ -9,7 +9,7 @@
 
 #include "config.h"
 #include <nc4internal.h>
-#include "hdf4dispatch.h"
+#include "cdfdispatch.h"
 #include "nc4dispatch.h"
 #include <mfhdf.h>
 
@@ -38,7 +38,7 @@ NC_CDF_get_vara(int ncid, int varid, const size_t *startp,
 {
     /* Function body commented out for v1.3.0 Sprint 3 - UDF skeleton only */
     /* Implementation will be added in Sprint 4 */
-    /* NC_VAR_CDF_INFO_T *hdf4_var; */
+    /* NC_VAR_CDF_INFO_T *cdf_var; */
     /* NC_VAR_INFO_T *var; */
     /* int32 start32[NC_MAX_VAR_DIMS], edge32[NC_MAX_VAR_DIMS]; */
     /* size_t nelem = 1; */
@@ -60,7 +60,7 @@ NC_CDF_get_vara(int ncid, int varid, const size_t *startp,
     /* assert(var && var->hdr.name && var->format_var_info); */
 
     /* Get the CDF specific var metadata. */
-    /* hdf4_var = (NC_VAR_CDF_INFO_T *)var->format_var_info; */
+    /* cdf_var = (NC_VAR_CDF_INFO_T *)var->format_var_info; */
 
     /* Convert starts/edges to the int32 type CDF wants. Also learn
      * how many elements of data are being read. */
@@ -83,7 +83,7 @@ NC_CDF_get_vara(int ncid, int varid, const size_t *startp,
     /*         return NC_ENOMEM; */
 
     /* Read the data with CDF. */
-    /* if (SDreaddata(hdf4_var->sdsid, start32, NULL, edge32, data)) */
+    /* if (SDreaddata(cdf_var->sdsid, start32, NULL, edge32, data)) */
     /*     return NC_EHDFERR; */
 
     /* Do we need to convert data? */

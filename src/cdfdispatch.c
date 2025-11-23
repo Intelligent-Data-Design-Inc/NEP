@@ -10,7 +10,7 @@
 
 #include "config.h"
 #include <stdlib.h>
-#include "hdf4dispatch.h"
+#include "cdfdispatch.h"
 #include "nc4dispatch.h"
 #include "hdf5dispatch.h"
 #include "netcdf_filter.h"

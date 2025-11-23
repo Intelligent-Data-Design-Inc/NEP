@@ -10,7 +10,7 @@
 
 #include "config.h"
 #include "nc4internal.h"
-#include "hdf4dispatch.h"
+#include "dispatch.h"
 #include <mfhdf.h>
 
 #define NUM_TYPES 12 /**< Number of netCDF atomic types. */
@@ -45,7 +45,7 @@ nc_type_size_g[NUM_TYPES] = {sizeof(char), sizeof(char), sizeof(short),
  * @author Edward Hartnett
  */
 static int
-hdf4_rec_grp_del(NC_GRP_INFO_T *grp)
+cdf_rec_grp_del(NC_GRP_INFO_T *grp)
 {
     /* Function body commented out for v1.3.0 Sprint 3 - UDF skeleton only */
     /* Implementation will be added in Sprint 4 */
@@ -59,7 +59,7 @@ hdf4_rec_grp_del(NC_GRP_INFO_T *grp)
  * for more information re: CDF types.
  *
  * @param h5 Pointer to HDF5 file info struct.
- * @param hdf4_typeid Type ID for hdf4 datatype.
+ * @param cdf_typeid Type ID for cdf datatype.
  * @param xtype Pointer that gets netcdf type. Ignored if NULL.
  * @param endniannessp Pointer that gets endianness. Ignored if NULL.
  * @param type_sizep Pointer that gets type size. Ignored if NULL.
@@ -69,7 +69,7 @@ hdf4_rec_grp_del(NC_GRP_INFO_T *grp)
  * @author Ed Hartnett
  */
 static int
-hdf4_type_info(NC_FILE_INFO_T *h5, int32 hdf4_typeid, nc_type* xtypep,
+cdf_type_info(NC_FILE_INFO_T *h5, int32 cdf_typeid, nc_type* xtypep,
                int *endiannessp, size_t *type_sizep, char *type_name)
 {
     /* Function body commented out for v1.3.0 Sprint 3 - UDF skeleton only */
@@ -113,7 +113,7 @@ nc4_set_var_type(nc_type xtype, int endianness, size_t type_size, char *type_nam
  * @author Ed Hartnett
  */
 static int
-hdf4_read_att(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var, int a)
+cdf_read_att(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var, int a)
 {
     /* Function body commented out for v1.3.0 Sprint 3 - UDF skeleton only */
     /* Implementation will be added in Sprint 4 */
@@ -138,7 +138,7 @@ hdf4_read_att(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var, int a)
  * @author Ed Hartnett
  */
 static int
-hdf4_read_dim(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var, int rec_dim_len, int d)
+cdf_read_dim(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var, int rec_dim_len, int d)
 {
     /* Function body commented out for v1.3.0 Sprint 3 - UDF skeleton only */
     /* Implementation will be added in Sprint 4 */
@@ -186,7 +186,7 @@ nc4_var_list_add_full(NC_GRP_INFO_T* grp, const char* name, int ndims, nc_type x
  * @author Ed Hartnett
  */
 static int
-hdf4_read_var(NC_FILE_INFO_T *h5, int v)
+cdf_read_var(NC_FILE_INFO_T *h5, int v)
 {
     /* Function body commented out for v1.3.0 Sprint 3 - UDF skeleton only */
     /* Implementation will be added in Sprint 4 */

@@ -2,7 +2,7 @@
  * @file @internal This header file contains the prototypes for the
  * CDF versions of the netCDF functions. This is part of the CDF
  * dispatch layer and this header should not be included by any file
- * outside the libhdf4 directory.
+ * outside the libcdf directory.
  *
  * @author Edward Hartnett
  * @date 2025-11-23
@@ -18,11 +18,11 @@
  * CDF documentation). */
 #define NC_MAX_CDF_DIMS 32
 
-/* Stuff below is for hdf4 files. */
+/* Stuff below is for cdf files. */
 typedef struct NC_VAR_CDF_INFO
 {
     int sdsid;
-    int hdf4_data_type;
+    int cdf_data_type;
 } NC_VAR_CDF_INFO_T;
 
 typedef struct NC_CDF_FILE_INFO
