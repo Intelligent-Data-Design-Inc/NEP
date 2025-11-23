@@ -24,11 +24,11 @@ The v4.0.0 architecture will add:
 - Metadata and projection information extraction
 - Data reading functionality
 - Geospatial coordinate information access
-- Integration with existing v1.0.0, v2.0.0, and v3.0.0 features
+- Integration with existing v1.0.0, v1.1.0, v1.2.0, v1.3.0, and v2.0.0 features
 
 ## Dependencies
 
-- All v1.0.0, v2.0.0, and v3.0.0 dependencies
+- All v1.0.0, v1.1.0, v1.2.0, v1.3.0, and v2.0.0 dependencies
 - libgeotiff library
 
 ---

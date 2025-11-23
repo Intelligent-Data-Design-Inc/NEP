@@ -154,7 +154,15 @@ NEP v1.1.0 is available now as open-source software. Visit the project repositor
 **A:** Yes. NEP v1.1.0 adds Fortran 90 wrappers (module `ncsqueeze`) around the existing C compression APIs. Fortran applications can call `nf90_def_var_lz4`, `nf90_inq_var_lz4`, `nf90_def_var_bzip2`, and `nf90_inq_var_bzip2` to enable and query compression, using the standard NetCDF Fortran API alongside NEP.
 
 #### Q: What is the current version?
-**A:** NEP v1.1.0 is the current release, providing LZ4 and BZIP2 compression support for HDF5/NetCDF-4 files for both C and Fortran applications.
+**A:** NEP v1.2.0 is the current release, providing LZ4 and BZIP2 compression support for HDF5/NetCDF-4 files for both C and Fortran applications, with improved documentation.
+
+#### Q: What's coming in v1.3.0?
+**A:** NEP v1.3.0 will add support for NASA Common Data Format (CDF) files through a User Defined Format (UDF) handler, enabling transparent access to CDF space physics and satellite data through the standard NetCDF API. This release will include:
+- NASA CDF library v3.9.x integration
+- CDF UDF handler with NC_Dispatch implementation
+- Automatic CDF format detection
+- File open/close, metadata extraction, and data reading for CDF files
+- Optional CDF support (enabled via build flags)
 
 #### Q: How stable is NEP?
 **A:** NEP v1.0.0 is production-ready and has undergone thorough testing. Both LZ4 and BZIP2 compression filters are stable and ready for use in production environments.
@@ -169,6 +177,7 @@ NEP v1.1.0 is available now as open-source software. Visit the project repositor
 - **Ocean modeling**: Reducing I/O bottlenecks in simulation workflows
 - **HPC workflows**: Improving I/O performance with fast compression
 - **Data archival**: Maximizing storage efficiency with high-ratio compression
+- **Space physics research** (v1.3.0+): Transparent access to NASA CDF space physics and satellite data through NetCDF API
 
 #### Q: Can NEP handle real-time data streams?
 **A:** Yes! LZ4's high-speed compression makes it ideal for real-time or near-real-time data processing where low latency is critical.

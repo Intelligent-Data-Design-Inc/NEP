@@ -6,6 +6,10 @@
 /* GRIB2 UDF support availability */
 /* #cmakedefine HAVE_GRIB2 */
 
+/* CDF library detection (v1.3.0) - library detection only, no UDF yet */
+/* CDF library availability */
+#cmakedefine HAVE_CDF
+
 /* Project version */
 #define NEP_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
 #define NEP_VERSION_MINOR @PROJECT_VERSION_MINOR@

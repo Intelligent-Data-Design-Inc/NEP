@@ -148,8 +148,12 @@ make uninstall
 | CMake Option | Autotools Option | Default | Description |
 |--------------|------------------|---------|-------------|
 | `-DBUILD_DOCUMENTATION=ON/OFF` | `--enable-docs/--disable-docs` | ON/enabled | Build API documentation |
+| `-DENABLE_FORTRAN=ON/OFF` | `--enable-fortran/--disable-fortran` | ON/enabled | Fortran wrappers and tests |
+| `-DENABLE_CDF=ON/OFF` | `--enable-cdf/--disable-cdf` | OFF/disabled | CDF library detection (v1.3.0+, library location only) |
 | N/A | `--enable-lz4/--disable-lz4` | enabled | LZ4 compression support |
 | N/A | `--enable-bzip2/--disable-bzip2` | enabled | BZIP2 compression support |
+
+**Note on CDF Support (v1.3.0):** The `--enable-cdf` option enables NASA CDF library detection during the build. This is library location only - no UDF (User Defined Format) implementation yet. The CDF UDF handler will be added in future sprints. To use this option, you must have the NASA CDF library installed. Download from: https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/
 
 ### Using NEP in Your Project
 

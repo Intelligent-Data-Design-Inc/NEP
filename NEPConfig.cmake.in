@@ -19,6 +19,9 @@ set(NEP_INCLUDE_DIR "@CMAKE_INSTALL_FULL_INCLUDEDIR@")
 # GRIB2 UDF support availability
 # set(NEP_HAVE_GRIB2 @HAVE_GRIB2@)
 
+# CDF library detection (v1.3.0) - library detection only, no UDF yet
+set(NEP_HAVE_CDF @HAVE_CDF@)
+
 # Initialize target list
 set(NEP_LIBRARIES "")
 
@@ -37,10 +40,13 @@ set(NEP_LIBRARIES "")
 # endif()
 
 # Provide summary information
-message(STATUS "Found NEP version ${NEP_VERSION} - LZ4 compression support")
+message(STATUS "Found NEP version ${NEP_VERSION} - LZ4/BZIP2 compression support")
 # GRIB2 UDF Handler - Disabled for v1.0.0
 # if(NEP_HAVE_GRIB2)
 #     message(STATUS "NEP GRIB2 UDF support available")
 # endif()
+if(NEP_HAVE_CDF)
+    message(STATUS "NEP CDF library detection enabled (library location only, no UDF yet)")
+endif()
 
 check_required_components(NEP)
