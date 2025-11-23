@@ -67,10 +67,59 @@
 - Add to CI.
 
 #### Sprint 3: Add UDF for CDF
-- Add UDF for CDF
-- Hello-world functionality.
+- **CDF UDF Handler Integration**: Integrate existing CDF source files into both build systems
+  - Source files to integrate: `src/cdfdispatch.c`, `src/cdffile.c`, `src/cdffunc.c`, `src/cdfvar.c`
+  - Header file to integrate: `include/cdfdispatch.h`
+  - Reference implementation: `/home/ed/netcdf-c/libhdf4` for build pattern
+  - UDF documentation: https://docs.unidata.ucar.edu/netcdf/NUG/user_defined_formats.html
+- **CMake Build System Integration**:
+  - Add CDF UDF handler library build when `ENABLE_CDF=ON` and `HAVE_CDF=TRUE`
+  - Library name: `libnccdf` (shared library)
+  - Source files: `cdfdispatch.c`, `cdffile.c`, `cdffunc.c`, `cdfvar.c`
+  - Link against: HDF5, NetCDF-C, and NASA CDF library (`${CDF_LIBRARY}`)
+  - Set library version to match project version with SOVERSION 1
+  - Install to `${CMAKE_INSTALL_LIBDIR}` with RPATH configuration
+  - Export as part of NEPTargets for CMake package integration
+  - Add to `src/CMakeLists.txt` following GRIB2 pattern (currently commented out)
+- **Autotools Build System Integration**:
+  - Add conditional CDF library build when `HAVE_CDF` is true
+  - Library name: `libnccdf.la` (libtool library)
+  - Source files: `cdfdispatch.c`, `cdffile.c`, `cdffunc.c`, `cdfvar.c`
+  - Link flags: `$(HDF5_LIBS) $(CDF_LIBS)` via `libnccdf_la_LIBADD`
+  - Version info: `-version-info 1:0:0` via `libnccdf_la_LDFLAGS`
+  - Add to `src/Makefile.am` following GRIB2 pattern (currently commented out)
+  - Conditional build: `if HAVE_CDF ... endif` block
+- **Code Preparation**:
+  - Comment out main function bodies in all CDF source files (cdfdispatch.c, cdffile.c, cdffunc.c, cdfvar.c)
+  - Leave function signatures, declarations, and dispatch table structure intact
+  - Preserve all header includes and type definitions
+  - Keep NC_Dispatch structure initialization in cdfdispatch.c
+  - Ensure code compiles but functions return placeholder/error codes
+- **Code Attribution Updates**:
+  - Change all `@author` tags to: `Edward Hartnett` (consistent spelling)
+  - Update or add `@date` tags to current date (2025-11-23) in all CDF files
+  - Add copyright line to all CDF source files: `@copyright Intelligent Data Design, Inc. All rights reserved.`
+  - Maintain existing Doxygen comment structure and formatting
+- **Header File Updates**:
+  - Verify `include/cdfdispatch.h` has proper include guards and prototypes
+  - Ensure header is compatible with both C and C++ (extern "C" blocks)
+  - Update header documentation to reflect CDF UDF handler purpose
+- **Build Verification**:
+  - Verify builds succeed with `-DENABLE_CDF=ON` (CMake) when CDF library is available
+  - Verify builds succeed with `--enable-cdf` (Autotools) when CDF library is available
+  - Verify builds succeed with CDF disabled (default behavior)
+  - Confirm `libnccdf.so` (or `libnccdf.la`) is created and installed when enabled
+  - Check that library links properly against all dependencies (HDF5, NetCDF-C, CDF)
+- **CI Integration**:
+  - CDF UDF library build exercised in existing CI CDF-enabled configurations
+  - Verify library installation and linking in CI environment
+  - No functional tests yet - only build/install verification
+- **Documentation**:
+  - Update build documentation to reflect CDF UDF handler availability
+  - Note that CDF UDF is build-only in this sprint (no functional implementation)
+  - Document that Sprint 4 will add functional tests and implementation
 
-#### Sprint 4: Open the Test File
+### Sprint 4: Open the Test File
 - Write a test which opens the test CDF file.
 - Check netCDF metadata for correctness.
 - Check data for correctness.
