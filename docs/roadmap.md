@@ -31,10 +31,24 @@
 
 #### Sprint 4: Var Metadata
 
-### v1.3.0 Spack Support
+### v1.4.0 Spack Support
 #### Sprint 1: Spack CI Testing and Spack Integration
 - Set up testing of the spack file just like NCEPLIBS-g2c has.
 - Submit spack file to spack repo.
+
+### v1.3.0 CDF Support
+#### Sprint 1: Add CDF to CI
+- Add NASA CDF library to install.
+- Find a small CDF data file to use as a sample.
+
+#### Sprint 2: Add UDF for CDF
+- Add UDF for CDF
+- Hello-world functionality.
+
+#### Sprint 3: Open the Test File
+- Write a test which opens the test CDF file.
+- Check netCDF metadata for correctness.
+- Check data for correctness.
 
 
 ### v1.2.0 Documentation Improvements
