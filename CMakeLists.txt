@@ -32,6 +32,9 @@ option(ENABLE_CDF "Enable CDF library detection" OFF)
 # Documentation option
 option(BUILD_DOCUMENTATION "Build documentation with Doxygen" ON)
 
+# Testing option - enable by default
+option(BUILD_TESTING "Build tests" ON)
+
 # Set compiler flags based on DEBUG option
 if(DEBUG)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
