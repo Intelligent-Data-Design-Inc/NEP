@@ -3,8 +3,8 @@
  * @brief Test CDF User Defined Format (UDF) handler
  * 
  * This test validates that CDF files can be opened and read through the
- * standard NetCDF API using the CDF UDF handler. It opens the test file
- * created by test_cdf/tst_cdf_basic.c and validates metadata.
+ * standard NetCDF API using the CDF UDF handler. It creates a test CDF
+ * file and validates the UDF handler registration.
  * 
  * This test is part of v1.3.0 Sprint 4 and validates the CDF UDF handler
  * implementation.

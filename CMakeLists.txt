@@ -162,10 +162,6 @@ if(NOT DOCS_ONLY)
         INSTALL_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/hdf5_plugins make install
         BUILD_IN_SOURCE 1
     )
-    
-    # Make tests depend on plugins being built
-    add_subdirectory (test)
-
     # GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
     # Will be re-enabled in v2.0.0 for GRIB2 UDF support
     # If GRIB2 layer has been built, test it.
@@ -177,6 +173,10 @@ if(NOT DOCS_ONLY)
     if(HAVE_CDF)
         add_subdirectory (test_cdf)
     endif()
+    
+    # Make tests depend on plugins being built
+    # Add test directory last so tst_cdf_udf runs after tst_cdf_basic
+    add_subdirectory (test)
 
     # Generate and install CMake config files
     include(CMakePackageConfigHelpers)
