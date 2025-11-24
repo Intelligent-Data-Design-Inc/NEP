@@ -215,14 +215,14 @@ int main(void)
     }
     
     // /* Open the CDF file using NetCDF API */
-    // printf("Opening CDF file via NetCDF API: %s\n", TEST_FILE);
-    // retval = nc_open(TEST_FILE, NC_NOWRITE, &ncid);
-    // if (retval != NC_NOERR) {
-    //     fprintf(stderr, "ERROR: Failed to open CDF file via NetCDF API: %s\n", 
-    //             nc_strerror(retval));
-    //     return 1;
-    // }
-    // printf("  ✓ Successfully opened CDF file via NetCDF API\n\n");
+    printf("Opening CDF file via NetCDF API: %s\n", TEST_FILE);
+    retval = nc_open(TEST_FILE, NC_NOWRITE, &ncid);
+    if (retval != NC_NOERR) {
+        fprintf(stderr, "ERROR: Failed to open CDF file via NetCDF API: %s\n", 
+                nc_strerror(retval));
+        return 1;
+    }
+    printf("  ✓ Successfully opened CDF file via NetCDF API\n\n");
     
     // /* Query file metadata */
     // printf("Querying file metadata...\n");
@@ -352,10 +352,10 @@ int main(void)
     // }
     // printf("\n");
     
-    // /* Close the file */
-    // printf("Closing file...\n");
-    // retval = nc_close(ncid);
-    // assert(retval == NC_NOERR);
+    /* Close the file */
+    printf("Closing file...\n");
+    retval = nc_close(ncid);
+    assert(retval == NC_NOERR);
     printf("  ✓ Successfully closed file\n\n");
     
     /* Print test summary */

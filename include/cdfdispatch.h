@@ -30,7 +30,7 @@ typedef struct NC_VAR_CDF_INFO
 
 typedef struct NC_CDF_FILE_INFO
 {
-    int sdid;
+    void *id;
 } NC_CDF_FILE_INFO_T;
 
 #if defined(__cplusplus)

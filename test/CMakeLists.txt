@@ -36,6 +36,12 @@ if(HAVE_CDF)
     target_link_libraries(tst_cdf_udf PRIVATE nccdf ncsqueeze ${NETCDF_LIBRARIES} ${CDF_LIBRARY})
     target_include_directories(tst_cdf_udf PRIVATE ${NETCDF_INCLUDE_DIRS} ${CDF_INCLUDE_DIR})
     
+    # Set rpath so the executable can find CDF library at runtime
+    get_filename_component(CDF_LIB_DIR ${CDF_LIBRARY} DIRECTORY)
+    set_target_properties(tst_cdf_udf PROPERTIES
+        INSTALL_RPATH "${CDF_LIB_DIR}"
+        BUILD_RPATH "${CDF_LIB_DIR}")
+    
     # Add test - creates its own CDF file
     add_test(NAME tst_cdf_udf COMMAND tst_cdf_udf)
 endif()

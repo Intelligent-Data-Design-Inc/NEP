@@ -172,12 +172,28 @@ if test "x$enable_cdf" = "xyes"; then
     if test "x$cdf_header" = "xyes" && test "x$cdf_lib" = "xyes"; then
         HAVE_CDF=yes
         AC_DEFINE([HAVE_CDF], [1], [Define if CDF library is found])
+        
+        # Extract library directory from LDFLAGS for rpath
+        for flag in $LDFLAGS; do
+            case $flag in
+                -L*)
+                    libdir=`echo $flag | sed 's/^-L//'`
+                    # Check if this is the CDF library directory
+                    if test -f "$libdir/libcdf.so" || test -f "$libdir/libcdf.a"; then
+                        CDF_LDFLAGS="-Wl,-rpath,$libdir"
+                        break
+                    fi
+                    ;;
+            esac
+        done
+        
         AC_MSG_NOTICE([CDF library detection enabled (library location only, no UDF yet)])
     else
         AC_MSG_ERROR([CDF enabled but NASA CDF library not found. Install NASA CDF library or disable with --disable-cdf])
     fi
 fi
 AC_SUBST([CDF_LIBS])
+AC_SUBST([CDF_LDFLAGS])
 
 # Check for Doxygen if documentation is enabled
 if test "x$enable_docs" != "xno"; then
@@ -283,13 +299,19 @@ fi
 
 # Find HDF5. This macro (from gnu.org) adds a --with-hdf5 option for setting
 # a path to any repository.
-AX_LIB_HDF5()
-# If you want a particular build of the HDF5 library, you can use these
-# instead.
-# AX_LIB_HDF5([serial])
-# AX_LIB_HDF5([parallel])
-if test "$with_hdf5" = "no"; then
-    AC_MSG_ERROR([Unable to find HDF5])
+# Only use AX_LIB_HDF5 if --with-hdf5 is explicitly specified
+if test "x$with_hdf5" != "x"; then
+    AX_LIB_HDF5()
+    # If you want a particular build of the HDF5 library, you can use these
+    # instead.
+    # AX_LIB_HDF5([serial])
+    # AX_LIB_HDF5([parallel])
+    if test "$with_hdf5" = "no"; then
+        AC_MSG_ERROR([Unable to find HDF5])
+    fi
+else
+    # If HDF5 paths provided via CPPFLAGS/LDFLAGS, skip h5cc requirement
+    AC_MSG_NOTICE([Skipping HDF5 autodetection - using provided CPPFLAGS/LDFLAGS])
 fi
 
 # We need our own, fixed, copy of the LZ4 plugin.

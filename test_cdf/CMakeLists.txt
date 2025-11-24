@@ -20,5 +20,11 @@ target_link_libraries(tst_cdf_basic ${CDF_LIBRARY})
 # Add CDF include directory
 target_include_directories(tst_cdf_basic PRIVATE ${CDF_INCLUDE_DIR})
 
+# Set rpath so the executable can find CDF library at runtime
+get_filename_component(CDF_LIB_DIR ${CDF_LIBRARY} DIRECTORY)
+set_target_properties(tst_cdf_basic PROPERTIES
+    INSTALL_RPATH "${CDF_LIB_DIR}"
+    BUILD_RPATH "${CDF_LIB_DIR}")
+
 # Add the test (matches TESTS = tst_cdf_basic)
 add_test(NAME tst_cdf_basic COMMAND tst_cdf_basic)

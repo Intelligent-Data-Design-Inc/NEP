@@ -47,6 +47,9 @@ static int create_test_file(void)
 
     printf("Creating test CDF file: %s\n", TEST_FILE);
 
+    /* Remove existing file if it exists */
+    remove(TEST_FILE);
+
     /* Initialize test data */
     for (i = 0; i < DIM_SIZE; i++) {
         data[i] = 20.0f + (float)i * 0.5f;  /* Temperature values 20.0 to 24.5 */
