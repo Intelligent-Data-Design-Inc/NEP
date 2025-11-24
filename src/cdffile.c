@@ -645,8 +645,8 @@ NC_CDF_close(int ncid, void *ignore)
     status = CDFcloseCDF((CDFid)cdf_file->id);
     
     /* Free metadata structures */
-    if (grp)
-        cdf_rec_grp_del(grp);
+    /* if (grp) */
+    /*     cdf_rec_grp_del(grp); */
     
     /* Free CDF-specific info */
     free(cdf_file);
