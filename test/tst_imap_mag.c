@@ -5,10 +5,8 @@
  * This test validates that the IMAP MAG L1B calibration CDF file can be
  * opened through the standard NetCDF API using the CDF UDF handler.
  * 
- * The test looks for the data file in the following order:
- * 1. Path specified via TOPSRCDIR environment variable
- * 2. Current directory (for in-tree builds)
- * 3. Parent directory (for some build configurations)
+ * The test data file is copied to the build directory by the build system
+ * to support both in-tree and out-of-tree builds.
  * 
  * @author Edward Hartnett
  * @date 2025-11-26
@@ -19,7 +17,6 @@
 #include <string.h>
 #include <assert.h>
 #include <netcdf.h>
-#include <unistd.h>
 #include "cdfdispatch.h"
 
 #define TEST_FILE "data/imap_mag_l1b-calibration_20240229_v001.cdf"

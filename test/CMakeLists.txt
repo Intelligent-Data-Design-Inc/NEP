@@ -55,11 +55,14 @@ if(HAVE_CDF)
         INSTALL_RPATH "${CDF_LIB_DIR}"
         BUILD_RPATH "${CDF_LIB_DIR}")
     
+    # Copy test data file to build directory
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/imap_mag_l1b-calibration_20240229_v001.cdf
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/imap_mag_l1b-calibration_20240229_v001.cdf
+                   COPYONLY)
+    
     # Add test - uses existing IMAP MAG CDF file
-    # Set TOPSRCDIR so test can find data file
     add_test(NAME tst_imap_mag COMMAND tst_imap_mag)
-    set_tests_properties(tst_imap_mag PROPERTIES
-        ENVIRONMENT "TOPSRCDIR=${CMAKE_SOURCE_DIR}")
 endif()
 
 # Configure run_tests.sh script with proper paths
