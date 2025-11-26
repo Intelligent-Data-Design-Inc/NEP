@@ -5,6 +5,11 @@
  * This test validates that the IMAP MAG L1B calibration CDF file can be
  * opened through the standard NetCDF API using the CDF UDF handler.
  * 
+ * The test looks for the data file in the following order:
+ * 1. Path specified via TOPSRCDIR environment variable
+ * 2. Current directory (for in-tree builds)
+ * 3. Parent directory (for some build configurations)
+ * 
  * @author Edward Hartnett
  * @date 2025-11-26
  */
@@ -14,6 +19,7 @@
 #include <string.h>
 #include <assert.h>
 #include <netcdf.h>
+#include <unistd.h>
 #include "cdfdispatch.h"
 
 #define TEST_FILE "data/imap_mag_l1b-calibration_20240229_v001.cdf"
@@ -40,7 +46,7 @@ int main(void)
     /* CDF files start with magic bytes 0xCDF30001 or 0xCDF26002 */
     /* Using CDF3 magic number: 0xCD, 0xF3, 0x00, 0x01 */
     char cdf_magic[5] = "\xCD\xF3\x00\x01";
-    retval = nc_def_user_format(NC_UDF0, CDF_dispatch_table, cdf_magic);
+    retval = nc_def_user_format(NC_UDF0, (NC_Dispatch *)CDF_dispatch_table, cdf_magic);
     if (retval != NC_NOERR) {
         fprintf(stderr, "ERROR: Failed to register CDF UDF handler: %s\n", 
                 nc_strerror(retval));

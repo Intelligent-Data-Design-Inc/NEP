@@ -56,8 +56,10 @@ if(HAVE_CDF)
         BUILD_RPATH "${CDF_LIB_DIR}")
     
     # Add test - uses existing IMAP MAG CDF file
-    add_test(NAME tst_imap_mag COMMAND tst_imap_mag 
-             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    # Set TOPSRCDIR so test can find data file
+    add_test(NAME tst_imap_mag COMMAND tst_imap_mag)
+    set_tests_properties(tst_imap_mag PROPERTIES
+        ENVIRONMENT "TOPSRCDIR=${CMAKE_SOURCE_DIR}")
 endif()
 
 # Configure run_tests.sh script with proper paths
