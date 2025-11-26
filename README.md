@@ -77,6 +77,33 @@ For better visualization of the faster compression methods:
 
 ---
 
+## CDF Reader
+
+NEP includes support for reading NASA Common Data Format (CDF) files through a NetCDF-like API. CDF is a self-describing data format designed for the storage and manipulation of multi-dimensional data sets, widely used in space physics and solar research communities.
+
+### What is CDF?
+
+The Common Data Format (CDF) is a conceptually similar format to NetCDF, developed and maintained by NASA's Space Physics Data Facility (SPDF). CDF files are commonly used for storing time-series and multi-dimensional scientific data from space missions and ground-based observations.
+
+**Key characteristics:**
+- Self-describing format with metadata
+- Support for multiple data types and dimensions
+- Platform-independent binary format
+- Optimized for space physics data
+
+### Resources
+
+- **[NASA CDF Homepage](https://cdf.gsfc.nasa.gov/)** - Official CDF library and documentation
+- **[CDF C Reference Manual](https://spdf.gsfc.nasa.gov/pub/software/cdf/doc/cdf_C_RefManual.pdf)** - Complete C API reference
+
+### CDF Support in NEP
+
+NEP provides a User-Defined Format (UDF) handler that allows reading CDF files using NetCDF-style API calls. This enables applications to work with both NetCDF and CDF files through a unified interface.
+
+To enable CDF support during build, use the `--enable-cdf` (Autotools) or `-DENABLE_CDF=ON` (CMake) configuration option. You must have the NASA CDF library installed on your system.
+
+---
+
 ## Installation
 
 ### Prerequisites
