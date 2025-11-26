@@ -31,6 +31,7 @@
 int main(void)
 {
     int ncid;
+    int ndims, nvars, natts, unlimdimid;
     int retval;
     
     printf("=== NEP IMAP MAG CDF Test ===\n\n");
@@ -44,7 +45,8 @@ int main(void)
     /* Using CDF3 magic number: 0xCD, 0xF3, 0x00, 0x01 */
     char cdf_magic[5] = "\xCD\xF3\x00\x01";
     retval = nc_def_user_format(NC_UDF0, (NC_Dispatch *)CDF_dispatch_table, cdf_magic);
-    if (retval != NC_NOERR) {
+    if (retval != NC_NOERR)
+    {
         fprintf(stderr, "ERROR: Failed to register CDF UDF handler: %s\n", 
                 nc_strerror(retval));
         return 1;
@@ -53,19 +55,27 @@ int main(void)
     
     /* Open the IMAP MAG CDF file using NetCDF API */
     printf("Opening IMAP MAG CDF file via NetCDF API: %s\n", TEST_FILE);
-    retval = nc_open(TEST_FILE, NC_NOWRITE, &ncid);
-    if (retval != NC_NOERR) {
+    if ((retval = nc_open(TEST_FILE, NC_NOWRITE, &ncid)))
+    {
         fprintf(stderr, "ERROR: Failed to open IMAP MAG CDF file via NetCDF API: %s\n", 
                 nc_strerror(retval));
         return 1;
     }
     printf("  ✓ Successfully opened IMAP MAG CDF file via NetCDF API\n\n");
+
+    /* Check the metadata. */
+    if ((retval = nc_inq(ncid, &ndims, &nvars, &natts, &unlimdimid)))
+	return 1;
+    printf("ndims %d nvars %d natts %d unlimdimid %d\n", ndims, nvars, natts, unlimdimid);
+
+    /* In this test file there are 24 global atts and 6 vars. */
+    if (nvars != 6 || natts != 24) return 1;
     
     /* Close the file */
     printf("Closing file...\n");
-    retval = nc_close(ncid);
-    if (retval != NC_NOERR) {
-        fprintf(stderr, "ERROR: Failed to close file: %s\n", nc_strerror(retval));
+    if ((retval = nc_close(ncid)))
+    {
+	fprintf(stderr, "ERROR: Failed to close file: %s\n", nc_strerror(retval));
         return 1;
     }
     printf("  ✓ Successfully closed file\n\n");
