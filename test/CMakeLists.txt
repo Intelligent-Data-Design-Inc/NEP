@@ -44,6 +44,20 @@ if(HAVE_CDF)
     
     # Add test - creates its own CDF file
     add_test(NAME tst_cdf_udf COMMAND tst_cdf_udf)
+    
+    # Build IMAP MAG CDF test
+    add_executable(tst_imap_mag tst_imap_mag.c)
+    target_link_libraries(tst_imap_mag PRIVATE nccdf ncsqueeze ${NETCDF_LIBRARIES} ${CDF_LIBRARY})
+    target_include_directories(tst_imap_mag PRIVATE ${NETCDF_INCLUDE_DIRS} ${CDF_INCLUDE_DIR})
+    
+    # Set rpath so the executable can find CDF library at runtime
+    set_target_properties(tst_imap_mag PROPERTIES
+        INSTALL_RPATH "${CDF_LIB_DIR}"
+        BUILD_RPATH "${CDF_LIB_DIR}")
+    
+    # Add test - uses existing IMAP MAG CDF file
+    add_test(NAME tst_imap_mag COMMAND tst_imap_mag 
+             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
 # Configure run_tests.sh script with proper paths
@@ -67,7 +81,7 @@ add_test(NAME run_tests
 
 # Make test script depend on hdf5_plugins being built
 if(HAVE_CDF)
-    add_custom_target(test_executables ALL DEPENDS tst_lz4 tst_bzip2 tst_perf tst_cdf_udf)
+    add_custom_target(test_executables ALL DEPENDS tst_lz4 tst_bzip2 tst_perf tst_cdf_udf tst_imap_mag)
 else()
     add_custom_target(test_executables ALL DEPENDS tst_lz4 tst_bzip2 tst_perf)
 endif()

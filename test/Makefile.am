@@ -54,9 +54,10 @@ tst_perf_SOURCES = tst_perf.c tst_utils.c
 
 # Build CDF UDF tests, if CDF is enabled.
 if HAVE_CDF
-check_PROGRAMS += tst_cdf_udf
+check_PROGRAMS += tst_cdf_udf tst_imap_mag
 tst_cdf_udf_LDADD = ${top_builddir}/src/libnccdf.la ${top_builddir}/src/libncsqueeze.la -lcdf
-TESTS += tst_cdf_udf
+tst_imap_mag_LDADD = ${top_builddir}/src/libnccdf.la ${top_builddir}/src/libncsqueeze.la -lcdf
+TESTS += tst_cdf_udf tst_imap_mag
 endif
 
 # Run all the appropriate tests in this script.
