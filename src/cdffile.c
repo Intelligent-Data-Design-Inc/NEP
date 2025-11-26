@@ -238,33 +238,37 @@ cdf_read_att(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var, int a)
                     NULL_);
     if (status != CDF_OK)
         return NC_EATTMETA;
-    
-    /* Get data type from first entry */
-    status = CDFlib(SELECT_, gENTRY_, 0L,
-                    GET_, gENTRY_DATATYPE_, &dataType,
-                    GET_, gENTRY_NUMELEMS_, &numElems,
-                    NULL_);
-    if (status != CDF_OK)
-        return NC_EATTMETA;
-    
-    /* Map CDF type to NetCDF type */
-    if ((retval = cdf_type_info(h5, dataType, &xtype, NULL, NULL, NULL)))
-        return retval;
-    
-    /* Allocate space for attribute data */
-    size_t type_size;
-    cdf_type_info(h5, dataType, NULL, NULL, &type_size, NULL);
-    if (!(data = malloc(numElems * type_size)))
-        return NC_ENOMEM;
-    
-    /* Read attribute data */
-    status = CDFlib(SELECT_, gENTRY_, 0L,
-                    GET_, gENTRY_DATA_, data,
-                    NULL_);
-    if (status != CDF_OK)
+
+    if (numElems)
     {
-        free(data);
-        return NC_EATTMETA;
+	/* Get data type from first entry */
+	status = CDFlib(SELECT_, gENTRY_, 0L,
+			GET_, gENTRY_DATATYPE_, &dataType,
+			GET_, gENTRY_NUMELEMS_, &numElems,
+			NULL_);
+	if (status != CDF_OK)
+	    return NC_EATTMETA;
+    
+	/* Map CDF type to NetCDF type */
+	if ((retval = cdf_type_info(h5, dataType, &xtype, NULL, NULL, NULL)))
+	    return retval;
+	printf("name %s numElems %d dataType %d netCDF type %d\n", attrName, numElems, dataType, xtype);
+    
+	/* Allocate space for attribute data */
+	size_t type_size;
+	cdf_type_info(h5, dataType, NULL, NULL, &type_size, NULL);
+	if (!(data = malloc(numElems * type_size)))
+	    return NC_ENOMEM;
+    
+	/* Read attribute data */
+	status = CDFlib(SELECT_, gENTRY_, 0L,
+			GET_, gENTRY_DATA_, data,
+			NULL_);
+	if (status != CDF_OK)
+	{
+	    free(data);
+	    return NC_EATTMETA;
+	}
     }
     
     /* Add attribute to metadata */
@@ -562,6 +566,7 @@ NC_CDF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     }
     
     /* Read global attributes */
+    printf("reading atts\n");
     for (attrNum = 0; attrNum < numAttrs; attrNum++)
     {
         long attrScope;
@@ -570,6 +575,7 @@ NC_CDF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
                         NULL_);
         if (status == CDF_OK && attrScope == GLOBAL_SCOPE)
         {
+	    printf("reading att number %d\n", attrNum);
             if ((retval = cdf_read_att(h5, NULL, attrNum)))
             {
                 free(cdf_file);
