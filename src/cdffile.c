@@ -418,22 +418,23 @@ cdf_read_var(NC_FILE_INFO_T *h5, int v)
     
     /* Create dimensions if needed */
     int dimids[NC_MAX_VAR_DIMS];
-    /* for (i = 0; i < numDims; i++) */
-    /* { */
-    /*     NC_DIM_INFO_T *dim; */
-    /*     char dimname[NC_MAX_NAME+1]; */
-    /*     snprintf(dimname, NC_MAX_NAME, "dim_%d", i); */
+    for (i = 0; i < numDims; i++)
+    {
+        NC_DIM_INFO_T *dim;
+        char dimname[NC_MAX_NAME+1];
+        snprintf(dimname, NC_MAX_NAME, "var_%d_dim_%d", v, i);
         
-    /*     /\* Check if dimension already exists *\/ */
-    /*     retval = nc4_find_dim(h5->root_grp, dimname, &dim, NULL); */
-    /*     if (retval == NC_EBADDIM) */
-    /*     { */
-    /*         /\* Create new dimension *\/ */
-    /*         if ((retval = nc4_dim_list_add(h5->root_grp, dimname, (size_t)dimSizes[i], -1, &dim))) */
-    /*             return retval; */
-    /*     } */
-    /*     dimids[i] = dim->hdr.id; */
-    /* } */
+        /* Check if dimension already exists */
+        retval = nc4_find_dim(h5->root_grp, dimname, &dim, NULL);
+        if (retval == NC_EBADDIM)
+        {
+            /* Create new dimension */
+            if ((retval = nc4_dim_list_add(h5->root_grp, dimname, (size_t)dimSizes[i], -1, &dim)))
+                return retval;
+	    printf("dim %s len %ld\n", dimname, dimSizes[i]);
+        }
+        dimids[i] = dim->hdr.id;
+    }
     
     /* Allocate CDF-specific variable info */
     if (!(var_cdf_info = calloc(1, sizeof(NC_VAR_CDF_INFO_T))))
