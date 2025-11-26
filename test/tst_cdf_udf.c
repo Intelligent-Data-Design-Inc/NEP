@@ -3,8 +3,8 @@
  * @brief Test CDF User Defined Format (UDF) handler
  * 
  * This test validates that CDF files can be opened and read through the
- * standard NetCDF API using the CDF UDF handler. It opens the test file
- * created by test_cdf/tst_cdf_basic.c and validates metadata.
+ * standard NetCDF API using the CDF UDF handler. It creates a test CDF
+ * file and validates the UDF handler registration.
  * 
  * This test is part of v1.3.0 Sprint 4 and validates the CDF UDF handler
  * implementation.
@@ -215,14 +215,14 @@ int main(void)
     }
     
     // /* Open the CDF file using NetCDF API */
-    // printf("Opening CDF file via NetCDF API: %s\n", TEST_FILE);
-    // retval = nc_open(TEST_FILE, NC_NOWRITE, &ncid);
-    // if (retval != NC_NOERR) {
-    //     fprintf(stderr, "ERROR: Failed to open CDF file via NetCDF API: %s\n", 
-    //             nc_strerror(retval));
-    //     return 1;
-    // }
-    // printf("  ✓ Successfully opened CDF file via NetCDF API\n\n");
+    printf("Opening CDF file via NetCDF API: %s\n", TEST_FILE);
+    retval = nc_open(TEST_FILE, NC_NOWRITE, &ncid);
+    if (retval != NC_NOERR) {
+        fprintf(stderr, "ERROR: Failed to open CDF file via NetCDF API: %s\n", 
+                nc_strerror(retval));
+        return 1;
+    }
+    printf("  ✓ Successfully opened CDF file via NetCDF API\n\n");
     
     // /* Query file metadata */
     // printf("Querying file metadata...\n");
@@ -352,10 +352,10 @@ int main(void)
     // }
     // printf("\n");
     
-    // /* Close the file */
-    // printf("Closing file...\n");
-    // retval = nc_close(ncid);
-    // assert(retval == NC_NOERR);
+    /* Close the file */
+    printf("Closing file...\n");
+    retval = nc_close(ncid);
+    assert(retval == NC_NOERR);
     printf("  ✓ Successfully closed file\n\n");
     
     /* Print test summary */

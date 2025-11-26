@@ -30,6 +30,22 @@ add_executable(tst_perf tst_perf.c tst_utils.c)
 target_link_libraries(tst_perf PRIVATE ncsqueeze ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
 target_include_directories(tst_perf PRIVATE ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
 
+# Build CDF UDF test if CDF is enabled
+if(HAVE_CDF)
+    add_executable(tst_cdf_udf tst_cdf_udf.c)
+    target_link_libraries(tst_cdf_udf PRIVATE nccdf ncsqueeze ${NETCDF_LIBRARIES} ${CDF_LIBRARY})
+    target_include_directories(tst_cdf_udf PRIVATE ${NETCDF_INCLUDE_DIRS} ${CDF_INCLUDE_DIR})
+    
+    # Set rpath so the executable can find CDF library at runtime
+    get_filename_component(CDF_LIB_DIR ${CDF_LIBRARY} DIRECTORY)
+    set_target_properties(tst_cdf_udf PROPERTIES
+        INSTALL_RPATH "${CDF_LIB_DIR}"
+        BUILD_RPATH "${CDF_LIB_DIR}")
+    
+    # Add test - creates its own CDF file
+    add_test(NAME tst_cdf_udf COMMAND tst_cdf_udf)
+endif()
+
 # Configure run_tests.sh script with proper paths
 # For CMake builds, point to the installed plugin location
 set(MY_HDF5_PLUGIN_PATH "${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin:${NETCDF_PREFIX}/hdf5/lib/plugin")
@@ -50,5 +66,9 @@ add_test(NAME run_tests
          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
 # Make test script depend on hdf5_plugins being built
-add_custom_target(test_executables ALL DEPENDS tst_lz4 tst_bzip2 tst_perf)
+if(HAVE_CDF)
+    add_custom_target(test_executables ALL DEPENDS tst_lz4 tst_bzip2 tst_perf tst_cdf_udf)
+else()
+    add_custom_target(test_executables ALL DEPENDS tst_lz4 tst_bzip2 tst_perf)
+endif()
 add_dependencies(test_executables hdf5_plugins)

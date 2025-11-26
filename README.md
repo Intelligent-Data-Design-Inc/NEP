@@ -123,6 +123,18 @@ cmake --install build
 cmake --build build --target uninstall
 ```
 
+**Note:** If HDF5 is installed in a non-standard location, you may need to specify `HDF5_ROOT`:
+
+```bash
+cmake -B build -DHDF5_ROOT=/path/to/hdf5 -DCMAKE_INSTALL_PREFIX=/usr/local
+```
+
+For example, if HDF5 is installed in `/usr/local/hdf5-1.14.6`:
+
+```bash
+cmake -B build -DHDF5_ROOT=/usr/local/hdf5-1.14.6 -DCMAKE_INSTALL_PREFIX=/usr/local
+```
+
 ### Autotools Build and Installation
 
 ```bash

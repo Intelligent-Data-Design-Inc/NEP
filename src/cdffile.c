@@ -84,6 +84,8 @@ cdf_type_info(NC_FILE_INFO_T *h5, int cdf_typeid, nc_type* xtypep,
     int endianness = NC_ENDIAN_NATIVE;
     size_t type_size = 0;
     const char *name = NULL;
+
+    assert(h5);
     
     /* Map CDF types to NetCDF types */
     switch(cdf_typeid)
@@ -215,7 +217,7 @@ static int
 cdf_read_att(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var, int a)
 {
     NC_CDF_FILE_INFO_T *cdf_info;
-    long id;
+    void *id;
     CDFstatus status;
     char attrName[CDF_ATTR_NAME_LEN256+1];
     long dataType, numElems;
@@ -226,7 +228,7 @@ cdf_read_att(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var, int a)
     
     /* Get CDF file ID */
     cdf_info = (NC_CDF_FILE_INFO_T *)h5->format_file_info;
-    id = (CDFid)cdf_info->sdid;
+    id = (CDFid)cdf_info->id;
     
     /* Get attribute info */
     status = CDFlib(SELECT_, CDF_, id,
@@ -303,6 +305,8 @@ cdf_read_dim(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var, int rec_dim_len, int d)
 {
     /* Function body commented out for v1.3.0 Sprint 3 - UDF skeleton only */
     /* Implementation will be added in Sprint 4 */
+    assert(h5 && var);
+    printf("rec_dim_len %d d %d\n", rec_dim_len, d);
     return NC_NOERR; /* Placeholder return */
 }
 
@@ -328,7 +332,10 @@ nc4_var_list_add_full(NC_GRP_INFO_T* grp, const char* name, int ndims, nc_type x
     NC_VAR_INFO_T *new_var;
     NC_TYPE_INFO_T *type_info;
     int retval;
-    
+
+    assert((fill_value || !fill_value) && (chunksizes || !chunksizes));
+    printf("contiguous %d\n", contiguous);
+       
     /* Add variable using NetCDF-C internal function */
     if ((retval = nc4_var_list_add(grp, name, ndims, &new_var)))
         return retval;
@@ -374,7 +381,7 @@ cdf_read_var(NC_FILE_INFO_T *h5, int v)
 {
     NC_CDF_FILE_INFO_T *cdf_info;
     NC_VAR_CDF_INFO_T *var_cdf_info;
-    long id;
+    void *id;
     CDFstatus status;
     char varName[CDF_VAR_NAME_LEN256+1];
     long dataType, numDims, dimSizes[CDF_MAX_DIMS];
@@ -388,7 +395,7 @@ cdf_read_var(NC_FILE_INFO_T *h5, int v)
     
     /* Get CDF file ID */
     cdf_info = (NC_CDF_FILE_INFO_T *)h5->format_file_info;
-    id = (CDFid)cdf_info->sdid;
+    id = (CDFid)cdf_info->id;
     
     /* Get variable info */
     status = CDFlib(SELECT_, CDF_, id,
@@ -407,22 +414,22 @@ cdf_read_var(NC_FILE_INFO_T *h5, int v)
     
     /* Create dimensions if needed */
     int dimids[NC_MAX_VAR_DIMS];
-    for (i = 0; i < numDims; i++)
-    {
-        NC_DIM_INFO_T *dim;
-        char dimname[NC_MAX_NAME+1];
-        snprintf(dimname, NC_MAX_NAME, "dim_%d", i);
+    /* for (i = 0; i < numDims; i++) */
+    /* { */
+    /*     NC_DIM_INFO_T *dim; */
+    /*     char dimname[NC_MAX_NAME+1]; */
+    /*     snprintf(dimname, NC_MAX_NAME, "dim_%d", i); */
         
-        /* Check if dimension already exists */
-        retval = nc4_find_dim(h5->root_grp, dimname, &dim, NULL);
-        if (retval == NC_EBADDIM)
-        {
-            /* Create new dimension */
-            if ((retval = nc4_dim_list_add(h5->root_grp, dimname, (size_t)dimSizes[i], -1, &dim)))
-                return retval;
-        }
-        dimids[i] = dim->hdr.id;
-    }
+    /*     /\* Check if dimension already exists *\/ */
+    /*     retval = nc4_find_dim(h5->root_grp, dimname, &dim, NULL); */
+    /*     if (retval == NC_EBADDIM) */
+    /*     { */
+    /*         /\* Create new dimension *\/ */
+    /*         if ((retval = nc4_dim_list_add(h5->root_grp, dimname, (size_t)dimSizes[i], -1, &dim))) */
+    /*             return retval; */
+    /*     } */
+    /*     dimids[i] = dim->hdr.id; */
+    /* } */
     
     /* Allocate CDF-specific variable info */
     if (!(var_cdf_info = calloc(1, sizeof(NC_VAR_CDF_INFO_T))))
@@ -472,14 +479,20 @@ int
 NC_CDF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
              void *parameters, const NC_Dispatch *dispatch, int ncid)
 {
+    NC *nc;
     NC_FILE_INFO_T *h5;
-    NC_CDF_FILE_INFO_T *cdf_info;
+    NC_CDF_FILE_INFO_T *cdf_file;
     NC_GRP_INFO_T *grp;
     CDFid id;
     CDFstatus status;
     long numzVars, numrVars, numAttrs;
     long varNum, attrNum;
     int retval;
+
+    assert(basepe || !basepe);
+    assert(chunksizehintp || !chunksizehintp);
+    assert(parameters || !parameters);
+    assert(dispatch);
     
     /* Validate parameters */
     if (!path)
@@ -493,11 +506,22 @@ NC_CDF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     if (mode & NC_WRITE)
         return NC_EPERM;
     
+    /* Find pointer to NC. */
+    if ((retval = NC_check_id(ncid, &nc)))
+        return retval;
+
     /* Open CDF file */
     status = CDFopenCDF(path, &id);
     if (status != CDF_OK)
         return NC_ENOTNC4;
     
+    /* Add necessary structs to hold netcdf-4 file data. */
+    if ((retval = nc4_file_list_add(ncid, path, mode, (void **)&h5)))
+        return retval;
+    assert(h5 && h5->root_grp);
+    h5->no_write = NC_TRUE;
+    h5->root_grp->atts_read = 1;
+
     /* Get file info structure - root group should already be initialized by dispatcher */
     if ((retval = nc4_find_grp_h5(ncid, &grp, &h5)))
     {
@@ -514,15 +538,15 @@ NC_CDF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     grp = h5->root_grp;
     
     /* Allocate CDF-specific file info */
-    if (!(cdf_info = calloc(1, sizeof(NC_CDF_FILE_INFO_T))))
+    if (!(cdf_file = calloc(1, sizeof(NC_CDF_FILE_INFO_T))))
     {
         CDFcloseCDF(id);
         return NC_ENOMEM;
     }
     
     /* Store CDF file ID (cast from CDFid pointer to long) */
-    cdf_info->sdid = (long)id;
-    h5->format_file_info = cdf_info;
+    cdf_file->id = id;
+    h5->format_file_info = cdf_file;
     
     /* Query file metadata */
     status = CDFlib(SELECT_, CDF_, id,
@@ -532,7 +556,7 @@ NC_CDF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
                     NULL_);
     if (status != CDF_OK)
     {
-        free(cdf_info);
+        free(cdf_file);
         CDFcloseCDF(id);
         return NC_EHDFERR;
     }
@@ -548,7 +572,7 @@ NC_CDF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
         {
             if ((retval = cdf_read_att(h5, NULL, attrNum)))
             {
-                free(cdf_info);
+                free(cdf_file);
                 CDFcloseCDF(id);
                 return retval;
             }
@@ -560,7 +584,7 @@ NC_CDF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     {
         if ((retval = cdf_read_var(h5, varNum)))
         {
-            free(cdf_info);
+            free(cdf_file);
             CDFcloseCDF(id);
             return retval;
         }
@@ -602,28 +626,30 @@ NC_CDF_close(int ncid, void *ignore)
 {
     NC_FILE_INFO_T *h5;
     NC_GRP_INFO_T *grp;
-    NC_CDF_FILE_INFO_T *cdf_info;
+    NC_CDF_FILE_INFO_T *cdf_file;
     CDFstatus status;
     int retval;
+
+    assert(ignore || !ignore);
     
     /* Get file info structure */
     if ((retval = nc4_find_grp_h5(ncid, &grp, &h5)))
         return retval;
     
     /* Get CDF-specific info */
-    cdf_info = (NC_CDF_FILE_INFO_T *)h5->format_file_info;
-    if (!cdf_info)
+    cdf_file = (NC_CDF_FILE_INFO_T *)h5->format_file_info;
+    if (!cdf_file)
         return NC_NOERR;
     
     /* Close CDF file */
-    status = CDFcloseCDF((CDFid)cdf_info->sdid);
+    status = CDFcloseCDF((CDFid)cdf_file->id);
     
     /* Free metadata structures */
-    if (grp)
-        cdf_rec_grp_del(grp);
+    /* if (grp) */
+    /*     cdf_rec_grp_del(grp); */
     
     /* Free CDF-specific info */
-    free(cdf_info);
+    free(cdf_file);
     h5->format_file_info = NULL;
     
     return (status == CDF_OK) ? NC_NOERR : NC_EHDFERR;

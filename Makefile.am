@@ -18,9 +18,9 @@ TEST_CDF = test_cdf
 endif
 
 if ENABLE_FORTRAN
-SUBDIRS = include src fsrc test ftest $(TEST_CDF)
+SUBDIRS = include src fsrc $(TEST_CDF) test ftest
 else
-SUBDIRS = include src test $(TEST_CDF)
+SUBDIRS = include src $(TEST_CDF) test
 endif
 EXTRA_DIST = autogen.sh
 
