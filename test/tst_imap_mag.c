@@ -68,8 +68,8 @@ int main(void)
 	return 1;
     printf("ndims %d nvars %d natts %d unlimdimid %d\n", ndims, nvars, natts, unlimdimid);
 
-    /* In this test file there are 24 global atts and 6 vars. */
-    if (nvars != 6 || natts != 24) return 1;
+    /* In this test file there are 6 dims, 24 global atts and 6 vars. */
+    if (ndims != 6 || nvars != 6 || natts != 24) return 1;
     
     /* Close the file */
     printf("Closing file...\n");
