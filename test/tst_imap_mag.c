@@ -36,13 +36,13 @@ int main(void)
     int ncid;
     int ndims, nvars, natts, unlimdimid;
     char expected_gatt_name[NUM_GATTS][NC_MAX_NAME + 1] = {
-	"Project", "Source_name", "Discipline", "Data_type", "Descriptor", "Data_version",
-	"Software_version", "Skeleton_version", "PI_name", "PI_affiliation", "TEXT",
-	"Instrument_type", "Mission_group", "Logical_source", "Logical_file_id",
-	"Logical_source_description", "Rules_of_use", "Generated_by", "Generation_date",
-	"MODS", "Level", "Parents", "Instrument_name", "Acknowledgement"
+        "Project", "Source_name", "Discipline", "Data_type", "Descriptor", "Data_version",
+        "Software_version", "Skeleton_version", "PI_name", "PI_affiliation", "TEXT",
+        "Instrument_type", "Mission_group", "Logical_source", "Logical_file_id",
+        "Logical_source_description", "Rules_of_use", "Generated_by", "Generation_date",
+        "MODS", "Level", "Parents", "Instrument_name", "Acknowledgement"
     };
-	
+        
     int retval;
     
     printf("=== NEP IMAP MAG CDF Test ===\n\n");
@@ -76,7 +76,7 @@ int main(void)
 
     /* Check the metadata. */
     if ((retval = nc_inq(ncid, &ndims, &nvars, &natts, &unlimdimid)))
-	return 1;
+        return 1;
     printf("ndims %d nvars %d natts %d unlimdimid %d\n", ndims, nvars, natts, unlimdimid);
 
     /* In this test file there are 6 dims, 24 global atts and 6 vars. */
@@ -85,24 +85,24 @@ int main(void)
     /* Check the global atts. */
     for (int i = 0; i < NUM_GATTS; i++)
     {
-	char attname[NC_MAX_NAME + 1];
-	nc_type xtype;
-	size_t len;
+        char attname[NC_MAX_NAME + 1];
+        nc_type xtype;
+        size_t len;
 
-	if ((retval = nc_inq_attname(ncid, NC_GLOBAL, i, attname)))
-	    return 20;
-	if ((retval = nc_inq_att(ncid, NC_GLOBAL, attname, &xtype, &len)))
-	    return 21;
-	printf("Att: %s type: %d len: %ld\n", attname, xtype, len);
-	if (xtype != NC_CHAR) return 22;
-	if (strncmp(attname, expected_gatt_name[i], NC_MAX_NAME + 1)) return 23;
+        if ((retval = nc_inq_attname(ncid, NC_GLOBAL, i, attname)))
+            return 20;
+        if ((retval = nc_inq_att(ncid, NC_GLOBAL, attname, &xtype, &len)))
+            return 21;
+        printf("Att: %s type: %d len: %ld\n", attname, xtype, len);
+        if (xtype != NC_CHAR) return 22;
+        if (strncmp(attname, expected_gatt_name[i], NC_MAX_NAME + 1)) return 23;
     }
     
     /* Close the file */
     printf("Closing file...\n");
     if ((retval = nc_close(ncid)))
     {
-	fprintf(stderr, "ERROR: Failed to close file: %s\n", nc_strerror(retval));
+        fprintf(stderr, "ERROR: Failed to close file: %s\n", nc_strerror(retval));
         return 1;
     }
     printf("  ✓ Successfully closed file\n\n");
