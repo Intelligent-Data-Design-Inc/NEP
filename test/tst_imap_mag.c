@@ -27,6 +27,9 @@
 /* Number of dims in this test file. */
 #define NUM_DIMS 6
 
+/* Number of vars in this test file. */
+#define NUM_VARS 6
+
 /**
  * @brief Main test function
  * 
@@ -53,7 +56,10 @@ int main(void)
 	"var_3_dim_1", 
 	"var_3_dim_2"
     };
-    int expected_dim_len[NUM_DIMS] = {3, 3, 4, 3, 3, 4};
+    char expected_var_name[NUM_VARS][NC_MAX_NAME + 1] = {
+	"STARTVALIDITY", "ENDVALIDITY", "MFOTOURFO", "MFITOURFI", "OTS", "ITS"
+    };
+    size_t expected_dim_len[NUM_DIMS] = {3, 3, 4, 3, 3, 4};
     int retval;
     
     printf("=== NEP IMAP MAG CDF Test ===\n\n");
@@ -91,7 +97,7 @@ int main(void)
     printf("ndims %d nvars %d natts %d unlimdimid %d\n", ndims, nvars, natts, unlimdimid);
 
     /* In this test file there are 6 dims, 24 global atts and 6 vars. */
-    if (ndims != NUM_DIMS || nvars != 6 || natts != NUM_GATTS) return 15;
+    if (ndims != NUM_DIMS || nvars != NUM_VARS || natts != NUM_GATTS || unlimdimid != -1) return 15;
 
     /* Check the global atts. */
     for (int i = 0; i < NUM_GATTS; i++)
@@ -121,7 +127,26 @@ int main(void)
 	if (strncmp(dimname, expected_dim_name[i], NC_MAX_NAME + 1)) return 31;
 	if (len != expected_dim_len[i]) return 32;
     }
-    
+
+    /* Check the vars. */
+    for (int i = 0; i < NUM_VARS; i++)
+    {
+        char varname[NC_MAX_NAME + 1];
+	nc_type xtype;
+        int ndims, dimids[3], natts;
+	
+	if ((retval = nc_inq_var(ncid, i, varname, &xtype, &ndims, dimids, &natts)))
+	    return 40;
+	printf("%d var %s xtype %d ndims %d natts %d\n", i, varname, xtype, ndims, natts);
+	if (strncmp(varname, expected_var_name[i], NC_MAX_NAME + 1)) return 41;
+	if (xtype != NC_DOUBLE) return 42;
+	if (ndims != ((i == 2 || i == 3) ? 3 : 0)) return 42;
+	if (i == 2)
+	    if (dimids[0] != 0 || dimids[1] != 1 || dimids[2] != 2) return 43;
+	if (i == 3)
+	    if (dimids[0] != 3 || dimids[1] != 4 || dimids[2] != 5) return 43;
+    }
+
     /* Close the file */
     printf("Closing file...\n");
     if ((retval = nc_close(ncid)))
