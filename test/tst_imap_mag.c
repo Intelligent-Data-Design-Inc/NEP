@@ -97,6 +97,7 @@ int main(void)
         if (xtype != NC_CHAR) return 22;
         if (strncmp(attname, expected_gatt_name[i], NC_MAX_NAME + 1)) return 23;
     }
+    if (ndims != 6 || nvars != 6 || natts != 24) return 1;
     
     /* Close the file */
     printf("Closing file...\n");
