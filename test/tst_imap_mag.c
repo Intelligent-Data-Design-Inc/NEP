@@ -24,6 +24,9 @@
 /* Number of global atts in this test file. */
 #define NUM_GATTS 24
 
+/* Number of dims in this test file. */
+#define NUM_DIMS 6
+
 /**
  * @brief Main test function
  * 
@@ -42,7 +45,15 @@ int main(void)
         "Logical_source_description", "Rules_of_use", "Generated_by", "Generation_date",
         "MODS", "Level", "Parents", "Instrument_name", "Acknowledgement"
     };
-        
+    char expected_dim_name[NUM_DIMS][NC_MAX_NAME + 1] = {
+	"var_2_dim_0", 
+	"var_2_dim_1", 
+	"var_2_dim_2", 
+	"var_3_dim_0", 
+	"var_3_dim_1", 
+	"var_3_dim_2"
+    };
+    int expected_dim_len[NUM_DIMS] = {3, 3, 4, 3, 3, 4};
     int retval;
     
     printf("=== NEP IMAP MAG CDF Test ===\n\n");
@@ -80,7 +91,7 @@ int main(void)
     printf("ndims %d nvars %d natts %d unlimdimid %d\n", ndims, nvars, natts, unlimdimid);
 
     /* In this test file there are 6 dims, 24 global atts and 6 vars. */
-    if (ndims != 6 || nvars != 6 || natts != NUM_GATTS) return 15;
+    if (ndims != NUM_DIMS || nvars != 6 || natts != NUM_GATTS) return 15;
 
     /* Check the global atts. */
     for (int i = 0; i < NUM_GATTS; i++)
@@ -96,6 +107,19 @@ int main(void)
         printf("Att: %s type: %d len: %ld\n", attname, xtype, len);
         if (xtype != NC_CHAR) return 22;
         if (strncmp(attname, expected_gatt_name[i], NC_MAX_NAME + 1)) return 23;
+    }
+
+    /* Check the dimensions. */
+    for (int i = 0; i < NUM_DIMS; i++)
+    {
+        char dimname[NC_MAX_NAME + 1];
+        size_t len;
+	
+	if ((retval = nc_inq_dim(ncid, i, dimname, &len)))
+	    return 30;
+	printf("%d dim %s len %ld\n", i, dimname, len);
+	if (strncmp(dimname, expected_dim_name[i], NC_MAX_NAME + 1)) return 31;
+	if (len != expected_dim_len[i]) return 32;
     }
     
     /* Close the file */
