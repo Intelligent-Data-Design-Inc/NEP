@@ -174,13 +174,14 @@ if test "x$enable_cdf" = "xyes"; then
         AC_DEFINE([HAVE_CDF], [1], [Define if CDF library is found])
         
         # Extract library directory from LDFLAGS for rpath
+        # Use -R for libtool compatibility
         for flag in $LDFLAGS; do
             case $flag in
                 -L*)
                     libdir=`echo $flag | sed 's/^-L//'`
                     # Check if this is the CDF library directory
                     if test -f "$libdir/libcdf.so" || test -f "$libdir/libcdf.a"; then
-                        CDF_LDFLAGS="-Wl,-rpath,$libdir"
+                        CDF_LDFLAGS="-R$libdir"
                         break
                     fi
                     ;;

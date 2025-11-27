@@ -32,7 +32,7 @@ libncsqueeze_la_SOURCES = ncsqueeze.c
 # CDF library (netCDF UDF support)
 if HAVE_CDF
 lib_LTLIBRARIES += libnccdf.la
-libnccdf_la_LDFLAGS = -version-info 1:0:0
+libnccdf_la_LDFLAGS = -version-info 1:0:0 $(CDF_LDFLAGS)
 libnccdf_la_SOURCES = cdfdispatch.c cdffile.c cdffunc.c cdfvar.c
 libnccdf_la_LIBADD = $(HDF5_LIBS) $(NETCDF_LIBS) $(CDF_LIBS)
 endif
