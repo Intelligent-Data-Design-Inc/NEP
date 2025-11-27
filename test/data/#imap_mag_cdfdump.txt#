@@ -1,0 +1,229 @@
+Dumping cdf from "imap_mag_l1b-calibration_20240229_v001.cdf"...
+File Info
+=========================================
+CDF File:     imap_mag_l1b-calibration_20240229_v001.cdf
+Version:      3.9.0
+
+Common Data Format (CDF)
+https://cdf.gsfc.nasa.gov
+Space Physics Data Facility
+NASA/Goddard Space Flight Center
+Greenbelt, Maryland 20771 USA
+
+Format:       SINGLE
+Encoding:     IBMPC
+Majority:     COLUMN
+NumrVars:     0
+NumzVars:     6
+NumAttrs:     33 (24 global, 9 variable)
+Compression:  GZIP.6
+Checksum:     MD5
+LeapSecondLastUpdated:     20170101
+
+Global Attributes (24 attributes)
+=========================================
+Project (num:0) (1 entry):
+	0 (CDF_UCHAR/4): 	"IMAP"
+Source_name (num:1) (1 entry):
+	0 (CDF_UCHAR/9): 	"IMAP>IMAP"
+Discipline (num:2) (1 entry):
+	0 (CDF_UCHAR/36): 	"Space Physics>Interplanetary Studies"
+Data_type (num:3) (1 entry):
+	0 (CDF_UCHAR/11): 	"Calibration"
+Descriptor (num:4) (1 entry):
+	0 (CDF_UCHAR/16): 	"MAG>Magnetometer"
+Data_version (num:5) (1 entry):
+	0 (CDF_UCHAR/2): 	"01"
+Software_version (num:6) (0 entry):
+Skeleton_version (num:7) (1 entry):
+	0 (CDF_UCHAR/2): 	"01"
+PI_name (num:8) (1 entry):
+	0 (CDF_UCHAR/10): 	"T. Horbury"
+PI_affiliation (num:9) (1 entry):
+	0 (CDF_UCHAR/48): 	"The Blackett Laboratory, Imperial College London"
+TEXT (num:10) (2 entries):
+	0 (CDF_UCHAR/43): 	"Dual-sensor, triaxial fluxgate magnetometer"
+	1 (CDF_UCHAR/7): 	"doi:TBD"
+Instrument_type (num:11) (1 entry):
+	0 (CDF_UCHAR/23): 	"Magnetic Fields (space)"
+Mission_group (num:12) (1 entry):
+	0 (CDF_UCHAR/4): 	"IMAP"
+Logical_source (num:13) (1 entry):
+	0 (CDF_UCHAR/16): 	"imap_calibration"
+Logical_file_id (num:14) (1 entry):
+	0 (CDF_UCHAR/33): 	"imap_calibration_mag_20240229_v01"
+Logical_source_description (num:15) (1 entry):
+	0 (CDF_UCHAR/26): 	"IMAP Magnetometer L1b Data"
+Rules_of_use (num:16) (1 entry):
+	0 (CDF_UCHAR/19): 	"Not For Publication"
+Generated_by (num:17) (1 entry):
+	0 (CDF_UCHAR/48): 	"The Blackett Laboratory, Imperial College London"
+Generation_date (num:18) (1 entry):
+	0 (CDF_UCHAR/19): 	"2024-02-29T13:59:36"
+MODS (num:19) (1 entry):
+	0 (CDF_UCHAR/46): 	"V01 2024/02/21 M. Facchinelli: Initial release"
+Level (num:20) (1 entry):
+	0 (CDF_UCHAR/11): 	"Calibration"
+Parents (num:21) (0 entry):
+Instrument_name (num:22) (1 entry):
+	0 (CDF_UCHAR/3): 	"MAG"
+Acknowledgement (num:23) (1 entry):
+	0 (CDF_UCHAR/99): 	"IMAP magnetometer data was provided by Imperial College London and supported by the UK Space Agency"
+
+Variable Attributes (9 attributes)
+=========================================
+CATDESC (num:24)
+DISPLAY_TYPE (num:25)
+FIELDNAM (num:26)
+FILLVAL (num:27)
+FORMAT (num:28)
+UNITS (num:29)
+VALIDMIN (num:30)
+VALIDMAX (num:31)
+VAR_TYPE (num:32)
+
+Variable Information (0 rVariable, 6 zVariables)
+===========================================================
+STARTVALIDITY         CDF_TT2000/1	0:[]	F/  
+ENDVALIDITY           CDF_TT2000/1	0:[]	F/  
+MFOTOURFO             CDF_DOUBLE/1	3:[3,3,4]	F/TTT
+MFITOURFI             CDF_DOUBLE/1	3:[3,3,4]	F/TTT
+OTS                   CDF_DOUBLE/1	0:[]	F/  
+ITS                   CDF_DOUBLE/1	0:[]	F/  
+
+
+Variable (6 variables)
+=========================================
+
+STARTVALIDITY (No: 0) (Recs: 1)
+-------------
+Data Type:           CDF_TT2000
+Dimensionality:      0:[]	(F/)  
+Format:              I
+Pad value:           0000-01-01T00:00:00.000000000
+Written Records:     1/1(max)
+Allocated Records:   1/1(max)
+Blocking Factor:     0 (records)
+Attribute Entries:
+     CATDESC         (CDF_UCHAR/48): "Epoch when validity of calibration matrix starts"
+     DISPLAY_TYPE    (CDF_UCHAR/7): "no_plot"
+     FIELDNAM        (CDF_UCHAR/21): "Start Validity (Time)"
+     FILLVAL         (CDF_TT2000/1): 9999-12-31T23:59:59.999999999
+     FORMAT          (CDF_UCHAR/1): "I"
+     UNITS           (CDF_UCHAR/2): "ns"
+     VALIDMIN        (CDF_TT2000/1): 9999-12-31T23:59:59.999999999
+     VALIDMAX        (CDF_TT2000/1): 9999-12-31T23:59:59.999999999
+     VAR_TYPE        (CDF_UCHAR/8): "metadata"
+Variable Data:
+  Record # 1: 2024-01-01T00:00:00.000000000
+
+ENDVALIDITY (No: 1) (Recs: 1)
+-----------
+Data Type:           CDF_TT2000
+Dimensionality:      0:[]	(F/)  
+Format:              I
+Pad value:           0000-01-01T00:00:00.000000000
+Written Records:     1/1(max)
+Allocated Records:   1/1(max)
+Blocking Factor:     0 (records)
+Attribute Entries:
+     CATDESC         (CDF_UCHAR/46): "Epoch when validity of calibration matrix ends"
+     DISPLAY_TYPE    (CDF_UCHAR/7): "no_plot"
+     FIELDNAM        (CDF_UCHAR/19): "End Validity (Time)"
+     FILLVAL         (CDF_TT2000/1): 9999-12-31T23:59:59.999999999
+     FORMAT          (CDF_UCHAR/1): "I"
+     UNITS           (CDF_UCHAR/2): "ns"
+     VALIDMIN        (CDF_TT2000/1): 9999-12-31T23:59:59.999999999
+     VALIDMAX        (CDF_TT2000/1): 9999-12-31T23:59:59.999999999
+     VAR_TYPE        (CDF_UCHAR/8): "metadata"
+Variable Data:
+  Record # 1: 2024-12-31T00:00:00.000000000
+
+MFOTOURFO (No: 2) (Recs: 1)
+---------
+Data Type:           CDF_DOUBLE
+Dimensionality:      3:[3,3,4]	(F/TTT)
+Format:              E11.4
+Pad value:           -1.0e+30
+Written Records:     1/1(max)
+Allocated Records:   1/1(max)
+Blocking Factor:     0 (records)
+Attribute Entries:
+     CATDESC         (CDF_UCHAR/150): "Calibration matrix to convert from outboard measurement (MFO) to outboard unit (URFO) reference frame. Each 3rd dimension represents a different range"
+     DISPLAY_TYPE    (CDF_UCHAR/7): "no_plot"
+     FIELDNAM        (CDF_UCHAR/11): "MFO to URFO"
+     FILLVAL         (CDF_DOUBLE/1): -1.0e+31
+     FORMAT          (CDF_UCHAR/5): "E11.4"
+     UNITS           (CDF_UCHAR/1): "-"
+     VALIDMIN        (CDF_DOUBLE/1): -1.0000e+10
+     VALIDMAX        (CDF_DOUBLE/1): 1.0000e+10
+     VAR_TYPE        (CDF_UCHAR/4): "data"
+Variable Data:
+  Record # 1: [2.2972e+00,3.4862e-03,-2.5079e-03,0.0000e+00,2.2380e+00,-8.8844e-03,0.0000e+00,0.0000e+00,2.2495e+00,7.3820e-02,1.0922e-04,-8.3376e-05,0.0000e+00,7.2378e-02,-2.8426e-04,0.0000e+00,0.0000e+00,7.2384e-02,1.8848e-02,3.2612e-05,-2.7124e-05,0.0000e+00,1.8484e-02,-7.4160e-05,0.0000e+00,0.0000e+00,1.8485e-02,4.5978e-03,5.0283e-06,2.5051e-06,0.0000e+00,4.5074e-03,-2.2940e-05,0.0000e+00,0.0000e+00,4.5095e-03]
+
+MFITOURFI (No: 3) (Recs: 1)
+---------
+Data Type:           CDF_DOUBLE
+Dimensionality:      3:[3,3,4]	(F/TTT)
+Format:              E11.4
+Pad value:           -1.0e+30
+Written Records:     1/1(max)
+Allocated Records:   1/1(max)
+Blocking Factor:     0 (records)
+Attribute Entries:
+     CATDESC         (CDF_UCHAR/148): "Calibration matrix to convert from inboard measurement (MFI) to inboard unit (URFI) reference frame. Each 3rd dimension represents a different range"
+     DISPLAY_TYPE    (CDF_UCHAR/7): "no_plot"
+     FIELDNAM        (CDF_UCHAR/11): "MFI to URFI"
+     FILLVAL         (CDF_DOUBLE/1): -1.0e+31
+     FORMAT          (CDF_UCHAR/5): "E11.4"
+     UNITS           (CDF_UCHAR/1): "-"
+     VALIDMIN        (CDF_DOUBLE/1): -1.0000e+10
+     VALIDMAX        (CDF_DOUBLE/1): 1.0000e+10
+     VAR_TYPE        (CDF_UCHAR/4): "data"
+Variable Data:
+  Record # 1: [2.2754e+00,-3.8643e-03,4.6398e-03,0.0000e+00,2.2380e+00,-1.1644e-02,0.0000e+00,0.0000e+00,2.2438e+00,7.3758e-02,-1.2730e-04,1.4400e-04,0.0000e+00,7.2272e-02,-3.7303e-04,0.0000e+00,0.0000e+00,7.2343e-02,1.8826e-02,-2.8348e-05,4.0751e-05,0.0000e+00,1.8468e-02,-9.7335e-05,0.0000e+00,0.0000e+00,1.8480e-02,4.5838e-03,-9.4722e-06,1.1352e-05,0.0000e+00,4.5140e-03,-2.0362e-05,0.0000e+00,0.0000e+00,4.5022e-03]
+
+OTS (No: 4) (Recs: 1)
+---
+Data Type:           CDF_DOUBLE
+Dimensionality:      0:[]	(F/)  
+Format:              E11.4
+Pad value:           -1.0e+30
+Written Records:     1/1(max)
+Allocated Records:   1/1(max)
+Blocking Factor:     0 (records)
+Attribute Entries:
+     CATDESC         (CDF_UCHAR/19): "Outboard time shift"
+     DISPLAY_TYPE    (CDF_UCHAR/7): "no_plot"
+     FIELDNAM        (CDF_UCHAR/19): "Outboard Time Shift"
+     FILLVAL         (CDF_DOUBLE/1): -1.0e+31
+     FORMAT          (CDF_UCHAR/5): "E11.4"
+     UNITS           (CDF_UCHAR/1): "s"
+     VALIDMIN        (CDF_DOUBLE/1): -1.0000e+10
+     VALIDMAX        (CDF_DOUBLE/1): 1.0000e+10
+     VAR_TYPE        (CDF_UCHAR/4): "data"
+Variable Data:
+  Record # 1: 0.0000e+00
+
+ITS (No: 5) (Recs: 1)
+---
+Data Type:           CDF_DOUBLE
+Dimensionality:      0:[]	(F/)  
+Format:              E11.4
+Pad value:           -1.0e+30
+Written Records:     1/1(max)
+Allocated Records:   1/1(max)
+Blocking Factor:     0 (records)
+Attribute Entries:
+     CATDESC         (CDF_UCHAR/18): "Inboard time shift"
+     DISPLAY_TYPE    (CDF_UCHAR/7): "no_plot"
+     FIELDNAM        (CDF_UCHAR/18): "Inboard Time Shift"
+     FILLVAL         (CDF_DOUBLE/1): -1.0e+31
+     FORMAT          (CDF_UCHAR/5): "E11.4"
+     UNITS           (CDF_UCHAR/1): "s"
+     VALIDMIN        (CDF_DOUBLE/1): -1.0000e+10
+     VALIDMAX        (CDF_DOUBLE/1): 1.0000e+10
+     VAR_TYPE        (CDF_UCHAR/4): "data"
+Variable Data:
+  Record # 1: 0.0000e+00
+

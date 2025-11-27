@@ -84,6 +84,9 @@ cdf_type_info(NC_FILE_INFO_T *h5, int cdf_typeid, nc_type* xtypep,
     int endianness = NC_ENDIAN_NATIVE;
     size_t type_size = 0;
     const char *name = NULL;
+    
+    /* Debug output */
+    printf("cdf_type_info: cdf_typeid = %d\n", cdf_typeid);
 
     assert(h5);
     
@@ -136,10 +139,14 @@ cdf_type_info(NC_FILE_INFO_T *h5, int cdf_typeid, nc_type* xtypep,
         case CDF_DOUBLE:
         case CDF_EPOCH:
         case CDF_EPOCH16:
-        case CDF_TIME_TT2000:
             xtype = NC_DOUBLE;
             type_size = sizeof(double);
             name = "double";
+            break;
+        case CDF_TIME_TT2000:
+            xtype = NC_INT64;
+            type_size = sizeof(long long);
+            name = "int64";
             break;
         case CDF_CHAR:
         case CDF_UCHAR:
@@ -150,6 +157,10 @@ cdf_type_info(NC_FILE_INFO_T *h5, int cdf_typeid, nc_type* xtypep,
         default:
             return NC_EBADTYPE;
     }
+    
+    /* Debug output */
+    printf("cdf_type_info: cdf_typeid = %d, mapped to xtype = %d, name = %s\n", 
+           cdf_typeid, xtype, name ? name : "NULL");
     
     /* Set output parameters if provided */
     if (xtypep)
@@ -217,6 +228,7 @@ static int
 cdf_read_att(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var, int a)
 {
     NC_CDF_FILE_INFO_T *cdf_info;
+    NC_VAR_CDF_INFO_T *var_cdf_info;
     void *id;
     CDFstatus status;
     char attrName[CDF_ATTR_NAME_LEN256+1];
@@ -225,50 +237,107 @@ cdf_read_att(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var, int a)
     NC_ATT_INFO_T *att;
     nc_type xtype;
     int retval;
+    long varNum = -1;
     
     /* Get CDF file ID */
     cdf_info = (NC_CDF_FILE_INFO_T *)h5->format_file_info;
     id = (CDFid)cdf_info->id;
     
+    /* Get variable number if this is a variable attribute */
+    if (var)
+    {
+        var_cdf_info = (NC_VAR_CDF_INFO_T *)var->format_var_info;
+        varNum = var_cdf_info->sdsid;
+    }
+    
     /* Get attribute info */
     status = CDFlib(SELECT_, CDF_, id,
                     SELECT_, ATTR_, (long)a,
                     GET_, ATTR_NAME_, attrName,
-                    GET_, ATTR_NUMgENTRIES_, &numElems,
                     NULL_);
     if (status != CDF_OK)
         return NC_EATTMETA;
 
-    if (numElems)
+    /* Read attribute entry based on scope */
+    if (var)
     {
-	/* Get data type from first entry */
-	status = CDFlib(SELECT_, gENTRY_, 0L,
-			GET_, gENTRY_DATATYPE_, &dataType,
-			GET_, gENTRY_NUMELEMS_, &numElems,
-			NULL_);
-	if (status != CDF_OK)
-	    return NC_EATTMETA;
+        /* Variable attribute - use zENTRY */
+        status = CDFlib(SELECT_, zENTRY_, varNum,
+                        GET_, zENTRY_DATATYPE_, &dataType,
+                        GET_, zENTRY_NUMELEMS_, &numElems,
+                        NULL_);
+        if (status != CDF_OK)
+            return NC_EATTMETA;
+    }
+    else
+    {
+        /* Global attribute - use gENTRY */
+        long numgEntries;
+        status = CDFlib(GET_, ATTR_NUMgENTRIES_, &numgEntries,
+                        NULL_);
+        if (status != CDF_OK)
+            return NC_EATTMETA;
+        
+        /* Handle attributes with no entries - default to NC_CHAR with len 0 */
+        if (numgEntries == 0)
+        {
+            xtype = NC_CHAR;
+            numElems = 0;
+            data = NULL;
+            printf("name %s numElems 0 (no entries) netCDF type %d\n", attrName, xtype);
+            
+            /* Add empty attribute to metadata */
+            NCindex *att_list = h5->root_grp->att;
+            if ((retval = nc4_att_list_add(att_list, attrName, &att)))
+                return retval;
+            
+            /* Set attribute properties */
+            att->nc_typeid = xtype;
+            att->len = 0;
+            att->data = NULL;
+            
+            return NC_NOERR;
+        }
+        
+        status = CDFlib(SELECT_, gENTRY_, 0L,
+                        GET_, gENTRY_DATATYPE_, &dataType,
+                        GET_, gENTRY_NUMELEMS_, &numElems,
+                        NULL_);
+        if (status != CDF_OK)
+            return NC_EATTMETA;
+    }
     
-	/* Map CDF type to NetCDF type */
-	if ((retval = cdf_type_info(h5, dataType, &xtype, NULL, NULL, NULL)))
-	    return retval;
-	printf("name %s numElems %d dataType %d netCDF type %d\n", attrName, numElems, dataType, xtype);
+    /* Map CDF type to NetCDF type */
+    if ((retval = cdf_type_info(h5, dataType, &xtype, NULL, NULL, NULL)))
+        return retval;
+    printf("name %s numElems %ld dataType %ld netCDF type %d\n", attrName, numElems, dataType, xtype);
     
-	/* Allocate space for attribute data */
-	size_t type_size;
-	cdf_type_info(h5, dataType, NULL, NULL, &type_size, NULL);
-	if (!(data = malloc(numElems * type_size)))
-	    return NC_ENOMEM;
+    /* Allocate space for attribute data */
+    size_t type_size;
+    cdf_type_info(h5, dataType, NULL, NULL, &type_size, NULL);
+    if (!(data = malloc(numElems * type_size)))
+        return NC_ENOMEM;
     
-	/* Read attribute data */
-	status = CDFlib(SELECT_, gENTRY_, 0L,
-			GET_, gENTRY_DATA_, data,
-			NULL_);
-	if (status != CDF_OK)
-	{
-	    free(data);
-	    return NC_EATTMETA;
-	}
+    /* Read attribute data based on scope */
+    if (var)
+    {
+        /* Variable attribute - use zENTRY */
+        status = CDFlib(SELECT_, zENTRY_, varNum,
+                        GET_, zENTRY_DATA_, data,
+                        NULL_);
+    }
+    else
+    {
+        /* Global attribute - use gENTRY */
+        status = CDFlib(SELECT_, gENTRY_, 0L,
+                        GET_, gENTRY_DATA_, data,
+                        NULL_);
+    }
+    
+    if (status != CDF_OK)
+    {
+        free(data);
+        return NC_EATTMETA;
     }
     
     /* Add attribute to metadata */
@@ -454,9 +523,49 @@ cdf_read_var(NC_FILE_INFO_T *h5, int v)
     /* Set variable dimensions */
     for (i = 0; i < numDims; i++)
         var->dimids[i] = dimids[i];
+
+    /* Read variable attributes. */
+    long numAttrs;
+    status = CDFlib(SELECT_, CDF_, id,
+                    GET_, CDF_NUMATTRS_, &numAttrs,
+                    NULL_);
+    if (status != CDF_OK)
+        return NC_EHDFERR;
     
-    /* Variable attributes will be read separately via attribute iteration */
-    /* For now, skip variable-specific attributes in this simplified implementation */
+    /* Loop through all attributes to find ones for this variable */
+    for (long attrNum = 0; attrNum < numAttrs; attrNum++)
+    {
+        long attrScope, numzEntries;
+        
+        /* Check attribute scope */
+        status = CDFlib(SELECT_, ATTR_, attrNum,
+                        GET_, ATTR_SCOPE_, &attrScope,
+                        NULL_);
+        if (status != CDF_OK)
+            continue;
+        
+        /* Only process variable-scoped attributes */
+        if (attrScope == VARIABLE_SCOPE)
+        {
+            /* Check if this attribute has an entry for this variable */
+            status = CDFlib(GET_, ATTR_NUMzENTRIES_, &numzEntries,
+                            NULL_);
+            if (status != CDF_OK)
+                continue;
+            
+            /* Check if this variable has this attribute */
+            long entryDataType, entryNumElems;
+            status = CDFlib(SELECT_, zENTRY_, varNum,
+                            GET_, zENTRY_DATATYPE_, &entryDataType,
+                            NULL_);
+            if (status == CDF_OK)
+            {
+                /* This variable has this attribute, read it */
+                if ((retval = cdf_read_att(h5, var, attrNum)))
+                    return retval;
+            }
+        }
+    }
     
     return NC_NOERR;
 }
