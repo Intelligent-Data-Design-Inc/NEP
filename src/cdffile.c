@@ -257,6 +257,12 @@ cdf_read_att(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var, int a)
                     NULL_);
     if (status != CDF_OK)
         return NC_EATTMETA;
+    
+    /* Map CDF FILLVAL attribute to NetCDF _FillValue */
+    if (strcmp(attrName, "FILLVAL") == 0)
+    {
+        strcpy(attrName, "_FillValue");
+    }
 
     /* Read attribute entry based on scope */
     if (var)
@@ -481,28 +487,46 @@ cdf_read_var(NC_FILE_INFO_T *h5, int v)
     if (status != CDF_OK)
         return NC_EVARMETA;
     
+    /* Get number of records written for this variable */
+    long maxRec;
+    status = CDFlib(SELECT_, zVAR_, varNum,
+                    GET_, zVAR_MAXREC_, &maxRec,
+                    NULL_);
+    if (status != CDF_OK)
+        return NC_EVARMETA;
+    
     /* Map CDF type to NetCDF type */
     if ((retval = cdf_type_info(h5, dataType, &xtype, &endianness, &type_size, type_name)))
         return retval;
     
-    /* Create dimensions if needed */
+    /* CDF z-variables have an implicit record dimension as the first dimension,
+     * followed by their array dimensions. Total dimensions = 1 (record) + numDims */
+    int total_dims = numDims + 1;
     int dimids[NC_MAX_VAR_DIMS];
+    
+    /* Create record dimension as first dimension */
+    NC_DIM_INFO_T *rec_dim;
+    char rec_dimname[NC_MAX_NAME+1];
+    snprintf(rec_dimname, NC_MAX_NAME, "var_%d_dim_0", v);
+    
+    /* Create new record dimension with size = maxRec + 1 */
+    if ((retval = nc4_dim_list_add(h5->root_grp, rec_dimname, (size_t)(maxRec + 1), -1, &rec_dim)))
+        return retval;
+    printf("dim %s len %ld (record dimension)\n", rec_dimname, maxRec + 1);
+    dimids[0] = rec_dim->hdr.id;
+    
+    /* Create array dimensions (starting at index 1) */
     for (i = 0; i < numDims; i++)
     {
         NC_DIM_INFO_T *dim;
         char dimname[NC_MAX_NAME+1];
-        snprintf(dimname, NC_MAX_NAME, "var_%d_dim_%d", v, i);
+        snprintf(dimname, NC_MAX_NAME, "var_%d_dim_%d", v, i + 1);
         
-        /* Check if dimension already exists */
-        retval = nc4_find_dim(h5->root_grp, dimname, &dim, NULL);
-        if (retval == NC_EBADDIM)
-        {
-            /* Create new dimension */
-            if ((retval = nc4_dim_list_add(h5->root_grp, dimname, (size_t)dimSizes[i], -1, &dim)))
-                return retval;
-	    printf("dim %s len %ld\n", dimname, dimSizes[i]);
-        }
-        dimids[i] = dim->hdr.id;
+        /* Create new dimension */
+        if ((retval = nc4_dim_list_add(h5->root_grp, dimname, (size_t)dimSizes[i], -1, &dim)))
+            return retval;
+        printf("dim %s len %ld\n", dimname, dimSizes[i]);
+        dimids[i + 1] = dim->hdr.id;
     }
     
     /* Allocate CDF-specific variable info */
@@ -511,8 +535,8 @@ cdf_read_var(NC_FILE_INFO_T *h5, int v)
     var_cdf_info->sdsid = varNum;
     var_cdf_info->cdf_data_type = dataType;
     
-    /* Add variable to group */
-    if ((retval = nc4_var_list_add_full(h5->root_grp, varName, numDims, xtype,
+    /* Add variable to group with total dimensions (record + array dims) */
+    if ((retval = nc4_var_list_add_full(h5->root_grp, varName, total_dims, xtype,
                                          endianness, type_size, type_name, NULL,
                                          1, NULL, var_cdf_info, &var)))
     {
@@ -520,8 +544,8 @@ cdf_read_var(NC_FILE_INFO_T *h5, int v)
         return retval;
     }
     
-    /* Set variable dimensions */
-    for (i = 0; i < numDims; i++)
+    /* Set variable dimensions (record dim + array dims) */
+    for (i = 0; i < total_dims; i++)
         var->dimids[i] = dimids[i];
 
     /* Read variable attributes. */
@@ -554,7 +578,7 @@ cdf_read_var(NC_FILE_INFO_T *h5, int v)
                 continue;
             
             /* Check if this variable has this attribute */
-            long entryDataType, entryNumElems;
+            long entryDataType;
             status = CDFlib(SELECT_, zENTRY_, varNum,
                             GET_, zENTRY_DATATYPE_, &entryDataType,
                             NULL_);
@@ -685,7 +709,7 @@ NC_CDF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
                         NULL_);
         if (status == CDF_OK && attrScope == GLOBAL_SCOPE)
         {
-	    printf("reading att number %d\n", attrNum);
+            printf("reading att number %ld\n", attrNum);
             if ((retval = cdf_read_att(h5, NULL, attrNum)))
             {
                 free(cdf_file);

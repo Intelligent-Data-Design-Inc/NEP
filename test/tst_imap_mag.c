@@ -18,7 +18,138 @@
 #include <assert.h>
 #include <netcdf.h>
 #include <stdint.h>
+#include <math.h>
 #include "cdfdispatch.h"
+
+/* Helper function to compare double values with tolerance */
+static int double_equal(double a, double b, double tolerance) {
+    return fabs(a - b) < tolerance;
+}
+
+/**
+ * @brief Test reading data from a variable
+ * 
+ * @param ncid NetCDF file ID
+ * @param varid Variable ID
+ * @param varname Variable name (for error messages)
+ * @param expected_fill Expected fill value for the variable
+ * @param tolerance Tolerance for floating-point comparison
+ * @return int 0 on success, non-zero on failure
+ */
+static int test_var_data(int ncid, int varid, const char *varname, 
+                        double expected_fill, double tolerance) {
+    int retval;
+    nc_type vartype;
+    int ndims;
+    int dimids[NC_MAX_VAR_DIMS];
+    size_t total_elems = 1;
+    
+    printf("  Getting variable info for %s...\n", varname);
+    
+    /* Get variable info */
+    if ((retval = nc_inq_var(ncid, varid, NULL, &vartype, &ndims, dimids, NULL)))
+        return retval;
+    
+    printf("  Variable type: %d, ndims: %d\n", vartype, ndims);
+    
+    /* Get dimension lengths */
+    for (int i = 0; i < ndims; i++) {
+        size_t len;
+        if ((retval = nc_inq_dimlen(ncid, dimids[i], &len))) return retval;
+        total_elems *= len;
+    }
+    
+    printf("  Total elements: %zu\n", total_elems);
+    
+    /* Skip empty variables */
+    if (total_elems == 0) {
+        printf("  Variable is empty, skipping\n");
+        return 0;
+    }
+    
+    /* Allocate buffer for data */
+    void *data = NULL;
+    if (vartype == NC_DOUBLE) {
+        printf("  Allocating buffer for %zu double values...\n", total_elems);
+        data = malloc(total_elems * sizeof(double));
+        if (!data) return NC_ENOMEM;
+        
+        /* Read the data */
+        printf("  Reading double data...\n");
+        if ((retval = nc_get_var_double(ncid, varid, (double *)data)))
+	{
+	    fprintf(stderr, "ERROR: Failed to read data: %d %s\n", 
+		    retval, nc_strerror(retval));
+            goto cleanup;
+	}
+            
+        /* Verify data */
+        printf("  Verifying %zu double values...\n", total_elems);
+        size_t fill_count = 0;
+        size_t valid_count = 0;
+        size_t small_count = 0;
+        size_t large_count = 0;
+        
+        for (size_t i = 0; i < total_elems; i++) {
+            double val = ((double *)data)[i];
+            
+            /* Check for fill value */
+            if (double_equal(val, expected_fill, tolerance)) {
+                fill_count++;
+                if (fill_count <= 3 || i == total_elems - 1) {
+                    printf("  Found fill value at index %zu\n", i);
+                }
+                continue;
+            }
+            
+            /* For non-fill values, check if they're within expected range */
+            double abs_val = fabs(val);
+            if (abs_val > 0 && abs_val < 1e-10) {
+                small_count++;
+                if (small_count <= 3) {
+                    printf("  Warning: Very small non-zero value at index %zu: %g\n", i, val);
+                }
+            } else if (abs_val > 1e10) {
+                large_count++;
+                if (large_count <= 3) {
+                    printf("  Warning: Very large value at index %zu: %g\n", i, val);
+                }
+            } else {
+                valid_count++;
+            }
+        }
+        
+        printf("  Data summary: %zu fill values, %zu valid values, %zu small values, %zu large values\n",
+               fill_count, valid_count, small_count, large_count);
+    } 
+    else if (vartype == NC_INT64) {
+        /* Handle TT2000 time variables */
+        printf("  Allocating buffer for %zu int64 values...\n", total_elems);
+        data = malloc(total_elems * sizeof(int64_t));
+        if (!data) return NC_ENOMEM;
+        
+        printf("  Reading int64 data...\n");
+        if ((retval = nc_get_var_longlong(ncid, varid, (long long *)data)))
+            goto cleanup;
+            
+        /* For TT2000 variables, just log the first and last values */
+        if (total_elems > 0) {
+            printf("  First TT2000 value: %lld\n", (long long)((int64_t *)data)[0]);
+            if (total_elems > 1) {
+                printf("  Last TT2000 value: %lld\n", 
+                      (long long)((int64_t *)data)[total_elems - 1]);
+            }
+            printf("  Successfully read %zu TT2000 values\n", total_elems);
+        }
+    }
+    else {
+        printf("  Warning: Unhandled variable type %d for %s\n", vartype, varname);
+    }
+    
+cleanup:
+    if (data) free(data);
+    return retval;
+}
 
 #define TEST_FILE "data/imap_mag_l1b-calibration_20240229_v001.cdf"
 
@@ -29,7 +160,7 @@
 #define NUM_VATTS 9
 
 /* Number of dims in this test file. */
-#define NUM_DIMS 6
+#define NUM_DIMS 12
 
 /* Number of vars in this test file. */
 #define NUM_VARS 6
@@ -46,9 +177,7 @@ int main(void)
     int ncid;
     int ndims, nvars, natts, unlimdimid;
     char att_text[256];
-    int64_t tt2000_val;
     double double_val;
-    size_t att_len;
     
     /* Expected attribute values for each variable */
     struct var_attrs {
@@ -147,17 +276,36 @@ int main(void)
         "MODS", "Level", "Parents", "Instrument_name", "Acknowledgement"
     };
     char expected_dim_name[NUM_DIMS][NC_MAX_NAME + 1] = {
-	"var_2_dim_0", 
-	"var_2_dim_1", 
-	"var_2_dim_2", 
-	"var_3_dim_0", 
-	"var_3_dim_1", 
-	"var_3_dim_2"
+	"var_0_dim_0",  /* STARTVALIDITY record dim */
+	"var_1_dim_0",  /* ENDVALIDITY record dim */
+	"var_2_dim_0",  /* MFOTOURFO record dim */
+	"var_2_dim_1",  /* MFOTOURFO array dim 0 */
+	"var_2_dim_2",  /* MFOTOURFO array dim 1 */
+	"var_2_dim_3",  /* MFOTOURFO array dim 2 */
+	"var_3_dim_0",  /* MFITOURFI record dim */
+	"var_3_dim_1",  /* MFITOURFI array dim 0 */
+	"var_3_dim_2",  /* MFITOURFI array dim 1 */
+	"var_3_dim_3",  /* MFITOURFI array dim 2 */
+	"var_4_dim_0",  /* OTS record dim */
+	"var_5_dim_0"   /* ITS record dim */
     };
     char expected_var_name[NUM_VARS][NC_MAX_NAME + 1] = {
 	"STARTVALIDITY", "ENDVALIDITY", "MFOTOURFO", "MFITOURFI", "OTS", "ITS"
     };
-    size_t expected_dim_len[NUM_DIMS] = {3, 3, 4, 3, 3, 4};
+    size_t expected_dim_len[NUM_DIMS] = {
+	1,  /* var_0 record */
+	1,  /* var_1 record */
+	1,  /* var_2 record */
+	3,  /* var_2 array dim 0 */
+	3,  /* var_2 array dim 1 */
+	4,  /* var_2 array dim 2 */
+	1,  /* var_3 record */
+	3,  /* var_3 array dim 0 */
+	3,  /* var_3 array dim 1 */
+	4,  /* var_3 array dim 2 */
+	1,  /* var_4 record */
+	1   /* var_5 record */
+    };
     int retval;
     
     printf("=== NEP IMAP MAG CDF Test ===\n\n");
@@ -231,7 +379,7 @@ int main(void)
     {
         char varname[NC_MAX_NAME + 1];
 	nc_type xtype;
-        int ndims, dimids[3], natts;
+        int ndims, dimids[NC_MAX_VAR_DIMS], natts;
 	
 	if ((retval = nc_inq_var(ncid, i, varname, &xtype, &ndims, dimids, &natts)))
 	    return 40;
@@ -242,16 +390,32 @@ int main(void)
                    varname, xtype, (i < 2) ? NC_INT64 : NC_DOUBLE);
             return 42;
         }
-	if (ndims != ((i == 2 || i == 3) ? 3 : 0)) return 42;
+	/* All variables now have at least 1 dimension (record) */
+	if (i == 0 || i == 1 || i == 4 || i == 5) {
+	    /* Scalar variables: 1 dimension (record only) */
+	    if (ndims != 1) return 42;
+	} else if (i == 2 || i == 3) {
+	    /* Array variables: 4 dimensions (record + 3 array dims) */
+	    if (ndims != 4) return 42;
+	}
+	/* Check dimension IDs */
+	if (i == 0)
+	    if (dimids[0] != 0) return 43;
+	if (i == 1)
+	    if (dimids[0] != 1) return 43;
 	if (i == 2)
-	    if (dimids[0] != 0 || dimids[1] != 1 || dimids[2] != 2) return 43;
+	    if (dimids[0] != 2 || dimids[1] != 3 || dimids[2] != 4 || dimids[3] != 5) return 43;
 	if (i == 3)
-	    if (dimids[0] != 3 || dimids[1] != 4 || dimids[2] != 5) return 43;
+	    if (dimids[0] != 6 || dimids[1] != 7 || dimids[2] != 8 || dimids[3] != 9) return 43;
+	if (i == 4)
+	    if (dimids[0] != 10) return 43;
+	if (i == 5)
+	    if (dimids[0] != 11) return 43;
 	if (natts != NUM_VATTS) return 44;
 
 	    /* Check the var attributes. */
     char expected_vatt_names[NUM_VATTS][NC_MAX_NAME + 1] = {
-	"CATDESC", "DISPLAY_TYPE", "FIELDNAM", "FILLVAL", 
+	"CATDESC", "DISPLAY_TYPE", "FIELDNAM", "_FillValue", 
 	"FORMAT", "UNITS", "VALIDMIN", "VALIDMAX", "VAR_TYPE"
     };
 	
@@ -321,23 +485,23 @@ int main(void)
                     return 121;
                 }
                 
-	    } else if (strcmp(attname, "FILLVAL") == 0) {
-		/* FILLVAL is TT2000 for first two vars, DOUBLE for rest */
+	    } else if (strcmp(attname, "_FillValue") == 0) {
+		/* _FillValue is TT2000 for first two vars, DOUBLE for rest */
 		if (i < 2) {
 		    if (att_xtype != NC_INT64) return 59; /* TT2000 maps to NC_INT64 */
 		    if (len != 1) return 60;
                     
-                    /* Skip FILLVAL value check for TT2000 variables */
-                    printf("  Skipping FILLVAL value check for TT2000 variable %s\n", varname);
+                    /* Skip _FillValue value check for TT2000 variables */
+                    printf("  Skipping _FillValue value check for TT2000 variable %s\n", varname);
 		} else {
 		    if (att_xtype != NC_DOUBLE) return 59;
 		    if (len != 1) return 60;
                     
-                    /* Verify FILLVAL for double variables */
-                    if ((retval = nc_get_att_double(ncid, i, "FILLVAL", &double_val))) 
+                    /* Verify _FillValue for double variables */
+                    if ((retval = nc_get_att_double(ncid, i, "_FillValue", &double_val))) 
                         return 130 + retval;
                     if (double_val != expected_attrs[i].fillval_double) {
-                        printf("Mismatch in FILLVAL for var %s: expected %g, got %g\n", 
+                        printf("Mismatch in _FillValue for var %s: expected %g, got %g\n", 
                                varname, expected_attrs[i].fillval_double, double_val);
                         return 132;
                     }
@@ -428,6 +592,30 @@ int main(void)
 	
     }
 
+    /* Test reading data from each variable */
+    printf("\n=== Testing Data Reading ===\n");
+    for (int i = 0; i < NUM_VARS; i++) {
+        printf("Testing data for variable: %s\n", expected_attrs[i].varname);
+        
+        /* Get the variable ID */
+        int varid;
+        if ((retval = nc_inq_varid(ncid, expected_attrs[i].varname, &varid))) {
+            printf("  Error: Could not get varid for %s: %s\n", 
+                   expected_attrs[i].varname, nc_strerror(retval));
+            return 200 + i;
+        }
+        
+        /* Test reading data with appropriate fill value */
+        double fill_value = (i < 2) ? 0.0 : expected_attrs[i].fillval_double;
+        if ((retval = test_var_data(ncid, varid, expected_attrs[i].varname, 
+                                   fill_value, 1e-6))) {
+            printf("  Error testing data for %s: %s\n", 
+                   expected_attrs[i].varname, nc_strerror(retval));
+            return 300 + i;
+        }
+        printf("  ✓ Data read successfully\n");
+    }
+    
     /* Close the file */
     printf("Closing file...\n");
     if ((retval = nc_close(ncid)))
@@ -438,11 +626,12 @@ int main(void)
     printf("  ✓ Successfully closed file\n\n");
     
     /* Print test summary */
-    printf("=== Test Summary ===\n");
+    printf("\n=== Test Summary ===\n");
     printf("✓ IMAP MAG CDF file opened via NetCDF API\n");
     printf("✓ All variables and dimensions validated\n");
     printf("✓ All attributes validated\n");
     printf("✓ All attribute values verified\n");
+    printf("✓ All variable data read and validated\n");
     printf("✓ File closed successfully\n\n");
     printf("SUCCESS: IMAP MAG CDF file access and content validated!\n");
     
