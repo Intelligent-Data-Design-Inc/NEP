@@ -47,6 +47,22 @@ jobs:
           . ~/spack/share/spack/setup-env.sh
           spack --version
           spack compiler find
+          
+          # Configure Spack to use system packages
+          spack external find --all
+          
+          # Show what externals were found
+          echo "=== External packages found ==="
+          spack external list
+          
+          # Configure Spack to prefer externals and use buildcache
+          spack config add "config:install_tree:padded_length:128"
+          spack config add "packages:all:prefer:[target=x86_64_v3]"
+          spack config add "packages:all:providers:mpi:[mpich]"
+          
+          # Add binary mirror for faster installs
+          spack mirror add binary https://binaries.spack.io/v0.23.1
+          spack buildcache keys --install --trust
       
       - name: Setup local Spack repository
         run: |
@@ -76,9 +92,9 @@ jobs:
           . ~/spack/share/spack/setup-env.sh
           echo "Installing NEP with variant: ${{ matrix.variant.spec }}"
           if [ -z "${{ matrix.variant.spec }}" ]; then
-            spack install --test=root --verbose nep@1.3.0
+            spack install --test=root --reuse --verbose nep@1.3.0
           else
-            spack install --test=root --verbose nep@1.3.0 ${{ matrix.variant.spec }}
+            spack install --test=root --reuse --verbose nep@1.3.0 ${{ matrix.variant.spec }}
           fi
       
       - name: Verify installation
