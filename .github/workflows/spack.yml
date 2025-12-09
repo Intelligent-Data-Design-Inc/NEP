@@ -61,39 +61,7 @@ jobs:
           spack --version
           spack compiler find
           
-          # Configure Spack to clean up aggressively
-          spack config add "config:build_stage:/tmp/spack-stage"
-          spack config add "config:keep_build_stage:false"
-          spack config add "config:install_tree:projections:all:'{name}-{version}-{hash:7}'"
-          
-          # Configure Spack to use system packages
-          spack external find --all
-          
-          # Show what externals were found
-          echo "=== External packages found ==="
-          spack external list
-          
-          # Configure Spack to prefer externals and minimize dependencies
-          spack config add "config:install_tree:padded_length:128"
-          spack config add "packages:all:prefer:[target=x86_64_v3]"
-          
-          # Prefer externals when available
-          spack config add "packages:all:require:target=x86_64_v3"
-          
-          # Mark gcc-runtime as external to avoid build issues
-          cat >> ~/.spack/packages.yaml << 'EOF'
-            gcc-runtime:
-              buildable: false
-              externals:
-              - spec: gcc-runtime@11.4.0
-                prefix: /usr
-          EOF
-          
-          # Disable MPI to avoid large dependency chain
-          spack config add "packages:hdf5:variants:~mpi"
-          spack config add "packages:netcdf-c:variants:~mpi"
-          
-          # Add binary mirror for faster installs
+          # Simple config - just use binary cache
           spack mirror add binary https://binaries.spack.io/v0.23.1
           spack buildcache keys --install --trust
       
@@ -124,23 +92,12 @@ jobs:
         run: |
           . ~/spack/share/spack/setup-env.sh
           
-          echo "=== Disk space before install ==="
-          df -h
-          
           echo "Installing NEP with variant: ${{ matrix.variant.spec }}"
           if [ -z "${{ matrix.variant.spec }}" ]; then
-            spack install --reuse --verbose --no-cache nep@1.3.0
+            spack install nep@1.3.0
           else
-            spack install --reuse --verbose --no-cache nep@1.3.0 ${{ matrix.variant.spec }}
+            spack install nep@1.3.0 ${{ matrix.variant.spec }}
           fi
-          
-          # Clean up after installation
-          echo "=== Cleaning up build artifacts ==="
-          spack clean --all
-          rm -rf /tmp/spack-stage/*
-          
-          echo "=== Disk space after install and cleanup ==="
-          df -h
       
       - name: Verify installation
         run: |
