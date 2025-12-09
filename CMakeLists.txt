@@ -187,37 +187,64 @@ if(NOT DOCS_ONLY)
         LOG_CONFIGURE TRUE
         LOG_BUILD TRUE
         LOG_INSTALL TRUE
+        STEP_TARGETS install
     )
     
-    # Install plugin directory - this will copy the entire plugin directory tree
-    install(DIRECTORY ${PLUGIN_INSTALL_DIR}/lib/plugin
-            DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            USE_SOURCE_PERMISSIONS
-            FILES_MATCHING PATTERN "*.so*")
+    # Create a custom target that ensures plugins are built before main install
+    add_custom_target(build_plugins ALL DEPENDS hdf5_plugins)
     
-    # Add install-time verification with detailed logging
+    # Install plugins using CODE block that copies from the ExternalProject install location
+    # This runs during 'make install' and must handle the case where plugins were built
     install(CODE "
         set(PLUGIN_SRC_DIR \"${PLUGIN_INSTALL_DIR}/lib/plugin\")
         set(PLUGIN_DEST_DIR \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/plugin\")
+        
         message(STATUS \"=== Plugin Installation Debug ===\")
         message(STATUS \"Source directory: \${PLUGIN_SRC_DIR}\")
         message(STATUS \"Destination directory: \${PLUGIN_DEST_DIR}\")
         
+        # First, ensure the ExternalProject install step has completed
+        execute_process(
+            COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target hdf5_plugins-install
+            RESULT_VARIABLE PLUGIN_BUILD_RESULT
+            OUTPUT_VARIABLE PLUGIN_BUILD_OUTPUT
+            ERROR_VARIABLE PLUGIN_BUILD_ERROR
+        )
+        
+        if(NOT PLUGIN_BUILD_RESULT EQUAL 0)
+            message(STATUS \"Plugin build output: \${PLUGIN_BUILD_OUTPUT}\")
+            message(STATUS \"Plugin build error: \${PLUGIN_BUILD_ERROR}\")
+            message(FATAL_ERROR \"Failed to build/install hdf5_plugins: \${PLUGIN_BUILD_RESULT}\")
+        endif()
+        
+        # Now check if the source directory exists
         if(EXISTS \"\${PLUGIN_SRC_DIR}\")
             file(GLOB_RECURSE ALL_FILES \"\${PLUGIN_SRC_DIR}/*\")
             message(STATUS \"Files in source directory: \${ALL_FILES}\")
             file(GLOB SO_FILES \"\${PLUGIN_SRC_DIR}/*.so*\")
-            message(STATUS \"Shared library files: \${SO_FILES}\")
+            message(STATUS \"Shared library files to install: \${SO_FILES}\")
+            
+            if(SO_FILES)
+                # Create destination directory
+                file(MAKE_DIRECTORY \"\${PLUGIN_DEST_DIR}\")
+                
+                # Copy each .so file
+                foreach(SO_FILE \${SO_FILES})
+                    get_filename_component(SO_NAME \${SO_FILE} NAME)
+                    message(STATUS \"Installing: \${SO_FILE} -> \${PLUGIN_DEST_DIR}/\${SO_NAME}\")
+                    file(COPY \${SO_FILE} DESTINATION \"\${PLUGIN_DEST_DIR}\")
+                endforeach()
+                
+                # Verify installation
+                file(GLOB_RECURSE INSTALLED_FILES \"\${PLUGIN_DEST_DIR}/*\")
+                message(STATUS \"Files installed to destination: \${INSTALLED_FILES}\")
+            else()
+                message(FATAL_ERROR \"No .so files found in \${PLUGIN_SRC_DIR}\")
+            endif()
         else()
-            message(WARNING \"Plugin source directory does not exist: \${PLUGIN_SRC_DIR}\")
+            message(FATAL_ERROR \"Plugin source directory does not exist: \${PLUGIN_SRC_DIR}\")
         endif()
         
-        if(EXISTS \"\${PLUGIN_DEST_DIR}\")
-            file(GLOB_RECURSE INSTALLED_FILES \"\${PLUGIN_DEST_DIR}/*\")
-            message(STATUS \"Files installed to destination: \${INSTALLED_FILES}\")
-        else()
-            message(WARNING \"Plugin destination directory does not exist: \${PLUGIN_DEST_DIR}\")
-        endif()
         message(STATUS \"=== End Plugin Installation Debug ===\")
     ")
     # GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
