@@ -35,6 +35,7 @@ class Nep(CMakePackage):
     def cmake_args(self):
         args = [
             self.define_from_variant("BUILD_DOCUMENTATION", "docs"),
+            self.define("BUILD_TESTING", self.run_tests),
         ]
         return args
 

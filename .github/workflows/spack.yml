@@ -92,9 +92,9 @@ jobs:
           . ~/spack/share/spack/setup-env.sh
           echo "Installing NEP with variant: ${{ matrix.variant.spec }}"
           if [ -z "${{ matrix.variant.spec }}" ]; then
-            spack install --test=root --reuse --verbose nep@1.3.0
+            spack install --reuse --verbose nep@1.3.0
           else
-            spack install --test=root --reuse --verbose nep@1.3.0 ${{ matrix.variant.spec }}
+            spack install --reuse --verbose nep@1.3.0 ${{ matrix.variant.spec }}
           fi
       
       - name: Verify installation
