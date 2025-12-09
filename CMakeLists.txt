@@ -152,16 +152,39 @@ if(NOT DOCS_ONLY)
     # Build HDF5 filter plugins using Autotools (LZ4 and BZIP2 for v1.0.0)
     # The hdf5_plugins directory uses Autotools, so we use ExternalProject to build it
     # Use h5cc wrapper which handles all HDF5 flags automatically
+    
+    # Build configure flags based on BUILD_LZ4 and BUILD_BZIP2 options
+    set(PLUGIN_CONFIGURE_FLAGS "--disable-jpeg --disable-lzf")
+    if(BUILD_LZ4)
+        list(APPEND PLUGIN_CONFIGURE_FLAGS "--enable-lz4")
+    else()
+        list(APPEND PLUGIN_CONFIGURE_FLAGS "--disable-lz4")
+    endif()
+    if(BUILD_BZIP2)
+        list(APPEND PLUGIN_CONFIGURE_FLAGS "--enable-bzip2")
+    else()
+        list(APPEND PLUGIN_CONFIGURE_FLAGS "--disable-bzip2")
+    endif()
+    string(REPLACE ";" " " PLUGIN_CONFIGURE_FLAGS_STR "${PLUGIN_CONFIGURE_FLAGS}")
+    
     ExternalProject_Add(hdf5_plugins
         SOURCE_DIR ${CMAKE_SOURCE_DIR}/hdf5_plugins
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/hdf5_plugins
             ${CMAKE_COMMAND} -E env
             "CC=${HDF5_C_COMPILER_EXECUTABLE}"
-            /bin/sh -c "test -f configure || autoreconf -if && ./configure --prefix=${CMAKE_BINARY_DIR}/hdf5_plugins_install --with-hdf5-plugin-path=${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin --enable-lz4 --enable-bzip2 --disable-jpeg --disable-lzf"
+            /bin/sh -c "test -f configure || autoreconf -if && ./configure --prefix=${CMAKE_INSTALL_PREFIX} --with-hdf5-plugin-path=${CMAKE_INSTALL_PREFIX}/lib/plugin ${PLUGIN_CONFIGURE_FLAGS_STR}"
         BUILD_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/hdf5_plugins make
-        INSTALL_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/hdf5_plugins make install
+        INSTALL_COMMAND ""
         BUILD_IN_SOURCE 1
     )
+    
+    # Install the plugin libraries from build location to final installation
+    install(CODE "
+        file(GLOB PLUGIN_LIBS \"${CMAKE_SOURCE_DIR}/hdf5_plugins/LZ4/src/.libs/*.so*\" \"${CMAKE_SOURCE_DIR}/hdf5_plugins/BZIP2/src/.libs/*.so*\")
+        foreach(PLUGIN_LIB \${PLUGIN_LIBS})
+            file(INSTALL \${PLUGIN_LIB} DESTINATION \"\${CMAKE_INSTALL_PREFIX}/lib/plugin\")
+        endforeach()
+    ")
     # GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
     # Will be re-enabled in v2.0.0 for GRIB2 UDF support
     # If GRIB2 layer has been built, test it.
