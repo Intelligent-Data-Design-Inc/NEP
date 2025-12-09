@@ -53,7 +53,23 @@ class Nep(CMakePackage):
     def check_install(self):
         """Verify that plugin libraries are installed."""
         plugin_dir = join_path(self.prefix.lib, "plugin")
+        
+        # Check if plugin directory exists
+        if not os.path.exists(plugin_dir):
+            raise InstallError(f"Plugin directory not found: {plugin_dir}")
+        
+        # List what's actually in the plugin directory
+        import glob
+        plugins = glob.glob(join_path(plugin_dir, "*.so"))
+        tty.info(f"Found plugins: {plugins}")
+        
+        # Verify expected plugins are present
         if self.spec.satisfies("+lz4"):
-            assert os.path.exists(join_path(plugin_dir, "libh5lz4.so"))
+            lz4_plugin = join_path(plugin_dir, "libh5lz4.so")
+            if not os.path.exists(lz4_plugin):
+                raise InstallError(f"LZ4 plugin not found: {lz4_plugin}")
+        
         if self.spec.satisfies("+bzip2"):
-            assert os.path.exists(join_path(plugin_dir, "libh5bzip2.so"))
+            bzip2_plugin = join_path(plugin_dir, "libh5bzip2.so")
+            if not os.path.exists(bzip2_plugin):
+                raise InstallError(f"BZIP2 plugin not found: {bzip2_plugin}")
