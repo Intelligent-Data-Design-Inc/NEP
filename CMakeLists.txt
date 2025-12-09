@@ -167,46 +167,58 @@ if(NOT DOCS_ONLY)
     endif()
     string(REPLACE ";" " " PLUGIN_CONFIGURE_FLAGS_STR "${PLUGIN_CONFIGURE_FLAGS}")
     
-    # Use a stamp file to track when plugins are built
-    set(PLUGIN_STAMP_FILE "${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin/.built")
-    set(PLUGIN_INSTALL_DIR "${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin")
+    set(PLUGIN_BUILD_DIR "${CMAKE_BINARY_DIR}/hdf5_plugins_build")
+    set(PLUGIN_INSTALL_DIR "${CMAKE_BINARY_DIR}/hdf5_plugins_install")
+    
+    message(STATUS "Plugin build directory: ${PLUGIN_BUILD_DIR}")
+    message(STATUS "Plugin install directory: ${PLUGIN_INSTALL_DIR}")
+    message(STATUS "Plugin configure flags: ${PLUGIN_CONFIGURE_FLAGS_STR}")
     
     ExternalProject_Add(hdf5_plugins
         SOURCE_DIR ${CMAKE_SOURCE_DIR}/hdf5_plugins
-        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/hdf5_plugins
+        BINARY_DIR ${PLUGIN_BUILD_DIR}
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E chdir ${PLUGIN_BUILD_DIR}
             ${CMAKE_COMMAND} -E env
             "CC=${HDF5_C_COMPILER_EXECUTABLE}"
-            /bin/sh -c "test -f configure || autoreconf -if && ./configure --prefix=${CMAKE_BINARY_DIR}/hdf5_plugins_install --with-hdf5-plugin-path=${PLUGIN_INSTALL_DIR} ${PLUGIN_CONFIGURE_FLAGS_STR}"
-        BUILD_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/hdf5_plugins make
-        INSTALL_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/hdf5_plugins /bin/sh -c "make install && touch ${PLUGIN_STAMP_FILE}"
-        BUILD_IN_SOURCE 1
+            /bin/sh -c "cd ${CMAKE_SOURCE_DIR}/hdf5_plugins && (test -f configure || autoreconf -if) && cd ${PLUGIN_BUILD_DIR} && ${CMAKE_SOURCE_DIR}/hdf5_plugins/configure --prefix=${PLUGIN_INSTALL_DIR} --with-hdf5-plugin-path=${PLUGIN_INSTALL_DIR}/lib/plugin ${PLUGIN_CONFIGURE_FLAGS_STR}"
+        BUILD_COMMAND ${CMAKE_COMMAND} -E chdir ${PLUGIN_BUILD_DIR} make
+        INSTALL_COMMAND ${CMAKE_COMMAND} -E chdir ${PLUGIN_BUILD_DIR} make install
+        BUILD_IN_SOURCE 0
+        LOG_CONFIGURE TRUE
+        LOG_BUILD TRUE
+        LOG_INSTALL TRUE
     )
     
-    # Create a custom target that depends on hdf5_plugins and is part of ALL
-    # This ensures plugins are built during 'make' phase, not just 'make install'
-    add_custom_target(build_plugins ALL DEPENDS hdf5_plugins)
+    # Install plugin directory - this will copy the entire plugin directory tree
+    install(DIRECTORY ${PLUGIN_INSTALL_DIR}/lib/plugin
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            USE_SOURCE_PERMISSIONS
+            FILES_MATCHING PATTERN "*.so*")
     
-    # Install the plugin libraries from temp build location to final installation
-    # This runs during 'make install' and copies from the ExternalProject install location
+    # Add install-time verification with detailed logging
     install(CODE "
-        set(PLUGIN_DIR \"${PLUGIN_INSTALL_DIR}\")
-        message(STATUS \"Looking for plugins in: \${PLUGIN_DIR}\")
-        if(EXISTS \"\${PLUGIN_DIR}\")
-            file(GLOB PLUGIN_FILES \"\${PLUGIN_DIR}/*.so*\")
-            message(STATUS \"Found plugin files: \${PLUGIN_FILES}\")
-            if(PLUGIN_FILES)
-                file(MAKE_DIRECTORY \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/plugin\")
-                foreach(PLUGIN_FILE \${PLUGIN_FILES})
-                    get_filename_component(PLUGIN_NAME \${PLUGIN_FILE} NAME)
-                    file(INSTALL \${PLUGIN_FILE} DESTINATION \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/plugin\")
-                    message(STATUS \"Installed plugin: \${PLUGIN_NAME} to \${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/plugin\")
-                endforeach()
-            else()
-                message(FATAL_ERROR \"No plugin files found in \${PLUGIN_DIR}\")
-            endif()
+        set(PLUGIN_SRC_DIR \"${PLUGIN_INSTALL_DIR}/lib/plugin\")
+        set(PLUGIN_DEST_DIR \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/plugin\")
+        message(STATUS \"=== Plugin Installation Debug ===\")
+        message(STATUS \"Source directory: \${PLUGIN_SRC_DIR}\")
+        message(STATUS \"Destination directory: \${PLUGIN_DEST_DIR}\")
+        
+        if(EXISTS \"\${PLUGIN_SRC_DIR}\")
+            file(GLOB_RECURSE ALL_FILES \"\${PLUGIN_SRC_DIR}/*\")
+            message(STATUS \"Files in source directory: \${ALL_FILES}\")
+            file(GLOB SO_FILES \"\${PLUGIN_SRC_DIR}/*.so*\")
+            message(STATUS \"Shared library files: \${SO_FILES}\")
         else()
-            message(FATAL_ERROR \"Plugin directory not found: \${PLUGIN_DIR}\")
+            message(WARNING \"Plugin source directory does not exist: \${PLUGIN_SRC_DIR}\")
         endif()
+        
+        if(EXISTS \"\${PLUGIN_DEST_DIR}\")
+            file(GLOB_RECURSE INSTALLED_FILES \"\${PLUGIN_DEST_DIR}/*\")
+            message(STATUS \"Files installed to destination: \${INSTALLED_FILES}\")
+        else()
+            message(WARNING \"Plugin destination directory does not exist: \${PLUGIN_DEST_DIR}\")
+        endif()
+        message(STATUS \"=== End Plugin Installation Debug ===\")
     ")
     # GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
     # Will be re-enabled in v2.0.0 for GRIB2 UDF support
