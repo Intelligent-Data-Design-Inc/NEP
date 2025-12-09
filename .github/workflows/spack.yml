@@ -77,17 +77,10 @@ jobs:
           spack config add "config:install_tree:padded_length:128"
           spack config add "packages:all:prefer:[target=x86_64_v3]"
           
-          # Prefer external/system packages to minimize installations
-          spack config add "packages:all:buildable:false"
-          spack config add "packages:nep:buildable:true"
-          spack config add "packages:netcdf-c:buildable:true"
-          spack config add "packages:hdf5:buildable:true"
-          spack config add "packages:lz4:buildable:true"
-          spack config add "packages:bzip2:buildable:true"
+          # Prefer externals when available
+          spack config add "packages:all:require:target=x86_64_v3"
           
-          # Use minimal MPI (we don't actually need MPI for NEP)
-          spack config add "packages:all:providers:mpi:[mpich]"
-          spack config add "packages:mpich:buildable:false"
+          # Disable MPI to avoid large dependency chain
           spack config add "packages:hdf5:variants:~mpi"
           spack config add "packages:netcdf-c:variants:~mpi"
           
