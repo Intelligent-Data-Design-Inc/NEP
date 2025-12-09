@@ -167,23 +167,37 @@ if(NOT DOCS_ONLY)
     endif()
     string(REPLACE ";" " " PLUGIN_CONFIGURE_FLAGS_STR "${PLUGIN_CONFIGURE_FLAGS}")
     
+    # Use a stamp file to track when plugins are built
+    set(PLUGIN_STAMP_FILE "${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin/.built")
+    
     ExternalProject_Add(hdf5_plugins
         SOURCE_DIR ${CMAKE_SOURCE_DIR}/hdf5_plugins
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/hdf5_plugins
             ${CMAKE_COMMAND} -E env
             "CC=${HDF5_C_COMPILER_EXECUTABLE}"
-            /bin/sh -c "test -f configure || autoreconf -if && ./configure --prefix=${CMAKE_INSTALL_PREFIX} --with-hdf5-plugin-path=${CMAKE_INSTALL_PREFIX}/lib/plugin ${PLUGIN_CONFIGURE_FLAGS_STR}"
+            /bin/sh -c "test -f configure || autoreconf -if && ./configure --prefix=${CMAKE_BINARY_DIR}/hdf5_plugins_install --with-hdf5-plugin-path=${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin ${PLUGIN_CONFIGURE_FLAGS_STR}"
         BUILD_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/hdf5_plugins make
-        INSTALL_COMMAND ""
+        INSTALL_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/hdf5_plugins /bin/sh -c "make install && touch ${PLUGIN_STAMP_FILE}"
         BUILD_IN_SOURCE 1
     )
     
-    # Install the plugin libraries from build location to final installation
+    # Install the plugin libraries from temp build location to final installation
+    # This runs during 'make install' and copies from the ExternalProject install location
     install(CODE "
-        file(GLOB PLUGIN_LIBS \"${CMAKE_SOURCE_DIR}/hdf5_plugins/LZ4/src/.libs/*.so*\" \"${CMAKE_SOURCE_DIR}/hdf5_plugins/BZIP2/src/.libs/*.so*\")
-        foreach(PLUGIN_LIB \${PLUGIN_LIBS})
-            file(INSTALL \${PLUGIN_LIB} DESTINATION \"\${CMAKE_INSTALL_PREFIX}/lib/plugin\")
-        endforeach()
+        if(EXISTS \"${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin\")
+            file(GLOB PLUGIN_FILES \"${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin/*.so*\")
+            if(PLUGIN_FILES)
+                file(MAKE_DIRECTORY \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/plugin\")
+                foreach(PLUGIN_FILE \${PLUGIN_FILES})
+                    file(INSTALL \${PLUGIN_FILE} DESTINATION \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/plugin\")
+                    message(STATUS \"Installed plugin: \${PLUGIN_FILE}\")
+                endforeach()
+            else()
+                message(WARNING \"No plugin files found in ${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin\")
+            endif()
+        else()
+            message(WARNING \"Plugin directory not found: ${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin\")
+        endif()
     ")
     # GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
     # Will be re-enabled in v2.0.0 for GRIB2 UDF support
