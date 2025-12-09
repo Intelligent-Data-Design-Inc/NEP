@@ -81,8 +81,13 @@ jobs:
           spack config add "packages:all:require:target=x86_64_v3"
           
           # Mark gcc-runtime as external to avoid build issues
-          spack config add "packages:gcc-runtime:buildable:false"
-          spack config add "packages:gcc-runtime:externals:[{spec: 'gcc-runtime@11.4.0', prefix: '/usr'}]"
+          cat >> ~/.spack/packages.yaml << 'EOF'
+            gcc-runtime:
+              buildable: false
+              externals:
+              - spec: gcc-runtime@11.4.0
+                prefix: /usr
+          EOF
           
           # Disable MPI to avoid large dependency chain
           spack config add "packages:hdf5:variants:~mpi"
