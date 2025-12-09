@@ -53,7 +53,7 @@ class Nep(CMakePackage):
     def check_install(self):
         """Verify that plugin libraries are installed."""
         plugin_dir = join_path(self.prefix.lib, "plugin")
-        if "+lz4" in self.spec:
+        if self.spec.satisfies("+lz4"):
             assert os.path.exists(join_path(plugin_dir, "libh5lz4.so"))
-        if "+bzip2" in self.spec:
+        if self.spec.satisfies("+bzip2"):
             assert os.path.exists(join_path(plugin_dir, "libh5bzip2.so"))
