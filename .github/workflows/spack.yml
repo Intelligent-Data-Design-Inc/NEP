@@ -48,14 +48,37 @@ jobs:
           spack --version
           spack compiler find
       
+      - name: Setup local Spack repository
+        run: |
+          . ~/spack/share/spack/setup-env.sh
+          
+          # Create local repository structure
+          mkdir -p ~/nep-spack-repo/packages/nep
+          cp spack/package.py ~/nep-spack-repo/packages/nep/
+          
+          # Create repo.yaml
+          cat > ~/nep-spack-repo/repo.yaml << 'EOF'
+          repo:
+            namespace: nep-local
+          EOF
+          
+          # Add repository to Spack
+          spack repo add ~/nep-spack-repo
+          
+          # Verify repository added
+          spack repo list
+          
+          # Verify package is available
+          spack info nep
+      
       - name: Install NEP with variant
         run: |
           . ~/spack/share/spack/setup-env.sh
           echo "Installing NEP with variant: ${{ matrix.variant.spec }}"
           if [ -z "${{ matrix.variant.spec }}" ]; then
-            spack install --test=root --verbose ./spack/package.py
+            spack install --test=root --verbose nep@1.3.0
           else
-            spack install --test=root --verbose ./spack/package.py ${{ matrix.variant.spec }}
+            spack install --test=root --verbose nep@1.3.0 ${{ matrix.variant.spec }}
           fi
       
       - name: Verify installation

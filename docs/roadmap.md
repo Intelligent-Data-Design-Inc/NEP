@@ -37,18 +37,19 @@
   - Keep existing variants: `+docs`, `+lz4`, `+bzip2`
   - Keep existing `check_install()` method that verifies plugin libraries
 - **Spack CI Workflow**: Create `.github/workflows/spack.yml` for automated testing
-  - Test basic install: `spack install ./spack/package.py` succeeds
+  - Create local Spack repository from `spack/package.py`
+  - Test basic install: `spack install nep@1.3.0` succeeds
   - Test variant combinations:
     - Default build (all features enabled)
-    - `spack install ./spack/package.py~docs` (documentation disabled)
-    - `spack install ./spack/package.py+lz4~bzip2` (LZ4 only)
-    - `spack install ./spack/package.py~lz4+bzip2` (BZIP2 only)
-    - `spack install ./spack/package.py+cdf` (with CDF support)
+    - `spack install nep@1.3.0~docs` (documentation disabled)
+    - `spack install nep@1.3.0+lz4~bzip2` (LZ4 only)
+    - `spack install nep@1.3.0~lz4+bzip2` (BZIP2 only)
   - Verify plugin installation via existing `check_install()` method
   - Use Ubuntu latest runner with Spack installed
   - Cache Spack installation for faster CI runs
-- **Testing Approach**: Test package.py in-place from repository
-  - Use `spack install ./spack/package.py` to test local package file
+- **Testing Approach**: Test package.py via local Spack repository
+  - Create local repo structure and add to Spack with `spack repo add`
+  - Install from local repo to validate package.py
   - Validates package.py before submission to spack/spack repository
   - Ensures CI catches package.py issues early
 - **Spack Repository Submission**: Submit to spack/spack after v1.3.0 release
