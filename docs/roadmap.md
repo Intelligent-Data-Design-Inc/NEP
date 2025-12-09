@@ -26,8 +26,38 @@
 
 ### v1.4.0 Spack Support
 #### Sprint 1: Spack CI Testing and Spack Integration
-- Set up testing of the spack file just like NCEPLIBS-g2c has.
-- Submit spack file to spack repo.
+- **Spack Package File Updates**: Update existing `spack/package.py` for v1.3.0 and submission readiness
+  - Remove `AutotoolsPackage` inheritance - use CMake build system only as specified
+  - Add v1.3.0 version with actual release tarball SHA256 checksum
+  - Update v1.0.0 version with actual release tarball SHA256 checksum (replace placeholder)
+  - Add CDF support as default-off variant: `variant("cdf", default=False, description="Enable CDF format support")`
+  - Add conditional dependency: `depends_on("cdf", when="+cdf", type=("build", "link"))`
+  - Update `cmake_args()` to include `-DENABLE_CDF=ON` when `+cdf` variant is enabled
+  - Remove `configure_args()` method since Autotools support is being removed
+  - Keep existing variants: `+docs`, `+lz4`, `+bzip2`
+  - Keep existing `check_install()` method that verifies plugin libraries
+- **Spack CI Workflow**: Create `.github/workflows/spack.yml` for automated testing
+  - Test basic install: `spack install ./spack/package.py` succeeds
+  - Test variant combinations:
+    - Default build (all features enabled)
+    - `spack install ./spack/package.py~docs` (documentation disabled)
+    - `spack install ./spack/package.py+lz4~bzip2` (LZ4 only)
+    - `spack install ./spack/package.py~lz4+bzip2` (BZIP2 only)
+    - `spack install ./spack/package.py+cdf` (with CDF support)
+  - Verify plugin installation via existing `check_install()` method
+  - Use Ubuntu latest runner with Spack installed
+  - Cache Spack installation for faster CI runs
+- **Testing Approach**: Test package.py in-place from repository
+  - Use `spack install ./spack/package.py` to test local package file
+  - Validates package.py before submission to spack/spack repository
+  - Ensures CI catches package.py issues early
+- **Spack Repository Submission**: Submit to spack/spack after v1.3.0 release
+  - Create PR to https://github.com/spack/spack
+  - Include both v1.0.0 and v1.3.0 versions with verified SHA256 checksums
+  - Package location in spack repo: `var/spack/repos/builtin/packages/nep/package.py`
+  - Reference existing NEP releases on GitHub
+  - Follow Spack contribution guidelines
+  - Wait for v1.3.0 release tarball to be available before submission
 
 ### v1.3.0 CDF Support
 #### Sprint 1: Add CDF Library Detection to Build Systems

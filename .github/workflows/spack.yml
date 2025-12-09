@@ -1,0 +1,121 @@
+name: Spack
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  spack-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant:
+          - name: "default"
+            spec: ""
+          - name: "no-docs"
+            spec: "~docs"
+          - name: "lz4-only"
+            spec: "+lz4~bzip2"
+          - name: "bzip2-only"
+            spec: "~lz4+bzip2"
+    
+    name: Spack (${{ matrix.variant.name }})
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Cache Spack
+        uses: actions/cache@v4
+        with:
+          path: ~/spack
+          key: spack-${{ runner.os }}-${{ hashFiles('.github/workflows/spack.yml') }}
+          restore-keys: |
+            spack-${{ runner.os }}-
+      
+      - name: Install Spack
+        run: |
+          if [ ! -d ~/spack ]; then
+            echo "Installing Spack..."
+            git clone -c feature.manyFiles=true --depth=1 https://github.com/spack/spack.git ~/spack
+          else
+            echo "Spack already cached"
+          fi
+          . ~/spack/share/spack/setup-env.sh
+          spack --version
+          spack compiler find
+      
+      - name: Install NEP with variant
+        run: |
+          . ~/spack/share/spack/setup-env.sh
+          echo "Installing NEP with variant: ${{ matrix.variant.spec }}"
+          if [ -z "${{ matrix.variant.spec }}" ]; then
+            spack install --test=root --verbose ./spack/package.py
+          else
+            spack install --test=root --verbose ./spack/package.py ${{ matrix.variant.spec }}
+          fi
+      
+      - name: Verify installation
+        run: |
+          . ~/spack/share/spack/setup-env.sh
+          echo "=== Spack find ==="
+          spack find nep
+          echo ""
+          echo "=== Loading NEP ==="
+          spack load nep
+          echo ""
+          echo "=== NEP installation location ==="
+          NEP_PREFIX=$(spack location -i nep)
+          echo "NEP installed at: $NEP_PREFIX"
+          echo ""
+          echo "=== Plugin directory contents ==="
+          ls -la $NEP_PREFIX/lib/plugin/ || echo "Plugin directory not found"
+      
+      - name: Verify plugin installation
+        run: |
+          . ~/spack/share/spack/setup-env.sh
+          spack load nep
+          NEP_PREFIX=$(spack location -i nep)
+          
+          echo "Checking for expected plugin libraries..."
+          
+          # Check for LZ4 if enabled (enabled by default unless explicitly disabled)
+          if [[ "${{ matrix.variant.spec }}" != *"~lz4"* ]]; then
+            echo "Checking for LZ4 plugin..."
+            if [ -f "$NEP_PREFIX/lib/plugin/libh5lz4.so" ]; then
+              echo "✓ LZ4 plugin found"
+            else
+              echo "✗ LZ4 plugin NOT found"
+              exit 1
+            fi
+          else
+            echo "LZ4 disabled, skipping check"
+          fi
+          
+          # Check for BZIP2 if enabled (enabled by default unless explicitly disabled)
+          if [[ "${{ matrix.variant.spec }}" != *"~bzip2"* ]]; then
+            echo "Checking for BZIP2 plugin..."
+            if [ -f "$NEP_PREFIX/lib/plugin/libh5bzip2.so" ]; then
+              echo "✓ BZIP2 plugin found"
+            else
+              echo "✗ BZIP2 plugin NOT found"
+              exit 1
+            fi
+          else
+            echo "BZIP2 disabled, skipping check"
+          fi
+          
+          echo ""
+          echo "All expected plugins verified successfully!"
+      
+      - name: Test HDF5_PLUGIN_PATH
+        run: |
+          . ~/spack/share/spack/setup-env.sh
+          spack load nep
+          NEP_PREFIX=$(spack location -i nep)
+          export HDF5_PLUGIN_PATH=$NEP_PREFIX/lib/plugin
+          echo "HDF5_PLUGIN_PATH set to: $HDF5_PLUGIN_PATH"
+          ls -la $HDF5_PLUGIN_PATH

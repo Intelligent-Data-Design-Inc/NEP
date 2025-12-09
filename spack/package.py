@@ -6,8 +6,8 @@
 from spack.package import *
 
 
-class Nep(CMakePackage, AutotoolsPackage):
-    """NEP (NetCDF Expansion Pack) provides high-performance compression for
+class Nep(CMakePackage):
+    """NEP (NetCDF Extension Pack) provides high-performance compression for
     HDF5/NetCDF-4 files with LZ4 and BZIP2 compression algorithms."""
 
     homepage = "https://github.com/Intelligent-Data-Design-Inc/NEP"
@@ -19,7 +19,8 @@ class Nep(CMakePackage, AutotoolsPackage):
     license("Apache-2.0")
 
     version("develop", branch="main")
-    version("1.0.0", sha256="0000000000000000000000000000000000000000000000000000000000000000")
+    version("1.3.0", sha256="acf8f8a1360b521cef3f6f57fdeced64d2d78e765e8fd644ce435487fe74a003")
+    version("1.0.0", sha256="c996da322c29e184a363ce013e5d44e773525e326a1d8022d69b5df46c032f54")
 
     variant("docs", default=True, description="Build documentation with Doxygen")
     variant("lz4", default=True, description="Enable LZ4 compression support")
@@ -37,22 +38,10 @@ class Nep(CMakePackage, AutotoolsPackage):
         ]
         return args
 
-    def configure_args(self):
-        args = [
-            self.with_or_without("lz4"),
-            self.with_or_without("bzip2"),
-            self.enable_or_disable("docs"),
-        ]
-        return args
-
     def check(self):
         """Run install tests to verify libraries are installed."""
-        if self.spec.satisfies("build_system=cmake"):
-            with working_dir(self.build_directory):
-                make("test")
-        else:
-            with working_dir(self.build_directory):
-                make("check")
+        with working_dir(self.build_directory):
+            make("test")
 
     @run_after("install")
     def check_install(self):

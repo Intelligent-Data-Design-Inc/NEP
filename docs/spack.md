@@ -26,14 +26,11 @@ spack install nep+lz4~bzip2
 spack install nep~lz4+bzip2
 ```
 
-### Build System Selection
-```bash
-# CMake (default)
-spack install nep build_system=cmake
+### Build System
+The Spack package uses the CMake build system only. For Autotools builds, use the standard build instructions in the main README.
 
-# Autotools
-spack install nep build_system=autotools
-```
+### CDF Format Support
+CDF format support is available in NEP v1.3.0+, but the CDF variant is not yet available in the Spack package because the CDF library is not currently in Spack. To use CDF support, build NEP manually with the `ENABLE_CDF` CMake option.
 
 ## Using NEP
 
@@ -70,4 +67,54 @@ ls $HDF5_PLUGIN_PATH
 Check Spack build log:
 ```bash
 spack install --verbose nep
+```
+
+## Package Maintenance
+
+The NEP Spack package is maintained in the official Spack repository at https://github.com/spack/spack.
+
+### Updating for New Releases
+
+When a new NEP version is released:
+
+1. Calculate SHA256 checksum for the new release tarball:
+   ```bash
+   wget https://github.com/Intelligent-Data-Design-Inc/NEP/archive/vX.Y.Z.tar.gz
+   sha256sum vX.Y.Z.tar.gz
+   ```
+
+2. Update `spack/package.py` in the NEP repository with the new version
+
+3. Submit a PR to the spack/spack repository:
+   - Fork https://github.com/spack/spack
+   - Update `var/spack/repos/builtin/packages/nep/package.py`
+   - Add the new version line with SHA256 checksum
+   - Test the package builds correctly
+   - Submit PR with clear description
+
+4. Respond to reviewer feedback and iterate as needed
+
+### Maintainers
+
+- Ed Hartnett (@edhartnett)
+
+### Testing Package Changes
+
+Test package.py changes locally before submission:
+
+```bash
+# Install Spack if not already installed
+git clone https://github.com/spack/spack.git ~/spack
+. ~/spack/share/spack/setup-env.sh
+
+# Test local package.py
+spack install --test=root ./spack/package.py
+
+# Test specific variants
+spack install ./spack/package.py~docs
+spack install ./spack/package.py+lz4~bzip2
+
+# Verify installation
+spack find nep
+spack load nep
 ```

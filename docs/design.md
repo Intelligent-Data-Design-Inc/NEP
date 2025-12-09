@@ -1,11 +1,20 @@
-# NEP – NetCDF Extension Pack v1.0.0
+# NEP – NetCDF Extension Pack
 ## Project Overview
 
-The NetCDF Extension Pack (NEP) v1.0.0 provides high-performance compression for HDF5/NetCDF-4 files through HDF5 filter plugins. NEP enables flexible lossless compression with two complementary algorithms: LZ4 (optimized for speed) and BZIP2 (optimized for compression ratio).
+The NetCDF Extension Pack (NEP) provides high-performance compression for HDF5/NetCDF-4 files through HDF5 filter plugins, and extends NetCDF to support additional scientific data formats through User Defined Format (UDF) handlers.
+
+**Current Version**: v1.3.0
+
+**Key Features**:
+- **v1.0.0**: LZ4 and BZIP2 compression filters for HDF5/NetCDF-4 files
+- **v1.3.0**: NASA Common Data Format (CDF) support via UDF handler
 
 ## Architecture
 
-NEP uses the HDF5 filter plugin architecture to provide transparent compression for NetCDF-4 files. The architecture consists of:
+NEP uses two complementary approaches to extend NetCDF functionality:
+
+### v1.0.0: HDF5 Filter Plugin Architecture
+Provides transparent compression for NetCDF-4 files:
 
 1. **Core NetCDF API**: Standard API used by applications
 2. **HDF5 Filter Pipeline**: Compression filters integrated into HDF5 I/O operations
@@ -29,6 +38,31 @@ NEP uses the HDF5 filter plugin architecture to provide transparent compression 
 └──────┬──────┘
        │
 [Compressed NetCDF-4/HDF5 Files]
+```
+
+### v1.3.0: User Defined Format (UDF) Architecture
+Enables transparent access to CDF files through the NetCDF API:
+
+1. **NetCDF API**: Standard API used by applications
+2. **NC_Dispatch Interface**: NetCDF's plugin mechanism for custom formats
+3. **CDF UDF Handler**: Translation layer between NetCDF API and NASA CDF library
+4. **Format Detection**: Magic number-based CDF file identification
+5. **Runtime Registration**: Automatic registration via nc_def_user_format()
+
+```
+[Application Layer]
+       │
+[NetCDF API]
+       │
+[NC_Dispatch Interface]
+       │
+┌──────┴──────┐
+│             │
+[NetCDF-4]    [CDF UDF Handler]
+│             │
+│             [NASA CDF Library]
+│             │
+[HDF5 Files]  [CDF Files]
 ```
 
 ## Project Structure
@@ -275,13 +309,71 @@ Based on a 150 MB NetCDF-4 dataset:
 - LZ4 offers minimal performance impact (79% write speed, 88% read speed) with 2.2× compression
 - BZIP2 achieves highest compression ratio (6.7×) at the cost of performance (1% write speed, 2% read speed)
 
+## v1.3.0: CDF Format Support
+
+### Overview
+NEP v1.3.0 extends the NetCDF Extension Pack to support NASA Common Data Format (CDF) through a User Defined Format (UDF) handler, enabling transparent access to CDF files through the standard NetCDF API.
+
+### Key Components
+
+1. **CDF UDF Handler**: Translation layer between NetCDF API and NASA CDF library
+2. **Format Detection**: Magic number-based CDF file identification
+3. **NC_Dispatch Implementation**: File operations, metadata access, data reading
+
+### Technical Implementation
+
+- File open/close operations
+- Metadata extraction from CDF files
+- Data reading functionality
+- Variable information access
+- Integration with existing v1.0.0 compression features
+
+### Dependencies
+
+- All v1.0.0 dependencies
+- NASA CDF library v3.9.x (built from source)
+  - Source: https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/
+  - Installation: Separate prefix directory (`$GITHUB_WORKSPACE/cdf-install` in CI)
+  - Detection: AC_CHECK_HEADERS + AC_SEARCH_LIBS pattern (Autotools), find_package/find_library (CMake)
+
+### Build System Integration
+
+**Optional Dependency**: CDF support disabled by default
+- CMake: `-DENABLE_CDF=ON/OFF` (default: OFF)
+- Autotools: `--enable-cdf/--disable-cdf` (default: disabled)
+
+**Dependency Detection**:
+- Check for CDF headers (cdf.h)
+- Search for CDF library (libcdf)
+- Error if enabled but not found
+
+**Configuration Macros**: HAVE_CDF defined when enabled and found
+
+### CI Integration
+
+- **CDF Build Step**: Download and build NASA CDF library from source
+- **Caching**: GitHub Actions cache for CDF build artifacts
+- **Environment Setup**: CPPFLAGS, LDFLAGS, LD_LIBRARY_PATH, CMAKE_PREFIX_PATH
+- **Build Matrix**: Single configuration with CDF enabled for validation
+
+### Test Data
+
+- **Location**: `test/data/` directory
+- **File Type**: Small (<100KB) space physics data from NASA SPDF
+- **Build Integration**: Copied to build directory for both CMake and Autotools
+
 ## Release Information
 
-- **Version**: v1.0.0
+### v1.3.0 (Current)
+- **Status**: Production Release
+- **Release Date**: December 2025
+- **Features**: NASA CDF format support via UDF handler
+
+### v1.0.0
 - **Status**: Production Release
 - **Release Date**: November 2025
 - **Features**: LZ4 and BZIP2 compression support for HDF5/NetCDF-4 files
 
 ---
 
-*Last Updated: November 2025*
+*Last Updated: December 2025*
