@@ -164,17 +164,16 @@ NEP provides comprehensive support for both CMake and Autotools build systems to
 
 ### HDF5 Filter Plugin Integration
 
-Each compression filter is compiled as a separate HDF5 filter plugin:
+The `hdf5_plugins/` subproject contains only the **LZ4 filter plugin**. BZIP2 support is provided by NetCDF-C's built-in bzip2 filter (available in NetCDF-C 4.9+).
 
 ```
 hdf5_plugins/
-├── LZ4/
-│   └── src/
-│       └── H5Zlz4.c          # LZ4 filter plugin → libh5lz4.so
-└── BZIP2/
+└── LZ4/
     └── src/
-        └── H5Zbzip2.c        # BZIP2 filter plugin → libh5bzip2.so
+        └── H5Zlz4.c          # LZ4 filter plugin → libh5lz4.so
 ```
+
+**Note**: The hdf5_plugins subproject uses Autotools and is built as an ExternalProject during the CMake build process. This approach was chosen because the LZ4 filter code predates NEP and uses Autotools natively.
 
 ### HDF5 Filter Plugin Architecture
 
@@ -252,16 +251,17 @@ make install
 ```
 ${PREFIX}/
 ├── lib/
+│   ├── libncsqueeze.so       # Core compression utilities
 │   └── plugin/
-│       ├── libh5lz4.so
-│       └── libh5bzip2.so
+│       └── libh5lz4.so       # LZ4 HDF5 filter plugin
 ├── include/
-│   └── nep/
-│       └── [header files]
+│   └── ncsqueeze.h           # Public API header
 └── share/doc/nep/
     └── html/
         └── [Doxygen generated documentation]
 ```
+
+**Note**: BZIP2 support uses NetCDF-C's built-in bzip2 filter and does not require a separate plugin installation.
 
 #### Uninstall Support
 Both build systems provide complete uninstall functionality:

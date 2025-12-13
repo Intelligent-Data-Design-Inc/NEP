@@ -16,10 +16,13 @@
 #cmakedefine HAVE_HDF5
 
 /* Define to 1 if LZ4 compression is enabled */
-#define BUILD_LZ4 1
+#cmakedefine01 BUILD_LZ4
 
 /* Define to 1 if BZIP2 compression is enabled */
-#define BUILD_BZIP2 1
+#cmakedefine01 BUILD_BZIP2
+
+/* Define to 1 if Zstandard compression is enabled */
+#cmakedefine01 BUILD_ZSTD
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #cmakedefine HAVE_INTTYPES_H @HAVE_INTTYPES_H@

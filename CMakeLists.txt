@@ -15,8 +15,11 @@ option(DEBUG "Build with debugging symbols" OFF)
 option(ENABLE_FORTRAN "Build Fortran wrappers and related tests" ON)
 
 # Build options for compression filters (mirror autotools options)
+# Note: NEP's hdf5_plugins subproject only provides LZ4. Other filters require
+# NetCDF-C to be built with the corresponding filter support.
 option(BUILD_LZ4 "Enable LZ4 filter support" ON)
-option(BUILD_BZIP2 "Enable BZIP2 filter support" ON)
+option(BUILD_BZIP2 "Enable BZIP2 filter support (requires NetCDF-C bzip2 support)" OFF)
+option(BUILD_ZSTD "Enable Zstandard filter support (requires NetCDF-C zstd support)" OFF)
 
 # Define global preprocessor symbol to mirror Autotools AC_DEFINE([USE_HDF5],[yes])
 # Use add_definitions for compatibility with CMake 3.9
@@ -40,6 +43,16 @@ if(DEBUG)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
     message(STATUS "Debug mode enabled: Adding -g flag")
 endif()
+
+# RPATH settings so executables can find libraries without LD_LIBRARY_PATH
+# Use full RPATH for build tree (allows running tests from build directory)
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
+# Don't use install RPATH when building - use build tree paths
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+# Set RPATH to use when installed
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+# Add library paths from dependencies to RPATH
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Determine if we're doing a documentation-only build
 set(DOCS_ONLY OFF)

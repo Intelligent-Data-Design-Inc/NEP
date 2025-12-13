@@ -29,6 +29,11 @@ target_include_directories(tst_bzip2 PRIVATE ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLU
 add_executable(tst_perf tst_perf.c tst_utils.c)
 target_link_libraries(tst_perf PRIVATE ncsqueeze ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
 target_include_directories(tst_perf PRIVATE ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+# Pass BUILD_LZ4 and BUILD_BZIP2 as preprocessor definitions
+target_compile_definitions(tst_perf PRIVATE
+    $<$<BOOL:${BUILD_LZ4}>:BUILD_LZ4=1>
+    $<$<BOOL:${BUILD_BZIP2}>:BUILD_BZIP2=1>
+)
 
 # Build CDF UDF test if CDF is enabled
 if(HAVE_CDF)
@@ -68,9 +73,20 @@ endif()
 # Configure run_tests.sh script with proper paths
 # For CMake builds, point to the installed plugin location
 set(MY_HDF5_PLUGIN_PATH "${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin:${NETCDF_PREFIX}/hdf5/lib/plugin")
-set(BUILD_LZ4 "yes")
-set(BUILD_BZIP2 "yes")
+# Convert CMake booleans to shell-compatible "yes"/"no" for run_tests.sh
+if(BUILD_LZ4)
+    set(BUILD_LZ4 "yes")
+else()
+    set(BUILD_LZ4 "no")
+endif()
+if(BUILD_BZIP2)
+    set(BUILD_BZIP2 "yes")
+else()
+    set(BUILD_BZIP2 "no")
+endif()
 set(BUILD_JPEG "no")
+# Get HDF5 library directory for LD_LIBRARY_PATH (needed when NetCDF lacks RPATH)
+get_filename_component(HDF5_LIB_DIR "${HDF5_C_LIBRARIES}" DIRECTORY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/run_tests.sh.in 
                ${CMAKE_CURRENT_BINARY_DIR}/run_tests.sh @ONLY)
 
