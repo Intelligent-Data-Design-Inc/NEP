@@ -190,21 +190,22 @@ if(NOT DOCS_ONLY)
         STEP_TARGETS install
     )
     
-    # Create a custom target that ensures plugins are built before main install
-    add_custom_target(build_plugins ALL DEPENDS hdf5_plugins)
-    
-    # Add a custom step to copy plugins to the final install location
-    # This runs as part of the ExternalProject and ensures plugins are available for install
-    ExternalProject_Add_Step(hdf5_plugins copy_to_install
-        COMMAND ${CMAKE_COMMAND} -E echo "Copying plugins from ${PLUGIN_INSTALL_DIR}/lib/plugin to install tree"
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/plugin_staging
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${PLUGIN_INSTALL_DIR}/lib/plugin ${CMAKE_BINARY_DIR}/plugin_staging
-        DEPENDEES install
-        ALWAYS 1
+    # Create a custom target that copies plugins to build tree after ExternalProject completes
+    # This ensures the plugins are available as build artifacts for installation
+    add_custom_command(
+        OUTPUT ${CMAKE_BINARY_DIR}/plugin_install_stamp
+        COMMAND ${CMAKE_COMMAND} -E echo "Copying plugins to build tree for installation"
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/plugins_for_install
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${PLUGIN_INSTALL_DIR}/lib/plugin ${CMAKE_BINARY_DIR}/plugins_for_install
+        COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_BINARY_DIR}/plugin_install_stamp
+        DEPENDS hdf5_plugins
+        COMMENT "Preparing plugins for installation"
     )
     
-    # Install the staged plugins
-    install(DIRECTORY ${CMAKE_BINARY_DIR}/plugin_staging/
+    add_custom_target(prepare_plugins ALL DEPENDS ${CMAKE_BINARY_DIR}/plugin_install_stamp)
+    
+    # Install the plugins that were copied to the build tree
+    install(DIRECTORY ${CMAKE_BINARY_DIR}/plugins_for_install/
             DESTINATION ${CMAKE_INSTALL_LIBDIR}/plugin
             USE_SOURCE_PERMISSIONS
             FILES_MATCHING PATTERN "*.so*"
