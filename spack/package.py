@@ -52,24 +52,64 @@ class Nep(CMakePackage):
     @run_after("install")
     def check_install(self):
         """Verify that plugin libraries are installed."""
-        plugin_dir = join_path(self.prefix.lib, "plugin")
-        
-        # Check if plugin directory exists
-        if not os.path.exists(plugin_dir):
-            raise InstallError(f"Plugin directory not found: {plugin_dir}")
-        
-        # List what's actually in the plugin directory
         import glob
-        plugins = glob.glob(join_path(plugin_dir, "*.so"))
-        tty.info(f"Found plugins: {plugins}")
-        
-        # Verify expected plugins are present
+
+        # Candidate library directories (handle lib vs lib64 layouts)
+        lib_dirs = []
+        if os.path.isdir(self.prefix.lib):
+            lib_dirs.append(self.prefix.lib)
+        if os.path.isdir(self.prefix.lib64):
+            lib_dirs.append(self.prefix.lib64)
+
+        tty.info(f"NEP prefix: {self.prefix}")
+        tty.info(f"Candidate library dirs for plugins: {lib_dirs}")
+
+        # Locate the plugin directory under one of the lib dirs
+        plugin_dir = None
+        for lib_dir in lib_dirs:
+            candidate = join_path(lib_dir, "plugin")
+            if os.path.isdir(candidate):
+                plugin_dir = candidate
+                break
+
+        if plugin_dir is None:
+            # Log useful debugging information before failing
+            try:
+                prefix_contents = os.listdir(self.prefix)
+            except OSError:
+                prefix_contents = []
+            tty.info(f"Top-level contents of prefix {self.prefix}: {prefix_contents}")
+
+            for lib_dir in lib_dirs:
+                try:
+                    tty.info(f"Contents of {lib_dir}: {os.listdir(lib_dir)}")
+                except OSError:
+                    tty.info(f"Could not list contents of {lib_dir}")
+
+            tried_paths = [join_path(d, "plugin") for d in lib_dirs]
+            raise InstallError(
+                "Plugin directory not found under any library directory. "
+                f"Tried: {tried_paths}"
+            )
+
+        tty.info(f"Using plugin directory: {plugin_dir}")
+
+        # List what is actually in the plugin directory
+        plugins = glob.glob(join_path(plugin_dir, "*.so*"))
+        tty.info(f"All plugin .so files found: {plugins}")
+
+        def _require_plugin(patterns, desc):
+            """Require that at least one file matching any pattern exists."""
+            for pattern in patterns:
+                matches = glob.glob(join_path(plugin_dir, pattern))
+                if matches:
+                    tty.info(f"{desc} plugin files matching '{pattern}': {matches}")
+                    return
+            raise InstallError(f"{desc} plugin not found in {plugin_dir}")
+
+        # Verify expected plugins are present based on variants
         if self.spec.satisfies("+lz4"):
-            lz4_plugin = join_path(plugin_dir, "libh5lz4.so")
-            if not os.path.exists(lz4_plugin):
-                raise InstallError(f"LZ4 plugin not found: {lz4_plugin}")
-        
+            _require_plugin(["libh5lz4.so", "libh5lz4.so.*"], "LZ4")
+
         if self.spec.satisfies("+bzip2"):
-            bzip2_plugin = join_path(plugin_dir, "libh5bzip2.so")
-            if not os.path.exists(bzip2_plugin):
-                raise InstallError(f"BZIP2 plugin not found: {bzip2_plugin}")
+            _require_plugin(["libh5bzip2.so", "libh5bzip2.so.*"], "BZIP2")

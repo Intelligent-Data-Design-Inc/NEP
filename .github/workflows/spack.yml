@@ -98,6 +98,38 @@ jobs:
           else
             spack install nep@1.3.0 ${{ matrix.variant.spec }}
           fi
+
+      - name: Dump Spack logs on failure
+        if: ${{ failure() }}
+        run: |
+          . ~/spack/share/spack/setup-env.sh
+          
+          echo "=== Spack debug info ==="
+          spack --version || true
+          spack debug report || true
+          echo ""
+          echo "=== Spack find (may be empty if install failed) ==="
+          spack find -lv nep || true
+          echo ""
+          echo "=== Spack stage directories (nep) ==="
+          ls -la /tmp/runner/spack-stage || true
+          ls -la /tmp/runner/spack-stage/spack-stage-nep-* || true
+          echo ""
+          echo "=== spack-build-out.txt (nep) ==="
+          for d in /tmp/runner/spack-stage/spack-stage-nep-*; do
+            if [ -d "$d" ]; then
+              echo "--- $d/spack-build-out.txt ---"
+              cat "$d/spack-build-out.txt" || true
+            fi
+          done
+          echo ""
+          echo "=== CMake logs (nep, if present) ==="
+          for d in /tmp/runner/spack-stage/spack-stage-nep-*; do
+            if [ -d "$d" ]; then
+              echo "--- Searching in $d ---"
+              find "$d" -maxdepth 6 -type f \( -name CMakeError.log -o -name CMakeOutput.log \) -print -exec cat {} \; || true
+            fi
+          done
       
       - name: Verify installation
         run: |
