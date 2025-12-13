@@ -193,17 +193,24 @@ if(NOT DOCS_ONLY)
     # Create a custom target that ensures plugins are built before main install
     add_custom_target(build_plugins ALL DEPENDS hdf5_plugins)
     
-    # Install plugins by copying from the ExternalProject install location
-    # Use CODE to copy at install time, after the ExternalProject has completed
-    install(CODE "
-        file(GLOB_RECURSE PLUGIN_FILES \"${PLUGIN_INSTALL_DIR}/lib/plugin/*.so*\")
-        foreach(PLUGIN_FILE \${PLUGIN_FILES})
-            get_filename_component(PLUGIN_NAME \${PLUGIN_FILE} NAME)
-            file(INSTALL \${PLUGIN_FILE}
-                 DESTINATION \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/plugin\"
-                 USE_SOURCE_PERMISSIONS)
-        endforeach()
-    ")
+    # Add a custom step to copy plugins to the final install location
+    # This runs as part of the ExternalProject and ensures plugins are available for install
+    ExternalProject_Add_Step(hdf5_plugins copy_to_install
+        COMMAND ${CMAKE_COMMAND} -E echo "Copying plugins from ${PLUGIN_INSTALL_DIR}/lib/plugin to install tree"
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/plugin_staging
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${PLUGIN_INSTALL_DIR}/lib/plugin ${CMAKE_BINARY_DIR}/plugin_staging
+        DEPENDEES install
+        ALWAYS 1
+    )
+    
+    # Install the staged plugins
+    install(DIRECTORY ${CMAKE_BINARY_DIR}/plugin_staging/
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}/plugin
+            USE_SOURCE_PERMISSIONS
+            FILES_MATCHING PATTERN "*.so*"
+            PATTERN "*.la" EXCLUDE
+            PATTERN "*.a" EXCLUDE
+            OPTIONAL)
     # GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
     # Will be re-enabled in v2.0.0 for GRIB2 UDF support
     # If GRIB2 layer has been built, test it.
