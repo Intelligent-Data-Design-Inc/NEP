@@ -190,26 +190,32 @@ if(NOT DOCS_ONLY)
         STEP_TARGETS install
     )
     
-    # Create a custom target that copies plugins to build tree after ExternalProject completes
-    # Use add_custom_target with COMMAND (not add_custom_command) so it always runs
-    # and use add_dependencies to ensure proper ordering
-    add_custom_target(prepare_plugins ALL
-        COMMAND ${CMAKE_COMMAND} -E echo "Copying plugins from ${PLUGIN_INSTALL_DIR}/lib/plugin to build tree"
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/plugins_for_install
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${PLUGIN_INSTALL_DIR}/lib/plugin ${CMAKE_BINARY_DIR}/plugins_for_install
-        COMMENT "Preparing plugins for installation"
-    )
-    
-    # Make prepare_plugins depend on the ExternalProject completing its install step
-    add_dependencies(prepare_plugins hdf5_plugins)
-    
-    # Install the plugins that were copied to the build tree
-    install(DIRECTORY ${CMAKE_BINARY_DIR}/plugins_for_install/
-            DESTINATION ${CMAKE_INSTALL_LIBDIR}/plugin
-            USE_SOURCE_PERMISSIONS
-            FILES_MATCHING PATTERN "*.so*"
-            PATTERN "*.la" EXCLUDE
-            PATTERN "*.a" EXCLUDE)
+    # Install plugins using install(CODE) which runs at install time
+    # This is necessary because ExternalProject builds during the build phase,
+    # so the plugin files don't exist at configure time when install(DIRECTORY) is evaluated
+    install(CODE "
+        set(PLUGIN_SRC_DIR \"${PLUGIN_INSTALL_DIR}/lib/plugin\")
+        set(PLUGIN_DST_DIR \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/plugin\")
+        
+        message(STATUS \"Installing HDF5 plugins from \${PLUGIN_SRC_DIR} to \${PLUGIN_DST_DIR}\")
+        
+        if(EXISTS \"\${PLUGIN_SRC_DIR}\")
+            file(MAKE_DIRECTORY \"\${PLUGIN_DST_DIR}\")
+            file(GLOB PLUGIN_FILES \"\${PLUGIN_SRC_DIR}/*.so*\")
+            foreach(PLUGIN_FILE \${PLUGIN_FILES})
+                get_filename_component(PLUGIN_NAME \"\${PLUGIN_FILE}\" NAME)
+                message(STATUS \"Installing: \${PLUGIN_DST_DIR}/\${PLUGIN_NAME}\")
+                file(COPY \"\${PLUGIN_FILE}\" DESTINATION \"\${PLUGIN_DST_DIR}\")
+            endforeach()
+            
+            # List what was installed
+            file(GLOB INSTALLED_PLUGINS \"\${PLUGIN_DST_DIR}/*\")
+            list(LENGTH INSTALLED_PLUGINS NUM_PLUGINS)
+            message(STATUS \"Installed \${NUM_PLUGINS} plugin file(s) to \${PLUGIN_DST_DIR}\")
+        else()
+            message(WARNING \"Plugin source directory does not exist: \${PLUGIN_SRC_DIR}\")
+        endif()
+    ")
     # GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
     # Will be re-enabled in v2.0.0 for GRIB2 UDF support
     # If GRIB2 layer has been built, test it.
