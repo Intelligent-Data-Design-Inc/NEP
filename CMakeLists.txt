@@ -209,8 +209,7 @@ if(NOT DOCS_ONLY)
             USE_SOURCE_PERMISSIONS
             FILES_MATCHING PATTERN "*.so*"
             PATTERN "*.la" EXCLUDE
-            PATTERN "*.a" EXCLUDE
-            OPTIONAL)
+            PATTERN "*.a" EXCLUDE)
     # GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
     # Will be re-enabled in v2.0.0 for GRIB2 UDF support
     # If GRIB2 layer has been built, test it.
