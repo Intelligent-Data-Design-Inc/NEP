@@ -194,14 +194,16 @@ if(NOT DOCS_ONLY)
     add_custom_target(build_plugins ALL DEPENDS hdf5_plugins)
     
     # Install plugins by copying from the ExternalProject install location
-    # The plugins are built during the build phase by the hdf5_plugins ExternalProject
-    # and installed to PLUGIN_INSTALL_DIR. We copy them to the final install location here.
-    install(DIRECTORY ${PLUGIN_INSTALL_DIR}/lib/plugin
-            DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            USE_SOURCE_PERMISSIONS
-            FILES_MATCHING PATTERN "*.so*"
-            PATTERN "*.la" EXCLUDE
-            PATTERN "*.a" EXCLUDE)
+    # Use CODE to copy at install time, after the ExternalProject has completed
+    install(CODE "
+        file(GLOB_RECURSE PLUGIN_FILES \"${PLUGIN_INSTALL_DIR}/lib/plugin/*.so*\")
+        foreach(PLUGIN_FILE \${PLUGIN_FILES})
+            get_filename_component(PLUGIN_NAME \${PLUGIN_FILE} NAME)
+            file(INSTALL \${PLUGIN_FILE}
+                 DESTINATION \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/plugin\"
+                 USE_SOURCE_PERMISSIONS)
+        endforeach()
+    ")
     # GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
     # Will be re-enabled in v2.0.0 for GRIB2 UDF support
     # If GRIB2 layer has been built, test it.
