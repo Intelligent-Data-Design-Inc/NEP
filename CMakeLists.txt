@@ -191,18 +191,17 @@ if(NOT DOCS_ONLY)
     )
     
     # Create a custom target that copies plugins to build tree after ExternalProject completes
-    # This ensures the plugins are available as build artifacts for installation
-    add_custom_command(
-        OUTPUT ${CMAKE_BINARY_DIR}/plugin_install_stamp
-        COMMAND ${CMAKE_COMMAND} -E echo "Copying plugins to build tree for installation"
+    # Use add_custom_target with COMMAND (not add_custom_command) so it always runs
+    # and use add_dependencies to ensure proper ordering
+    add_custom_target(prepare_plugins ALL
+        COMMAND ${CMAKE_COMMAND} -E echo "Copying plugins from ${PLUGIN_INSTALL_DIR}/lib/plugin to build tree"
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/plugins_for_install
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${PLUGIN_INSTALL_DIR}/lib/plugin ${CMAKE_BINARY_DIR}/plugins_for_install
-        COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_BINARY_DIR}/plugin_install_stamp
-        DEPENDS hdf5_plugins
         COMMENT "Preparing plugins for installation"
     )
     
-    add_custom_target(prepare_plugins ALL DEPENDS ${CMAKE_BINARY_DIR}/plugin_install_stamp)
+    # Make prepare_plugins depend on the ExternalProject completing its install step
+    add_dependencies(prepare_plugins hdf5_plugins)
     
     # Install the plugins that were copied to the build tree
     install(DIRECTORY ${CMAKE_BINARY_DIR}/plugins_for_install/
