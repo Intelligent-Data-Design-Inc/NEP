@@ -193,28 +193,51 @@ if(NOT DOCS_ONLY)
     # Install plugins using install(CODE) which runs at install time
     # This is necessary because ExternalProject builds during the build phase,
     # so the plugin files don't exist at configure time when install(DIRECTORY) is evaluated
+    install(CODE [[
+        message(STATUS "=== HDF5 Plugin Installation Starting ===")
+    ]])
+    
     install(CODE "
+        message(STATUS \"Plugin source: ${PLUGIN_INSTALL_DIR}/lib/plugin\")
+        message(STATUS \"Plugin dest: \${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/plugin\")
+        
         set(PLUGIN_SRC_DIR \"${PLUGIN_INSTALL_DIR}/lib/plugin\")
         set(PLUGIN_DST_DIR \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/plugin\")
         
-        message(STATUS \"Installing HDF5 plugins from \${PLUGIN_SRC_DIR} to \${PLUGIN_DST_DIR}\")
+        # Debug: show what we're looking for
+        message(STATUS \"Looking for plugins in: \${PLUGIN_SRC_DIR}\")
         
         if(EXISTS \"\${PLUGIN_SRC_DIR}\")
+            message(STATUS \"Source directory EXISTS\")
+            
+            # List contents of source directory
+            file(GLOB ALL_FILES \"\${PLUGIN_SRC_DIR}/*\")
+            message(STATUS \"Source directory contents: \${ALL_FILES}\")
+            
             file(MAKE_DIRECTORY \"\${PLUGIN_DST_DIR}\")
             file(GLOB PLUGIN_FILES \"\${PLUGIN_SRC_DIR}/*.so*\")
+            message(STATUS \"Found .so files: \${PLUGIN_FILES}\")
+            
             foreach(PLUGIN_FILE \${PLUGIN_FILES})
                 get_filename_component(PLUGIN_NAME \"\${PLUGIN_FILE}\" NAME)
-                message(STATUS \"Installing: \${PLUGIN_DST_DIR}/\${PLUGIN_NAME}\")
+                message(STATUS \"Copying: \${PLUGIN_FILE} -> \${PLUGIN_DST_DIR}/\${PLUGIN_NAME}\")
                 file(COPY \"\${PLUGIN_FILE}\" DESTINATION \"\${PLUGIN_DST_DIR}\")
             endforeach()
             
-            # List what was installed
+            # Verify what was installed
             file(GLOB INSTALLED_PLUGINS \"\${PLUGIN_DST_DIR}/*\")
             list(LENGTH INSTALLED_PLUGINS NUM_PLUGINS)
             message(STATUS \"Installed \${NUM_PLUGINS} plugin file(s) to \${PLUGIN_DST_DIR}\")
+            message(STATUS \"Installed files: \${INSTALLED_PLUGINS}\")
         else()
             message(WARNING \"Plugin source directory does not exist: \${PLUGIN_SRC_DIR}\")
+            # Debug: list parent directory
+            execute_process(COMMAND ls -la \"${PLUGIN_INSTALL_DIR}/lib\" OUTPUT_VARIABLE LS_OUTPUT ERROR_VARIABLE LS_ERROR)
+            message(STATUS \"Contents of ${PLUGIN_INSTALL_DIR}/lib: \${LS_OUTPUT}\")
+            message(STATUS \"Error (if any): \${LS_ERROR}\")
         endif()
+        
+        message(STATUS \"=== HDF5 Plugin Installation Complete ===\")
     ")
     # GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
     # Will be re-enabled in v2.0.0 for GRIB2 UDF support

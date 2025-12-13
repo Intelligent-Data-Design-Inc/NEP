@@ -54,6 +54,44 @@ class Nep(CMakePackage):
         """Verify that plugin libraries are installed."""
         import glob
 
+        # Debug: Check if build directory still exists and show cmake_install.cmake
+        tty.info(f"Build directory: {self.build_directory}")
+        cmake_install_file = join_path(self.build_directory, "cmake_install.cmake")
+        if os.path.isfile(cmake_install_file):
+            tty.info(f"cmake_install.cmake exists at: {cmake_install_file}")
+            # Check if our plugin install code is in the cmake_install.cmake
+            try:
+                with open(cmake_install_file, "r") as f:
+                    content = f.read()
+                    if "HDF5 Plugin" in content or "PLUGIN_SRC_DIR" in content:
+                        tty.info("Found plugin install code in cmake_install.cmake")
+                    else:
+                        tty.warn("Plugin install code NOT found in cmake_install.cmake!")
+                    # Show lines containing 'plugin' (case insensitive)
+                    plugin_lines = [l for l in content.split('\n') if 'plugin' in l.lower()]
+                    tty.info(f"Lines mentioning 'plugin' in cmake_install.cmake: {len(plugin_lines)}")
+                    for line in plugin_lines[:20]:  # Show first 20
+                        tty.info(f"  {line.strip()}")
+            except Exception as e:
+                tty.warn(f"Could not read cmake_install.cmake: {e}")
+        else:
+            tty.warn(f"cmake_install.cmake not found at: {cmake_install_file}")
+
+        # Debug: Check hdf5_plugins_install directory in build tree
+        plugin_staging = join_path(self.build_directory, "hdf5_plugins_install", "lib", "plugin")
+        tty.info(f"Checking plugin staging dir: {plugin_staging}")
+        if os.path.isdir(plugin_staging):
+            tty.info(f"Plugin staging dir EXISTS, contents: {os.listdir(plugin_staging)}")
+        else:
+            tty.warn(f"Plugin staging dir does NOT exist: {plugin_staging}")
+            # Check parent directories
+            parent = join_path(self.build_directory, "hdf5_plugins_install")
+            if os.path.isdir(parent):
+                tty.info(f"hdf5_plugins_install exists, contents: {os.listdir(parent)}")
+                lib_dir = join_path(parent, "lib")
+                if os.path.isdir(lib_dir):
+                    tty.info(f"hdf5_plugins_install/lib contents: {os.listdir(lib_dir)}")
+
         # Candidate library directories (handle lib vs lib64 layouts)
         lib_dirs = []
         if os.path.isdir(self.prefix.lib):
