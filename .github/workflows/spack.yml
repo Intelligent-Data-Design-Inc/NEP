@@ -94,9 +94,9 @@ jobs:
           
           echo "Installing NEP with variant: ${{ matrix.variant.spec }}"
           if [ -z "${{ matrix.variant.spec }}" ]; then
-            spack install nep@1.3.0
+            spack install --verbose nep@1.3.0
           else
-            spack install nep@1.3.0 ${{ matrix.variant.spec }}
+            spack install --verbose nep@1.3.0 ${{ matrix.variant.spec }}
           fi
 
       - name: Dump Spack logs on failure
@@ -115,11 +115,31 @@ jobs:
           ls -la /tmp/runner/spack-stage || true
           ls -la /tmp/runner/spack-stage/spack-stage-nep-* || true
           echo ""
-          echo "=== spack-build-out.txt (nep) ==="
+          echo "=== NEP stage directory structure ==="
+          for d in /tmp/runner/spack-stage/spack-stage-nep-*; do
+            if [ -d "$d" ]; then
+              echo "--- Directory tree for $d ---"
+              find "$d" -type d | head -50 || true
+            fi
+          done
+          echo ""
+          echo "=== spack-build-out.txt (nep) - FULL OUTPUT ==="
           for d in /tmp/runner/spack-stage/spack-stage-nep-*; do
             if [ -d "$d" ]; then
               echo "--- $d/spack-build-out.txt ---"
-              cat "$d/spack-build-out.txt" || true
+              if [ -f "$d/spack-build-out.txt" ]; then
+                cat "$d/spack-build-out.txt"
+              else
+                echo "File not found: $d/spack-build-out.txt"
+              fi
+            fi
+          done
+          echo ""
+          echo "=== spack-build-env.txt (nep) ==="
+          for d in /tmp/runner/spack-stage/spack-stage-nep-*; do
+            if [ -d "$d" ]; then
+              echo "--- $d/spack-build-env.txt ---"
+              cat "$d/spack-build-env.txt" || true
             fi
           done
           echo ""
@@ -130,6 +150,24 @@ jobs:
               find "$d" -maxdepth 6 -type f \( -name CMakeError.log -o -name CMakeOutput.log \) -print -exec cat {} \; || true
             fi
           done
+          echo ""
+          echo "=== Build directory contents ==="
+          for d in /tmp/runner/spack-stage/spack-stage-nep-*; do
+            if [ -d "$d/spack-build-*" ]; then
+              echo "--- Build directory in $d ---"
+              ls -laR "$d/spack-build-"* | head -200 || true
+            fi
+          done
+          echo ""
+          echo "=== Install prefix check ==="
+          NEP_INSTALL=$(spack location -i nep 2>/dev/null || echo "NOT_INSTALLED")
+          if [ "$NEP_INSTALL" != "NOT_INSTALLED" ]; then
+            echo "NEP install location: $NEP_INSTALL"
+            echo "--- Contents of install prefix ---"
+            ls -laR "$NEP_INSTALL" || true
+          else
+            echo "NEP not installed yet"
+          fi
       
       - name: Verify installation
         run: |
