@@ -125,6 +125,8 @@ NEP can be installed using Spack for simplified dependency management:
 spack install nep
 ```
 
+**Note**: CDF support (available in v1.3.0+) is not yet available via Spack because the CDF library is not in Spack. For CDF support, build NEP manually.
+
 For more details on Spack installation options and variants, see **[Spack Installation Guide](docs/spack.md)**.
 
 ### Test Data

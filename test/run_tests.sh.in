@@ -4,6 +4,12 @@
 set -x
 set -e
 
+# Add HDF5 library path to LD_LIBRARY_PATH so NetCDF can find HDF5 libraries
+# This is needed when NetCDF-C was built without RPATH embedding
+if test -n "@HDF5_LIB_DIR@"; then
+    export LD_LIBRARY_PATH="@HDF5_LIB_DIR@:$LD_LIBRARY_PATH"
+fi
+
 # This will find the zstd filter with the netcdf-c install.
 export HDF5_PLUGIN_PATH=@MY_HDF5_PLUGIN_PATH@
 

@@ -124,6 +124,7 @@ int test_compression(int f)
     /* The parameter f denotes the desired compression. */
     if (f)
     {
+#if BUILD_ZSTD
 	if (f == COMPRESS_ZSTD)
 	{
 	    if ((ret = nc_def_var_zstandard(ncid, varid, level)))
@@ -132,7 +133,9 @@ int test_compression(int f)
 		ERR;
 	    }
 	}
-	else if (f == COMPRESS_ZLIB)
+	else
+#endif
+	if (f == COMPRESS_ZLIB)
 	{
 	    level = MIN_ZLIB;
 	    if (nc_def_var_deflate(ncid, varid, 0, 1, level)) ERR;
@@ -236,7 +239,9 @@ main()
     srand(time(NULL));
     
     test_compression(UNCOMPRESSED);
+#if BUILD_ZSTD
     test_compression(COMPRESS_ZSTD);
+#endif
     test_compression(COMPRESS_ZLIB);
 #if BUILD_LZ4    
     test_compression(COMPRESS_LZ4);

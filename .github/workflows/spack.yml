@@ -1,0 +1,232 @@
+name: Spack
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  spack-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant:
+          - name: "default"
+            spec: ""
+          - name: "lz4-only"
+            spec: "+lz4~bzip2"
+          - name: "bzip2-only"
+            spec: "~lz4+bzip2"
+    
+    name: Spack (${{ matrix.variant.name }})
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Cache Spack
+        uses: actions/cache@v4
+        with:
+          path: ~/spack
+          key: spack-${{ runner.os }}-${{ hashFiles('.github/workflows/spack.yml') }}
+          restore-keys: |
+            spack-${{ runner.os }}-
+      
+      - name: Free up disk space
+        run: |
+          echo "=== Disk space before cleanup ==="
+          df -h
+          
+          # Remove unnecessary packages to free up space
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          
+          echo "=== Disk space after cleanup ==="
+          df -h
+      
+      - name: Install Spack
+        run: |
+          if [ ! -d ~/spack ]; then
+            echo "Installing Spack..."
+            git clone -c feature.manyFiles=true --depth=1 https://github.com/spack/spack.git ~/spack
+          else
+            echo "Spack already cached"
+          fi
+          . ~/spack/share/spack/setup-env.sh
+          spack --version
+          spack compiler find
+          
+          # Simple config - just use binary cache
+          spack mirror add binary https://binaries.spack.io/v0.23.1
+          spack buildcache keys --install --trust
+      
+      - name: Setup local Spack repository
+        run: |
+          . ~/spack/share/spack/setup-env.sh
+          
+          # Create local repository structure
+          mkdir -p ~/nep-spack-repo/packages/nep
+          cp spack/package.py ~/nep-spack-repo/packages/nep/
+          
+          # Create repo.yaml
+          cat > ~/nep-spack-repo/repo.yaml << 'EOF'
+          repo:
+            namespace: nep-local
+          EOF
+          
+          # Add repository to Spack
+          spack repo add ~/nep-spack-repo
+          
+          # Verify repository added
+          spack repo list
+          
+          # Verify package is available
+          spack info nep
+      
+      - name: Install NEP with variant
+        run: |
+          . ~/spack/share/spack/setup-env.sh
+          
+          echo "Installing NEP with variant: ${{ matrix.variant.spec }}"
+          if [ -z "${{ matrix.variant.spec }}" ]; then
+            spack install --verbose nep@1.3.0
+          else
+            spack install --verbose nep@1.3.0 ${{ matrix.variant.spec }}
+          fi
+
+      - name: Dump Spack logs on failure
+        if: ${{ failure() }}
+        run: |
+          . ~/spack/share/spack/setup-env.sh
+          
+          echo "=== Spack debug info ==="
+          spack --version || true
+          spack debug report || true
+          echo ""
+          echo "=== Spack find (may be empty if install failed) ==="
+          spack find -lv nep || true
+          echo ""
+          echo "=== Spack stage directories (nep) ==="
+          ls -la /tmp/runner/spack-stage || true
+          ls -la /tmp/runner/spack-stage/spack-stage-nep-* || true
+          echo ""
+          echo "=== NEP stage directory structure ==="
+          for d in /tmp/runner/spack-stage/spack-stage-nep-*; do
+            if [ -d "$d" ]; then
+              echo "--- Directory tree for $d ---"
+              find "$d" -type d | head -50 || true
+            fi
+          done
+          echo ""
+          echo "=== spack-build-out.txt (nep) - FULL OUTPUT ==="
+          for d in /tmp/runner/spack-stage/spack-stage-nep-*; do
+            if [ -d "$d" ]; then
+              echo "--- $d/spack-build-out.txt ---"
+              if [ -f "$d/spack-build-out.txt" ]; then
+                cat "$d/spack-build-out.txt"
+              else
+                echo "File not found: $d/spack-build-out.txt"
+              fi
+            fi
+          done
+          echo ""
+          echo "=== spack-build-env.txt (nep) ==="
+          for d in /tmp/runner/spack-stage/spack-stage-nep-*; do
+            if [ -d "$d" ]; then
+              echo "--- $d/spack-build-env.txt ---"
+              cat "$d/spack-build-env.txt" || true
+            fi
+          done
+          echo ""
+          echo "=== CMake logs (nep, if present) ==="
+          for d in /tmp/runner/spack-stage/spack-stage-nep-*; do
+            if [ -d "$d" ]; then
+              echo "--- Searching in $d ---"
+              find "$d" -maxdepth 6 -type f \( -name CMakeError.log -o -name CMakeOutput.log \) -print -exec cat {} \; || true
+            fi
+          done
+          echo ""
+          echo "=== Build directory contents ==="
+          for d in /tmp/runner/spack-stage/spack-stage-nep-*; do
+            if [ -d "$d/spack-build-*" ]; then
+              echo "--- Build directory in $d ---"
+              ls -laR "$d/spack-build-"* | head -200 || true
+            fi
+          done
+          echo ""
+          echo "=== Install prefix check ==="
+          NEP_INSTALL=$(spack location -i nep 2>/dev/null || echo "NOT_INSTALLED")
+          if [ "$NEP_INSTALL" != "NOT_INSTALLED" ]; then
+            echo "NEP install location: $NEP_INSTALL"
+            echo "--- Contents of install prefix ---"
+            ls -laR "$NEP_INSTALL" || true
+          else
+            echo "NEP not installed yet"
+          fi
+      
+      - name: Verify installation
+        run: |
+          . ~/spack/share/spack/setup-env.sh
+          echo "=== Spack find ==="
+          spack find nep
+          echo ""
+          echo "=== Loading NEP ==="
+          spack load nep
+          echo ""
+          echo "=== NEP installation location ==="
+          NEP_PREFIX=$(spack location -i nep)
+          echo "NEP installed at: $NEP_PREFIX"
+          echo ""
+          echo "=== Plugin directory contents ==="
+          ls -la $NEP_PREFIX/lib/plugin/ || echo "Plugin directory not found"
+      
+      - name: Verify plugin installation
+        run: |
+          . ~/spack/share/spack/setup-env.sh
+          spack load nep
+          NEP_PREFIX=$(spack location -i nep)
+          
+          echo "Checking for expected plugin libraries..."
+          
+          # Check for LZ4 if enabled (enabled by default unless explicitly disabled)
+          if [[ "${{ matrix.variant.spec }}" != *"~lz4"* ]]; then
+            echo "Checking for LZ4 plugin..."
+            if [ -f "$NEP_PREFIX/lib/plugin/libh5lz4.so" ]; then
+              echo "✓ LZ4 plugin found"
+            else
+              echo "✗ LZ4 plugin NOT found"
+              exit 1
+            fi
+          else
+            echo "LZ4 disabled, skipping check"
+          fi
+          
+          # Check for BZIP2 if enabled (enabled by default unless explicitly disabled)
+          if [[ "${{ matrix.variant.spec }}" != *"~bzip2"* ]]; then
+            echo "Checking for BZIP2 plugin..."
+            if [ -f "$NEP_PREFIX/lib/plugin/libh5bzip2.so" ]; then
+              echo "✓ BZIP2 plugin found"
+            else
+              echo "✗ BZIP2 plugin NOT found"
+              exit 1
+            fi
+          else
+            echo "BZIP2 disabled, skipping check"
+          fi
+          
+          echo ""
+          echo "All expected plugins verified successfully!"
+      
+      - name: Test HDF5_PLUGIN_PATH
+        run: |
+          . ~/spack/share/spack/setup-env.sh
+          spack load nep
+          NEP_PREFIX=$(spack location -i nep)
+          export HDF5_PLUGIN_PATH=$NEP_PREFIX/lib/plugin
+          echo "HDF5_PLUGIN_PATH set to: $HDF5_PLUGIN_PATH"
+          ls -la $HDF5_PLUGIN_PATH

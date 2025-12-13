@@ -15,8 +15,11 @@ option(DEBUG "Build with debugging symbols" OFF)
 option(ENABLE_FORTRAN "Build Fortran wrappers and related tests" ON)
 
 # Build options for compression filters (mirror autotools options)
+# Note: NEP's hdf5_plugins subproject only provides LZ4. Other filters require
+# NetCDF-C to be built with the corresponding filter support.
 option(BUILD_LZ4 "Enable LZ4 filter support" ON)
-option(BUILD_BZIP2 "Enable BZIP2 filter support" ON)
+option(BUILD_BZIP2 "Enable BZIP2 filter support (requires NetCDF-C bzip2 support)" OFF)
+option(BUILD_ZSTD "Enable Zstandard filter support (requires NetCDF-C zstd support)" OFF)
 
 # Define global preprocessor symbol to mirror Autotools AC_DEFINE([USE_HDF5],[yes])
 # Use add_definitions for compatibility with CMake 3.9
@@ -40,6 +43,16 @@ if(DEBUG)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
     message(STATUS "Debug mode enabled: Adding -g flag")
 endif()
+
+# RPATH settings so executables can find libraries without LD_LIBRARY_PATH
+# Use full RPATH for build tree (allows running tests from build directory)
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
+# Don't use install RPATH when building - use build tree paths
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+# Set RPATH to use when installed
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+# Add library paths from dependencies to RPATH
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Determine if we're doing a documentation-only build
 set(DOCS_ONLY OFF)
@@ -152,16 +165,93 @@ if(NOT DOCS_ONLY)
     # Build HDF5 filter plugins using Autotools (LZ4 and BZIP2 for v1.0.0)
     # The hdf5_plugins directory uses Autotools, so we use ExternalProject to build it
     # Use h5cc wrapper which handles all HDF5 flags automatically
+    
+    # Build configure flags based on BUILD_LZ4 and BUILD_BZIP2 options
+    set(PLUGIN_CONFIGURE_FLAGS "--disable-jpeg --disable-lzf")
+    if(BUILD_LZ4)
+        list(APPEND PLUGIN_CONFIGURE_FLAGS "--enable-lz4")
+    else()
+        list(APPEND PLUGIN_CONFIGURE_FLAGS "--disable-lz4")
+    endif()
+    if(BUILD_BZIP2)
+        list(APPEND PLUGIN_CONFIGURE_FLAGS "--enable-bzip2")
+    else()
+        list(APPEND PLUGIN_CONFIGURE_FLAGS "--disable-bzip2")
+    endif()
+    string(REPLACE ";" " " PLUGIN_CONFIGURE_FLAGS_STR "${PLUGIN_CONFIGURE_FLAGS}")
+    
+    set(PLUGIN_BUILD_DIR "${CMAKE_BINARY_DIR}/hdf5_plugins_build")
+    set(PLUGIN_INSTALL_DIR "${CMAKE_BINARY_DIR}/hdf5_plugins_install")
+    
+    message(STATUS "Plugin build directory: ${PLUGIN_BUILD_DIR}")
+    message(STATUS "Plugin install directory: ${PLUGIN_INSTALL_DIR}")
+    message(STATUS "Plugin configure flags: ${PLUGIN_CONFIGURE_FLAGS_STR}")
+    
     ExternalProject_Add(hdf5_plugins
         SOURCE_DIR ${CMAKE_SOURCE_DIR}/hdf5_plugins
-        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/hdf5_plugins
+        BINARY_DIR ${PLUGIN_BUILD_DIR}
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E chdir ${PLUGIN_BUILD_DIR}
             ${CMAKE_COMMAND} -E env
             "CC=${HDF5_C_COMPILER_EXECUTABLE}"
-            /bin/sh -c "test -f configure || autoreconf -if && ./configure --prefix=${CMAKE_BINARY_DIR}/hdf5_plugins_install --with-hdf5-plugin-path=${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin --enable-lz4 --enable-bzip2 --disable-jpeg --disable-lzf"
-        BUILD_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/hdf5_plugins make
-        INSTALL_COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/hdf5_plugins make install
-        BUILD_IN_SOURCE 1
+            /bin/sh -c "cd ${CMAKE_SOURCE_DIR}/hdf5_plugins && (test -f configure || autoreconf -if) && cd ${PLUGIN_BUILD_DIR} && ${CMAKE_SOURCE_DIR}/hdf5_plugins/configure --prefix=${PLUGIN_INSTALL_DIR} --with-hdf5-plugin-path=${PLUGIN_INSTALL_DIR}/lib/plugin ${PLUGIN_CONFIGURE_FLAGS_STR}"
+        BUILD_COMMAND ${CMAKE_COMMAND} -E chdir ${PLUGIN_BUILD_DIR} make
+        INSTALL_COMMAND ${CMAKE_COMMAND} -E chdir ${PLUGIN_BUILD_DIR} make install
+        BUILD_IN_SOURCE 0
+        LOG_CONFIGURE TRUE
+        LOG_BUILD TRUE
+        LOG_INSTALL TRUE
+        STEP_TARGETS install
     )
+    
+    # Install plugins using install(CODE) which runs at install time
+    # This is necessary because ExternalProject builds during the build phase,
+    # so the plugin files don't exist at configure time when install(DIRECTORY) is evaluated
+    install(CODE [[
+        message(STATUS "=== HDF5 Plugin Installation Starting ===")
+    ]])
+    
+    install(CODE "
+        message(STATUS \"Plugin source: ${PLUGIN_INSTALL_DIR}/lib/plugin\")
+        message(STATUS \"Plugin dest: \${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/plugin\")
+        
+        set(PLUGIN_SRC_DIR \"${PLUGIN_INSTALL_DIR}/lib/plugin\")
+        set(PLUGIN_DST_DIR \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/plugin\")
+        
+        # Debug: show what we're looking for
+        message(STATUS \"Looking for plugins in: \${PLUGIN_SRC_DIR}\")
+        
+        if(EXISTS \"\${PLUGIN_SRC_DIR}\")
+            message(STATUS \"Source directory EXISTS\")
+            
+            # List contents of source directory
+            file(GLOB ALL_FILES \"\${PLUGIN_SRC_DIR}/*\")
+            message(STATUS \"Source directory contents: \${ALL_FILES}\")
+            
+            file(MAKE_DIRECTORY \"\${PLUGIN_DST_DIR}\")
+            file(GLOB PLUGIN_FILES \"\${PLUGIN_SRC_DIR}/*.so*\")
+            message(STATUS \"Found .so files: \${PLUGIN_FILES}\")
+            
+            foreach(PLUGIN_FILE \${PLUGIN_FILES})
+                get_filename_component(PLUGIN_NAME \"\${PLUGIN_FILE}\" NAME)
+                message(STATUS \"Copying: \${PLUGIN_FILE} -> \${PLUGIN_DST_DIR}/\${PLUGIN_NAME}\")
+                file(COPY \"\${PLUGIN_FILE}\" DESTINATION \"\${PLUGIN_DST_DIR}\")
+            endforeach()
+            
+            # Verify what was installed
+            file(GLOB INSTALLED_PLUGINS \"\${PLUGIN_DST_DIR}/*\")
+            list(LENGTH INSTALLED_PLUGINS NUM_PLUGINS)
+            message(STATUS \"Installed \${NUM_PLUGINS} plugin file(s) to \${PLUGIN_DST_DIR}\")
+            message(STATUS \"Installed files: \${INSTALLED_PLUGINS}\")
+        else()
+            message(WARNING \"Plugin source directory does not exist: \${PLUGIN_SRC_DIR}\")
+            # Debug: list parent directory
+            execute_process(COMMAND ls -la \"${PLUGIN_INSTALL_DIR}/lib\" OUTPUT_VARIABLE LS_OUTPUT ERROR_VARIABLE LS_ERROR)
+            message(STATUS \"Contents of ${PLUGIN_INSTALL_DIR}/lib: \${LS_OUTPUT}\")
+            message(STATUS \"Error (if any): \${LS_ERROR}\")
+        endif()
+        
+        message(STATUS \"=== HDF5 Plugin Installation Complete ===\")
+    ")
     # GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
     # Will be re-enabled in v2.0.0 for GRIB2 UDF support
     # If GRIB2 layer has been built, test it.
