@@ -21,9 +21,11 @@ target_link_libraries(tst_lz4 PRIVATE ncsqueeze ${NETCDF_LIBRARIES} ${HDF5_LIBRA
 target_include_directories(tst_lz4 PRIVATE ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
 
 # Build BZIP2 test
-add_executable(tst_bzip2 tst_bzip2.c)
-target_link_libraries(tst_bzip2 PRIVATE ncsqueeze ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
-target_include_directories(tst_bzip2 PRIVATE ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+if(BUILD_BZIP2)
+    add_executable(tst_bzip2 tst_bzip2.c)
+    target_link_libraries(tst_bzip2 PRIVATE ncsqueeze ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
+    target_include_directories(tst_bzip2 PRIVATE ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+endif()
 
 # Build performance test
 add_executable(tst_perf tst_perf.c tst_utils.c)
@@ -67,9 +69,33 @@ endif()
 
 # Configure run_tests.sh script with proper paths
 # For CMake builds, point to the installed plugin location
-set(MY_HDF5_PLUGIN_PATH "${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin:${NETCDF_PREFIX}/hdf5/lib/plugin")
+set(MY_HDF5_PLUGIN_PATH "${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin:${NETCDF_PREFIX}/hdf5/lib/plugin:${NETCDF_PREFIX}/lib/plugin:${NETCDF_PREFIX}/lib/hdf5/plugin")
+
+# Provide a runtime library search path for the selected HDF5.
+# FindHDF5.cmake does not always populate HDF5_LIBRARY_DIRS, so derive it.
+set(_nep_hdf5_lib_dirs "")
+if(HDF5_LIBRARY_DIRS)
+    list(APPEND _nep_hdf5_lib_dirs ${HDF5_LIBRARY_DIRS})
+else()
+    foreach(_nep_lib ${HDF5_LIBRARIES})
+        if(IS_ABSOLUTE "${_nep_lib}")
+            get_filename_component(_nep_lib_dir "${_nep_lib}" DIRECTORY)
+            list(APPEND _nep_hdf5_lib_dirs "${_nep_lib_dir}")
+        endif()
+    endforeach()
+endif()
+if(NOT _nep_hdf5_lib_dirs AND DEFINED HDF5_ROOT)
+    list(APPEND _nep_hdf5_lib_dirs "${HDF5_ROOT}/lib" "${HDF5_ROOT}/lib64")
+endif()
+list(REMOVE_DUPLICATES _nep_hdf5_lib_dirs)
+string(REPLACE ";" ":" MY_LD_LIBRARY_PATH "${_nep_hdf5_lib_dirs}")
+
 set(BUILD_LZ4 "yes")
-set(BUILD_BZIP2 "yes")
+if(BUILD_BZIP2)
+    set(BUILD_BZIP2 "yes")
+else()
+    set(BUILD_BZIP2 "no")
+endif()
 set(BUILD_JPEG "no")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/run_tests.sh.in 
                ${CMAKE_CURRENT_BINARY_DIR}/run_tests.sh @ONLY)
@@ -86,8 +112,16 @@ add_test(NAME run_tests
 
 # Make test script depend on hdf5_plugins being built
 if(HAVE_CDF)
-    add_custom_target(test_executables ALL DEPENDS tst_lz4 tst_bzip2 tst_perf tst_cdf_udf tst_imap_mag)
+    if(BUILD_BZIP2)
+        add_custom_target(test_executables ALL DEPENDS tst_lz4 tst_bzip2 tst_perf tst_cdf_udf tst_imap_mag)
+    else()
+        add_custom_target(test_executables ALL DEPENDS tst_lz4 tst_perf tst_cdf_udf tst_imap_mag)
+    endif()
 else()
-    add_custom_target(test_executables ALL DEPENDS tst_lz4 tst_bzip2 tst_perf)
+    if(BUILD_BZIP2)
+        add_custom_target(test_executables ALL DEPENDS tst_lz4 tst_bzip2 tst_perf)
+    else()
+        add_custom_target(test_executables ALL DEPENDS tst_lz4 tst_perf)
+    endif()
 endif()
 add_dependencies(test_executables hdf5_plugins)

@@ -10,7 +10,7 @@ This page documents the primary build-time options for NEP, including compressio
 - **Behavior**: Controls whether the LZ4 compression filter support is built and installed.
 
 ### BZIP2 Compression
-- **CMake**: `-DBUILD_BZIP2=ON/OFF` (default: `ON`)
+- **CMake**: `-DBUILD_BZIP2=ON/OFF` (default: `OFF`)
 - **Autotools**: `--enable-bzip2/--disable-bzip2` (if provided by configure script)
 - **Behavior**: Controls whether the BZIP2 compression filter support is built and installed.
 
