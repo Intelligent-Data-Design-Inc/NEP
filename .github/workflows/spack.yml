@@ -52,11 +52,21 @@ jobs:
 
       - name: Add NEP package to Spack
         run: |
-          echo "=== Adding NEP package ==="
-          mkdir -p $HOME/spack/var/spack/repos/builtin/packages/nep
-          cp spack/package.py $HOME/spack/var/spack/repos/builtin/packages/nep/
+          echo "=== Creating local Spack repository for NEP ==="
+          mkdir -p $HOME/nep-repo/packages/nep
+          cp spack/package.py $HOME/nep-repo/packages/nep/
+          cat > $HOME/nep-repo/repo.yaml << 'EOF'
+          repo:
+            namespace: nep-local
+          EOF
+          echo "=== repo.yaml contents ==="
+          cat $HOME/nep-repo/repo.yaml
           echo "=== NEP package.py contents ==="
-          cat $HOME/spack/var/spack/repos/builtin/packages/nep/package.py
+          cat $HOME/nep-repo/packages/nep/package.py
+          echo "=== Adding repository to Spack ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          spack repo add $HOME/nep-repo
+          spack repo list
 
       - name: Run Spack style check
         run: |
@@ -65,7 +75,7 @@ jobs:
           spack style --fix spack/package.py || true
           echo "=== Checking for style differences ==="
           # Check if there are differences after style fix
-          if ! diff -q spack/package.py $HOME/spack/var/spack/repos/builtin/packages/nep/package.py > /dev/null 2>&1; then
+          if ! diff -q spack/package.py $HOME/nep-repo/packages/nep/package.py > /dev/null 2>&1; then
             echo "Style check found issues. Please run 'spack style --fix' on your package.py"
             echo "=== Style check output ==="
             spack style spack/package.py
@@ -107,11 +117,20 @@ jobs:
 
       - name: Add NEP package to Spack
         run: |
-          echo "=== Adding NEP package ==="
-          mkdir -p $HOME/spack/var/spack/repos/builtin/packages/nep
-          cp spack/package.py $HOME/spack/var/spack/repos/builtin/packages/nep/
-          echo "=== Verifying package info ==="
+          echo "=== Creating local Spack repository for NEP ==="
+          mkdir -p $HOME/nep-repo/packages/nep
+          cp spack/package.py $HOME/nep-repo/packages/nep/
+          cat > $HOME/nep-repo/repo.yaml << 'EOF'
+          repo:
+            namespace: nep-local
+          EOF
+          echo "=== repo.yaml contents ==="
+          cat $HOME/nep-repo/repo.yaml
+          echo "=== Adding repository to Spack ==="
           . $HOME/spack/share/spack/setup-env.sh
+          spack repo add $HOME/nep-repo
+          spack repo list
+          echo "=== Verifying package info ==="
           spack info nep
 
       - name: Check package concretization (default variants)
@@ -253,13 +272,22 @@ jobs:
 
       - name: Add NEP package to Spack
         run: |
-          echo "=== Adding NEP package to Spack ==="
-          mkdir -p $HOME/spack/var/spack/repos/builtin/packages/nep
-          cp spack/package.py $HOME/spack/var/spack/repos/builtin/packages/nep/
+          echo "=== Creating local Spack repository for NEP ==="
+          mkdir -p $HOME/nep-repo/packages/nep
+          cp spack/package.py $HOME/nep-repo/packages/nep/
+          cat > $HOME/nep-repo/repo.yaml << 'EOF'
+          repo:
+            namespace: nep-local
+          EOF
+          echo "=== repo.yaml contents ==="
+          cat $HOME/nep-repo/repo.yaml
           echo "=== NEP package.py contents ==="
-          cat $HOME/spack/var/spack/repos/builtin/packages/nep/package.py
-          echo "=== Verifying package is recognized ==="
+          cat $HOME/nep-repo/packages/nep/package.py
+          echo "=== Adding repository to Spack ==="
           . $HOME/spack/share/spack/setup-env.sh
+          spack repo add $HOME/nep-repo
+          spack repo list
+          echo "=== Verifying package is recognized ==="
           spack info nep
 
       - name: Show concretization (for debugging)
