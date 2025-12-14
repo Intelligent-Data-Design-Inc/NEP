@@ -30,7 +30,7 @@ class Nep(CMakePackage):
     variant("cdf", default=False, description="Enable NASA CDF support")
 
     depends_on("netcdf-c@4.9:", type=("build", "link"))
-    depends_on("hdf5@1.12:+hl", type=("build", "link"))
+    depends_on("hdf5@1.12:+hl~mpi", type=("build", "link"))
     depends_on("lz4", when="+lz4", type=("build", "link"))
     depends_on("bzip2", when="+bzip2", type=("build", "link"))
     depends_on("netcdf-fortran", when="+fortran", type=("build", "link"))
