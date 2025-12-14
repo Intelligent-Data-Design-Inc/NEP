@@ -192,7 +192,7 @@ if(NOT DOCS_ONLY)
         )
 
         install(TARGETS nep_h5lz4
-            LIBRARY DESTINATION "${NEP_HDF5_PLUGIN_INSTALL_DIR}"
+            LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}/plugin"
         )
 
         add_dependencies(hdf5_plugins nep_h5lz4)
