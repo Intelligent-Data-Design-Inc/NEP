@@ -26,8 +26,35 @@
 
 ### v1.4.0 Spack Support
 #### Sprint 1: Spack CI Testing and Spack Integration
-- Set up testing of the spack file just like NCEPLIBS-g2c has.
-- Submit spack file to spack repo.
+- **Spack CI Workflow**: Create separate `.github/workflows/spack.yml` workflow
+  - Run on PRs and pushes to main branch
+  - Isolate Spack testing from main CI matrix
+  - Follow NCEPLIBS patterns for workflow structure
+- **Spack CI Testing Scope**: Implement two-tier testing approach
+  - Lint checks on every PR: Use `spack audit` and `spack style` to validate package.py syntax
+  - Full install test on main branch: Clone spack, add NEP as local package, run `spack install nep@develop`
+  - Validate dependency resolution and build completion
+- **Add Fortran Variant**: Update `spack/package.py` with Fortran support
+  - Add `variant("fortran", default=True, description="Build Fortran wrappers")`
+  - Add `depends_on("netcdf-fortran", when="+fortran", type=("build", "link"))`
+  - Update `cmake_args()` with `ENABLE_FORTRAN` based on variant
+- **CMake-Only Build System**: Simplify package.py to CMake only
+  - Remove Autotools support from package.py (inherit only from CMakePackage)
+  - Remove `configure_args()` method and build_system variant
+  - Aligns with roadmap intent; Autotools users build directly from source
+- **Version and Checksum Updates**: Prepare for spack repo submission
+  - Add released version (v1.4.0) with valid SHA256 checksum
+  - Keep `develop` branch pointing to `main` for testing
+  - Update version in package.py after release is tagged
+- **Spack Repository Submission**: Submit PR to spack/spack repository
+  - Submit after CI is passing and at least one version has valid checksum
+  - Follow spack contribution guidelines and package conventions
+  - Iterate based on spack maintainer feedback
+- **Definition of Done**:
+  - Spack CI workflow passing on PRs and main branch
+  - package.py updated with Fortran variant and CMake-only build
+  - At least one released version with valid checksum
+  - PR submitted to spack/spack repository
 
 ### v1.3.0 CDF Support
 #### Sprint 1: Add CDF Library Detection to Build Systems

@@ -26,13 +26,22 @@ spack install nep+lz4~bzip2
 spack install nep~lz4+bzip2
 ```
 
-### Build System Selection
+### Fortran Wrappers
 ```bash
-# CMake (default)
-spack install nep build_system=cmake
+# With Fortran wrappers (default)
+spack install nep+fortran
 
-# Autotools
-spack install nep build_system=autotools
+# Without Fortran wrappers
+spack install nep~fortran
+```
+
+### CDF Support
+```bash
+# Enable NASA CDF format support
+spack install nep+cdf
+
+# Default (CDF disabled)
+spack install nep~cdf
 ```
 
 ## Using NEP
