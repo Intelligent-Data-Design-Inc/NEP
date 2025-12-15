@@ -253,7 +253,7 @@ nc_inq_var_lz4(int ncid, int varid, int *lz4p, int *levelp)
  *
  * @param ncid File ID.
  * @param varid Variable ID.
- * @param qulity_factor Quality factor, between 1 and 100.
+ * @param quality_factor Quality factor, between 1 and 100.
  * @param nx size of X in image. Must be > 0.
  * @param ny size of Y in image. Must be > 0.
  * @param rgb color mode: 1 for RGB, 0 for MONO.
@@ -303,7 +303,7 @@ nc_def_var_jpeg(int ncid, int varid, int quality_factor, int nx,
  * @param varid Variable ID.
  * @param jpegp Pointer that gets a 0 if jpeg is not in use for this
  * var, and a 1 if it is. Ignored if NULL.
- * @param qulity_factorp Pointer to int which gets quality factor,
+ * @param quality_factorp Pointer to int which gets quality factor,
  * between 1 and 100. Ignored if NULL.
  * @param nxp Pointer to int which gets size of X in image. Ignored if
  * NULL.
