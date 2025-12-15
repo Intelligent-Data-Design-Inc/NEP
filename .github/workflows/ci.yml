@@ -39,13 +39,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Install base dependencies
         run: |
-          sudo apt-get install -y cmake make wget doxygen graphviz zlib1g-dev libpng-dev libaec-dev libjpeg-dev liblz4-dev wget libbz2-dev libjpeg-dev liblzf-dev
+          sudo apt-get install -y cmake make wget zlib1g-dev 
 
-      # GRIB2 dependencies removed for v1.0.0 (LZ4 compression only)
-      # Jasper and g2c will be restored in v2.0.0
-      # CDF library detection added in v1.3.0
+      - name: Install documentation dependencies
+        if: matrix.fortran == 'on' && matrix.compression == 'all'
+        run: |
+          sudo apt-get install -y doxygen graphviz
+
+      - name: Install JPEG dependencies
+        if: matrix.compression == 'all'
+        run: |
+          sudo apt-get install -y libjpeg-dev
+
+      - name: Install LZ4 dependencies
+        if: matrix.compression != 'no-lz4'
+        run: |
+          sudo apt-get install -y liblz4-dev
+
+      - name: Install BZIP2 dependencies
+        if: matrix.compression != 'no-bzip2'
+        run: |
+          sudo apt-get install -y libbz2-dev
 
       # Cache NASA CDF install (v1.3.0+)
       - name: Cache NASA CDF install

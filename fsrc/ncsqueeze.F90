@@ -184,7 +184,7 @@ contains
   ! !!
   ! !! @param ncid File or group ID.
   ! !! @param varid Variable ID.
-  ! !! @param qulity_factor Quality factor, between 1 and 100.
+  ! !! @param quality_factor Quality factor, between 1 and 100.
   ! !! @param nx size of X in image.
   ! !! @param ny size of Y in image.
   ! !! @param rgb color mode: 1 for RGB, 0 for MONO.
@@ -206,7 +206,7 @@ contains
   ! !! @param varid Variable ID.
   ! !! @param jpegp Pointer that gets 1 if JPEG is in use, 0
   ! !! otherwise. Ignored if NULL.
-  ! !! @param qulity_factorp Pointer to int which gets quality factor,
+  ! !! @param quality_factorp Pointer to int which gets quality factor,
   ! !! between 1 and 100. Ignored if NULL.
   ! !! @param nxp Pointer to int which gets size of X in image.
   ! !! @param nyp Pointer to int which gets size of Y in image.
