@@ -43,10 +43,6 @@ jobs:
         run: |
           sudo apt-get install -y cmake make wget doxygen graphviz zlib1g-dev libpng-dev libaec-dev libjpeg-dev liblz4-dev wget libbz2-dev libjpeg-dev liblzf-dev
 
-      # GRIB2 dependencies removed for v1.0.0 (LZ4 compression only)
-      # Jasper and g2c will be restored in v2.0.0
-      # CDF library detection added in v1.3.0
-
       # Cache NASA CDF install (v1.3.0+)
       - name: Cache NASA CDF install
         id: cache-cdf
