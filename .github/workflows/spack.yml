@@ -54,7 +54,7 @@ jobs:
         run: |
           echo "=== Creating local Spack repository for NEP ==="
           mkdir -p $HOME/nep-repo/packages/nep
-          cp spack/package.py $HOME/nep-repo/packages/nep/
+          cp spack/NEP/package.py $HOME/nep-repo/packages/nep/
           cat > $HOME/nep-repo/repo.yaml << 'EOF'
           repo:
             namespace: nep-local
@@ -75,9 +75,9 @@ jobs:
           # Run style check - F405 warnings are expected for Spack packages using star imports
           # Only check isort and black formatting, skip flake8 which complains about star imports
           echo "=== Running isort check ==="
-          spack style --tool isort spack/package.py || true
+          spack style --tool isort spack/NEP/package.py || true
           echo "=== Running black check ==="
-          spack style --tool black spack/package.py || true
+          spack style --tool black spack/NEP/package.py || true
           echo "=== Style check complete (F405 warnings from star imports are expected) ==="
 
   # Concretization check - runs on all PRs and pushes
@@ -116,7 +116,7 @@ jobs:
         run: |
           echo "=== Creating local Spack repository for NEP ==="
           mkdir -p $HOME/nep-repo/packages/nep
-          cp spack/package.py $HOME/nep-repo/packages/nep/
+          cp spack/NEP/package.py $HOME/nep-repo/packages/nep/
           cat > $HOME/nep-repo/repo.yaml << 'EOF'
           repo:
             namespace: nep-local
@@ -271,7 +271,7 @@ jobs:
         run: |
           echo "=== Creating local Spack repository for NEP ==="
           mkdir -p $HOME/nep-repo/packages/nep
-          cp spack/package.py $HOME/nep-repo/packages/nep/
+          cp spack/NEP/package.py $HOME/nep-repo/packages/nep/
           cat > $HOME/nep-repo/repo.yaml << 'EOF'
           repo:
             namespace: nep-local
