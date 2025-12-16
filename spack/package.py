@@ -5,7 +5,9 @@
 
 import os
 
-from spack.package import *  # noqa: F401, F403
+from spack_repo.builtin.build_systems.cmake import CMakePackage
+
+from spack.package import *
 
 
 class Nep(CMakePackage):
@@ -21,28 +23,24 @@ class Nep(CMakePackage):
     license("Apache-2.0")
 
     version("develop", branch="main")
-    version("1.4.0", sha256="0000000000000000000000000000000000000000000000000000000000000000")
-    version("1.3.0", sha256="0000000000000000000000000000000000000000000000000000000000000000")
+    version("1.3.0", sha256="acf8f8a1360b521cef3f6f57fdeced64d2d78e765e8fd644ce435487fe74a003")
 
     variant("docs", default=True, description="Build documentation with Doxygen")
     variant("lz4", default=True, description="Enable LZ4 compression support")
     variant("bzip2", default=True, description="Enable BZIP2 compression support")
     variant("fortran", default=True, description="Build Fortran wrappers")
-    variant("cdf", default=False, description="Enable NASA CDF support")
 
     depends_on("netcdf-c@4.9:", type=("build", "link"))
     depends_on("hdf5@1.12:+hl~mpi", type=("build", "link"))
     depends_on("lz4", when="+lz4", type=("build", "link"))
     depends_on("bzip2", when="+bzip2", type=("build", "link"))
     depends_on("netcdf-fortran", when="+fortran", type=("build", "link"))
-    depends_on("cdf", when="+cdf", type=("build", "link"))
     depends_on("doxygen", when="+docs", type="build")
 
     def cmake_args(self):
         args = [
             self.define_from_variant("BUILD_DOCUMENTATION", "docs"),
             self.define_from_variant("ENABLE_FORTRAN", "fortran"),
-            self.define_from_variant("ENABLE_CDF", "cdf"),
         ]
         return args
 
