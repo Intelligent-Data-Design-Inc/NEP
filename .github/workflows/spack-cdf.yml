@@ -55,8 +55,8 @@ jobs:
           echo "=== Running Spack style check ==="
           . $HOME/spack/share/spack/setup-env.sh
           # F405 warnings are expected for Spack packages using star imports
-          spack style --tool isort spack/cdf/package.py || true
-          spack style --tool black spack/cdf/package.py || true
+          spack style --tool isort spack/cdf/package.py 
+          spack style --tool black spack/cdf/package.py
           echo "=== Style check complete ==="
 
       - name: Run Spack audit check
@@ -173,7 +173,7 @@ jobs:
           . $HOME/spack/share/spack/setup-env.sh
           echo "=== Install with verbose output ==="
           # NOTE: Using || true to not fail CI - we will check results manually at first
-          spack install -v cdf@3.9.1 2>&1 | tee spack_install_cdf.log || true
+          spack install -v cdf@3.9.1 2>&1 | tee spack_install_cdf.log 
           echo "=== Installation attempt complete ==="
 
       - name: Show build logs (always runs)
@@ -197,7 +197,7 @@ jobs:
           if [ -n "$CDF_PREFIX" ]; then
             echo "CDF installed at: $CDF_PREFIX"
             echo "=== CDF installation contents ==="
-            ls -laR $CDF_PREFIX || true
+            ls -laR $CDF_PREFIX 
           else
             echo "CDF installation not found - check build logs above"
           fi
