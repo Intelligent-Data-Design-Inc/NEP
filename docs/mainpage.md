@@ -2,7 +2,13 @@
 
 ## Overview
 
-NEP (NetCDF Extension Pack) provides high-performance compression for NetCDF-4 data with two complementary algorithms: LZ4 (optimized for speed) and BZIP2 (optimized for compression ratio). NEP extends the NetCDF ecosystem with flexible lossless compression options for diverse scientific data workflows.
+NEP (NetCDF Extension Pack) extends NetCDF-4 with high-performance compression and multi-format data access:
+
+- **LZ4 Compression**: Speed-optimized lossless compression (2-3x faster than DEFLATE)
+- **BZIP2 Compression**: High-ratio lossless compression for archival storage
+- **CDF File Reader**: Read NASA Common Data Format files through the NetCDF API
+
+NEP provides flexible compression options and unified data access for diverse scientific data workflows.
 
 ## Compression Algorithms
 
@@ -43,6 +49,55 @@ BZIP2 is a lossless data compression algorithm using the Burrows-Wheeler block s
 - **Use LZ4 when**: I/O speed is critical, working with real-time data, running on HPC systems, need fast decompression
 - **Use BZIP2 when**: Storage space is limited, archiving data long-term, transferring over slow networks, compression ratio matters most
 
+## CDF File Reader
+
+NEP provides a User-Defined Format (UDF) handler that enables reading NASA Common Data Format (CDF) files using the familiar NetCDF API.
+
+### What is CDF?
+
+The Common Data Format (CDF) is a self-describing data format developed by NASA's Space Physics Data Facility (SPDF). CDF is widely used in space physics and heliophysics research for storing time-series and multi-dimensional scientific data from space missions.
+
+**Key Characteristics:**
+- Self-describing format with embedded metadata
+- Support for multiple data types and dimensions
+- Platform-independent binary format
+- Optimized for space physics data
+- Used by NASA missions: IMAP, MMS, Van Allen Probes, and many others
+
+### CDF Support in NEP
+
+**Transparent Access**: Read CDF files using standard NetCDF functions (`nc_open()`, `nc_get_var()`, `nc_get_att()`) without file conversion.
+
+**Automatic Type Mapping**: CDF data types are automatically mapped to NetCDF equivalents:
+- CDF_INT4 → NC_INT
+- CDF_REAL8 → NC_DOUBLE
+- CDF_TIME_TT2000 → NC_INT64 (for time variables)
+- And more...
+
+**Attribute Conventions**: CDF attributes are automatically converted to NetCDF conventions (e.g., FILLVAL → _FillValue).
+
+**Use Cases:**
+- Space physics and heliophysics research
+- NASA mission data analysis
+- Cross-format data integration (CDF + NetCDF)
+- Legacy CDF data access in modern workflows
+
+### Enabling CDF Support
+
+CDF support is optional and disabled by default. To enable:
+
+```bash
+# CMake
+cmake -B build -DENABLE_CDF=ON
+
+# Autotools
+./configure --enable-cdf
+```
+
+**Requirements**: NASA CDF library v3.9+ must be installed. Download from: https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/
+
+**Spack Users**: Install CDF separately with `spack install cdf`.
+
 ## Installation
 
 NEP requires:
@@ -50,7 +105,8 @@ NEP requires:
 - HDF5 library (v1.12+) and its dependencies
 - LZ4 library
 - BZIP2 library
-- NetCDF-Fortran library (when Fortran support is enabled)
+- NetCDF-Fortran library (optional, for Fortran support)
+- NASA CDF library v3.9+ (optional, for CDF file reading)
 
 Build with CMake or Autotools:
 
@@ -68,18 +124,44 @@ make install
 
 ## Usage
 
-Once installed, both LZ4 and BZIP2 compression filters are available to NetCDF-4 applications through the configured NEP libraries. Choose the algorithm that best fits your workflow requirements—LZ4 for speed or BZIP2 for compression ratio.
+### Compression
+
+Once installed, both LZ4 and BZIP2 compression filters are available to NetCDF-4 applications through HDF5 filter plugins. Set the `HDF5_PLUGIN_PATH` environment variable and use standard NetCDF-4 compression APIs:
+
+```bash
+export HDF5_PLUGIN_PATH=/usr/local/lib/plugin
+```
+
+Choose the algorithm that best fits your workflow requirements—LZ4 for speed or BZIP2 for compression ratio.
+
+### CDF File Reading
+
+When CDF support is enabled, open and read CDF files using standard NetCDF functions:
+
+```c
+int ncid;
+nc_open("data.cdf", NC_NOWRITE, &ncid);
+// Use standard NetCDF API calls
+nc_close(ncid);
+```
+
+No special code is needed—the CDF UDF handler automatically detects and processes CDF files.
 
 ## Features and Options
 
 - **Compression Algorithms**:
-  - LZ4: speed-optimized lossless compression.
-  - BZIP2: high-ratio lossless compression.
-- **Configurable Compression Support**:
-  - LZ4 and BZIP2 support can be enabled or disabled at build time.
+  - LZ4: speed-optimized lossless compression
+  - BZIP2: high-ratio lossless compression
+- **CDF File Reader**:
+  - Read NASA CDF files via NetCDF API
+  - Automatic type and attribute mapping
+  - Support for TT2000 time variables
+- **Configurable Build Options**:
+  - LZ4 and BZIP2 support can be enabled or disabled at build time
+  - CDF support is optional (disabled by default)
 - **Fortran Support**:
-  - Optional Fortran wrappers for NEP compression functions.
-  - When Fortran is enabled, the `netcdf-fortran` library is required.
+  - Optional Fortran wrappers for NEP functions
+  - Requires `netcdf-fortran` library when enabled
 
 See the dedicated build and configuration page for full details on CMake and Autotools options:
 
