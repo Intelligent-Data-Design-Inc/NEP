@@ -54,7 +54,7 @@ jobs:
         run: |
           echo "=== Creating local Spack repository for NEP ==="
           mkdir -p $HOME/nep-repo/packages/nep
-          cp spack/package.py $HOME/nep-repo/packages/nep/
+          cp spack/NEP/package.py $HOME/nep-repo/packages/nep/
           cat > $HOME/nep-repo/repo.yaml << 'EOF'
           repo:
             namespace: nep-local
@@ -75,9 +75,9 @@ jobs:
           # Run style check - F405 warnings are expected for Spack packages using star imports
           # Only check isort and black formatting, skip flake8 which complains about star imports
           echo "=== Running isort check ==="
-          spack style --tool isort spack/package.py || true
+          spack style --tool isort spack/NEP/package.py || true
           echo "=== Running black check ==="
-          spack style --tool black spack/package.py || true
+          spack style --tool black spack/NEP/package.py || true
           echo "=== Style check complete (F405 warnings from star imports are expected) ==="
 
   # Concretization check - runs on all PRs and pushes
@@ -116,7 +116,7 @@ jobs:
         run: |
           echo "=== Creating local Spack repository for NEP ==="
           mkdir -p $HOME/nep-repo/packages/nep
-          cp spack/package.py $HOME/nep-repo/packages/nep/
+          cp spack/NEP/package.py $HOME/nep-repo/packages/nep/
           cat > $HOME/nep-repo/repo.yaml << 'EOF'
           repo:
             namespace: nep-local
@@ -142,7 +142,7 @@ jobs:
         run: |
           echo "=== Concretizing NEP with minimal variants ==="
           . $HOME/spack/share/spack/setup-env.sh
-          spack spec -I nep@develop~docs~fortran~cdf
+          spack spec -I nep@develop~docs~fortran
 
       - name: Check package concretization (all variants)
         run: |
@@ -271,7 +271,7 @@ jobs:
         run: |
           echo "=== Creating local Spack repository for NEP ==="
           mkdir -p $HOME/nep-repo/packages/nep
-          cp spack/package.py $HOME/nep-repo/packages/nep/
+          cp spack/NEP/package.py $HOME/nep-repo/packages/nep/
           cat > $HOME/nep-repo/repo.yaml << 'EOF'
           repo:
             namespace: nep-local
@@ -292,11 +292,11 @@ jobs:
           echo "=== Concretizing NEP (detailed view) ==="
           . $HOME/spack/share/spack/setup-env.sh
           echo "=== Install spec with dependencies ==="
-          spack spec -I nep@develop~docs~cdf~fortran
+          spack spec -I nep@develop~docs~fortran
           echo "=== Dependency tree ==="
-          spack spec -t nep@develop~docs~cdf~fortran
+          spack spec -t nep@develop~docs~fortran
           echo "=== What will be installed vs reused ==="
-          spack spec -N nep@develop~docs~cdf~fortran
+          spack spec -N nep@develop~docs~fortran
 
       - name: Install NEP with Spack (minimal config for speed)
         run: |
@@ -306,7 +306,7 @@ jobs:
           # Install with minimal variants to reduce build time
           # Use system packages where possible
           # NOTE: Using || true to not fail CI - we will check results manually at first
-          spack install -v --fail-fast nep@develop~docs~cdf~fortran 2>&1 | tee spack_install.log || true
+          spack install -v --fail-fast nep@develop~docs~fortran 2>&1 | tee spack_install.log || true
           echo "=== Installation attempt complete ==="
 
       - name: Show build logs (always runs)

@@ -56,6 +56,37 @@
   - At least one released version with valid checksum
   - PR submitted to spack/spack repository
 
+  #### Sprint 2: Spack Package File for CDF
+  - **Package Structure**: Create `spack/cdf/package.py` following standard Spack lowercase naming convention
+    - Package class name: `Cdf`
+    - Inherits from `MakefilePackage` base class
+    - Override `edit()`, `build()`, and `install()` methods for custom build system
+  - **Version and Dependencies**: 
+    - Add version 3.9.1 with calculated SHA256 checksum from: `https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/cdf39_1/cdf39_1-dist-cdf.tar.gz`
+    - No variants in initial implementation (can add shared/fortran variants in future sprint)
+    - No external dependencies beyond system compiler
+  - **Build System Implementation**:
+    - CDF uses custom Makefile requiring `OS=linux ENV=gnu` parameters
+    - Build command: `make OS=linux ENV=gnu all`
+    - Install command: `make INSTALLDIR=<prefix> install`
+    - Reference `.github/workflows/ci.yml` lines 74-86 for build details
+  - **Testing Workflow**: Create `.github/workflows/spack-cdf.yml`
+    - Include spec check: `spack spec cdf`
+    - Include install attempt: `spack install -v cdf || true`
+    - Use `|| true` to exit successfully even on failure for manual debugging
+    - Review logs to identify and fix issues iteratively
+  - **Submission**: Submit CDF package to spack/spack-packages repository
+    - Follow same PR process as NEP package submission
+    - Ensure `spack audit packages cdf` passes
+    - Ensure `spack style` checks pass
+  - **Definition of Done**:
+    - [x] `spack/cdf/package.py` created with MakefilePackage implementation
+    - [x] Version 3.9.1 with valid SHA256 checksum
+    - [x] `.github/workflows/spack-cdf.yml` workflow created and running
+    - [x] Package includes explicit URL for version to pass Spack CI verification
+    - [x] PR submitted to spack/spack-packages repository
+    - [ ] PR approved and merged by Spack maintainers
+
 ### v1.3.0 CDF Support
 #### Sprint 1: Add CDF Library Detection to Build Systems
 - **NASA CDF Library Integration**: Add NASA CDF library v3.9.x to CI

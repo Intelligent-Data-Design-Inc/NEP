@@ -1,0 +1,203 @@
+# Spack CI workflow for CDF package validation
+#
+# This workflow validates the CDF Spack package by:
+# - Running lint/style checks on all PRs
+# - Running concretization (spec) checks on all PRs
+# - Running install tests with || true for manual debugging
+#
+# Edward Hartnett, Intelligent Data Design, Inc.
+
+name: Spack CDF CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Lint and style checks - runs on all PRs and pushes
+  lint:
+    name: Spack CDF Lint & Style
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout NEP
+        uses: actions/checkout@v4
+
+      - name: Clone Spack
+        run: |
+          echo "=== Cloning Spack ==="
+          git clone --depth=1 https://github.com/spack/spack.git $HOME/spack
+
+      - name: Setup Spack
+        run: |
+          echo "=== Setting up Spack ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          echo "=== Spack Version ==="
+          spack --version
+
+      - name: Add CDF package to Spack
+        run: |
+          echo "=== Creating local Spack repository for CDF ==="
+          mkdir -p $HOME/cdf-repo/packages/cdf
+          cp spack/cdf/package.py $HOME/cdf-repo/packages/cdf/
+          cat > $HOME/cdf-repo/repo.yaml << 'EOF'
+          repo:
+            namespace: cdf-local
+          EOF
+          echo "=== Adding repository to Spack ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          spack repo add $HOME/cdf-repo
+          spack repo list
+
+      - name: Run Spack style check
+        run: |
+          echo "=== Running Spack style check ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          # F405 warnings are expected for Spack packages using star imports
+          spack style --tool isort spack/cdf/package.py 
+          spack style --tool black spack/cdf/package.py
+          echo "=== Style check complete ==="
+
+      - name: Run Spack audit check
+        run: |
+          echo "=== Running Spack audit check ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          spack audit packages cdf
+
+  # Concretization check - runs on all PRs and pushes
+  spec:
+    name: Spack CDF Spec Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout NEP
+        uses: actions/checkout@v4
+
+      - name: Clone Spack
+        run: |
+          echo "=== Cloning Spack ==="
+          git clone --depth=1 https://github.com/spack/spack.git $HOME/spack
+
+      - name: Setup Spack
+        run: |
+          echo "=== Setting up Spack ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          echo "=== Spack Version ==="
+          spack --version
+          echo "=== Finding compilers ==="
+          spack compiler find
+          echo "=== Available compilers ==="
+          spack compilers
+
+      - name: Add CDF package to Spack
+        run: |
+          echo "=== Creating local Spack repository for CDF ==="
+          mkdir -p $HOME/cdf-repo/packages/cdf
+          cp spack/cdf/package.py $HOME/cdf-repo/packages/cdf/
+          cat > $HOME/cdf-repo/repo.yaml << 'EOF'
+          repo:
+            namespace: cdf-local
+          EOF
+          echo "=== Adding repository to Spack ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          spack repo add $HOME/cdf-repo
+          spack repo list
+          echo "=== Verifying package info ==="
+          spack info cdf
+
+      - name: Check package concretization
+        run: |
+          echo "=== Concretizing CDF package ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          spack spec -I cdf@3.9.1
+          echo "=== Dependency tree ==="
+          spack spec -t cdf@3.9.1
+
+  # Install test - runs on pushes to main, exits successfully even on failure
+  install:
+    name: Spack CDF Install Test
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout NEP
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          echo "=== Installing system dependencies ==="
+          sudo apt-get update
+          sudo apt-get install -y build-essential gfortran cmake
+
+      - name: Clone Spack
+        run: git clone --depth=1 https://github.com/spack/spack.git $HOME/spack
+
+      - name: Setup Spack with system compilers
+        run: |
+          echo "=== Setting up Spack ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          echo "=== Spack Version ==="
+          spack --version
+          echo "=== Finding system compilers ==="
+          spack compiler find
+          echo "=== Available compilers ==="
+          spack compilers
+
+      - name: Add CDF package to Spack
+        run: |
+          echo "=== Creating local Spack repository for CDF ==="
+          mkdir -p $HOME/cdf-repo/packages/cdf
+          cp spack/cdf/package.py $HOME/cdf-repo/packages/cdf/
+          cat > $HOME/cdf-repo/repo.yaml << 'EOF'
+          repo:
+            namespace: cdf-local
+          EOF
+          echo "=== Adding repository to Spack ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          spack repo add $HOME/cdf-repo
+          spack repo list
+          echo "=== Verifying package is recognized ==="
+          spack info cdf
+
+      - name: Show concretization (for debugging)
+        run: |
+          echo "=== Concretizing CDF (detailed view) ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          echo "=== Install spec with dependencies ==="
+          spack spec -I cdf@3.9.1
+          echo "=== Dependency tree ==="
+          spack spec -t cdf@3.9.1
+
+      - name: Install CDF with Spack
+        run: |
+          echo "=== Starting CDF installation ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          echo "=== Install with verbose output ==="
+          # NOTE: Using || true to not fail CI - we will check results manually at first
+          spack install -v cdf@3.9.1 2>&1 | tee spack_install_cdf.log 
+          echo "=== Installation attempt complete ==="
+
+      - name: Show build logs (always runs)
+        if: always()
+        run: |
+          echo "=== Showing build logs for manual review ==="
+          echo "=== Spack install log (last 200 lines) ==="
+          tail -200 spack_install_cdf.log || true
+          echo "=== Finding build directories ==="
+          find $HOME/spack/var/spack/stage -name '*.log' -o -name 'spack-build-out.txt' 2>/dev/null | head -10 || true
+
+      - name: List installed files (for manual verification)
+        if: always()
+        run: |
+          echo "=== Listing installed files for manual verification ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          echo "=== Installed packages ==="
+          spack find -v cdf || echo "CDF not found in installed packages"
+          echo "=== Attempting to locate CDF installation ==="
+          CDF_PREFIX=$(spack location -i cdf 2>/dev/null) || CDF_PREFIX=""
+          if [ -n "$CDF_PREFIX" ]; then
+            echo "CDF installed at: $CDF_PREFIX"
+            echo "=== CDF installation contents ==="
+            ls -laR $CDF_PREFIX 
+          else
+            echo "CDF installation not found - check build logs above"
+          fi
