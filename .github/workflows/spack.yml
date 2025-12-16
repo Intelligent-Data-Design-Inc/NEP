@@ -142,7 +142,7 @@ jobs:
         run: |
           echo "=== Concretizing NEP with minimal variants ==="
           . $HOME/spack/share/spack/setup-env.sh
-          spack spec -I nep@develop~docs~fortran~cdf
+          spack spec -I nep@develop~docs~fortran
 
       - name: Check package concretization (all variants)
         run: |
@@ -292,11 +292,11 @@ jobs:
           echo "=== Concretizing NEP (detailed view) ==="
           . $HOME/spack/share/spack/setup-env.sh
           echo "=== Install spec with dependencies ==="
-          spack spec -I nep@develop~docs~cdf~fortran
+          spack spec -I nep@develop~docs~fortran
           echo "=== Dependency tree ==="
-          spack spec -t nep@develop~docs~cdf~fortran
+          spack spec -t nep@develop~docs~fortran
           echo "=== What will be installed vs reused ==="
-          spack spec -N nep@develop~docs~cdf~fortran
+          spack spec -N nep@develop~docs~fortran
 
       - name: Install NEP with Spack (minimal config for speed)
         run: |
@@ -306,7 +306,7 @@ jobs:
           # Install with minimal variants to reduce build time
           # Use system packages where possible
           # NOTE: Using || true to not fail CI - we will check results manually at first
-          spack install -v --fail-fast nep@develop~docs~cdf~fortran 2>&1 | tee spack_install.log || true
+          spack install -v --fail-fast nep@develop~docs~fortran 2>&1 | tee spack_install.log || true
           echo "=== Installation attempt complete ==="
 
       - name: Show build logs (always runs)
