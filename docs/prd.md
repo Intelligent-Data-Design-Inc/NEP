@@ -107,6 +107,8 @@ NEP v2.0.0 will extend the NetCDF Extension Pack to support GRIB2 meteorological
 ### 5.1 Overview
 NEP v1.5.0 will add support for GeoTIFF geospatial raster data format through a User Defined Format (UDF) handler, enabling transparent access to GeoTIFF files through the standard NetCDF API.
 
+For details on NetCDF's User Defined Format mechanism, see `docs/udf.md`.
+
 ### 5.2 Business Objectives
 - Enable seamless access to GeoTIFF geospatial raster data
 - Eliminate need for data conversion from GeoTIFF to NetCDF
@@ -164,8 +166,19 @@ NEP v1.5.0 will add support for GeoTIFF geospatial raster data format through a 
 - Sprint 3: Raster data reading
 - Sprint 4: Coordinate system and georeferencing support
 
+## 9. Test Data
+
+Sample GeoTIFF files from NASA's MODIS NRT Global Flood Product are available in `test/data/`:
+- `MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif`
+- `MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif`
+
+These files provide real-world GeoTIFF data with georeferencing for testing the UDF handler implementation.
+
 ---
 
 *Version: 1.5.0 (Planning)*
 *Status: Not yet implemented*
-*Reference: ESDS-RFC-040v1.1.pdf in docs directory*
+*References:*
+- *ESDS-RFC-040v1.1.pdf - GeoTIFF format specification*
+- *docs/udf.md - NetCDF User Defined Format documentation*
+- *https://www.earthdata.nasa.gov/data/instruments/viirs/near-real-time-data/nrt-global-flood-products - VIIRS/MODIS NRT Global Flood Products (test data source)*

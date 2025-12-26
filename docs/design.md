@@ -281,6 +281,8 @@ Based on a 150 MB NetCDF-4 dataset:
 
 NEP v1.5.0 will add support for GeoTIFF geospatial raster data format through a User Defined Format (UDF) handler. This enables transparent access to GeoTIFF files through the standard NetCDF API, eliminating the need for format conversion in geospatial workflows.
 
+For details on NetCDF's User Defined Format mechanism, see `docs/udf.md`.
+
 ### Architecture
 
 The GeoTIFF read layer follows the NC_Dispatch pattern used for other UDF handlers in NEP:
@@ -385,9 +387,25 @@ cmake -DENABLE_GEOTIFF=OFF # Disable GeoTIFF support (default)
 - **Error Handling**: Standard NetCDF error codes and messages
 - **Testing**: Unit tests for each phase, integration tests with sample GeoTIFF files
 
+### Test Data
+
+The project includes sample GeoTIFF files from NASA's VIIRS/MODIS Near Real-Time Global Flood Products:
+- `test/data/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif`
+- `test/data/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif`
+
+These are MODIS Daily L3 Global Flood Composite files at 250m resolution in GeoTIFF format. The files contain flood detection data with georeferencing information suitable for testing the GeoTIFF UDF handler.
+
+**Data Source**: NASA LANCE MODIS NRT Global Flood Product (MCDWD_L3_F1C_NRT)
+- **Product**: MODIS Daily L3 Global Flood Composite 250m Linear Lat Lon Grid - NRT
+- **Resolution**: ~250m
+- **Format**: GeoTIFF with embedded georeferencing
+- **Documentation**: https://www.earthdata.nasa.gov/data/instruments/viirs/near-real-time-data/nrt-global-flood-products
+
 ### Reference Documentation
 
-See `docs/ESDS-RFC-040v1.1.pdf` for detailed GeoTIFF format specification.
+- `docs/ESDS-RFC-040v1.1.pdf` - GeoTIFF format specification
+- `docs/udf.md` - NetCDF User Defined Format documentation
+- https://www.earthdata.nasa.gov/data/instruments/viirs/near-real-time-data/nrt-global-flood-products - VIIRS/MODIS NRT Global Flood Products (test data source)
 
 ## Release Information
 
