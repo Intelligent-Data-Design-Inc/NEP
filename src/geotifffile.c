@@ -690,4 +690,26 @@ NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_
     return NC_NOERR;
 }
 
+/**
+ * @internal Read data from a GeoTIFF variable.
+ *
+ * This is a Phase 3 function - stub implementation for Phase 2.
+ *
+ * @param ncid File ID.
+ * @param varid Variable ID.
+ * @param startp Start indices.
+ * @param countp Count of values to read.
+ * @param value Pointer to data buffer.
+ *
+ * @return NC_ENOTNC4 Not yet implemented.
+ * @author Edward Hartnett
+ */
+int
+NC_GEOTIFF_get_vara(int ncid, int varid, const size_t *startp,
+                    const size_t *countp, void *value, nc_type memtype)
+{
+    /* Phase 3: Implement raster data reading */
+    return NC_ENOTNC4;
+}
+
 #endif /* HAVE_GEOTIFF */
