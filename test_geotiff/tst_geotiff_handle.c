@@ -74,9 +74,9 @@ test_invalid_file_path(void)
     printf("Testing invalid file path...");
     
     ret = nc_open(TEST_DATA_DIR "nonexistent.tif", NC_NOWRITE, &ncid);
-    if (ret != NC_ENOENT && ret != NC_ENOTNC)
+    if (ret != NC_ENOTNC)
     {
-        printf("FAILED - should return NC_ENOENT or NC_ENOTNC, got %s\n", nc_strerror(ret));
+        printf("FAILED - should return NC_ENOTNC, got %s\n", nc_strerror(ret));
         return 1;
     }
 
@@ -119,9 +119,9 @@ test_write_mode_rejection(void)
     printf("Testing write mode rejection...");
     
     ret = nc_open(TEST_DATA_DIR "le_geotiff.tif", NC_WRITE, &ncid);
-    if (ret != NC_EINVAL && ret != NC_EPERM)
+    if (ret != NC_EINVAL)
     {
-        printf("FAILED - should return NC_EINVAL or NC_EPERM, got %s\n", nc_strerror(ret));
+        printf("FAILED - should return NC_EINVAL, got %s\n", nc_strerror(ret));
         return 1;
     }
 
@@ -141,9 +141,9 @@ test_null_path(void)
     printf("Testing NULL path parameter...");
     
     ret = nc_open(NULL, NC_NOWRITE, &ncid);
-    if (ret != NC_EINVAL && ret != NC_ENULLPAD)
+    if (ret != NC_EINVAL)
     {
-        printf("FAILED - should return NC_EINVAL or NC_ENULLPAD, got %s\n", nc_strerror(ret));
+        printf("FAILED - should return NC_EINVAL, got %s\n", nc_strerror(ret));
         return 1;
     }
 
