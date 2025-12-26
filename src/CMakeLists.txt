@@ -66,3 +66,25 @@ if(HAVE_CDF)
     )
     message(STATUS "Building CDF UDF library: ${CDF_LIB_NAME}")
 endif()
+
+# GeoTIFF UDF Handler - v1.5.0
+# Build GeoTIFF library if enabled (netCDF UDF support)
+if(HAVE_GEOTIFF)
+    set(GEOTIFF_LIB_NAME ncgeotiff)
+    add_library(${GEOTIFF_LIB_NAME} SHARED 
+        geotifffile.c)
+    target_include_directories(${GEOTIFF_LIB_NAME} PRIVATE ${GEOTIFF_INCLUDE_DIR} ${TIFF_INCLUDE_DIR})
+    target_link_libraries(${GEOTIFF_LIB_NAME} PRIVATE 
+        ${HDF5_C_${LIB_TYPE}_LIBRARY} ${NETCDF_LIBRARIES} ${GEOTIFF_LIBRARY} ${TIFF_LIBRARY})
+    set_target_properties(${GEOTIFF_LIB_NAME} PROPERTIES 
+        VERSION ${PROJECT_VERSION}
+        SOVERSION 1
+        INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
+        INSTALL_RPATH_USE_LINK_PATH TRUE
+    )
+    install(TARGETS ${GEOTIFF_LIB_NAME}
+        EXPORT NEPTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
+    message(STATUS "Building GeoTIFF UDF library: ${GEOTIFF_LIB_NAME}")
+endif()
