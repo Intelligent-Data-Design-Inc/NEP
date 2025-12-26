@@ -29,6 +29,9 @@ add_definitions(-DUSE_HDF5=yes)
 # CDF library detection (v1.3.0) - default OFF, library detection only, no UDF yet
 option(ENABLE_CDF "Enable CDF library detection" OFF)
 
+# GeoTIFF library detection (v1.5.0) - default OFF, library detection only, no UDF yet
+option(ENABLE_GEOTIFF "Enable GeoTIFF library detection" OFF)
+
 # Documentation option
 option(BUILD_DOCUMENTATION "Build documentation with Doxygen" ON)
 
@@ -103,6 +106,22 @@ if(ENABLE_CDF)
         message(STATUS "CDF library detection enabled (library location only, no UDF yet)")
     else()
         message(FATAL_ERROR "CDF enabled but NASA CDF library not found. Install NASA CDF library or disable with -DENABLE_CDF=OFF")
+    endif()
+endif()
+
+# GeoTIFF library detection (v1.5.0) - library detection only, no UDF implementation yet
+if(ENABLE_GEOTIFF)
+    pkg_check_modules(GEOTIFF libgeotiff)
+    pkg_check_modules(TIFF libtiff-4)
+    
+    if(GEOTIFF_FOUND AND TIFF_FOUND)
+        message(STATUS "Found libgeotiff: ${GEOTIFF_LIBRARIES}")
+        message(STATUS "Found libtiff: ${TIFF_LIBRARIES}")
+        include_directories(${GEOTIFF_INCLUDE_DIRS} ${TIFF_INCLUDE_DIRS})
+        set(HAVE_GEOTIFF TRUE)
+        message(STATUS "GeoTIFF library detection enabled (library location only, no UDF yet)")
+    else()
+        message(FATAL_ERROR "GeoTIFF enabled but libgeotiff or libtiff not found. Install libgeotiff and libtiff or disable with -DENABLE_GEOTIFF=OFF")
     endif()
 endif()
 
