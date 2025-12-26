@@ -23,5 +23,17 @@ if(HAVE_GEOTIFF)
     set_tests_properties(tst_geotiff_detect PROPERTIES 
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
+    # Test for GeoTIFF file handle management
+    add_executable(tst_geotiff_handle tst_geotiff_handle.c)
+    target_link_libraries(tst_geotiff_handle 
+        ncgeotiff
+        ${NETCDF_LIBRARIES} 
+        ${HDF5_LIBRARIES}
+        ${GEOTIFF_LIBRARY} 
+        ${TIFF_LIBRARY})
+    add_test(NAME tst_geotiff_handle COMMAND tst_geotiff_handle)
+    set_tests_properties(tst_geotiff_handle PROPERTIES 
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
     message(STATUS "GeoTIFF tests enabled")
 endif()

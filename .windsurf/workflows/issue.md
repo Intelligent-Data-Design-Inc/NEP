@@ -1,20 +1,20 @@
-# GitHub Issue Requirements Analysis Workflow
+# GitHub Issue Refinement and Planning Workflow
 
-**PURPOSE: Requirements gathering and GitHub documentation ONLY. NO CODE CHANGES.**
+**PURPOSE: Refine the issue and generate an implementation plan. NO CODE IMPLEMENTATION.**
 
-This workflow helps analyze GitHub issues systematically to clarify requirements and document findings on GitHub.
+This workflow helps refine GitHub issues systematically to clarify requirements, generate a detailed implementation plan, and document findings on GitHub.
 
 ## Process Overview
 
-**This workflow is for analysis and planning ONLY—no code implementation.**
+**This workflow refines issues and generates implementation plans—no code implementation.**
 
 1. **Issue Assessment**: Review the GitHub issue to understand the core problem
-2. **Wiki Research**: Consult the project wiki for architectural context and development guidance
-3. **Requirements Gathering**: Ask targeted clarifying questions to fill knowledge gaps
-4. **Solution Planning**: Synthesize answers into a clear action plan
-5. **GitHub Documentation**: Record findings and next steps back on GitHub
+2. **Documentation Research**: Consult project documentation for architectural context and development guidance
+3. **Requirements Refinement**: Ask targeted clarifying questions to fill knowledge gaps
+4. **Implementation Plan Generation**: Create a detailed, actionable plan for future implementation
+5. **GitHub Documentation**: Record refined requirements and implementation plan on GitHub
 
-**After this workflow completes, implementation happens separately.**
+**The output is a refined issue with a clear implementation plan. Code implementation happens in a separate workflow.**
 
 ## Step 1: Issue Analysis
 
@@ -55,19 +55,20 @@ Ask 3-7 targeted questions to better understand the problem and requirements. Fo
 
 Format questions as multiple choice with a recommended answer when appropriate.
 
-## Step 4: Solution Planning (NOT Implementation)
+## Step 4: Implementation Plan Generation (NOT Implementation)
 
-Based on the answers provided, create a plan for future implementation:
+Based on the answers provided, generate a detailed implementation plan:
 - Summarize the key requirements and constraints
 - Identify the proposed approach and rationale
 - Outline specific implementation steps in priority order (for later execution)
 - Highlight any risks, assumptions, or dependencies
+- Estimate effort and identify dependencies between steps
 
-**Remember: You are planning what should be done, not doing it.**
+**Goal: Create a clear, actionable plan that can be executed in a separate implementation workflow.**
 
 ## Step 5: GitHub Documentation
 
-Create a comprehensive follow-up comment on the GitHub issue that serves as both a record and a roadmap. The comment should be structured with clear sections:
+Create a comprehensive follow-up comment on the GitHub issue that documents the refined requirements and implementation plan. This serves as both a record and a roadmap for future implementation. The comment should be structured with clear sections:
 
 **Executive Summary:**
 - 2-3 sentence recap of the core problem and the agreed solution approach
@@ -96,28 +97,30 @@ gh issue comment <issue_number> --body "your comment text here"
 ```
 This ensures the comment is properly posted even if MCP GitHub tools have permission issues.
 
-## Step 6: Final Review & Roadmap Creation
+## Step 6: Final Review & Implementation Roadmap
 
-Review the complete analysis for completeness and accuracy, then append the finalized implementation roadmap to the bottom of the GitHub follow-up comment. The appended roadmap should include:
+Review the complete analysis for completeness and accuracy, then append the finalized implementation roadmap to the bottom of the GitHub follow-up comment. The roadmap should include:
 
-- A numbered list of concrete implementation steps (to be executed later)
+- A numbered list of concrete implementation steps (to be executed in a separate workflow)
 - Owner/assignee for each major step
-- Estimated completion dates
+- Estimated completion dates or effort
 - Dependencies between steps
 - Success criteria for each milestone
 
 This ensures everyone has a clear, actionable roadmap that can be tracked directly from the GitHub issue.
 
-**This roadmap documents what WILL be done in a future implementation phase. Do not execute these steps now.**
+**This roadmap is the PRIMARY OUTPUT of this workflow. It documents what WILL be done when the implementation workflow is executed. Do not implement these steps now.**
 
 ## Important Constraints
 
 - **ABSOLUTELY NO CODE CHANGES**: Do not modify, create, or delete any code files
-- **ABSOLUTELY NO IMPLEMENTATION**: This workflow is requirements gathering and documentation ONLY
-- **Focus on clarity**: The goal is to understand what needs to be done, not to do it
-- **Record everything**: Document the analysis and decisions back on GitHub for transparency
-- **Implementation happens later**: After this workflow, a separate implementation phase will occur
+- **ABSOLUTELY NO IMPLEMENTATION**: This workflow generates plans, not code
+- **Focus on planning**: The goal is to refine the issue and create a detailed implementation plan
+- **Record everything**: Document refined requirements and the implementation plan on GitHub
+- **Implementation happens separately**: Use the /implement workflow to execute the generated plan
 
 ---
+
+**WORKFLOW OUTPUT: A refined GitHub issue with clarified requirements and a detailed implementation plan ready for execution via /implement workflow.**
 
 **Ready to begin. Please provide the GitHub issue URL or paste the issue content below:** 

@@ -18,6 +18,12 @@
 #include <netcdf.h>
 #include "geotiffdispatch.h"
 
+#ifdef HAVE_GEOTIFF
+#include <tiffio.h>
+#include <geotiff/geotiff.h>
+#include <geotiff/geo_normalize.h>
+#endif
+
 /** GeoTIFF key directory tag */
 #define GEOTIFF_KEY_DIRECTORY_TAG 34735
 
@@ -278,3 +284,252 @@ NC_GEOTIFF_detect_format(const char *path, int *is_geotiff)
     *is_geotiff = has_geotiff_tags;
     return NC_NOERR;
 }
+
+#ifdef HAVE_GEOTIFF
+/**
+ * @internal Open a GeoTIFF file and initialize file handle.
+ *
+ * This function opens a GeoTIFF file and initializes the libgeotiff context.
+ * It validates that the file is a valid GeoTIFF and sets up the necessary
+ * handles for subsequent operations.
+ *
+ * @param path Path to the GeoTIFF file.
+ * @param mode File open mode (must be NC_NOWRITE for read-only).
+ * @param basepe Unused (for parallel I/O).
+ * @param chunksizehintp Unused (for chunking).
+ * @param parameters Unused (for format-specific parameters).
+ * @param dispatch Pointer to dispatch table.
+ * @param ncid NetCDF ID for this file.
+ *
+ * @return NC_NOERR on success.
+ * @return NC_EINVAL if parameters are invalid or write mode requested.
+ * @return NC_ENOTNC if file is not a valid GeoTIFF.
+ * @return NC_ENOMEM if memory allocation fails.
+ *
+ * @author Edward Hartnett
+ */
+int
+NC_GEOTIFF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
+                void *parameters, const NC_Dispatch *dispatch, int ncid)
+{
+    NC_GEOTIFF_FILE_INFO_T *info = NULL;
+    TIFF *tiff = NULL;
+    GTIF *gtif = NULL;
+    int ret = NC_NOERR;
+    int is_geotiff = 0;
+
+    /* Validate parameters */
+    if (!path)
+        return NC_EINVAL;
+
+    /* Only read-only mode is supported */
+    if (mode & NC_WRITE)
+        return NC_EINVAL;
+
+    /* Verify this is actually a GeoTIFF file */
+    ret = NC_GEOTIFF_detect_format(path, &is_geotiff);
+    if (ret != NC_NOERR)
+        return ret;
+    if (!is_geotiff)
+        return NC_ENOTNC;
+
+    /* Allocate file info structure */
+    info = (NC_GEOTIFF_FILE_INFO_T *)malloc(sizeof(NC_GEOTIFF_FILE_INFO_T));
+    if (!info)
+    {
+        ret = NC_ENOMEM;
+        goto cleanup;
+    }
+    memset(info, 0, sizeof(NC_GEOTIFF_FILE_INFO_T));
+
+    /* Duplicate file path */
+    info->path = strdup(path);
+    if (!info->path)
+    {
+        ret = NC_ENOMEM;
+        goto cleanup;
+    }
+
+    /* Open TIFF file to validate it's accessible */
+    tiff = TIFFOpen(path, "r");
+    if (!tiff)
+    {
+        ret = NC_ENOTNC;
+        goto cleanup;
+    }
+
+    /* Phase 1: Basic validation only */
+    /* Store TIFF handle for now - GTIFNew will be fully integrated in Phase 2 */
+    /* when we have proper dispatch layer integration */
+    info->tiff_handle = tiff;
+    info->gtif_handle = NULL;  /* Will be initialized in Phase 2 */
+
+    /* Determine endianness from TIFF file */
+    {
+        uint16_t byte_order;
+        if (TIFFGetField(tiff, TIFFTAG_FILLORDER, &byte_order))
+        {
+            info->is_little_endian = (byte_order == FILLORDER_LSB2MSB);
+        }
+        else
+        {
+            /* Default to little-endian if not specified */
+            info->is_little_endian = 1;
+        }
+    }
+
+    /* TODO: Store file info in dispatch layer when full integration is complete */
+    /* For Phase 1, we clean up immediately since we can't store the info */
+    /* This prevents resource leaks until dispatch integration is complete */
+    TIFFClose(tiff);
+    free(info->path);
+    free(info);
+
+    /* Success - file was validated as accessible GeoTIFF */
+    return NC_NOERR;
+
+cleanup:
+    /* Clean up resources on error */
+    if (gtif)
+        GTIFFree(gtif);
+    if (tiff)
+        TIFFClose(tiff);
+    if (info)
+    {
+        if (info->path)
+            free(info->path);
+        free(info);
+    }
+    return ret;
+}
+
+/**
+ * @internal Close a GeoTIFF file and release resources.
+ *
+ * This function closes a GeoTIFF file and frees all associated resources
+ * including the GTIF context, TIFF handle, and file info structure.
+ *
+ * @param ncid NetCDF ID for this file.
+ * @param ignore Unused parameter (for dispatch compatibility).
+ *
+ * @return NC_NOERR on success.
+ * @return NC_EBADID if ncid is invalid.
+ *
+ * @author Edward Hartnett
+ */
+int
+NC_GEOTIFF_close(int ncid, void *ignore)
+{
+    NC_GEOTIFF_FILE_INFO_T *info = NULL;
+
+    /* TODO: Retrieve file info from ncid via dispatch layer */
+    /* For now, this is a stub that will be completed when dispatch integration is done */
+    
+    if (!info)
+        return NC_EBADID;
+
+    /* Free GTIF context */
+    if (info->gtif_handle)
+        GTIFFree((GTIF *)info->gtif_handle);
+
+    /* Close TIFF file */
+    if (info->tiff_handle)
+        TIFFClose((TIFF *)info->tiff_handle);
+
+    /* Free path string */
+    if (info->path)
+        free(info->path);
+
+    /* Free file info structure */
+    free(info);
+
+    return NC_NOERR;
+}
+
+/**
+ * @internal Abort a GeoTIFF file operation and release resources.
+ *
+ * This function is called on error paths to clean up resources.
+ * It performs the same cleanup as NC_GEOTIFF_close but is used
+ * when an error has occurred during file operations.
+ *
+ * @param ncid NetCDF ID for this file.
+ *
+ * @return NC_NOERR on success.
+ * @return NC_EBADID if ncid is invalid.
+ *
+ * @author Edward Hartnett
+ */
+int
+NC_GEOTIFF_abort(int ncid)
+{
+    /* Abort is the same as close for read-only operations */
+    return NC_GEOTIFF_close(ncid, NULL);
+}
+
+/**
+ * @internal Query the format of a GeoTIFF file.
+ *
+ * @param ncid NetCDF ID for this file.
+ * @param formatp Pointer to store format value.
+ *
+ * @return NC_NOERR on success.
+ *
+ * @author Edward Hartnett
+ */
+int
+NC_GEOTIFF_inq_format(int ncid, int *formatp)
+{
+    if (formatp)
+        *formatp = NC_FORMATX_NC_GEOTIFF;
+    return NC_NOERR;
+}
+
+/**
+ * @internal Query the extended format of a GeoTIFF file.
+ *
+ * @param ncid NetCDF ID for this file.
+ * @param formatp Pointer to store format value.
+ * @param modep Pointer to store mode value.
+ *
+ * @return NC_NOERR on success.
+ *
+ * @author Edward Hartnett
+ */
+int
+NC_GEOTIFF_inq_format_extended(int ncid, int *formatp, int *modep)
+{
+    if (formatp)
+        *formatp = NC_FORMATX_NC_GEOTIFF;
+    if (modep)
+        *modep = NC_FORMATX_NC_GEOTIFF;
+    return NC_NOERR;
+}
+
+/**
+ * @internal Initialize GeoTIFF handler.
+ *
+ * @return NC_NOERR on success.
+ *
+ * @author Edward Hartnett
+ */
+int
+NC_GEOTIFF_initialize(void)
+{
+    return NC_NOERR;
+}
+
+/**
+ * @internal Finalize GeoTIFF handler.
+ *
+ * @return NC_NOERR on success.
+ *
+ * @author Edward Hartnett
+ */
+int
+NC_GEOTIFF_finalize(void)
+{
+    return NC_NOERR;
+}
+
+#endif /* HAVE_GEOTIFF */
