@@ -14,10 +14,11 @@ if(HAVE_GEOTIFF)
     # Test for GeoTIFF format detection
     add_executable(tst_geotiff_detect tst_geotiff_detect.c)
     target_link_libraries(tst_geotiff_detect 
+        ncgeotiff
         ${NETCDF_LIBRARIES} 
+        ${HDF5_C_${LIB_TYPE}_LIBRARY}
         ${GEOTIFF_LIBRARY} 
-        ${TIFF_LIBRARY}
-        ncgeotiff)
+        ${TIFF_LIBRARY})
     add_test(NAME tst_geotiff_detect COMMAND tst_geotiff_detect)
     set_tests_properties(tst_geotiff_detect PROPERTIES 
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
