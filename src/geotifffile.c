@@ -541,32 +541,6 @@ NC_GEOTIFF_inq_format_extended(int ncid, int *formatp, int *modep)
 }
 
 /**
- * @internal Initialize GeoTIFF handler.
- *
- * @return NC_NOERR on success.
- *
- * @author Edward Hartnett
- */
-int
-NC_GEOTIFF_initialize(void)
-{
-    return NC_NOERR;
-}
-
-/**
- * @internal Finalize GeoTIFF handler.
- *
- * @return NC_NOERR on success.
- *
- * @author Edward Hartnett
- */
-int
-NC_GEOTIFF_finalize(void)
-{
-    return NC_NOERR;
-}
-
-/**
  * @internal Extract metadata from GeoTIFF file.
  *
  * This function extracts dimensions, data types, and coordinate reference
