@@ -101,3 +101,71 @@ NEP v2.0.0 will extend the NetCDF Extension Pack to support GRIB2 meteorological
 
 *Version: 2.0.0 (Planning)*
 *Status: Not yet implemented*
+
+## 5. NEP v1.5.0 GeoTIFF Read Layer
+
+### 5.1 Overview
+NEP v1.5.0 will add support for GeoTIFF geospatial raster data format through a User Defined Format (UDF) handler, enabling transparent access to GeoTIFF files through the standard NetCDF API.
+
+### 5.2 Business Objectives
+- Enable seamless access to GeoTIFF geospatial raster data
+- Eliminate need for data conversion from GeoTIFF to NetCDF
+- Support geospatial analysis and remote sensing workflows
+- Maintain backward compatibility with all previous NEP features
+- Leverage libgeotiff for GeoTIFF file operations
+
+### 5.3 Success Metrics
+- Zero breaking changes to existing applications
+- <5% performance overhead compared to native GeoTIFF access
+- Successful integration with geospatial data workflows
+- Full support for GeoTIFF metadata and georeferencing information
+
+## 6. Key Features (GeoTIFF - Planned)
+
+- GeoTIFF format support via UDF handler
+- Automatic GeoTIFF format detection
+- Runtime-pluggable GeoTIFF handler
+- Standard NetCDF API access to GeoTIFF raster data
+- Integration with libgeotiff library
+- Support for georeferencing and coordinate system metadata
+- Access to GeoTIFF tags and key-value pairs
+
+## 7. Technical Requirements (GeoTIFF - To Be Developed)
+
+### 7.1 GeoTIFF UDF Handler
+- File open/close operations for GeoTIFF files
+- Metadata extraction (dimensions, data types, georeferencing)
+- Raster data reading functionality
+- Variable information access (bands, coordinate systems)
+- GeoTIFF tag and key reading
+- Coordinate reference system (CRS) information extraction
+
+### 7.2 Dependencies
+- libgeotiff library (https://github.com/OSGeo/libgeotiff)
+- All v1.0.0 dependencies (NetCDF-C, HDF5)
+- Optional: PROJ library for coordinate transformations
+
+### 7.3 Build System Integration
+- Optional GeoTIFF support (enabled via build flags)
+- CMake: `-DENABLE_GEOTIFF=ON/OFF`
+- Autotools: `--enable-geotiff/--disable-geotiff`
+- Automatic libgeotiff detection during configuration
+
+### 7.4 API Design
+- NC_Dispatch implementation for GeoTIFF format
+- Standard NetCDF API functions for file operations
+- Transparent access to GeoTIFF raster bands as NetCDF variables
+- Metadata mapping from GeoTIFF tags to NetCDF attributes
+
+## 8. Timeline (GeoTIFF - Planned)
+
+- Sprint 1: GeoTIFF file open/close and format detection
+- Sprint 2: Metadata extraction and dimension mapping
+- Sprint 3: Raster data reading
+- Sprint 4: Coordinate system and georeferencing support
+
+---
+
+*Version: 1.5.0 (Planning)*
+*Status: Not yet implemented*
+*Reference: ESDS-RFC-040v1.1.pdf in docs directory*
