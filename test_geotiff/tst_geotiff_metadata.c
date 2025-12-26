@@ -307,6 +307,13 @@ main(void)
         return 1;
     }
     
+    /* Register GeoTIFF UDF handler with NetCDF-C */
+    if (nc_def_user_format(NC_FORMATX_NC_GEOTIFF, (NC_Dispatch*)GEOTIFF_dispatch_table, NULL) != NC_NOERR)
+    {
+        printf("ERROR: Failed to register GeoTIFF UDF handler\n");
+        return 1;
+    }
+    
     /* Test dispatch layer integration */
     err += test_dispatch_integration();
     
