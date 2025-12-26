@@ -21,7 +21,7 @@ if(HAVE_GEOTIFF)
         ${TIFF_LIBRARY})
     add_test(NAME tst_geotiff_detect COMMAND tst_geotiff_detect)
     set_tests_properties(tst_geotiff_detect PROPERTIES 
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
     # Test for GeoTIFF file handle management
     add_executable(tst_geotiff_handle tst_geotiff_handle.c)
@@ -33,7 +33,7 @@ if(HAVE_GEOTIFF)
         ${TIFF_LIBRARY})
     add_test(NAME tst_geotiff_handle COMMAND tst_geotiff_handle)
     set_tests_properties(tst_geotiff_handle PROPERTIES 
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
     # Test for GeoTIFF Phase 2: metadata extraction
     add_executable(tst_geotiff_metadata tst_geotiff_metadata.c)
@@ -45,7 +45,7 @@ if(HAVE_GEOTIFF)
         ${TIFF_LIBRARY})
     add_test(NAME tst_geotiff_metadata COMMAND tst_geotiff_metadata)
     set_tests_properties(tst_geotiff_metadata PROPERTIES 
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
     message(STATUS "GeoTIFF tests enabled")
 endif()
