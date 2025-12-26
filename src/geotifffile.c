@@ -17,11 +17,16 @@
 #include <string.h>
 #include <netcdf.h>
 #include "geotiffdispatch.h"
+#include "nc.h"
+#include "nc4internal.h"
+#include "hdf5internal.h"
 
 #ifdef HAVE_GEOTIFF
 #include <tiffio.h>
 #include <geotiff/geotiff.h>
 #include <geotiff/geo_normalize.h>
+#include <geotiff/geotiffio.h>
+#include <geotiff/xtiffio.h>
 #endif
 
 /** GeoTIFF key directory tag */
@@ -289,9 +294,8 @@ NC_GEOTIFF_detect_format(const char *path, int *is_geotiff)
 /**
  * @internal Open a GeoTIFF file and initialize file handle.
  *
- * This function opens a GeoTIFF file and initializes the libgeotiff context.
- * It validates that the file is a valid GeoTIFF and sets up the necessary
- * handles for subsequent operations.
+ * Phase 2: Full dispatch layer integration with GTIFNew initialization
+ * and metadata extraction.
  *
  * @param path Path to the GeoTIFF file.
  * @param mode File open mode (must be NC_NOWRITE for read-only).
@@ -312,7 +316,9 @@ int
 NC_GEOTIFF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
                 void *parameters, const NC_Dispatch *dispatch, int ncid)
 {
-    NC_GEOTIFF_FILE_INFO_T *info = NULL;
+    NC_FILE_INFO_T *h5 = NULL;
+    NC_GEOTIFF_FILE_INFO_T *geotiff_info = NULL;
+    NC *nc = NULL;
     TIFF *tiff = NULL;
     GTIF *gtif = NULL;
     int ret = NC_NOERR;
@@ -326,6 +332,10 @@ NC_GEOTIFF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     if (mode & NC_WRITE)
         return NC_EINVAL;
 
+    /* Find pointer to NC */
+    if ((ret = NC_check_id(ncid, &nc)))
+        return ret;
+
     /* Verify this is actually a GeoTIFF file */
     ret = NC_GEOTIFF_detect_format(path, &is_geotiff);
     if (ret != NC_NOERR)
@@ -333,72 +343,88 @@ NC_GEOTIFF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     if (!is_geotiff)
         return NC_ENOTNC;
 
-    /* Allocate file info structure */
-    info = (NC_GEOTIFF_FILE_INFO_T *)malloc(sizeof(NC_GEOTIFF_FILE_INFO_T));
-    if (!info)
+    /* Add necessary structs to hold netcdf-4 file data */
+    if ((ret = nc4_file_list_add(ncid, path, mode, (void **)&h5)))
+        return ret;
+    if (!h5 || !h5->root_grp)
+        return NC_ENOMEM;
+    h5->no_write = NC_TRUE;
+    h5->root_grp->atts_read = 1;
+
+    /* Allocate GeoTIFF-specific file info structure */
+    geotiff_info = (NC_GEOTIFF_FILE_INFO_T *)malloc(sizeof(NC_GEOTIFF_FILE_INFO_T));
+    if (!geotiff_info)
     {
         ret = NC_ENOMEM;
         goto cleanup;
     }
-    memset(info, 0, sizeof(NC_GEOTIFF_FILE_INFO_T));
+    memset(geotiff_info, 0, sizeof(NC_GEOTIFF_FILE_INFO_T));
 
     /* Duplicate file path */
-    info->path = strdup(path);
-    if (!info->path)
+    geotiff_info->path = strdup(path);
+    if (!geotiff_info->path)
     {
         ret = NC_ENOMEM;
         goto cleanup;
     }
 
-    /* Open TIFF file to validate it's accessible */
+    /* Open TIFF file */
     tiff = TIFFOpen(path, "r");
     if (!tiff)
     {
         ret = NC_ENOTNC;
         goto cleanup;
     }
-
-    /* Phase 1: Basic validation only */
-    /* Store TIFF handle for now - GTIFNew will be fully integrated in Phase 2 */
-    /* when we have proper dispatch layer integration */
-    info->tiff_handle = tiff;
-    info->gtif_handle = NULL;  /* Will be initialized in Phase 2 */
+    geotiff_info->tiff_handle = tiff;
 
     /* Determine endianness from TIFF file */
     {
         uint16_t byte_order;
         if (TIFFGetField(tiff, TIFFTAG_FILLORDER, &byte_order))
         {
-            info->is_little_endian = (byte_order == FILLORDER_LSB2MSB);
+            geotiff_info->is_little_endian = (byte_order == FILLORDER_LSB2MSB);
         }
         else
         {
             /* Default to little-endian if not specified */
-            info->is_little_endian = 1;
+            geotiff_info->is_little_endian = 1;
         }
     }
 
-    /* TODO: Store file info in dispatch layer when full integration is complete */
-    /* For Phase 1, we clean up immediately since we can't store the info */
-    /* This prevents resource leaks until dispatch integration is complete */
-    TIFFClose(tiff);
-    free(info->path);
-    free(info);
+    /* Initialize GTIFNew context with error handling for malformed tags */
+    gtif = GTIFNew(tiff);
+    if (!gtif)
+    {
+        /* GTIFNew can fail with malformed GeoTIFF tags */
+        /* This is not necessarily fatal - we can still read the raster data */
+        /* but we won't have georeferencing information */
+        geotiff_info->gtif_handle = NULL;
+    }
+    else
+    {
+        geotiff_info->gtif_handle = gtif;
+    }
 
-    /* Success - file was validated as accessible GeoTIFF */
+    /* Store GeoTIFF file info in dispatch layer */
+    h5->format_file_info = geotiff_info;
+
+    /* Extract metadata: dimensions, data types, and CRS */
+    if ((ret = NC_GEOTIFF_extract_metadata(h5, geotiff_info)))
+        goto cleanup;
+
     return NC_NOERR;
 
 cleanup:
     /* Clean up resources on error */
-    if (gtif)
-        GTIFFree(gtif);
-    if (tiff)
-        TIFFClose(tiff);
-    if (info)
+    if (geotiff_info)
     {
-        if (info->path)
-            free(info->path);
-        free(info);
+        if (geotiff_info->gtif_handle)
+            GTIFFree((GTIF *)geotiff_info->gtif_handle);
+        if (geotiff_info->tiff_handle)
+            TIFFClose((TIFF *)geotiff_info->tiff_handle);
+        if (geotiff_info->path)
+            free(geotiff_info->path);
+        free(geotiff_info);
     }
     return ret;
 }
@@ -406,8 +432,7 @@ cleanup:
 /**
  * @internal Close a GeoTIFF file and release resources.
  *
- * This function closes a GeoTIFF file and frees all associated resources
- * including the GTIF context, TIFF handle, and file info structure.
+ * Phase 2: Retrieve file info from dispatch layer and cleanup.
  *
  * @param ncid NetCDF ID for this file.
  * @param ignore Unused parameter (for dispatch compatibility).
@@ -420,28 +445,37 @@ cleanup:
 int
 NC_GEOTIFF_close(int ncid, void *ignore)
 {
-    NC_GEOTIFF_FILE_INFO_T *info = NULL;
+    NC_GRP_INFO_T *grp;
+    NC *nc;
+    NC_FILE_INFO_T *h5;
+    NC_GEOTIFF_FILE_INFO_T *geotiff_info;
+    int ret;
 
-    /* TODO: Retrieve file info from ncid via dispatch layer */
-    /* For now, this is a stub that will be completed when dispatch integration is done */
+    /* Find our metadata for this file */
+    if ((ret = nc4_find_nc_grp_h5(ncid, &nc, &grp, (NC_FILE_INFO_T **)&h5)))
+        return ret;
     
-    if (!info)
+    if (!h5 || !h5->format_file_info)
         return NC_EBADID;
 
+    /* Get GeoTIFF-specific file info */
+    geotiff_info = (NC_GEOTIFF_FILE_INFO_T *)h5->format_file_info;
+
     /* Free GTIF context */
-    if (info->gtif_handle)
-        GTIFFree((GTIF *)info->gtif_handle);
+    if (geotiff_info->gtif_handle)
+        GTIFFree((GTIF *)geotiff_info->gtif_handle);
 
     /* Close TIFF file */
-    if (info->tiff_handle)
-        TIFFClose((TIFF *)info->tiff_handle);
+    if (geotiff_info->tiff_handle)
+        TIFFClose((TIFF *)geotiff_info->tiff_handle);
 
     /* Free path string */
-    if (info->path)
-        free(info->path);
+    if (geotiff_info->path)
+        free(geotiff_info->path);
 
     /* Free file info structure */
-    free(info);
+    free(geotiff_info);
+    h5->format_file_info = NULL;
 
     return NC_NOERR;
 }
@@ -529,6 +563,139 @@ NC_GEOTIFF_initialize(void)
 int
 NC_GEOTIFF_finalize(void)
 {
+    return NC_NOERR;
+}
+
+/**
+ * @internal Extract metadata from GeoTIFF file.
+ *
+ * This function extracts dimensions, data types, and coordinate reference
+ * system information from a GeoTIFF file and populates the NetCDF metadata
+ * structures.
+ *
+ * @param h5 Pointer to NC_FILE_INFO_T structure.
+ * @param geotiff_info Pointer to GeoTIFF-specific file info.
+ *
+ * @return NC_NOERR on success.
+ * @return NC_EHDFERR on TIFF/GeoTIFF errors.
+ *
+ * @author Edward Hartnett
+ */
+int
+NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_info)
+{
+    TIFF *tiff;
+    GTIF *gtif;
+    uint32_t width, height;
+    uint16_t samples_per_pixel = 1;
+    uint16_t bits_per_sample = 0;
+    uint16_t sample_format = SAMPLEFORMAT_UINT;
+    NC_GRP_INFO_T *grp;
+    NC_DIM_INFO_T *dim_x = NULL, *dim_y = NULL, *dim_band = NULL;
+    NC_VAR_INFO_T *var = NULL;
+    nc_type xtype = NC_UBYTE;
+    int retval;
+
+    if (!h5 || !geotiff_info || !geotiff_info->tiff_handle)
+        return NC_EINVAL;
+
+    tiff = (TIFF *)geotiff_info->tiff_handle;
+    gtif = (GTIF *)geotiff_info->gtif_handle;
+    grp = h5->root_grp;
+
+    /* Extract image dimensions */
+    if (!TIFFGetField(tiff, TIFFTAG_IMAGEWIDTH, &width))
+        return NC_EHDFERR;
+    if (!TIFFGetField(tiff, TIFFTAG_IMAGELENGTH, &height))
+        return NC_EHDFERR;
+
+    /* Get samples per pixel (bands) */
+    TIFFGetField(tiff, TIFFTAG_SAMPLESPERPIXEL, &samples_per_pixel);
+
+    /* Get data type information */
+    TIFFGetField(tiff, TIFFTAG_BITSPERSAMPLE, &bits_per_sample);
+    TIFFGetField(tiff, TIFFTAG_SAMPLEFORMAT, &sample_format);
+
+    /* Map TIFF data type to NetCDF type */
+    if (sample_format == SAMPLEFORMAT_UINT)
+    {
+        if (bits_per_sample == 8)
+            xtype = NC_UBYTE;
+        else if (bits_per_sample == 16)
+            xtype = NC_USHORT;
+        else if (bits_per_sample == 32)
+            xtype = NC_UINT;
+        else
+            xtype = NC_UBYTE;
+    }
+    else if (sample_format == SAMPLEFORMAT_INT)
+    {
+        if (bits_per_sample == 8)
+            xtype = NC_BYTE;
+        else if (bits_per_sample == 16)
+            xtype = NC_SHORT;
+        else if (bits_per_sample == 32)
+            xtype = NC_INT;
+        else
+            xtype = NC_SHORT;
+    }
+    else if (sample_format == SAMPLEFORMAT_IEEEFP)
+    {
+        if (bits_per_sample == 32)
+            xtype = NC_FLOAT;
+        else if (bits_per_sample == 64)
+            xtype = NC_DOUBLE;
+        else
+            xtype = NC_FLOAT;
+    }
+
+    /* Create dimensions */
+    if ((retval = nc4_dim_list_add(grp, "x", width, -1, &dim_x)))
+        return retval;
+    if ((retval = nc4_dim_list_add(grp, "y", height, -1, &dim_y)))
+        return retval;
+
+    /* Create band dimension if multi-band */
+    if (samples_per_pixel > 1)
+    {
+        if ((retval = nc4_dim_list_add(grp, "band", samples_per_pixel, -1, &dim_band)))
+            return retval;
+    }
+
+    /* Create variable for raster data */
+    if (samples_per_pixel > 1)
+    {
+        int dimids[3] = {dim_band->hdr.id, dim_y->hdr.id, dim_x->hdr.id};
+        if ((retval = nc4_var_list_add2(grp, "data", xtype, 3, dimids, &var)))
+            return retval;
+    }
+    else
+    {
+        int dimids[2] = {dim_y->hdr.id, dim_x->hdr.id};
+        if ((retval = nc4_var_list_add2(grp, "data", xtype, 2, dimids, &var)))
+            return retval;
+    }
+
+    /* Extract CRS information if GTIFNew succeeded */
+    if (gtif)
+    {
+        GTIFDefn defn;
+        if (GTIFGetDefn(gtif, &defn))
+        {
+            /* Store CRS information as attributes */
+            /* This is a simplified version - full implementation would extract */
+            /* projection parameters, datum, etc. */
+            if (defn.Model != 0)
+            {
+                /* Add model type as attribute */
+                NC_ATT_INFO_T *att;
+                if ((retval = nc4_att_list_add(&var->att, "grid_mapping_name", &att)))
+                    return retval;
+                /* Further CRS attribute extraction would go here */
+            }
+        }
+    }
+
     return NC_NOERR;
 }
 

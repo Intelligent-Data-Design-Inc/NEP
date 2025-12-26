@@ -72,7 +72,7 @@ endif()
 if(HAVE_GEOTIFF)
     set(GEOTIFF_LIB_NAME ncgeotiff)
     add_library(${GEOTIFF_LIB_NAME} SHARED 
-        geotifffile.c)
+        geotiffdispatch.c geotifffile.c)
     target_include_directories(${GEOTIFF_LIB_NAME} PRIVATE ${GEOTIFF_INCLUDE_DIR} ${TIFF_INCLUDE_DIR})
     target_link_libraries(${GEOTIFF_LIB_NAME} PRIVATE 
         ${HDF5_C_${LIB_TYPE}_LIBRARY} ${NETCDF_LIBRARIES} ${GEOTIFF_LIBRARY} ${TIFF_LIBRARY})

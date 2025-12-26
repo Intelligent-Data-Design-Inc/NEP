@@ -76,6 +76,9 @@ extern "C" {
     extern int
     NC_GEOTIFF_detect_format(const char *path, int *is_geotiff);
 
+    extern int
+    NC_GEOTIFF_extract_metadata(struct NC_FILE_INFO *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_info);
+
     extern const NC_Dispatch *GEOTIFF_dispatch_table;
 
 #if defined(__cplusplus)

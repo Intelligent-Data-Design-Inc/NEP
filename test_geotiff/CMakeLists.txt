@@ -35,5 +35,17 @@ if(HAVE_GEOTIFF)
     set_tests_properties(tst_geotiff_handle PROPERTIES 
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
+    # Test for GeoTIFF Phase 2: metadata extraction
+    add_executable(tst_geotiff_metadata tst_geotiff_metadata.c)
+    target_link_libraries(tst_geotiff_metadata 
+        ncgeotiff
+        ${NETCDF_LIBRARIES} 
+        ${HDF5_LIBRARIES}
+        ${GEOTIFF_LIBRARY} 
+        ${TIFF_LIBRARY})
+    add_test(NAME tst_geotiff_metadata COMMAND tst_geotiff_metadata)
+    set_tests_properties(tst_geotiff_metadata PROPERTIES 
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
     message(STATUS "GeoTIFF tests enabled")
 endif()
