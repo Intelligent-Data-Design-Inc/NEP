@@ -14,6 +14,7 @@
 
 #include "config.h"
 #include "ncdispatch.h"
+#include "nc4internal.h"
 
 /** GeoTIFF format uses UDF1 slot in NetCDF-C dispatch table */
 #define NC_FORMATX_NC_GEOTIFF NC_FORMATX_UDF1
