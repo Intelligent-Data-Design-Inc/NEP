@@ -690,10 +690,9 @@ NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_
         var->dimids[1] = dim_x->hdr.id;
     }
     
-    /* Set variable type */
-    var->type_info = grp->nc4_info->types[xtype];
-    if (var->type_info)
-        var->type_info->rc++;
+    /* Store the NetCDF type for later use in get_vara */
+    var->type_info = NULL;  /* Will be set when data is read */
+    var->xtype = xtype;
 
     /* Extract CRS information if GTIFNew succeeded */
     if (gtif)
