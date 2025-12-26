@@ -12,14 +12,18 @@ AM_CFLAGS = -g -Wall -Wextra $(HDF5_CFLAGS)
 if HAVE_GEOTIFF
 
 # Test programs
-check_PROGRAMS = tst_geotiff_detect
+check_PROGRAMS = tst_geotiff_detect tst_geotiff_handle
 
 # Test for GeoTIFF format detection
 tst_geotiff_detect_SOURCES = tst_geotiff_detect.c
 tst_geotiff_detect_LDADD = $(top_builddir)/src/libncgeotiff.la $(NETCDF_LIBS) $(GEOTIFF_LIBS) $(HDF5_LIBS)
 
+# Test for GeoTIFF file handle management
+tst_geotiff_handle_SOURCES = tst_geotiff_handle.c
+tst_geotiff_handle_LDADD = $(top_builddir)/src/libncgeotiff.la $(NETCDF_LIBS) $(GEOTIFF_LIBS) $(HDF5_LIBS)
+
 # Define tests
-TESTS = tst_geotiff_detect
+TESTS = tst_geotiff_detect tst_geotiff_handle
 
 endif # HAVE_GEOTIFF
 
