@@ -16,7 +16,7 @@ if(HAVE_GEOTIFF)
     target_link_libraries(tst_geotiff_detect 
         ncgeotiff
         ${NETCDF_LIBRARIES} 
-        ${HDF5_C_${LIB_TYPE}_LIBRARY}
+        ${HDF5_LIBRARIES}
         ${GEOTIFF_LIBRARY} 
         ${TIFF_LIBRARY})
     add_test(NAME tst_geotiff_detect COMMAND tst_geotiff_detect)
