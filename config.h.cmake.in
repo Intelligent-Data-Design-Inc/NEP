@@ -12,6 +12,10 @@
 /* Define if CDF library is found */
 #cmakedefine HAVE_CDF
 
+/* GeoTIFF library detection (v1.5.0) - library detection only, no UDF yet */
+/* Define if GeoTIFF library is found */
+#cmakedefine HAVE_GEOTIFF
+
 /* Defined if you have HDF5 support */
 #cmakedefine HAVE_HDF5
 

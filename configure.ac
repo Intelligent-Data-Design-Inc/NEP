@@ -142,9 +142,18 @@ AC_ARG_ENABLE([cdf],
 test "x$enable_cdf" = xyes || enable_cdf=no
 AC_MSG_RESULT([$enable_cdf])
 
+# GeoTIFF library detection (v1.5.0) - library detection only, no UDF yet
+AC_MSG_CHECKING([whether GeoTIFF library detection should be enabled])
+AC_ARG_ENABLE([geotiff],
+              [AS_HELP_STRING([--enable-geotiff],
+                              [Enable GeoTIFF library detection (default: no)])])
+test "x$enable_geotiff" = xyes || enable_geotiff=no
+AC_MSG_RESULT([$enable_geotiff])
+
 # Initialize variables
 HAVE_GRIB2=no
 HAVE_CDF=no
+HAVE_GEOTIFF=no
 HAVE_DOXYGEN=no
 
 # GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
@@ -196,6 +205,26 @@ fi
 AC_SUBST([CDF_LIBS])
 AC_SUBST([CDF_LDFLAGS])
 
+# GeoTIFF library detection (v1.5.0) - library detection only, no UDF implementation yet
+if test "x$enable_geotiff" = "xyes"; then
+    AC_CHECK_HEADERS([geotiff/geotiff.h], [geotiff_header=yes], [geotiff_header=no])
+    AC_CHECK_HEADERS([tiff.h], [tiff_header=yes], [tiff_header=no])
+    AC_CHECK_LIB([tiff], [TIFFOpen], [tiff_lib=yes; TIFF_LIBS="-ltiff"], [tiff_lib=no])
+    AC_CHECK_LIB([geotiff], [GTIFNew], [geotiff_lib=yes; GEOTIFF_LIBS="-lgeotiff $TIFF_LIBS"], [geotiff_lib=no], [-ltiff])
+    
+    if test "x$geotiff_header" = "xyes" && test "x$tiff_header" = "xyes" && test "x$geotiff_lib" = "xyes" && test "x$tiff_lib" = "xyes"; then
+        HAVE_GEOTIFF=yes
+        AC_DEFINE([HAVE_GEOTIFF], [1], [Define if GeoTIFF library is found])
+        AC_DEFINE([HAVE_GEOTIFF_H], [1], [Define if geotiff.h header is found])
+        AC_DEFINE([HAVE_TIFF_H], [1], [Define if tiff.h header is found])
+        AC_MSG_NOTICE([GeoTIFF library detection enabled (library location only, no UDF yet)])
+    else
+        AC_MSG_ERROR([GeoTIFF enabled but libgeotiff or libtiff not found. Install libgeotiff and libtiff or disable with --disable-geotiff])
+    fi
+fi
+AC_SUBST([GEOTIFF_LIBS])
+AC_SUBST([TIFF_LIBS])
+
 # Check for Doxygen if documentation is enabled
 if test "x$enable_docs" != "xno"; then
     AC_CHECK_PROG([DOXYGEN], [doxygen], [doxygen])
@@ -235,6 +264,7 @@ fi
 # Will be re-enabled in v2.0.0 for GRIB2 UDF support
 # AM_CONDITIONAL([HAVE_GRIB2], [test "x$HAVE_GRIB2" = "xyes"])
 AM_CONDITIONAL([HAVE_CDF], [test "x$HAVE_CDF" = "xyes"])
+AM_CONDITIONAL([HAVE_GEOTIFF], [test "x$HAVE_GEOTIFF" = "xyes"])
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$HAVE_DOXYGEN" = "xyes"])
 
 # Initialize Automake

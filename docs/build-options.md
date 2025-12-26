@@ -30,6 +30,33 @@ When Fortran support is **disabled**:
 - No Fortran libraries or modules are built or installed.
 - Fortran tests are not built or run.
 
+## Library Detection Options
+
+### CDF Library Detection (v1.3.0)
+- **CMake**: `-DENABLE_CDF=ON/OFF` (default: `OFF`)
+- **Autotools**: `--enable-cdf/--disable-cdf`
+- **Behavior**: Enables detection of NASA CDF library for future CDF UDF handler support.
+- **Dependencies**: NASA CDF library v3.9.x or later
+- **Note**: Library detection only - no UDF implementation yet.
+
+### GeoTIFF Library Detection (v1.5.0)
+- **CMake**: `-DENABLE_GEOTIFF=ON/OFF` (default: `OFF`)
+- **Autotools**: `--enable-geotiff/--disable-geotiff`
+- **Behavior**: Enables detection of libgeotiff and libtiff libraries for future GeoTIFF UDF handler support.
+- **Dependencies**: 
+  - libgeotiff (latest stable version)
+  - libtiff (dependency of libgeotiff)
+- **Note**: Library detection only - no UDF implementation yet.
+
+When GeoTIFF detection is **enabled**:
+- Build system verifies presence of libgeotiff and libtiff libraries.
+- `HAVE_GEOTIFF` macro is defined in configuration headers.
+- Build fails with clear error message if libraries are not found.
+
+When GeoTIFF detection is **disabled** (default):
+- No GeoTIFF library checks are performed.
+- Build proceeds without GeoTIFF support.
+
 ## Documentation Build
 
 - **CMake**: `-DBUILD_DOCUMENTATION=ON/OFF` (default: `ON`)
