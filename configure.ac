@@ -207,7 +207,7 @@ AC_SUBST([CDF_LDFLAGS])
 
 # GeoTIFF library detection (v1.5.0) - library detection only, no UDF implementation yet
 if test "x$enable_geotiff" = "xyes"; then
-    AC_CHECK_HEADERS([geotiff.h], [geotiff_header=yes], [geotiff_header=no])
+    AC_CHECK_HEADERS([geotiff/geotiff.h], [geotiff_header=yes], [geotiff_header=no])
     AC_CHECK_HEADERS([tiff.h], [tiff_header=yes], [tiff_header=no])
     AC_CHECK_LIB([tiff], [TIFFOpen], [tiff_lib=yes; TIFF_LIBS="-ltiff"], [tiff_lib=no])
     AC_CHECK_LIB([geotiff], [GTIFNew], [geotiff_lib=yes; GEOTIFF_LIBS="-lgeotiff $TIFF_LIBS"], [geotiff_lib=no], [-ltiff])

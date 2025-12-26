@@ -27,6 +27,9 @@
 /* Define if GeoTIFF library is found */
 #undef HAVE_GEOTIFF
 
+/* Define to 1 if you have the <geotiff/geotiff.h> header file. */
+#undef HAVE_GEOTIFF_GEOTIFF_H
+
 /* Define if geotiff.h header is found */
 #undef HAVE_GEOTIFF_H
 
