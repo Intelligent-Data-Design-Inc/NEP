@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "geotiffdispatch.h"
 
 #define NASA_DATA_DIR "../test/data/"
 #define ERR_CHECK(ret) do { if ((ret) != NC_NOERR) { \
@@ -299,6 +300,13 @@ main(void)
     printf("\n*** Testing GeoTIFF Phase 2: Dispatch Integration and Metadata Extraction ***\n");
 
 #ifdef HAVE_GEOTIFF
+    /* Initialize GeoTIFF dispatch layer */
+    if (NC_GEOTIFF_initialize() != NC_NOERR)
+    {
+        printf("ERROR: Failed to initialize GeoTIFF dispatch layer\n");
+        return 1;
+    }
+    
     /* Test dispatch layer integration */
     err += test_dispatch_integration();
     

@@ -322,6 +322,9 @@ jobs:
         run: |
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
           cd build/test_geotiff
+          # Copy test data to build directory
+          cp -r ../../test_geotiff/data .
+          cp -r ../../test/data ../../test_geotiff/
           echo "=== Running tst_geotiff_detect under Valgrind ==="
           valgrind --leak-check=full --show-leak-kinds=all --track-fds=yes \
             --suppressions=../../valgrind.supp --error-exitcode=1 \
@@ -429,6 +432,9 @@ jobs:
         run: |
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
           cd build/test_geotiff
+          # Copy test data to build directory
+          cp -r ../../test_geotiff/data .
+          cp -r ../../test/data ../../test_geotiff/
           ./tst_geotiff_detect
           ./tst_geotiff_handle
           ./tst_geotiff_metadata
