@@ -326,36 +326,37 @@ jobs:
           cp -r ../../test_geotiff/data .
           mkdir -p ../test/data
           cp -r ../../test/data/*.tif ../test/data/ || true
+          
           echo "=== Running tst_geotiff_detect under Valgrind ==="
-          valgrind --leak-check=full --show-leak-kinds=all --track-fds=yes \
+          if valgrind --leak-check=full --show-leak-kinds=all --track-fds=yes \
             --suppressions=../../valgrind.supp --error-exitcode=1 \
-            ./tst_geotiff_detect 2>&1 | tee valgrind_detect.log
+            ./tst_geotiff_detect 2>&1 | tee valgrind_detect.log; then
+            echo "✓ tst_geotiff_detect: No memory leaks detected"
+          else
+            echo "✗ tst_geotiff_detect: Memory leaks or errors detected"
+            exit 1
+          fi
           
           echo "=== Running tst_geotiff_handle under Valgrind ==="
-          valgrind --leak-check=full --show-leak-kinds=all --track-fds=yes \
+          if valgrind --leak-check=full --show-leak-kinds=all --track-fds=yes \
             --suppressions=../../valgrind.supp --error-exitcode=1 \
-            ./tst_geotiff_handle 2>&1 | tee valgrind_handle.log
+            ./tst_geotiff_handle 2>&1 | tee valgrind_handle.log; then
+            echo "✓ tst_geotiff_handle: No memory leaks detected"
+          else
+            echo "✗ tst_geotiff_handle: Memory leaks or errors detected"
+            exit 1
+          fi
           
           echo "=== Running tst_geotiff_metadata under Valgrind ==="
-          valgrind --leak-check=full --show-leak-kinds=all --track-fds=yes \
+          if valgrind --leak-check=full --show-leak-kinds=all --track-fds=yes \
             --suppressions=../../valgrind.supp --error-exitcode=1 \
-            ./tst_geotiff_metadata 2>&1 | tee valgrind_metadata.log
-
-      - name: Check for memory leaks
-        run: |
-          cd build/test_geotiff
-          echo "=== Checking Valgrind Results ==="
-          for log in valgrind_*.log; do
-            echo "Checking $log..."
-            if grep -q "definitely lost: 0 bytes in 0 blocks" "$log" && \
-               grep -q "indirectly lost: 0 bytes in 0 blocks" "$log"; then
-              echo "✓ No memory leaks in $log"
-            else
-              echo "✗ Memory leaks detected in $log"
-              cat "$log"
-              exit 1
-            fi
-          done
+            ./tst_geotiff_metadata 2>&1 | tee valgrind_metadata.log; then
+            echo "✓ tst_geotiff_metadata: No memory leaks detected"
+          else
+            echo "✗ tst_geotiff_metadata: Memory leaks or errors detected"
+            exit 1
+          fi
+          
           echo "=== All Valgrind checks passed ==="
 
       - name: Upload Valgrind reports
