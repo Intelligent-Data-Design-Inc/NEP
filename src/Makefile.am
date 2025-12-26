@@ -42,6 +42,6 @@ endif
 if HAVE_GEOTIFF
 lib_LTLIBRARIES += libncgeotiff.la
 libncgeotiff_la_LDFLAGS = -version-info 1:0:0
-libncgeotiff_la_SOURCES = geotifffile.c
+libncgeotiff_la_SOURCES = geotiffdispatch.c geotifffile.c
 libncgeotiff_la_LIBADD = $(HDF5_LIBS) $(NETCDF_LIBS) $(GEOTIFF_LIBS)
 endif
