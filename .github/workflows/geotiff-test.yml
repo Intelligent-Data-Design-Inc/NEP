@@ -229,8 +229,6 @@ jobs:
   geotiff-valgrind:
     name: GeoTIFF Memory Leak Detection
     runs-on: ubuntu-latest
-    env:
-      LD_LIBRARY_PATH: $GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -322,6 +320,7 @@ jobs:
 
       - name: Run tests under Valgrind
         run: |
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
           cd build/test_geotiff
           echo "=== Running tst_geotiff_detect under Valgrind ==="
           valgrind --leak-check=full --show-leak-kinds=all --track-fds=yes \
@@ -365,8 +364,6 @@ jobs:
   geotiff-coverage:
     name: GeoTIFF Code Coverage
     runs-on: ubuntu-latest
-    env:
-      LD_LIBRARY_PATH: $GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -430,6 +427,7 @@ jobs:
 
       - name: Run tests to generate coverage data
         run: |
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
           cd build/test_geotiff
           ./tst_geotiff_detect
           ./tst_geotiff_handle
