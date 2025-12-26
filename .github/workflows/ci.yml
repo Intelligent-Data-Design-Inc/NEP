@@ -18,9 +18,9 @@ name: ci_main
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "c11" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "c11" ]
 
 jobs:
   build:
