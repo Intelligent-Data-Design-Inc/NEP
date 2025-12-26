@@ -665,16 +665,35 @@ NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_
     /* Create variable for raster data */
     if (samples_per_pixel > 1)
     {
-        int dimids[3] = {dim_band->hdr.id, dim_y->hdr.id, dim_x->hdr.id};
-        if ((retval = nc4_var_list_add2(grp, "data", xtype, 3, dimids, &var)))
+        /* Multi-band: 3D variable (band, y, x) */
+        if ((retval = nc4_var_list_add(grp, "data", 3, &var)))
             return retval;
+        if ((retval = nc4_var_set_ndims(var, 3)))
+            return retval;
+        var->dim[0] = dim_band;
+        var->dimids[0] = dim_band->hdr.id;
+        var->dim[1] = dim_y;
+        var->dimids[1] = dim_y->hdr.id;
+        var->dim[2] = dim_x;
+        var->dimids[2] = dim_x->hdr.id;
     }
     else
     {
-        int dimids[2] = {dim_y->hdr.id, dim_x->hdr.id};
-        if ((retval = nc4_var_list_add2(grp, "data", xtype, 2, dimids, &var)))
+        /* Single-band: 2D variable (y, x) */
+        if ((retval = nc4_var_list_add(grp, "data", 2, &var)))
             return retval;
+        if ((retval = nc4_var_set_ndims(var, 2)))
+            return retval;
+        var->dim[0] = dim_y;
+        var->dimids[0] = dim_y->hdr.id;
+        var->dim[1] = dim_x;
+        var->dimids[1] = dim_x->hdr.id;
     }
+    
+    /* Set variable type */
+    var->type_info = grp->nc4_info->types[xtype];
+    if (var->type_info)
+        var->type_info->rc++;
 
     /* Extract CRS information if GTIFNew succeeded */
     if (gtif)
@@ -689,7 +708,7 @@ NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_
             {
                 /* Add model type as attribute */
                 NC_ATT_INFO_T *att;
-                if ((retval = nc4_att_list_add(&var->att, "grid_mapping_name", &att)))
+                if ((retval = nc4_att_list_add(var->att, "grid_mapping_name", &att)))
                     return retval;
                 /* Further CRS attribute extraction would go here */
             }
