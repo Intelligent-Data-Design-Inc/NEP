@@ -315,9 +315,10 @@ main(void)
     
     /* Register GeoTIFF UDF handler with NetCDF-C */
     /* GeoTIFF uses UDF1 slot - pass the format constant as the mode flag */
-    if (nc_def_user_format(NC_FORMATX_UDF1, (NC_Dispatch*)GEOTIFF_dispatch_table, NULL) != NC_NOERR)
+    int reg_ret = nc_def_user_format(NC_FORMATX_UDF1, (NC_Dispatch*)GEOTIFF_dispatch_table, NULL);
+    if (reg_ret != NC_NOERR)
     {
-        printf("ERROR: Failed to register GeoTIFF UDF handler\n");
+        printf("ERROR: Failed to register GeoTIFF UDF handler: %s (code %d)\n", nc_strerror(reg_ret), reg_ret);
         return 1;
     }
     
