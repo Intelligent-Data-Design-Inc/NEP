@@ -36,3 +36,12 @@ libnccdf_la_LDFLAGS = -version-info 1:0:0 $(CDF_LDFLAGS)
 libnccdf_la_SOURCES = cdfdispatch.c cdffile.c cdffunc.c cdfvar.c
 libnccdf_la_LIBADD = $(HDF5_LIBS) $(NETCDF_LIBS) $(CDF_LIBS)
 endif
+
+# GeoTIFF UDF Handler - v1.5.0
+# GeoTIFF library (netCDF UDF support)
+if HAVE_GEOTIFF
+lib_LTLIBRARIES += libncgeotiff.la
+libncgeotiff_la_LDFLAGS = -version-info 1:0:0
+libncgeotiff_la_SOURCES = geotifffile.c
+libncgeotiff_la_LIBADD = $(HDF5_LIBS) $(NETCDF_LIBS) $(GEOTIFF_LIBS)
+endif

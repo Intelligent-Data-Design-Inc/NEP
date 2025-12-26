@@ -17,10 +17,15 @@ if HAVE_CDF
 TEST_CDF = test_cdf
 endif
 
+# GeoTIFF test - v1.5.0: GeoTIFF format detection test
+if HAVE_GEOTIFF
+TEST_GEOTIFF = test_geotiff
+endif
+
 if ENABLE_FORTRAN
-SUBDIRS = include src fsrc $(TEST_CDF) test ftest
+SUBDIRS = include src fsrc $(TEST_CDF) $(TEST_GEOTIFF) test ftest
 else
-SUBDIRS = include src $(TEST_CDF) test
+SUBDIRS = include src $(TEST_CDF) $(TEST_GEOTIFF) test
 endif
 EXTRA_DIST = autogen.sh
 

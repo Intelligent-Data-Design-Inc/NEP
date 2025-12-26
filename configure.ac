@@ -362,6 +362,7 @@ AC_CONFIG_FILES([Makefile
                  ftest/Makefile
                  test_grib2/Makefile
                  test_cdf/Makefile
+                 test_geotiff/Makefile
                  docs/Doxyfile])
 
 AC_OUTPUT

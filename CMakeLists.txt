@@ -232,6 +232,11 @@ if(NOT DOCS_ONLY)
         add_subdirectory (test_cdf)
     endif()
     
+    # GeoTIFF test - v1.5.0: GeoTIFF format detection test
+    if(HAVE_GEOTIFF)
+        add_subdirectory (test_geotiff)
+    endif()
+    
     # Make tests depend on plugins being built
     # Add test directory last so tst_cdf_udf runs after tst_cdf_basic
     add_subdirectory (test)
