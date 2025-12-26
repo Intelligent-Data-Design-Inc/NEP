@@ -39,23 +39,64 @@ When Fortran support is **disabled**:
 - **Dependencies**: NASA CDF library v3.9.x or later
 - **Note**: Library detection only - no UDF implementation yet.
 
-### GeoTIFF Library Detection (v1.5.0)
+### GeoTIFF Support (v1.5.0)
 - **CMake**: `-DENABLE_GEOTIFF=ON/OFF` (default: `OFF`)
 - **Autotools**: `--enable-geotiff/--disable-geotiff`
-- **Behavior**: Enables detection of libgeotiff and libtiff libraries for future GeoTIFF UDF handler support.
+- **Behavior**: Enables GeoTIFF file format support through NetCDF User Defined Format (UDF) handler.
 - **Dependencies**: 
-  - libgeotiff (latest stable version)
+  - libgeotiff (latest stable version recommended)
   - libtiff (dependency of libgeotiff)
-- **Note**: Library detection only - no UDF implementation yet.
+  - NetCDF-C v4.9.0 or later
+- **Status**: ✅ Fully implemented (Phase 1 & 2 complete)
 
-When GeoTIFF detection is **enabled**:
+When GeoTIFF support is **enabled**:
 - Build system verifies presence of libgeotiff and libtiff libraries.
+- GeoTIFF dispatch layer is compiled and linked.
 - `HAVE_GEOTIFF` macro is defined in configuration headers.
-- Build fails with clear error message if libraries are not found.
+- GeoTIFF test suite is built and can be run.
+- Build fails with clear error message if required libraries are not found.
 
-When GeoTIFF detection is **disabled** (default):
+When GeoTIFF support is **disabled** (default):
 - No GeoTIFF library checks are performed.
+- GeoTIFF source files are not compiled.
 - Build proceeds without GeoTIFF support.
+
+**GeoTIFF Features (Phase 1 & 2):**
+- ✅ Automatic GeoTIFF file format detection via magic number
+- ✅ Open GeoTIFF files through standard `nc_open()` API
+- ✅ Close GeoTIFF files through standard `nc_close()` API
+- ✅ Extract image dimensions (width, height, bands)
+- ✅ Extract data type information (byte, short, int, float, double)
+- ✅ Extract coordinate reference system (CRS) metadata
+- ✅ Support for both little-endian and big-endian TIFF files
+- ✅ Robust error handling for malformed files
+- ⏳ Raster data reading (Phase 3 - planned)
+- ⏳ Coordinate system transformations (Phase 4 - planned)
+
+**Build Examples:**
+
+CMake:
+```bash
+mkdir build && cd build
+cmake .. -DENABLE_GEOTIFF=ON
+make
+make test  # Runs GeoTIFF test suite
+```
+
+Autotools:
+```bash
+./configure --enable-geotiff
+make
+make check  # Runs GeoTIFF test suite
+```
+
+**Testing:**
+The GeoTIFF test suite includes:
+- Format detection tests (valid/invalid files)
+- File operations tests (open/close/error handling)
+- Metadata extraction tests (dimensions, types, CRS)
+- Memory leak detection (valgrind)
+- Code coverage reporting (>80% target)
 
 ## Documentation Build
 

@@ -133,11 +133,99 @@ To enable CDF support during build, use the `--enable-cdf` (Autotools) or `-DENA
 
 ---
 
+## GeoTIFF Reader
+
+NEP v1.5.0 adds support for reading GeoTIFF files through the NetCDF API. GeoTIFF is a widely-used geospatial raster format that embeds geographic metadata within TIFF image files.
+
+### What is GeoTIFF?
+
+GeoTIFF is a public domain metadata standard that allows georeferencing information to be embedded within TIFF image files. It's the de facto standard for geospatial raster data exchange and is widely used in remote sensing, GIS applications, and Earth observation missions.
+
+**Key characteristics:**
+- Standard TIFF format with geospatial extensions
+- Embedded coordinate reference system (CRS) information
+- Support for various map projections and datums
+- Multi-band raster data support
+- Platform-independent format
+
+### Resources
+
+- **[GeoTIFF Homepage](https://www.geotiff.org/)** - Official GeoTIFF specification
+- **[libgeotiff](https://github.com/OSGeo/libgeotiff)** - Open source GeoTIFF library
+
+### GeoTIFF Support in NEP
+
+NEP provides a User-Defined Format (UDF) handler that allows reading GeoTIFF files using NetCDF-style API calls. This enables applications to work with GeoTIFF, NetCDF, and CDF files through a unified interface.
+
+**Current Features (Phase 1 & 2):**
+- ✅ Automatic format detection - GeoTIFF files are recognized by magic number
+- ✅ Open/close operations via standard `nc_open()` and `nc_close()` functions
+- ✅ Metadata extraction - dimensions, data types, coordinate reference systems
+- ✅ Support for both little-endian and big-endian TIFF files
+- ✅ Multi-band and single-band raster support
+- ⏳ Raster data reading (Phase 3 - planned)
+- ⏳ Coordinate transformations (Phase 4 - planned)
+
+**Usage Example:**
+
+```c
+#include <netcdf.h>
+
+int ncid, ndims, nvars, natts;
+int retval;
+
+/* Open GeoTIFF file - automatically detected */
+if ((retval = nc_open("satellite_image.tif", NC_NOWRITE, &ncid)))
+    ERR(retval);
+
+/* Query file metadata */
+if ((retval = nc_inq(ncid, &ndims, &nvars, &natts, NULL)))
+    ERR(retval);
+
+printf("Dimensions: %d, Variables: %d, Attributes: %d\n", 
+       ndims, nvars, natts);
+
+/* Get dimension information */
+char dim_name[NC_MAX_NAME + 1];
+size_t dim_len;
+for (int i = 0; i < ndims; i++) {
+    if ((retval = nc_inq_dim(ncid, i, dim_name, &dim_len)))
+        ERR(retval);
+    printf("Dimension %d: %s = %zu\n", i, dim_name, dim_len);
+}
+
+/* Close file */
+if ((retval = nc_close(ncid)))
+    ERR(retval);
+```
+
+**Build Configuration:**
+
+To enable GeoTIFF support during build, use the `--enable-geotiff` (Autotools) or `-DENABLE_GEOTIFF=ON` (CMake) configuration option. You must have libgeotiff and libtiff installed on your system.
+
+```bash
+# CMake
+cmake -B build -DENABLE_GEOTIFF=ON
+
+# Autotools
+./configure --enable-geotiff
+```
+
+**Use Cases:**
+- NASA Earth observation data (MODIS, Landsat, Sentinel)
+- Satellite imagery analysis
+- Digital elevation models (DEMs)
+- Land cover classification maps
+- Climate and weather model outputs
+- Integration of GIS data with NetCDF workflows
+
+---
+
 ## Installation
 
 ### Prerequisites
 
-NEP v1.4.0 requires the following dependencies:
+NEP v1.5.0 requires the following dependencies:
 
 - **NetCDF-C library** (v4.9+)
 - **HDF5 library** (v1.12+)
@@ -146,6 +234,8 @@ NEP v1.4.0 requires the following dependencies:
 - **BZIP2 library** for BZIP2 compression support
 - **NetCDF-Fortran** (optional, for Fortran wrappers)
 - **NASA CDF library** (v3.9+, optional, for CDF file support)
+- **libgeotiff** (latest stable, optional, for GeoTIFF file support)
+- **libtiff** (latest stable, optional, required by libgeotiff)
 - **Doxygen** (optional, for building documentation)
 
 ### Spack Installation (Recommended for HPC)
@@ -234,7 +324,8 @@ make uninstall
 |--------------|------------------|---------|-------------|
 | `-DBUILD_DOCUMENTATION=ON/OFF` | `--enable-docs/--disable-docs` | ON/enabled | Build API documentation |
 | `-DENABLE_FORTRAN=ON/OFF` | `--enable-fortran/--disable-fortran` | ON/enabled | Fortran wrappers and tests |
-| `-DENABLE_CDF=ON/OFF` | `--enable-cdf/--disable-cdf` | OFF/disabled | CDF UDF handler build (v1.3.0 Sprint 3+) |
+| `-DENABLE_CDF=ON/OFF` | `--enable-cdf/--disable-cdf` | OFF/disabled | CDF UDF handler build (v1.3.0+) |
+| `-DENABLE_GEOTIFF=ON/OFF` | `--enable-geotiff/--disable-geotiff` | OFF/disabled | GeoTIFF UDF handler build (v1.5.0+) |
 | N/A | `--enable-lz4/--disable-lz4` | enabled | LZ4 compression support |
 | N/A | `--enable-bzip2/--disable-bzip2` | enabled | BZIP2 compression support |
 
