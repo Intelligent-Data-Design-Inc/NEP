@@ -275,6 +275,138 @@ Based on a 150 MB NetCDF-4 dataset:
 - LZ4 offers minimal performance impact (79% write speed, 88% read speed) with 2.2× compression
 - BZIP2 achieves highest compression ratio (6.7×) at the cost of performance (1% write speed, 2% read speed)
 
+## GeoTIFF Read Layer (v1.5.0 - Planned)
+
+### Overview
+
+NEP v1.5.0 will add support for GeoTIFF geospatial raster data format through a User Defined Format (UDF) handler. This enables transparent access to GeoTIFF files through the standard NetCDF API, eliminating the need for format conversion in geospatial workflows.
+
+For details on NetCDF's User Defined Format mechanism, see `docs/udf.md`.
+
+### Architecture
+
+The GeoTIFF read layer follows the NC_Dispatch pattern used for other UDF handlers in NEP:
+
+```
+[Application Layer]
+       │
+[NetCDF-4 API]
+       │
+[NC_Dispatch Layer]
+       │
+┌──────┴──────────┐
+│                 │
+[HDF5 Backend]   [GeoTIFF UDF Handler]
+│                 │
+│            [libgeotiff]
+│                 │
+└──────┬──────────┘
+       │
+[NetCDF-4/HDF5 Files]  [GeoTIFF Files]
+```
+
+### Key Components
+
+#### GeoTIFF UDF Handler
+- **Format Detection**: Automatic identification of GeoTIFF files via magic number and TIFF header inspection
+- **NC_Dispatch Implementation**: Complete dispatch table for GeoTIFF file operations
+- **File Operations**: Open, close, and query operations for GeoTIFF files
+- **Metadata Extraction**: Dimensions, data types, georeferencing information, and GeoTIFF tags
+- **Data Access**: Raster band reading with support for various data types
+
+#### Raster Band Mapping
+- **Single-band GeoTIFF**: Maps to 2D NetCDF variable (e.g., `data[y, x]`)
+- **Multi-band GeoTIFF**: Maps to 3D NetCDF variable with band dimension (e.g., `data[band, y, x]`)
+- **Variable Naming**: Configurable naming scheme for bands (default: `band1`, `band2`, etc.)
+
+#### Georeferencing Metadata
+Coordinate reference system (CRS) and georeferencing information stored following CF conventions:
+- **Variable Attributes**: Coordinate system metadata attached to data variables
+- **Global Attributes**: File-level georeferencing information
+- **CF Compliance**: Follows CF conventions for geospatial metadata where applicable
+- **GeoTIFF Tags**: Key GeoTIFF tags exposed as NetCDF attributes
+
+### Dependencies
+
+| Component | Library | Version | Purpose |
+|-----------|---------|---------|---------|
+| GeoTIFF Handler | libgeotiff | Latest stable | GeoTIFF file operations and metadata |
+| Core | NetCDF-C | v4.9+ | NetCDF API |
+| Core | HDF5 | v1.12+ | HDF5 backend |
+
+**Note**: PROJ library support is out of scope for v1.5.0. Coordinate transformations will be addressed in future releases if needed.
+
+### Build System Integration
+
+#### Optional GeoTIFF Support
+GeoTIFF support is optional and controlled via build flags:
+
+**CMake:**
+```bash
+cmake -DENABLE_GEOTIFF=ON  # Enable GeoTIFF support
+cmake -DENABLE_GEOTIFF=OFF # Disable GeoTIFF support (default)
+```
+
+**Autotools:**
+```bash
+./configure --enable-geotiff   # Enable GeoTIFF support
+./configure --disable-geotiff  # Disable GeoTIFF support (default)
+```
+
+#### Dependency Detection
+- Automatic libgeotiff detection during configuration
+- Clear error messages if libgeotiff not found when enabled
+- Graceful degradation when disabled
+
+### Implementation Phases
+
+1. **Phase 1**: File open/close and format detection
+   - GeoTIFF magic number detection
+   - Basic file handle management
+   - NC_Dispatch registration
+
+2. **Phase 2**: Metadata extraction and dimension mapping
+   - Raster dimensions (width, height, bands)
+   - Data type detection
+   - Basic attribute extraction
+
+3. **Phase 3**: Raster data reading
+   - Band data access
+   - Data type conversion
+   - Memory management
+
+4. **Phase 4**: Coordinate system and georeferencing support
+   - CRS metadata extraction
+   - Georeferencing tag parsing
+   - CF-compliant attribute mapping
+
+### Integration Points
+
+- **Format Detection**: Integrated into NetCDF's file open logic
+- **Dispatch Table**: Registered alongside existing format handlers
+- **Error Handling**: Standard NetCDF error codes and messages
+- **Testing**: Unit tests for each phase, integration tests with sample GeoTIFF files
+
+### Test Data
+
+The project includes sample GeoTIFF files from NASA's VIIRS/MODIS Near Real-Time Global Flood Products:
+- `test/data/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif`
+- `test/data/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif`
+
+These are MODIS Daily L3 Global Flood Composite files at 250m resolution in GeoTIFF format. The files contain flood detection data with georeferencing information suitable for testing the GeoTIFF UDF handler.
+
+**Data Source**: NASA LANCE MODIS NRT Global Flood Product (MCDWD_L3_F1C_NRT)
+- **Product**: MODIS Daily L3 Global Flood Composite 250m Linear Lat Lon Grid - NRT
+- **Resolution**: ~250m
+- **Format**: GeoTIFF with embedded georeferencing
+- **Documentation**: https://www.earthdata.nasa.gov/data/instruments/viirs/near-real-time-data/nrt-global-flood-products
+
+### Reference Documentation
+
+- `docs/ESDS-RFC-040v1.1.pdf` - GeoTIFF format specification
+- `docs/udf.md` - NetCDF User Defined Format documentation
+- https://www.earthdata.nasa.gov/data/instruments/viirs/near-real-time-data/nrt-global-flood-products - VIIRS/MODIS NRT Global Flood Products (test data source)
+
 ## Release Information
 
 - **Version**: v1.0.0
@@ -284,4 +416,4 @@ Based on a 150 MB NetCDF-4 dataset:
 
 ---
 
-*Last Updated: November 2025*
+*Last Updated: December 2025*

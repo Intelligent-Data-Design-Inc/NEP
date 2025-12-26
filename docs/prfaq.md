@@ -164,6 +164,17 @@ NEP v1.1.0 is available now as open-source software. Visit the project repositor
 - File open/close, metadata extraction, and data reading for CDF files
 - Optional CDF support (enabled via build flags)
 
+#### Q: What's coming in v1.5.0?
+**A:** NEP v1.5.0 will add support for GeoTIFF geospatial raster data format through a User Defined Format (UDF) handler, enabling transparent access to GeoTIFF files through the standard NetCDF API. This release will include:
+- libgeotiff library integration (https://github.com/OSGeo/libgeotiff)
+- GeoTIFF UDF handler with NC_Dispatch implementation
+- Automatic GeoTIFF format detection
+- File open/close, metadata extraction, and raster data reading for GeoTIFF files
+- Support for georeferencing and coordinate system metadata
+- Access to GeoTIFF tags and key-value pairs
+- Optional GeoTIFF support (enabled via build flags)
+- See ESDS-RFC-040v1.1.pdf in docs directory for GeoTIFF format details
+
 #### Q: How stable is NEP?
 **A:** NEP v1.0.0 is production-ready and has undergone thorough testing. Both LZ4 and BZIP2 compression filters are stable and ready for use in production environments.
 
@@ -178,6 +189,8 @@ NEP v1.1.0 is available now as open-source software. Visit the project repositor
 - **HPC workflows**: Improving I/O performance with fast compression
 - **Data archival**: Maximizing storage efficiency with high-ratio compression
 - **Space physics research** (v1.3.0+): Transparent access to NASA CDF space physics and satellite data through NetCDF API
+- **Geospatial analysis** (v1.5.0+): Transparent access to GeoTIFF raster data for remote sensing, land cover analysis, and digital elevation models through NetCDF API
+- **Remote sensing workflows** (v1.5.0+): Direct processing of satellite imagery and aerial photography stored in GeoTIFF format
 
 #### Q: Can NEP handle real-time data streams?
 **A:** Yes! LZ4's high-speed compression makes it ideal for real-time or near-real-time data processing where low latency is critical.
