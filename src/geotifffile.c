@@ -387,8 +387,8 @@ NC_GEOTIFF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
         goto cleanup;
     }
 
-    /* Open TIFF file */
-    tiff = TIFFOpen(path, "r");
+    /* Open TIFF file using XTIFFOpen for better GeoTIFF compatibility */
+    tiff = XTIFFOpen(path, "r");
     if (!tiff)
     {
         ret = NC_ENOTNC;
@@ -444,7 +444,7 @@ cleanup:
         if (geotiff_info->gtif_handle)
             GTIFFree((GTIF *)geotiff_info->gtif_handle);
         if (geotiff_info->tiff_handle)
-            TIFFClose((TIFF *)geotiff_info->tiff_handle);
+            XTIFFClose((TIFF *)geotiff_info->tiff_handle);
         if (geotiff_info->path)
             free(geotiff_info->path);
         free(geotiff_info);
@@ -490,7 +490,7 @@ NC_GEOTIFF_close(int ncid, void *ignore)
 
     /* Close TIFF file */
     if (geotiff_info->tiff_handle)
-        TIFFClose((TIFF *)geotiff_info->tiff_handle);
+        XTIFFClose((TIFF *)geotiff_info->tiff_handle);
 
     /* Free path string */
     if (geotiff_info->path)
