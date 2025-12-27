@@ -296,6 +296,7 @@ int
 main(void)
 {
     int err = 0;
+    char magic_number[4] = "II*";
 
     printf("\n*** Testing GeoTIFF Phase 2: Dispatch Integration and Metadata Extraction ***\n");
 
@@ -309,7 +310,7 @@ main(void)
     
     /* Register GeoTIFF UDF handler with NetCDF-C */
     /* GeoTIFF uses UDF1 slot - NC_UDF1 is defined in netcdf.h as 0x0080 */
-    int reg_ret = nc_def_user_format(NC_UDF1, (NC_Dispatch*)GEOTIFF_dispatch_table, NULL);
+    int reg_ret = nc_def_user_format(NC_UDF1, (NC_Dispatch*)GEOTIFF_dispatch_table, magic_number);
     if (reg_ret != NC_NOERR)
     {
         printf("ERROR: Failed to register GeoTIFF UDF handler: %s (code %d)\n", nc_strerror(reg_ret), reg_ret);
