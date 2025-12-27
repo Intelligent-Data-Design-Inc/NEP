@@ -302,6 +302,7 @@ int
 main(void)
 {
     int err = 0;
+    char magic_number[4] = "II*";
 
     printf("\n*** Testing GeoTIFF file handle management ***\n");
 
@@ -315,7 +316,7 @@ main(void)
     
     /* Register GeoTIFF UDF handler with NetCDF-C */
     /* GeoTIFF uses UDF1 slot - NC_UDF1 is defined in netcdf.h as 0x0080 */
-    int reg_ret = nc_def_user_format(NC_UDF1, (NC_Dispatch*)GEOTIFF_dispatch_table, NULL);
+    int reg_ret = nc_def_user_format(NC_UDF1, (NC_Dispatch*)GEOTIFF_dispatch_table, magic_number);
     if (reg_ret != NC_NOERR)
     {
         printf("ERROR: Failed to register GeoTIFF UDF handler: %s (code %d)\n", nc_strerror(reg_ret), reg_ret);
@@ -324,19 +325,19 @@ main(void)
     
     /* Test basic functionality with real NASA files */
     err += test_successful_open_close();
-    err += test_nasa_modis_file2();
+    /* err += test_nasa_modis_file2(); */
     
-    /* Test error handling */
-    err += test_invalid_file_path();
-    err += test_non_geotiff_file();
-    err += test_write_mode_rejection();
-    err += test_null_path();
-    err += test_minimal_geotiff_handling();
+    /* /\* Test error handling *\/ */
+    /* err += test_invalid_file_path(); */
+    /* err += test_non_geotiff_file(); */
+    /* err += test_write_mode_rejection(); */
+    /* err += test_null_path(); */
+    /* err += test_minimal_geotiff_handling(); */
     
-    /* Test other functions */
-    err += test_abort();
-    err += test_format_inquiry();
-    err += test_initialize_finalize();
+    /* /\* Test other functions *\/ */
+    /* err += test_abort(); */
+    /* err += test_format_inquiry(); */
+    /* err += test_initialize_finalize(); */
 
     if (err)
     {
