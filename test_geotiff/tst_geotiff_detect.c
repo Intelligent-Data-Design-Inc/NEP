@@ -208,7 +208,7 @@ test_nasa_modis_files(void)
     int ret;
 
     printf("Testing NASA MODIS file 1...");
-    ret = NC_GEOTIFF_detect_format("../test/data/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif", 
+    ret = NC_GEOTIFF_detect_format("../../test/data/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif", 
                                     &is_geotiff);
     ERR_CHECK(ret);
     if (!is_geotiff)
@@ -219,7 +219,7 @@ test_nasa_modis_files(void)
     printf("ok\n");
 
     printf("Testing NASA MODIS file 2...");
-    ret = NC_GEOTIFF_detect_format("../test/data/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif", 
+    ret = NC_GEOTIFF_detect_format("../../test/data/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif", 
                                     &is_geotiff);
     ERR_CHECK(ret);
     if (!is_geotiff)
