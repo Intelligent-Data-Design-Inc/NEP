@@ -323,6 +323,10 @@ NC_GEOTIFF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     GTIF *gtif = NULL;
     int ret = NC_NOERR;
     int is_geotiff = 0;
+    FILE *fp = NULL;
+    int is_little_endian;
+    int is_bigtiff;
+    unsigned int ifd_offset;
 
     /* Validate parameters */
     if (!path)
@@ -336,11 +340,26 @@ NC_GEOTIFF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     if ((ret = NC_check_id(ncid, &nc)))
         return ret;
 
-    /* Verify this is actually a GeoTIFF file */
-    ret = NC_GEOTIFF_detect_format(path, &is_geotiff);
+    /* Read TIFF header to get endianness */
+    fp = fopen(path, "rb");
+    if (!fp)
+        return NC_ENOTNC;
+    
+    ret = read_tiff_header(fp, &is_little_endian, &is_bigtiff, &ifd_offset);
+    if (ret != NC_NOERR)
+    {
+        fclose(fp);
+        return ret;
+    }
+    
+    /* Check for GeoTIFF tags */
+    int has_geotiff_tags;
+    ret = check_geotiff_tags(fp, ifd_offset, is_little_endian, is_bigtiff, &has_geotiff_tags);
+    fclose(fp);
+    
     if (ret != NC_NOERR)
         return ret;
-    if (!is_geotiff)
+    if (!has_geotiff_tags)
         return NC_ENOTNC;
 
     /* Add necessary structs to hold netcdf-4 file data */
@@ -377,19 +396,8 @@ NC_GEOTIFF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     }
     geotiff_info->tiff_handle = tiff;
 
-    /* Determine endianness from TIFF file */
-    {
-        uint16_t byte_order;
-        if (TIFFGetField(tiff, TIFFTAG_FILLORDER, &byte_order))
-        {
-            geotiff_info->is_little_endian = (byte_order == FILLORDER_LSB2MSB);
-        }
-        else
-        {
-            /* Default to little-endian if not specified */
-            geotiff_info->is_little_endian = 1;
-        }
-    }
+    /* Store endianness from TIFF header */
+    geotiff_info->is_little_endian = is_little_endian;
 
     /* Initialize GTIFNew context with error handling for malformed tags */
     gtif = GTIFNew(tiff);
@@ -402,7 +410,22 @@ NC_GEOTIFF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     }
     else
     {
-        geotiff_info->gtif_handle = gtif;
+        /* Validate GeoTIFF directory version */
+        int versions[3];
+        int keycount;
+        GTIFDirectoryInfo(gtif, versions, &keycount);
+        
+        /* Check version compatibility (should be version 1) */
+        if (versions[0] > 1)
+        {
+            /* Future version - may not be compatible */
+            GTIFFree(gtif);
+            geotiff_info->gtif_handle = NULL;
+        }
+        else
+        {
+            geotiff_info->gtif_handle = gtif;
+        }
     }
 
     /* Store GeoTIFF file info in dispatch layer */
@@ -671,18 +694,39 @@ NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_
     if (gtif)
     {
         GTIFDefn defn;
+        memset(&defn, 0, sizeof(GTIFDefn));
+        
         if (GTIFGetDefn(gtif, &defn))
         {
             /* Store CRS information as attributes */
-            /* This is a simplified version - full implementation would extract */
-            /* projection parameters, datum, etc. */
             if (defn.Model != 0)
             {
-                /* Add model type as attribute */
                 NC_ATT_INFO_T *att;
-                if ((retval = nc4_att_list_add(var->att, "grid_mapping_name", &att)))
-                    return retval;
-                /* Further CRS attribute extraction would go here */
+                
+                /* Add model type */
+                geocode_t model_type;
+                if (GTIFKeyGet(gtif, GTModelTypeGeoKey, &model_type, 0, 1))
+                {
+                    if ((retval = nc4_att_list_add(var->att, "grid_mapping_name", &att)))
+                        return retval;
+                    /* Set attribute value based on model type */
+                }
+                
+                /* Add geographic CRS info if available */
+                geocode_t geog_type;
+                if (GTIFKeyGet(gtif, GeographicTypeGeoKey, &geog_type, 0, 1))
+                {
+                    if ((retval = nc4_att_list_add(var->att, "geographic_crs", &att)))
+                        return retval;
+                }
+                
+                /* Add projected CRS info if available */
+                geocode_t proj_type;
+                if (GTIFKeyGet(gtif, ProjectedCSTypeGeoKey, &proj_type, 0, 1))
+                {
+                    if ((retval = nc4_att_list_add(var->att, "projected_crs", &att)))
+                        return retval;
+                }
             }
         }
     }
