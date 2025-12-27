@@ -14,7 +14,7 @@
 #include <string.h>
 #include "geotiffdispatch.h"
 
-#define NASA_DATA_DIR "../test/data/"
+#define NASA_DATA_DIR "../../test/data/"
 #define ERR_CHECK(ret) do { if ((ret) != NC_NOERR) { \
     printf("Error at line %d: %s\n", __LINE__, nc_strerror(ret)); \
     return 1; \

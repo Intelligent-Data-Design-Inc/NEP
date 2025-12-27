@@ -14,7 +14,7 @@
 #include <string.h>
 #include "geotiffdispatch.h"
 
-#define TEST_DATA_DIR "data/"
+#define TEST_DATA_DIR "../../test_geotiff/data/"
 #define ERR_CHECK(ret) do { if ((ret) != NC_NOERR) { \
     printf("Error at line %d: %s\n", __LINE__, nc_strerror(ret)); \
     return 1; \
