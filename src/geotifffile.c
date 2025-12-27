@@ -699,34 +699,12 @@ NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_
         if (GTIFGetDefn(gtif, &defn))
         {
             /* Store CRS information as attributes */
+            /* Note: Full CRS attribute extraction will be implemented in Phase 3 */
+            /* For now, just validate that GTIFGetDefn succeeded */
             if (defn.Model != 0)
             {
-                NC_ATT_INFO_T *att;
-                
-                /* Add model type */
-                geocode_t model_type;
-                if (GTIFKeyGet(gtif, GTModelTypeGeoKey, &model_type, 0, 1))
-                {
-                    if ((retval = nc4_att_list_add(var->att, "grid_mapping_name", &att)))
-                        return retval;
-                    /* Set attribute value based on model type */
-                }
-                
-                /* Add geographic CRS info if available */
-                geocode_t geog_type;
-                if (GTIFKeyGet(gtif, GeographicTypeGeoKey, &geog_type, 0, 1))
-                {
-                    if ((retval = nc4_att_list_add(var->att, "geographic_crs", &att)))
-                        return retval;
-                }
-                
-                /* Add projected CRS info if available */
-                geocode_t proj_type;
-                if (GTIFKeyGet(gtif, ProjectedCSTypeGeoKey, &proj_type, 0, 1))
-                {
-                    if ((retval = nc4_att_list_add(var->att, "projected_crs", &att)))
-                        return retval;
-                }
+                /* CRS information is available but not yet extracted */
+                /* This will be implemented when we add full CF-compliant grid mapping support */
             }
         }
     }
