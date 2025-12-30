@@ -127,3 +127,7 @@ tst_grib2
 ftst_ncsqueeze_bzip2
 ftst_ncsqueeze_lz4
 tst_cdf_basic
+
+# Copied test data files (should only exist in test/data/)
+test_geotiff/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif
+test_geotiff/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif

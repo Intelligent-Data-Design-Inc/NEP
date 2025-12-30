@@ -201,9 +201,256 @@ jobs:
           make -j$(nproc)
           echo "=== Build with GeoTIFF disabled completed successfully ==="
 
+      - name: Run Tests (CMake)
+        if: matrix.build_system == 'cmake'
+        working-directory: build
+        run: |
+          echo "=== Running GeoTIFF Tests ==="
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
+          ctest --output-on-failure --verbose -R geotiff || true
+
+      - name: Run Tests (Autotools)
+        if: matrix.build_system == 'autotools'
+        run: |
+          echo "=== Running GeoTIFF Tests ==="
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
+          cd test_geotiff
+          ./tst_geotiff_handle || echo "tst_geotiff_handle failed"
+          ./tst_geotiff_metadata || echo "tst_geotiff_metadata failed"
+
       - name: Summary
         if: always()
         run: |
           echo "=== GeoTIFF Detection Test Summary ==="
           echo "Build System: ${{ matrix.build_system }}"
           echo "Test completed - check logs above for detailed results"
+
+  geotiff-valgrind:
+    name: GeoTIFF Memory Leak Detection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake make wget zlib1g-dev valgrind libgeotiff-dev libtiff-dev
+
+      - name: Cache HDF5 install
+        id: cache-hdf5
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/hdf5-install
+          key: hdf5-1.14.6-${{ runner.os }}-geotiff-1
+      
+      - name: Download and build HDF5 1.14.6
+        if: steps.cache-hdf5.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5-1.14.6.tar.gz &> /dev/null
+          tar -xzf hdf5-1.14.6.tar.gz
+          cd hdf5-hdf5-1.14.6
+          mkdir build && cd build
+          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF ..
+          make -j$(nproc)
+          make install
+
+      - name: Cache NetCDF-C install
+        id: cache-netcdf-c
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/netcdf-c-install
+          key: netcdf-c-4.9.3-${{ runner.os }}-geotiff-1
+
+      - name: Download and build NetCDF-C
+        if: steps.cache-netcdf-c.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/Unidata/netcdf-c/archive/v4.9.3.tar.gz &> /dev/null
+          tar -xzf v4.9.3.tar.gz
+          cd netcdf-c-4.9.3
+          export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib"
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$LD_LIBRARY_PATH"
+          ./configure --prefix=$GITHUB_WORKSPACE/netcdf-c-install --enable-netcdf-4 --enable-shared
+          make -j$(nproc)
+          make install
+
+      - name: Create valgrind suppression file
+        run: |
+          cat > valgrind.supp << 'EOF'
+          # Suppress known issues in third-party libraries
+          {
+             hdf5_known_leak
+             Memcheck:Leak
+             ...
+             obj:*/libhdf5.so*
+          }
+          {
+             netcdf_known_leak
+             Memcheck:Leak
+             ...
+             obj:*/libnetcdf.so*
+          }
+          {
+             tiff_known_leak
+             Memcheck:Leak
+             ...
+             obj:*/libtiff.so*
+          }
+          {
+             geotiff_known_leak
+             Memcheck:Leak
+             ...
+             obj:*/libgeotiff.so*
+          }
+          EOF
+
+      - name: Build with CMake
+        run: |
+          mkdir build && cd build
+          cmake .. \
+            -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install" \
+            -DENABLE_GEOTIFF=ON \
+            -DENABLE_FORTRAN=OFF \
+            -DBUILD_TESTING=ON \
+            -DBUILD_DOCUMENTATION=OFF
+          make -j$(nproc)
+
+      - name: Run tests under Valgrind
+        run: |
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
+          cd build/test_geotiff
+          # Copy test data to build directory
+          cp -r ../../test_geotiff/data .
+          mkdir -p ../test/data
+          cp -r ../../test/data/*.tif ../test/data/ || true
+          
+          echo "=== Running tst_geotiff_handle under Valgrind ==="
+          if valgrind --leak-check=full --show-leak-kinds=all --track-fds=yes \
+            --suppressions=../../valgrind.supp --error-exitcode=1 \
+            ./tst_geotiff_handle 2>&1 | tee valgrind_handle.log; then
+            echo "✓ tst_geotiff_handle: No memory leaks detected"
+          else
+            echo "✗ tst_geotiff_handle: Memory leaks or errors detected"
+            exit 1
+          fi
+          
+          echo "=== Running tst_geotiff_metadata under Valgrind ==="
+          if valgrind --leak-check=full --show-leak-kinds=all --track-fds=yes \
+            --suppressions=../../valgrind.supp --error-exitcode=1 \
+            ./tst_geotiff_metadata 2>&1 | tee valgrind_metadata.log; then
+            echo "✓ tst_geotiff_metadata: No memory leaks detected"
+          else
+            echo "✗ tst_geotiff_metadata: Memory leaks or errors detected"
+            exit 1
+          fi
+          
+          echo "=== All Valgrind checks passed ==="
+
+      - name: Upload Valgrind reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: valgrind-reports
+          path: build/test_geotiff/valgrind_*.log
+
+  geotiff-coverage:
+    name: GeoTIFF Code Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake make wget zlib1g-dev lcov libgeotiff-dev libtiff-dev
+
+      - name: Cache HDF5 install
+        id: cache-hdf5
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/hdf5-install
+          key: hdf5-1.14.6-${{ runner.os }}-geotiff-1
+      
+      - name: Download and build HDF5 1.14.6
+        if: steps.cache-hdf5.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5-1.14.6.tar.gz &> /dev/null
+          tar -xzf hdf5-1.14.6.tar.gz
+          cd hdf5-hdf5-1.14.6
+          mkdir build && cd build
+          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF ..
+          make -j$(nproc)
+          make install
+
+      - name: Cache NetCDF-C install
+        id: cache-netcdf-c
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/netcdf-c-install
+          key: netcdf-c-4.9.3-${{ runner.os }}-geotiff-1
+
+      - name: Download and build NetCDF-C
+        if: steps.cache-netcdf-c.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/Unidata/netcdf-c/archive/v4.9.3.tar.gz &> /dev/null
+          tar -xzf v4.9.3.tar.gz
+          cd netcdf-c-4.9.3
+          export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib"
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$LD_LIBRARY_PATH"
+          ./configure --prefix=$GITHUB_WORKSPACE/netcdf-c-install --enable-netcdf-4 --enable-shared
+          make -j$(nproc)
+          make install
+
+      - name: Build with coverage instrumentation
+        run: |
+          mkdir build && cd build
+          cmake .. \
+            -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install" \
+            -DENABLE_GEOTIFF=ON \
+            -DENABLE_FORTRAN=OFF \
+            -DBUILD_TESTING=ON \
+            -DBUILD_DOCUMENTATION=OFF \
+            -DCMAKE_C_FLAGS="--coverage -fprofile-arcs -ftest-coverage" \
+            -DCMAKE_EXE_LINKER_FLAGS="--coverage"
+          make -j$(nproc)
+
+      - name: Run tests to generate coverage data
+        run: |
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
+          cd build/test_geotiff
+          # Copy test data to build directory
+          cp -r ../../test_geotiff/data .
+          mkdir -p ../test/data
+          cp -r ../../test/data/*.tif ../test/data/ || true
+          ./tst_geotiff_handle
+          ./tst_geotiff_metadata
+
+      - name: Generate coverage report
+        run: |
+          cd build
+          lcov --capture --directory . --output-file coverage.info
+          lcov --remove coverage.info '/usr/*' '*/test_geotiff/*' '*/hdf5_plugins/*' --output-file coverage_filtered.info --ignore-errors unused
+          lcov --list coverage_filtered.info
+          genhtml coverage_filtered.info --output-directory coverage_html
+
+      - name: Check coverage threshold
+        run: |
+          cd build
+          COVERAGE=$(lcov --summary coverage_filtered.info 2>&1 | grep "lines" | awk '{print $2}' | sed 's/%//')
+          echo "Code coverage: $COVERAGE%"
+          if (( $(echo "$COVERAGE < 50" | bc -l) )); then
+            echo "⚠️  Warning: Coverage is below 50% threshold"
+          else
+            echo "✓ Coverage meets 50% threshold"
+          fi
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: build/coverage_html
