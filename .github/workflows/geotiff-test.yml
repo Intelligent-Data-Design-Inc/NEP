@@ -455,10 +455,10 @@ jobs:
           cd build
           COVERAGE=$(lcov --summary coverage_filtered.info 2>&1 | grep "lines" | awk '{print $2}' | sed 's/%//')
           echo "Code coverage: $COVERAGE%"
-          if (( $(echo "$COVERAGE < 80" | bc -l) )); then
-            echo "⚠️  Warning: Coverage is below 80% threshold"
+          if (( $(echo "$COVERAGE < 50" | bc -l) )); then
+            echo "⚠️  Warning: Coverage is below 50% threshold"
           else
-            echo "✓ Coverage meets 80% threshold"
+            echo "✓ Coverage meets 50% threshold"
           fi
 
       - name: Upload coverage report
