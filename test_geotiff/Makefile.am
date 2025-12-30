@@ -17,11 +17,7 @@ check-local:
 	cp -f $(top_srcdir)/test/data/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif $(builddir)/
 
 # Test programs
-<<<<<<< HEAD
 check_PROGRAMS = tst_geotiff_handle tst_geotiff_metadata tst_phase2_acceptance
-=======
-check_PROGRAMS = tst_geotiff_handle tst_geotiff_metadata
->>>>>>> main
 
 # Test for GeoTIFF file handle management
 tst_geotiff_handle_SOURCES = tst_geotiff_handle.c
@@ -36,11 +32,7 @@ tst_phase2_acceptance_SOURCES = tst_phase2_acceptance.c
 tst_phase2_acceptance_LDADD = $(top_builddir)/src/libncgeotiff.la $(NETCDF_LIBS) $(GEOTIFF_LIBS) $(HDF5_LIBS)
 
 # Define tests
-<<<<<<< HEAD
 TESTS = tst_geotiff_handle tst_geotiff_metadata tst_phase2_acceptance
-=======
-TESTS = tst_geotiff_handle tst_geotiff_metadata
->>>>>>> main
 
 endif # HAVE_GEOTIFF
 
