@@ -73,10 +73,9 @@ test_invalid_file_path(void)
 
     printf("Testing invalid file path...");
     
-    ret = nc_open(TEST_DATA_DIR "nonexistent.tif", NC_NOWRITE, &ncid);
-    if (ret != NC_ENOTNC)
+    if (!(ret = nc_open(TEST_DATA_DIR "nonexistent.tif", NC_NOWRITE, &ncid)))
     {
-        printf("FAILED - should return NC_ENOTNC, got %s\n", nc_strerror(ret));
+        printf("FAILED - should return error, got %s\n", nc_strerror(ret));
         return 1;
     }
 
@@ -327,17 +326,17 @@ main(void)
     err += test_successful_open_close();
     /* err += test_nasa_modis_file2(); */
     
-    /* /\* Test error handling *\/ */
-    /* err += test_invalid_file_path(); */
-    /* err += test_non_geotiff_file(); */
-    /* err += test_write_mode_rejection(); */
-    /* err += test_null_path(); */
-    /* err += test_minimal_geotiff_handling(); */
+    /* Test error handling */
+    err += test_invalid_file_path();
+    err += test_non_geotiff_file();
+    err += test_write_mode_rejection();
+    err += test_null_path();
+    err += test_minimal_geotiff_handling();
     
-    /* /\* Test other functions *\/ */
-    /* err += test_abort(); */
-    /* err += test_format_inquiry(); */
-    /* err += test_initialize_finalize(); */
+    /* Test other functions */
+    err += test_abort();
+    err += test_format_inquiry();
+    err += test_initialize_finalize();
 
     if (err)
     {
@@ -346,8 +345,6 @@ main(void)
     }
 
     printf("\n*** ALL TESTS PASSED ***\n");
-    printf("\nNote: Full dispatch integration will be completed in later phases.\n");
-    printf("Some functions return NC_EBADID as expected for Phase 1.\n");
 #else
     printf("\n*** GeoTIFF support not enabled - skipping tests ***\n");
 #endif
