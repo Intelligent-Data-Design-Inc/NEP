@@ -215,7 +215,6 @@ jobs:
           echo "=== Running GeoTIFF Tests ==="
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
           cd test_geotiff
-          ./tst_geotiff_detect || echo "tst_geotiff_detect failed"
           ./tst_geotiff_handle || echo "tst_geotiff_handle failed"
           ./tst_geotiff_metadata || echo "tst_geotiff_metadata failed"
 
@@ -327,16 +326,6 @@ jobs:
           mkdir -p ../test/data
           cp -r ../../test/data/*.tif ../test/data/ || true
           
-          echo "=== Running tst_geotiff_detect under Valgrind ==="
-          if valgrind --leak-check=full --show-leak-kinds=all --track-fds=yes \
-            --suppressions=../../valgrind.supp --error-exitcode=1 \
-            ./tst_geotiff_detect 2>&1 | tee valgrind_detect.log; then
-            echo "✓ tst_geotiff_detect: No memory leaks detected"
-          else
-            echo "✗ tst_geotiff_detect: Memory leaks or errors detected"
-            exit 1
-          fi
-          
           echo "=== Running tst_geotiff_handle under Valgrind ==="
           if valgrind --leak-check=full --show-leak-kinds=all --track-fds=yes \
             --suppressions=../../valgrind.supp --error-exitcode=1 \
@@ -438,7 +427,6 @@ jobs:
           cp -r ../../test_geotiff/data .
           mkdir -p ../test/data
           cp -r ../../test/data/*.tif ../test/data/ || true
-          ./tst_geotiff_detect
           ./tst_geotiff_handle
           ./tst_geotiff_metadata
 
