@@ -157,13 +157,17 @@ GeoTIFF is a public domain metadata standard that allows georeferencing informat
 
 NEP provides a User-Defined Format (UDF) handler that allows reading GeoTIFF files using NetCDF-style API calls. This enables applications to work with GeoTIFF, NetCDF, and CDF files through a unified interface.
 
-**Current Features (Phase 1 & 2):**
+**Current Features (Phase 1, 2 & 3):**
 - ✅ Automatic format detection - GeoTIFF files are recognized by magic number
+- ✅ **BigTIFF support** - handles files >4GB via dual UDF registration
 - ✅ Open/close operations via standard `nc_open()` and `nc_close()` functions
 - ✅ Metadata extraction - dimensions, data types, coordinate reference systems
-- ✅ Support for both little-endian and big-endian TIFF files
-- ✅ Multi-band and single-band raster support
-- ⏳ Raster data reading (Phase 3 - planned)
+- ✅ Support for both little-endian TIFF formats (standard and BigTIFF)
+- ✅ **Multi-band raster reading** - supports 3D variable access (band, y, x)
+- ✅ **Single-band raster reading** - optimized 2D access
+- ✅ **Hyperslab operations** - efficient subsetting and partial reads
+- ✅ Support for both tiled and striped TIFF organizations
+- ✅ Support for PLANARCONFIG_CONTIG and PLANARCONFIG_SEPARATE
 - ⏳ Coordinate transformations (Phase 4 - planned)
 
 **Usage Example:**
@@ -171,28 +175,43 @@ NEP provides a User-Defined Format (UDF) handler that allows reading GeoTIFF fil
 ```c
 #include <netcdf.h>
 
-int ncid, ndims, nvars, natts;
+int ncid, varid, ndims, nvars;
 int retval;
 
-/* Open GeoTIFF file - automatically detected */
+/* Open GeoTIFF file - automatically detected (works with standard TIFF and BigTIFF) */
 if ((retval = nc_open("satellite_image.tif", NC_NOWRITE, &ncid)))
     ERR(retval);
 
 /* Query file metadata */
-if ((retval = nc_inq(ncid, &ndims, &nvars, &natts, NULL)))
+if ((retval = nc_inq(ncid, &ndims, &nvars, NULL, NULL)))
     ERR(retval);
 
-printf("Dimensions: %d, Variables: %d, Attributes: %d\n", 
-       ndims, nvars, natts);
+printf("Dimensions: %d, Variables: %d\n", ndims, nvars);
 
-/* Get dimension information */
-char dim_name[NC_MAX_NAME + 1];
-size_t dim_len;
-for (int i = 0; i < ndims; i++) {
-    if ((retval = nc_inq_dim(ncid, i, dim_name, &dim_len)))
-        ERR(retval);
-    printf("Dimension %d: %s = %zu\n", i, dim_name, dim_len);
-}
+/* Get variable ID and dimensions */
+if ((retval = nc_inq_varid(ncid, "data", &varid)))
+    ERR(retval);
+
+/* Read raster data - single pixel */
+size_t start[2] = {100, 200};  /* y, x */
+size_t count[2] = {1, 1};
+unsigned char pixel;
+if ((retval = nc_get_vara_uchar(ncid, varid, start, count, &pixel)))
+    ERR(retval);
+
+/* Read hyperslab - 100x100 region */
+size_t start2[2] = {0, 0};
+size_t count2[2] = {100, 100};
+unsigned char *buffer = malloc(100 * 100);
+if ((retval = nc_get_vara_uchar(ncid, varid, start2, count2, buffer)))
+    ERR(retval);
+
+/* Multi-band files: use 3D access (band, y, x) */
+size_t start3[3] = {0, 100, 200};  /* band 0, y=100, x=200 */
+size_t count3[3] = {1, 50, 50};     /* 1 band, 50x50 pixels */
+unsigned char *multiband = malloc(50 * 50);
+if ((retval = nc_get_vara_uchar(ncid, varid, start3, count3, multiband)))
+    ERR(retval);
 
 /* Close file */
 if ((retval = nc_close(ncid)))
@@ -209,6 +228,38 @@ cmake -B build -DENABLE_GEOTIFF=ON
 
 # Autotools
 ./configure --enable-geotiff
+```
+
+**Useful Tools for Working with GeoTIFF Files:**
+
+```bash
+# Essential tools for GeoTIFF inspection and manipulation
+sudo apt install gdal-bin        # GDAL command-line utilities
+sudo apt install libtiff-tools   # TIFF utilities (tiffinfo, tiffdump)
+sudo apt install qgis            # GUI for viewing/analyzing GeoTIFF files (optional)
+```
+
+**Key GDAL commands:**
+- `gdalinfo <file.tif>` - Display detailed file information (bands, CRS, metadata)
+- `gdal_translate` - Convert between formats and extract subsets
+- `gdalwarp` - Reproject and transform raster data
+- `gdal_merge.py` - Merge multiple GeoTIFF files
+
+**Key libtiff commands:**
+- `tiffinfo <file.tif>` - Display TIFF structure and tags
+- `tiffdump <file.tif>` - Dump TIFF directory contents
+- `tiffcp` - Copy and convert TIFF files
+
+**Example usage:**
+```bash
+# Check if a file is multi-band
+gdalinfo satellite_image.tif | grep "Band"
+
+# View planar configuration
+tiffinfo satellite_image.tif | grep "Planar Configuration"
+
+# Get basic file info
+tiffinfo satellite_image.tif | grep -E "(Image Width|Image Length|Samples)"
 ```
 
 **Use Cases:**
@@ -263,9 +314,55 @@ For more details on Spack installation options and variants, see **[Spack Instal
 
 ### Test Data
 
-NEP v1.4.0 includes comprehensive test suites:
-- LZ4 and BZIP2 compression tests with sample NetCDF-4 datasets
-- CDF file reading tests with NASA IMAP MAG L1B calibration data
+NEP includes comprehensive test suites with real-world sample data files located in `test/data/`:
+
+#### CDF Test Files
+
+**`imap_mag_l1b-calibration_20240229_v001.cdf`** (3.2 KB)
+- NASA IMAP (Interstellar Mapping and Acceleration Probe) magnetometer calibration data
+- L1B calibration dataset from February 29, 2024
+- Contains multi-dimensional arrays and TT2000 time variables
+- Used for testing CDF UDF handler functionality
+- Source: NASA Space Physics Data Facility (SPDF)
+
+**`imap_mag_cdfdump.txt`** (8.9 KB)
+- Reference output from NASA's `cdfdump` utility for validation
+- Used to verify correct metadata extraction and data reading
+
+#### GeoTIFF Test Files
+
+**`MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif`** (41 KB)
+- MODIS/Aqua+Terra Global Flood Product (tile h00v02)
+- Single-band raster: 4800×4800 pixels, 8-bit unsigned integer
+- Resolution: 250m (~0.002° pixel size)
+- Coverage: 70°N to 60°N latitude, 180°W to 170°W longitude
+- Planar configuration: Single image plane (PLANARCONFIG_CONTIG)
+- Used for testing GeoTIFF single-band reading and organization detection
+
+**`MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif`** (383 KB)
+- MODIS/Aqua+Terra Global Flood Product (tile h00v03)
+- Single-band raster: 4800×4800 pixels, 8-bit unsigned integer
+- Resolution: 250m (~0.002° pixel size)
+- Coverage: 60°N to 50°N latitude, 180°W to 170°W longitude
+- Planar configuration: Single image plane (PLANARCONFIG_CONTIG)
+- Used for testing GeoTIFF reading with different data patterns
+
+**Data Source:** NASA LANCE (Land, Atmosphere Near real-time Capability for EOS)
+- Product: MCDWD_L3_F1C_NRT v6.1
+- Description: 1-day composite flood detection with cloud shadow masks
+- DOI: 10.5067/MODIS/MCDWD_L3_F1C_NRT.061
+
+**`ABBA_2022_C61_HNL.tif`** (5.4 MB)
+- Arctic Boreal Annual Burned Area for 2022 (tile HNL)
+- Single-band raster: 55,877×41,013 pixels, 8-bit unsigned integer with palette
+- Resolution: 463m pixel size in Sinusoidal projection
+- Coverage: Circumpolar boreal forest and tundra regions above 50°N
+- Planar configuration: Single image plane (PLANARCONFIG_CONTIG)
+- Cloud-optimized GeoTIFF with multiple overview levels
+- Used for testing large GeoTIFF files and tiled organization
+- Citation: Loboda, T. V., Hall, J. V., Chen, D., Hoffman-Hall, A., Shevade, V. S., Argueta, F., & Liang, X. (2024). Arctic Boreal Annual Burned Area, Circumpolar Boreal Forest and Tundra, V2, 2002-2022 (Version 2). ORNL Distributed Active Archive Center. https://doi.org/10.3334/ORNLDAAC/2328 Date Accessed: 2025-12-30
+
+**Note:** Current test files are single-band GeoTIFFs. For testing multi-band raster reading (Phase 3.3), additional test files with multiple bands (e.g., Landsat, Sentinel-2) are recommended. See the GeoTIFF section above for data sources.
 
 ### CMake Build and Installation
 

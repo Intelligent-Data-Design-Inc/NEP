@@ -15,10 +15,11 @@ if HAVE_GEOTIFF
 check-local:
 	cp -f $(top_srcdir)/test/data/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif $(builddir)/
 	cp -f $(top_srcdir)/test/data/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif $(builddir)/
+	cp -f $(top_srcdir)/test/data/ABBA_2022_C61_HNL.tif $(builddir)/
 
 # Test programs
 check_PROGRAMS = tst_geotiff_handle tst_geotiff_metadata tst_phase2_acceptance \
-		 tst_geotiff_organization tst_single_band_read
+		 tst_geotiff_organization tst_single_band_read tst_large_geotiff
 
 # Test for GeoTIFF file handle management
 tst_geotiff_handle_SOURCES = tst_geotiff_handle.c
@@ -40,9 +41,13 @@ tst_geotiff_organization_LDADD = $(top_builddir)/src/libncgeotiff.la $(NETCDF_LI
 tst_single_band_read_SOURCES = tst_single_band_read.c
 tst_single_band_read_LDADD = $(top_builddir)/src/libncgeotiff.la $(NETCDF_LIBS) $(GEOTIFF_LIBS) $(HDF5_LIBS)
 
+# Test for GeoTIFF Phase 3.4/3.5: large file and tiled organization
+tst_large_geotiff_SOURCES = tst_large_geotiff.c
+tst_large_geotiff_LDADD = $(top_builddir)/src/libncgeotiff.la $(NETCDF_LIBS) $(GEOTIFF_LIBS) $(HDF5_LIBS)
+
 # Define tests
 TESTS = tst_geotiff_handle tst_geotiff_metadata tst_phase2_acceptance \
-	tst_geotiff_organization tst_single_band_read
+	tst_geotiff_organization tst_single_band_read tst_large_geotiff
 
 endif # HAVE_GEOTIFF
 
