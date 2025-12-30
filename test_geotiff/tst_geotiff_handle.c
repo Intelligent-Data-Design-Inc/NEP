@@ -534,7 +534,8 @@ int
 main(void)
 {
     int err = 0;
-    char magic_number[4] = "II*";
+    char magic_number_tiff[4] = "II*";     /* Standard TIFF */
+    char magic_number_bigtiff[4] = "II+";  /* BigTIFF */
 
     printf("\n*** Testing GeoTIFF file handle management ***\n");
 
@@ -546,12 +547,20 @@ main(void)
         return 1;
     }
     
-    /* Register GeoTIFF UDF handler with NetCDF-C */
-    /* GeoTIFF uses UDF1 slot - NC_UDF1 is defined in netcdf.h as 0x0080 */
-    int reg_ret = nc_def_user_format(NC_UDF1, (NC_Dispatch*)GEOTIFF_dispatch_table, magic_number);
-    if (reg_ret != NC_NOERR)
+    /* Register GeoTIFF UDF handlers for both standard TIFF and BigTIFF */
+    int reg_ret;
+    
+    /* NC_UDF0: Standard TIFF */
+    if ((reg_ret = nc_def_user_format(NC_UDF0, (NC_Dispatch*)GEOTIFF_dispatch_table, magic_number_tiff)))
     {
-        printf("ERROR: Failed to register GeoTIFF UDF handler: %s (code %d)\n", nc_strerror(reg_ret), reg_ret);
+        printf("ERROR: Failed to register standard TIFF handler: %s\n", nc_strerror(reg_ret));
+        return 1;
+    }
+    
+    /* NC_UDF1: BigTIFF */
+    if ((reg_ret = nc_def_user_format(NC_UDF1, (NC_Dispatch*)GEOTIFF_dispatch_table, magic_number_bigtiff)))
+    {
+        printf("ERROR: Failed to register BigTIFF handler: %s\n", nc_strerror(reg_ret));
         return 1;
     }
     

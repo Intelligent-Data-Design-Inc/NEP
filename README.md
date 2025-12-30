@@ -157,13 +157,17 @@ GeoTIFF is a public domain metadata standard that allows georeferencing informat
 
 NEP provides a User-Defined Format (UDF) handler that allows reading GeoTIFF files using NetCDF-style API calls. This enables applications to work with GeoTIFF, NetCDF, and CDF files through a unified interface.
 
-**Current Features (Phase 1 & 2):**
+**Current Features (Phase 1, 2 & 3):**
 - ✅ Automatic format detection - GeoTIFF files are recognized by magic number
+- ✅ **BigTIFF support** - handles files >4GB via dual UDF registration
 - ✅ Open/close operations via standard `nc_open()` and `nc_close()` functions
 - ✅ Metadata extraction - dimensions, data types, coordinate reference systems
-- ✅ Support for both little-endian and big-endian TIFF files
-- ✅ Multi-band and single-band raster support
-- ⏳ Raster data reading (Phase 3 - planned)
+- ✅ Support for both little-endian TIFF formats (standard and BigTIFF)
+- ✅ **Multi-band raster reading** - supports 3D variable access (band, y, x)
+- ✅ **Single-band raster reading** - optimized 2D access
+- ✅ **Hyperslab operations** - efficient subsetting and partial reads
+- ✅ Support for both tiled and striped TIFF organizations
+- ✅ Support for PLANARCONFIG_CONTIG and PLANARCONFIG_SEPARATE
 - ⏳ Coordinate transformations (Phase 4 - planned)
 
 **Usage Example:**
@@ -171,28 +175,43 @@ NEP provides a User-Defined Format (UDF) handler that allows reading GeoTIFF fil
 ```c
 #include <netcdf.h>
 
-int ncid, ndims, nvars, natts;
+int ncid, varid, ndims, nvars;
 int retval;
 
-/* Open GeoTIFF file - automatically detected */
+/* Open GeoTIFF file - automatically detected (works with standard TIFF and BigTIFF) */
 if ((retval = nc_open("satellite_image.tif", NC_NOWRITE, &ncid)))
     ERR(retval);
 
 /* Query file metadata */
-if ((retval = nc_inq(ncid, &ndims, &nvars, &natts, NULL)))
+if ((retval = nc_inq(ncid, &ndims, &nvars, NULL, NULL)))
     ERR(retval);
 
-printf("Dimensions: %d, Variables: %d, Attributes: %d\n", 
-       ndims, nvars, natts);
+printf("Dimensions: %d, Variables: %d\n", ndims, nvars);
 
-/* Get dimension information */
-char dim_name[NC_MAX_NAME + 1];
-size_t dim_len;
-for (int i = 0; i < ndims; i++) {
-    if ((retval = nc_inq_dim(ncid, i, dim_name, &dim_len)))
-        ERR(retval);
-    printf("Dimension %d: %s = %zu\n", i, dim_name, dim_len);
-}
+/* Get variable ID and dimensions */
+if ((retval = nc_inq_varid(ncid, "data", &varid)))
+    ERR(retval);
+
+/* Read raster data - single pixel */
+size_t start[2] = {100, 200};  /* y, x */
+size_t count[2] = {1, 1};
+unsigned char pixel;
+if ((retval = nc_get_vara_uchar(ncid, varid, start, count, &pixel)))
+    ERR(retval);
+
+/* Read hyperslab - 100x100 region */
+size_t start2[2] = {0, 0};
+size_t count2[2] = {100, 100};
+unsigned char *buffer = malloc(100 * 100);
+if ((retval = nc_get_vara_uchar(ncid, varid, start2, count2, buffer)))
+    ERR(retval);
+
+/* Multi-band files: use 3D access (band, y, x) */
+size_t start3[3] = {0, 100, 200};  /* band 0, y=100, x=200 */
+size_t count3[3] = {1, 50, 50};     /* 1 band, 50x50 pixels */
+unsigned char *multiband = malloc(50 * 50);
+if ((retval = nc_get_vara_uchar(ncid, varid, start3, count3, multiband)))
+    ERR(retval);
 
 /* Close file */
 if ((retval = nc_close(ncid)))

@@ -26,7 +26,8 @@ main(int argc, char **argv)
     int ncid, varid;
     int ret;
     int nvars;
-    char magic_number[4] = "II*";
+    char magic_number_tiff[4] = "II*";     /* Standard TIFF */
+    char magic_number_bigtiff[4] = "II+";  /* BigTIFF */
     
     printf("\n*** Testing single-band raster reading.\n");
     
@@ -40,14 +41,23 @@ main(int argc, char **argv)
     }
     printf("ok\n");
     
-    /* Register GeoTIFF UDF handler */
-    printf("*** Registering handler...");
-    ret = nc_def_user_format(NC_UDF1, (NC_Dispatch *)GEOTIFF_dispatch_table, magic_number);
-    if (ret != NC_NOERR)
+    /* Register GeoTIFF UDF handlers for both standard TIFF and BigTIFF */
+    printf("*** Registering handlers (II* and II+)...");
+    
+    /* NC_UDF0: Standard TIFF */
+    if ((ret = nc_def_user_format(NC_UDF0, (NC_Dispatch *)GEOTIFF_dispatch_table, magic_number_tiff)))
     {
-        printf("FAILED: %s\n", nc_strerror(ret));
+        printf("FAILED (II*): %s\n", nc_strerror(ret));
         return 1;
     }
+    
+    /* NC_UDF1: BigTIFF */
+    if ((ret = nc_def_user_format(NC_UDF1, (NC_Dispatch *)GEOTIFF_dispatch_table, magic_number_bigtiff)))
+    {
+        printf("FAILED (II+): %s\n", nc_strerror(ret));
+        return 1;
+    }
+    
     printf("ok\n");
     
     /* Test 1: Open file */
