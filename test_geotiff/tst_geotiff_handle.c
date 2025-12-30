@@ -30,6 +30,233 @@ int total_err = 0;
 
 #ifdef HAVE_GEOTIFF
 
+/* Dump the metadata from a netCDF file. */
+static int
+dump_netcdf_file(int ncid)
+{
+    int ndims, nvars, ngatts, unlimdimid;
+    int ret;
+    
+    /* Get global file information */
+    if ((ret = nc_inq(ncid, &ndims, &nvars, &ngatts, &unlimdimid)))
+    {
+        printf("Error in nc_inq: %s\n", nc_strerror(ret));
+        return 1;
+    }
+    
+    printf("\n=== NetCDF File Metadata ===\n");
+    printf("Number of dimensions: %d\n", ndims);
+    printf("Number of variables: %d\n", nvars);
+    printf("Number of global attributes: %d\n", ngatts);
+    printf("Unlimited dimension ID: %d\n", unlimdimid);
+    
+    /* Print dimension information */
+    printf("\n--- Dimensions ---\n");
+    for (int i = 0; i < ndims; i++)
+    {
+        char dimname[NC_MAX_NAME + 1];
+        size_t dimlen;
+        
+        if ((ret = nc_inq_dim(ncid, i, dimname, &dimlen)))
+        {
+            printf("Error in nc_inq_dim for dim %d: %s\n", i, nc_strerror(ret));
+            return 1;
+        }
+        
+        printf("  Dimension %d: %s = %zu%s\n", i, dimname, dimlen,
+               (i == unlimdimid) ? " (UNLIMITED)" : "");
+    }
+    
+    /* Print global attributes */
+    printf("\n--- Global Attributes ---\n");
+    for (int i = 0; i < ngatts; i++)
+    {
+        char attname[NC_MAX_NAME + 1];
+        nc_type atttype;
+        size_t attlen;
+        
+        if ((ret = nc_inq_attname(ncid, NC_GLOBAL, i, attname)))
+        {
+            printf("Error in nc_inq_attname for global att %d: %s\n", i, nc_strerror(ret));
+            return 1;
+        }
+        
+        if ((ret = nc_inq_att(ncid, NC_GLOBAL, attname, &atttype, &attlen)))
+        {
+            printf("Error in nc_inq_att for %s: %s\n", attname, nc_strerror(ret));
+            return 1;
+        }
+        
+        printf("  %s: type=%d, len=%zu\n", attname, atttype, attlen);
+        
+        /* Print attribute value based on type */
+        if (atttype == NC_CHAR)
+        {
+            char *attval = malloc(attlen + 1);
+            if (attval)
+            {
+                if ((ret = nc_get_att_text(ncid, NC_GLOBAL, attname, attval)) == NC_NOERR)
+                {
+                    attval[attlen] = '\0';
+                    printf("    Value: \"%s\"\n", attval);
+                }
+                free(attval);
+            }
+        }
+        else if (atttype == NC_INT)
+        {
+            int *attval = malloc(attlen * sizeof(int));
+            if (attval)
+            {
+                if ((ret = nc_get_att_int(ncid, NC_GLOBAL, attname, attval)) == NC_NOERR)
+                {
+                    printf("    Value: ");
+                    for (size_t j = 0; j < attlen; j++)
+                        printf("%d%s", attval[j], (j < attlen - 1) ? ", " : "\n");
+                }
+                free(attval);
+            }
+        }
+        else if (atttype == NC_FLOAT)
+        {
+            float *attval = malloc(attlen * sizeof(float));
+            if (attval)
+            {
+                if ((ret = nc_get_att_float(ncid, NC_GLOBAL, attname, attval)) == NC_NOERR)
+                {
+                    printf("    Value: ");
+                    for (size_t j = 0; j < attlen; j++)
+                        printf("%f%s", attval[j], (j < attlen - 1) ? ", " : "\n");
+                }
+                free(attval);
+            }
+        }
+        else if (atttype == NC_DOUBLE)
+        {
+            double *attval = malloc(attlen * sizeof(double));
+            if (attval)
+            {
+                if ((ret = nc_get_att_double(ncid, NC_GLOBAL, attname, attval)) == NC_NOERR)
+                {
+                    printf("    Value: ");
+                    for (size_t j = 0; j < attlen; j++)
+                        printf("%f%s", attval[j], (j < attlen - 1) ? ", " : "\n");
+                }
+                free(attval);
+            }
+        }
+    }
+    
+    /* Print variable information */
+    printf("\n--- Variables ---\n");
+    for (int i = 0; i < nvars; i++)
+    {
+        char varname[NC_MAX_NAME + 1];
+        nc_type vartype;
+        int varndims, vardimids[NC_MAX_VAR_DIMS], varnatts;
+        
+        if ((ret = nc_inq_var(ncid, i, varname, &vartype, &varndims, vardimids, &varnatts)))
+        {
+            printf("Error in nc_inq_var for var %d: %s\n", i, nc_strerror(ret));
+            return 1;
+        }
+        
+        printf("  Variable %d: %s\n", i, varname);
+        printf("    Type: %d\n", vartype);
+        printf("    Dimensions: %d [", varndims);
+        for (int j = 0; j < varndims; j++)
+        {
+            char dimname[NC_MAX_NAME + 1];
+            if ((ret = nc_inq_dimname(ncid, vardimids[j], dimname)) == NC_NOERR)
+                printf("%s%s", dimname, (j < varndims - 1) ? ", " : "");
+        }
+        printf("]\n");
+        printf("    Number of attributes: %d\n", varnatts);
+        
+        /* Print variable attributes */
+        for (int j = 0; j < varnatts; j++)
+        {
+            char attname[NC_MAX_NAME + 1];
+            nc_type atttype;
+            size_t attlen;
+            
+            if ((ret = nc_inq_attname(ncid, i, j, attname)))
+            {
+                printf("Error in nc_inq_attname for var %d att %d: %s\n", i, j, nc_strerror(ret));
+                return 1;
+            }
+            
+            if ((ret = nc_inq_att(ncid, i, attname, &atttype, &attlen)))
+            {
+                printf("Error in nc_inq_att for var %d att %s: %s\n", i, attname, nc_strerror(ret));
+                return 1;
+            }
+            
+            printf("      %s: type=%d, len=%zu\n", attname, atttype, attlen);
+            
+            /* Print attribute value based on type */
+            if (atttype == NC_CHAR)
+            {
+                char *attval = malloc(attlen + 1);
+                if (attval)
+                {
+                    if ((ret = nc_get_att_text(ncid, i, attname, attval)) == NC_NOERR)
+                    {
+                        attval[attlen] = '\0';
+                        printf("        Value: \"%s\"\n", attval);
+                    }
+                    free(attval);
+                }
+            }
+            else if (atttype == NC_INT)
+            {
+                int *attval = malloc(attlen * sizeof(int));
+                if (attval)
+                {
+                    if ((ret = nc_get_att_int(ncid, i, attname, attval)) == NC_NOERR)
+                    {
+                        printf("        Value: ");
+                        for (size_t k = 0; k < attlen; k++)
+                            printf("%d%s", attval[k], (k < attlen - 1) ? ", " : "\n");
+                    }
+                    free(attval);
+                }
+            }
+            else if (atttype == NC_FLOAT)
+            {
+                float *attval = malloc(attlen * sizeof(float));
+                if (attval)
+                {
+                    if ((ret = nc_get_att_float(ncid, i, attname, attval)) == NC_NOERR)
+                    {
+                        printf("        Value: ");
+                        for (size_t k = 0; k < attlen; k++)
+                            printf("%f%s", attval[k], (k < attlen - 1) ? ", " : "\n");
+                    }
+                    free(attval);
+                }
+            }
+            else if (atttype == NC_DOUBLE)
+            {
+                double *attval = malloc(attlen * sizeof(double));
+                if (attval)
+                {
+                    if ((ret = nc_get_att_double(ncid, i, attname, attval)) == NC_NOERR)
+                    {
+                        printf("        Value: ");
+                        for (size_t k = 0; k < attlen; k++)
+                            printf("%f%s", attval[k], (k < attlen - 1) ? ", " : "\n");
+                    }
+                    free(attval);
+                }
+            }
+        }
+    }
+    
+    printf("\n");
+    return 0;
+}
+
 /**
  * Test successful file handle creation with real NASA GeoTIFF.
  */
@@ -50,6 +277,9 @@ test_successful_open_close(void)
         return 1;
     }
 
+    if ((ret = dump_netcdf_file(ncid)))
+	return 1;
+    
     /* Close the file */
     ret = nc_close(ncid);
     if (ret != NC_NOERR)
@@ -193,6 +423,9 @@ test_nasa_modis_file2(void)
         printf("FAILED - open returned %s\n", nc_strerror(ret));
         return 1;
     }
+
+    if ((ret = dump_netcdf_file(ncid)))
+	return 1;
     
     ret = nc_close(ncid);
     if (ret != NC_NOERR)

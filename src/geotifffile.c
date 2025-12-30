@@ -12,6 +12,7 @@
  */
 
 #include "config.h"
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -61,6 +62,123 @@ swap32(unsigned int val)
 {
     return ((val & 0xFF) << 24) | ((val & 0xFF00) << 8) |
            ((val >> 8) & 0xFF00) | ((val >> 24) & 0xFF);
+}
+
+/**
+ * @internal Set the type of a netCDF-4 variable.
+ *
+ * @param xtype A netcdf type.
+ * @param endianness The endianness of the data.
+ * @param type_size The size in bytes of one element of this type.
+ * @param type_name A name for the type.
+ * @param typep Pointer to a pointer that gets the TYPE_INFO_T struct.
+ *
+ * @return ::NC_NOERR No error.
+ * @author Ed Hartnett
+ */
+static int
+nc4_set_var_type(nc_type xtype, int endianness, size_t type_size, char *type_name,
+                 NC_TYPE_INFO_T **typep)
+{
+    NC_TYPE_INFO_T *type;
+
+    /* Check inputs. */
+    assert(typep);
+
+    /* Allocate space for the type info struct. */
+    if (!(type = calloc(1, sizeof(NC_TYPE_INFO_T))))
+        return NC_ENOMEM;
+    if (!(type->hdr.name = strdup(type_name)))
+    {
+        free(type);
+        return NC_ENOMEM;
+    }
+    type->hdr.sort = NCTYP;
+
+    /* Determine the type class. */
+    if (xtype == NC_FLOAT)
+        type->nc_type_class = NC_FLOAT;
+    else if (xtype == NC_DOUBLE)
+        type->nc_type_class = NC_DOUBLE;
+    else if (xtype == NC_CHAR)
+        type->nc_type_class = NC_STRING;
+    else
+        type->nc_type_class = NC_INT;
+
+    /* Set other type info values. */
+    type->endianness = endianness;
+    type->size = type_size;
+    type->hdr.id = (size_t)xtype;
+
+    /* Return to caller. */
+    *typep = type;
+
+    return NC_NOERR;
+}
+
+/**
+ * @internal Create a new variable and insert int relevant lists
+ *
+ * @param grp the containing group
+ * @param name the name for the new variable
+ * @param ndims the rank of the new variable
+ * @param format_var_info Pointer to format-specific var info struct.
+ * @param var Pointer in which to return a pointer to the new var.
+ *
+ * @return ::NC_NOERR No error.
+ * @return ::NC_ENOMEM Out of memory.
+ * @author Ed Hartnett
+ */
+static int
+nc4_var_list_add_full(NC_GRP_INFO_T* grp, const char* name, int ndims, nc_type xtype,
+                      int endianness, size_t type_size, char *type_name, void *fill_value,
+                      int contiguous, size_t *chunksizes, void *format_var_info,
+                      NC_VAR_INFO_T **var)
+{
+    int d;
+    int retval;
+
+    /* Add the VAR_INFO_T struct to our list of vars. */
+    if ((retval = nc4_var_list_add(grp, name, ndims, var)))
+        return retval;
+    (*var)->created = NC_TRUE;
+    (*var)->written_to = NC_TRUE;
+    (*var)->format_var_info = format_var_info;
+    (*var)->atts_read = 1;
+
+    /* Fill special type_info struct for variable type information. */
+    if ((retval = nc4_set_var_type(xtype, endianness, type_size, type_name,
+                                   &(*var)->type_info)))
+        return retval;
+    /* Propate the endianness to the variable */
+    (*var)->endianness = (*var)->type_info->endianness;
+
+    (*var)->type_info->rc++;
+
+    /* Handle fill value, if provided. */
+    if (fill_value)
+    {
+        if (!((*var)->fill_value = malloc(type_size)))
+            return NC_ENOMEM;
+        memcpy((*var)->fill_value, fill_value, type_size);
+    }
+
+    /* Var contiguous or chunked? */
+    if (contiguous)
+	(*var)->storage = NC_CONTIGUOUS;
+    else
+	(*var)->storage = NC_CHUNKED;
+
+    /* Were chunksizes provided? */
+    if (chunksizes)
+    {
+        if (!((*var)->chunksizes = malloc(ndims * sizeof(size_t))))
+            return NC_ENOMEM;
+        for (d = 0; d < ndims; d++)
+            (*var)->chunksizes[d] = chunksizes[d];
+    }
+
+    return NC_NOERR;
 }
 
 /**
@@ -591,6 +709,9 @@ NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_
     NC_DIM_INFO_T *dim_x = NULL, *dim_y = NULL, *dim_band = NULL;
     NC_VAR_INFO_T *var = NULL;
     nc_type xtype = NC_UBYTE;
+    int endianness;
+    size_t type_size;
+    char type_name[NC_MAX_NAME + 1];
     int retval;
 
     if (!h5 || !geotiff_info || !geotiff_info->tiff_handle)
@@ -617,34 +738,81 @@ NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_
     if (sample_format == SAMPLEFORMAT_UINT)
     {
         if (bits_per_sample == 8)
+        {
             xtype = NC_UBYTE;
+            type_size = sizeof(unsigned char);
+            strcpy(type_name, "ubyte");
+        }
         else if (bits_per_sample == 16)
+        {
             xtype = NC_USHORT;
+            type_size = sizeof(unsigned short);
+            strcpy(type_name, "ushort");
+        }
         else if (bits_per_sample == 32)
+        {
             xtype = NC_UINT;
+            type_size = sizeof(unsigned int);
+            strcpy(type_name, "uint");
+        }
         else
+        {
             xtype = NC_UBYTE;
+            type_size = sizeof(unsigned char);
+            strcpy(type_name, "ubyte");
+        }
     }
     else if (sample_format == SAMPLEFORMAT_INT)
     {
         if (bits_per_sample == 8)
+        {
             xtype = NC_BYTE;
+            type_size = sizeof(char);
+            strcpy(type_name, "byte");
+        }
         else if (bits_per_sample == 16)
+        {
             xtype = NC_SHORT;
+            type_size = sizeof(short);
+            strcpy(type_name, "short");
+        }
         else if (bits_per_sample == 32)
+        {
             xtype = NC_INT;
+            type_size = sizeof(int);
+            strcpy(type_name, "int");
+        }
         else
+        {
             xtype = NC_SHORT;
+            type_size = sizeof(short);
+            strcpy(type_name, "short");
+        }
     }
     else if (sample_format == SAMPLEFORMAT_IEEEFP)
     {
         if (bits_per_sample == 32)
+        {
             xtype = NC_FLOAT;
+            type_size = sizeof(float);
+            strcpy(type_name, "float");
+        }
         else if (bits_per_sample == 64)
+        {
             xtype = NC_DOUBLE;
+            type_size = sizeof(double);
+            strcpy(type_name, "double");
+        }
         else
+        {
             xtype = NC_FLOAT;
+            type_size = sizeof(float);
+            strcpy(type_name, "float");
+        }
     }
+
+    /* Determine endianness from GeoTIFF file */
+    endianness = geotiff_info->is_little_endian ? NC_ENDIAN_LITTLE : NC_ENDIAN_BIG;
 
     /* Create dimensions */
     if ((retval = nc4_dim_list_add(grp, "x", width, -1, &dim_x)))
@@ -663,7 +831,9 @@ NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_
     if (samples_per_pixel > 1)
     {
         /* Multi-band: 3D variable (band, y, x) */
-        if ((retval = nc4_var_list_add(grp, "data", 3, &var)))
+        if ((retval = nc4_var_list_add_full(grp, "data", 3, xtype, endianness,
+                                            type_size, type_name, NULL, NC_TRUE,
+                                            NULL, NULL, &var)))
             return retval;
         if ((retval = nc4_var_set_ndims(var, 3)))
             return retval;
@@ -677,7 +847,9 @@ NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_
     else
     {
         /* Single-band: 2D variable (y, x) */
-        if ((retval = nc4_var_list_add(grp, "data", 2, &var)))
+        if ((retval = nc4_var_list_add_full(grp, "data", 2, xtype, endianness,
+                                            type_size, type_name, NULL, NC_TRUE,
+                                            NULL, NULL, &var)))
             return retval;
         if ((retval = nc4_var_set_ndims(var, 2)))
             return retval;
@@ -686,10 +858,6 @@ NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_
         var->dim[1] = dim_x;
         var->dimids[1] = dim_x->hdr.id;
     }
-    
-    /* Set variable type */
-    var->type_info = NULL;
-    /* var->xtype = xtype; */
 
     /* Extract CRS information if GTIFNew succeeded */
     if (gtif)
