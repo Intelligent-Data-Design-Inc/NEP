@@ -324,7 +324,7 @@ main(void)
     
     /* Test basic functionality with real NASA files */
     err += test_successful_open_close();
-    /* err += test_nasa_modis_file2(); */
+    err += test_nasa_modis_file2();
     
     /* Test error handling */
     err += test_invalid_file_path();
