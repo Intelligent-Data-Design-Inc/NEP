@@ -211,6 +211,38 @@ cmake -B build -DENABLE_GEOTIFF=ON
 ./configure --enable-geotiff
 ```
 
+**Useful Tools for Working with GeoTIFF Files:**
+
+```bash
+# Essential tools for GeoTIFF inspection and manipulation
+sudo apt install gdal-bin        # GDAL command-line utilities
+sudo apt install libtiff-tools   # TIFF utilities (tiffinfo, tiffdump)
+sudo apt install qgis            # GUI for viewing/analyzing GeoTIFF files (optional)
+```
+
+**Key GDAL commands:**
+- `gdalinfo <file.tif>` - Display detailed file information (bands, CRS, metadata)
+- `gdal_translate` - Convert between formats and extract subsets
+- `gdalwarp` - Reproject and transform raster data
+- `gdal_merge.py` - Merge multiple GeoTIFF files
+
+**Key libtiff commands:**
+- `tiffinfo <file.tif>` - Display TIFF structure and tags
+- `tiffdump <file.tif>` - Dump TIFF directory contents
+- `tiffcp` - Copy and convert TIFF files
+
+**Example usage:**
+```bash
+# Check if a file is multi-band
+gdalinfo satellite_image.tif | grep "Band"
+
+# View planar configuration
+tiffinfo satellite_image.tif | grep "Planar Configuration"
+
+# Get basic file info
+tiffinfo satellite_image.tif | grep -E "(Image Width|Image Length|Samples)"
+```
+
 **Use Cases:**
 - NASA Earth observation data (MODIS, Landsat, Sentinel)
 - Satellite imagery analysis
@@ -263,9 +295,55 @@ For more details on Spack installation options and variants, see **[Spack Instal
 
 ### Test Data
 
-NEP v1.4.0 includes comprehensive test suites:
-- LZ4 and BZIP2 compression tests with sample NetCDF-4 datasets
-- CDF file reading tests with NASA IMAP MAG L1B calibration data
+NEP includes comprehensive test suites with real-world sample data files located in `test/data/`:
+
+#### CDF Test Files
+
+**`imap_mag_l1b-calibration_20240229_v001.cdf`** (3.2 KB)
+- NASA IMAP (Interstellar Mapping and Acceleration Probe) magnetometer calibration data
+- L1B calibration dataset from February 29, 2024
+- Contains multi-dimensional arrays and TT2000 time variables
+- Used for testing CDF UDF handler functionality
+- Source: NASA Space Physics Data Facility (SPDF)
+
+**`imap_mag_cdfdump.txt`** (8.9 KB)
+- Reference output from NASA's `cdfdump` utility for validation
+- Used to verify correct metadata extraction and data reading
+
+#### GeoTIFF Test Files
+
+**`MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif`** (41 KB)
+- MODIS/Aqua+Terra Global Flood Product (tile h00v02)
+- Single-band raster: 4800×4800 pixels, 8-bit unsigned integer
+- Resolution: 250m (~0.002° pixel size)
+- Coverage: 70°N to 60°N latitude, 180°W to 170°W longitude
+- Planar configuration: Single image plane (PLANARCONFIG_CONTIG)
+- Used for testing GeoTIFF single-band reading and organization detection
+
+**`MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif`** (383 KB)
+- MODIS/Aqua+Terra Global Flood Product (tile h00v03)
+- Single-band raster: 4800×4800 pixels, 8-bit unsigned integer
+- Resolution: 250m (~0.002° pixel size)
+- Coverage: 60°N to 50°N latitude, 180°W to 170°W longitude
+- Planar configuration: Single image plane (PLANARCONFIG_CONTIG)
+- Used for testing GeoTIFF reading with different data patterns
+
+**Data Source:** NASA LANCE (Land, Atmosphere Near real-time Capability for EOS)
+- Product: MCDWD_L3_F1C_NRT v6.1
+- Description: 1-day composite flood detection with cloud shadow masks
+- DOI: 10.5067/MODIS/MCDWD_L3_F1C_NRT.061
+
+**`ABBA_2022_C61_HNL.tif`** (5.4 MB)
+- Arctic Boreal Annual Burned Area for 2022 (tile HNL)
+- Single-band raster: 55,877×41,013 pixels, 8-bit unsigned integer with palette
+- Resolution: 463m pixel size in Sinusoidal projection
+- Coverage: Circumpolar boreal forest and tundra regions above 50°N
+- Planar configuration: Single image plane (PLANARCONFIG_CONTIG)
+- Cloud-optimized GeoTIFF with multiple overview levels
+- Used for testing large GeoTIFF files and tiled organization
+- Citation: Loboda, T. V., Hall, J. V., Chen, D., Hoffman-Hall, A., Shevade, V. S., Argueta, F., & Liang, X. (2024). Arctic Boreal Annual Burned Area, Circumpolar Boreal Forest and Tundra, V2, 2002-2022 (Version 2). ORNL Distributed Active Archive Center. https://doi.org/10.3334/ORNLDAAC/2328 Date Accessed: 2025-12-30
+
+**Note:** Current test files are single-band GeoTIFFs. For testing multi-band raster reading (Phase 3.3), additional test files with multiple bands (e.g., Landsat, Sentinel-2) are recommended. See the GeoTIFF section above for data sources.
 
 ### CMake Build and Installation
 
