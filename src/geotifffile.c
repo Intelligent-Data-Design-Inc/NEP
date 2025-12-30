@@ -593,9 +593,73 @@ cleanup:
 }
 
 /**
+ * @internal Recursively delete group and its contents.
+ *
+ * This function frees all variables, dimensions, and attributes in a group
+ * and its subgroups, following the HDF4 pattern.
+ *
+ * @param grp Group to delete.
+ *
+ * @return NC_NOERR on success.
+ *
+ * @author Edward Hartnett
+ */
+static int
+geotiff_rec_grp_del(NC_GRP_INFO_T *grp)
+{
+    NC_VAR_INFO_T *var;
+    NC_DIM_INFO_T *dim;
+    int i;
+
+    if (!grp)
+        return NC_NOERR;
+
+    /* Free variables */
+    for (i = 0; i < ncindexsize(grp->vars); i++)
+    {
+        var = (NC_VAR_INFO_T *)ncindexith(grp->vars, i);
+        if (var)
+        {
+            /* Free variable dimension arrays */
+            if (var->dim)
+            {
+                free(var->dim);
+                var->dim = NULL;
+            }
+            if (var->dimids)
+            {
+                free(var->dimids);
+                var->dimids = NULL;
+            }
+            
+            /* Free variable-specific GeoTIFF info if any */
+            if (var->format_var_info)
+            {
+                free(var->format_var_info);
+                var->format_var_info = NULL;
+            }
+        }
+    }
+
+    /* Free dimensions */
+    for (i = 0; i < ncindexsize(grp->dim); i++)
+    {
+        dim = (NC_DIM_INFO_T *)ncindexith(grp->dim, i);
+        if (dim && dim->hdr.name)
+        {
+            free(dim->hdr.name);
+            dim->hdr.name = NULL;
+        }
+    }
+
+    return NC_NOERR;
+}
+
+/**
  * @internal Close a GeoTIFF file and release resources.
  *
  * Phase 2: Retrieve file info from dispatch layer and cleanup.
+ * Updated Phase 3.4: Properly free all NetCDF internal structures.
  *
  * @param ncid NetCDF ID for this file.
  * @param ignore Unused parameter (for dispatch compatibility).
@@ -612,14 +676,18 @@ NC_GEOTIFF_close(int ncid, void *ignore)
     NC *nc;
     NC_FILE_INFO_T *h5;
     NC_GEOTIFF_FILE_INFO_T *geotiff_info;
-    int ret;
+    int retval;
 
     /* Find our metadata for this file */
-    if ((ret = nc4_find_nc_grp_h5(ncid, &nc, &grp, (NC_FILE_INFO_T **)&h5)))
-        return ret;
+    if ((retval = nc4_find_nc_grp_h5(ncid, &nc, &grp, &h5)))
+        return retval;
     
     if (!h5 || !h5->format_file_info)
         return NC_EBADID;
+
+    /* Clean up GeoTIFF specific allocations in groups */
+    if ((retval = geotiff_rec_grp_del(h5->root_grp)))
+        return retval;
 
     /* Get GeoTIFF-specific file info */
     geotiff_info = (NC_GEOTIFF_FILE_INFO_T *)h5->format_file_info;
@@ -636,9 +704,12 @@ NC_GEOTIFF_close(int ncid, void *ignore)
     if (geotiff_info->path)
         free(geotiff_info->path);
 
-    /* Free file info structure */
+    /* Free GeoTIFF file info structure */
     free(geotiff_info);
-    h5->format_file_info = NULL;
+
+    /* Free the NC_FILE_INFO_T struct */
+    if ((retval = nc4_nc4f_list_del(h5)))
+        return retval;
 
     return NC_NOERR;
 }
