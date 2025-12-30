@@ -302,10 +302,12 @@ static int
 check_geotiff_tags(FILE *fp, unsigned int ifd_offset, int is_little_endian,
                    int is_bigtiff, int *has_geotiff_tags)
 {
-    unsigned short num_entries;
-    unsigned char entry_count[2];
+    unsigned long long num_entries;
+    unsigned char entry_count_buf[8];
     int need_swap;
     int i;
+    size_t entry_size;
+    size_t count_size;
 
     *has_geotiff_tags = 0;
 
@@ -319,28 +321,57 @@ check_geotiff_tags(FILE *fp, unsigned int ifd_offset, int is_little_endian,
     if (fseek(fp, ifd_offset, SEEK_SET) != 0)
         return NC_ENOTNC;
 
+    /* BigTIFF uses 8-byte entry count, classic TIFF uses 2-byte */
+    if (is_bigtiff)
+    {
+        count_size = 8;
+        entry_size = 20;  /* BigTIFF IFD entries are 20 bytes */
+    }
+    else
+    {
+        count_size = 2;
+        entry_size = 12;  /* Classic TIFF IFD entries are 12 bytes */
+    }
+
     /* Read number of entries */
-    if (fread(entry_count, 1, 2, fp) != 2)
+    if (fread(entry_count_buf, 1, count_size, fp) != count_size)
         return NC_ENOTNC;
 
-    num_entries = (entry_count[0]) | (entry_count[1] << 8);
-    if (need_swap)
-        num_entries = swap16(num_entries);
-
-    /* Sanity check on number of entries */
-    if (num_entries > 4096)
-        return NC_ENOTNC;
+    if (is_bigtiff)
+    {
+        /* BigTIFF: 8-byte entry count */
+        num_entries = (unsigned long long)entry_count_buf[0] |
+                     ((unsigned long long)entry_count_buf[1] << 8) |
+                     ((unsigned long long)entry_count_buf[2] << 16) |
+                     ((unsigned long long)entry_count_buf[3] << 24) |
+                     ((unsigned long long)entry_count_buf[4] << 32) |
+                     ((unsigned long long)entry_count_buf[5] << 40) |
+                     ((unsigned long long)entry_count_buf[6] << 48) |
+                     ((unsigned long long)entry_count_buf[7] << 56);
+        /* For simplicity, we only handle reasonable entry counts */
+        if (num_entries > 4096)
+            return NC_ENOTNC;
+    }
+    else
+    {
+        /* Classic TIFF: 2-byte entry count */
+        num_entries = (entry_count_buf[0]) | (entry_count_buf[1] << 8);
+        if (need_swap)
+            num_entries = swap16((unsigned short)num_entries);
+        if (num_entries > 4096)
+            return NC_ENOTNC;
+    }
 
     /* Read and check each IFD entry */
-    for (i = 0; i < num_entries; i++)
+    for (i = 0; i < (int)num_entries; i++)
     {
-        unsigned char entry[TIFF_IFD_ENTRY_SIZE];
+        unsigned char entry[20];  /* Max size for BigTIFF */
         unsigned short tag;
 
-        if (fread(entry, 1, TIFF_IFD_ENTRY_SIZE, fp) != TIFF_IFD_ENTRY_SIZE)
+        if (fread(entry, 1, entry_size, fp) != entry_size)
             return NC_ENOTNC;
 
-        /* Extract tag ID (first 2 bytes) */
+        /* Extract tag ID (first 2 bytes - same for both formats) */
         tag = (entry[0]) | (entry[1] << 8);
         if (need_swap)
             tag = swap16(tag);
