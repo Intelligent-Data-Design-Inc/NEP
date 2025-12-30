@@ -70,6 +70,15 @@ static int detect_tiff_organization(TIFF *tiff, NC_GEOTIFF_FILE_INFO_T *geotiff_
 static void *allocate_read_buffer(NC_GEOTIFF_FILE_INFO_T *geotiff_info, size_t type_size);
 static void free_read_buffer(void *buffer);
 static int validate_hyperslab(NC_VAR_INFO_T *var, const size_t *start, const size_t *count);
+
+/* Forward declarations for Phase 3.2 helper functions */
+static int read_scanline(TIFF *tiff, uint32_t row, void *buffer, uint16_t samples_per_pixel);
+static int read_tile(TIFF *tiff, uint32_t tile_x, uint32_t tile_y, void *buffer);
+static void copy_region(const void *src, size_t src_width, size_t src_x, size_t src_y,
+                       void *dst, size_t width, size_t height, size_t elem_size);
+static int read_single_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
+                                     const size_t *start, const size_t *count,
+                                     void *value, size_t type_size);
 #endif
 
 /**
@@ -1070,25 +1079,250 @@ validate_hyperslab(NC_VAR_INFO_T *var, const size_t *start, const size_t *count)
 }
 
 /**
- * @internal Read data from a GeoTIFF variable.
+ * @internal Read a single scanline from a striped TIFF file.
  *
- * This is a Phase 3 function - stub implementation for Phase 2.
+ * @param tiff TIFF file handle.
+ * @param row Row number to read.
+ * @param buffer Buffer to read into (must be pre-allocated).
+ * @param samples_per_pixel Number of samples per pixel.
+ *
+ * @return NC_NOERR on success, NC_EHDFERR on TIFF error.
+ *
+ * @author Edward Hartnett
+ */
+static int
+read_scanline(TIFF *tiff, uint32_t row, void *buffer, uint16_t samples_per_pixel)
+{
+    if (!tiff || !buffer)
+        return NC_EINVAL;
+    
+    /* For single-band or PLANARCONFIG_CONTIG, read the scanline */
+    if (TIFFReadScanline(tiff, buffer, row, 0) < 0)
+        return NC_EHDFERR;
+    
+    return NC_NOERR;
+}
+
+/**
+ * @internal Read a tile from a tiled TIFF file.
+ *
+ * @param tiff TIFF file handle.
+ * @param tile_x Tile column index.
+ * @param tile_y Tile row index.
+ * @param buffer Buffer to read into (must be pre-allocated).
+ *
+ * @return NC_NOERR on success, NC_EHDFERR on TIFF error.
+ *
+ * @author Edward Hartnett
+ */
+static int
+read_tile(TIFF *tiff, uint32_t tile_x, uint32_t tile_y, void *buffer)
+{
+    if (!tiff || !buffer)
+        return NC_EINVAL;
+    
+    /* Read the tile */
+    if (TIFFReadTile(tiff, buffer, tile_x, tile_y, 0, 0) < 0)
+        return NC_EHDFERR;
+    
+    return NC_NOERR;
+}
+
+/**
+ * @internal Copy a rectangular region from source buffer to destination.
+ *
+ * This function extracts a hyperslab from a larger buffer (e.g., a tile or
+ * scanline) and copies it to the destination buffer.
+ *
+ * @param src Source buffer.
+ * @param src_width Width of source buffer.
+ * @param src_x X offset in source.
+ * @param src_y Y offset in source.
+ * @param dst Destination buffer.
+ * @param width Width to copy.
+ * @param height Height to copy.
+ * @param elem_size Size of one element in bytes.
+ *
+ * @author Edward Hartnett
+ */
+static void
+copy_region(const void *src, size_t src_width, size_t src_x, size_t src_y,
+            void *dst, size_t width, size_t height, size_t elem_size)
+{
+    size_t y;
+    const unsigned char *src_ptr = (const unsigned char *)src;
+    unsigned char *dst_ptr = (unsigned char *)dst;
+    
+    for (y = 0; y < height; y++)
+    {
+        size_t src_offset = ((src_y + y) * src_width + src_x) * elem_size;
+        size_t dst_offset = y * width * elem_size;
+        memcpy(dst_ptr + dst_offset, src_ptr + src_offset, width * elem_size);
+    }
+}
+
+/**
+ * @internal Read a hyperslab from a single-band GeoTIFF variable.
+ *
+ * This function implements the core reading logic for single-band (2D) rasters.
+ * It handles both tiled and striped TIFF organizations.
+ *
+ * @param h5 File info structure.
+ * @param var Variable info structure.
+ * @param start Start indices [y, x].
+ * @param count Count of values [height, width].
+ * @param value Output buffer.
+ * @param type_size Size of data type in bytes.
+ *
+ * @return NC_NOERR on success, error code on failure.
+ *
+ * @author Edward Hartnett
+ */
+static int
+read_single_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
+                           const size_t *start, const size_t *count,
+                           void *value, size_t type_size)
+{
+    NC_GEOTIFF_FILE_INFO_T *geotiff_info;
+    TIFF *tiff;
+    void *read_buffer = NULL;
+    size_t start_y, start_x, count_y, count_x;
+    int retval = NC_NOERR;
+    
+    /* Get GeoTIFF info */
+    geotiff_info = (NC_GEOTIFF_FILE_INFO_T *)h5->format_file_info;
+    if (!geotiff_info || !geotiff_info->tiff_handle)
+        return NC_EINVAL;
+    
+    tiff = (TIFF *)geotiff_info->tiff_handle;
+    
+    /* Extract start and count for 2D array [y, x] */
+    start_y = start[0];
+    start_x = start[1];
+    count_y = count[0];
+    count_x = count[1];
+    
+    /* Allocate read buffer */
+    read_buffer = allocate_read_buffer(geotiff_info, type_size);
+    if (!read_buffer)
+        return NC_ENOMEM;
+    
+    if (geotiff_info->is_tiled)
+    {
+        /* Tiled reading */
+        uint32_t tile_width = geotiff_info->tile_width;
+        uint32_t tile_height = geotiff_info->tile_height;
+        size_t y;
+        
+        for (y = 0; y < count_y; y++)
+        {
+            size_t row = start_y + y;
+            uint32_t tile_row = row / tile_height;
+            uint32_t row_in_tile = row % tile_height;
+            size_t x = 0;
+            
+            while (x < count_x)
+            {
+                size_t col = start_x + x;
+                uint32_t tile_col = col / tile_width;
+                uint32_t col_in_tile = col % tile_width;
+                size_t pixels_in_tile = tile_width - col_in_tile;
+                size_t pixels_to_copy = (pixels_in_tile < (count_x - x)) ? 
+                                       pixels_in_tile : (count_x - x);
+                
+                /* Read tile */
+                if ((retval = read_tile(tiff, tile_col * tile_width, 
+                                       tile_row * tile_height, read_buffer)))
+                {
+                    free_read_buffer(read_buffer);
+                    return retval;
+                }
+                
+                /* Copy relevant portion */
+                unsigned char *dst = (unsigned char *)value + 
+                                    (y * count_x + x) * type_size;
+                unsigned char *src = (unsigned char *)read_buffer + 
+                                    (row_in_tile * tile_width + col_in_tile) * type_size;
+                memcpy(dst, src, pixels_to_copy * type_size);
+                
+                x += pixels_to_copy;
+            }
+        }
+    }
+    else
+    {
+        /* Striped (scanline) reading */
+        size_t y;
+        
+        for (y = 0; y < count_y; y++)
+        {
+            uint32_t row = start_y + y;
+            
+            /* Read scanline */
+            if ((retval = read_scanline(tiff, row, read_buffer, 
+                                       geotiff_info->samples_per_pixel)))
+            {
+                free_read_buffer(read_buffer);
+                return retval;
+            }
+            
+            /* Copy relevant portion */
+            unsigned char *dst = (unsigned char *)value + y * count_x * type_size;
+            unsigned char *src = (unsigned char *)read_buffer + start_x * type_size;
+            memcpy(dst, src, count_x * type_size);
+        }
+    }
+    
+    free_read_buffer(read_buffer);
+    return NC_NOERR;
+}
+
+/**
+ * @internal Read data from a GeoTIFF variable (hyperslab).
+ *
+ * This function implements nc_get_vara for GeoTIFF files. It supports
+ * reading rectangular subsets (hyperslabs) from single-band rasters.
  *
  * @param ncid File ID.
  * @param varid Variable ID.
  * @param startp Start indices.
  * @param countp Count of values to read.
  * @param value Pointer to data buffer.
+ * @param memtype Memory type (currently ignored - reads in native type).
  *
- * @return NC_ENOTNC4 Not yet implemented.
+ * @return NC_NOERR on success, error code on failure.
  * @author Edward Hartnett
  */
 int
 NC_GEOTIFF_get_vara(int ncid, int varid, const size_t *startp,
                     const size_t *countp, void *value, nc_type memtype)
 {
-    /* Phase 3: Implement raster data reading */
-    return NC_ENOTNC4;
+    NC_FILE_INFO_T *h5;
+    NC_VAR_INFO_T *var;
+    size_t type_size;
+    int retval;
+    
+    /* Get file and variable info */
+    if ((retval = nc4_find_grp_h5_var(ncid, varid, &h5, NULL, &var)))
+        return retval;
+    
+    if (!h5 || !var || !startp || !countp || !value)
+        return NC_EINVAL;
+    
+    /* Validate hyperslab */
+    if ((retval = validate_hyperslab(var, startp, countp)))
+        return retval;
+    
+    /* Get type size */
+    if ((retval = nc4_get_typelen_mem(h5, var->type_info->hdr.id, &type_size)))
+        return retval;
+    
+    /* Currently only support single-band (2D) variables */
+    if (var->ndims != 2)
+        return NC_EINVAL;
+    
+    /* Read the hyperslab */
+    return read_single_band_hyperslab(h5, var, startp, countp, value, type_size);
 }
 
 #endif /* HAVE_GEOTIFF */

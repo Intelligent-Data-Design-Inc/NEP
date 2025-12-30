@@ -18,7 +18,7 @@ check-local:
 
 # Test programs
 check_PROGRAMS = tst_geotiff_handle tst_geotiff_metadata tst_phase2_acceptance \
-		 tst_geotiff_organization
+		 tst_geotiff_organization tst_single_band_read
 
 # Test for GeoTIFF file handle management
 tst_geotiff_handle_SOURCES = tst_geotiff_handle.c
@@ -36,9 +36,13 @@ tst_phase2_acceptance_LDADD = $(top_builddir)/src/libncgeotiff.la $(NETCDF_LIBS)
 tst_geotiff_organization_SOURCES = tst_geotiff_organization.c
 tst_geotiff_organization_LDADD = $(top_builddir)/src/libncgeotiff.la $(NETCDF_LIBS) $(GEOTIFF_LIBS) $(HDF5_LIBS)
 
+# Test for GeoTIFF Phase 3.2: single-band raster reading
+tst_single_band_read_SOURCES = tst_single_band_read.c
+tst_single_band_read_LDADD = $(top_builddir)/src/libncgeotiff.la $(NETCDF_LIBS) $(GEOTIFF_LIBS) $(HDF5_LIBS)
+
 # Define tests
 TESTS = tst_geotiff_handle tst_geotiff_metadata tst_phase2_acceptance \
-	tst_geotiff_organization
+	tst_geotiff_organization tst_single_band_read
 
 endif # HAVE_GEOTIFF
 
