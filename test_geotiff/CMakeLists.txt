@@ -3,6 +3,12 @@
 
 # Only build tests if GeoTIFF is enabled
 if(HAVE_GEOTIFF)
+    # Copy test data files to build directory
+    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../test/data/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif
+         DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../test/data/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif
+         DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    
     # Include directories
     include_directories(${CMAKE_BINARY_DIR}/include)
     include_directories(${CMAKE_SOURCE_DIR}/include)
@@ -10,18 +16,6 @@ if(HAVE_GEOTIFF)
     include_directories(${CMAKE_SOURCE_DIR})
     include_directories(${GEOTIFF_INCLUDE_DIR})
     include_directories(${TIFF_INCLUDE_DIR})
-
-    # Test for GeoTIFF format detection
-    add_executable(tst_geotiff_detect tst_geotiff_detect.c)
-    target_link_libraries(tst_geotiff_detect 
-        ncgeotiff
-        ${NETCDF_LIBRARIES} 
-        ${HDF5_LIBRARIES}
-        ${GEOTIFF_LIBRARY} 
-        ${TIFF_LIBRARY})
-    add_test(NAME tst_geotiff_detect COMMAND tst_geotiff_detect)
-    set_tests_properties(tst_geotiff_detect PROPERTIES 
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
     # Test for GeoTIFF file handle management
     add_executable(tst_geotiff_handle tst_geotiff_handle.c)

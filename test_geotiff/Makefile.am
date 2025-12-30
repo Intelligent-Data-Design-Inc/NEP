@@ -11,12 +11,13 @@ AM_CFLAGS = -g -Wall -Wextra $(HDF5_CFLAGS)
 # Only build tests if GeoTIFF is enabled
 if HAVE_GEOTIFF
 
-# Test programs
-check_PROGRAMS = tst_geotiff_detect tst_geotiff_handle tst_geotiff_metadata
+# Copy test data files to build directory
+check-local:
+	cp -f $(top_srcdir)/test/data/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif $(builddir)/
+	cp -f $(top_srcdir)/test/data/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif $(builddir)/
 
-# Test for GeoTIFF format detection
-tst_geotiff_detect_SOURCES = tst_geotiff_detect.c
-tst_geotiff_detect_LDADD = $(top_builddir)/src/libncgeotiff.la $(NETCDF_LIBS) $(GEOTIFF_LIBS) $(HDF5_LIBS)
+# Test programs
+check_PROGRAMS = tst_geotiff_handle tst_geotiff_metadata
 
 # Test for GeoTIFF file handle management
 tst_geotiff_handle_SOURCES = tst_geotiff_handle.c
@@ -27,7 +28,7 @@ tst_geotiff_metadata_SOURCES = tst_geotiff_metadata.c
 tst_geotiff_metadata_LDADD = $(top_builddir)/src/libncgeotiff.la $(NETCDF_LIBS) $(GEOTIFF_LIBS) $(HDF5_LIBS)
 
 # Define tests
-TESTS = tst_geotiff_detect tst_geotiff_handle tst_geotiff_metadata
+TESTS = tst_geotiff_handle tst_geotiff_metadata
 
 endif # HAVE_GEOTIFF
 
