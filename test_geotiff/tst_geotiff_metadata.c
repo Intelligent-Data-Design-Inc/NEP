@@ -317,21 +317,21 @@ main(void)
         return 1;
     }
     
-    // /* Test dispatch layer integration */
-    // err += test_dispatch_integration();
+    /* Test dispatch layer integration */
+    err += test_dispatch_integration();
     
-    // /* Test metadata extraction */
-    // err += test_dimension_extraction();
-    // err += test_variable_extraction();
+    /* Test metadata extraction */
+    err += test_dimension_extraction();
+    err += test_variable_extraction();
     
-    // /* Test format inquiry */
-    // err += test_format_inquiry();
+    /* Test format inquiry */
+    err += test_format_inquiry();
     
-    // /* Test error handling */
-    // err += test_gtifnew_error_handling();
+    /* Test error handling */
+    err += test_gtifnew_error_handling();
     
-    // /* Test with multiple files */
-    // err += test_second_nasa_file();
+    /* Test with multiple files */
+    err += test_second_nasa_file();
 
     if (err)
     {
