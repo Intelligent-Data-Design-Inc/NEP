@@ -689,7 +689,7 @@ NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_
     
     /* Set variable type */
     var->type_info = NULL;
-    var->xtype = xtype;
+    /* var->xtype = xtype; */
 
     /* Extract CRS information if GTIFNew succeeded */
     if (gtif)
