@@ -64,6 +64,14 @@ swap32(unsigned int val)
            ((val >> 8) & 0xFF00) | ((val >> 24) & 0xFF);
 }
 
+#ifdef HAVE_GEOTIFF
+/* Forward declarations for Phase 3.1 helper functions */
+static int detect_tiff_organization(TIFF *tiff, NC_GEOTIFF_FILE_INFO_T *geotiff_info);
+static void *allocate_read_buffer(NC_GEOTIFF_FILE_INFO_T *geotiff_info, size_t type_size);
+static void free_read_buffer(void *buffer);
+static int validate_hyperslab(NC_VAR_INFO_T *var, const size_t *start, const size_t *count);
+#endif
+
 /**
  * @internal Set the type of a netCDF-4 variable.
  *
@@ -730,6 +738,15 @@ NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_
     /* Get samples per pixel (bands) */
     TIFFGetField(tiff, TIFFTAG_SAMPLESPERPIXEL, &samples_per_pixel);
 
+    /* Cache image dimensions and samples in geotiff_info for later use */
+    geotiff_info->image_width = width;
+    geotiff_info->image_height = height;
+    geotiff_info->samples_per_pixel = samples_per_pixel;
+
+    /* Detect and cache TIFF organization (tiled vs striped, planar config) */
+    if ((retval = detect_tiff_organization(tiff, geotiff_info)))
+        return retval;
+
     /* Get data type information */
     TIFFGetField(tiff, TIFFTAG_BITSPERSAMPLE, &bits_per_sample);
     TIFFGetField(tiff, TIFFTAG_SAMPLEFORMAT, &sample_format);
@@ -878,6 +895,177 @@ NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_
         }
     }
 
+    return NC_NOERR;
+}
+
+/**
+ * @internal Detect TIFF file organization (tiled vs striped, planar config).
+ *
+ * This function queries TIFF tags to determine the file's internal organization
+ * and caches the results in the NC_GEOTIFF_FILE_INFO_T structure for efficient
+ * data reading operations.
+ *
+ * @param tiff TIFF file handle.
+ * @param geotiff_info GeoTIFF file info structure to populate.
+ *
+ * @return NC_NOERR on success.
+ * @return NC_EINVAL if parameters are invalid.
+ * @return NC_EHDFERR if TIFF tag reading fails.
+ *
+ * @author Edward Hartnett
+ */
+static int
+detect_tiff_organization(TIFF *tiff, NC_GEOTIFF_FILE_INFO_T *geotiff_info)
+{
+    uint32_t tile_width = 0, tile_height = 0;
+    uint32_t rows_per_strip = 0;
+    uint16_t planar_config = PLANARCONFIG_CONTIG;
+    
+    if (!tiff || !geotiff_info)
+        return NC_EINVAL;
+    
+    /* Check if file is tiled */
+    if (TIFFIsTiled(tiff))
+    {
+        geotiff_info->is_tiled = 1;
+        
+        /* Get tile dimensions */
+        if (!TIFFGetField(tiff, TIFFTAG_TILEWIDTH, &tile_width))
+            return NC_EHDFERR;
+        if (!TIFFGetField(tiff, TIFFTAG_TILELENGTH, &tile_height))
+            return NC_EHDFERR;
+        
+        geotiff_info->tile_width = tile_width;
+        geotiff_info->tile_height = tile_height;
+        geotiff_info->rows_per_strip = 0;
+    }
+    else
+    {
+        /* File is striped */
+        geotiff_info->is_tiled = 0;
+        geotiff_info->tile_width = 0;
+        geotiff_info->tile_height = 0;
+        
+        /* Get rows per strip */
+        if (!TIFFGetField(tiff, TIFFTAG_ROWSPERSTRIP, &rows_per_strip))
+        {
+            /* If not specified, default to image height (single strip) */
+            rows_per_strip = geotiff_info->image_height;
+        }
+        geotiff_info->rows_per_strip = rows_per_strip;
+    }
+    
+    /* Get planar configuration */
+    if (!TIFFGetField(tiff, TIFFTAG_PLANARCONFIG, &planar_config))
+    {
+        /* Default to contiguous (pixel-interleaved) if not specified */
+        planar_config = PLANARCONFIG_CONTIG;
+    }
+    geotiff_info->planar_config = planar_config;
+    
+    return NC_NOERR;
+}
+
+/**
+ * @internal Allocate buffer for reading TIFF tiles or scanlines.
+ *
+ * Allocates a buffer sized appropriately for the TIFF file organization
+ * (tile or scanline based). The buffer size is calculated based on the
+ * file's tile/strip dimensions and data type size.
+ *
+ * @param geotiff_info GeoTIFF file info structure.
+ * @param type_size Size of one data element in bytes.
+ *
+ * @return Pointer to allocated buffer, or NULL on failure.
+ *
+ * @author Edward Hartnett
+ */
+static void *
+allocate_read_buffer(NC_GEOTIFF_FILE_INFO_T *geotiff_info, size_t type_size)
+{
+    size_t buffer_size;
+    
+    if (!geotiff_info || type_size == 0)
+        return NULL;
+    
+    if (geotiff_info->is_tiled)
+    {
+        /* Allocate buffer for one tile */
+        buffer_size = (size_t)geotiff_info->tile_width * 
+                      (size_t)geotiff_info->tile_height * 
+                      (size_t)geotiff_info->samples_per_pixel * 
+                      type_size;
+    }
+    else
+    {
+        /* Allocate buffer for one scanline */
+        buffer_size = (size_t)geotiff_info->image_width * 
+                      (size_t)geotiff_info->samples_per_pixel * 
+                      type_size;
+    }
+    
+    /* Sanity check on buffer size (max 1GB) */
+    if (buffer_size > 1073741824)
+        return NULL;
+    
+    return malloc(buffer_size);
+}
+
+/**
+ * @internal Free a read buffer.
+ *
+ * @param buffer Buffer to free.
+ *
+ * @author Edward Hartnett
+ */
+static void
+free_read_buffer(void *buffer)
+{
+    if (buffer)
+        free(buffer);
+}
+
+/**
+ * @internal Validate hyperslab coordinates against variable dimensions.
+ *
+ * Checks that the requested hyperslab (defined by start and count arrays)
+ * is within the bounds of the variable's dimensions. Returns NC_EEDGE if
+ * any coordinates are out of bounds.
+ *
+ * @param var Variable info structure.
+ * @param start Start indices for each dimension.
+ * @param count Count of values to read in each dimension.
+ *
+ * @return NC_NOERR if hyperslab is valid.
+ * @return NC_EINVAL if parameters are invalid.
+ * @return NC_EEDGE if hyperslab is out of bounds.
+ *
+ * @author Edward Hartnett
+ */
+static int
+validate_hyperslab(NC_VAR_INFO_T *var, const size_t *start, const size_t *count)
+{
+    int d;
+    
+    if (!var || !start || !count)
+        return NC_EINVAL;
+    
+    /* Check each dimension */
+    for (d = 0; d < var->ndims; d++)
+    {
+        /* Check if start is within bounds */
+        if (start[d] >= var->dim[d]->len)
+            return NC_EEDGE;
+        
+        /* Check if start + count exceeds dimension length */
+        if (start[d] + count[d] > var->dim[d]->len)
+            return NC_EEDGE;
+        
+        /* Check for zero count (invalid) */
+        if (count[d] == 0)
+            return NC_EEDGE;
+    }
+    
     return NC_NOERR;
 }
 

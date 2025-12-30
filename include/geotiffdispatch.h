@@ -42,6 +42,14 @@ typedef struct NC_GEOTIFF_FILE_INFO
     void *gtif_handle;
     char *path;
     int is_little_endian;
+    int is_tiled;
+    uint32_t tile_width;
+    uint32_t tile_height;
+    uint32_t rows_per_strip;
+    uint16_t planar_config;
+    uint32_t image_width;
+    uint32_t image_height;
+    uint16_t samples_per_pixel;
 } NC_GEOTIFF_FILE_INFO_T;
 
 #if defined(__cplusplus)
