@@ -41,5 +41,39 @@ if(HAVE_GEOTIFF)
     set_tests_properties(tst_geotiff_metadata PROPERTIES 
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
+    # Test for GeoTIFF Phase 3.5a: error handling
+    add_executable(tst_geotiff_errors tst_geotiff_errors.c)
+    target_link_libraries(tst_geotiff_errors 
+        ncgeotiff
+        ${NETCDF_LIBRARIES} 
+        ${HDF5_LIBRARIES}
+        ${GEOTIFF_LIBRARY} 
+        ${TIFF_LIBRARY})
+    add_test(NAME tst_geotiff_errors COMMAND tst_geotiff_errors)
+    set_tests_properties(tst_geotiff_errors PROPERTIES 
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+    # Test for GeoTIFF Phase 3.5a: edge cases
+    add_executable(tst_geotiff_edge_cases tst_geotiff_edge_cases.c)
+    target_link_libraries(tst_geotiff_edge_cases 
+        ncgeotiff
+        ${NETCDF_LIBRARIES} 
+        ${HDF5_LIBRARIES}
+        ${GEOTIFF_LIBRARY} 
+        ${TIFF_LIBRARY})
+    add_test(NAME tst_geotiff_edge_cases COMMAND tst_geotiff_edge_cases)
+    set_tests_properties(tst_geotiff_edge_cases PROPERTIES 
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+    # Benchmark for GeoTIFF Phase 3.5a: performance validation
+    add_executable(bench_geotiff_performance bench_geotiff_performance.c)
+    target_link_libraries(bench_geotiff_performance 
+        ncgeotiff
+        ${NETCDF_LIBRARIES} 
+        ${HDF5_LIBRARIES}
+        ${GEOTIFF_LIBRARY} 
+        ${TIFF_LIBRARY})
+    # Note: benchmark is not added to tests - run manually for performance analysis
+
     message(STATUS "GeoTIFF tests enabled")
 endif()
