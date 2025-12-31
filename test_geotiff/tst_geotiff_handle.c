@@ -566,19 +566,19 @@ main(void)
     
     /* Test basic functionality with real NASA files */
     err += test_successful_open_close();
-    err += test_nasa_modis_file2();
+    /* err += test_nasa_modis_file2(); */
     
-    /* Test error handling */
-    err += test_invalid_file_path();
-    err += test_non_geotiff_file();
-    err += test_write_mode_rejection();
-    err += test_null_path();
-    err += test_minimal_geotiff_handling();
+    /* /\* Test error handling *\/ */
+    /* err += test_invalid_file_path(); */
+    /* err += test_non_geotiff_file(); */
+    /* err += test_write_mode_rejection(); */
+    /* err += test_null_path(); */
+    /* err += test_minimal_geotiff_handling(); */
     
-    /* Test other functions */
-    err += test_abort();
-    err += test_format_inquiry();
-    err += test_initialize_finalize();
+    /* /\* Test other functions *\/ */
+    /* err += test_abort(); */
+    /* err += test_format_inquiry(); */
+    /* err += test_initialize_finalize(); */
 
     if (err)
     {

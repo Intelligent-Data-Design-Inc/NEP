@@ -23,6 +23,91 @@ on:
     branches: [ "main" ]
 
 jobs:
+  # Memory leak testing with AddressSanitizer
+  memory-leak-check:
+    name: Memory Leak Testing (AddressSanitizer)
+    runs-on: ubuntu-latest
+    env:
+      HDF5_PLUGIN_PATH: ${{ github.workspace }}/netcdf-c-install/hdf5/lib/plugin
+      LD_LIBRARY_PATH: $GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1:abort_on_error=1
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake make wget zlib1g-dev libtiff-dev libgeotiff-dev
+
+      - name: Cache HDF5 install
+        id: cache-hdf5-asan
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/hdf5-install
+          key: hdf5-1.14.6-asan-${{ runner.os }}-1
+      
+      - name: Download and build HDF5 with ASAN
+        if: steps.cache-hdf5-asan.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5-1.14.6.tar.gz &> /dev/null
+          tar -xzf hdf5-1.14.6.tar.gz
+          cd hdf5-hdf5-1.14.6
+          mkdir build && cd build
+          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install \
+                -DCMAKE_C_FLAGS="-g -O0 -fsanitize=address -fno-omit-frame-pointer" \
+                -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address" \
+                -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=address" \
+                -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF ..
+          make -j$(nproc)
+          make install
+
+      - name: Cache NetCDF-C install
+        id: cache-netcdf-c-asan
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/netcdf-c-install
+          key: netcdf-c-4.9.3-asan-${{ runner.os }}-1
+
+      - name: Download and build NetCDF-C with ASAN
+        if: steps.cache-netcdf-c-asan.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/Unidata/netcdf-c/archive/v4.9.3.tar.gz &> /dev/null
+          tar -xzf v4.9.3.tar.gz
+          cd netcdf-c-4.9.3
+          export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include"
+          export CFLAGS="-g -O0 -fsanitize=address -fno-omit-frame-pointer"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -fsanitize=address"
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$LD_LIBRARY_PATH"
+          ./configure --prefix=$GITHUB_WORKSPACE/netcdf-c-install --enable-netcdf-4 --enable-shared
+          make -j$(nproc)
+          make install
+
+      - name: Configure NEP with ASAN
+        run: |
+          autoreconf -i
+          export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
+          export CFLAGS="-g -O0 -fsanitize=address -fno-omit-frame-pointer"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -fsanitize=address"
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
+          ./configure --enable-geotiff --disable-fortran --disable-shared --disable-bzip2 --disable-lz4
+
+      - name: Build NEP with ASAN
+        run: make -j$(nproc)
+
+      - name: Run tests with AddressSanitizer
+        run: |
+          export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
+          export HDF5_PLUGIN_PATH="$GITHUB_WORKSPACE/netcdf-c-install/hdf5/lib/plugin"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -fsanitize=address"
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
+          export ASAN_OPTIONS="detect_leaks=1:halt_on_error=1:abort_on_error=1"
+          make check || (echo "Memory leak detected! Test logs:"; cat test_geotiff/test-suite.log 2>/dev/null || true; exit 1)
+          echo "✅ All tests passed with zero memory leaks!"
+
   build:
     name: build (${{ matrix.build_system }}, Fortran ${{ matrix.fortran }}, compression ${{ matrix.compression }})
     runs-on: ubuntu-latest

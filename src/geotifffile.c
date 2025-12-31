@@ -39,6 +39,12 @@
 /** TIFF IFD entry size */
 #define TIFF_IFD_ENTRY_SIZE 12
 
+/** Maximum buffer size for reading (1 GB) */
+#define MAX_BUFFER_SIZE 1073741824
+
+/** Maximum number of IFD entries to process */
+#define MAX_IFD_ENTRIES 4096
+
 /**
  * Byte-swap a 16-bit value.
  *
@@ -65,13 +71,11 @@ swap32(unsigned int val)
 }
 
 #ifdef HAVE_GEOTIFF
-/* Forward declarations for Phase 3.1 helper functions */
+/* Forward declarations for helper functions */
 static int detect_tiff_organization(TIFF *tiff, NC_GEOTIFF_FILE_INFO_T *geotiff_info);
 static void *allocate_read_buffer(NC_GEOTIFF_FILE_INFO_T *geotiff_info, size_t type_size);
 static void free_read_buffer(void *buffer);
 static int validate_hyperslab(NC_VAR_INFO_T *var, const size_t *start, const size_t *count);
-
-/* Forward declarations for Phase 3.2 helper functions */
 static int read_scanline(TIFF *tiff, uint32_t row, void *buffer, uint16_t samples_per_pixel);
 static int read_tile(TIFF *tiff, uint32_t tile_x, uint32_t tile_y, void *buffer);
 static void copy_region(const void *src, size_t src_width, size_t src_x, size_t src_y,
@@ -79,8 +83,6 @@ static void copy_region(const void *src, size_t src_width, size_t src_x, size_t 
 static int read_single_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
                                      const size_t *start, const size_t *count,
                                      void *value, size_t type_size);
-
-/* Forward declarations for Phase 3.3 helper functions */
 static int read_multi_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
                                     const size_t *start, const size_t *count,
                                     void *value, size_t type_size);
@@ -172,7 +174,7 @@ nc4_var_list_add_full(NC_GRP_INFO_T* grp, const char* name, int ndims, nc_type x
     if ((retval = nc4_set_var_type(xtype, endianness, type_size, type_name,
                                    &(*var)->type_info)))
         return retval;
-    /* Propate the endianness to the variable */
+    /* Propagate the endianness to the variable */
     (*var)->endianness = (*var)->type_info->endianness;
 
     (*var)->type_info->rc++;
@@ -187,9 +189,9 @@ nc4_var_list_add_full(NC_GRP_INFO_T* grp, const char* name, int ndims, nc_type x
 
     /* Var contiguous or chunked? */
     if (contiguous)
-	(*var)->storage = NC_CONTIGUOUS;
+        (*var)->storage = NC_CONTIGUOUS;
     else
-	(*var)->storage = NC_CHUNKED;
+        (*var)->storage = NC_CHUNKED;
 
     /* Were chunksizes provided? */
     if (chunksizes)
@@ -349,7 +351,7 @@ check_geotiff_tags(FILE *fp, unsigned int ifd_offset, int is_little_endian,
                      ((unsigned long long)entry_count_buf[6] << 48) |
                      ((unsigned long long)entry_count_buf[7] << 56);
         /* For simplicity, we only handle reasonable entry counts */
-        if (num_entries > 4096)
+        if (num_entries > MAX_IFD_ENTRIES)
             return NC_ENOTNC;
     }
     else
@@ -358,7 +360,7 @@ check_geotiff_tags(FILE *fp, unsigned int ifd_offset, int is_little_endian,
         num_entries = (entry_count_buf[0]) | (entry_count_buf[1] << 8);
         if (need_swap)
             num_entries = swap16((unsigned short)num_entries);
-        if (num_entries > 4096)
+        if (num_entries > MAX_IFD_ENTRIES)
             return NC_ENOTNC;
     }
 
@@ -464,9 +466,6 @@ NC_GEOTIFF_detect_format(const char *path, int *is_geotiff)
 #ifdef HAVE_GEOTIFF
 /**
  * @internal Open a GeoTIFF file and initialize file handle.
- *
- * Phase 2: Full dispatch layer integration with GTIFNew initialization
- * and metadata extraction.
  *
  * @param path Path to the GeoTIFF file.
  * @param mode File open mode (must be NC_NOWRITE for read-only).
@@ -651,17 +650,10 @@ geotiff_rec_grp_del(NC_GRP_INFO_T *grp)
         var = (NC_VAR_INFO_T *)ncindexith(grp->vars, i);
         if (var)
         {
-            /* Free variable dimension arrays */
-            if (var->dim)
-            {
-                free(var->dim);
-                var->dim = NULL;
-            }
-            if (var->dimids)
-            {
-                free(var->dimids);
-                var->dimids = NULL;
-            }
+            /* NOTE: Do NOT free var->dim or var->dimids here.
+             * These are allocated by nc4_var_set_ndims() and will be
+             * freed by NetCDF's nc4_nc4f_list_del() during cleanup.
+             * Freeing them here causes double-free issues. */
             
             /* Free variable-specific GeoTIFF info if any */
             if (var->format_var_info)
@@ -688,9 +680,6 @@ geotiff_rec_grp_del(NC_GRP_INFO_T *grp)
 
 /**
  * @internal Close a GeoTIFF file and release resources.
- *
- * Phase 2: Retrieve file info from dispatch layer and cleanup.
- * Updated Phase 3.4: Properly free all NetCDF internal structures.
  *
  * @param ncid NetCDF ID for this file.
  * @param ignore Unused parameter (for dispatch compatibility).
@@ -1001,12 +990,10 @@ NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_
         if (GTIFGetDefn(gtif, &defn))
         {
             /* Store CRS information as attributes */
-            /* Note: Full CRS attribute extraction will be implemented in Phase 3 */
-            /* For now, just validate that GTIFGetDefn succeeded */
             if (defn.Model != 0)
             {
-                /* CRS information is available but not yet extracted */
-                /* This will be implemented when we add full CF-compliant grid mapping support */
+                /* CRS information is available */
+                /* Full CF-compliant grid mapping support can be added in future */
             }
         }
     }
@@ -1120,8 +1107,8 @@ allocate_read_buffer(NC_GEOTIFF_FILE_INFO_T *geotiff_info, size_t type_size)
                       type_size;
     }
     
-    /* Sanity check on buffer size (max 1GB) */
-    if (buffer_size > 1073741824)
+    /* Sanity check on buffer size */
+    if (buffer_size > MAX_BUFFER_SIZE)
         return NULL;
     
     return malloc(buffer_size);
