@@ -651,17 +651,10 @@ geotiff_rec_grp_del(NC_GRP_INFO_T *grp)
         var = (NC_VAR_INFO_T *)ncindexith(grp->vars, i);
         if (var)
         {
-            /* Free variable dimension arrays */
-            if (var->dim)
-            {
-                free(var->dim);
-                var->dim = NULL;
-            }
-            if (var->dimids)
-            {
-                free(var->dimids);
-                var->dimids = NULL;
-            }
+            /* NOTE: Do NOT free var->dim or var->dimids here.
+             * These are allocated by nc4_var_set_ndims() and will be
+             * freed by NetCDF's nc4_nc4f_list_del() during cleanup.
+             * Freeing them here causes double-free issues. */
             
             /* Free variable-specific GeoTIFF info if any */
             if (var->format_var_info)
