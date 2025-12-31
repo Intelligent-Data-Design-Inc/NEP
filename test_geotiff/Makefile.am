@@ -11,7 +11,9 @@ AM_CFLAGS = -g -Wall -Wextra $(HDF5_CFLAGS)
 # Only build tests if GeoTIFF is enabled
 if HAVE_GEOTIFF
 
-# Copy test data files to build directory
+# Copy test data files to build directory before running tests
+check-TESTS: check-local
+
 check-local:
 	cp -f $(top_srcdir)/test/data/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif $(builddir)/
 	cp -f $(top_srcdir)/test/data/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif $(builddir)/
