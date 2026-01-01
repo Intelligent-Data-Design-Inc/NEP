@@ -78,8 +78,6 @@ static void free_read_buffer(void *buffer);
 static int validate_hyperslab(NC_VAR_INFO_T *var, const size_t *start, const size_t *count);
 static int read_scanline(TIFF *tiff, uint32_t row, void *buffer, uint16_t samples_per_pixel);
 static int read_tile(TIFF *tiff, uint32_t tile_x, uint32_t tile_y, void *buffer);
-static void copy_region(const void *src, size_t src_width, size_t src_x, size_t src_y,
-                       void *dst, size_t width, size_t height, size_t elem_size);
 static int read_single_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
                                      const size_t *start, const size_t *count,
                                      void *value, size_t type_size);
@@ -492,11 +490,15 @@ NC_GEOTIFF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     TIFF *tiff = NULL;
     GTIF *gtif = NULL;
     int ret = NC_NOERR;
-    int is_geotiff = 0;
     FILE *fp = NULL;
     int is_little_endian;
     int is_bigtiff;
     unsigned int ifd_offset;
+
+    (void)basepe;
+    (void)chunksizehintp;
+    (void)parameters;
+    (void)dispatch;
 
     /* Validate parameters */
     if (!path)
@@ -623,62 +625,6 @@ cleanup:
 }
 
 /**
- * @internal Recursively delete group and its contents.
- *
- * This function frees all variables, dimensions, and attributes in a group
- * and its subgroups, following the HDF4 pattern.
- *
- * @param grp Group to delete.
- *
- * @return NC_NOERR on success.
- *
- * @author Edward Hartnett
- */
-static int
-geotiff_rec_grp_del(NC_GRP_INFO_T *grp)
-{
-    NC_VAR_INFO_T *var;
-    NC_DIM_INFO_T *dim;
-    int i;
-
-    if (!grp)
-        return NC_NOERR;
-
-    /* Free variables */
-    for (i = 0; i < ncindexsize(grp->vars); i++)
-    {
-        var = (NC_VAR_INFO_T *)ncindexith(grp->vars, i);
-        if (var)
-        {
-            /* NOTE: Do NOT free var->dim or var->dimids here.
-             * These are allocated by nc4_var_set_ndims() and will be
-             * freed by NetCDF's nc4_nc4f_list_del() during cleanup.
-             * Freeing them here causes double-free issues. */
-            
-            /* Free variable-specific GeoTIFF info if any */
-            if (var->format_var_info)
-            {
-                free(var->format_var_info);
-                var->format_var_info = NULL;
-            }
-        }
-    }
-
-    /* Free dimensions */
-    for (i = 0; i < ncindexsize(grp->dim); i++)
-    {
-        dim = (NC_DIM_INFO_T *)ncindexith(grp->dim, i);
-        if (dim && dim->hdr.name)
-        {
-            free(dim->hdr.name);
-            dim->hdr.name = NULL;
-        }
-    }
-
-    return NC_NOERR;
-}
-
-/**
  * @internal Close a GeoTIFF file and release resources.
  *
  * @param ncid NetCDF ID for this file.
@@ -698,16 +644,14 @@ NC_GEOTIFF_close(int ncid, void *ignore)
     NC_GEOTIFF_FILE_INFO_T *geotiff_info;
     int retval;
 
+    (void)ignore;
+
     /* Find our metadata for this file */
     if ((retval = nc4_find_nc_grp_h5(ncid, &nc, &grp, &h5)))
         return retval;
     
     if (!h5 || !h5->format_file_info)
         return NC_EBADID;
-
-    /* Clean up GeoTIFF specific allocations in groups */
-    if ((retval = geotiff_rec_grp_del(h5->root_grp)))
-        return retval;
 
     /* Get GeoTIFF-specific file info */
     geotiff_info = (NC_GEOTIFF_FILE_INFO_T *)h5->format_file_info;
@@ -730,7 +674,7 @@ NC_GEOTIFF_close(int ncid, void *ignore)
     /* Free the NC_FILE_INFO_T struct */
     if ((retval = nc4_nc4f_list_del(h5)))
         return retval;
-
+    
     return NC_NOERR;
 }
 
@@ -768,6 +712,7 @@ NC_GEOTIFF_abort(int ncid)
 int
 NC_GEOTIFF_inq_format(int ncid, int *formatp)
 {
+    (void)ncid;
     if (formatp)
         *formatp = NC_FORMATX_NC_GEOTIFF;
     return NC_NOERR;
@@ -787,6 +732,7 @@ NC_GEOTIFF_inq_format(int ncid, int *formatp)
 int
 NC_GEOTIFF_inq_format_extended(int ncid, int *formatp, int *modep)
 {
+    (void)ncid;
     if (formatp)
         *formatp = NC_FORMATX_NC_GEOTIFF;
     if (modep)
@@ -823,7 +769,7 @@ NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_
     NC_VAR_INFO_T *var = NULL;
     nc_type xtype = NC_UBYTE;
     int endianness;
-    size_t type_size;
+    size_t type_size = 0;
     char type_name[NC_MAX_NAME + 1];
     int retval;
 
@@ -957,8 +903,7 @@ NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_
                                             type_size, type_name, NULL, NC_TRUE,
                                             NULL, NULL, &var)))
             return retval;
-        if ((retval = nc4_var_set_ndims(var, 3)))
-            return retval;
+        /* dimids and dim arrays already allocated by nc4_var_list_add */
         var->dim[0] = dim_band;
         var->dimids[0] = dim_band->hdr.id;
         var->dim[1] = dim_y;
@@ -973,8 +918,7 @@ NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_
                                             type_size, type_name, NULL, NC_TRUE,
                                             NULL, NULL, &var)))
             return retval;
-        if ((retval = nc4_var_set_ndims(var, 2)))
-            return retval;
+        /* dimids and dim arrays already allocated by nc4_var_list_add */
         var->dim[0] = dim_y;
         var->dimids[0] = dim_y->hdr.id;
         var->dim[1] = dim_x;
@@ -1154,7 +1098,7 @@ validate_hyperslab(NC_VAR_INFO_T *var, const size_t *start, const size_t *count)
         return NC_EINVAL;
     
     /* Check each dimension */
-    for (d = 0; d < var->ndims; d++)
+    for (d = 0; d < (int)var->ndims; d++)
     {
         /* Check if start is within bounds */
         if (start[d] >= var->dim[d]->len)
@@ -1187,6 +1131,7 @@ validate_hyperslab(NC_VAR_INFO_T *var, const size_t *start, const size_t *count)
 static int
 read_scanline(TIFF *tiff, uint32_t row, void *buffer, uint16_t samples_per_pixel)
 {
+    (void)samples_per_pixel;
     if (!tiff || !buffer)
         return NC_EINVAL;
     
@@ -1223,39 +1168,6 @@ read_tile(TIFF *tiff, uint32_t tile_x, uint32_t tile_y, void *buffer)
 }
 
 /**
- * @internal Copy a rectangular region from source buffer to destination.
- *
- * This function extracts a hyperslab from a larger buffer (e.g., a tile or
- * scanline) and copies it to the destination buffer.
- *
- * @param src Source buffer.
- * @param src_width Width of source buffer.
- * @param src_x X offset in source.
- * @param src_y Y offset in source.
- * @param dst Destination buffer.
- * @param width Width to copy.
- * @param height Height to copy.
- * @param elem_size Size of one element in bytes.
- *
- * @author Edward Hartnett
- */
-static void
-copy_region(const void *src, size_t src_width, size_t src_x, size_t src_y,
-            void *dst, size_t width, size_t height, size_t elem_size)
-{
-    size_t y;
-    const unsigned char *src_ptr = (const unsigned char *)src;
-    unsigned char *dst_ptr = (unsigned char *)dst;
-    
-    for (y = 0; y < height; y++)
-    {
-        size_t src_offset = ((src_y + y) * src_width + src_x) * elem_size;
-        size_t dst_offset = y * width * elem_size;
-        memcpy(dst_ptr + dst_offset, src_ptr + src_offset, width * elem_size);
-    }
-}
-
-/**
  * @internal Read a hyperslab from a single-band GeoTIFF variable.
  *
  * This function implements the core reading logic for single-band (2D) rasters.
@@ -1282,6 +1194,8 @@ read_single_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
     void *read_buffer = NULL;
     size_t start_y, start_x, count_y, count_x;
     int retval = NC_NOERR;
+
+    (void)var;
     
     /* Get GeoTIFF info */
     geotiff_info = (NC_GEOTIFF_FILE_INFO_T *)h5->format_file_info;
@@ -1400,6 +1314,8 @@ read_multi_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
     size_t count_band, count_y, count_x;
     size_t band;
     int retval = NC_NOERR;
+
+    (void)var;
     
     /* Get GeoTIFF info */
     geotiff_info = (NC_GEOTIFF_FILE_INFO_T *)h5->format_file_info;
@@ -1618,6 +1534,8 @@ NC_GEOTIFF_get_vara(int ncid, int varid, const size_t *startp,
     NC_VAR_INFO_T *var;
     size_t type_size;
     int retval;
+
+    (void)memtype;
     
     /* Get file and variable info */
     if ((retval = nc4_find_grp_h5_var(ncid, varid, &h5, NULL, &var)))

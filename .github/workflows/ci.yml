@@ -6,6 +6,10 @@
 # This CI configuration includes LZ4/BZIP2 compression for HDF5/NetCDF-4 files
 # and adds NASA CDF library detection (library location only, no UDF yet).
 #
+# Compiler Warnings (Issue #86):
+# Both CMake and autotools build systems automatically add -Wall -Werror flags
+# for GNU compilers, ensuring all builds fail on any compiler warnings.
+#
 # Future Versions:
 # - v2.0.0: GRIB2 UDF handler support will be restored
 # - v4.0: GeoTIFF UDF handler support will be restored
@@ -88,7 +92,7 @@ jobs:
         run: |
           autoreconf -i
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
-          export CFLAGS="-g -O0 -fsanitize=address -fno-omit-frame-pointer"
+          export CFLAGS="-g -O0 -Wall -Werror -fsanitize=address -fno-omit-frame-pointer"
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -fsanitize=address"
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
@@ -96,6 +100,12 @@ jobs:
 
       - name: Build NEP with ASAN
         run: make -j$(nproc)
+
+      - name: Copy test data files
+        run: |
+          cp -f test/data/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif test_geotiff/
+          cp -f test/data/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif test_geotiff/
+          cp -f test/data/ABBA_2022_C61_HNL.tif test_geotiff/
 
       - name: Run tests with AddressSanitizer
         run: |
@@ -289,7 +299,7 @@ jobs:
           if [ "${{ matrix.fortran }}" = "on" ] && [ "${{ matrix.compression }}" = "all" ]; then
             CDF_FLAG="-DENABLE_CDF=ON"
           fi
-          cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install;$GITHUB_WORKSPACE/cdf-install;/usr/include/liblzf" -DBUILD_TESTING=ON $DOC_FLAG $FORTRAN_FLAG $CDF_FLAG
+          cmake .. -DCMAKE_C_FLAGS="-Wall -Werror" -DCMAKE_Fortran_FLAGS="-Wall -Werror" -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install;$GITHUB_WORKSPACE/cdf-install;/usr/include/liblzf" -DBUILD_TESTING=ON $DOC_FLAG $FORTRAN_FLAG $CDF_FLAG
 
       - name: Build (CMake)
         if: matrix.build_system == 'cmake'
@@ -387,7 +397,7 @@ jobs:
 
       - name: Build (Autotools)
         if: matrix.build_system == 'autotools'
-        run: make -j$(nproc)
+        run: make -j$(nproc) CFLAGS="-Wall -Werror" FCFLAGS="-Wall -Werror -Wno-error=missing-include-dirs"
 
       - name: Build Documentation (Autotools)
         if: matrix.build_system == 'autotools' && matrix.fortran == 'on' && matrix.compression == 'all'
@@ -413,7 +423,7 @@ jobs:
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib"
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH"
           ls -l "${HDF5_PLUGIN_PATH}"
-          make VERBOSE=1 check || (echo "Tests failed. Printing test logs:"; cat test/test-suite.log; cat test/run_tests.sh.log; test -f test_cdf/test-suite.log && cat test_cdf/test-suite.log; exit 1)
+          make VERBOSE=1 check CFLAGS="-Wall -Werror" FCFLAGS="-Wall -Werror -Wno-error=missing-include-dirs" || (echo "Tests failed. Printing test logs:"; cat test/test-suite.log; cat test/run_tests.sh.log; if [ -f test_cdf/test-suite.log ]; then cat test_cdf/test-suite.log; fi; exit 1)
           echo "Tests passed. Showing test output:"
           cat test/run_tests.sh.log
           if [ -f test_cdf/test-suite.log ]; then

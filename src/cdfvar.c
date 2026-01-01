@@ -11,7 +11,11 @@
 #include <nc4internal.h>
 #include "cdfdispatch.h"
 #include "nc4dispatch.h"
+/* Suppress warnings from external CDF library header */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #include <cdf.h>
+#pragma GCC diagnostic pop
 #include <stdio.h>  /* For fprintf */
 
 /* Define NC_ECDF error code if not already defined */

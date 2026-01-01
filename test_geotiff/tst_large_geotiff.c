@@ -36,10 +36,13 @@ static double get_time_ms(void)
 int
 main(int argc, char **argv)
 {
+    (void)argc;
+    (void)argv;
+
     printf("\n*** Testing large GeoTIFF file reading.\n");
 
 #ifdef HAVE_GEOTIFF
-    int ncid, varid, ret;
+    int ncid, ret;
     int ndims, nvars, dimids[NC_MAX_DIMS];
     size_t height, width;
     char var_name[NC_MAX_NAME + 1];

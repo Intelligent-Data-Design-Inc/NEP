@@ -30,9 +30,6 @@ program ftst_ncsqueeze_bzip2
   ! write our data.
   integer :: start(NDIMS), count(NDIMS)
 
-  ! These program variables hold the latitudes and longitudes.
-  real :: lats(NLATS), lons(NLONS)
-  integer :: lon_varid, lat_varid
   integer, parameter :: COMPRESSION_LEVEL = 3
   integer :: bzip2p, levelp
 

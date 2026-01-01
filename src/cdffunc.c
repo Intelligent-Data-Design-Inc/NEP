@@ -9,7 +9,18 @@
 #include "config.h"
 #include "nc4internal.h"
 #include "cdfdispatch.h"
+
+
+/* Define LOG macro if not already defined (when LOGGING is disabled) */
+#ifndef LOG
+#define LOG(e)
+#endif
+
+/* Suppress warnings from external CDF library header */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #include <cdf.h>
+#pragma GCC diagnostic pop
 
 /**
  * @internal Get the format (i.e. NC_FORMAT_NC_CDF) of an open CDF
@@ -25,13 +36,12 @@
 int
 NC_CDF_inq_format(int ncid, int *formatp)
 {
-    /* Function body commented out for v1.3.0 Sprint 3 - UDF skeleton only */
-    /* Implementation will be added in Sprint 4 */
+    (void)ncid;
     /* CDF is the format. */
-    /* if (formatp) */
-    /*     *formatp = NC_FORMATX_NC_CDF; */
+    if (formatp)
+        *formatp = NC_FORMATX_NC_CDF;
 
-    return NC_ENOTNC4; /* Placeholder return */
+    return NC_NOERR;
 }
 
 /**
@@ -51,21 +61,19 @@ NC_CDF_inq_format(int ncid, int *formatp)
 int
 NC_CDF_inq_format_extended(int ncid, int *formatp, int *modep)
 {
-    /* Function body commented out for v1.3.0 Sprint 3 - UDF skeleton only */
-    /* Implementation will be added in Sprint 4 */
-    /* NC *nc; */
-    /* int retval; */
+    NC *nc;
+    int retval;
 
-    /* LOG((2, "%s: ncid 0x%x", __func__, ncid)); */
+    LOG((2, "%s: ncid 0x%x", __func__, ncid));
 
-    /* if ((retval = nc4_find_nc_grp_h5(ncid, &nc, NULL, NULL))) */
-    /*     return NC_EBADID; */
+    if ((retval = nc4_find_nc_grp_h5(ncid, &nc, NULL, NULL)))
+        return NC_EBADID;
 
-    /* if (modep) */
-    /*     *modep = nc->mode|NC_NETCDF4; */
+    if (modep)
+        *modep = nc->mode|NC_NETCDF4;
 
-    /* if (formatp) */
-    /*     *formatp = NC_FORMATX_NC_CDF; */
+    if (formatp)
+        *formatp = NC_FORMATX_NC_CDF;
 
-    return NC_ENOTNC4; /* Placeholder return */
+    return NC_NOERR;
 }
