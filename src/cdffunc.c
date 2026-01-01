@@ -9,6 +9,13 @@
 #include "config.h"
 #include "nc4internal.h"
 #include "cdfdispatch.h"
+
+
+/* Define LOG macro if not already defined (when LOGGING is disabled) */
+#ifndef LOG
+#define LOG(e)
+#endif
+
 /* Suppress warnings from external CDF library header */
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
