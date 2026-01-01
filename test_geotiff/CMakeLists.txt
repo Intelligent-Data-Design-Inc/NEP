@@ -65,6 +65,18 @@ if(HAVE_GEOTIFF)
     set_tests_properties(tst_geotiff_edge_cases PROPERTIES 
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
+    # Test for simple GeoTIFF value comparison (issue #84)
+    add_executable(tst_simple_geotiff tst_simple_geotiff.c)
+    target_link_libraries(tst_simple_geotiff 
+        ncgeotiff
+        ${NETCDF_LIBRARIES} 
+        ${HDF5_LIBRARIES}
+        ${GEOTIFF_LIBRARY} 
+        ${TIFF_LIBRARY})
+    add_test(NAME tst_simple_geotiff COMMAND tst_simple_geotiff)
+    set_tests_properties(tst_simple_geotiff PROPERTIES 
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
     # Benchmark for GeoTIFF Phase 3.5a: performance validation
     add_executable(bench_geotiff_performance bench_geotiff_performance.c)
     target_link_libraries(bench_geotiff_performance 

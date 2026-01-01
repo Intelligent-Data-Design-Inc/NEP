@@ -22,7 +22,7 @@ check-local:
 # Test programs
 check_PROGRAMS = tst_geotiff_handle tst_geotiff_metadata tst_phase2_acceptance \
 		 tst_geotiff_organization tst_single_band_read tst_large_geotiff \
-		 tst_geotiff_errors tst_geotiff_edge_cases
+		 tst_geotiff_errors tst_geotiff_edge_cases tst_simple_geotiff
 
 # Benchmark programs (not run automatically)
 noinst_PROGRAMS = bench_geotiff_performance
@@ -59,6 +59,10 @@ tst_geotiff_errors_LDADD = $(top_builddir)/src/libncgeotiff.la $(NETCDF_LIBS) $(
 tst_geotiff_edge_cases_SOURCES = tst_geotiff_edge_cases.c
 tst_geotiff_edge_cases_LDADD = $(top_builddir)/src/libncgeotiff.la $(NETCDF_LIBS) $(GEOTIFF_LIBS) $(HDF5_LIBS)
 
+# Test for simple GeoTIFF value comparison (issue #84)
+tst_simple_geotiff_SOURCES = tst_simple_geotiff.c
+tst_simple_geotiff_LDADD = $(top_builddir)/src/libncgeotiff.la $(NETCDF_LIBS) $(GEOTIFF_LIBS) $(HDF5_LIBS)
+
 # Benchmark for GeoTIFF Phase 3.5a: performance validation
 bench_geotiff_performance_SOURCES = bench_geotiff_performance.c
 bench_geotiff_performance_LDADD = $(top_builddir)/src/libncgeotiff.la $(NETCDF_LIBS) $(GEOTIFF_LIBS) $(HDF5_LIBS)
@@ -66,7 +70,7 @@ bench_geotiff_performance_LDADD = $(top_builddir)/src/libncgeotiff.la $(NETCDF_L
 # Define tests
 TESTS = tst_geotiff_handle tst_geotiff_metadata tst_phase2_acceptance \
 	tst_geotiff_organization tst_single_band_read tst_large_geotiff \
-	tst_geotiff_errors tst_geotiff_edge_cases
+	tst_geotiff_errors tst_geotiff_edge_cases tst_simple_geotiff
 
 endif # HAVE_GEOTIFF
 
