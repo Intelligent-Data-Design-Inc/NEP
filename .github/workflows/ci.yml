@@ -423,7 +423,7 @@ jobs:
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib"
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH"
           ls -l "${HDF5_PLUGIN_PATH}"
-          make VERBOSE=1 check || (echo "Tests failed. Printing test logs:"; cat test/test-suite.log; cat test/run_tests.sh.log; if [ -f test_cdf/test-suite.log ]; then cat test_cdf/test-suite.log; fi; exit 1)
+          make VERBOSE=1 check CFLAGS="-Wall -Werror" FCFLAGS="-Wall -Werror -Wno-error=missing-include-dirs" || (echo "Tests failed. Printing test logs:"; cat test/test-suite.log; cat test/run_tests.sh.log; if [ -f test_cdf/test-suite.log ]; then cat test_cdf/test-suite.log; fi; exit 1)
           echo "Tests passed. Showing test output:"
           cat test/run_tests.sh.log
           if [ -f test_cdf/test-suite.log ]; then
