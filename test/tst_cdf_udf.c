@@ -19,7 +19,10 @@
 #include <assert.h>
 #include <netcdf.h>
 #include "cdfdispatch.h"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #include "cdf.h"
+#pragma GCC diagnostic pop
 
 #define TEST_FILE "tst_cdf_simple.cdf"
 #define EXPECTED_VAR_NAME "temperature"
@@ -181,13 +184,7 @@ static int create_test_file(void)
  */
 int main(void)
 {
-    int ncid, varid, dimid;
-    int ndims, nvars, natts, unlimdimid;
-    int var_ndims, var_natts, var_dimids[NC_MAX_VAR_DIMS];
-    nc_type var_type;
-    char name[NC_MAX_NAME+1];
-    char att_value[256];
-    size_t dim_len, att_len;
+    int ncid;
     int retval;
     
     printf("=== NEP CDF UDF Handler Test ===\n\n");
@@ -200,7 +197,7 @@ int main(void)
     /* CDF files start with magic bytes 0xCDF30001 or 0xCDF26002 */
     /* Using CDF3 magic number: 0xCD, 0xF3, 0x00, 0x01 */
     char cdf_magic[5] = "\xCD\xF3\x00\x01";
-    retval = nc_def_user_format(NC_UDF0, CDF_dispatch_table, cdf_magic);
+    retval = nc_def_user_format(NC_UDF0, (NC_Dispatch *)CDF_dispatch_table, cdf_magic);
     if (retval != NC_NOERR) {
         fprintf(stderr, "ERROR: Failed to register CDF UDF handler: %s\n", 
                 nc_strerror(retval));
