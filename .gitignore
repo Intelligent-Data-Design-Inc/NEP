@@ -127,14 +127,20 @@ tst_grib2
 ftst_ncsqueeze_bzip2
 ftst_ncsqueeze_lz4
 tst_cdf_basic
-<<<<<<< HEAD
-tst_geotiff_detect
+
+# GeoTIFF test binaries
 tst_geotiff_handle
 tst_geotiff_metadata
 tst_phase2_acceptance
-=======
->>>>>>> main
+tst_geotiff_organization
+tst_single_band_read
+tst_large_geotiff
+tst_geotiff_errors
+tst_geotiff_edge_cases
+tst_simple_geotiff
+bench_geotiff_performance
 
 # Copied test data files (should only exist in test/data/)
 test_geotiff/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif
 test_geotiff/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif
+test_geotiff/ABBA_2022_C61_HNL.tif

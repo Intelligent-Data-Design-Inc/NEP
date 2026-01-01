@@ -44,6 +44,18 @@ if(DEBUG)
     message(STATUS "Debug mode enabled: Adding -g flag")
 endif()
 
+# Add -Wall and -Werror for GNU compilers
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror")
+    message(STATUS "GNU C compiler detected: Adding -Wall -Werror flags")
+endif()
+
+# Add -Wall and -Werror for GNU Fortran compiler
+if(ENABLE_FORTRAN AND CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wall -Werror")
+    message(STATUS "GNU Fortran compiler detected: Adding -Wall -Werror flags")
+endif()
+
 # Determine if we're doing a documentation-only build
 set(DOCS_ONLY OFF)
 if(BUILD_DOCUMENTATION AND NOT BUILD_TESTING)

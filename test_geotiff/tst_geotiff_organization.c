@@ -28,6 +28,9 @@ main(int argc, char **argv)
     int format;
     char magic_number_tiff[4] = "II*";     /* Standard TIFF */
     char magic_number_bigtiff[4] = "II+";  /* BigTIFF */
+
+    (void)argc;
+    (void)argv;
     
     printf("\n*** Testing GeoTIFF organization detection.\n");
     

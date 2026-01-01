@@ -27,6 +27,9 @@
 int
 main(int argc, char **argv)
 {
+    (void)argc;
+    (void)argv;
+
     printf("\n*** Testing simple GeoTIFF value comparison.\n");
     
 #ifdef HAVE_GEOTIFF
@@ -114,8 +117,8 @@ main(int argc, char **argv)
         return 1;
     }
     
-    uint32 width, height;
-    uint16 samples_per_pixel, bits_per_sample;
+    uint32_t width, height;
+    uint16_t samples_per_pixel, bits_per_sample;
     
     TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);
     TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);

@@ -6,6 +6,10 @@
 # This CI configuration includes LZ4/BZIP2 compression for HDF5/NetCDF-4 files
 # and adds NASA CDF library detection (library location only, no UDF yet).
 #
+# Compiler Warnings (Issue #86):
+# Both CMake and autotools build systems automatically add -Wall -Werror flags
+# for GNU compilers, ensuring all builds fail on any compiler warnings.
+#
 # Future Versions:
 # - v2.0.0: GRIB2 UDF handler support will be restored
 # - v4.0: GeoTIFF UDF handler support will be restored
@@ -96,6 +100,12 @@ jobs:
 
       - name: Build NEP with ASAN
         run: make -j$(nproc)
+
+      - name: Copy test data files
+        run: |
+          cp -f test/data/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif test_geotiff/
+          cp -f test/data/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif test_geotiff/
+          cp -f test/data/ABBA_2022_C61_HNL.tif test_geotiff/
 
       - name: Run tests with AddressSanitizer
         run: |

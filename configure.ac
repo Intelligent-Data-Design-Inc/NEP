@@ -16,6 +16,12 @@ AC_CONFIG_MACRO_DIR([m4])
 # Checks for programs.
 AC_PROG_CC
 
+# Add -Wall and -Werror for GNU compilers
+if test "x$GCC" = xyes; then
+   CFLAGS="$CFLAGS -Wall -Werror"
+   AC_MSG_NOTICE([GNU C compiler detected: Adding -Wall -Werror flags])
+fi
+
 # Checks for header files.
 AC_CHECK_HEADERS([stdlib.h])
 
@@ -257,6 +263,13 @@ if test "x$enable_fortran" = xyes; then
    AC_LANG_PUSH(Fortran)
    AC_SEARCH_LIBS([nf_create], [netcdff], [], [AC_MSG_ERROR([Can't find or link to the netCDF Fortran library, set CPPFLAGS/LDFLAGS.])])
    AC_LANG_POP(Fortran)
+   
+   # Add -Wall and -Werror for GNU Fortran compiler
+   AC_PROG_FC
+   if test "x$ac_cv_fc_compiler_gnu" = xyes; then
+      FCFLAGS="$FCFLAGS -Wall -Werror"
+      AC_MSG_NOTICE([GNU Fortran compiler detected: Adding -Wall -Werror flags])
+   fi
 fi
 
 # Set up conditionals for Makefile.am

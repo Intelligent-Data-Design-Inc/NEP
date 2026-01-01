@@ -593,6 +593,9 @@ main(int argc, char **argv)
     char magic_number_tiff[4] = "II*";
     char magic_number_bigtiff[4] = "II+";
     int ret;
+
+    (void)argc;
+    (void)argv;
     
     printf("\n*** GeoTIFF Performance Benchmark Suite ***\n");
     printf("Iterations per test: %d\n", NUM_ITERATIONS);

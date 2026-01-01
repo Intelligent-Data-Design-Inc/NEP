@@ -33,6 +33,9 @@ main(int argc, char **argv)
     int ncid, varid;
     int ret;
     int test_failures = 0;
+
+    (void)argc;
+    (void)argv;
     
     printf("\n*** Testing GeoTIFF edge cases.\n");
     
