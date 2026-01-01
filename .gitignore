@@ -105,7 +105,13 @@ test-driver
 test_vol_plugin.sh
 vol_plugin
 
+# Emacs temporary files
 *~
+\#*\#
+.\#*
+*.swp
+*.swo
+
 /docs/html/
 *.trs 
 *.log 
@@ -144,3 +150,5 @@ bench_geotiff_performance
 test_geotiff/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif
 test_geotiff/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif
 test_geotiff/ABBA_2022_C61_HNL.tif
+
+
