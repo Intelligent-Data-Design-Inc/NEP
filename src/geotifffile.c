@@ -161,11 +161,8 @@ nc4_var_list_add_full(NC_GRP_INFO_T* grp, const char* name, int ndims, nc_type x
     int retval;
 
     /* Add the VAR_INFO_T struct to our list of vars. */
-    printf("[GEOTIFF] nc4_var_list_add_full: Adding var '%s' with ndims=%d\n", name, ndims);
     if ((retval = nc4_var_list_add(grp, name, ndims, var)))
         return retval;
-    printf("[GEOTIFF] nc4_var_list_add_full: After nc4_var_list_add, var=%p, var->dimids=%p, var->dim=%p\n", 
-           (void*)*var, (void*)(*var)->dimids, (void*)(*var)->dim);
     (*var)->created = NC_TRUE;
     (*var)->written_to = NC_TRUE;
     (*var)->format_var_info = format_var_info;
@@ -675,26 +672,9 @@ NC_GEOTIFF_close(int ncid, void *ignore)
     free(geotiff_info);
 
     /* Free the NC_FILE_INFO_T struct */
-    printf("[GEOTIFF] NC_GEOTIFF_close: About to call nc4_nc4f_list_del\n");
-    
-    /* Debug: Check what variables exist before cleanup */
-    if (h5->root_grp && h5->root_grp->vars) {
-        int i;
-        printf("[GEOTIFF] NC_GEOTIFF_close: Group has %d variables\n", (int)ncindexsize(h5->root_grp->vars));
-        for (i = 0; i < (int)ncindexsize(h5->root_grp->vars); i++) {
-            NC_VAR_INFO_T *var = (NC_VAR_INFO_T *)ncindexith(h5->root_grp->vars, i);
-            if (var) {
-                printf("[GEOTIFF] NC_GEOTIFF_close: var[%d] '%s': var=%p, dimids=%p, dim=%p\n",
-                       i, var->hdr.name, (void*)var, (void*)var->dimids, (void*)var->dim);
-            }
-        }
-    }
-    
     if ((retval = nc4_nc4f_list_del(h5)))
         return retval;
     
-    printf("[GEOTIFF] NC_GEOTIFF_close: After nc4_nc4f_list_del\n");
-
     return NC_NOERR;
 }
 
