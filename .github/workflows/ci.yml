@@ -364,8 +364,6 @@ jobs:
           autoreconf -i
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
           export HDF5_PLUGIN_PATH="$GITHUB_WORKSPACE/netcdf-c-install/hdf5/lib/plugin"
-          export CFLAGS="-Wall -Werror"
-          export FCFLAGS="-Wall -Werror"
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include -I$GITHUB_WORKSPACE/cdf-install/include -I/usr/include/liblzf"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib"
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH"
@@ -399,7 +397,7 @@ jobs:
 
       - name: Build (Autotools)
         if: matrix.build_system == 'autotools'
-        run: make -j$(nproc)
+        run: make -j$(nproc) CFLAGS="-Wall -Werror" FCFLAGS="-Wall -Werror"
 
       - name: Build Documentation (Autotools)
         if: matrix.build_system == 'autotools' && matrix.fortran == 'on' && matrix.compression == 'all'
