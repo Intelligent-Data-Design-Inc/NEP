@@ -9,7 +9,11 @@
 #include "config.h"
 #include "nc4internal.h"
 #include "cdfdispatch.h"
+/* Suppress warnings from external CDF library header */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #include <cdf.h>
+#pragma GCC diagnostic pop
 
 /**
  * @internal Get the format (i.e. NC_FORMAT_NC_CDF) of an open CDF

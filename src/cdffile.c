@@ -11,7 +11,11 @@
 #include "config.h"
 #include "nc4internal.h"
 #include "cdfdispatch.h"
+/* Suppress warnings from external CDF library header */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #include <cdf.h>
+#pragma GCC diagnostic pop
 
 #define NUM_TYPES 12 /**< Number of netCDF atomic types. */
 
@@ -21,6 +25,8 @@ extern int nc4_vararray_add(NC_GRP_INFO_T *grp, NC_VAR_INFO_T *var);
 static const int
 ILLEGAL_OPEN_FLAGS = (NC_MMAP|NC_64BIT_OFFSET|NC_DISKLESS|NC_WRITE);
 
+/* Commented out for v1.3.0 - will be used in future versions */
+#if 0
 /** @internal NetCDF atomic type names. */
 static const char*
 nc_type_name_g[NUM_TYPES] = {"char", "byte", "short", "int", "float", "double",
@@ -59,6 +65,7 @@ cdf_rec_grp_del(NC_GRP_INFO_T *grp)
     
     return NC_NOERR;
 }
+#endif
 
 /**
  * @internal Given an CDF type, set a pointer to netcdf type.
@@ -379,6 +386,7 @@ cdf_read_att(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var, int a)
  * @return ::NC_EMAXNAME Name too long.
  * @author Ed Hartnett
  */
+#if 0
 static int
 cdf_read_dim(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var, int rec_dim_len, int d)
 {
@@ -388,6 +396,7 @@ cdf_read_dim(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var, int rec_dim_len, int d)
     printf("rec_dim_len %d d %d\n", rec_dim_len, d);
     return NC_NOERR; /* Placeholder return */
 }
+#endif
 
 /**
  * @internal Create a new variable and insert int relevant lists

@@ -17,7 +17,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+/* Suppress warnings from external CDF library header */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #include "cdf.h"
+#pragma GCC diagnostic pop
 
 #define TEST_FILE "tst_cdf_simple.cdf"
 #define EXPECTED_VAR_NAME "temperature"
