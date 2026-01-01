@@ -696,16 +696,16 @@ NC_GEOTIFF_close(int ncid, void *ignore)
     if (geotiff_info->tiff_handle)
         XTIFFClose((TIFF *)geotiff_info->tiff_handle);
 
+    /* Free the NC_FILE_INFO_T struct */
+    if ((retval = nc4_nc4f_list_del(h5)))
+        return retval;
+
     /* Free path string */
     if (geotiff_info->path)
         free(geotiff_info->path);
 
     /* Free GeoTIFF file info structure */
     free(geotiff_info);
-
-    /* Free the NC_FILE_INFO_T struct */
-    if ((retval = nc4_nc4f_list_del(h5)))
-        return retval;
 
     return NC_NOERR;
 }
