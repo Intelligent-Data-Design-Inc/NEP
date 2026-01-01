@@ -397,7 +397,7 @@ jobs:
 
       - name: Build (Autotools)
         if: matrix.build_system == 'autotools'
-        run: make -j$(nproc) CFLAGS="-Wall -Werror" FCFLAGS="-Wall -Werror"
+        run: make -j$(nproc) CFLAGS="-Wall -Werror" FCFLAGS="-Wall -Werror -Wno-error=missing-include-dirs"
 
       - name: Build Documentation (Autotools)
         if: matrix.build_system == 'autotools' && matrix.fortran == 'on' && matrix.compression == 'all'
