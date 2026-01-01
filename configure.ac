@@ -16,12 +16,6 @@ AC_CONFIG_MACRO_DIR([m4])
 # Checks for programs.
 AC_PROG_CC
 
-# Add -Wall and -Werror for GNU compilers
-if test "x$GCC" = xyes; then
-   CFLAGS="$CFLAGS -Wall -Werror"
-   AC_MSG_NOTICE([GNU C compiler detected: Adding -Wall -Werror flags])
-fi
-
 # Checks for header files.
 AC_CHECK_HEADERS([stdlib.h])
 

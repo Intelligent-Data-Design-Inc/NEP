@@ -92,7 +92,7 @@ jobs:
         run: |
           autoreconf -i
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
-          export CFLAGS="-g -O0 -fsanitize=address -fno-omit-frame-pointer"
+          export CFLAGS="-g -O0 -Wall -Werror -fsanitize=address -fno-omit-frame-pointer"
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -fsanitize=address"
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
@@ -299,7 +299,7 @@ jobs:
           if [ "${{ matrix.fortran }}" = "on" ] && [ "${{ matrix.compression }}" = "all" ]; then
             CDF_FLAG="-DENABLE_CDF=ON"
           fi
-          cmake .. -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install;$GITHUB_WORKSPACE/cdf-install;/usr/include/liblzf" -DBUILD_TESTING=ON $DOC_FLAG $FORTRAN_FLAG $CDF_FLAG
+          cmake .. -DCMAKE_C_FLAGS="-Wall -Werror" -DCMAKE_Fortran_FLAGS="-Wall -Werror" -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install;$GITHUB_WORKSPACE/cdf-install;/usr/include/liblzf" -DBUILD_TESTING=ON $DOC_FLAG $FORTRAN_FLAG $CDF_FLAG
 
       - name: Build (CMake)
         if: matrix.build_system == 'cmake'
@@ -364,6 +364,8 @@ jobs:
           autoreconf -i
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
           export HDF5_PLUGIN_PATH="$GITHUB_WORKSPACE/netcdf-c-install/hdf5/lib/plugin"
+          export CFLAGS="-Wall -Werror"
+          export FCFLAGS="-Wall -Werror"
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include -I$GITHUB_WORKSPACE/cdf-install/include -I/usr/include/liblzf"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib"
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH"
