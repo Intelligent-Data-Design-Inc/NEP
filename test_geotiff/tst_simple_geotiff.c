@@ -122,33 +122,62 @@ main(int argc, char **argv)
     TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL, &samples_per_pixel);
     TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE, &bits_per_sample);
     
-    printf("TIFF dimensions: %u x %u, samples=%u, bits=%u\n", 
-           width, height, samples_per_pixel, bits_per_sample);
+    int is_tiled = TIFFIsTiled(tif);
+    
+    printf("TIFF dimensions: %u x %u, samples=%u, bits=%u, %s\n", 
+           width, height, samples_per_pixel, bits_per_sample,
+           is_tiled ? "tiled" : "scanline");
     
     if (bits_per_sample != 8)
     {
         printf("WARNING: Expected 8 bits per sample, got %u\n", bits_per_sample);
     }
     
-    unsigned char *scanline = (unsigned char *)_TIFFmalloc(TIFFScanlineSize(tif));
-    if (!scanline)
-    {
-        printf("FAILED to allocate scanline buffer\n");
-        TIFFClose(tif);
-        return 1;
-    }
+    unsigned char *buffer = NULL;
+    tsize_t buffer_size;
     
-    if (TIFFReadScanline(tif, scanline, 0, 0) < 0)
+    if (is_tiled)
     {
-        printf("FAILED to read scanline\n");
-        _TIFFfree(scanline);
-        TIFFClose(tif);
-        return 1;
+        buffer_size = TIFFTileSize(tif);
+        buffer = (unsigned char *)_TIFFmalloc(buffer_size);
+        if (!buffer)
+        {
+            printf("FAILED to allocate tile buffer\n");
+            TIFFClose(tif);
+            return 1;
+        }
+        
+        if (TIFFReadTile(tif, buffer, 0, 0, 0, 0) < 0)
+        {
+            printf("FAILED to read tile\n");
+            _TIFFfree(buffer);
+            TIFFClose(tif);
+            return 1;
+        }
+    }
+    else
+    {
+        buffer_size = TIFFScanlineSize(tif);
+        buffer = (unsigned char *)_TIFFmalloc(buffer_size);
+        if (!buffer)
+        {
+            printf("FAILED to allocate scanline buffer\n");
+            TIFFClose(tif);
+            return 1;
+        }
+        
+        if (TIFFReadScanline(tif, buffer, 0, 0) < 0)
+        {
+            printf("FAILED to read scanline\n");
+            _TIFFfree(buffer);
+            TIFFClose(tif);
+            return 1;
+        }
     }
     
     for (i = 0; i < NUM_VALUES; i++)
     {
-        libtiff_values[i] = scanline[i];
+        libtiff_values[i] = buffer[i];
     }
     
     printf("libgeotiff values: ");
@@ -158,7 +187,7 @@ main(int argc, char **argv)
     }
     printf("\n");
     
-    _TIFFfree(scanline);
+    _TIFFfree(buffer);
     TIFFClose(tif);
     
     printf("*** Step 3: Comparing values...\n");
