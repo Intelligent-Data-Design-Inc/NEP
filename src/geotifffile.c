@@ -625,34 +625,6 @@ cleanup:
 }
 
 /**
- * @internal Recursively delete group and its contents.
- *
- * This function frees all variables, dimensions, and attributes in a group
- * and its subgroups, following the HDF4 pattern.
- *
- * @param grp Group to delete.
- *
- * @return NC_NOERR on success.
- *
- * @author Edward Hartnett
- */
-static int
-geotiff_rec_grp_del(NC_GRP_INFO_T *grp)
-{
-    int retval;
-    
-    /* Handle NULL pointer gracefully */
-    if (!grp)
-        return NC_NOERR;
-    
-    /* Use NetCDF-C internal function to recursively delete group metadata */
-    if ((retval = nc4_rec_grp_del(grp)))
-        return retval;
-    
-    return NC_NOERR;
-}
-
-/**
  * @internal Close a GeoTIFF file and release resources.
  *
  * @param ncid NetCDF ID for this file.
@@ -681,10 +653,6 @@ NC_GEOTIFF_close(int ncid, void *ignore)
     if (!h5 || !h5->format_file_info)
         return NC_EBADID;
 
-    /* Clean up GeoTIFF specific allocations in groups */
-    if ((retval = geotiff_rec_grp_del(h5->root_grp)))
-        return retval;
-
     /* Get GeoTIFF-specific file info */
     geotiff_info = (NC_GEOTIFF_FILE_INFO_T *)h5->format_file_info;
 
@@ -696,16 +664,17 @@ NC_GEOTIFF_close(int ncid, void *ignore)
     if (geotiff_info->tiff_handle)
         XTIFFClose((TIFF *)geotiff_info->tiff_handle);
 
-    /* Free the NC_FILE_INFO_T struct */
-    if ((retval = nc4_nc4f_list_del(h5)))
-        return retval;
-
     /* Free path string */
     if (geotiff_info->path)
         free(geotiff_info->path);
 
     /* Free GeoTIFF file info structure */
     free(geotiff_info);
+
+    /* Free the NC_FILE_INFO_T struct */
+    if ((retval = nc4_nc4f_list_del(h5)))
+        return retval;
+
 
     return NC_NOERR;
 }
