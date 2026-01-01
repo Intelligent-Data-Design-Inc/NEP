@@ -639,44 +639,16 @@ cleanup:
 static int
 geotiff_rec_grp_del(NC_GRP_INFO_T *grp)
 {
-    NC_VAR_INFO_T *var;
-    NC_DIM_INFO_T *dim;
-    int i;
-
+    int retval;
+    
+    /* Handle NULL pointer gracefully */
     if (!grp)
         return NC_NOERR;
-
-    /* Free variables */
-    for (i = 0; i < (int)ncindexsize(grp->vars); i++)
-    {
-        var = (NC_VAR_INFO_T *)ncindexith(grp->vars, i);
-        if (var)
-        {
-            /* NOTE: Do NOT free var->dim or var->dimids here.
-             * These are allocated by nc4_var_set_ndims() and will be
-             * freed by NetCDF's nc4_nc4f_list_del() during cleanup.
-             * Freeing them here causes double-free issues. */
-            
-            /* Free variable-specific GeoTIFF info if any */
-            if (var->format_var_info)
-            {
-                free(var->format_var_info);
-                var->format_var_info = NULL;
-            }
-        }
-    }
-
-    /* Free dimensions */
-    for (i = 0; i < (int)ncindexsize(grp->dim); i++)
-    {
-        dim = (NC_DIM_INFO_T *)ncindexith(grp->dim, i);
-        if (dim && dim->hdr.name)
-        {
-            free(dim->hdr.name);
-            dim->hdr.name = NULL;
-        }
-    }
-
+    
+    /* Use NetCDF-C internal function to recursively delete group metadata */
+    if ((retval = nc4_rec_grp_del(grp)))
+        return retval;
+    
     return NC_NOERR;
 }
 
