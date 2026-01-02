@@ -7,6 +7,7 @@ NEP (NetCDF Extension Pack) extends NetCDF-4 with high-performance compression a
 - **LZ4 Compression**: Speed-optimized lossless compression (2-3x faster than DEFLATE)
 - **BZIP2 Compression**: High-ratio lossless compression for archival storage
 - **CDF File Reader**: Read NASA Common Data Format files through the NetCDF API
+- **GeoTIFF File Reader**: Read GeoTIFF geospatial raster files through the NetCDF API
 
 NEP provides flexible compression options and unified data access for diverse scientific data workflows.
 
@@ -98,6 +99,54 @@ cmake -B build -DENABLE_CDF=ON
 
 **Spack Users**: Install CDF separately with `spack install cdf`.
 
+## GeoTIFF File Reader
+
+NEP provides a User-Defined Format (UDF) handler that enables reading GeoTIFF files using the familiar NetCDF API.
+
+### What is GeoTIFF?
+
+GeoTIFF is a public domain metadata standard that allows georeferencing information to be embedded within a TIFF (Tagged Image File Format) file. GeoTIFF is widely used in geographic information systems (GIS), remote sensing, and earth science applications for storing geospatial raster data.
+
+**Key Characteristics:**
+- Standard TIFF format with geospatial metadata tags
+- Support for coordinate reference systems (CRS)
+- Multi-band raster data support
+- Platform-independent format
+- Used by NASA, USGS, and earth observation missions
+
+### GeoTIFF Support in NEP
+
+**Transparent Access**: Read GeoTIFF files using standard NetCDF functions (`nc_open()`, `nc_get_var()`, `nc_inq_dim()`) without file conversion.
+
+**Automatic Dimension Mapping**: GeoTIFF structure is automatically mapped to NetCDF dimensions:
+- Bands → NetCDF dimension (if multi-band)
+- Rows (height) → NetCDF dimension
+- Columns (width) → NetCDF dimension
+
+**Metadata Preservation**: GeoTIFF tags and geospatial metadata are accessible as NetCDF attributes, including coordinate reference system information.
+
+**Use Cases:**
+- Remote sensing and satellite imagery analysis
+- GIS data integration
+- Earth observation data processing
+- Cross-format geospatial workflows (GeoTIFF + NetCDF)
+
+### Enabling GeoTIFF Support
+
+GeoTIFF support is optional and disabled by default. To enable:
+
+```bash
+# CMake
+cmake -B build -DENABLE_GEOTIFF=ON
+
+# Autotools
+./configure --enable-geotiff
+```
+
+**Requirements**: libgeotiff and libtiff libraries must be installed.
+
+**Spack Users**: Install with `spack install nep +geotiff`.
+
 ## Installation
 
 NEP requires:
@@ -107,6 +156,7 @@ NEP requires:
 - BZIP2 library
 - NetCDF-Fortran library (optional, for Fortran support)
 - NASA CDF library v3.9+ (optional, for CDF file reading)
+- libgeotiff and libtiff (optional, for GeoTIFF file reading)
 
 Build with CMake or Autotools:
 
@@ -147,6 +197,34 @@ nc_close(ncid);
 
 No special code is needed—the CDF UDF handler automatically detects and processes CDF files.
 
+### GeoTIFF File Reading
+
+When GeoTIFF support is enabled, open and read GeoTIFF files using standard NetCDF functions:
+
+```c
+int ncid, varid;
+size_t width, height, bands;
+float *data;
+
+// Open GeoTIFF file using NetCDF API
+nc_open("satellite_image.tif", NC_NOWRITE, &ncid);
+
+// Query dimensions
+nc_inq_dimlen(ncid, 0, &bands);
+nc_inq_dimlen(ncid, 1, &height);
+nc_inq_dimlen(ncid, 2, &width);
+
+// Read raster data
+data = malloc(width * height * sizeof(float));
+nc_inq_varid(ncid, "raster", &varid);
+nc_get_var_float(ncid, varid, data);
+
+// Close file
+nc_close(ncid);
+```
+
+No special code is needed—the GeoTIFF UDF handler automatically detects and processes GeoTIFF files.
+
 ## Features and Options
 
 - **Compression Algorithms**:
@@ -156,9 +234,14 @@ No special code is needed—the CDF UDF handler automatically detects and proces
   - Read NASA CDF files via NetCDF API
   - Automatic type and attribute mapping
   - Support for TT2000 time variables
+- **GeoTIFF File Reader**:
+  - Read GeoTIFF geospatial raster files via NetCDF API
+  - Automatic dimension mapping (bands, rows, columns)
+  - Metadata and coordinate reference system preservation
 - **Configurable Build Options**:
   - LZ4 and BZIP2 support can be enabled or disabled at build time
   - CDF support is optional (disabled by default)
+  - GeoTIFF support is optional (disabled by default)
 - **Fortran Support**:
   - Optional Fortran wrappers for NEP functions
   - Requires `netcdf-fortran` library when enabled
