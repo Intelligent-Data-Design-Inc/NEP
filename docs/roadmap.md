@@ -1,11 +1,24 @@
 # NEP Development Roadmap
 
-### v4.0 GeoTIFF
-#### Sprint 1: GeoTIFF File Open/Close
-- Add a small, simple GeoTIFF test file in test/data.
-- Add file open/close to the GeoTIFF UDF handler.
-- Add a test which opens/closes the file.
-- Ensure test data files are copied to build directory for both CMake and Autotools builds.
+### v1.5.0 GeoTIFF Read Support (Released: January 2026)
+#### Sprint 1: GeoTIFF File Open/Close and Data Reading
+- [x] Add GeoTIFF test files in test/data (MODIS NRT Global Flood Product samples)
+- [x] Implement GeoTIFF UDF handler (`src/geotifffile.c`, `src/geotiffdispatch.c`)
+- [x] File open/close operations (`NC_GEOTIFF_open()`, `NC_GEOTIFF_close()`)
+- [x] Automatic TIFF magic number validation and GeoTIFF tag detection
+- [x] Metadata extraction (dimensions, variables, attributes from GeoTIFF structure)
+- [x] Data reading (`NC_GEOTIFF_get_vara()`) with type conversion
+- [x] Endianness support (little-endian and big-endian TIFF files)
+- [x] Security hardening with validation against malformed files
+- [x] Dimension mapping (bands, rows, columns to NetCDF dimensions)
+- [x] Build system integration (CMake and Autotools with `ENABLE_GEOTIFF` option)
+- [x] Comprehensive test suite (10 test programs covering basic functionality, errors, edge cases, performance)
+- [x] Test data copied to build directory for both CMake and Autotools builds
+- [x] CI integration with GeoTIFF tests in GitHub Actions workflow
+- [x] Documentation updates (API docs, design.md, build-options.md)
+- [x] libgeotiff and libtiff dependency integration
+
+**Status**: Released January 1, 2026. Provides read-only access to GeoTIFF files through standard NetCDF API.
 
 ### v2.0.0: GRIB2
 #### Sprint 1: GRIB2 File Open/Close

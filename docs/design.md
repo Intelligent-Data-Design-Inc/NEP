@@ -1,11 +1,15 @@
-# NEP – NetCDF Extension Pack v1.0.0
+# NEP – NetCDF Extension Pack v1.5.0
 ## Project Overview
 
-The NetCDF Extension Pack (NEP) v1.0.0 provides high-performance compression for HDF5/NetCDF-4 files through HDF5 filter plugins. NEP enables flexible lossless compression with two complementary algorithms: LZ4 (optimized for speed) and BZIP2 (optimized for compression ratio).
+The NetCDF Extension Pack (NEP) v1.5.0 extends NetCDF-4 with high-performance compression filters and User Defined Format (UDF) handlers for accessing diverse scientific data formats through the standard NetCDF API. NEP provides flexible lossless compression with two complementary algorithms (LZ4 and BZIP2) and transparent access to NASA CDF and GeoTIFF files.
 
 ## Architecture
 
-NEP uses the HDF5 filter plugin architecture to provide transparent compression for NetCDF-4 files. The architecture consists of:
+NEP consists of two primary architectural components:
+
+### 1. HDF5 Filter Plugin Architecture
+
+NEP uses the HDF5 filter plugin architecture to provide transparent compression for NetCDF-4 files:
 
 1. **Core NetCDF API**: Standard API used by applications
 2. **HDF5 Filter Pipeline**: Compression filters integrated into HDF5 I/O operations
@@ -31,14 +35,47 @@ NEP uses the HDF5 filter plugin architecture to provide transparent compression 
 [Compressed NetCDF-4/HDF5 Files]
 ```
 
+### 2. NetCDF User Defined Format (UDF) System
+
+NEP implements NetCDF's UDF system to provide transparent access to various scientific data formats:
+
+1. **Core NetCDF API**: Standard API used by applications
+2. **NC_Dispatch Layer**: Format-specific function pointer tables
+3. **Format Handlers**: CDF and GeoTIFF UDF handlers
+4. **Format Libraries**: Integration with libgeotiff and NASA CDF library
+5. **Multi-format Storage**: Access to NetCDF-4, CDF, and GeoTIFF files
+
+```
+[Application Layer]
+       │
+[NetCDF-4 API]
+       │
+[NC_Dispatch Layer]
+       │
+┌──────┴────────────┬──────────────┐
+│                   │              │
+[HDF5 Backend]  [CDF Handler]  [GeoTIFF Handler]
+│                   │              │
+│               [CDF Library]  [libgeotiff]
+│                   │              │
+└───────┬───────────┼──────────────┘
+        │           │              │
+[NetCDF-4 Files]  [CDF Files]  [GeoTIFF Files]
+```
+
 ## Project Structure
 
 The project is structured as follows:
-- `/hdf5_plugins` - HDF5 filter plugins (LZ4 and BZIP2 compression)
-- `/test` - Unit tests for compression filters
-- `/test_h5` - HDF5-specific compression tests
+- `/src` - Core C source code including UDF handlers and compression filters
+- `/fsrc` - Fortran wrappers for compression functions
+- `/include` - Public header files
+- `/test` - C unit tests for all features
+- `/ftest` - Fortran unit tests
+- `/test/data` - Test data files for CDF and GeoTIFF formats
 - `/docs` - Project documentation
+- `/docs/releases` - Release notes for each version
 - `/.github/workflows` - CI/CD pipeline configurations
+- `/spack` - Spack package manager recipes
 
 ## Compression Filter Design
 
@@ -275,11 +312,11 @@ Based on a 150 MB NetCDF-4 dataset:
 - LZ4 offers minimal performance impact (79% write speed, 88% read speed) with 2.2× compression
 - BZIP2 achieves highest compression ratio (6.7×) at the cost of performance (1% write speed, 2% read speed)
 
-## GeoTIFF Read Layer (v1.5.0 - Planned)
+## GeoTIFF Read Layer (v1.5.0)
 
 ### Overview
 
-NEP v1.5.0 will add support for GeoTIFF geospatial raster data format through a User Defined Format (UDF) handler. This enables transparent access to GeoTIFF files through the standard NetCDF API, eliminating the need for format conversion in geospatial workflows.
+NEP v1.5.0 adds support for GeoTIFF geospatial raster data format through a User Defined Format (UDF) handler. This enables transparent access to GeoTIFF files through the standard NetCDF API, eliminating the need for format conversion in geospatial workflows.
 
 For details on NetCDF's User Defined Format mechanism, see `docs/udf.md`.
 
@@ -358,27 +395,31 @@ cmake -DENABLE_GEOTIFF=OFF # Disable GeoTIFF support (default)
 - Clear error messages if libgeotiff not found when enabled
 - Graceful degradation when disabled
 
-### Implementation Phases
+### Implementation
 
-1. **Phase 1**: File open/close and format detection
-   - GeoTIFF magic number detection
-   - Basic file handle management
-   - NC_Dispatch registration
+The GeoTIFF UDF handler is fully implemented in `src/geotifffile.c` and `src/geotiffdispatch.c` with the following features:
 
-2. **Phase 2**: Metadata extraction and dimension mapping
-   - Raster dimensions (width, height, bands)
-   - Data type detection
-   - Basic attribute extraction
+1. **File Operations**
+   - `NC_GEOTIFF_open()` and `NC_GEOTIFF_close()` for lifecycle management
+   - Automatic TIFF magic number validation and GeoTIFF tag detection
+   - Resource cleanup and error handling
 
-3. **Phase 3**: Raster data reading
-   - Band data access
-   - Data type conversion
-   - Memory management
+2. **Metadata Handling**
+   - Dimension extraction (bands, rows, columns)
+   - Variable creation with appropriate data types
+   - GeoTIFF tag extraction as NetCDF attributes
+   - Coordinate system metadata preservation
 
-4. **Phase 4**: Coordinate system and georeferencing support
-   - CRS metadata extraction
-   - Georeferencing tag parsing
-   - CF-compliant attribute mapping
+3. **Data Access**
+   - `NC_GEOTIFF_get_vara()` for reading raster data
+   - Type conversion between GeoTIFF and NetCDF data types
+   - Support for multi-band imagery
+   - Endianness handling for cross-platform compatibility
+
+4. **Security Features**
+   - Bounds checking and validation
+   - Protection against malformed files
+   - Memory management with proper cleanup
 
 ### Integration Points
 
@@ -407,13 +448,97 @@ These are MODIS Daily L3 Global Flood Composite files at 250m resolution in GeoT
 - `docs/udf.md` - NetCDF User Defined Format documentation
 - https://www.earthdata.nasa.gov/data/instruments/viirs/near-real-time-data/nrt-global-flood-products - VIIRS/MODIS NRT Global Flood Products (test data source)
 
+## NASA CDF Format Support (v1.3.0)
+
+### Overview
+
+NEP v1.3.0 added support for NASA Common Data Format (CDF) files through a User Defined Format (UDF) handler. This enables transparent access to CDF space physics and satellite data through the standard NetCDF API.
+
+### Architecture
+
+The CDF UDF handler follows the same NC_Dispatch pattern used for other format handlers:
+
+```
+[Application Layer]
+       │
+[NetCDF-4 API]
+       │
+[NC_Dispatch Layer]
+       │
+┌──────┴──────────┐
+│                 │
+[HDF5 Backend]   [CDF UDF Handler]
+│                 │
+│             [NASA CDF Library]
+│                 │
+└──────┬──────────┘
+       │
+[NetCDF-4/HDF5 Files]  [CDF Files]
+```
+
+### Key Components
+
+#### CDF UDF Handler
+- **Format Detection**: Automatic identification of CDF files via magic number
+- **NC_Dispatch Implementation**: Complete dispatch table for CDF file operations
+- **File Operations**: `NC_CDF_open()` and `NC_CDF_close()` with proper resource management
+- **Metadata Mapping**: CDF structures mapped to NetCDF equivalents
+
+#### Type System
+- **Type Mapping**: Complete mapping of CDF types to NetCDF types
+  - CDF_INT4 → NC_INT
+  - CDF_REAL8 → NC_DOUBLE
+  - CDF_TIME_TT2000 → NC_INT64
+- **Attribute Conventions**: FILLVAL attributes automatically renamed to _FillValue
+- **Data Reading**: `NC_CDF_get_vara()` supporting scalars and arrays
+
+#### Dependencies
+- NASA CDF Library v3.9.x (required when enabled)
+
+#### Build Integration
+- Optional CDF support via build flags:
+  - CMake: `-DENABLE_CDF=ON/OFF`
+  - Autotools: `--enable-cdf/--disable-cdf`
+
+## Spack Package Manager Support (v1.4.0)
+
+### Overview
+
+NEP v1.4.0 added Spack package manager support for simplified installation and dependency management in HPC environments.
+
+### Key Features
+
+- **NEP Spack Package**: Complete Spack package recipe with CMake build system
+- **CDF Spack Package**: Separate package for NASA CDF library v3.9.1
+- **Variant Support**: `+fortran/-fortran`, `+lz4/-lz4`, `+bzip2/-bzip2`, `+docs/-docs`
+- **Dependency Management**: Automatic resolution of NetCDF-C, HDF5, LZ4, BZIP2, and NetCDF-Fortran
+- **CI Integration**: Dedicated GitHub Actions workflows for testing Spack packages
+
+### Installation
+
+```bash
+# Install NEP with all features
+spack install nep
+
+# Install with minimal features
+spack install nep~docs~fortran
+
+# Install CDF library
+spack install cdf
+```
+
 ## Release Information
 
-- **Version**: v1.0.0
+- **Version**: v1.5.0
 - **Status**: Production Release
-- **Release Date**: November 2025
-- **Features**: LZ4 and BZIP2 compression support for HDF5/NetCDF-4 files
+- **Release Date**: January 2026
+- **Features**:
+  - LZ4 and BZIP2 compression for HDF5/NetCDF-4 files
+  - Fortran wrappers for compression functions
+  - NASA CDF format support via UDF handler
+  - GeoTIFF format support via UDF handler
+  - Spack package manager support
 
 ---
 
-*Last Updated: December 2025*
+*Last Updated: January 2026*
