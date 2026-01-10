@@ -4,40 +4,54 @@
 
 **FOR IMMEDIATE RELEASE**
 
-### NetCDF Extension Pack (NEP) v1.1.0 Brings High-Performance Compression to Fortran Applications
+### NetCDF Extension Pack (NEP) v1.5.0 Adds GeoTIFF Support for Geospatial Data Access
 
-*Open-source framework provides flexible compression options (LZ4 and BZIP2) for HDF5/NetCDF-4 files, now with Fortran 90 wrappers*
+*Open-source framework now provides high-performance compression (LZ4/BZIP2), NASA CDF support, and transparent GeoTIFF file access through NetCDF API*
 
-**November 2025** - The scientific computing community today gains access to NEP (NetCDF Extension Pack) v1.1.0, a powerful open-source framework that extends high-performance compression options for HDF5/NetCDF-4 files to both C and Fortran applications.
+**January 2026** - The scientific computing community gains powerful new capabilities with NEP (NetCDF Extension Pack) v1.5.0, an open-source framework that extends NetCDF-4 with high-performance compression and seamless access to multiple scientific data formats including GeoTIFF geospatial raster data.
 
 #### The Challenge
 
-Large-scale scientific data producers face mounting challenges with data storage and I/O performance. Massive data volumes require efficient compression that balances storage savings with processing speed. Traditional DEFLATE compression is often too slow for real-time workflows, while offering limited flexibility in choosing optimal compression strategies.
+Scientific researchers work with diverse data formats—NetCDF-4, NASA CDF space physics data, and GeoTIFF geospatial imagery—often requiring format conversion before analysis. Large-scale data volumes demand efficient compression balancing storage savings with processing speed. Traditional workflows force scientists to convert data between formats, adding complexity and storage overhead.
 
 #### The Solution
 
-NEP introduces high-performance compression for HDF5/NetCDF-4 files with two complementary algorithms, and with v1.1.0 adds first-class Fortran support through thin wrappers around the existing C APIs:
+NEP provides a comprehensive solution with three key capabilities:
 
-**LZ4**: Blazing-fast compression delivering 2-3x faster speeds than DEFLATE, ideal for real-time workflows and HPC environments.
+**High-Performance Compression (v1.0.0, v1.1.0):**
+- **LZ4**: 2-3x faster compression than DEFLATE for real-time workflows and HPC environments
+- **BZIP2**: Superior compression ratios for archival storage and bandwidth-constrained scenarios
+- **C and Fortran APIs**: Full support for both languages with `nc_*` and `nf90_*` functions
 
-**BZIP2**: Superior compression ratios exceeding DEFLATE, perfect for archival storage and bandwidth-constrained scenarios.
+**NASA CDF Support (v1.3.0):**
+- **Transparent Access**: Read CDF space physics and satellite data through standard NetCDF API
+- **No Conversion Required**: Direct access to CDF files without format conversion
+- **Complete Metadata**: Full mapping of CDF variables, attributes, and types to NetCDF equivalents
 
-This dual-algorithm approach, now available from both C and Fortran, enables scientists to:
+**GeoTIFF Support (v1.5.0):**
+- **Geospatial Data Access**: Read GeoTIFF raster data through standard NetCDF API
+- **Format Detection**: Automatic TIFF/GeoTIFF identification and validation
+- **Metadata Preservation**: Georeferencing, coordinate systems, and GeoTIFF tags accessible as NetCDF attributes
+- **Multi-Band Support**: Handle single and multi-band imagery with proper dimension mapping
 
-- **Choose the right tool**: Select LZ4 for speed or BZIP2 for compression ratio based on workflow needs
-- **Process data faster**: LZ4 compression/decompression is 2-3x faster than DEFLATE
-- **Maximize storage efficiency**: BZIP2 achieves better compression ratios than DEFLATE
-- **Reduce I/O bottlenecks**: Speed-optimized LZ4 ideal for HPC environments
-- **Optimize archival storage**: BZIP2 ideal for long-term data retention
-- **Maintain data integrity**: Both algorithms provide lossless compression
-- **Work seamlessly**: Transparent integration with existing NetCDF-4 applications
+This comprehensive framework enables scientists to:
 
-"NEP transforms how scientists handle large-scale data," said Ed Hartnett, Principal Architect. "With both LZ4 and BZIP2 compression, researchers can choose the optimal algorithm for their workflow—LZ4 for speed-critical operations or BZIP2 for storage optimization. With v1.1.0, those same capabilities are now directly available from Fortran codes via simple `nf90_*` functions. This flexibility enables scientists to optimize their data workflows based on specific requirements, regardless of whether they use C or Fortran."
+- **Eliminate format conversion**: Access CDF and GeoTIFF files directly through NetCDF API
+- **Optimize compression**: Choose LZ4 for speed or BZIP2 for compression ratio
+- **Process data faster**: LZ4 delivers 2-3x faster compression/decompression than DEFLATE
+- **Simplify workflows**: Use familiar NetCDF API for multiple scientific data formats
+- **Maintain data integrity**: Lossless compression and accurate metadata mapping
+- **Deploy easily**: Spack package manager support for HPC environments
+
+"NEP transforms how scientists handle diverse scientific data," said Ed Hartnett, Principal Architect. "Version 1.5.0 brings together high-performance compression with transparent access to NASA CDF and GeoTIFF formats. Researchers can now read space physics data and geospatial imagery using the same NetCDF API they already know, eliminating the need for format conversion and streamlining their analysis workflows."
 
 
 #### Availability
 
-NEP v1.1.0 is available now as open-source software. Visit the project repository for documentation and installation instructions.
+NEP v1.5.0 is available now as open-source software. Installation options include:
+- **Source Build**: CMake or Autotools build systems
+- **Spack Package Manager**: `spack install nep` for HPC environments
+- **Documentation**: Complete API documentation at https://intelligent-data-design-inc.github.io/NEP/
 
 ---
 
@@ -46,21 +60,29 @@ NEP v1.1.0 is available now as open-source software. Visit the project repositor
 ### General Questions
 
 #### Q: What is NEP?
-**A:** NEP (NetCDF Extension Pack) is an open-source framework that provides high-performance compression (LZ4 and BZIP2) for HDF5/NetCDF-4 files through HDF5 filter plugins, with both C and Fortran APIs.
+**A:** NEP (NetCDF Extension Pack) is an open-source framework that extends NetCDF-4 with:
+- High-performance compression (LZ4 and BZIP2) for HDF5/NetCDF-4 files
+- User Defined Format (UDF) handlers for NASA CDF and GeoTIFF files
+- C and Fortran APIs for all features
+- Spack package manager support for simplified HPC deployment
 
 #### Q: Who should use NEP?
 **A:** NEP is designed for:
-- Scientific researchers working with large NetCDF-4/HDF5 datasets
+- Scientific researchers working with NetCDF-4/HDF5, NASA CDF, or GeoTIFF datasets
+- Space physics researchers analyzing CDF satellite and mission data
+- Geospatial analysts working with GeoTIFF satellite imagery and raster data
 - Data center operators optimizing storage efficiency
 - HPC system administrators optimizing I/O performance
 - Software developers building scientific applications
-- Anyone needing flexible compression options for NetCDF-4 files
+- Anyone needing flexible compression or multi-format access for scientific data
 
 #### Q: What problem does NEP solve?
-**A:** NEP addresses key compression challenges:
+**A:** NEP addresses key challenges in scientific data management:
 1. **Limited compression options**: NetCDF-4 traditionally relies on DEFLATE, which is slow for large datasets
-2. **Speed vs ratio trade-offs**: No easy way to choose between fast compression and high compression ratios
-3. **I/O bottlenecks**: Compression overhead can limit performance in HPC environments
+2. **Format fragmentation**: Scientists must convert between NetCDF, CDF, and GeoTIFF formats
+3. **Speed vs ratio trade-offs**: No easy way to choose between fast compression and high compression ratios
+4. **I/O bottlenecks**: Compression overhead can limit performance in HPC environments
+5. **Complex workflows**: Multiple tools required for different scientific data formats
 
 ### Technical Questions
 
@@ -86,26 +108,60 @@ NEP v1.1.0 is available now as open-source software. Visit the project repositor
 - **Both are lossless**: Choose based on your workflow priorities—speed or compression ratio
 
 #### Q: Do I need to modify my existing NetCDF code?
-**A:** No! LZ4 and BZIP2 compression work transparently with existing NetCDF-4 applications. Simply set the HDF5_PLUGIN_PATH environment variable and use standard NetCDF-4 compression APIs.
+**A:** No! NEP features work transparently with existing NetCDF applications:
+- **Compression**: Set HDF5_PLUGIN_PATH and use standard NetCDF compression APIs
+- **CDF files**: Use `nc_open()` to read CDF files directly
+- **GeoTIFF files**: Use `nc_open()` to read GeoTIFF files directly
+All features integrate seamlessly with the standard NetCDF API.
 
 ### Installation and Usage
 
 #### Q: What are the system requirements?
 **A:** 
 - **Operating System**: Linux or Unix
-- **Required Libraries (C)**: NetCDF-C (v4.9+), HDF5 (v1.12+), LZ4, BZIP2
-- **Additional Fortran Support**: NetCDF-Fortran (v4.5.4+) when building the Fortran wrappers
+- **Core Libraries**: NetCDF-C (v4.9+), HDF5 (v1.12+)
+- **Compression (optional)**: LZ4, BZIP2
+- **Fortran Support (optional)**: NetCDF-Fortran (v4.5.4+)
+- **CDF Support (optional)**: NASA CDF Library (v3.9.x)
+- **GeoTIFF Support (optional)**: libgeotiff, libtiff
 - **Build Tools**: CMake (v3.9+) or Autotools
-- **Optional**: Doxygen (for building documentation)
+- **Documentation (optional)**: Doxygen and Graphviz
 
 #### Q: How do I install NEP?
-**A:** Installation is straightforward with either CMake or Autotools. See the README for detailed instructions.
+**A:** Multiple installation methods:
+- **Spack** (recommended for HPC): `spack install nep`
+- **CMake**: `cmake -B build && cmake --build build && cmake --install build`
+- **Autotools**: `./configure && make && make install`
+See the README for detailed instructions.
 
 #### Q: Can I enable only specific features?
-**A:** Yes! Use build options to control which compression algorithms are compiled. Both CMake and Autotools support enable/disable flags for LZ4 and BZIP2.
+**A:** Yes! Use build options to control which features are compiled:
+- **CMake**: `-DBUILD_LZ4=ON/OFF`, `-DBUILD_BZIP2=ON/OFF`, `-DENABLE_FORTRAN=ON/OFF`, `-DENABLE_CDF=ON/OFF`, `-DENABLE_GEOTIFF=ON/OFF`
+- **Autotools**: `--enable-lz4`, `--enable-bzip2`, `--enable-fortran`, `--enable-cdf`, `--enable-geotiff`
+- **Spack**: `spack install nep+lz4+bzip2+fortran` (variants control features)
 
 #### Q: How do I use LZ4 compression in my NetCDF files?
-**A:** LZ4 compression is available as an HDF5 filter. Once NEP is installed, the LZ4 filter is automatically available to NetCDF-4 applications through the HDF5_PLUGIN_PATH mechanism.
+**A:** LZ4 compression is available as an HDF5 filter. Once NEP is installed, set HDF5_PLUGIN_PATH and use the NEP compression API:
+```c
+nc_def_var_lz4(ncid, varid, level);  // C API
+nf90_def_var_lz4(ncid, varid, level) ! Fortran API
+```
+
+#### Q: How do I read CDF files with NEP?
+**A:** Enable CDF support during build (`-DENABLE_CDF=ON`), then use standard NetCDF API:
+```c
+nc_open("data.cdf", NC_NOWRITE, &ncid);
+nc_inq(ncid, &ndims, &nvars, &natts, &unlimdimid);
+nc_get_var_double(ncid, varid, data);
+```
+
+#### Q: How do I read GeoTIFF files with NEP?
+**A:** Enable GeoTIFF support during build (`-DENABLE_GEOTIFF=ON`), then use standard NetCDF API:
+```c
+nc_open("image.tif", NC_NOWRITE, &ncid);
+nc_inq_dimlen(ncid, 0, &bands);
+nc_get_var_float(ncid, varid, raster_data);
+```
 
 ### Compatibility and Performance
 
@@ -151,46 +207,44 @@ NEP v1.1.0 is available now as open-source software. Visit the project repositor
 **A:** Check the project documentation, GitHub issues, and community forums. File bug reports and feature requests through the GitHub issue tracker.
 
 #### Q: Does NEP support Fortran applications?
-**A:** Yes. NEP v1.1.0 adds Fortran 90 wrappers (module `ncsqueeze`) around the existing C compression APIs. Fortran applications can call `nf90_def_var_lz4`, `nf90_inq_var_lz4`, `nf90_def_var_bzip2`, and `nf90_inq_var_bzip2` to enable and query compression, using the standard NetCDF Fortran API alongside NEP.
+**A:** Yes. NEP v1.1.0 added Fortran 90 wrappers (module `ncsqueeze`) for compression functions. Fortran applications can call `nf90_def_var_lz4`, `nf90_inq_var_lz4`, `nf90_def_var_bzip2`, and `nf90_inq_var_bzip2` to enable and query compression.
 
 #### Q: What is the current version?
-**A:** NEP v1.2.0 is the current release, providing LZ4 and BZIP2 compression support for HDF5/NetCDF-4 files for both C and Fortran applications, with improved documentation.
+**A:** NEP v1.5.0 is the current release (January 2026), providing:
+- LZ4 and BZIP2 compression for HDF5/NetCDF-4 files (C and Fortran APIs)
+- NASA CDF format support via UDF handler
+- GeoTIFF format support via UDF handler
+- Spack package manager support
+- Comprehensive documentation and CI testing
 
-#### Q: What's coming in v1.3.0?
-**A:** NEP v1.3.0 will add support for NASA Common Data Format (CDF) files through a User Defined Format (UDF) handler, enabling transparent access to CDF space physics and satellite data through the standard NetCDF API. This release will include:
-- NASA CDF library v3.9.x integration
-- CDF UDF handler with NC_Dispatch implementation
-- Automatic CDF format detection
-- File open/close, metadata extraction, and data reading for CDF files
-- Optional CDF support (enabled via build flags)
-
-#### Q: What's coming in v1.5.0?
-**A:** NEP v1.5.0 will add support for GeoTIFF geospatial raster data format through a User Defined Format (UDF) handler, enabling transparent access to GeoTIFF files through the standard NetCDF API. This release will include:
-- libgeotiff library integration (https://github.com/OSGeo/libgeotiff)
-- GeoTIFF UDF handler with NC_Dispatch implementation
-- Automatic GeoTIFF format detection
-- File open/close, metadata extraction, and raster data reading for GeoTIFF files
-- Support for georeferencing and coordinate system metadata
-- Access to GeoTIFF tags and key-value pairs
-- Optional GeoTIFF support (enabled via build flags)
-- See ESDS-RFC-040v1.1.pdf in docs directory for GeoTIFF format details
+#### Q: What formats does NEP support?
+**A:** NEP supports multiple scientific data formats:
+- **NetCDF-4/HDF5**: Native format with LZ4/BZIP2 compression
+- **NASA CDF** (v1.3.0): Space physics and satellite data via UDF handler
+- **GeoTIFF** (v1.5.0): Geospatial raster imagery via UDF handler
+All formats accessible through standard NetCDF API.
 
 #### Q: How stable is NEP?
-**A:** NEP v1.0.0 is production-ready and has undergone thorough testing. Both LZ4 and BZIP2 compression filters are stable and ready for use in production environments.
+**A:** NEP is production-ready and thoroughly tested:
+- **v1.0.0-v1.5.0**: All releases maintain backward compatibility
+- **Zero breaking changes**: Stable API across all versions
+- **Comprehensive testing**: Extensive test suites and CI validation
+- **Real-world data**: Tested with NASA IMAP MAG, MODIS imagery, and production datasets
 
 ### Use Cases
 
 #### Q: What are typical use cases for NEP?
 **A:** 
-- **Weather forecasting**: Fast compression of large meteorological datasets
-- **Climate modeling**: Efficient storage and access to simulation outputs
-- **Satellite data processing**: Optimizing storage for large observation datasets
-- **Ocean modeling**: Reducing I/O bottlenecks in simulation workflows
-- **HPC workflows**: Improving I/O performance with fast compression
-- **Data archival**: Maximizing storage efficiency with high-ratio compression
-- **Space physics research** (v1.3.0+): Transparent access to NASA CDF space physics and satellite data through NetCDF API
-- **Geospatial analysis** (v1.5.0+): Transparent access to GeoTIFF raster data for remote sensing, land cover analysis, and digital elevation models through NetCDF API
-- **Remote sensing workflows** (v1.5.0+): Direct processing of satellite imagery and aerial photography stored in GeoTIFF format
+- **Weather forecasting**: Fast compression of large meteorological datasets with LZ4
+- **Climate modeling**: Efficient storage and access to simulation outputs with BZIP2
+- **Space physics research**: Direct access to NASA CDF satellite and mission data (IMAP, MMS, Van Allen Probes)
+- **Geospatial analysis**: Read GeoTIFF satellite imagery, land cover, and digital elevation models
+- **Remote sensing workflows**: Process MODIS, Landsat, and aerial photography in GeoTIFF format
+- **Satellite data processing**: Optimize storage for large observation datasets
+- **Ocean modeling**: Reduce I/O bottlenecks in simulation workflows
+- **HPC workflows**: Improve I/O performance with fast LZ4 compression
+- **Data archival**: Maximize storage efficiency with BZIP2 compression
+- **Multi-format analysis**: Unified NetCDF API for NetCDF-4, CDF, and GeoTIFF data
 
 #### Q: Can NEP handle real-time data streams?
 **A:** Yes! LZ4's high-speed compression makes it ideal for real-time or near-real-time data processing where low latency is critical.
@@ -214,4 +268,16 @@ For more information:
 
 ---
 
-*Last Updated: November 2025 (v1.1.0)*
+## Release History
+
+- **v0.1.3** (Nov 2025): Architecture shift from HDF5 VOL to NetCDF UDF, Doxygen documentation
+- **v1.0.0**: LZ4 and BZIP2 compression filters
+- **v1.1.0**: Fortran wrappers for compression functions
+- **v1.2.0**: Documentation improvements and GitHub Pages deployment
+- **v1.3.0**: NASA CDF format support via UDF handler
+- **v1.4.0**: Spack package manager support for NEP and CDF
+- **v1.5.0** (Jan 2026): GeoTIFF read support via UDF handler
+
+---
+
+*Last Updated: January 2026 (v1.5.0)*

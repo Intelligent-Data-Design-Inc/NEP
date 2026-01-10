@@ -16,6 +16,11 @@
 #include "ncdispatch.h"
 #include "nc4internal.h"
 
+#ifdef HAVE_GEOTIFF
+#include <geotiff/geotiff.h>
+#include <geotiff/geo_normalize.h>
+#endif
+
 /** GeoTIFF format uses UDF1 slot in NetCDF-C dispatch table */
 #define NC_FORMATX_NC_GEOTIFF NC_FORMATX_UDF1
 
@@ -36,6 +41,27 @@ typedef struct NC_VAR_GEOTIFF_INFO
     int geotiff_data_type;
 } NC_VAR_GEOTIFF_INFO_T;
 
+/** CRS coordinate system types */
+#define NC_GEOTIFF_CRS_UNKNOWN 0
+#define NC_GEOTIFF_CRS_GEOGRAPHIC 1
+#define NC_GEOTIFF_CRS_PROJECTED 2
+
+/** CRS parameter storage structure */
+typedef struct nc_geotiff_crs_info
+{
+    int crs_type; /* geographic or projected */
+    int epsg_code;
+    char crs_name[NC_MAX_NAME + 1];
+    double semi_major_axis;
+    double inverse_flattening;
+    double false_easting;
+    double false_northing;
+    double scale_factor;
+    double central_meridian;
+    double latitude_of_origin;
+    /* Additional projection parameters as needed */
+} NC_GEOTIFF_CRS_INFO_T;
+
 typedef struct NC_GEOTIFF_FILE_INFO
 {
     void *tiff_handle;
@@ -50,6 +76,7 @@ typedef struct NC_GEOTIFF_FILE_INFO
     uint32_t image_width;
     uint32_t image_height;
     uint16_t samples_per_pixel;
+    NC_GEOTIFF_CRS_INFO_T crs_info; /* CRS metadata */
 } NC_GEOTIFF_FILE_INFO_T;
 
 #if defined(__cplusplus)
@@ -87,6 +114,18 @@ extern "C" {
 
     extern int
     NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_info);
+
+#ifdef HAVE_GEOTIFF
+    extern int
+    extract_crs_parameters(GTIF *gtif, NC_GEOTIFF_CRS_INFO_T *crs_info);
+
+    extern int
+    map_geotiff_to_cf_attributes(const NC_GEOTIFF_CRS_INFO_T *crs_info, 
+                                       NC_ATT_INFO_T **atts, int *num_atts);
+
+    extern int
+    validate_crs_completeness(const NC_GEOTIFF_CRS_INFO_T *crs_info);
+#endif
 
     extern const NC_Dispatch *GEOTIFF_dispatch_table;
 
