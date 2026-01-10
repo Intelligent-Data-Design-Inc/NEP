@@ -1,5 +1,8 @@
 # NEP Development Roadmap
 
+### V1.6.0
+Implement Phase 4 of the GeoTIFF read layer for NEP v1.5.0: Extract and expose coordinate reference system (CRS) and georeferencing information following CF conventions. (see closed GitHub issue 59)
+
 ### v1.5.0 GeoTIFF Read Support (Released: January 2026)
 #### Sprint 1: GeoTIFF File Open/Close and Data Reading
 - [x] Add GeoTIFF test files in test/data (MODIS NRT Global Flood Product samples)
@@ -457,3 +460,4 @@
 - Unit tests
 - CI testing
 
+ 

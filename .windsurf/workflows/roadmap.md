@@ -1,51 +1,53 @@
 ---
-description: Expand roadmap sprint into detailed planning document
+description: Break version work into detailed sprint planning documents
 ---
 
-# Roadmap Sprint Expansion Workflow
+# Version Roadmap Planning Workflow
 
-This workflow creates detailed sprint planning documents from roadmap entries.
+This workflow breaks down a version's work into 1-5 detailed sprint planning documents.
 
 ## Usage
 
 ```
-/roadmap <version> sprint <number>
+/roadmap <version>
 ```
 
-**Example:** `/roadmap v0.4.0 sprint 3`
+**Example:** `/roadmap v2.0.0`
 
-**Output:** Updates `docs/roadmap.md` with clarified sprint details
+**Output:** Updates `docs/roadmap.md` with clarified sprint breakdown for the specified version
 
 ---
 
 ## Scope
 
 **Do:**
-- Expand and clarify tasks from the specified sprint
-- Identify technical gaps and missing requirements
+- Analyze the specified version's work and break it into 1-5 sprints
+- Identify technical gaps and missing requirements across all sprints
 - Update roadmap and related documentation with clarifications
+- Ensure logical dependency flow between sprints
 
 **Don't:**
-- Modify other versions or sprints
+- Modify other versions not specified
 - Implement code (save for `/plan` workflow)
-- Create new sprints or features not in the roadmap
+- Create more than 5 sprints for a version
+- Skip dependency analysis between sprints
 
 ---
 
 ## Steps
 
-### 1. Validate sprint exists
+### 1. Validate version exists
 
 - Read `docs/roadmap.md` and verify the specified version exists
-- Confirm the sprint number exists within that version
 - **If not found:** Report error and stop workflow
 
-### 2. Extract sprint details from roadmap
+### 2. Extract version details from roadmap
 
-- Locate the specified version and sprint number in `docs/roadmap.md`
-- Extract all tasks, goals, and definition of done criteria
-- Identify dependencies on previous sprints or external systems
-- Note any incomplete or ambiguous requirements
+- Locate the specified version in `docs/roadmap.md`
+- Extract all existing work items, goals, and requirements
+- Identify any existing sprint breakdown
+- Note incomplete or ambiguous requirements
+- Assess total scope and complexity of the version
 
 ### 3. Review related documentation for context
 
@@ -54,21 +56,24 @@ This workflow creates detailed sprint planning documents from roadmap entries.
 - Review existing sprint plans in `docs/plan/` to understand format and detail level
 - Check source code in `src/`, `include/`, and `test/` for existing patterns
 
-### 4. Analyze sprint scope and identify gaps
+### 4. Analyze version scope and identify optimal sprint breakdown
 
-- Review each task for completeness and clarity
-- Identify missing implementation details (NC_Dispatch functions, data structures, error handling)
-- Check for missing testing requirements (C unit tests, Fortran tests, integration tests)
-- Verify build system integration (CMake and Autotools)
+- Review all work items for completeness and clarity
+- Group related tasks into logical sprint units (1-5 sprints total)
+- Identify dependencies between task groups
+- Ensure each sprint has a coherent theme and deliverable
+- Check for missing implementation details (NC_Dispatch functions, data structures, error handling)
+- Verify testing requirements (C unit tests, Fortran tests, integration tests)
+- Assess build system integration (CMake and Autotools)
 - Identify dependency requirements and version constraints
-- Check if dependencies from previous sprints are satisfied
 
 ### 5. Ask 3-6 numbered clarifying questions
 
 **Focus areas:**
+- Sprint organization and dependency flow
 - Ambiguous requirements or missing technical details
 - Error handling strategies and NetCDF error code mapping
-- Testing expectations and coverage targets
+- Testing expectations and coverage targets per sprint
 - Build system integration and dependency detection
 - Memory management and resource cleanup
 - Integration with native format libraries (NCEPLIBS-g2, libgeotiff, NASA CDF)
@@ -86,17 +91,19 @@ This workflow creates detailed sprint planning documents from roadmap entries.
 - Ask follow-up questions to clarify
 - Maximum 2 rounds of questions total
 
-### 6. Update roadmap with clarifications
+### 6. Update roadmap with sprint breakdown
 
 - Incorporate answers from step 5 into `docs/roadmap.md`
-- Add implementation decisions to sprint section
+- Create 1-5 sprint sections with clear themes and deliverables
+- Distribute work items logically across sprints
 - Clarify ambiguous tasks with specific details
-- Add any new subtasks or requirements discovered
-- Update definition of done if needed
+- Add dependency information between sprints
+- Update definition of done for each sprint
+- Ensure each sprint builds incrementally toward version goals
 
 **Important:**
 - **DO NOT** add proposed code changes to the roadmap
-- Code can be added to the plan (next step)
+- Code can be added to individual sprint plans (next step)
 - If example code is presented by the user, that may be included in the roadmap
 
 ### 7. Update related documentation (if needed)
@@ -111,9 +118,12 @@ This workflow creates detailed sprint planning documents from roadmap entries.
 ### 8. Verify completion criteria
 
 **Confirm all items are satisfied:**
+- ✓ Version work is broken into 1-5 logical sprints
+- ✓ Each sprint has a coherent theme and clear deliverables
+- ✓ Dependencies between sprints are documented
 - ✓ All sprint tasks are clearly defined
-- ✓ Implementation approach is specified for each task
-- ✓ Testing requirements are identified
+- ✓ Implementation approach is specified for each major task
+- ✓ Testing requirements are identified for each sprint
 - ✓ Build system integration is addressed
 - ✓ Dependencies are documented
 - ✓ Error handling strategy is defined
@@ -121,19 +131,28 @@ This workflow creates detailed sprint planning documents from roadmap entries.
 
 **If any criteria are missing:** Return to step 5 and ask additional questions
 
-**Next step:** User can run `/plan <version> sprint <number>` to create detailed implementation plan
+**Next step:** User can run `/plan <version> sprint <number>` to create detailed implementation plan for individual sprints
 
 ---
 
 ## Error Handling
 
-**If sprint not found in roadmap:**
-- Report: "Sprint {number} not found in version {version} of docs/roadmap.md"
-- List available sprints for that version
+**If version not found in roadmap:**
+- Report: "Version {version} not found in docs/roadmap.md"
+- List available versions
 - Stop workflow
 
+**If version scope is too large for 5 sprints:**
+- Report: "Version {version} work is too complex for 5 sprints"
+- Suggest breaking into multiple versions or reducing scope
+- Ask user how to proceed
+
+**If version has insufficient work for 1 sprint:**
+- Report: "Version {version} has minimal work, consider combining with another version"
+- Ask user if they want to proceed with a single sprint
+
 **If dependencies not met:**
-- Report: "Previous sprint dependencies not satisfied"
+- Report: "Previous version dependencies not satisfied"
 - List missing dependencies
 - Ask user if they want to proceed anyway
 
