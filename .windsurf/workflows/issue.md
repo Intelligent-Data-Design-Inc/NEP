@@ -1,10 +1,10 @@
-# GitHub Issue Refinement and Planning Workflow
+---
+description: Refine GitHub issues and generate implementation plans
+---
 
-**PURPOSE: Refine the issue and generate an implementation plan. NO CODE IMPLEMENTATION.**
+# Issue Refinement Workflow
 
-This workflow helps refine GitHub issues systematically to clarify requirements, generate a detailed implementation plan, and document findings on GitHub.
-
-## Process Overview
+This workflow helps refine GitHub issues systematically to clarify requirements, identify dependencies, and generate actionable implementation plans.
 
 **This workflow refines issues and generates implementation plans—no code implementation.**
 
@@ -71,20 +71,25 @@ Review the project's documentation to gather architectural context and developme
 
 Ask 3-7 targeted questions to better understand the problem and requirements. Focus on:
 
-**Technical Requirements:**
-- What specific functionality needs to be implemented or fixed?
-- Are there any existing code patterns, architectural constraints, or technical debt I should be aware of?
-- What are the acceptance criteria for this issue?
+**For bug reports:**
+- Reproduction steps and environment details
+- Expected vs. actual behavior
+- Error messages or logs
+- When the issue started occurring
+- Any recent changes that might be related
 
-**Context & Constraints:**
-- What is the expected timeline and priority level?
-- Are there any dependencies on other teams, systems, or components?
-- What is the impact scope (users, systems, revenue, etc.)?
+**For feature requests:**
+- Specific use cases and workflows
+- Performance requirements or constraints
+- Integration with existing functionality
+- User interface considerations
+- Backward compatibility requirements
 
-**Implementation Details:**
-- Should this follow existing patterns in the codebase or introduce new approaches?
-- Are there specific technologies, frameworks, or versions that must be used?
-- What testing approach is expected (unit tests, integration tests, manual testing)?
+**For documentation issues:**
+- Which documentation needs updating
+- Target audience (users, developers, contributors)
+- Missing or unclear information
+- Examples that would be helpful
 
 Format questions as multiple choice with a recommended answer when appropriate.
 
@@ -112,7 +117,7 @@ Based on the answers provided, generate a structured implementation plan:
 **Plan Structure:**
 ```markdown
 ## Executive Summary
-<2-3 sentence summary of problem and solution approach>
+<Brief 2-3 sentence summary of the core problem and proposed solution approach>
 
 ## Requirements & Acceptance Criteria
 - [ ] <Specific, testable requirement 1>
@@ -120,29 +125,29 @@ Based on the answers provided, generate a structured implementation plan:
 - [ ] <Specific, testable requirement 3>
 
 ## Implementation Approach
-<High-level approach and rationale>
+<High-level technical approach and rationale for the chosen solution>
 
 ## Implementation Steps
-1. <Concrete step 1> - <estimated effort>
-2. <Concrete step 2> - <estimated effort>
-3. <Concrete step 3> - <estimated effort>
+1. <Concrete implementation step 1> - <estimated effort in hours/story points>
+2. <Concrete implementation step 2> - <estimated effort in hours/story points>
+3. <Concrete implementation step 3> - <estimated effort in hours/story points>
 
 ## Dependencies
-- Depends on #<issue_number> - <reason>
-- Blocks #<issue_number> - <reason>
+- Depends on #<issue_number> - <reason for dependency>
+- Blocks #<issue_number> - <reason for blocking>
 
 ## Testing Requirements
 - [ ] Unit tests for all new or modified functions
 - [ ] Unit tests for error handling paths
-- [ ] Integration test for <scenario>
-- [ ] Manual testing for <edge cases>
+- [ ] Integration test for <specific scenario>
+- [ ] Manual testing for <specific edge cases>
 - [ ] Test coverage verification (minimum 80% for new code)
 
 ## Risks & Mitigations
-- <Risk> → <Mitigation strategy>
+- <Identified risk> → <Specific mitigation strategy>
 
 ## Notes
-<Additional context, references to existing code, etc.>
+<Additional context, references to existing code patterns, etc.>
 ```
 
 **Quality checks:**
@@ -165,7 +170,7 @@ Create a comprehensive follow-up comment on the GitHub issue that documents the 
 ## Issue Refinement Summary
 
 ### Executive Summary
-<2-3 sentence recap of the core problem and the agreed solution approach>
+<Brief 2-3 sentence recap of the core problem and the agreed solution approach>
 
 ### Requirements & Acceptance Criteria
 - [ ] <Specific, testable requirement 1>
@@ -175,46 +180,31 @@ Create a comprehensive follow-up comment on the GitHub issue that documents the 
 ### Implementation Plan
 <High-level approach and rationale>
 
-#### Implementation Steps
-1. <Concrete step 1> - <estimated effort>
-2. <Concrete step 2> - <estimated effort>
-3. <Concrete step 3> - <estimated effort>
-
-### Dependencies
-- Depends on #<issue_number> - <reason>
-- Blocks #<issue_number> - <reason>
-
-### Testing Requirements
-- [ ] Unit tests for all new or modified functions
-- [ ] Unit tests for error handling paths
-- [ ] Integration test for <scenario>
-- [ ] Manual testing for <edge cases>
-- [ ] Test coverage verification (minimum 80% for new code)
-
-### Risks & Mitigations
-- <Risk> → <Mitigation strategy>
-
-### Notes
-<Additional context, references to existing code, etc.>
+### Next Steps
+<Immediate actions needed to proceed with implementation>
 ```
 
-**After posting the comment:**
-- Add relevant labels if needed (e.g., `ready-for-implementation`, `needs-design-review`)
-- Link to related issues or documentation
-- Consider adding to appropriate project board or milestone
-
-**Result:** The issue is now well-documented with a clear implementation plan ready for execution.
-
-## Important Constraints
-
-- **ABSOLUTELY NO CODE CHANGES**: Do not modify, create, or delete any code files
-- **ABSOLUTELY NO IMPLEMENTATION**: This workflow generates plans, not code
-- **Focus on planning**: The goal is to refine the issue and create a detailed implementation plan
-- **Record everything**: Document refined requirements and the implementation plan on GitHub
-- **Implementation happens separately**: Use the /implement workflow to execute the generated plan
+**Posting to GitHub:**
+Use the `gh` command line tool to post the comment to the issue:
+```bash
+gh issue comment <issue_number> --body "your comment text here"
+```
 
 ---
 
-**WORKFLOW OUTPUT: A refined GitHub issue with clarified requirements and a detailed implementation plan ready for execution via /implement workflow.**
+## Step 8: Final Review & Implementation Roadmap
 
-**Ready to begin. Please provide the GitHub issue URL or paste the issue content below:** 
+Review the complete analysis for completeness and accuracy, then append the finalized implementation roadmap to the bottom of the GitHub follow-up comment. The roadmap should include:
+
+- A numbered list of concrete implementation steps (to be executed in a separate workflow)
+- Owner/assignee for each major step
+- Estimated completion dates or effort
+- Dependencies between steps
+- Success criteria for each milestone
+
+**Final validation:**
+- ✓ All questions have been answered
+- ✓ Requirements are clear and testable
+- ✓ Implementation plan is technically sound
+- ✓ Dependencies are documented
+- ✓ Testing strategy is comprehensive

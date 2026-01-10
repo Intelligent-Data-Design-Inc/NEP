@@ -172,7 +172,7 @@ nc4_var_list_add_full(NC_GRP_INFO_T* grp, const char* name, int ndims, nc_type x
     if ((retval = nc4_set_var_type(xtype, endianness, type_size, type_name,
                                    &(*var)->type_info)))
         return retval;
-        
+
     /* Propagate the endianness to the variable */
     (*var)->endianness = (*var)->type_info->endianness;
 
@@ -214,7 +214,7 @@ nc4_var_list_add_full(NC_GRP_INFO_T* grp, const char* name, int ndims, nc_type x
  * @return NC_NOERR on success, error code otherwise.
  */
 static int
-read_tiff_header(FILE *fp, int *is_little_endian, int *is_bigtiff, 
+read_tiff_header(FILE *fp, int *is_little_endian, int *is_bigtiff,
                  unsigned int *ifd_offset)
 {
     unsigned char header[TIFF_HEADER_SIZE];
@@ -259,7 +259,7 @@ read_tiff_header(FILE *fp, int *is_little_endian, int *is_bigtiff,
     {
         *is_bigtiff = 0;
         /* Read IFD offset (4 bytes at offset 4) */
-        *ifd_offset = (header[4]) | (header[5] << 8) | 
+        *ifd_offset = (header[4]) | (header[5] << 8) |
                       (header[6] << 16) | (header[7] << 24);
         if (need_swap)
             *ifd_offset = swap32(*ifd_offset);
@@ -272,7 +272,7 @@ read_tiff_header(FILE *fp, int *is_little_endian, int *is_bigtiff,
         unsigned char bigtiff_header[8];
         if (fread(bigtiff_header, 1, 8, fp) != 8)
             return NC_ENOTNC;
-        *ifd_offset = (bigtiff_header[0]) | (bigtiff_header[1] << 8) | 
+        *ifd_offset = (bigtiff_header[0]) | (bigtiff_header[1] << 8) |
                       (bigtiff_header[2] << 16) | (bigtiff_header[3] << 24);
         if (need_swap)
             *ifd_offset = swap32(*ifd_offset);
@@ -517,19 +517,19 @@ NC_GEOTIFF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     fp = fopen(path, "rb");
     if (!fp)
         return NC_ENOTNC;
-    
+
     ret = read_tiff_header(fp, &is_little_endian, &is_bigtiff, &ifd_offset);
     if (ret != NC_NOERR)
     {
         fclose(fp);
         return ret;
     }
-    
+
     /* Check for GeoTIFF tags */
     int has_geotiff_tags;
     ret = check_geotiff_tags(fp, ifd_offset, is_little_endian, is_bigtiff, &has_geotiff_tags);
     fclose(fp);
-    
+
     if (ret != NC_NOERR)
         return ret;
     if (!has_geotiff_tags)
@@ -587,7 +587,7 @@ NC_GEOTIFF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
         int versions[3];
         int keycount;
         GTIFDirectoryInfo(gtif, versions, &keycount);
-        
+
         /* Check version compatibility (should be version 1) */
         if (versions[0] > 1)
         {
@@ -650,7 +650,7 @@ NC_GEOTIFF_close(int ncid, void *ignore)
     /* Find our metadata for this file */
     if ((retval = nc4_find_nc_grp_h5(ncid, &nc, &grp, &h5)))
         return retval;
-    
+
     if (!h5 || !h5->format_file_info)
         return NC_EBADID;
 
@@ -675,7 +675,7 @@ NC_GEOTIFF_close(int ncid, void *ignore)
     /* Free the NC_FILE_INFO_T struct */
     if ((retval = nc4_nc4f_list_del(h5)))
         return retval;
-    
+
     return NC_NOERR;
 }
 
@@ -931,7 +931,7 @@ NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_
     {
         GTIFDefn defn;
         memset(&defn, 0, sizeof(GTIFDefn));
-        
+
         if (GTIFGetDefn(gtif, &defn))
         {
             /* Store CRS information as attributes */
@@ -968,21 +968,21 @@ detect_tiff_organization(TIFF *tiff, NC_GEOTIFF_FILE_INFO_T *geotiff_info)
     uint32_t tile_width = 0, tile_height = 0;
     uint32_t rows_per_strip = 0;
     uint16_t planar_config = PLANARCONFIG_CONTIG;
-    
+
     if (!tiff || !geotiff_info)
         return NC_EINVAL;
-    
+
     /* Check if file is tiled */
     if (TIFFIsTiled(tiff))
     {
         geotiff_info->is_tiled = 1;
-        
+
         /* Get tile dimensions */
         if (!TIFFGetField(tiff, TIFFTAG_TILEWIDTH, &tile_width))
             return NC_EHDFERR;
         if (!TIFFGetField(tiff, TIFFTAG_TILELENGTH, &tile_height))
             return NC_EHDFERR;
-        
+
         geotiff_info->tile_width = tile_width;
         geotiff_info->tile_height = tile_height;
         geotiff_info->rows_per_strip = 0;
@@ -993,7 +993,7 @@ detect_tiff_organization(TIFF *tiff, NC_GEOTIFF_FILE_INFO_T *geotiff_info)
         geotiff_info->is_tiled = 0;
         geotiff_info->tile_width = 0;
         geotiff_info->tile_height = 0;
-        
+
         /* Get rows per strip */
         if (!TIFFGetField(tiff, TIFFTAG_ROWSPERSTRIP, &rows_per_strip))
         {
@@ -1002,7 +1002,7 @@ detect_tiff_organization(TIFF *tiff, NC_GEOTIFF_FILE_INFO_T *geotiff_info)
         }
         geotiff_info->rows_per_strip = rows_per_strip;
     }
-    
+
     /* Get planar configuration */
     if (!TIFFGetField(tiff, TIFFTAG_PLANARCONFIG, &planar_config))
     {
@@ -1010,7 +1010,7 @@ detect_tiff_organization(TIFF *tiff, NC_GEOTIFF_FILE_INFO_T *geotiff_info)
         planar_config = PLANARCONFIG_CONTIG;
     }
     geotiff_info->planar_config = planar_config;
-    
+
     return NC_NOERR;
 }
 
@@ -1032,30 +1032,30 @@ static void *
 allocate_read_buffer(NC_GEOTIFF_FILE_INFO_T *geotiff_info, size_t type_size)
 {
     size_t buffer_size;
-    
+
     if (!geotiff_info || type_size == 0)
         return NULL;
-    
+
     if (geotiff_info->is_tiled)
     {
         /* Allocate buffer for one tile */
-        buffer_size = (size_t)geotiff_info->tile_width * 
-                      (size_t)geotiff_info->tile_height * 
-                      (size_t)geotiff_info->samples_per_pixel * 
+        buffer_size = (size_t)geotiff_info->tile_width *
+                      (size_t)geotiff_info->tile_height *
+                      (size_t)geotiff_info->samples_per_pixel *
                       type_size;
     }
     else
     {
         /* Allocate buffer for one scanline */
-        buffer_size = (size_t)geotiff_info->image_width * 
-                      (size_t)geotiff_info->samples_per_pixel * 
+        buffer_size = (size_t)geotiff_info->image_width *
+                      (size_t)geotiff_info->samples_per_pixel *
                       type_size;
     }
-    
+
     /* Sanity check on buffer size */
     if (buffer_size > MAX_BUFFER_SIZE)
         return NULL;
-    
+
     return malloc(buffer_size);
 }
 
@@ -1094,26 +1094,26 @@ static int
 validate_hyperslab(NC_VAR_INFO_T *var, const size_t *start, const size_t *count)
 {
     int d;
-    
+
     if (!var || !start || !count)
         return NC_EINVAL;
-    
+
     /* Check each dimension */
     for (d = 0; d < (int)var->ndims; d++)
     {
         /* Check if start is within bounds */
         if (start[d] >= var->dim[d]->len)
             return NC_EEDGE;
-        
+
         /* Check if start + count exceeds dimension length */
         if (start[d] + count[d] > var->dim[d]->len)
             return NC_EEDGE;
-        
+
         /* Check for zero count (invalid) */
         if (count[d] == 0)
             return NC_EEDGE;
     }
-    
+
     return NC_NOERR;
 }
 
@@ -1135,11 +1135,11 @@ read_scanline(TIFF *tiff, uint32_t row, void *buffer, uint16_t samples_per_pixel
     (void)samples_per_pixel;
     if (!tiff || !buffer)
         return NC_EINVAL;
-    
+
     /* For single-band or PLANARCONFIG_CONTIG, read the scanline */
     if (TIFFReadScanline(tiff, buffer, row, 0) < 0)
         return NC_EHDFERR;
-    
+
     return NC_NOERR;
 }
 
@@ -1160,11 +1160,11 @@ read_tile(TIFF *tiff, uint32_t tile_x, uint32_t tile_y, void *buffer)
 {
     if (!tiff || !buffer)
         return NC_EINVAL;
-    
+
     /* Read the tile */
     if (TIFFReadTile(tiff, buffer, tile_x, tile_y, 0, 0) < 0)
         return NC_EHDFERR;
-    
+
     return NC_NOERR;
 }
 
@@ -1197,63 +1197,63 @@ read_single_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
     int retval = NC_NOERR;
 
     (void)var;
-    
+
     /* Get GeoTIFF info */
     geotiff_info = (NC_GEOTIFF_FILE_INFO_T *)h5->format_file_info;
     if (!geotiff_info || !geotiff_info->tiff_handle)
         return NC_EINVAL;
-    
+
     tiff = (TIFF *)geotiff_info->tiff_handle;
-    
+
     /* Extract start and count for 2D array [y, x] */
     start_y = start[0];
     start_x = start[1];
     count_y = count[0];
     count_x = count[1];
-    
+
     /* Allocate read buffer */
     read_buffer = allocate_read_buffer(geotiff_info, type_size);
     if (!read_buffer)
         return NC_ENOMEM;
-    
+
     if (geotiff_info->is_tiled)
     {
         /* Tiled reading */
         uint32_t tile_width = geotiff_info->tile_width;
         uint32_t tile_height = geotiff_info->tile_height;
         size_t y;
-        
+
         for (y = 0; y < count_y; y++)
         {
             size_t row = start_y + y;
             uint32_t tile_row = row / tile_height;
             uint32_t row_in_tile = row % tile_height;
             size_t x = 0;
-            
+
             while (x < count_x)
             {
                 size_t col = start_x + x;
                 uint32_t tile_col = col / tile_width;
                 uint32_t col_in_tile = col % tile_width;
                 size_t pixels_in_tile = tile_width - col_in_tile;
-                size_t pixels_to_copy = (pixels_in_tile < (count_x - x)) ? 
+                size_t pixels_to_copy = (pixels_in_tile < (count_x - x)) ?
                                        pixels_in_tile : (count_x - x);
-                
+
                 /* Read tile */
-                if ((retval = read_tile(tiff, tile_col * tile_width, 
+                if ((retval = read_tile(tiff, tile_col * tile_width,
                                        tile_row * tile_height, read_buffer)))
                 {
                     free_read_buffer(read_buffer);
                     return retval;
                 }
-                
+
                 /* Copy relevant portion */
-                unsigned char *dst = (unsigned char *)value + 
+                unsigned char *dst = (unsigned char *)value +
                                     (y * count_x + x) * type_size;
-                unsigned char *src = (unsigned char *)read_buffer + 
+                unsigned char *src = (unsigned char *)read_buffer +
                                     (row_in_tile * tile_width + col_in_tile) * type_size;
                 memcpy(dst, src, pixels_to_copy * type_size);
-                
+
                 x += pixels_to_copy;
             }
         }
@@ -1262,26 +1262,26 @@ read_single_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
     {
         /* Striped (scanline) reading */
         size_t y;
-        
+
         for (y = 0; y < count_y; y++)
         {
             uint32_t row = start_y + y;
-            
+
             /* Read scanline */
-            if ((retval = read_scanline(tiff, row, read_buffer, 
+            if ((retval = read_scanline(tiff, row, read_buffer,
                                        geotiff_info->samples_per_pixel)))
             {
                 free_read_buffer(read_buffer);
                 return retval;
             }
-            
+
             /* Copy relevant portion */
             unsigned char *dst = (unsigned char *)value + y * count_x * type_size;
             unsigned char *src = (unsigned char *)read_buffer + start_x * type_size;
             memcpy(dst, src, count_x * type_size);
         }
     }
-    
+
     free_read_buffer(read_buffer);
     return NC_NOERR;
 }
@@ -1317,14 +1317,14 @@ read_multi_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
     int retval = NC_NOERR;
 
     (void)var;
-    
+
     /* Get GeoTIFF info */
     geotiff_info = (NC_GEOTIFF_FILE_INFO_T *)h5->format_file_info;
     if (!geotiff_info || !geotiff_info->tiff_handle)
         return NC_EINVAL;
-    
+
     tiff = (TIFF *)geotiff_info->tiff_handle;
-    
+
     /* Extract start and count for 3D array [band, y, x] */
     start_band = start[0];
     start_y = start[1];
@@ -1332,12 +1332,12 @@ read_multi_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
     count_band = count[0];
     count_y = count[1];
     count_x = count[2];
-    
+
     /* Allocate read buffer */
     read_buffer = allocate_read_buffer(geotiff_info, type_size);
     if (!read_buffer)
         return NC_ENOMEM;
-    
+
     if (geotiff_info->planar_config == PLANARCONFIG_SEPARATE)
     {
         /* Band-interleaved: each band stored separately */
@@ -1346,30 +1346,30 @@ read_multi_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
         {
             uint16_t sample = start_band + band;
             size_t band_offset = band * count_y * count_x;
-            
+
             if (geotiff_info->is_tiled)
             {
                 /* Tiled reading for this band */
                 uint32_t tile_width = geotiff_info->tile_width;
                 uint32_t tile_height = geotiff_info->tile_height;
                 size_t y;
-                
+
                 for (y = 0; y < count_y; y++)
                 {
                     size_t row = start_y + y;
                     uint32_t tile_row = row / tile_height;
                     uint32_t row_in_tile = row % tile_height;
                     size_t x = 0;
-                    
+
                     while (x < count_x)
                     {
                         size_t col = start_x + x;
                         uint32_t tile_col = col / tile_width;
                         uint32_t col_in_tile = col % tile_width;
                         size_t pixels_in_tile = tile_width - col_in_tile;
-                        size_t pixels_to_copy = (pixels_in_tile < (count_x - x)) ? 
+                        size_t pixels_to_copy = (pixels_in_tile < (count_x - x)) ?
                                                pixels_in_tile : (count_x - x);
-                        
+
                         /* Read tile for this band */
                         if (TIFFReadTile(tiff, read_buffer, tile_col * tile_width,
                                         tile_row * tile_height, 0, sample) < 0)
@@ -1377,14 +1377,14 @@ read_multi_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
                             free_read_buffer(read_buffer);
                             return NC_EHDFERR;
                         }
-                        
+
                         /* Copy relevant portion */
-                        unsigned char *dst = (unsigned char *)value + 
+                        unsigned char *dst = (unsigned char *)value +
                                             (band_offset + y * count_x + x) * type_size;
-                        unsigned char *src = (unsigned char *)read_buffer + 
+                        unsigned char *src = (unsigned char *)read_buffer +
                                             (row_in_tile * tile_width + col_in_tile) * type_size;
                         memcpy(dst, src, pixels_to_copy * type_size);
-                        
+
                         x += pixels_to_copy;
                     }
                 }
@@ -1393,20 +1393,20 @@ read_multi_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
             {
                 /* Striped reading for this band */
                 size_t y;
-                
+
                 for (y = 0; y < count_y; y++)
                 {
                     uint32_t row = start_y + y;
-                    
+
                     /* Read scanline for this band */
                     if (TIFFReadScanline(tiff, read_buffer, row, sample) < 0)
                     {
                         free_read_buffer(read_buffer);
                         return NC_EHDFERR;
                     }
-                    
+
                     /* Copy relevant portion */
-                    unsigned char *dst = (unsigned char *)value + 
+                    unsigned char *dst = (unsigned char *)value +
                                         (band_offset + y * count_x) * type_size;
                     unsigned char *src = (unsigned char *)read_buffer + start_x * type_size;
                     memcpy(dst, src, count_x * type_size);
@@ -1425,23 +1425,23 @@ read_multi_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
             uint32_t tile_height = geotiff_info->tile_height;
             uint16_t samples_per_pixel = geotiff_info->samples_per_pixel;
             size_t y;
-            
+
             for (y = 0; y < count_y; y++)
             {
                 size_t row = start_y + y;
                 uint32_t tile_row = row / tile_height;
                 uint32_t row_in_tile = row % tile_height;
                 size_t x = 0;
-                
+
                 while (x < count_x)
                 {
                     size_t col = start_x + x;
                     uint32_t tile_col = col / tile_width;
                     uint32_t col_in_tile = col % tile_width;
                     size_t pixels_in_tile = tile_width - col_in_tile;
-                    size_t pixels_to_copy = (pixels_in_tile < (count_x - x)) ? 
+                    size_t pixels_to_copy = (pixels_in_tile < (count_x - x)) ?
                                            pixels_in_tile : (count_x - x);
-                    
+
                     /* Read tile */
                     if ((retval = read_tile(tiff, tile_col * tile_width,
                                            tile_row * tile_height, read_buffer)))
@@ -1449,13 +1449,13 @@ read_multi_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
                         free_read_buffer(read_buffer);
                         return retval;
                     }
-                    
+
                     /* De-interleave pixels for requested bands */
                     size_t p;
                     for (p = 0; p < pixels_to_copy; p++)
                     {
                         size_t src_pixel = (row_in_tile * tile_width + col_in_tile + p) * samples_per_pixel;
-                        
+
                         for (band = 0; band < count_band; band++)
                         {
                             size_t src_offset = (src_pixel + start_band + band) * type_size;
@@ -1465,7 +1465,7 @@ read_multi_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
                                    type_size);
                         }
                     }
-                    
+
                     x += pixels_to_copy;
                 }
             }
@@ -1475,24 +1475,24 @@ read_multi_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
             /* Striped reading */
             uint16_t samples_per_pixel = geotiff_info->samples_per_pixel;
             size_t y;
-            
+
             for (y = 0; y < count_y; y++)
             {
                 uint32_t row = start_y + y;
-                
+
                 /* Read scanline */
                 if ((retval = read_scanline(tiff, row, read_buffer, samples_per_pixel)))
                 {
                     free_read_buffer(read_buffer);
                     return retval;
                 }
-                
+
                 /* De-interleave pixels for requested bands */
                 size_t x;
                 for (x = 0; x < count_x; x++)
                 {
                     size_t src_pixel = (start_x + x) * samples_per_pixel;
-                    
+
                     for (band = 0; band < count_band; band++)
                     {
                         size_t src_offset = (src_pixel + start_band + band) * type_size;
@@ -1505,7 +1505,7 @@ read_multi_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
             }
         }
     }
-    
+
     free_read_buffer(read_buffer);
     return NC_NOERR;
 }
@@ -1537,22 +1537,22 @@ NC_GEOTIFF_get_vara(int ncid, int varid, const size_t *startp,
     int retval;
 
     (void)memtype;
-    
+
     /* Get file and variable info */
     if ((retval = nc4_find_grp_h5_var(ncid, varid, &h5, NULL, &var)))
         return retval;
-    
+
     if (!h5 || !var || !startp || !countp || !value)
         return NC_EINVAL;
-    
+
     /* Validate hyperslab */
     if ((retval = validate_hyperslab(var, startp, countp)))
         return retval;
-    
+
     /* Get type size */
     if ((retval = nc4_get_typelen_mem(h5, var->type_info->hdr.id, &type_size)))
         return retval;
-    
+
     /* Support both 2D (single-band) and 3D (multi-band) variables */
     if (var->ndims == 2)
     {
