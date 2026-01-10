@@ -8,15 +8,19 @@ This workflow helps refine GitHub issues systematically to clarify requirements,
 
 **This workflow refines issues and generates implementation plans—no code implementation.**
 
-1. **Issue Assessment**: Review the GitHub issue to understand the core problem
-2. **Documentation Research**: Consult project documentation for architectural context and development guidance
-3. **Requirements Refinement**: Ask targeted clarifying questions to fill knowledge gaps
-4. **Implementation Plan Generation**: Create a detailed, actionable plan for future implementation
-5. **GitHub Documentation**: Record refined requirements and implementation plan on GitHub
+1. **Issue Assessment & Validation**: Review and validate the GitHub issue
+2. **Documentation Research**: Consult project documentation for architectural context
+3. **Codebase Context**: Examine existing code patterns and similar implementations
+4. **Requirements Refinement**: Ask targeted clarifying questions
+5. **Dependency Analysis**: Check for dependencies and conflicts
+6. **Implementation Plan Generation**: Create structured, actionable plan
+7. **GitHub Documentation**: Record refined requirements and implementation plan
 
 **The output is a refined issue with a clear implementation plan. Code implementation happens in a separate workflow.**
 
-## Step 1: Issue Analysis
+---
+
+## Step 1: Issue Analysis & Validation
 
 First, thoroughly examine the GitHub issue to understand:
 - The problem description and context
@@ -24,17 +28,46 @@ First, thoroughly examine the GitHub issue to understand:
 - Any error messages, logs, or screenshots provided
 - Existing discussion or comments
 
+**Validate issue quality:**
+- ✓ Issue title is clear and specific
+- ✓ Problem description is understandable
+- ✓ Expected behavior is defined
+- ✓ At least one reproduction step (for bugs)
+- ✓ Environment details provided (if relevant)
+- **If issue is incomplete:** Ask for missing information before proceeding
+
+---
+
 ## Step 2: Consult Project Documentation
 
 Review the project's documentation to gather architectural context and development guidance:
 - **Examine docs/design.md** for system architecture, design patterns, and technical specifications
 - **Check docs/prd.md** for product requirements, feature specifications, and business requirements
 - **Review docs/prfaq.md** for frequently asked questions, common issues, and implementation guidance
+- **Check README.md** for build instructions, dependencies, and project overview
 - Look for relevant design decisions or technical specifications in the documentation
 - Understand established patterns and conventions used in the project
-- Review any setup, deployment, or configuration guidelines
 
-## Step 3: Clarifying Questions
+---
+
+## Step 3: Examine Codebase Context
+
+**Search for similar implementations:**
+- Look for related functionality in `src/`, `include/`, `test/`
+- Identify existing NC_Dispatch implementations to follow
+- Review error handling patterns and NetCDF error codes used
+- Check memory management patterns (allocation, cleanup)
+- Note build system patterns (CMake, Autotools)
+
+**Check GitHub context:**
+- Search for related existing issues (open and closed)
+- Check for relevant pull requests
+- Note any blocking or related issues
+- Identify available milestones or project boards
+
+---
+
+## Step 4: Clarifying Questions
 
 Ask 3-7 targeted questions to better understand the problem and requirements. Focus on:
 
@@ -55,61 +88,122 @@ Ask 3-7 targeted questions to better understand the problem and requirements. Fo
 
 Format questions as multiple choice with a recommended answer when appropriate.
 
-## Step 4: Implementation Plan Generation (NOT Implementation)
+---
 
-Based on the answers provided, generate a detailed implementation plan:
-- Summarize the key requirements and constraints
-- Identify the proposed approach and rationale
-- Outline specific implementation steps in priority order (for later execution)
-- Highlight any risks, assumptions, or dependencies
-- Estimate effort and identify dependencies between steps
+## Step 5: Dependency Analysis
+
+**Identify dependencies and conflicts:**
+- Check if this issue depends on other open issues
+- Look for potential conflicts with in-progress work
+- Identify external dependencies (libraries, systems, teams)
+- Note any blocking issues or prerequisites
+
+**Document dependencies:**
+- List dependent issues with issue numbers
+- Identify any work that must be completed first
+- Note any conflicts that need resolution
+
+---
+
+## Step 6: Implementation Plan Generation (NOT Implementation)
+
+Based on the answers provided, generate a structured implementation plan:
+
+**Plan Structure:**
+```markdown
+## Executive Summary
+<2-3 sentence summary of problem and solution approach>
+
+## Requirements & Acceptance Criteria
+- [ ] <Specific, testable requirement 1>
+- [ ] <Specific, testable requirement 2>
+- [ ] <Specific, testable requirement 3>
+
+## Implementation Approach
+<High-level approach and rationale>
+
+## Implementation Steps
+1. <Concrete step 1> - <estimated effort>
+2. <Concrete step 2> - <estimated effort>
+3. <Concrete step 3> - <estimated effort>
+
+## Dependencies
+- Depends on #<issue_number> - <reason>
+- Blocks #<issue_number> - <reason>
+
+## Testing Requirements
+- [ ] Unit tests for all new or modified functions
+- [ ] Unit tests for error handling paths
+- [ ] Integration test for <scenario>
+- [ ] Manual testing for <edge cases>
+- [ ] Test coverage verification (minimum 80% for new code)
+
+## Risks & Mitigations
+- <Risk> → <Mitigation strategy>
+
+## Notes
+<Additional context, references to existing code, etc.>
+```
+
+**Quality checks:**
+- ✓ Steps are concrete and actionable
+- ✓ Dependencies are clearly identified
+- ✓ Testing requirements are specific
+- ✓ Effort estimates are reasonable
+- ✓ Plan follows project conventions
 
 **Goal: Create a clear, actionable plan that can be executed in a separate implementation workflow.**
 
-## Step 5: GitHub Documentation
+---
 
-Create a comprehensive follow-up comment on the GitHub issue that documents the refined requirements and implementation plan. This serves as both a record and a roadmap for future implementation. The comment should be structured with clear sections:
+## Step 7: GitHub Documentation
 
-**Executive Summary:**
-- 2-3 sentence recap of the core problem and the agreed solution approach
-- Brief mention of the expected outcome and business value
+Create a comprehensive follow-up comment on the GitHub issue that documents the refined requirements and implementation plan. This serves as both a record and a roadmap for future implementation.
 
-**Requirements & Acceptance Criteria:**
-- Clear, testable requirements in bullet point format
-- Specific acceptance criteria that define "done"
-- Any non-functional requirements (performance, security, usability)
+**Comment structure:**
+```markdown
+## Issue Refinement Summary
 
-**Technical Implementation Plan:**
-- Detailed step-by-step approach with logical grouping
-- Estimated effort for each major component (story points or time)
-- Key technical decisions and their rationale
-- Integration points with existing systems
+### Executive Summary
+<2-3 sentence recap of the core problem and the agreed solution approach>
 
-**Open Questions & Decision Points:**
-- Outstanding items that need stakeholder input
-- Decisions that need to be made before implementation
-- Areas requiring further research or prototyping
+### Requirements & Acceptance Criteria
+- [ ] <Specific, testable requirement 1>
+- [ ] <Specific, testable requirement 2>
+- [ ] <Specific, testable requirement 3>
 
-**Posting to GitHub:**
-Use the `gh` command line tool to post the comment to the issue:
-```bash
-gh issue comment <issue_number> --body "your comment text here"
+### Implementation Plan
+<High-level approach and rationale>
+
+#### Implementation Steps
+1. <Concrete step 1> - <estimated effort>
+2. <Concrete step 2> - <estimated effort>
+3. <Concrete step 3> - <estimated effort>
+
+### Dependencies
+- Depends on #<issue_number> - <reason>
+- Blocks #<issue_number> - <reason>
+
+### Testing Requirements
+- [ ] Unit tests for all new or modified functions
+- [ ] Unit tests for error handling paths
+- [ ] Integration test for <scenario>
+- [ ] Manual testing for <edge cases>
+- [ ] Test coverage verification (minimum 80% for new code)
+
+### Risks & Mitigations
+- <Risk> → <Mitigation strategy>
+
+### Notes
+<Additional context, references to existing code, etc.>
 ```
-This ensures the comment is properly posted even if MCP GitHub tools have permission issues.
 
-## Step 6: Final Review & Implementation Roadmap
+**After posting the comment:**
+- Add relevant labels if needed (e.g., `ready-for-implementation`, `needs-design-review`)
+- Link to related issues or documentation
+- Consider adding to appropriate project board or milestone
 
-Review the complete analysis for completeness and accuracy, then append the finalized implementation roadmap to the bottom of the GitHub follow-up comment. The roadmap should include:
-
-- A numbered list of concrete implementation steps (to be executed in a separate workflow)
-- Owner/assignee for each major step
-- Estimated completion dates or effort
-- Dependencies between steps
-- Success criteria for each milestone
-
-This ensures everyone has a clear, actionable roadmap that can be tracked directly from the GitHub issue.
-
-**This roadmap is the PRIMARY OUTPUT of this workflow. It documents what WILL be done when the implementation workflow is executed. Do not implement these steps now.**
+**Result:** The issue is now well-documented with a clear implementation plan ready for execution.
 
 ## Important Constraints
 
