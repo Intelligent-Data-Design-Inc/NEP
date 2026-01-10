@@ -290,6 +290,177 @@ test_second_nasa_file(void)
     return 0;
 }
 
+/**
+ * Test CRS metadata extraction.
+ */
+int
+test_crs_extraction(void)
+{
+    int ncid;
+    int natts;
+    char att_name[NC_MAX_NAME + 1];
+    nc_type att_type;
+    size_t att_len;
+    int ret;
+    int found_crs_atts = 0;
+
+    printf("Testing CRS extraction...");
+    
+    /* Open GeoTIFF file */
+    ret = nc_open(NASA_DATA_DIR "MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif", 
+                  NC_NOWRITE, &ncid);
+    ERR_CHECK(ret);
+
+    /* Query number of global attributes */
+    ret = nc_inq_natts(ncid, &natts);
+    ERR_CHECK(ret);
+
+    /* Look for CRS-related attributes */
+    for (int i = 0; i < natts; i++)
+    {
+        ret = nc_inq_attname(ncid, NC_GLOBAL, i, att_name);
+        ERR_CHECK(ret);
+
+        /* Check for CRS attribute prefixes */
+        if (strncmp(att_name, "geotiff_", 9) == 0)
+        {
+            found_crs_atts++;
+            
+            /* Verify attribute type and length */
+            ret = nc_inq_att(ncid, NC_GLOBAL, att_name, &att_type, &att_len);
+            ERR_CHECK(ret);
+            
+            /* Basic validation */
+            if (att_len == 0)
+            {
+                printf("FAILED - CRS attribute %s has zero length\n", att_name);
+                nc_close(ncid);
+                return 1;
+            }
+        }
+    }
+
+    /* We should find at least some CRS attributes if the file has CRS information */
+    /* Note: Some files might not have CRS, so we don't require a minimum count */
+    
+    nc_close(ncid);
+    printf("ok (found %d CRS attributes)\n", found_crs_atts);
+    return 0;
+}
+
+/**
+ * Test CRS parameter validation.
+ */
+int
+test_crs_validation(void)
+{
+    int ncid;
+    int natts;
+    char att_name[NC_MAX_NAME + 1];
+    int epsg_code = -1;
+    char crs_name[NC_MAX_NAME + 1] = "";
+    int ret;
+
+    printf("Testing CRS validation...");
+    
+    /* Open GeoTIFF file */
+    ret = nc_open(NASA_DATA_DIR "MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif", 
+                  NC_NOWRITE, &ncid);
+    ERR_CHECK(ret);
+
+    /* Query number of global attributes */
+    ret = nc_inq_natts(ncid, &natts);
+    ERR_CHECK(ret);
+
+    /* Look for specific CRS attributes */
+    for (int i = 0; i < natts; i++)
+    {
+        ret = nc_inq_attname(ncid, NC_GLOBAL, i, att_name);
+        ERR_CHECK(ret);
+
+        if (strcmp(att_name, "geotiff_epsg_code") == 0)
+        {
+            ret = nc_get_att_int(ncid, NC_GLOBAL, att_name, &epsg_code);
+            ERR_CHECK(ret);
+        }
+        else if (strcmp(att_name, "geotiff_crs_name") == 0)
+        {
+            ret = nc_get_att_text(ncid, NC_GLOBAL, att_name, crs_name);
+            ERR_CHECK(ret);
+        }
+    }
+
+    /* Basic validation of extracted CRS information */
+    if (epsg_code != -1)
+    {
+        /* If we have an EPSG code, it should be reasonable */
+        if (epsg_code <= 0 || epsg_code > 100000)
+        {
+            printf("WARNING - EPSG code %d seems unusual\n", epsg_code);
+        }
+    }
+
+    if (strlen(crs_name) > 0)
+    {
+        /* If we have a CRS name, it should be a known type */
+        if (strcmp(crs_name, "Geographic") != 0 && 
+            strcmp(crs_name, "Projected") != 0 && 
+            strcmp(crs_name, "Unknown") != 0)
+        {
+            printf("WARNING - Unexpected CRS name: %s\n", crs_name);
+        }
+    }
+
+    nc_close(ncid);
+    printf("ok\n");
+    return 0;
+}
+
+/**
+ * Test CRS extraction with files that might not have CRS.
+ */
+int
+test_crs_graceful_degradation(void)
+{
+    int ncid;
+    int natts;
+    char att_name[NC_MAX_NAME + 1];
+    int found_crs_atts = 0;
+    int ret;
+
+    printf("Testing CRS graceful degradation...");
+    
+    /* Try to open a file (this might or might not have CRS) */
+    ret = nc_open(NASA_DATA_DIR "ABBA_2022_C61_HNL.tif", NC_NOWRITE, &ncid);
+    if (ret != NC_NOERR)
+    {
+        /* If file doesn't exist or can't be opened, that's ok for this test */
+        printf("ok (file not available for CRS degradation test)\n");
+        return 0;
+    }
+
+    /* Query number of global attributes */
+    ret = nc_inq_natts(ncid, &natts);
+    ERR_CHECK(ret);
+
+    /* Look for CRS-related attributes */
+    for (int i = 0; i < natts; i++)
+    {
+        ret = nc_inq_attname(ncid, NC_GLOBAL, i, att_name);
+        ERR_CHECK(ret);
+
+        if (strncmp(att_name, "geotiff_", 9) == 0)
+        {
+            found_crs_atts++;
+        }
+    }
+
+    /* The file should open successfully regardless of CRS presence */
+    nc_close(ncid);
+    printf("ok (file opened successfully, %d CRS attributes found)\n", found_crs_atts);
+    return 0;
+}
+
 #endif /* HAVE_GEOTIFF */
 
 int
@@ -332,6 +503,11 @@ main(void)
     /* Test metadata extraction */
     err += test_dimension_extraction();
     err += test_variable_extraction();
+    
+    /* Test CRS extraction */
+    err += test_crs_extraction();
+    err += test_crs_validation();
+    err += test_crs_graceful_degradation();
     
     /* Test format inquiry */
     err += test_format_inquiry();

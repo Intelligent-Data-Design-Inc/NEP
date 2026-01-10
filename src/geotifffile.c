@@ -929,20 +929,516 @@ NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_
     /* Extract CRS information if GTIFNew succeeded */
     if (gtif)
     {
-        GTIFDefn defn;
-        memset(&defn, 0, sizeof(GTIFDefn));
-
-        if (GTIFGetDefn(gtif, &defn))
+        /* Extract CRS parameters using helper function */
+        int retval = extract_crs_parameters(gtif, &geotiff_info->crs_info);
+        if (retval == NC_NOERR)
         {
-            /* Store CRS information as attributes */
-            if (defn.Model != 0)
+            /* Validate CRS completeness */
+            retval = validate_crs_completeness(&geotiff_info->crs_info);
+            if (retval == NC_NOERR)
             {
-                /* CRS information is available */
-                /* Full CF-compliant grid mapping support can be added in future */
+                /* Map CRS parameters to NetCDF attributes */
+                NC_ATT_INFO_T *att = NULL;
+                char att_name[NC_MAX_NAME + 1];
+                void *att_data = NULL;
+                
+                /* Add EPSG code attribute */
+                if (geotiff_info->crs_info.epsg_code != 0)
+                {
+                    strcpy(att_name, "geotiff_epsg_code");
+                    att_data = malloc(sizeof(int));
+                    if (att_data)
+                    {
+                        *(int*)att_data = geotiff_info->crs_info.epsg_code;
+                        if ((retval = nc4_att_list_add(grp->att, att_name, &att)) == NC_NOERR)
+                        {
+                            att->data = att_data;
+                            att->len = 1;
+                            att->nc_typeid = NC_INT;
+                        }
+                        else
+                        {
+                            free(att_data);
+                        }
+                    }
+                }
+                
+                /* Add CRS name attribute */
+                if (strlen(geotiff_info->crs_info.crs_name) > 0)
+                {
+                    strcpy(att_name, "geotiff_crs_name");
+                    att_data = malloc(strlen(geotiff_info->crs_info.crs_name) + 1);
+                    if (att_data)
+                    {
+                        strcpy(att_data, geotiff_info->crs_info.crs_name);
+                        if ((retval = nc4_att_list_add(grp->att, att_name, &att)) == NC_NOERR)
+                        {
+                            att->data = att_data;
+                            att->len = strlen(geotiff_info->crs_info.crs_name) + 1;
+                            att->nc_typeid = NC_CHAR;
+                        }
+                        else
+                        {
+                            free(att_data);
+                        }
+                    }
+                }
+                
+                /* Add ellipsoid parameters */
+                if (geotiff_info->crs_info.semi_major_axis != 0.0)
+                {
+                    strcpy(att_name, "geotiff_semi_major_axis");
+                    att_data = malloc(sizeof(double));
+                    if (att_data)
+                    {
+                        *(double*)att_data = geotiff_info->crs_info.semi_major_axis;
+                        if ((retval = nc4_att_list_add(grp->att, att_name, &att)) == NC_NOERR)
+                        {
+                            att->data = att_data;
+                            att->len = 1;
+                            att->nc_typeid = NC_DOUBLE;
+                        }
+                        else
+                        {
+                            free(att_data);
+                        }
+                    }
+                }
+                
+                if (geotiff_info->crs_info.inverse_flattening != 0.0)
+                {
+                    strcpy(att_name, "geotiff_inverse_flattening");
+                    att_data = malloc(sizeof(double));
+                    if (att_data)
+                    {
+                        *(double*)att_data = geotiff_info->crs_info.inverse_flattening;
+                        if ((retval = nc4_att_list_add(grp->att, att_name, &att)) == NC_NOERR)
+                        {
+                            att->data = att_data;
+                            att->len = 1;
+                            att->nc_typeid = NC_DOUBLE;
+                        }
+                        else
+                        {
+                            free(att_data);
+                        }
+                    }
+                }
+                
+                /* Add projection parameters for projected CRS */
+                if (geotiff_info->crs_info.crs_type == NC_GEOTIFF_CRS_PROJECTED)
+                {
+                    if (geotiff_info->crs_info.false_easting != 0.0)
+                    {
+                        strcpy(att_name, "geotiff_false_easting");
+                        att_data = malloc(sizeof(double));
+                        if (att_data)
+                        {
+                            *(double*)att_data = geotiff_info->crs_info.false_easting;
+                            if ((retval = nc4_att_list_add(grp->att, att_name, &att)) == NC_NOERR)
+                            {
+                                att->data = att_data;
+                                att->len = 1;
+                                att->nc_typeid = NC_DOUBLE;
+                            }
+                            else
+                            {
+                                free(att_data);
+                            }
+                        }
+                    }
+                    
+                    if (geotiff_info->crs_info.false_northing != 0.0)
+                    {
+                        strcpy(att_name, "geotiff_false_northing");
+                        att_data = malloc(sizeof(double));
+                        if (att_data)
+                        {
+                            *(double*)att_data = geotiff_info->crs_info.false_northing;
+                            if ((retval = nc4_att_list_add(grp->att, att_name, &att)) == NC_NOERR)
+                            {
+                                att->data = att_data;
+                                att->len = 1;
+                                att->nc_typeid = NC_DOUBLE;
+                            }
+                            else
+                            {
+                                free(att_data);
+                            }
+                        }
+                    }
+                    
+                    if (geotiff_info->crs_info.scale_factor != 0.0)
+                    {
+                        strcpy(att_name, "geotiff_scale_factor");
+                        att_data = malloc(sizeof(double));
+                        if (att_data)
+                        {
+                            *(double*)att_data = geotiff_info->crs_info.scale_factor;
+                            if ((retval = nc4_att_list_add(grp->att, att_name, &att)) == NC_NOERR)
+                            {
+                                att->data = att_data;
+                                att->len = 1;
+                                att->nc_typeid = NC_DOUBLE;
+                            }
+                            else
+                            {
+                                free(att_data);
+                            }
+                        }
+                    }
+                    
+                    if (geotiff_info->crs_info.central_meridian != 0.0)
+                    {
+                        strcpy(att_name, "geotiff_central_meridian");
+                        att_data = malloc(sizeof(double));
+                        if (att_data)
+                        {
+                            *(double*)att_data = geotiff_info->crs_info.central_meridian;
+                            if ((retval = nc4_att_list_add(grp->att, att_name, &att)) == NC_NOERR)
+                            {
+                                att->data = att_data;
+                                att->len = 1;
+                                att->nc_typeid = NC_DOUBLE;
+                            }
+                            else
+                            {
+                                free(att_data);
+                            }
+                        }
+                    }
+                    
+                    if (geotiff_info->crs_info.latitude_of_origin != 0.0)
+                    {
+                        strcpy(att_name, "geotiff_latitude_of_origin");
+                        att_data = malloc(sizeof(double));
+                        if (att_data)
+                        {
+                            *(double*)att_data = geotiff_info->crs_info.latitude_of_origin;
+                            if ((retval = nc4_att_list_add(grp->att, att_name, &att)) == NC_NOERR)
+                            {
+                                att->data = att_data;
+                                att->len = 1;
+                                att->nc_typeid = NC_DOUBLE;
+                            }
+                            else
+                            {
+                                free(att_data);
+                            }
+                        }
+                    }
+                }
             }
+            else
+            {
+                /* CRS validation failed - continue without CRS but log warning */
+                /* In a production environment, you might want to add logging here */
+            }
+        }
+        else
+        {
+            /* CRS extraction failed - continue without CRS but this is expected for files without CRS */
         }
     }
 
+    return NC_NOERR;
+}
+
+/**
+ * @internal Extract CRS parameters from GTIF definition.
+ *
+ * This function parses the GTIFDefn structure and extracts relevant CRS
+ * parameters into a structured format suitable for NetCDF attribute creation.
+ *
+ * @param gtif GTIF handle.
+ * @param crs_info CRS info structure to populate.
+ * @return NC_NOERR on success, error code otherwise.
+ */
+int
+extract_crs_parameters(GTIF *gtif, NC_GEOTIFF_CRS_INFO_T *crs_info)
+{
+    GTIFDefn defn;
+    
+    if (!gtif || !crs_info)
+        return NC_EINVAL;
+    
+    /* Initialize CRS info structure */
+    memset(crs_info, 0, sizeof(NC_GEOTIFF_CRS_INFO_T));
+    crs_info->crs_type = NC_GEOTIFF_CRS_UNKNOWN;
+    
+    /* Get GTIF definition */
+    memset(&defn, 0, sizeof(GTIFDefn));
+    if (!GTIFGetDefn(gtif, &defn))
+        return NC_NOERR; /* No CRS data available, but not an error */
+    
+    /* Extract basic CRS information */
+    /* Note: GTIFDefn doesn't have EPSGCode field directly */
+    crs_info->epsg_code = 0; /* Could be derived from other fields if needed */
+    
+    /* Determine CRS type */
+    if (defn.Model == ModelTypeGeographic)
+    {
+        crs_info->crs_type = NC_GEOTIFF_CRS_GEOGRAPHIC;
+        strncpy(crs_info->crs_name, "Geographic", NC_MAX_NAME);
+    }
+    else if (defn.Model == ModelTypeProjected)
+    {
+        crs_info->crs_type = NC_GEOTIFF_CRS_PROJECTED;
+        strncpy(crs_info->crs_name, "Projected", NC_MAX_NAME);
+    }
+    else
+    {
+        crs_info->crs_type = NC_GEOTIFF_CRS_UNKNOWN;
+        strncpy(crs_info->crs_name, "Unknown", NC_MAX_NAME);
+    }
+    
+    /* Extract ellipsoid parameters */
+    if (defn.SemiMajor != 0.0)
+        crs_info->semi_major_axis = defn.SemiMajor;
+    
+    /* Calculate inverse flattening from semi-major and semi-minor axes */
+    if (defn.SemiMajor != 0.0 && defn.SemiMinor != 0.0 && defn.SemiMajor != defn.SemiMinor)
+        crs_info->inverse_flattening = defn.SemiMajor / (defn.SemiMajor - defn.SemiMinor);
+    
+    /* Extract projection parameters for projected CRS */
+    if (crs_info->crs_type == NC_GEOTIFF_CRS_PROJECTED)
+    {
+        /* Look for common projection parameters in ProjParm array */
+        for (int i = 0; i < defn.nParms; i++)
+        {
+            switch (defn.ProjParmId[i])
+            {
+                case ProjFalseEastingGeoKey:
+                    crs_info->false_easting = defn.ProjParm[i];
+                    break;
+                case ProjFalseNorthingGeoKey:
+                    crs_info->false_northing = defn.ProjParm[i];
+                    break;
+                case ProjScaleAtOriginGeoKey:
+                    crs_info->scale_factor = defn.ProjParm[i];
+                    break;
+                case ProjNatOriginLongGeoKey:
+                    crs_info->central_meridian = defn.ProjParm[i];
+                    break;
+                case ProjNatOriginLatGeoKey:
+                    crs_info->latitude_of_origin = defn.ProjParm[i];
+                    break;
+                default:
+                    /* Other projection parameters not used in this implementation */
+                    break;
+            }
+        }
+    }
+    
+    return NC_NOERR;
+}
+
+/**
+ * @internal Map GeoTIFF CRS parameters to CF-compliant attributes.
+ *
+ * This function converts the extracted CRS parameters into NetCDF attributes
+ * following CF conventions where applicable.
+ *
+ * @param crs_info CRS info structure.
+ * @param atts Pointer to array of attributes (output).
+ * @param num_atts Pointer to number of attributes (output).
+ * @return NC_NOERR on success, error code otherwise.
+ */
+int
+map_geotiff_to_cf_attributes(const NC_GEOTIFF_CRS_INFO_T *crs_info, 
+                           NC_ATT_INFO_T **atts, int *num_atts)
+{
+    if (!crs_info || !atts || !num_atts)
+        return NC_EINVAL;
+    
+    *atts = NULL;
+    *num_atts = 0;
+    
+    /* Only create attributes if we have valid CRS information */
+    if (crs_info->crs_type == NC_GEOTIFF_CRS_UNKNOWN)
+        return NC_NOERR;
+    
+    /* Calculate number of attributes needed */
+    int att_count = 0;
+    if (crs_info->epsg_code != 0) att_count++;
+    if (strlen(crs_info->crs_name) > 0) att_count++;
+    if (crs_info->semi_major_axis != 0.0) att_count++;
+    if (crs_info->inverse_flattening != 0.0) att_count++;
+    if (crs_info->false_easting != 0.0) att_count++;
+    if (crs_info->false_northing != 0.0) att_count++;
+    if (crs_info->scale_factor != 0.0) att_count++;
+    if (crs_info->central_meridian != 0.0) att_count++;
+    if (crs_info->latitude_of_origin != 0.0) att_count++;
+    
+    if (att_count == 0)
+        return NC_NOERR;
+    
+    /* Allocate attribute array */
+    *atts = calloc(att_count, sizeof(NC_ATT_INFO_T));
+    if (!*atts)
+        return NC_ENOMEM;
+    
+    *num_atts = att_count;
+    int att_idx = 0;
+    
+    /* Add EPSG code attribute */
+    if (crs_info->epsg_code != 0)
+    {
+        NC_ATT_INFO_T *att = &(*atts)[att_idx++];
+        snprintf(att->hdr.name, NC_MAX_NAME, "geotiff_epsg_code");
+        att->nc_typeid = NC_INT;
+        att->len = 1;
+        att->data = malloc(sizeof(int));
+        if (!att->data)
+            return NC_ENOMEM;
+        *(int*)att->data = crs_info->epsg_code;
+    }
+    
+    /* Add CRS name attribute */
+    if (strlen(crs_info->crs_name) > 0)
+    {
+        NC_ATT_INFO_T *att = &(*atts)[att_idx++];
+        snprintf(att->hdr.name, NC_MAX_NAME, "geotiff_crs_name");
+        att->nc_typeid = NC_CHAR;
+        att->len = strlen(crs_info->crs_name) + 1;
+        att->data = malloc(att->len);
+        if (!att->data)
+            return NC_ENOMEM;
+        strcpy(att->data, crs_info->crs_name);
+    }
+    
+    /* Add ellipsoid parameters */
+    if (crs_info->semi_major_axis != 0.0)
+    {
+        NC_ATT_INFO_T *att = &(*atts)[att_idx++];
+        snprintf(att->hdr.name, NC_MAX_NAME, "geotiff_semi_major_axis");
+        att->nc_typeid = NC_DOUBLE;
+        att->len = 1;
+        att->data = malloc(sizeof(double));
+        if (!att->data)
+            return NC_ENOMEM;
+        *(double*)att->data = crs_info->semi_major_axis;
+    }
+    
+    if (crs_info->inverse_flattening != 0.0)
+    {
+        NC_ATT_INFO_T *att = &(*atts)[att_idx++];
+        snprintf(att->hdr.name, NC_MAX_NAME, "geotiff_inverse_flattening");
+        att->nc_typeid = NC_DOUBLE;
+        att->len = 1;
+        att->data = malloc(sizeof(double));
+        if (!att->data)
+            return NC_ENOMEM;
+        *(double*)att->data = crs_info->inverse_flattening;
+    }
+    
+    /* Add projection parameters for projected CRS */
+    if (crs_info->crs_type == NC_GEOTIFF_CRS_PROJECTED)
+    {
+        if (crs_info->false_easting != 0.0)
+        {
+            NC_ATT_INFO_T *att = &(*atts)[att_idx++];
+            snprintf(att->hdr.name, NC_MAX_NAME, "geotiff_false_easting");
+            att->nc_typeid = NC_DOUBLE;
+            att->len = 1;
+            att->data = malloc(sizeof(double));
+            if (!att->data)
+                return NC_ENOMEM;
+            *(double*)att->data = crs_info->false_easting;
+        }
+        
+        if (crs_info->false_northing != 0.0)
+        {
+            NC_ATT_INFO_T *att = &(*atts)[att_idx++];
+            snprintf(att->hdr.name, NC_MAX_NAME, "geotiff_false_northing");
+            att->nc_typeid = NC_DOUBLE;
+            att->len = 1;
+            att->data = malloc(sizeof(double));
+            if (!att->data)
+                return NC_ENOMEM;
+            *(double*)att->data = crs_info->false_northing;
+        }
+        
+        if (crs_info->scale_factor != 0.0)
+        {
+            NC_ATT_INFO_T *att = &(*atts)[att_idx++];
+            snprintf(att->hdr.name, NC_MAX_NAME, "geotiff_scale_factor");
+            att->nc_typeid = NC_DOUBLE;
+            att->len = 1;
+            att->data = malloc(sizeof(double));
+            if (!att->data)
+                return NC_ENOMEM;
+            *(double*)att->data = crs_info->scale_factor;
+        }
+        
+        if (crs_info->central_meridian != 0.0)
+        {
+            NC_ATT_INFO_T *att = &(*atts)[att_idx++];
+            snprintf(att->hdr.name, NC_MAX_NAME, "geotiff_central_meridian");
+            att->nc_typeid = NC_DOUBLE;
+            att->len = 1;
+            att->data = malloc(sizeof(double));
+            if (!att->data)
+                return NC_ENOMEM;
+            *(double*)att->data = crs_info->central_meridian;
+        }
+        
+        if (crs_info->latitude_of_origin != 0.0)
+        {
+            NC_ATT_INFO_T *att = &(*atts)[att_idx++];
+            snprintf(att->hdr.name, NC_MAX_NAME, "geotiff_latitude_of_origin");
+            att->nc_typeid = NC_DOUBLE;
+            att->len = 1;
+            att->data = malloc(sizeof(double));
+            if (!att->data)
+                return NC_ENOMEM;
+            *(double*)att->data = crs_info->latitude_of_origin;
+        }
+    }
+    
+    return NC_NOERR;
+}
+
+/**
+ * @internal Validate completeness of CRS information.
+ *
+ * This function checks if the extracted CRS information contains
+ * the minimum required parameters for the CRS type.
+ *
+ * @param crs_info CRS info structure to validate.
+ * @return NC_NOERR if complete, NC_EINVAL if incomplete.
+ */
+int
+validate_crs_completeness(const NC_GEOTIFF_CRS_INFO_T *crs_info)
+{
+    if (!crs_info)
+        return NC_EINVAL;
+    
+    /* Unknown CRS type is considered incomplete but not an error */
+    if (crs_info->crs_type == NC_GEOTIFF_CRS_UNKNOWN)
+        return NC_NOERR;
+    
+    /* For foundation implementation, be more permissive:
+       - For geographic CRS, accept if we have any ellipsoid info
+       - For projected CRS, accept if we have basic CRS info
+       - Don't require all parameters to be present */
+    
+    /* For geographic CRS, at least one ellipsoid parameter should be present */
+    if (crs_info->crs_type == NC_GEOTIFF_CRS_GEOGRAPHIC)
+    {
+        if (crs_info->semi_major_axis == 0.0)
+            return NC_EINVAL; /* Need at least semi-major axis */
+    }
+    
+    /* For projected CRS, at least CRS type should be identified */
+    if (crs_info->crs_type == NC_GEOTIFF_CRS_PROJECTED)
+    {
+        /* For foundation implementation, accept projected CRS even without full parameters */
+        /* We only need to know it's a projected CRS */
+        if (crs_info->semi_major_axis == 0.0)
+            return NC_EINVAL; /* Still need basic ellipsoid info */
+    }
+    
     return NC_NOERR;
 }
 

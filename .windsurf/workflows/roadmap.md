@@ -9,12 +9,14 @@ This workflow breaks down a version's work into 1-5 detailed sprint planning doc
 ## Usage
 
 ```
-/roadmap <version>
+/roadmap <version> <description>
 ```
 
-**Example:** `/roadmap v2.0.0`
+**Example:** `/roadmap v1.6.0 Add CF conventions for GeoTIFF metadata`
 
-**Output:** Updates `docs/roadmap.md` with clarified sprint breakdown for the specified version
+**Output:** Creates version-specific GitHub Project "NEP Version 1.6.0 - GeoTIFF metadata to CF" with sprint breakdown
+
+**Note:** Only v1.6.0+ versions are supported. Historical versions are not updated.
 
 ---
 
@@ -23,7 +25,7 @@ This workflow breaks down a version's work into 1-5 detailed sprint planning doc
 **Do:**
 - Analyze the specified version's work and break it into 1-5 sprints
 - Identify technical gaps and missing requirements across all sprints
-- Update roadmap and related documentation with clarifications
+- Create version-specific GitHub Project with sprint breakdown and task organization
 - Ensure logical dependency flow between sprints
 
 **Don't:**
@@ -31,23 +33,64 @@ This workflow breaks down a version's work into 1-5 detailed sprint planning doc
 - Implement code (save for `/plan` workflow)
 - Create more than 5 sprints for a version
 - Skip dependency analysis between sprints
+- Add code changes to GitHub Project (use Issues/PRs instead)
+- Update historical versions (v1.5.0 and earlier) - these are frozen
+
+---
+
+## Project Creation Process
+
+### Naming Convention
+Version-specific projects follow the pattern: `NEP Version {version} - {brief description}`
+
+**Examples:**
+- "NEP Version 1.6.0 - GeoTIFF metadata to CF"
+- "NEP Version 1.7.0 - GRIB2 write support"
+- "NEP Version 1.8.0 - Performance optimization"
+
+### Project Structure
+Each version-specific project includes:
+- **Organization-level project** (not repository-specific)
+- **Standard fields**: Version, Sprint, Task Status, Priority, Component
+- **Field values**: 
+  - Version: "{version}" for all issues
+  - Sprint: 1-5 for respective sprint issues
+  - Task Status: Backlog → In Progress → Review → Done
+  - Priority: High/Medium/Low
+  - Component: Build System/UDF Handler/Tests/Documentation
+- **Issues**: Main version issue + individual sprint issues
+
+### Implementation Tools
+- **GitHub CLI** (`gh project create`) for automated creation
+- **GitHub API** as fallback for advanced configuration
+- **Manual creation** option when automation fails
 
 ---
 
 ## Steps
 
-### 1. Validate version exists
+### 1. Validate version and create version-specific GitHub Project
 
-- Read `docs/roadmap.md` and verify the specified version exists
-- **If not found:** Report error and stop workflow
+- Check if version-specific GitHub Project exists for NEP organization
+- **If no project exists:** Create new organization-level GitHub Project with:
+  - Project name: "NEP Version {version} - {brief description}" (e.g., "NEP Version 1.6.0 - GeoTIFF metadata to CF")
+  - Owner: Intelligent-Data-Design-Inc (organization level)
+  - Fields: Version (text), Sprint (number), Task Status (single select: Backlog, In Progress, Review, Done), Priority (single select: High, Medium, Low), Component (single select: Build System, UDF Handler, Tests, Documentation)
+  - Add all relevant issues to the project
+- Query GitHub Projects for the specified version
+- **If version is v1.5.0 or earlier:** Report that historical versions are not supported and stop workflow
 
-### 2. Extract version details from roadmap
+### 2. Extract version details
 
-- Locate the specified version in `docs/roadmap.md`
-- Extract all existing work items, goals, and requirements
-- Identify any existing sprint breakdown
-- Note incomplete or ambiguous requirements
-- Assess total scope and complexity of the version
+- Locate the specified version in GitHub Project
+- **If version exists but has no items:** Create initial project items for the version based on:
+  - User-provided version description from the command prompt
+  - Known technical components and requirements
+  - Standard sprint structure (file operations, metadata, data reading, etc.)
+- Extract all existing work items, goals, and requirements from project items
+- Identify any existing sprint breakdown from project fields
+- Note incomplete or ambiguous requirements from item descriptions
+- Assess total scope and complexity from linked Issues/PRs
 
 ### 3. Review related documentation for context
 
@@ -59,6 +102,7 @@ This workflow breaks down a version's work into 1-5 detailed sprint planning doc
 ### 4. Analyze version scope and identify optimal sprint breakdown
 
 - Review all work items for completeness and clarity
+- Use the user-provided version description as the primary source for requirements
 - Group related tasks into logical sprint units (1-5 sprints total)
 - Identify dependencies between task groups
 - Ensure each sprint has a coherent theme and deliverable
@@ -70,8 +114,8 @@ This workflow breaks down a version's work into 1-5 detailed sprint planning doc
 ### 5. Ask 3-6 numbered clarifying questions
 
 **Focus areas:**
-- Sprint organization and dependency flow
-- Ambiguous requirements or missing technical details
+- Sprint organization and dependency flow based on user-provided description
+- Ambiguous requirements or missing technical details from the initial prompt
 - Error handling strategies and NetCDF error code mapping
 - Testing expectations and coverage targets per sprint
 - Build system integration and dependency detection
@@ -93,18 +137,19 @@ This workflow breaks down a version's work into 1-5 detailed sprint planning doc
 
 ### 6. Update roadmap with sprint breakdown
 
-- Incorporate answers from step 5 into `docs/roadmap.md`
-- Create 1-5 sprint sections with clear themes and deliverables
-- Distribute work items logically across sprints
-- Clarify ambiguous tasks with specific details
-- Add dependency information between sprints
-- Update definition of done for each sprint
+- Incorporate answers from step 5 into GitHub Project
+- Create 1-5 sprint sections using project fields and organization
+- Distribute work items logically across sprints by updating item fields
+- Clarify ambiguous tasks with specific details in item descriptions
+- Add dependency information between project items
+- Update definition of done for each sprint in project metadata
 - Ensure each sprint builds incrementally toward version goals
+- Link related Issues/PRs to project items for implementation
 
 **Important:**
-- **DO NOT** add proposed code changes to the roadmap
-- Code can be added to individual sprint plans (next step)
-- If example code is presented by the user, that may be included in the roadmap
+- **DO NOT** add proposed code changes to project item descriptions
+- Code implementation should be tracked in separate Issues/PRs linked to project items
+- If example code is presented by the user, that may be included in item descriptions
 
 ### 7. Update related documentation (if needed)
 
@@ -127,7 +172,7 @@ This workflow breaks down a version's work into 1-5 detailed sprint planning doc
 - ✓ Build system integration is addressed
 - ✓ Dependencies are documented
 - ✓ Error handling strategy is defined
-- ✓ Roadmap is updated with all clarifications
+- ✓ GitHub Project is updated with all clarifications and sprint organization
 
 **If any criteria are missing:** Return to step 5 and ask additional questions
 
@@ -137,9 +182,13 @@ This workflow breaks down a version's work into 1-5 detailed sprint planning doc
 
 ## Error Handling
 
-**If version not found in roadmap:**
-- Report: "Version {version} not found in docs/roadmap.md"
-- List available versions
+**If version not found:**
+- Report "Version {version} not found in GitHub Project"
+- List available versions from project
+- Stop workflow
+
+**If version is v1.5.0 or earlier:**
+- Report "Historical versions (v1.5.0 and earlier) are not supported"
 - Stop workflow
 
 **If version scope is too large for 5 sprints:**
@@ -156,7 +205,13 @@ This workflow breaks down a version's work into 1-5 detailed sprint planning doc
 - List missing dependencies
 - Ask user if they want to proceed anyway
 
-**If roadmap is malformed:**
-- Report specific formatting issues found
-- Ask user to fix roadmap structure first
+**If GitHub Project creation fails:**
+- Report specific GitHub API errors for project creation
+- Suggest manual project creation with the naming convention "NEP Version {version} - {brief description}"
+- Provide field configuration details for manual setup
 - Stop workflow
+
+**If GitHub Project operations fail:**
+- Report specific GitHub API errors
+- Suggest manual project updates as fallback
+- Continue with documentation updates if possible
