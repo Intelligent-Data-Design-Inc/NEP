@@ -49,8 +49,14 @@ int main(int argc, char *argv[]) {
             
             // Print the value
             if (att_type == NC_CHAR) {
-                char *value = malloc(att_len);
+                char *value = malloc(att_len + 1);
+                if (!value) {
+                    printf("Memory allocation failed\n");
+                    nc_close(ncid);
+                    return 1;
+                }
                 nc_get_att_text(ncid, NC_GLOBAL, att_name, value);
+                value[att_len] = '\0';
                 printf("    Value: %s\n", value);
                 free(value);
             } else if (att_type == NC_INT) {

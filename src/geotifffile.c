@@ -669,10 +669,18 @@ NC_GEOTIFF_close(int ncid, void *ignore)
     if (geotiff_info->path)
         free(geotiff_info->path);
 
-    /* Free GeoTIFF file info structure */
+    /* CRS cleanup notes:
+     * - crs_info is embedded in geotiff_info (not a pointer), so freed automatically
+     * - CRS attribute data (allocated in NC_GEOTIFF_extract_metadata) is transferred
+     *   to NetCDF's attribute system and freed by nc4_nc4f_list_del() below
+     * - If CRS structure is extended with dynamic allocations in the future,
+     *   add explicit cleanup here before freeing geotiff_info
+     */
+
+    /* Free GeoTIFF file info structure (includes embedded crs_info) */
     free(geotiff_info);
 
-    /* Free the NC_FILE_INFO_T struct */
+    /* Free the NC_FILE_INFO_T struct (also frees all attributes including CRS attrs) */
     if ((retval = nc4_nc4f_list_del(h5)))
         return retval;
 
