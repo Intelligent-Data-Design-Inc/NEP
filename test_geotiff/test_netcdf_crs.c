@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <netcdf.h>
 
 #define ERR_CHECK(ret) do { if ((ret) != NC_NOERR) { \

@@ -71,10 +71,11 @@ bench_geotiff_performance_SOURCES = bench_geotiff_performance.c
 bench_geotiff_performance_LDADD = $(top_builddir)/src/libncgeotiff.la $(NETCDF_LIBS) $(GEOTIFF_LIBS) $(HDF5_LIBS)
 
 # Define tests
+# Note: test_netcdf_crs requires command-line argument, run manually:
+#   ./test_netcdf_crs MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif
 TESTS = tst_geotiff_handle tst_geotiff_metadata tst_phase2_acceptance \
 	tst_geotiff_organization tst_single_band_read tst_large_geotiff \
-	tst_geotiff_errors tst_geotiff_edge_cases tst_simple_geotiff \
-	test_netcdf_crs
+	tst_geotiff_errors tst_geotiff_edge_cases tst_simple_geotiff
 
 endif # HAVE_GEOTIFF
 

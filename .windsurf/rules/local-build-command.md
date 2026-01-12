@@ -11,6 +11,7 @@ For CI/GitHub Actions, different paths are used (see `.github/workflows/`).
 - **HDF5**: `/usr/local/hdf5-1.14.6/`
 - **NetCDF-C**: `/usr/local/netcdf-c/`
 - **NetCDF-Fortran**: `/usr/local/netcdf-fortran/` (if Fortran enabled)
+- **CDF**: `/usr/local/cdf-3.9.1/` (if CDF enabled)
 
 ## Runtime Environment
 Before running tests or executables:
