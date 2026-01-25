@@ -14,9 +14,9 @@ set(CLASSIC_EXAMPLES
 # Build each example using NetCDF variables from parent scope
 foreach(example ${CLASSIC_EXAMPLES})
     add_executable(${example} ${example}.c)
-    target_include_directories(${example} PRIVATE ${NETCDF_INCLUDE_DIRS})
-    target_link_directories(${example} PRIVATE ${NETCDF_LIBRARY_DIRS})
-    target_link_libraries(${example} PRIVATE ${NETCDF_LIBRARIES})
+    target_include_directories(${example} PRIVATE ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIR})
+    target_link_directories(${example} PRIVATE ${NETCDF_LIBRARY_DIRS} ${HDF5_LIBRARY_DIRS})
+    target_link_libraries(${example} PRIVATE ${NETCDF_LIBRARIES} ${HDF5_C_${LIB_TYPE}_LIBRARY})
     
     # Add as test
     if(BUILD_TESTING)

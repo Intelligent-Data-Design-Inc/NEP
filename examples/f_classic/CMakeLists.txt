@@ -14,9 +14,9 @@ set(F_CLASSIC_EXAMPLES
 # Build each example using NetCDF-Fortran variables from parent scope
 foreach(example ${F_CLASSIC_EXAMPLES})
     add_executable(${example} ${example}.f90)
-    target_include_directories(${example} PRIVATE ${NetCDF_Fortran_INCLUDE_DIRS})
-    target_link_directories(${example} PRIVATE ${NetCDF_Fortran_LIBRARY_DIRS})
-    target_link_libraries(${example} PRIVATE ${NetCDF_Fortran_LIBRARIES})
+    target_include_directories(${example} PRIVATE ${NetCDF_Fortran_INCLUDE_DIRS} ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIR})
+    target_link_directories(${example} PRIVATE ${NetCDF_Fortran_LIBRARY_DIRS} ${NETCDF_LIBRARY_DIRS} ${HDF5_LIBRARY_DIRS})
+    target_link_libraries(${example} PRIVATE ${NetCDF_Fortran_LIBRARIES} ${NETCDF_LIBRARIES} ${HDF5_C_${LIB_TYPE}_LIBRARY})
     
     # Add as test
     if(BUILD_TESTING)
