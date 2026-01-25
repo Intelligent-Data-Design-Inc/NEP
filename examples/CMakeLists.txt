@@ -5,10 +5,14 @@
 add_subdirectory(classic)
 add_subdirectory(netcdf-4)
 
-# Fortran examples only built when Fortran is enabled
-if(ENABLE_FORTRAN AND NetCDF_Fortran_FOUND)
-    add_subdirectory(f_classic)
-    add_subdirectory(f_netcdf-4)
+# Fortran examples only built when Fortran is enabled and NetCDF-Fortran is found
+if(ENABLE_FORTRAN)
+    if(NetCDF_Fortran_FOUND)
+        add_subdirectory(f_classic)
+        add_subdirectory(f_netcdf-4)
+    else()
+        message(STATUS "Skipping Fortran examples - NetCDF-Fortran not found")
+    endif()
 endif()
 
 # Placeholder directories for future examples
