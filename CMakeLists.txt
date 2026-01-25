@@ -38,6 +38,10 @@ option(BUILD_DOCUMENTATION "Build documentation with Doxygen" ON)
 # Testing option - enable by default
 option(BUILD_TESTING "Build tests" ON)
 
+# Examples option - disabled by default in CMake due to complex HDF5 linking (v1.5.1)
+# Autotools build handles examples correctly; use that for example builds
+option(BUILD_EXAMPLES "Build example programs" OFF)
+
 # Set compiler flags based on DEBUG option
 if(DEBUG)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
@@ -70,6 +74,16 @@ if(NOT DOCS_ONLY)
     include_directories(${NETCDF_INCLUDE_DIRS})
     link_directories(${NETCDF_LIBRARY_DIRS})
     set (LINK_LIBS ${LINK_LIBS} ${NETCDF_LIBRARIES})
+
+    # Find NetCDF-Fortran (optional, for Fortran examples)
+    if(ENABLE_FORTRAN)
+        pkg_check_modules(NetCDF_Fortran netcdf-fortran)
+        if(NetCDF_Fortran_FOUND)
+            message(STATUS "Found NetCDF-Fortran: ${NetCDF_Fortran_LIBRARIES}")
+        else()
+            message(STATUS "NetCDF-Fortran not found, Fortran examples will be skipped")
+        endif()
+    endif()
 
     # Ensure runtime can locate the exact HDF5/NetCDF shared libraries selected at configure time.
     # This avoids mixing system HDF5 with a custom HDF5 prefix and fixes missing libhdf5_hl.so at runtime.
@@ -300,4 +314,11 @@ else()
     message(STATUS "Documentation generation disabled")
 endif()
 
+# Add examples subdirectory (v1.5.1)
+if(BUILD_EXAMPLES AND NOT DOCS_ONLY)
+    message(STATUS "Building example programs")
+    add_subdirectory(examples)
+else()
+    message(STATUS "Example programs disabled")
+endif()
 

@@ -1,0 +1,56 @@
+# CMakeLists.txt for classic NetCDF C examples
+# Edward Hartnett 1/25/26
+
+# Find nc-config from the NetCDF library directories
+find_program(NC_CONFIG nc-config
+    HINTS ${NETCDF_LIBRARY_DIRS}/../bin
+    PATHS ${NETCDF_LIBRARY_DIRS}/../bin
+)
+
+if(NOT NC_CONFIG)
+    message(FATAL_ERROR "nc-config not found. Cannot build examples.")
+endif()
+
+# Get NetCDF compile and link flags using nc-config (includes all dependencies)
+execute_process(
+    COMMAND ${NC_CONFIG} --cflags
+    OUTPUT_VARIABLE NC_CFLAGS
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+execute_process(
+    COMMAND ${NC_CONFIG} --libs
+    OUTPUT_VARIABLE NC_LIBS
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Convert space-separated strings to CMake lists
+separate_arguments(NC_CFLAGS_LIST UNIX_COMMAND "${NC_CFLAGS}")
+separate_arguments(NC_LIBS_LIST UNIX_COMMAND "${NC_LIBS}")
+
+# Get HDF5 library directory from HDF5_INCLUDE_DIR (parent scope)
+get_filename_component(HDF5_LIB_DIR "${HDF5_INCLUDE_DIR}/../lib" ABSOLUTE)
+
+# List of classic example programs
+set(CLASSIC_EXAMPLES
+    simple_2D
+    coord_vars
+    format_variants
+    size_limits
+    unlimited_dim
+    var4d
+)
+
+# Build each example using nc-config flags
+foreach(example ${CLASSIC_EXAMPLES})
+    add_executable(${example} ${example}.c)
+    target_compile_options(${example} PRIVATE ${NC_CFLAGS_LIST})
+    target_link_directories(${example} PRIVATE ${HDF5_LIB_DIR})
+    # nc-config --libs doesn't include HDF5, so we need to add it explicitly
+    # NetCDF needs both libhdf5 and libhdf5_hl
+    target_link_libraries(${example} PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl)
+    
+    # Add as test
+    if(BUILD_TESTING)
+        add_test(NAME ${example} COMMAND ${example})
+    endif()
+endforeach()

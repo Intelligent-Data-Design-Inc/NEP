@@ -252,6 +252,16 @@ AC_MSG_RESULT([$enable_fortran])
 AM_CONDITIONAL([ENABLE_FORTRAN], [test "x$enable_fortran" = xyes])
 AC_SUBST([ENABLE_FORTRAN], [$enable_fortran])
 
+# Examples support (v1.5.1)
+AC_MSG_CHECKING([whether example programs should be built])
+AC_ARG_ENABLE([examples],
+              [AS_HELP_STRING([--enable-examples],
+                              [Enable example programs (default: yes)])])
+test "x$enable_examples" = xno || enable_examples=yes
+AC_MSG_RESULT([$enable_examples])
+AM_CONDITIONAL([BUILD_EXAMPLES], [test "x$enable_examples" = xyes])
+AC_SUBST([BUILD_EXAMPLES], [$enable_examples])
+
 # Check for netCDF Fortran library when Fortran support is enabled.
 if test "x$enable_fortran" = xyes; then
    AC_LANG_PUSH(Fortran)
@@ -370,6 +380,11 @@ AC_CONFIG_FILES([Makefile
                  test_grib2/Makefile
                  test_cdf/Makefile
                  test_geotiff/Makefile
+                 examples/Makefile
+                 examples/classic/Makefile
+                 examples/netcdf-4/Makefile
+                 examples/f_classic/Makefile
+                 examples/f_netcdf-4/Makefile
                  docs/Doxyfile])
 
 AC_OUTPUT

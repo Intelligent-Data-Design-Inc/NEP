@@ -34,6 +34,12 @@ NEP provides a comprehensive solution with three key capabilities:
 - **Metadata Preservation**: Georeferencing, coordinate systems, and GeoTIFF tags accessible as NetCDF attributes
 - **Multi-Band Support**: Handle single and multi-band imagery with proper dimension mapping
 
+**Example Programs (v3.5.1):**
+- **Learning Resources**: Comprehensive example programs in C and Fortran demonstrating NetCDF API usage
+- **Read and Write**: Each example creates a file and reads it back, demonstrating both operations
+- **Validated Output**: Examples run as tests to ensure correctness
+- **Multiple Categories**: Classic NetCDF and NetCDF-4 examples covering basic to advanced features
+
 This comprehensive framework enables scientists to:
 
 - **Eliminate format conversion**: Access CDF and GeoTIFF files directly through NetCDF API
@@ -114,6 +120,15 @@ NEP v1.5.0 is available now as open-source software. Installation options includ
 - **GeoTIFF files**: Use `nc_open()` to read GeoTIFF files directly
 All features integrate seamlessly with the standard NetCDF API.
 
+#### Q: Does NEP provide example programs to help me learn?
+**A:** Yes! NEP v3.5.1 includes comprehensive example programs in both C and Fortran:
+- **Classic NetCDF examples**: Basic 2D arrays, coordinate variables, format variants, size limits, unlimited dimensions, 4D variables
+- **NetCDF-4 examples**: NetCDF-4 files, compression, chunking, multiple unlimited dimensions, user-defined types
+- **Dual language support**: All examples available in both C and Fortran
+- **Read and write**: Each example creates a file and reads it back to demonstrate both operations
+- **Built and tested**: Examples build with NEP (unless `--disable-examples` is used) and run as tests
+- **Location**: All examples in the `examples/` directory with detailed README
+
 ### Installation and Usage
 
 #### Q: What are the system requirements?
@@ -136,8 +151,8 @@ See the README for detailed instructions.
 
 #### Q: Can I enable only specific features?
 **A:** Yes! Use build options to control which features are compiled:
-- **CMake**: `-DBUILD_LZ4=ON/OFF`, `-DBUILD_BZIP2=ON/OFF`, `-DENABLE_FORTRAN=ON/OFF`, `-DENABLE_CDF=ON/OFF`, `-DENABLE_GEOTIFF=ON/OFF`
-- **Autotools**: `--enable-lz4`, `--enable-bzip2`, `--enable-fortran`, `--enable-cdf`, `--enable-geotiff`
+- **CMake**: `-DBUILD_LZ4=ON/OFF`, `-DBUILD_BZIP2=ON/OFF`, `-DENABLE_FORTRAN=ON/OFF`, `-DENABLE_CDF=ON/OFF`, `-DENABLE_GEOTIFF=ON/OFF`, `-DBUILD_EXAMPLES=ON/OFF`
+- **Autotools**: `--enable-lz4`, `--enable-bzip2`, `--enable-fortran`, `--enable-cdf`, `--enable-geotiff`, `--disable-examples`
 - **Spack**: `spack install nep+lz4+bzip2+fortran` (variants control features)
 
 #### Q: How do I use LZ4 compression in my NetCDF files?

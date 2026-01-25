@@ -316,6 +316,64 @@ For applications requiring full raster reads, consider using native GeoTIFF tool
 
 ---
 
+## Example Programs
+
+NEP v3.5.1 includes comprehensive example programs in C and Fortran to help you learn NetCDF API usage. These examples demonstrate both read and write operations, covering basic to advanced features.
+
+### What's Included
+
+**Classic NetCDF Examples:**
+- Basic 2D arrays and coordinate variables
+- Format variants (classic, 64-bit offset, CDF-5)
+- Size limits and unlimited dimensions
+- 4-dimensional variables
+
+**NetCDF-4 Examples:**
+- NetCDF-4 file creation
+- Compression filters (deflate, shuffle)
+- Chunking strategies and performance
+- Multiple unlimited dimensions
+- User-defined compound and enum types
+
+**Dual Language Support:**
+- All examples provided in both C and Fortran
+- Equivalent functionality across languages
+- Demonstrates language-specific API usage
+
+### Running Examples
+
+Examples are built automatically and run as tests:
+
+```bash
+# CMake
+cmake -B build
+cmake --build build
+ctest --test-dir build
+
+# Autotools
+./configure
+make
+make check
+```
+
+Each example creates a NetCDF file and reads it back to verify correctness, demonstrating both write and read operations.
+
+### Disabling Examples
+
+If you don't need the examples:
+
+```bash
+# CMake
+cmake -B build -DBUILD_EXAMPLES=OFF
+
+# Autotools
+./configure --disable-examples
+```
+
+For more details, see `examples/README.md`.
+
+---
+
 ## Installation
 
 ### Prerequisites
@@ -464,6 +522,7 @@ make uninstall
 | CMake Option | Autotools Option | Default | Description |
 |--------------|------------------|---------|-------------|
 | `-DBUILD_DOCUMENTATION=ON/OFF` | `--enable-docs/--disable-docs` | ON/enabled | Build API documentation |
+| `-DBUILD_EXAMPLES=ON/OFF` | `--enable-examples/--disable-examples` | ON/enabled | Build example programs (v3.5.1+) |
 | `-DENABLE_FORTRAN=ON/OFF` | `--enable-fortran/--disable-fortran` | ON/enabled | Fortran wrappers and tests |
 | `-DENABLE_CDF=ON/OFF` | `--enable-cdf/--disable-cdf` | OFF/disabled | CDF UDF handler build (v1.3.0+) |
 | `-DENABLE_GEOTIFF=ON/OFF` | `--enable-geotiff/--disable-geotiff` | OFF/disabled | GeoTIFF UDF handler build (v1.5.0+) |

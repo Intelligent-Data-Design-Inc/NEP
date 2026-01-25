@@ -201,36 +201,117 @@ nc_close(ncid);
 
 ---
 
-## 7. Build Systems
+## 7. Example Programs (v3.5.1)
 
-### 7.1 CMake
+### 7.1 Overview
+Comprehensive example programs in C and Fortran demonstrating NetCDF API usage for learning and reference purposes.
+
+### 7.2 Features
+- **Dual Language Support**: All examples provided in both C and Fortran
+- **Read and Write Operations**: Each example creates a NetCDF file and reads it back to demonstrate both operations
+- **Test Integration**: Examples run as automated tests to ensure correctness
+- **Multiple Categories**: Classic NetCDF and NetCDF-4 examples covering basic to advanced features
+- **Educational Value**: Demonstrates best practices and common usage patterns
+
+### 7.3 Example Categories
+
+#### Classic NetCDF Examples (C)
+Located in `examples/classic/`:
+- `simple_2D.c` - Basic 2D array creation and writing
+- `coord_vars.c` - Working with coordinate variables
+- `format_variants.c` - Different NetCDF format variants (classic, 64-bit offset, CDF-5)
+- `size_limits.c` - Demonstrating size and dimension limits
+- `unlimited_dim.c` - Using unlimited dimensions for time series data
+- `var4d.c` - Creating and writing 4-dimensional variables
+
+#### NetCDF-4 Examples (C)
+Located in `examples/netcdf-4/`:
+- `simple_nc4.c` - Basic NetCDF-4 file creation
+- `compression.c` - Using compression filters (deflate, shuffle)
+- `chunking_performance.c` - Chunking strategies and performance
+- `multi_unlimited.c` - Multiple unlimited dimensions (NetCDF-4 feature)
+- `user_types.c` - User-defined compound and enum types
+
+#### Classic NetCDF Examples (Fortran)
+Located in `examples/f_classic/`:
+- `f_simple_2D.f90` - Basic 2D array in Fortran
+- `f_coord_vars.f90` - Coordinate variables in Fortran
+- `f_format_variants.f90` - Format variants in Fortran
+- `f_size_limits.f90` - Size limits in Fortran
+- `f_unlimited_dim.f90` - Unlimited dimensions in Fortran
+- `f_var4d.f90` - 4D variables in Fortran
+
+#### NetCDF-4 Examples (Fortran)
+Located in `examples/f_netcdf-4/`:
+- `f_simple_nc4.f90` - Basic NetCDF-4 in Fortran
+- `f_compression.f90` - Compression in Fortran
+- `f_chunking_performance.f90` - Chunking in Fortran
+- `f_multi_unlimited.f90` - Multiple unlimited dimensions in Fortran
+- `f_user_types.f90` - User-defined types in Fortran
+
+### 7.4 Build Configuration
+**CMake:**
+- `BUILD_EXAMPLES=ON/OFF` - Enable/disable example programs (default: ON)
+
+**Autotools:**
+- `--enable-examples/--disable-examples` - Example programs (default: enabled)
+
+### 7.5 Dependencies
+- NetCDF-C library (required for C examples)
+- NetCDF-Fortran library (required for Fortran examples)
+- C99 compiler
+- Fortran 90+ compiler (for Fortran examples)
+
+### 7.6 Usage
+Examples are automatically built and run as tests:
+
+```bash
+# CMake
+cmake -B build
+cmake --build build
+ctest --test-dir build
+
+# Autotools
+./configure
+make
+make check
+```
+
+### 7.7 Output Validation
+Example output is validated to ensure correctness across code changes. Each example creates NetCDF files demonstrating the features being illustrated.
+
+---
+
+## 8. Build Systems
+
+### 8.1 CMake
 - Minimum version: 3.9+
 - Full feature support with configurable options
 - Documentation generation with Doxygen
 - Comprehensive test suite integration
 
-### 7.2 Autotools
+### 8.2 Autotools
 - Standard configure/make/make install workflow
 - Feature parity with CMake
 - Documentation generation support
 - Test suite integration
 
-### 7.3 Common Build Options
+### 8.3 Common Build Options
 - `BUILD_DOCUMENTATION=ON/OFF` (CMake) / `--enable-docs/--disable-docs` (Autotools)
 - Doxygen-generated API documentation
 - Zero-warning builds enforced
 
 ---
 
-## 8. Documentation (v1.2.0)
+## 9. Documentation (v1.2.0)
 
-### 8.1 Features
+### 9.1 Features
 - **Version-Driven**: All documentation derives version from `version.txt`
 - **API Documentation**: Complete Doxygen coverage of C and Fortran APIs
 - **Build Options**: Comprehensive documentation of configuration flags
 - **GitHub Pages**: Automated deployment on releases
 
-### 8.2 Documentation Structure
+### 9.2 Documentation Structure
 - Main page: Overview and installation
 - API reference: Generated from source code
 - Build options: Configuration guide
@@ -238,22 +319,23 @@ nc_close(ncid);
 
 ---
 
-## 9. Testing and Quality Assurance
+## 10. Testing and Quality Assurance
 
-### 9.1 Test Coverage
+### 10.1 Test Coverage
 - **Compression Tests**: C and Fortran tests for LZ4 and BZIP2
 - **CDF Tests**: Basic file operations and IMAP MAG L1B calibration data
 - **GeoTIFF Tests**: 10 comprehensive test programs covering edge cases, errors, performance
+- **Example Programs**: All examples run as tests to validate correctness
 - **CI Integration**: GitHub Actions with multiple build configurations
 
-### 9.2 CI Matrix
+### 10.2 CI Matrix
 - CMake and Autotools builds
 - Compression combinations (all, no-bzip2, no-lz4)
 - Fortran on/off configurations
 - Documentation validation
 - Format-specific tests (CDF, GeoTIFF)
 
-### 9.3 Quality Gates
+### 10.3 Quality Gates
 - Zero-warning builds
 - All tests pass before merge
 - Documentation builds without errors
@@ -261,14 +343,14 @@ nc_close(ncid);
 
 ---
 
-## 10. Dependencies
+## 11. Dependencies
 
-### 10.1 Core Dependencies
+### 11.1 Core Dependencies
 - NetCDF-C v4.9+ (required)
 - HDF5 v1.12+ (required)
 - CMake v3.9+ or Autotools (build)
 
-### 10.2 Optional Dependencies
+### 11.2 Optional Dependencies
 - LZ4 library (for LZ4 compression)
 - BZIP2 library (for BZIP2 compression)
 - NetCDF-Fortran v4.5.4+ (for Fortran wrappers)
@@ -279,7 +361,7 @@ nc_close(ncid);
 
 ---
 
-## 11. Release History
+## 12. Release History
 
 - **v0.1.3** (Nov 2025): Architecture shift from HDF5 VOL to NetCDF UDF, Doxygen documentation
 - **v1.0.0**: LZ4 and BZIP2 compression filters

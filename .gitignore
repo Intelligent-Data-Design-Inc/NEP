@@ -151,4 +151,41 @@ test_geotiff/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif
 test_geotiff/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif
 test_geotiff/ABBA_2022_C61_HNL.tif
 
+# Example binaries - classic
+examples/classic/simple_2D
+examples/classic/coord_vars
+examples/classic/format_variants
+examples/classic/size_limits
+examples/classic/unlimited_dim
+examples/classic/var4d
+
+# Example binaries - netcdf-4
+examples/netcdf-4/simple_nc4
+examples/netcdf-4/compression
+examples/netcdf-4/chunking_performance
+examples/netcdf-4/multi_unlimited
+examples/netcdf-4/user_types
+
+# Example binaries - Fortran classic
+examples/f_classic/f_simple_2D
+examples/f_classic/f_coord_vars
+examples/f_classic/f_format_variants
+examples/f_classic/f_size_limits
+examples/f_classic/f_unlimited_dim
+examples/f_classic/f_var4d
+
+# Example binaries - Fortran netcdf-4
+examples/f_netcdf-4/f_simple_nc4
+examples/f_netcdf-4/f_compression
+examples/f_netcdf-4/f_chunking_performance
+examples/f_netcdf-4/f_multi_unlimited
+
+# Valgrind logs
+valgrind*.log
+**/valgrind*.log
+
+# Test output files
+examples/**/*.nc
+test_netcdf_crs
+
 

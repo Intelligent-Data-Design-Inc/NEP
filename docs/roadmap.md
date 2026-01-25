@@ -79,6 +79,15 @@ Implement Phase 4 of the GeoTIFF read layer for NEP v1.5.0: Extract and expose c
   - CDL validation catches regressions in CI pipeline
   - No additional CI workflow changes needed (examples use existing test infrastructure)
 
+  #### Sprint 3: Further Development of Examples
+  - The fortran example f_simple2d.f90 needs to have a similar structure to the C program classic/simple_2D.c. The fortran program has a subprogram do all the work, instead, move that code to the main program so it looks similar to the C program.
+  - The Fortran program f_simple_2D.f90 needs to define the exact same attributes as the C program simple_2d.c. The output of the two programs should be identical, and this can be tested by comparing their CDF output with ncdump.
+
+  #### Sprint 4: Example Documented with Doxygen
+  - We need doxygen documentation on all the examples, C and Fortran.
+  - The documentation should explain the example, assuming the reader does not know much about netCDF.
+  
+
 ### v1.5.0 GeoTIFF Read Support (Released: January 2026)
 #### Sprint 1: GeoTIFF File Open/Close and Data Reading
 - [x] Add GeoTIFF test files in test/data (MODIS NRT Global Flood Product samples)
