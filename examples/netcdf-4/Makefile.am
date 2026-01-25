@@ -11,6 +11,11 @@ chunking_performance_SOURCES = chunking_performance.c
 multi_unlimited_SOURCES = multi_unlimited.c
 user_types_SOURCES = user_types.c
 
+# Link math library for examples that use math functions
+compression_LDADD = -lm
+multi_unlimited_LDADD = -lm
+user_types_LDADD = -lm
+
 # All examples run as tests
 TESTS = $(check_PROGRAMS)
 
