@@ -1,6 +1,18 @@
 # CMakeLists.txt for NetCDF-4 C examples
 # Edward Hartnett 1/25/26
 
+# Get NetCDF compile and link flags using nc-config (includes all dependencies)
+execute_process(
+    COMMAND nc-config --cflags
+    OUTPUT_VARIABLE NC_CFLAGS
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+execute_process(
+    COMMAND nc-config --libs
+    OUTPUT_VARIABLE NC_LIBS
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
 # List of NetCDF-4 example programs
 set(NETCDF4_EXAMPLES
     simple_nc4
@@ -10,12 +22,13 @@ set(NETCDF4_EXAMPLES
     user_types
 )
 
-# Build each example using NetCDF variables from parent scope
+# Build each example using nc-config flags
 foreach(example ${NETCDF4_EXAMPLES})
     add_executable(${example} ${example}.c)
-    target_include_directories(${example} PRIVATE ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIR})
-    target_link_directories(${example} PRIVATE ${NETCDF_LIBRARY_DIRS} ${HDF5_LIBRARY_DIRS})
-    target_link_libraries(${example} PRIVATE ${NETCDF_LIBRARIES} ${HDF5_C_${LIB_TYPE}_LIBRARY} m)
+    set_target_properties(${example} PROPERTIES
+        COMPILE_FLAGS "${NC_CFLAGS}"
+        LINK_FLAGS "${NC_LIBS} -lm"
+    )
     
     # Add as test
     if(BUILD_TESTING)

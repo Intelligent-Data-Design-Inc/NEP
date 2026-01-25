@@ -1,6 +1,18 @@
 # CMakeLists.txt for NetCDF-4 Fortran examples
 # Edward Hartnett 1/25/26
 
+# Get NetCDF-Fortran compile and link flags using nf-config (includes all dependencies)
+execute_process(
+    COMMAND nf-config --fflags
+    OUTPUT_VARIABLE NF_FFLAGS
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+execute_process(
+    COMMAND nf-config --flibs
+    OUTPUT_VARIABLE NF_LIBS
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
 # List of Fortran NetCDF-4 example programs
 set(F_NETCDF4_EXAMPLES
     f_simple_nc4
@@ -10,12 +22,13 @@ set(F_NETCDF4_EXAMPLES
     f_user_types
 )
 
-# Build each example using NetCDF-Fortran variables from parent scope
+# Build each example using nf-config flags
 foreach(example ${F_NETCDF4_EXAMPLES})
     add_executable(${example} ${example}.f90)
-    target_include_directories(${example} PRIVATE ${NetCDF_Fortran_INCLUDE_DIRS} ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIR})
-    target_link_directories(${example} PRIVATE ${NetCDF_Fortran_LIBRARY_DIRS} ${NETCDF_LIBRARY_DIRS} ${HDF5_LIBRARY_DIRS})
-    target_link_libraries(${example} PRIVATE ${NetCDF_Fortran_LIBRARIES} ${NETCDF_LIBRARIES} ${HDF5_C_${LIB_TYPE}_LIBRARY})
+    set_target_properties(${example} PROPERTIES
+        COMPILE_FLAGS "${NF_FFLAGS}"
+        LINK_FLAGS "${NF_LIBS}"
+    )
     
     # Add as test
     if(BUILD_TESTING)
