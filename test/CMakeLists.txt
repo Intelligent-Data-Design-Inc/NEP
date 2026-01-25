@@ -34,8 +34,12 @@ target_include_directories(tst_perf PRIVATE ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUD
 
 # Build CDF UDF test if CDF is enabled
 if(HAVE_CDF)
+    # Get HDF5 library directory
+    get_filename_component(HDF5_LIB_DIR "${HDF5_INCLUDE_DIR}/../lib" ABSOLUTE)
+    
     add_executable(tst_cdf_udf tst_cdf_udf.c)
-    target_link_libraries(tst_cdf_udf PRIVATE nccdf ncsqueeze ${NETCDF_LIBRARIES} ${CDF_LIBRARY})
+    target_link_directories(tst_cdf_udf PRIVATE ${HDF5_LIB_DIR})
+    target_link_libraries(tst_cdf_udf PRIVATE nccdf ncsqueeze ${NETCDF_LIBRARIES} hdf5 hdf5_hl ${CDF_LIBRARY})
     target_include_directories(tst_cdf_udf PRIVATE ${NETCDF_INCLUDE_DIRS} ${CDF_INCLUDE_DIR})
     
     # Set rpath so the executable can find CDF library at runtime
@@ -49,7 +53,8 @@ if(HAVE_CDF)
     
     # Build IMAP MAG CDF test
     add_executable(tst_imap_mag tst_imap_mag.c)
-    target_link_libraries(tst_imap_mag PRIVATE nccdf ncsqueeze ${NETCDF_LIBRARIES} ${CDF_LIBRARY})
+    target_link_directories(tst_imap_mag PRIVATE ${HDF5_LIB_DIR})
+    target_link_libraries(tst_imap_mag PRIVATE nccdf ncsqueeze ${NETCDF_LIBRARIES} hdf5 hdf5_hl ${CDF_LIBRARY})
     target_include_directories(tst_imap_mag PRIVATE ${NETCDF_INCLUDE_DIRS} ${CDF_INCLUDE_DIR})
     
     # Set rpath so the executable can find CDF library at runtime

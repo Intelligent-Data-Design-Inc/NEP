@@ -38,8 +38,9 @@ option(BUILD_DOCUMENTATION "Build documentation with Doxygen" ON)
 # Testing option - enable by default
 option(BUILD_TESTING "Build tests" ON)
 
-# Examples option - enable by default (v1.5.1)
-option(BUILD_EXAMPLES "Build example programs" ON)
+# Examples option - disabled by default in CMake due to complex HDF5 linking (v1.5.1)
+# Autotools build handles examples correctly; use that for example builds
+option(BUILD_EXAMPLES "Build example programs" OFF)
 
 # Set compiler flags based on DEBUG option
 if(DEBUG)
