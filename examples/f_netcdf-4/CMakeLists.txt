@@ -1,6 +1,14 @@
 # CMakeLists.txt for NetCDF-4 Fortran examples
 # Edward Hartnett 1/25/26
 
+# Get NetCDF-Fortran compiler and linker flags from nf-config
+execute_process(COMMAND nf-config --fflags OUTPUT_VARIABLE NF_FFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND nf-config --flibs OUTPUT_VARIABLE NF_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+# Parse flags into lists for CMake (separate by spaces)
+separate_arguments(NF_FFLAGS_LIST UNIX_COMMAND "${NF_FFLAGS}")
+separate_arguments(NF_LIBS_LIST UNIX_COMMAND "${NF_LIBS}")
+
 # List of Fortran NetCDF-4 example programs
 set(F_NETCDF4_EXAMPLES
     f_simple_nc4
@@ -13,9 +21,8 @@ set(F_NETCDF4_EXAMPLES
 # Build each example
 foreach(example ${F_NETCDF4_EXAMPLES})
     add_executable(${example} ${example}.f90)
-    target_include_directories(${example} PRIVATE ${NetCDF_Fortran_INCLUDE_DIRS})
-    target_link_libraries(${example} PRIVATE ${NetCDF_Fortran_LIBRARIES})
-    target_link_directories(${example} PRIVATE ${NetCDF_Fortran_LIBRARY_DIRS})
+    target_compile_options(${example} PRIVATE ${NF_FFLAGS_LIST})
+    target_link_libraries(${example} PRIVATE ${NF_LIBS_LIST})
     
     # Add as test
     if(BUILD_TESTING)
