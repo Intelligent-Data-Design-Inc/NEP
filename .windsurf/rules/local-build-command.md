@@ -8,15 +8,16 @@ Use these paths for **local development builds on Ed's machine**.
 For CI/GitHub Actions, different paths are used (see `.github/workflows/`).
 
 ## Machine-Specific Dependency Paths
-- **HDF5**: `/usr/local/hdf5-1.14.6/`
-- **NetCDF-C**: `/usr/local/netcdf-c/`
+- **HDF5**: `/usr/local/hdf5-1.14.6_cmake/`
+- **NetCDF-C**: `/usr/local/netcdf-c-4.9.3_cmake/`
 - **NetCDF-Fortran**: `/usr/local/netcdf-fortran/` (if Fortran enabled)
 - **CDF**: `/usr/local/cdf-3.9.1/` (if CDF enabled)
+- **GeoTIFF**: System packages (`libgeotiff-dev`, `libtiff-dev`)
 
 ## Runtime Environment
 Before running tests or executables:
 ```bash
-export LD_LIBRARY_PATH=/usr/local/hdf5-1.14.6/lib:/usr/local/netcdf-c/lib:/usr/local/netcdf-fortran/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/usr/local/hdf5-1.14.6_cmake/lib:/usr/local/netcdf-c-4.9.3_cmake/lib:/usr/local/netcdf-fortran/lib:/usr/local/cdf-3.9.1/lib:$LD_LIBRARY_PATH
 ```
 
 ## Build System Options
@@ -36,8 +37,8 @@ Working directory: `/home/ed/NEP`
 ```bash
 autoreconf -i && \
 CFLAGS="-g -O0" \
-CPPFLAGS="-I/usr/local/hdf5-1.14.6/include -I/usr/local/netcdf-c/include" \
-LDFLAGS="-L/usr/local/hdf5-1.14.6/lib -L/usr/local/netcdf-c/lib" \
+CPPFLAGS="-I/usr/local/hdf5-1.14.6_cmake/include -I/usr/local/netcdf-c-4.9.3_cmake/include -I/usr/local/cdf-3.9.1/include" \
+LDFLAGS="-L/usr/local/hdf5-1.14.6_cmake/lib -L/usr/local/netcdf-c-4.9.3_cmake/lib -L/usr/local/cdf-3.9.1/lib -Wl,-rpath,/usr/local/hdf5-1.14.6_cmake/lib -Wl,-rpath,/usr/local/netcdf-c-4.9.3_cmake/lib" \
 ./configure --enable-geotiff --enable-cdf --disable-fortran --disable-shared --disable-bzip2 --disable-lz4 && \
 make clean && make -j$(nproc) && make check
 ```
@@ -50,7 +51,7 @@ Working directory: `/home/ed/NEP`
 ```bash
 mkdir -p build && cd build
 cmake .. \
-  -DCMAKE_PREFIX_PATH="/usr/local/hdf5-1.14.6;/usr/local/netcdf-c" \
+  -DCMAKE_PREFIX_PATH="/usr/local/hdf5-1.14.6_cmake;/usr/local/netcdf-c-4.9.3_cmake;/usr/local/cdf-3.9.1" \
   -DCMAKE_BUILD_TYPE=Debug \
   -DENABLE_GEOTIFF=ON \
   -DENABLE_CDF=ON \
