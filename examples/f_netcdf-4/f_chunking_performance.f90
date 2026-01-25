@@ -103,7 +103,7 @@ contains
       integer :: dimids(NDIMS)
       integer :: retval
       real(8) :: start_time, end_time
-      integer :: file_unit, file_size
+      integer :: file_size
       logical :: file_exists
       
       print *, ""
@@ -211,12 +211,12 @@ contains
       call cpu_time(end_time)
       read_time = end_time - start_time
       
-      ! Validate a few data points
+      ! Validate a few data points (using expected_data for reference)
       errors = 0
       do t = 1, 5
          do lat = 1, 5
             do lon = 1, 5
-               expected = real((t-1) * 1000 + (lat-1) * 10 + (lon-1))
+               expected = expected_data(lon, lat, t)
                actual = data(lon, lat, t)
                if (actual /= expected) then
                   print *, "Error: data(", lon, ",", lat, ",", t, ") = ", actual, &

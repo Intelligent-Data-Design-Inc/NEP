@@ -82,7 +82,7 @@ contains
       integer, intent(in) :: dim_size
       
       integer :: ncid, varid, dimid, retval
-      integer :: format_in, mode_in
+      integer :: format_in
       character(len=50) :: detected_format
       real :: test_data(10)
       integer :: start_pos(1), count_val(1)

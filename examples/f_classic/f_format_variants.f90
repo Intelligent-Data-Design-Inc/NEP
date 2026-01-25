@@ -152,7 +152,7 @@ contains
       character(len=*), intent(in) :: filename, expected_format_name
       
       integer :: ncid, retval
-      integer :: format_in, mode_in
+      integer :: format_in
       integer :: ndims, nvars
       real :: temperature(NLON, NLAT, NTIME)
       real :: pressure(NLON, NLAT, NTIME)
@@ -163,6 +163,7 @@ contains
       
       print *, ""
       print *, "Verifying file: ", trim(filename)
+      print *, "  Expected format: ", trim(expected_format_name)
       
       ! Open file
       retval = nf90_open(filename, NF90_NOWRITE, ncid)
