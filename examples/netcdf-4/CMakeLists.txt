@@ -14,7 +14,7 @@ set(NETCDF4_EXAMPLES
 foreach(example ${NETCDF4_EXAMPLES})
     add_executable(${example} ${example}.c)
     target_include_directories(${example} PRIVATE ${NETCDF_INCLUDE_DIRS})
-    target_link_libraries(${example} PRIVATE ${NETCDF_LIBRARIES})
+    target_link_libraries(${example} PRIVATE ${NETCDF_LIBRARIES} m)
     target_link_directories(${example} PRIVATE ${NETCDF_LIBRARY_DIRS})
     
     # Add as test
