@@ -1,6 +1,9 @@
 # Makefile.am for NetCDF-4 Fortran examples
 # Edward Hartnett 1/25/26
 
+# Fortran module path - NetCDF-Fortran modules should be in CPPFLAGS from configure
+AM_FCFLAGS = $(CPPFLAGS)
+
 # List of Fortran NetCDF-4 example programs
 check_PROGRAMS = f_simple_nc4 f_compression f_chunking_performance f_multi_unlimited f_user_types
 

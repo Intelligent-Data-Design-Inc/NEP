@@ -1,6 +1,9 @@
 # Makefile.am for classic NetCDF Fortran examples
 # Edward Hartnett 1/25/26
 
+# Fortran module path - NetCDF-Fortran modules should be in CPPFLAGS from configure
+AM_FCFLAGS = $(CPPFLAGS)
+
 # List of Fortran classic example programs
 check_PROGRAMS = f_simple_2D f_coord_vars f_format_variants f_size_limits f_unlimited_dim f_var4d
 
