@@ -77,6 +77,18 @@ if(HAVE_GEOTIFF)
     set_tests_properties(tst_simple_geotiff PROPERTIES 
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
+    # Test for CRS metadata extraction (issue #92)
+    add_executable(test_netcdf_crs test_netcdf_crs.c)
+    target_link_libraries(test_netcdf_crs 
+        ncgeotiff
+        ${NETCDF_LIBRARIES} 
+        ${HDF5_LIBRARIES}
+        ${GEOTIFF_LIBRARY} 
+        ${TIFF_LIBRARY})
+    add_test(NAME test_netcdf_crs COMMAND test_netcdf_crs ${CMAKE_CURRENT_BINARY_DIR}/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif)
+    set_tests_properties(test_netcdf_crs PROPERTIES 
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
     # Benchmark for GeoTIFF Phase 3.5a: performance validation
     add_executable(bench_geotiff_performance bench_geotiff_performance.c)
     target_link_libraries(bench_geotiff_performance 

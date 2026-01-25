@@ -1,14 +1,20 @@
 ---
-description: Review code and create GitHub issues
+description: Review pull request and add code review comments
 ---
 
-# Code Review Workflow
+# Pull Request Code Review Workflow
 
-This workflow performs a comprehensive code review and generates actionable GitHub issues.
+This workflow performs a comprehensive code review on a pull request and adds review comments directly to the PR.
 
 ## Steps
 
-1. **Perform comprehensive code review**
+1. **Fetch pull request details**
+   - Get PR information using the pull request number
+   - Retrieve the list of changed files
+   - Get the diff for each changed file
+   - Identify added, modified, and deleted lines
+
+2. **Perform comprehensive code review**
    - Analyze code quality and adherence to best practices
    - Identify potential bugs or edge cases
    - Look for performance optimization opportunities
@@ -17,42 +23,49 @@ This workflow performs a comprehensive code review and generates actionable GitH
    - Review documentation completeness
    - Check for code duplication
    - Verify error handling patterns
+   - Ensure unit tests are included for new/modified code
 
-2. **Generate issue recommendations**
-   - Create a numbered list of potential GitHub issues
-   - For each issue, include:
-     - **Title**: Clear, concise issue title
-     - **Priority**: Critical/High/Medium/Low
-     - **Type**: Bug/Enhancement/Refactor/Documentation/Security
-     - **Description**: Detailed explanation of the issue
-     - **Location**: Specific file(s) and line numbers
-     - **Suggested Fix**: How to address the issue
-   - Present all issues to the user for approval
+3. **Generate review comments**
+   - Create a list of code review comments for each issue found
+   - For each comment, include:
+     - **File**: The file being commented on
+     - **Line**: Specific line number (or range)
+     - **Type**: Suggestion/Issue/Question/Praise
+     - **Comment**: Detailed feedback or question
+     - **Severity**: Critical/High/Medium/Low
 
-3. **Interactive issue creation**
-   - For each recommended issue, ask: "Create this issue? (yes/no)"
-   - If user says **yes**: Create the GitHub issue with all details
-   - If user says **no**: Skip and move to next issue
-   - Continue until all issues are processed
+4. **Add review comments to PR**
+   - For each review comment, ask: "Add this comment to PR? (yes/no)"
+   - If user says **yes**: Add the comment as a PR review comment using the appropriate line
+   - If user says **no**: Skip and move to next comment
+   - Continue until all comments are processed
 
-4. **Summary**
-   - Report how many issues were created
-   - List the issue numbers and titles created
+5. **Submit overall review**
+   - Ask user for overall review status: "Approve", "Request Changes", or "Comment"
+   - Add summary comment with overall assessment
+   - Submit the review with the chosen status
+
+6. **Summary**
+   - Report how many comments were added
+   - List the types of issues found
+   - Note the overall review status
 
 ## Usage
 
 ```
-/review <file_path>
+/review <pull_request_number>
 ```
 
 Example:
 ```
-/review src/geotifffile.c
+/review 123
 ```
 
 ## Notes
 
-- Issues are created in the current repository
-- Use appropriate labels based on issue type
-- Include code references using GitHub's file:line syntax
+- Comments are added as pull request review comments on specific lines
+- Use appropriate comment types (suggestion, issue, question, praise)
+- Include code references using GitHub's line selection
+- Review focuses on code quality, not creating separate issues
+- For critical issues that need separate tracking, suggest creating issues in comments
 - Group related issues when appropriate 

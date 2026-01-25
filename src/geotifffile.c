@@ -172,6 +172,7 @@ nc4_var_list_add_full(NC_GRP_INFO_T* grp, const char* name, int ndims, nc_type x
     if ((retval = nc4_set_var_type(xtype, endianness, type_size, type_name,
                                    &(*var)->type_info)))
         return retval;
+
     /* Propagate the endianness to the variable */
     (*var)->endianness = (*var)->type_info->endianness;
 
@@ -213,7 +214,7 @@ nc4_var_list_add_full(NC_GRP_INFO_T* grp, const char* name, int ndims, nc_type x
  * @return NC_NOERR on success, error code otherwise.
  */
 static int
-read_tiff_header(FILE *fp, int *is_little_endian, int *is_bigtiff, 
+read_tiff_header(FILE *fp, int *is_little_endian, int *is_bigtiff,
                  unsigned int *ifd_offset)
 {
     unsigned char header[TIFF_HEADER_SIZE];
@@ -258,7 +259,7 @@ read_tiff_header(FILE *fp, int *is_little_endian, int *is_bigtiff,
     {
         *is_bigtiff = 0;
         /* Read IFD offset (4 bytes at offset 4) */
-        *ifd_offset = (header[4]) | (header[5] << 8) | 
+        *ifd_offset = (header[4]) | (header[5] << 8) |
                       (header[6] << 16) | (header[7] << 24);
         if (need_swap)
             *ifd_offset = swap32(*ifd_offset);
@@ -271,7 +272,7 @@ read_tiff_header(FILE *fp, int *is_little_endian, int *is_bigtiff,
         unsigned char bigtiff_header[8];
         if (fread(bigtiff_header, 1, 8, fp) != 8)
             return NC_ENOTNC;
-        *ifd_offset = (bigtiff_header[0]) | (bigtiff_header[1] << 8) | 
+        *ifd_offset = (bigtiff_header[0]) | (bigtiff_header[1] << 8) |
                       (bigtiff_header[2] << 16) | (bigtiff_header[3] << 24);
         if (need_swap)
             *ifd_offset = swap32(*ifd_offset);
@@ -516,19 +517,19 @@ NC_GEOTIFF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     fp = fopen(path, "rb");
     if (!fp)
         return NC_ENOTNC;
-    
+
     ret = read_tiff_header(fp, &is_little_endian, &is_bigtiff, &ifd_offset);
     if (ret != NC_NOERR)
     {
         fclose(fp);
         return ret;
     }
-    
+
     /* Check for GeoTIFF tags */
     int has_geotiff_tags;
     ret = check_geotiff_tags(fp, ifd_offset, is_little_endian, is_bigtiff, &has_geotiff_tags);
     fclose(fp);
-    
+
     if (ret != NC_NOERR)
         return ret;
     if (!has_geotiff_tags)
@@ -586,7 +587,7 @@ NC_GEOTIFF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
         int versions[3];
         int keycount;
         GTIFDirectoryInfo(gtif, versions, &keycount);
-        
+
         /* Check version compatibility (should be version 1) */
         if (versions[0] > 1)
         {
@@ -649,7 +650,7 @@ NC_GEOTIFF_close(int ncid, void *ignore)
     /* Find our metadata for this file */
     if ((retval = nc4_find_nc_grp_h5(ncid, &nc, &grp, &h5)))
         return retval;
-    
+
     if (!h5 || !h5->format_file_info)
         return NC_EBADID;
 
@@ -668,13 +669,21 @@ NC_GEOTIFF_close(int ncid, void *ignore)
     if (geotiff_info->path)
         free(geotiff_info->path);
 
-    /* Free GeoTIFF file info structure */
+    /* CRS cleanup notes:
+     * - crs_info is embedded in geotiff_info (not a pointer), so freed automatically
+     * - CRS attribute data (allocated in NC_GEOTIFF_extract_metadata) is transferred
+     *   to NetCDF's attribute system and freed by nc4_nc4f_list_del() below
+     * - If CRS structure is extended with dynamic allocations in the future,
+     *   add explicit cleanup here before freeing geotiff_info
+     */
+
+    /* Free GeoTIFF file info structure (includes embedded crs_info) */
     free(geotiff_info);
 
-    /* Free the NC_FILE_INFO_T struct */
+    /* Free the NC_FILE_INFO_T struct (also frees all attributes including CRS attrs) */
     if ((retval = nc4_nc4f_list_del(h5)))
         return retval;
-    
+
     return NC_NOERR;
 }
 
@@ -928,20 +937,516 @@ NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_
     /* Extract CRS information if GTIFNew succeeded */
     if (gtif)
     {
-        GTIFDefn defn;
-        memset(&defn, 0, sizeof(GTIFDefn));
-        
-        if (GTIFGetDefn(gtif, &defn))
+        /* Extract CRS parameters using helper function */
+        int retval = extract_crs_parameters(gtif, &geotiff_info->crs_info);
+        if (retval == NC_NOERR)
         {
-            /* Store CRS information as attributes */
-            if (defn.Model != 0)
+            /* Validate CRS completeness */
+            retval = validate_crs_completeness(&geotiff_info->crs_info);
+            if (retval == NC_NOERR)
             {
-                /* CRS information is available */
-                /* Full CF-compliant grid mapping support can be added in future */
+                /* Map CRS parameters to NetCDF attributes */
+                NC_ATT_INFO_T *att = NULL;
+                char att_name[NC_MAX_NAME + 1];
+                void *att_data = NULL;
+                
+                /* Add EPSG code attribute */
+                if (geotiff_info->crs_info.epsg_code != 0)
+                {
+                    strcpy(att_name, "geotiff_epsg_code");
+                    att_data = malloc(sizeof(int));
+                    if (att_data)
+                    {
+                        *(int*)att_data = geotiff_info->crs_info.epsg_code;
+                        if ((retval = nc4_att_list_add(grp->att, att_name, &att)) == NC_NOERR)
+                        {
+                            att->data = att_data;
+                            att->len = 1;
+                            att->nc_typeid = NC_INT;
+                        }
+                        else
+                        {
+                            free(att_data);
+                        }
+                    }
+                }
+                
+                /* Add CRS name attribute */
+                if (strlen(geotiff_info->crs_info.crs_name) > 0)
+                {
+                    strcpy(att_name, "geotiff_crs_name");
+                    att_data = malloc(strlen(geotiff_info->crs_info.crs_name) + 1);
+                    if (att_data)
+                    {
+                        strcpy(att_data, geotiff_info->crs_info.crs_name);
+                        if ((retval = nc4_att_list_add(grp->att, att_name, &att)) == NC_NOERR)
+                        {
+                            att->data = att_data;
+                            att->len = strlen(geotiff_info->crs_info.crs_name) + 1;
+                            att->nc_typeid = NC_CHAR;
+                        }
+                        else
+                        {
+                            free(att_data);
+                        }
+                    }
+                }
+                
+                /* Add ellipsoid parameters */
+                if (geotiff_info->crs_info.semi_major_axis != 0.0)
+                {
+                    strcpy(att_name, "geotiff_semi_major_axis");
+                    att_data = malloc(sizeof(double));
+                    if (att_data)
+                    {
+                        *(double*)att_data = geotiff_info->crs_info.semi_major_axis;
+                        if ((retval = nc4_att_list_add(grp->att, att_name, &att)) == NC_NOERR)
+                        {
+                            att->data = att_data;
+                            att->len = 1;
+                            att->nc_typeid = NC_DOUBLE;
+                        }
+                        else
+                        {
+                            free(att_data);
+                        }
+                    }
+                }
+                
+                if (geotiff_info->crs_info.inverse_flattening != 0.0)
+                {
+                    strcpy(att_name, "geotiff_inverse_flattening");
+                    att_data = malloc(sizeof(double));
+                    if (att_data)
+                    {
+                        *(double*)att_data = geotiff_info->crs_info.inverse_flattening;
+                        if ((retval = nc4_att_list_add(grp->att, att_name, &att)) == NC_NOERR)
+                        {
+                            att->data = att_data;
+                            att->len = 1;
+                            att->nc_typeid = NC_DOUBLE;
+                        }
+                        else
+                        {
+                            free(att_data);
+                        }
+                    }
+                }
+                
+                /* Add projection parameters for projected CRS */
+                if (geotiff_info->crs_info.crs_type == NC_GEOTIFF_CRS_PROJECTED)
+                {
+                    if (geotiff_info->crs_info.false_easting != 0.0)
+                    {
+                        strcpy(att_name, "geotiff_false_easting");
+                        att_data = malloc(sizeof(double));
+                        if (att_data)
+                        {
+                            *(double*)att_data = geotiff_info->crs_info.false_easting;
+                            if ((retval = nc4_att_list_add(grp->att, att_name, &att)) == NC_NOERR)
+                            {
+                                att->data = att_data;
+                                att->len = 1;
+                                att->nc_typeid = NC_DOUBLE;
+                            }
+                            else
+                            {
+                                free(att_data);
+                            }
+                        }
+                    }
+                    
+                    if (geotiff_info->crs_info.false_northing != 0.0)
+                    {
+                        strcpy(att_name, "geotiff_false_northing");
+                        att_data = malloc(sizeof(double));
+                        if (att_data)
+                        {
+                            *(double*)att_data = geotiff_info->crs_info.false_northing;
+                            if ((retval = nc4_att_list_add(grp->att, att_name, &att)) == NC_NOERR)
+                            {
+                                att->data = att_data;
+                                att->len = 1;
+                                att->nc_typeid = NC_DOUBLE;
+                            }
+                            else
+                            {
+                                free(att_data);
+                            }
+                        }
+                    }
+                    
+                    if (geotiff_info->crs_info.scale_factor != 0.0)
+                    {
+                        strcpy(att_name, "geotiff_scale_factor");
+                        att_data = malloc(sizeof(double));
+                        if (att_data)
+                        {
+                            *(double*)att_data = geotiff_info->crs_info.scale_factor;
+                            if ((retval = nc4_att_list_add(grp->att, att_name, &att)) == NC_NOERR)
+                            {
+                                att->data = att_data;
+                                att->len = 1;
+                                att->nc_typeid = NC_DOUBLE;
+                            }
+                            else
+                            {
+                                free(att_data);
+                            }
+                        }
+                    }
+                    
+                    if (geotiff_info->crs_info.central_meridian != 0.0)
+                    {
+                        strcpy(att_name, "geotiff_central_meridian");
+                        att_data = malloc(sizeof(double));
+                        if (att_data)
+                        {
+                            *(double*)att_data = geotiff_info->crs_info.central_meridian;
+                            if ((retval = nc4_att_list_add(grp->att, att_name, &att)) == NC_NOERR)
+                            {
+                                att->data = att_data;
+                                att->len = 1;
+                                att->nc_typeid = NC_DOUBLE;
+                            }
+                            else
+                            {
+                                free(att_data);
+                            }
+                        }
+                    }
+                    
+                    if (geotiff_info->crs_info.latitude_of_origin != 0.0)
+                    {
+                        strcpy(att_name, "geotiff_latitude_of_origin");
+                        att_data = malloc(sizeof(double));
+                        if (att_data)
+                        {
+                            *(double*)att_data = geotiff_info->crs_info.latitude_of_origin;
+                            if ((retval = nc4_att_list_add(grp->att, att_name, &att)) == NC_NOERR)
+                            {
+                                att->data = att_data;
+                                att->len = 1;
+                                att->nc_typeid = NC_DOUBLE;
+                            }
+                            else
+                            {
+                                free(att_data);
+                            }
+                        }
+                    }
+                }
             }
+            else
+            {
+                /* CRS validation failed - continue without CRS but log warning */
+                /* In a production environment, you might want to add logging here */
+            }
+        }
+        else
+        {
+            /* CRS extraction failed - continue without CRS but this is expected for files without CRS */
         }
     }
 
+    return NC_NOERR;
+}
+
+/**
+ * @internal Extract CRS parameters from GTIF definition.
+ *
+ * This function parses the GTIFDefn structure and extracts relevant CRS
+ * parameters into a structured format suitable for NetCDF attribute creation.
+ *
+ * @param gtif GTIF handle.
+ * @param crs_info CRS info structure to populate.
+ * @return NC_NOERR on success, error code otherwise.
+ */
+int
+extract_crs_parameters(GTIF *gtif, NC_GEOTIFF_CRS_INFO_T *crs_info)
+{
+    GTIFDefn defn;
+    
+    if (!gtif || !crs_info)
+        return NC_EINVAL;
+    
+    /* Initialize CRS info structure */
+    memset(crs_info, 0, sizeof(NC_GEOTIFF_CRS_INFO_T));
+    crs_info->crs_type = NC_GEOTIFF_CRS_UNKNOWN;
+    
+    /* Get GTIF definition */
+    memset(&defn, 0, sizeof(GTIFDefn));
+    if (!GTIFGetDefn(gtif, &defn))
+        return NC_NOERR; /* No CRS data available, but not an error */
+    
+    /* Extract basic CRS information */
+    /* Note: GTIFDefn doesn't have EPSGCode field directly */
+    crs_info->epsg_code = 0; /* Could be derived from other fields if needed */
+    
+    /* Determine CRS type */
+    if (defn.Model == ModelTypeGeographic)
+    {
+        crs_info->crs_type = NC_GEOTIFF_CRS_GEOGRAPHIC;
+        strncpy(crs_info->crs_name, "Geographic", NC_MAX_NAME);
+    }
+    else if (defn.Model == ModelTypeProjected)
+    {
+        crs_info->crs_type = NC_GEOTIFF_CRS_PROJECTED;
+        strncpy(crs_info->crs_name, "Projected", NC_MAX_NAME);
+    }
+    else
+    {
+        crs_info->crs_type = NC_GEOTIFF_CRS_UNKNOWN;
+        strncpy(crs_info->crs_name, "Unknown", NC_MAX_NAME);
+    }
+    
+    /* Extract ellipsoid parameters */
+    if (defn.SemiMajor != 0.0)
+        crs_info->semi_major_axis = defn.SemiMajor;
+    
+    /* Calculate inverse flattening from semi-major and semi-minor axes */
+    if (defn.SemiMajor != 0.0 && defn.SemiMinor != 0.0 && defn.SemiMajor != defn.SemiMinor)
+        crs_info->inverse_flattening = defn.SemiMajor / (defn.SemiMajor - defn.SemiMinor);
+    
+    /* Extract projection parameters for projected CRS */
+    if (crs_info->crs_type == NC_GEOTIFF_CRS_PROJECTED)
+    {
+        /* Look for common projection parameters in ProjParm array */
+        for (int i = 0; i < defn.nParms; i++)
+        {
+            switch (defn.ProjParmId[i])
+            {
+                case ProjFalseEastingGeoKey:
+                    crs_info->false_easting = defn.ProjParm[i];
+                    break;
+                case ProjFalseNorthingGeoKey:
+                    crs_info->false_northing = defn.ProjParm[i];
+                    break;
+                case ProjScaleAtOriginGeoKey:
+                    crs_info->scale_factor = defn.ProjParm[i];
+                    break;
+                case ProjNatOriginLongGeoKey:
+                    crs_info->central_meridian = defn.ProjParm[i];
+                    break;
+                case ProjNatOriginLatGeoKey:
+                    crs_info->latitude_of_origin = defn.ProjParm[i];
+                    break;
+                default:
+                    /* Other projection parameters not used in this implementation */
+                    break;
+            }
+        }
+    }
+    
+    return NC_NOERR;
+}
+
+/**
+ * @internal Map GeoTIFF CRS parameters to CF-compliant attributes.
+ *
+ * This function converts the extracted CRS parameters into NetCDF attributes
+ * following CF conventions where applicable.
+ *
+ * @param crs_info CRS info structure.
+ * @param atts Pointer to array of attributes (output).
+ * @param num_atts Pointer to number of attributes (output).
+ * @return NC_NOERR on success, error code otherwise.
+ */
+int
+map_geotiff_to_cf_attributes(const NC_GEOTIFF_CRS_INFO_T *crs_info, 
+                           NC_ATT_INFO_T **atts, int *num_atts)
+{
+    if (!crs_info || !atts || !num_atts)
+        return NC_EINVAL;
+    
+    *atts = NULL;
+    *num_atts = 0;
+    
+    /* Only create attributes if we have valid CRS information */
+    if (crs_info->crs_type == NC_GEOTIFF_CRS_UNKNOWN)
+        return NC_NOERR;
+    
+    /* Calculate number of attributes needed */
+    int att_count = 0;
+    if (crs_info->epsg_code != 0) att_count++;
+    if (strlen(crs_info->crs_name) > 0) att_count++;
+    if (crs_info->semi_major_axis != 0.0) att_count++;
+    if (crs_info->inverse_flattening != 0.0) att_count++;
+    if (crs_info->false_easting != 0.0) att_count++;
+    if (crs_info->false_northing != 0.0) att_count++;
+    if (crs_info->scale_factor != 0.0) att_count++;
+    if (crs_info->central_meridian != 0.0) att_count++;
+    if (crs_info->latitude_of_origin != 0.0) att_count++;
+    
+    if (att_count == 0)
+        return NC_NOERR;
+    
+    /* Allocate attribute array */
+    *atts = calloc(att_count, sizeof(NC_ATT_INFO_T));
+    if (!*atts)
+        return NC_ENOMEM;
+    
+    *num_atts = att_count;
+    int att_idx = 0;
+    
+    /* Add EPSG code attribute */
+    if (crs_info->epsg_code != 0)
+    {
+        NC_ATT_INFO_T *att = &(*atts)[att_idx++];
+        snprintf(att->hdr.name, NC_MAX_NAME, "geotiff_epsg_code");
+        att->nc_typeid = NC_INT;
+        att->len = 1;
+        att->data = malloc(sizeof(int));
+        if (!att->data)
+            return NC_ENOMEM;
+        *(int*)att->data = crs_info->epsg_code;
+    }
+    
+    /* Add CRS name attribute */
+    if (strlen(crs_info->crs_name) > 0)
+    {
+        NC_ATT_INFO_T *att = &(*atts)[att_idx++];
+        snprintf(att->hdr.name, NC_MAX_NAME, "geotiff_crs_name");
+        att->nc_typeid = NC_CHAR;
+        att->len = strlen(crs_info->crs_name) + 1;
+        att->data = malloc(att->len);
+        if (!att->data)
+            return NC_ENOMEM;
+        strcpy(att->data, crs_info->crs_name);
+    }
+    
+    /* Add ellipsoid parameters */
+    if (crs_info->semi_major_axis != 0.0)
+    {
+        NC_ATT_INFO_T *att = &(*atts)[att_idx++];
+        snprintf(att->hdr.name, NC_MAX_NAME, "geotiff_semi_major_axis");
+        att->nc_typeid = NC_DOUBLE;
+        att->len = 1;
+        att->data = malloc(sizeof(double));
+        if (!att->data)
+            return NC_ENOMEM;
+        *(double*)att->data = crs_info->semi_major_axis;
+    }
+    
+    if (crs_info->inverse_flattening != 0.0)
+    {
+        NC_ATT_INFO_T *att = &(*atts)[att_idx++];
+        snprintf(att->hdr.name, NC_MAX_NAME, "geotiff_inverse_flattening");
+        att->nc_typeid = NC_DOUBLE;
+        att->len = 1;
+        att->data = malloc(sizeof(double));
+        if (!att->data)
+            return NC_ENOMEM;
+        *(double*)att->data = crs_info->inverse_flattening;
+    }
+    
+    /* Add projection parameters for projected CRS */
+    if (crs_info->crs_type == NC_GEOTIFF_CRS_PROJECTED)
+    {
+        if (crs_info->false_easting != 0.0)
+        {
+            NC_ATT_INFO_T *att = &(*atts)[att_idx++];
+            snprintf(att->hdr.name, NC_MAX_NAME, "geotiff_false_easting");
+            att->nc_typeid = NC_DOUBLE;
+            att->len = 1;
+            att->data = malloc(sizeof(double));
+            if (!att->data)
+                return NC_ENOMEM;
+            *(double*)att->data = crs_info->false_easting;
+        }
+        
+        if (crs_info->false_northing != 0.0)
+        {
+            NC_ATT_INFO_T *att = &(*atts)[att_idx++];
+            snprintf(att->hdr.name, NC_MAX_NAME, "geotiff_false_northing");
+            att->nc_typeid = NC_DOUBLE;
+            att->len = 1;
+            att->data = malloc(sizeof(double));
+            if (!att->data)
+                return NC_ENOMEM;
+            *(double*)att->data = crs_info->false_northing;
+        }
+        
+        if (crs_info->scale_factor != 0.0)
+        {
+            NC_ATT_INFO_T *att = &(*atts)[att_idx++];
+            snprintf(att->hdr.name, NC_MAX_NAME, "geotiff_scale_factor");
+            att->nc_typeid = NC_DOUBLE;
+            att->len = 1;
+            att->data = malloc(sizeof(double));
+            if (!att->data)
+                return NC_ENOMEM;
+            *(double*)att->data = crs_info->scale_factor;
+        }
+        
+        if (crs_info->central_meridian != 0.0)
+        {
+            NC_ATT_INFO_T *att = &(*atts)[att_idx++];
+            snprintf(att->hdr.name, NC_MAX_NAME, "geotiff_central_meridian");
+            att->nc_typeid = NC_DOUBLE;
+            att->len = 1;
+            att->data = malloc(sizeof(double));
+            if (!att->data)
+                return NC_ENOMEM;
+            *(double*)att->data = crs_info->central_meridian;
+        }
+        
+        if (crs_info->latitude_of_origin != 0.0)
+        {
+            NC_ATT_INFO_T *att = &(*atts)[att_idx++];
+            snprintf(att->hdr.name, NC_MAX_NAME, "geotiff_latitude_of_origin");
+            att->nc_typeid = NC_DOUBLE;
+            att->len = 1;
+            att->data = malloc(sizeof(double));
+            if (!att->data)
+                return NC_ENOMEM;
+            *(double*)att->data = crs_info->latitude_of_origin;
+        }
+    }
+    
+    return NC_NOERR;
+}
+
+/**
+ * @internal Validate completeness of CRS information.
+ *
+ * This function checks if the extracted CRS information contains
+ * the minimum required parameters for the CRS type.
+ *
+ * @param crs_info CRS info structure to validate.
+ * @return NC_NOERR if complete, NC_EINVAL if incomplete.
+ */
+int
+validate_crs_completeness(const NC_GEOTIFF_CRS_INFO_T *crs_info)
+{
+    if (!crs_info)
+        return NC_EINVAL;
+    
+    /* Unknown CRS type is considered incomplete but not an error */
+    if (crs_info->crs_type == NC_GEOTIFF_CRS_UNKNOWN)
+        return NC_NOERR;
+    
+    /* For foundation implementation, be more permissive:
+       - For geographic CRS, accept if we have any ellipsoid info
+       - For projected CRS, accept if we have basic CRS info
+       - Don't require all parameters to be present */
+    
+    /* For geographic CRS, at least one ellipsoid parameter should be present */
+    if (crs_info->crs_type == NC_GEOTIFF_CRS_GEOGRAPHIC)
+    {
+        if (crs_info->semi_major_axis == 0.0)
+            return NC_EINVAL; /* Need at least semi-major axis */
+    }
+    
+    /* For projected CRS, at least CRS type should be identified */
+    if (crs_info->crs_type == NC_GEOTIFF_CRS_PROJECTED)
+    {
+        /* For foundation implementation, accept projected CRS even without full parameters */
+        /* We only need to know it's a projected CRS */
+        if (crs_info->semi_major_axis == 0.0)
+            return NC_EINVAL; /* Still need basic ellipsoid info */
+    }
+    
     return NC_NOERR;
 }
 
@@ -967,21 +1472,21 @@ detect_tiff_organization(TIFF *tiff, NC_GEOTIFF_FILE_INFO_T *geotiff_info)
     uint32_t tile_width = 0, tile_height = 0;
     uint32_t rows_per_strip = 0;
     uint16_t planar_config = PLANARCONFIG_CONTIG;
-    
+
     if (!tiff || !geotiff_info)
         return NC_EINVAL;
-    
+
     /* Check if file is tiled */
     if (TIFFIsTiled(tiff))
     {
         geotiff_info->is_tiled = 1;
-        
+
         /* Get tile dimensions */
         if (!TIFFGetField(tiff, TIFFTAG_TILEWIDTH, &tile_width))
             return NC_EHDFERR;
         if (!TIFFGetField(tiff, TIFFTAG_TILELENGTH, &tile_height))
             return NC_EHDFERR;
-        
+
         geotiff_info->tile_width = tile_width;
         geotiff_info->tile_height = tile_height;
         geotiff_info->rows_per_strip = 0;
@@ -992,7 +1497,7 @@ detect_tiff_organization(TIFF *tiff, NC_GEOTIFF_FILE_INFO_T *geotiff_info)
         geotiff_info->is_tiled = 0;
         geotiff_info->tile_width = 0;
         geotiff_info->tile_height = 0;
-        
+
         /* Get rows per strip */
         if (!TIFFGetField(tiff, TIFFTAG_ROWSPERSTRIP, &rows_per_strip))
         {
@@ -1001,7 +1506,7 @@ detect_tiff_organization(TIFF *tiff, NC_GEOTIFF_FILE_INFO_T *geotiff_info)
         }
         geotiff_info->rows_per_strip = rows_per_strip;
     }
-    
+
     /* Get planar configuration */
     if (!TIFFGetField(tiff, TIFFTAG_PLANARCONFIG, &planar_config))
     {
@@ -1009,7 +1514,7 @@ detect_tiff_organization(TIFF *tiff, NC_GEOTIFF_FILE_INFO_T *geotiff_info)
         planar_config = PLANARCONFIG_CONTIG;
     }
     geotiff_info->planar_config = planar_config;
-    
+
     return NC_NOERR;
 }
 
@@ -1031,30 +1536,30 @@ static void *
 allocate_read_buffer(NC_GEOTIFF_FILE_INFO_T *geotiff_info, size_t type_size)
 {
     size_t buffer_size;
-    
+
     if (!geotiff_info || type_size == 0)
         return NULL;
-    
+
     if (geotiff_info->is_tiled)
     {
         /* Allocate buffer for one tile */
-        buffer_size = (size_t)geotiff_info->tile_width * 
-                      (size_t)geotiff_info->tile_height * 
-                      (size_t)geotiff_info->samples_per_pixel * 
+        buffer_size = (size_t)geotiff_info->tile_width *
+                      (size_t)geotiff_info->tile_height *
+                      (size_t)geotiff_info->samples_per_pixel *
                       type_size;
     }
     else
     {
         /* Allocate buffer for one scanline */
-        buffer_size = (size_t)geotiff_info->image_width * 
-                      (size_t)geotiff_info->samples_per_pixel * 
+        buffer_size = (size_t)geotiff_info->image_width *
+                      (size_t)geotiff_info->samples_per_pixel *
                       type_size;
     }
-    
+
     /* Sanity check on buffer size */
     if (buffer_size > MAX_BUFFER_SIZE)
         return NULL;
-    
+
     return malloc(buffer_size);
 }
 
@@ -1093,26 +1598,26 @@ static int
 validate_hyperslab(NC_VAR_INFO_T *var, const size_t *start, const size_t *count)
 {
     int d;
-    
+
     if (!var || !start || !count)
         return NC_EINVAL;
-    
+
     /* Check each dimension */
     for (d = 0; d < (int)var->ndims; d++)
     {
         /* Check if start is within bounds */
         if (start[d] >= var->dim[d]->len)
             return NC_EEDGE;
-        
+
         /* Check if start + count exceeds dimension length */
         if (start[d] + count[d] > var->dim[d]->len)
             return NC_EEDGE;
-        
+
         /* Check for zero count (invalid) */
         if (count[d] == 0)
             return NC_EEDGE;
     }
-    
+
     return NC_NOERR;
 }
 
@@ -1134,11 +1639,11 @@ read_scanline(TIFF *tiff, uint32_t row, void *buffer, uint16_t samples_per_pixel
     (void)samples_per_pixel;
     if (!tiff || !buffer)
         return NC_EINVAL;
-    
+
     /* For single-band or PLANARCONFIG_CONTIG, read the scanline */
     if (TIFFReadScanline(tiff, buffer, row, 0) < 0)
         return NC_EHDFERR;
-    
+
     return NC_NOERR;
 }
 
@@ -1159,11 +1664,11 @@ read_tile(TIFF *tiff, uint32_t tile_x, uint32_t tile_y, void *buffer)
 {
     if (!tiff || !buffer)
         return NC_EINVAL;
-    
+
     /* Read the tile */
     if (TIFFReadTile(tiff, buffer, tile_x, tile_y, 0, 0) < 0)
         return NC_EHDFERR;
-    
+
     return NC_NOERR;
 }
 
@@ -1196,63 +1701,63 @@ read_single_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
     int retval = NC_NOERR;
 
     (void)var;
-    
+
     /* Get GeoTIFF info */
     geotiff_info = (NC_GEOTIFF_FILE_INFO_T *)h5->format_file_info;
     if (!geotiff_info || !geotiff_info->tiff_handle)
         return NC_EINVAL;
-    
+
     tiff = (TIFF *)geotiff_info->tiff_handle;
-    
+
     /* Extract start and count for 2D array [y, x] */
     start_y = start[0];
     start_x = start[1];
     count_y = count[0];
     count_x = count[1];
-    
+
     /* Allocate read buffer */
     read_buffer = allocate_read_buffer(geotiff_info, type_size);
     if (!read_buffer)
         return NC_ENOMEM;
-    
+
     if (geotiff_info->is_tiled)
     {
         /* Tiled reading */
         uint32_t tile_width = geotiff_info->tile_width;
         uint32_t tile_height = geotiff_info->tile_height;
         size_t y;
-        
+
         for (y = 0; y < count_y; y++)
         {
             size_t row = start_y + y;
             uint32_t tile_row = row / tile_height;
             uint32_t row_in_tile = row % tile_height;
             size_t x = 0;
-            
+
             while (x < count_x)
             {
                 size_t col = start_x + x;
                 uint32_t tile_col = col / tile_width;
                 uint32_t col_in_tile = col % tile_width;
                 size_t pixels_in_tile = tile_width - col_in_tile;
-                size_t pixels_to_copy = (pixels_in_tile < (count_x - x)) ? 
+                size_t pixels_to_copy = (pixels_in_tile < (count_x - x)) ?
                                        pixels_in_tile : (count_x - x);
-                
+
                 /* Read tile */
-                if ((retval = read_tile(tiff, tile_col * tile_width, 
+                if ((retval = read_tile(tiff, tile_col * tile_width,
                                        tile_row * tile_height, read_buffer)))
                 {
                     free_read_buffer(read_buffer);
                     return retval;
                 }
-                
+
                 /* Copy relevant portion */
-                unsigned char *dst = (unsigned char *)value + 
+                unsigned char *dst = (unsigned char *)value +
                                     (y * count_x + x) * type_size;
-                unsigned char *src = (unsigned char *)read_buffer + 
+                unsigned char *src = (unsigned char *)read_buffer +
                                     (row_in_tile * tile_width + col_in_tile) * type_size;
                 memcpy(dst, src, pixels_to_copy * type_size);
-                
+
                 x += pixels_to_copy;
             }
         }
@@ -1261,26 +1766,26 @@ read_single_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
     {
         /* Striped (scanline) reading */
         size_t y;
-        
+
         for (y = 0; y < count_y; y++)
         {
             uint32_t row = start_y + y;
-            
+
             /* Read scanline */
-            if ((retval = read_scanline(tiff, row, read_buffer, 
+            if ((retval = read_scanline(tiff, row, read_buffer,
                                        geotiff_info->samples_per_pixel)))
             {
                 free_read_buffer(read_buffer);
                 return retval;
             }
-            
+
             /* Copy relevant portion */
             unsigned char *dst = (unsigned char *)value + y * count_x * type_size;
             unsigned char *src = (unsigned char *)read_buffer + start_x * type_size;
             memcpy(dst, src, count_x * type_size);
         }
     }
-    
+
     free_read_buffer(read_buffer);
     return NC_NOERR;
 }
@@ -1316,14 +1821,14 @@ read_multi_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
     int retval = NC_NOERR;
 
     (void)var;
-    
+
     /* Get GeoTIFF info */
     geotiff_info = (NC_GEOTIFF_FILE_INFO_T *)h5->format_file_info;
     if (!geotiff_info || !geotiff_info->tiff_handle)
         return NC_EINVAL;
-    
+
     tiff = (TIFF *)geotiff_info->tiff_handle;
-    
+
     /* Extract start and count for 3D array [band, y, x] */
     start_band = start[0];
     start_y = start[1];
@@ -1331,12 +1836,12 @@ read_multi_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
     count_band = count[0];
     count_y = count[1];
     count_x = count[2];
-    
+
     /* Allocate read buffer */
     read_buffer = allocate_read_buffer(geotiff_info, type_size);
     if (!read_buffer)
         return NC_ENOMEM;
-    
+
     if (geotiff_info->planar_config == PLANARCONFIG_SEPARATE)
     {
         /* Band-interleaved: each band stored separately */
@@ -1345,30 +1850,30 @@ read_multi_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
         {
             uint16_t sample = start_band + band;
             size_t band_offset = band * count_y * count_x;
-            
+
             if (geotiff_info->is_tiled)
             {
                 /* Tiled reading for this band */
                 uint32_t tile_width = geotiff_info->tile_width;
                 uint32_t tile_height = geotiff_info->tile_height;
                 size_t y;
-                
+
                 for (y = 0; y < count_y; y++)
                 {
                     size_t row = start_y + y;
                     uint32_t tile_row = row / tile_height;
                     uint32_t row_in_tile = row % tile_height;
                     size_t x = 0;
-                    
+
                     while (x < count_x)
                     {
                         size_t col = start_x + x;
                         uint32_t tile_col = col / tile_width;
                         uint32_t col_in_tile = col % tile_width;
                         size_t pixels_in_tile = tile_width - col_in_tile;
-                        size_t pixels_to_copy = (pixels_in_tile < (count_x - x)) ? 
+                        size_t pixels_to_copy = (pixels_in_tile < (count_x - x)) ?
                                                pixels_in_tile : (count_x - x);
-                        
+
                         /* Read tile for this band */
                         if (TIFFReadTile(tiff, read_buffer, tile_col * tile_width,
                                         tile_row * tile_height, 0, sample) < 0)
@@ -1376,14 +1881,14 @@ read_multi_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
                             free_read_buffer(read_buffer);
                             return NC_EHDFERR;
                         }
-                        
+
                         /* Copy relevant portion */
-                        unsigned char *dst = (unsigned char *)value + 
+                        unsigned char *dst = (unsigned char *)value +
                                             (band_offset + y * count_x + x) * type_size;
-                        unsigned char *src = (unsigned char *)read_buffer + 
+                        unsigned char *src = (unsigned char *)read_buffer +
                                             (row_in_tile * tile_width + col_in_tile) * type_size;
                         memcpy(dst, src, pixels_to_copy * type_size);
-                        
+
                         x += pixels_to_copy;
                     }
                 }
@@ -1392,20 +1897,20 @@ read_multi_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
             {
                 /* Striped reading for this band */
                 size_t y;
-                
+
                 for (y = 0; y < count_y; y++)
                 {
                     uint32_t row = start_y + y;
-                    
+
                     /* Read scanline for this band */
                     if (TIFFReadScanline(tiff, read_buffer, row, sample) < 0)
                     {
                         free_read_buffer(read_buffer);
                         return NC_EHDFERR;
                     }
-                    
+
                     /* Copy relevant portion */
-                    unsigned char *dst = (unsigned char *)value + 
+                    unsigned char *dst = (unsigned char *)value +
                                         (band_offset + y * count_x) * type_size;
                     unsigned char *src = (unsigned char *)read_buffer + start_x * type_size;
                     memcpy(dst, src, count_x * type_size);
@@ -1424,23 +1929,23 @@ read_multi_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
             uint32_t tile_height = geotiff_info->tile_height;
             uint16_t samples_per_pixel = geotiff_info->samples_per_pixel;
             size_t y;
-            
+
             for (y = 0; y < count_y; y++)
             {
                 size_t row = start_y + y;
                 uint32_t tile_row = row / tile_height;
                 uint32_t row_in_tile = row % tile_height;
                 size_t x = 0;
-                
+
                 while (x < count_x)
                 {
                     size_t col = start_x + x;
                     uint32_t tile_col = col / tile_width;
                     uint32_t col_in_tile = col % tile_width;
                     size_t pixels_in_tile = tile_width - col_in_tile;
-                    size_t pixels_to_copy = (pixels_in_tile < (count_x - x)) ? 
+                    size_t pixels_to_copy = (pixels_in_tile < (count_x - x)) ?
                                            pixels_in_tile : (count_x - x);
-                    
+
                     /* Read tile */
                     if ((retval = read_tile(tiff, tile_col * tile_width,
                                            tile_row * tile_height, read_buffer)))
@@ -1448,13 +1953,13 @@ read_multi_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
                         free_read_buffer(read_buffer);
                         return retval;
                     }
-                    
+
                     /* De-interleave pixels for requested bands */
                     size_t p;
                     for (p = 0; p < pixels_to_copy; p++)
                     {
                         size_t src_pixel = (row_in_tile * tile_width + col_in_tile + p) * samples_per_pixel;
-                        
+
                         for (band = 0; band < count_band; band++)
                         {
                             size_t src_offset = (src_pixel + start_band + band) * type_size;
@@ -1464,7 +1969,7 @@ read_multi_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
                                    type_size);
                         }
                     }
-                    
+
                     x += pixels_to_copy;
                 }
             }
@@ -1474,24 +1979,24 @@ read_multi_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
             /* Striped reading */
             uint16_t samples_per_pixel = geotiff_info->samples_per_pixel;
             size_t y;
-            
+
             for (y = 0; y < count_y; y++)
             {
                 uint32_t row = start_y + y;
-                
+
                 /* Read scanline */
                 if ((retval = read_scanline(tiff, row, read_buffer, samples_per_pixel)))
                 {
                     free_read_buffer(read_buffer);
                     return retval;
                 }
-                
+
                 /* De-interleave pixels for requested bands */
                 size_t x;
                 for (x = 0; x < count_x; x++)
                 {
                     size_t src_pixel = (start_x + x) * samples_per_pixel;
-                    
+
                     for (band = 0; band < count_band; band++)
                     {
                         size_t src_offset = (src_pixel + start_band + band) * type_size;
@@ -1504,7 +2009,7 @@ read_multi_band_hyperslab(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
             }
         }
     }
-    
+
     free_read_buffer(read_buffer);
     return NC_NOERR;
 }
@@ -1536,22 +2041,22 @@ NC_GEOTIFF_get_vara(int ncid, int varid, const size_t *startp,
     int retval;
 
     (void)memtype;
-    
+
     /* Get file and variable info */
     if ((retval = nc4_find_grp_h5_var(ncid, varid, &h5, NULL, &var)))
         return retval;
-    
+
     if (!h5 || !var || !startp || !countp || !value)
         return NC_EINVAL;
-    
+
     /* Validate hyperslab */
     if ((retval = validate_hyperslab(var, startp, countp)))
         return retval;
-    
+
     /* Get type size */
     if ((retval = nc4_get_typelen_mem(h5, var->type_info->hdr.id, &type_size)))
         return retval;
-    
+
     /* Support both 2D (single-band) and 3D (multi-band) variables */
     if (var->ndims == 2)
     {
