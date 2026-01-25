@@ -3,6 +3,82 @@
 ### V1.6.0
 Implement Phase 4 of the GeoTIFF read layer for NEP v1.5.0: Extract and expose coordinate reference system (CRS) and georeferencing information following CF conventions. (see closed GitHub issue 59)
 
+### V1.5.1
+#### Sprint 1: Add Examples Directory and Build Integration
+- **Source Integration**: Copy example programs from `/home/ed/writing_netcdf_programs` to new `examples/` directory in NEP
+  - Create `examples/` directory structure matching source layout
+  - Copy C examples: `classic/` (6 programs), `netcdf-4/` (5 programs)
+  - Copy Fortran examples: `f_classic/` (6 programs), `f_netcdf-4/` (5 programs)
+  - Copy empty directories: `parallelIO/`, `performance/` (placeholders for future work)
+  - Preserve directory structure for consistency and future expansion
+- **CMake Build System Integration**: Add examples to CMake build
+  - Add `option(BUILD_EXAMPLES "Build example programs" ON)` to root CMakeLists.txt
+  - Create `examples/CMakeLists.txt` as top-level build file
+  - Create subdirectory CMakeLists.txt for each example category (classic, netcdf-4, f_classic, f_netcdf-4)
+  - Reference `/home/ed/writing_netcdf_programs/CMakeLists.txt` for build patterns
+  - Link examples against installed NetCDF-C library (not internal NEP code)
+  - Configure RPATH for runtime library discovery
+  - Conditional Fortran builds: Only build f_classic/ and f_netcdf-4/ when `ENABLE_FORTRAN=ON` and netcdf-fortran is available
+  - Register examples as CTest tests when `BUILD_EXAMPLES=ON`
+- **Autotools Build System Integration**: Add examples to Autotools build
+  - Add `AC_ARG_ENABLE([examples])` to configure.ac with default enabled
+  - Create `examples/Makefile.am` and subdirectory Makefile.am files
+  - Reference `/home/ed/writing_netcdf_programs/configure.ac` and Makefile.am files for patterns
+  - Conditional Fortran builds: Use `AM_CONDITIONAL([BUILD_FORTRAN])` to control f_classic/ and f_netcdf-4/
+  - Add examples to `make check` test suite when enabled
+  - Update AC_CONFIG_FILES to include examples/Makefile and subdirectories
+- **Test Integration**: Examples execute as validation tests
+  - Each example program runs during `make check` (Autotools) or `ctest` (CMake)
+  - Test success criteria: Program executes without errors (exit code 0)
+  - Test output: Programs create NetCDF files demonstrating various features
+  - No output validation in Sprint 1 (deferred to Sprint 2)
+- **Doxygen Documentation Updates**: Add examples section to API documentation
+  - Update `docs/Doxyfile.in` to include `examples/` directory in INPUT paths
+  - Create `examples/README.md` with overview of example categories
+  - Add examples section to Doxygen main page with:
+    - Brief description of each example category (classic, netcdf-4, Fortran variants)
+    - Links to source files with descriptions of what each demonstrates
+    - Build instructions for examples (how to enable/disable)
+  - Document example programs with Doxygen comments explaining their purpose
+- **Build Configuration**: Flexible example building
+  - CMake: `-DBUILD_EXAMPLES=ON/OFF` (default: ON)
+  - Autotools: `--enable-examples/--disable-examples` (default: enabled)
+  - When disabled: Examples not built, not installed, not tested
+  - Fortran examples automatically skip if ENABLE_FORTRAN=OFF or netcdf-fortran unavailable
+
+#### Sprint 2: Example Output Validation with CDL Comparison
+- **CDL Reference Files**: Generate and store expected output
+  - Run each example program to generate NetCDF output files
+  - Use `ncdump` to create CDL (Common Data Language) representation of each output file
+  - Store CDL files in `examples/expected_output/` directory
+  - CDL files serve as regression test baselines
+  - Naming convention: `<example_name>_expected.cdl` (e.g., `simple_2D_expected.cdl`)
+- **Test Enhancement**: Automated output validation
+  - Modify test scripts to capture example program output
+  - Run `ncdump` on generated NetCDF files after each example executes
+  - Compare ncdump output against stored CDL files using text comparison
+  - Test fails if output differs from expected CDL (indicates regression)
+  - Provide clear error messages showing differences when validation fails
+- **CMake Test Updates**: Integrate CDL validation into CTest
+  - Add custom test commands that run example + ncdump + comparison
+  - Use CMake's `add_test()` with comparison logic
+  - Store generated files in build directory for inspection
+  - Clean up temporary files after successful tests
+- **Autotools Test Updates**: Integrate CDL validation into make check
+  - Create shell scripts for each example that perform: execute → ncdump → compare
+  - Add scripts to TESTS variable in Makefile.am
+  - Use `diff` or similar tool for CDL comparison
+  - Report failures with helpful diagnostics
+- **Documentation Updates**: Document validation approach
+  - Update `examples/README.md` with explanation of CDL validation
+  - Document how to regenerate expected CDL files if intentional changes occur
+  - Add troubleshooting section for common validation failures
+  - Explain purpose of regression testing for examples
+- **CI Integration**: Ensure examples run in continuous integration
+  - Examples already run as tests when BUILD_EXAMPLES=ON (default)
+  - CDL validation catches regressions in CI pipeline
+  - No additional CI workflow changes needed (examples use existing test infrastructure)
+
 ### v1.5.0 GeoTIFF Read Support (Released: January 2026)
 #### Sprint 1: GeoTIFF File Open/Close and Data Reading
 - [x] Add GeoTIFF test files in test/data (MODIS NRT Global Flood Product samples)
