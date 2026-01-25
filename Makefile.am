@@ -22,10 +22,15 @@ if HAVE_GEOTIFF
 TEST_GEOTIFF = test_geotiff
 endif
 
+# Examples subdirectory (v1.5.1)
+if BUILD_EXAMPLES
+EXAMPLES_DIR = examples
+endif
+
 if ENABLE_FORTRAN
-SUBDIRS = include src fsrc $(TEST_CDF) $(TEST_GEOTIFF) test ftest
+SUBDIRS = include src fsrc $(TEST_CDF) $(TEST_GEOTIFF) test ftest $(EXAMPLES_DIR)
 else
-SUBDIRS = include src $(TEST_CDF) $(TEST_GEOTIFF) test
+SUBDIRS = include src $(TEST_CDF) $(TEST_GEOTIFF) test $(EXAMPLES_DIR)
 endif
 EXTRA_DIST = autogen.sh
 
