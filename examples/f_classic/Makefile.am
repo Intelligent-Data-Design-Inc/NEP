@@ -12,6 +12,9 @@ f_size_limits_SOURCES = f_size_limits.f90
 f_unlimited_dim_SOURCES = f_unlimited_dim.f90
 f_var4d_SOURCES = f_var4d.f90
 
+# Link with NetCDF-Fortran library
+LDADD = -lnetcdff
+
 # All examples run as tests
 TESTS = $(check_PROGRAMS)
 

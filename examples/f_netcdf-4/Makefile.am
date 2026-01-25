@@ -11,6 +11,9 @@ f_chunking_performance_SOURCES = f_chunking_performance.f90
 f_multi_unlimited_SOURCES = f_multi_unlimited.f90
 f_user_types_SOURCES = f_user_types.f90
 
+# Link with NetCDF-Fortran library
+LDADD = -lnetcdff
+
 # All examples run as tests
 TESTS = $(check_PROGRAMS)
 
