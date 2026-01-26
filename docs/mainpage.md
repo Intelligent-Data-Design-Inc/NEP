@@ -37,7 +37,7 @@ NEP includes 22 comprehensive example programs demonstrating NetCDF API usage in
 
 **Advanced (NetCDF-4)**: Master `simple_nc4` → `compression` → `chunking_performance` → `multi_unlimited` → `user_types`
 
-See the [Examples Documentation](@ref examples) for complete details, build instructions, and usage guides.
+See the Examples Documentation page for complete details, build instructions, and usage guides.
 
 ## Compression Algorithms
 
