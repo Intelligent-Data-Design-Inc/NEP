@@ -128,6 +128,69 @@ diff -u simple_2D.cdl f_simple_2D.cdl
 
 This equivalence ensures users can learn NetCDF concepts from either language and expect consistent behavior.
 
+## Documentation
+
+All examples are comprehensively documented with Doxygen comments explaining:
+- What the example demonstrates
+- Learning objectives and key concepts
+- Prerequisites and related examples
+- Compilation and usage instructions
+- Expected output
+
+### Viewing Documentation
+
+The examples are integrated into the main NEP Doxygen documentation. After building the documentation:
+
+```bash
+# Build documentation
+cmake -B build -DBUILD_DOCUMENTATION=ON
+cmake --build build --target doc
+
+# View in browser
+open build/docs/html/examples.html
+```
+
+Or view the online documentation at: https://intelligent-data-design-inc.github.io/NEP/
+
+### Learning Path
+
+**For NetCDF Beginners:**
+1. Start with `simple_2D.c` / `f_simple_2D.f90` - Learn basic file operations
+2. Progress to `coord_vars.c` / `f_coord_vars.f90` - Add coordinate variables and metadata
+3. Explore `unlimited_dim.c` / `f_unlimited_dim.f90` - Work with time-series data
+
+**For Intermediate Users:**
+4. Study `format_variants.c` / `f_format_variants.f90` - Understand format choices
+5. Review `size_limits.c` / `f_size_limits.f90` - Learn size constraints
+6. Master `var4d.c` / `f_var4d.f90` - Handle multi-dimensional data
+
+**For Advanced Users (NetCDF-4):**
+7. Begin with `simple_nc4.c` / `f_simple_nc4.f90` - NetCDF-4 format introduction
+8. Apply `compression.c` / `f_compression.f90` - Reduce file sizes
+9. Optimize with `chunking_performance.c` / `f_chunking_performance.f90` - Improve I/O performance
+10. Utilize `multi_unlimited.c` / `f_multi_unlimited.f90` - Multiple unlimited dimensions
+11. Explore `user_types.c` / `f_user_types.f90` - Complex data structures
+
+### C vs Fortran
+
+Each C example has a Fortran equivalent that produces identical output. Key differences:
+
+**Array Ordering:**
+- C: Row-major `data[NY][NX]` with dimensions `(y, x)`
+- Fortran: Column-major `data(NX, NY)` with dimensions `(x, y)`
+
+**Indexing:**
+- C: 0-based (0 to N-1)
+- Fortran: 1-based (1 to N)
+
+**API Functions:**
+- C: `nc_*` (e.g., `nc_create`, `nc_def_dim`)
+- Fortran: `nf90_*` (e.g., `nf90_create`, `nf90_def_dim`)
+
+**Dimension Order:**
+- C: Slowest to fastest `(time, level, lat, lon)`
+- Fortran: Fastest to slowest `(lon, lat, level, time)` - reversed!
+
 ## Dependencies
 
 - NetCDF-C library (required)

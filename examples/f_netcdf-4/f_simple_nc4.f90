@@ -1,10 +1,34 @@
-! This is part of the book: Writing NetCDF Programs.
-!
-! Demonstrates basic NetCDF-4/HDF5 file creation with format detection.
-! Creates a 2D array using NF90_NETCDF4 flag and verifies the format.
-!
-! Author: Edward Hartnett, Intelligent Data Design, Inc.
-! Copyright: 2026
+!> @file f_simple_nc4.f90
+!! @brief Basic NetCDF-4/HDF5 format file creation and format detection (Fortran)
+!!
+!! Fortran equivalent of simple_nc4.c, demonstrating NetCDF-4 format using the
+!! Fortran 90 NetCDF API. Creates a simple 2D array with NF90_NETCDF4 flag.
+!!
+!! **Learning Objectives:**
+!! - Understand NF90_NETCDF4 flag in Fortran
+!! - Learn format detection with nf90_inq_format()
+!! - Prepare for NetCDF-4 features (compression, chunking, groups)
+!!
+!! **Fortran NetCDF-4 Constants:**
+!! - NF90_NETCDF4 - Create NetCDF-4/HDF5 format file
+!! - NF90_FORMAT_NETCDF4 - Format detection constant
+!!
+!! **Prerequisites:**
+!! - f_simple_2D.f90 - Basic Fortran NetCDF operations
+!! - simple_nc4.c - C equivalent
+!!
+!! **Related Examples:**
+!! - simple_nc4.c - C equivalent
+!! - f_compression.f90 - NetCDF-4 compression
+!! - f_chunking_performance.f90 - NetCDF-4 chunking
+!!
+!! **Compilation:**
+!! @code
+!! gfortran -o f_simple_nc4 f_simple_nc4.f90 -lnetcdff -lnetcdf
+!! @endcode
+!!
+!! @author Edward Hartnett, Intelligent Data Design, Inc.
+!! @date 2026
 
 program f_simple_nc4
    use netcdf

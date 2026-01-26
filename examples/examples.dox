@@ -1,0 +1,180 @@
+/**
+ * @page examples NetCDF Example Programs
+ * 
+ * @section examples_overview Overview
+ * 
+ * This collection of example programs demonstrates NetCDF API usage in both C and Fortran.
+ * The examples are organized by complexity and feature set, providing a learning path from
+ * basic file operations to advanced NetCDF-4 features.
+ * 
+ * All examples include:
+ * - Complete, runnable code with comprehensive documentation
+ * - Write and read phases with data validation
+ * - Error handling patterns
+ * - Equivalent C and Fortran implementations
+ * - CDL validation for regression testing
+ * 
+ * @section learning_path Recommended Learning Path
+ * 
+ * **Beginners** - Start here:
+ * 1. @ref simple_2D.c / @ref f_simple_2D.f90 - Basic 2D array operations
+ * 2. @ref coord_vars.c / @ref f_coord_vars.f90 - Coordinate variables and CF metadata
+ * 3. @ref unlimited_dim.c / @ref f_unlimited_dim.f90 - Time-series with unlimited dimensions
+ * 
+ * **Intermediate** - Classic NetCDF features:
+ * 4. @ref format_variants.c / @ref f_format_variants.f90 - Format types (CDF-1, CDF-2, CDF-5)
+ * 5. @ref size_limits.c / @ref f_size_limits.f90 - Understanding size limitations
+ * 6. @ref var4d.c / @ref f_var4d.f90 - Multi-dimensional arrays
+ * 
+ * **Advanced** - NetCDF-4 features:
+ * 7. @ref simple_nc4.c / @ref f_simple_nc4.f90 - NetCDF-4 format introduction
+ * 8. @ref compression.c / @ref f_compression.f90 - Compression filters
+ * 9. @ref chunking_performance.c / @ref f_chunking_performance.f90 - Chunking strategies
+ * 10. @ref multi_unlimited.c / @ref f_multi_unlimited.f90 - Multiple unlimited dimensions
+ * 11. @ref user_types.c / @ref f_user_types.f90 - User-defined types
+ * 
+ * @section examples_categories Example Categories
+ * 
+ * @subsection classic_c Classic NetCDF (C)
+ * 
+ * Located in `examples/classic/`:
+ * - @ref simple_2D.c - Basic 2D array creation and reading
+ * - @ref coord_vars.c - Coordinate variables with CF conventions
+ * - @ref format_variants.c - NetCDF format variants (CDF-1, CDF-2, CDF-5)
+ * - @ref size_limits.c - File size and dimension limits
+ * - @ref unlimited_dim.c - Unlimited dimensions for time-series
+ * - @ref var4d.c - Multi-dimensional arrays (2D, 3D, 4D)
+ * 
+ * @subsection netcdf4_c NetCDF-4 Features (C)
+ * 
+ * Located in `examples/netcdf-4/`:
+ * - @ref simple_nc4.c - NetCDF-4/HDF5 format basics
+ * - @ref compression.c - Compression filters (deflate, shuffle)
+ * - @ref chunking_performance.c - Chunking strategies and performance
+ * - @ref multi_unlimited.c - Multiple unlimited dimensions
+ * - @ref user_types.c - User-defined types (compound, enum, vlen, opaque)
+ * 
+ * @subsection classic_fortran Classic NetCDF (Fortran)
+ * 
+ * Located in `examples/f_classic/`:
+ * - @ref f_simple_2D.f90 - Basic 2D array (Fortran)
+ * - @ref f_coord_vars.f90 - Coordinate variables (Fortran)
+ * - @ref f_format_variants.f90 - Format variants (Fortran)
+ * - @ref f_size_limits.f90 - Size limits (Fortran)
+ * - @ref f_unlimited_dim.f90 - Unlimited dimensions (Fortran)
+ * - @ref f_var4d.f90 - Multi-dimensional arrays (Fortran)
+ * 
+ * @subsection netcdf4_fortran NetCDF-4 Features (Fortran)
+ * 
+ * Located in `examples/f_netcdf-4/`:
+ * - @ref f_simple_nc4.f90 - NetCDF-4 format (Fortran)
+ * - @ref f_compression.f90 - Compression (Fortran)
+ * - @ref f_chunking_performance.f90 - Chunking (Fortran)
+ * - @ref f_multi_unlimited.f90 - Multiple unlimited dimensions (Fortran)
+ * - @ref f_user_types.f90 - User-defined types (Fortran)
+ * 
+ * @section c_vs_fortran C vs Fortran Equivalence
+ * 
+ * Each C example has a corresponding Fortran equivalent that produces identical output.
+ * Key differences to understand:
+ * 
+ * **Array Ordering:**
+ * - C: Row-major, data[NY][NX] with dimensions (y, x)
+ * - Fortran: Column-major, data(NX, NY) with dimensions (x, y)
+ * 
+ * **Indexing:**
+ * - C: 0-based (0 to N-1)
+ * - Fortran: 1-based (1 to N)
+ * 
+ * **API Naming:**
+ * - C: nc_* functions (e.g., nc_create, nc_def_dim)
+ * - Fortran: nf90_* functions (e.g., nf90_create, nf90_def_dim)
+ * 
+ * **Dimension Order:**
+ * - C: Slowest to fastest varying (time, level, lat, lon)
+ * - Fortran: Fastest to slowest varying (lon, lat, level, time)
+ * 
+ * @section building_examples Building Examples
+ * 
+ * **CMake:**
+ * @code
+ * cmake -B build -DBUILD_EXAMPLES=ON
+ * cmake --build build
+ * ctest --test-dir build
+ * @endcode
+ * 
+ * **Autotools:**
+ * @code
+ * ./configure --enable-examples
+ * make
+ * make check
+ * @endcode
+ * 
+ * **Disable Examples:**
+ * - CMake: `-DBUILD_EXAMPLES=OFF`
+ * - Autotools: `--disable-examples`
+ * 
+ * @section fortran_requirements Fortran Requirements
+ * 
+ * Fortran examples require:
+ * - Fortran 90+ compiler (gfortran, ifort, etc.)
+ * - NetCDF-Fortran library (netcdf-fortran)
+ * - CMake: `-DENABLE_FORTRAN=ON`
+ * - Autotools: `--enable-fortran`
+ * 
+ * If Fortran support is disabled or netcdf-fortran is unavailable, Fortran examples
+ * are automatically skipped.
+ * 
+ * @section output_validation Output Validation
+ * 
+ * All examples are validated against expected CDL (Common Data Language) output stored
+ * in `examples/expected_output/`. This ensures examples continue producing correct output
+ * across code changes.
+ * 
+ * To regenerate expected output:
+ * @code
+ * cd examples
+ * ./generate_all_cdl.sh
+ * @endcode
+ * 
+ * @section key_concepts Key NetCDF Concepts
+ * 
+ * **Dimensions:** Named axes that define array shapes (e.g., time, lat, lon)
+ * 
+ * **Variables:** Named data arrays with defined dimensions and types
+ * 
+ * **Attributes:** Metadata attached to variables or files (units, long_name, etc.)
+ * 
+ * **Coordinate Variables:** 1D variables sharing dimension names, providing axis values
+ * 
+ * **Unlimited Dimensions:** Dimensions that can grow (classic: one max, NetCDF-4: unlimited)
+ * 
+ * **Compression:** NetCDF-4 feature for reducing file size (deflate, shuffle filters)
+ * 
+ * **Chunking:** NetCDF-4 feature for optimizing I/O performance
+ * 
+ * **User-Defined Types:** NetCDF-4 feature for complex data structures (compound, enum, vlen, opaque)
+ * 
+ * @section additional_resources Additional Resources
+ * 
+ * - NetCDF User Guide: https://docs.unidata.ucar.edu/netcdf-c/current/
+ * - CF Conventions: http://cfconventions.org/
+ * - NetCDF-Fortran Documentation: https://docs.unidata.ucar.edu/netcdf-fortran/current/
+ * - NEP Project Documentation: See docs/ directory
+ * 
+ * @section example_output Example Output
+ * 
+ * Each example creates NetCDF files demonstrating specific features. Use `ncdump` to
+ * inspect the output:
+ * 
+ * @code
+ * ./simple_2D
+ * ncdump simple_2D.nc
+ * @endcode
+ * 
+ * For NetCDF-4 files, you can also use HDF5 tools:
+ * @code
+ * ./simple_nc4
+ * h5dump simple_nc4.nc
+ * @endcode
+ */

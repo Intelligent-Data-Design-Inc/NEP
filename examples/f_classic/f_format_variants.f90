@@ -1,10 +1,43 @@
-! This is part of the book: Writing NetCDF Programs.
-!
-! Demonstrates the three classic NetCDF format variants by creating
-! identical data structures in each format and comparing their characteristics.
-!
-! Author: Edward Hartnett, Intelligent Data Design, Inc.
-! Copyright: 2026
+!> @file f_format_variants.f90
+!! @brief Demonstrates NetCDF classic format variants (CDF-1, CDF-2, CDF-5) in Fortran
+!!
+!! This is the Fortran equivalent of format_variants.c, demonstrating the three
+!! classic NetCDF format variants using the Fortran 90 NetCDF API. The program
+!! creates identical data structures in each format and compares their characteristics.
+!!
+!! **Learning Objectives:**
+!! - Understand format flags in Fortran (NF90_CLASSIC_MODEL, NF90_64BIT_OFFSET, NF90_64BIT_DATA)
+!! - Learn format detection with nf90_inq_format()
+!! - Compare file sizes and format characteristics
+!! - Make informed format choices in Fortran applications
+!!
+!! **Fortran Format Constants:**
+!! - NF90_CLASSIC_MODEL - CDF-1 format (2GB limits)
+!! - NF90_64BIT_OFFSET - CDF-2 format (4GB variable limit)
+!! - NF90_64BIT_DATA - CDF-5 format (unlimited sizes)
+!!
+!! **Prerequisites:**
+!! - f_simple_2D.f90 - Basic file operations
+!! - format_variants.c - C equivalent for comparison
+!!
+!! **Related Examples:**
+!! - format_variants.c - C equivalent
+!! - f_size_limits.f90 - Demonstrates actual size limits
+!! - f_simple_nc4.f90 - NetCDF-4 format alternative
+!!
+!! **Compilation:**
+!! @code
+!! gfortran -o f_format_variants f_format_variants.f90 -lnetcdff -lnetcdf
+!! @endcode
+!!
+!! **Usage:**
+!! @code
+!! ./f_format_variants
+!! ls -lh f_format_*.nc
+!! @endcode
+!!
+!! @author Edward Hartnett, Intelligent Data Design, Inc.
+!! @date 2026
 
 program f_format_variants
    use netcdf

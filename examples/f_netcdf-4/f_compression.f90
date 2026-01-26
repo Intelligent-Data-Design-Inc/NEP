@@ -1,10 +1,35 @@
-! This is part of the book: Writing NetCDF Programs.
-!
-! Demonstrates compression filters in NetCDF-4 with performance analysis.
-! Tests deflate, shuffle, and their combinations with realistic data.
-!
-! Author: Edward Hartnett, Intelligent Data Design, Inc.
-! Copyright: 2026
+!> @file f_compression.f90
+!! @brief Demonstrates NetCDF-4 compression filters with performance analysis (Fortran)
+!!
+!! Fortran equivalent of compression.c, exploring NetCDF-4 compression using the
+!! Fortran 90 NetCDF API. Tests various compression configurations and measures performance.
+!!
+!! **Learning Objectives:**
+!! - Configure compression with nf90_def_var_deflate() in Fortran
+!! - Measure compression performance in Fortran applications
+!! - Select appropriate compression levels for different data
+!!
+!! **Fortran Compression Functions:**
+!! - nf90_def_var_deflate(ncid, varid, shuffle, deflate, deflate_level)
+!! - shuffle: 0=off, 1=on
+!! - deflate: 0=off, 1=on
+!! - deflate_level: 1-9 (higher=better compression, slower)
+!!
+!! **Prerequisites:**
+!! - f_simple_nc4.f90 - NetCDF-4 format basics
+!! - compression.c - C equivalent
+!!
+!! **Related Examples:**
+!! - compression.c - C equivalent
+!! - f_chunking_performance.f90 - Chunking impacts compression
+!!
+!! **Compilation:**
+!! @code
+!! gfortran -o f_compression f_compression.f90 -lnetcdff -lnetcdf
+!! @endcode
+!!
+!! @author Edward Hartnett, Intelligent Data Design, Inc.
+!! @date 2026
 
 program f_compression
    use netcdf

@@ -1,11 +1,45 @@
-! This is part of the book: Writing NetCDF Programs.
-!
-! Demonstrates coordinate variables following CF conventions.
-! Creates a file with latitude and longitude coordinate variables
-! and a 2D temperature variable with proper CF metadata attributes.
-!
-! Author: Edward Hartnett, Intelligent Data Design, Inc.
-! Copyright: 2026
+!> @file f_coord_vars.f90
+!! @brief Demonstrates coordinate variables and CF convention metadata (Fortran)
+!!
+!! This is the Fortran equivalent of coord_vars.c, demonstrating coordinate variables
+!! and CF (Climate and Forecast) convention metadata using the Fortran 90 NetCDF API.
+!! The program creates a 2D temperature field with latitude and longitude coordinate
+!! variables following CF conventions.
+!!
+!! **Learning Objectives:**
+!! - Understand coordinate variables in Fortran NetCDF API
+!! - Learn CF convention attributes (nf90_put_att)
+!! - Master attribute definition and retrieval in Fortran
+!! - Work with geospatial data in Fortran
+!! - Verify equivalence with C version (coord_vars.c)
+!!
+!! **Key Fortran Concepts:**
+!! - **Character Attributes**: Use nf90_put_att with character strings
+!! - **Attribute Length**: Fortran handles string length automatically
+!! - **Array Ordering**: Temperature(NLON, NLAT) vs C temperature[NLAT][NLON]
+!!
+!! **Prerequisites:**
+!! - f_simple_2D.f90 - Basic Fortran NetCDF operations
+!! - coord_vars.c - C equivalent for comparison
+!!
+!! **Related Examples:**
+!! - coord_vars.c - C equivalent
+!! - f_unlimited_dim.f90 - Time-series with coordinates
+!! - f_var4d.f90 - 4D data with multiple coordinates
+!!
+!! **Compilation:**
+!! @code
+!! gfortran -o f_coord_vars f_coord_vars.f90 -lnetcdff -lnetcdf
+!! @endcode
+!!
+!! **Usage:**
+!! @code
+!! ./f_coord_vars
+!! ncdump f_coord_vars.nc
+!! @endcode
+!!
+!! @author Edward Hartnett, Intelligent Data Design, Inc.
+!! @date 2026
 
 program f_coord_vars
    use netcdf

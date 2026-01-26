@@ -1,11 +1,90 @@
-/*
- * This is part of the book: Writing NetCDF Programs.
+/**
+ * @file user_types.c
+ * @brief Demonstrates NetCDF-4 user-defined types (compound, enum, vlen, opaque)
  *
- * Demonstrates user-defined types in NetCDF-4: compound, vlen, enum, opaque.
- * Shows how to create and use custom data types.
+ * This example showcases NetCDF-4's powerful type system, which extends beyond the
+ * basic atomic types (int, float, etc.) to include user-defined types similar to
+ * C structures and enumerations. User-defined types enable more expressive and
+ * efficient data models for complex scientific data.
  *
- * Author: Edward Hartnett, Intelligent Data Design, Inc.
- * Copyright: 2026
+ * The program demonstrates four types of user-defined types:
+ * - **Compound types**: Structured records like C structs (weather observations)
+ * - **Enum types**: Named integer constants (cloud cover categories)
+ * - **Variable-length types**: Arrays of varying length (daily measurements)
+ * - **Opaque types**: Binary blobs for arbitrary data (calibration data)
+ *
+ * **Learning Objectives:**
+ * - Understand NetCDF-4 user-defined type system
+ * - Learn to create compound types with nc_def_compound()
+ * - Master enum type definition with nc_def_enum()
+ * - Work with variable-length arrays using nc_def_vlen()
+ * - Use opaque types for binary data with nc_def_opaque()
+ * - Write and read complex structured data
+ *
+ * **Key Concepts:**
+ * - **Compound Type**: Structured type with named fields (like C struct)
+ * - **Enum Type**: Integer type with named values (like C enum)
+ * - **Variable-Length Type**: Array whose length varies per element
+ * - **Opaque Type**: Uninterpreted binary data of fixed size
+ * - **Type ID**: Unique identifier for each user-defined type
+ *
+ * **User-Defined Type Details:**
+ *
+ * **Compound Types:**
+ * - Define with nc_def_compound(), add fields with nc_insert_compound()
+ * - Fields can be atomic types or other user-defined types
+ * - Useful for observations, records, structured metadata
+ * - Example: Weather observation with time, temp, pressure, humidity
+ *
+ * **Enum Types:**
+ * - Define with nc_def_enum(), add members with nc_insert_enum()
+ * - Based on integer type (NC_BYTE, NC_SHORT, NC_INT, etc.)
+ * - Provides named constants for categorical data
+ * - Example: Cloud cover (CLEAR, PARTLY_CLOUDY, CLOUDY, OVERCAST)
+ *
+ * **Variable-Length Types:**
+ * - Define with nc_def_vlen() specifying base type
+ * - Each array element can have different length
+ * - Useful for ragged arrays, particle lists, event sequences
+ * - Example: Daily measurements (different counts per day)
+ *
+ * **Opaque Types:**
+ * - Define with nc_def_opaque() specifying byte size
+ * - Store arbitrary binary data (images, encrypted data, proprietary formats)
+ * - NetCDF doesn't interpret the content
+ * - Example: Instrument calibration data
+ *
+ * **Prerequisites:**
+ * - simple_nc4.c - NetCDF-4 format basics
+ * - coord_vars.c - Variables and attributes
+ * - var4d.c - Multi-dimensional data
+ *
+ * **Related Examples:**
+ * - f_user_types.f90 - Fortran equivalent
+ * - simple_nc4.c - NetCDF-4 format requirement
+ * - compression.c - Compression with user-defined types
+ *
+ * **Compilation:**
+ * @code
+ * gcc -o user_types user_types.c -lnetcdf -lm
+ * @endcode
+ *
+ * **Usage:**
+ * @code
+ * ./user_types
+ * ncdump user_types.nc
+ * @endcode
+ *
+ * **Expected Output:**
+ * Creates user_types.nc containing:
+ * - Compound type: WeatherObs (time, temperature, pressure, humidity)
+ * - Enum type: CloudCover (CLEAR=0, PARTLY_CLOUDY=1, CLOUDY=2, OVERCAST=3)
+ * - Vlen type: DailyMeasurements (variable-length float arrays)
+ * - Opaque type: CalibrationData (16-byte binary blobs)
+ * - Variables demonstrating each type with realistic data
+ *
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @date 2026
  */
 
 #include <stdio.h>

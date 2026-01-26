@@ -1,10 +1,34 @@
-! This is part of the book: Writing NetCDF Programs.
-!
-! Demonstrates multiple unlimited dimensions in NetCDF-4.
-! Shows appending data to both time and station dimensions.
-!
-! Author: Edward Hartnett, Intelligent Data Design, Inc.
-! Copyright: 2026
+!> @file f_multi_unlimited.f90
+!! @brief Demonstrates multiple unlimited dimensions (NetCDF-4 feature, Fortran)
+!!
+!! Fortran equivalent of multi_unlimited.c, showcasing NetCDF-4's multiple unlimited
+!! dimensions using the Fortran 90 NetCDF API. Demonstrates appending along both dimensions.
+!!
+!! **Learning Objectives:**
+!! - Create multiple unlimited dimensions in Fortran
+!! - Append data along different unlimited dimensions
+!! - Work with ragged arrays in Fortran
+!!
+!! **Fortran Multiple Unlimited:**
+!! - Define with nf90_def_dim(ncid, name, NF90_UNLIMITED, dimid)
+!! - Can have unlimited dimensions in any position (NetCDF-4 only)
+!! - Use nf90_put_var with start/count for appending
+!!
+!! **Prerequisites:**
+!! - f_unlimited_dim.f90 - Single unlimited dimension
+!! - multi_unlimited.c - C equivalent
+!!
+!! **Related Examples:**
+!! - multi_unlimited.c - C equivalent
+!! - f_unlimited_dim.f90 - Single unlimited (classic compatible)
+!!
+!! **Compilation:**
+!! @code
+!! gfortran -o f_multi_unlimited f_multi_unlimited.f90 -lnetcdff -lnetcdf
+!! @endcode
+!!
+!! @author Edward Hartnett, Intelligent Data Design, Inc.
+!! @date 2026
 
 program f_multi_unlimited
    use netcdf

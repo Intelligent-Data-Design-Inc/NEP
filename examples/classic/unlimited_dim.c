@@ -1,12 +1,66 @@
-/*
- * This is part of the book: Writing NetCDF Programs.
+/**
+ * @file unlimited_dim.c
+ * @brief Demonstrates unlimited dimensions for appendable time-series data
  *
- * Demonstrates unlimited dimensions for time-series data.
- * Creates a file with an unlimited time dimension, writes initial
- * timesteps, then reopens to append additional timesteps.
+ * This example introduces unlimited dimensions - a special dimension type that can
+ * grow dynamically, allowing data to be appended to files over time. Unlimited
+ * dimensions are essential for time-series data where the total number of timesteps
+ * is not known in advance.
  *
- * Author: Edward Hartnett, Intelligent Data Design, Inc.
- * Copyright: 2026
+ * The program creates a file with an unlimited time dimension, writes initial timesteps,
+ * then reopens the file in write mode to append additional timesteps. This demonstrates
+ * the common pattern for incrementally building time-series datasets.
+ *
+ * **Learning Objectives:**
+ * - Understand unlimited dimensions and their use cases
+ * - Learn to create files with NC_UNLIMITED dimension
+ * - Master appending data to existing files
+ * - Work with time-series data patterns
+ * - Understand performance implications of unlimited dimensions
+ *
+ * **Key Concepts:**
+ * - **Unlimited Dimension**: Dimension that can grow (NC_UNLIMITED)
+ * - **Record Variable**: Variable with unlimited dimension as first dimension
+ * - **Appending Data**: Adding new records to existing file
+ * - **Time Series**: Sequential data indexed by time
+ * - **File Reopening**: Opening existing file for modification (NC_WRITE)
+ *
+ * **Unlimited Dimension Characteristics:**
+ * - Only one unlimited dimension allowed in classic formats
+ * - Must be the first (slowest-varying) dimension of record variables
+ * - Enables incremental data writing without knowing final size
+ * - Slightly slower than fixed dimensions due to dynamic allocation
+ * - NetCDF-4 allows multiple unlimited dimensions
+ *
+ * **Prerequisites:**
+ * - simple_2D.c - Basic file and variable operations
+ * - coord_vars.c - Multi-dimensional data
+ *
+ * **Related Examples:**
+ * - f_unlimited_dim.f90 - Fortran equivalent
+ * - multi_unlimited.c - Multiple unlimited dimensions (NetCDF-4)
+ * - var4d.c - 4D data with time dimension
+ *
+ * **Compilation:**
+ * @code
+ * gcc -o unlimited_dim unlimited_dim.c -lnetcdf
+ * @endcode
+ *
+ * **Usage:**
+ * @code
+ * ./unlimited_dim
+ * ncdump unlimited_dim.nc
+ * @endcode
+ *
+ * **Expected Output:**
+ * Creates unlimited_dim.nc containing:
+ * - Unlimited time dimension (grows from 3 to 5 records)
+ * - Fixed lat(4) and lon(5) dimensions
+ * - Temperature variable(time, lat, lon)
+ * - Demonstrates appending 2 additional timesteps
+ *
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @date 2026
  */
 
 #include <stdio.h>

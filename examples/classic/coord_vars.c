@@ -1,12 +1,65 @@
-/*
- * This is part of the book: Writing NetCDF Programs.
+/**
+ * @file coord_vars.c
+ * @brief Demonstrates coordinate variables and CF convention metadata
  *
- * Demonstrates coordinate variables following CF conventions.
- * Creates a file with latitude and longitude coordinate variables
- * and a 2D temperature variable with proper CF metadata attributes.
+ * This example introduces the concept of coordinate variables - special 1D variables
+ * that share the same name as their dimension and provide values along that axis.
+ * Coordinate variables are essential for geospatial data, defining latitude, longitude,
+ * time, or other dimensional coordinates.
  *
- * Author: Edward Hartnett, Intelligent Data Design, Inc.
- * Copyright: 2026
+ * The program creates a 2D temperature field (4x5 grid) with latitude and longitude
+ * coordinate variables following Climate and Forecast (CF) conventions. CF conventions
+ * are the standard metadata conventions for climate and forecast data.
+ *
+ * **Learning Objectives:**
+ * - Understand coordinate variables and their relationship to dimensions
+ * - Learn CF convention metadata attributes (units, standard_name, long_name, axis)
+ * - Master attribute definition and retrieval (nc_put_att, nc_get_att)
+ * - Work with multi-dimensional geospatial data
+ * - Implement proper metadata for scientific data interoperability
+ *
+ * **Key Concepts:**
+ * - **Coordinate Variable**: 1D variable with same name as its dimension (e.g., lat(lat))
+ * - **CF Conventions**: Standardized metadata for climate/forecast data
+ * - **Attributes**: Metadata attached to variables (units, standard_name, etc.)
+ * - **_FillValue**: Special attribute indicating missing/undefined data values
+ * - **Geospatial Grid**: Regular lat/lon grid for spatial data
+ *
+ * **CF Convention Attributes Used:**
+ * - `units`: Physical units (degrees_north, degrees_east, K)
+ * - `standard_name`: CF standard name vocabulary (latitude, longitude, air_temperature)
+ * - `long_name`: Human-readable descriptive name
+ * - `axis`: Coordinate axis identifier (X, Y, Z, T)
+ * - `_FillValue`: Value representing missing data
+ *
+ * **Prerequisites:** 
+ * - simple_2D.c - Basic NetCDF file operations
+ *
+ * **Related Examples:**
+ * - f_coord_vars.f90 - Fortran equivalent
+ * - unlimited_dim.c - Adds time dimension with unlimited size
+ * - var4d.c - 4D data with time, level, lat, lon coordinates
+ *
+ * **Compilation:**
+ * @code
+ * gcc -o coord_vars coord_vars.c -lnetcdf
+ * @endcode
+ *
+ * **Usage:**
+ * @code
+ * ./coord_vars
+ * ncdump coord_vars.nc
+ * @endcode
+ *
+ * **Expected Output:**
+ * Creates coord_vars.nc containing:
+ * - 2 dimensions: lat(4), lon(5)
+ * - 3 variables: lat(lat), lon(lon), temperature(lat,lon)
+ * - CF-compliant metadata attributes
+ * - Temperature data in Kelvin with lat/lon coordinates
+ *
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @date 2026
  */
 
 #include <stdio.h>

@@ -1,11 +1,44 @@
-! This is part of the book: Writing NetCDF Programs.
-!
-! Demonstrates multi-dimensional arrays with 2D, 3D, and 4D variables.
-! Creates a file with 4 dimensions (time, level, lat, lon) and three
-! variables of different dimensionalities to show dimension reuse.
-!
-! Author: Edward Hartnett, Intelligent Data Design, Inc.
-! Copyright: 2026
+!> @file f_var4d.f90
+!! @brief Demonstrates multi-dimensional arrays (2D, 3D, 4D) with dimension reuse (Fortran)
+!!
+!! This is the Fortran equivalent of var4d.c, demonstrating multi-dimensional arrays
+!! using the Fortran 90 NetCDF API. The program creates variables of different
+!! dimensionalities (2D, 3D, 4D) that share common dimensions.
+!!
+!! **Learning Objectives:**
+!! - Understand Fortran column-major array ordering for 4D data
+!! - Learn dimension ordering reversal between Fortran and C
+!! - Master multi-dimensional array indexing in Fortran
+!! - Work with atmospheric/oceanographic data structures
+!!
+!! **Critical Fortran vs C Difference:**
+!! - **Fortran**: temp_3d(NLON, NLAT, NLEVEL, NTIME) - fastest to slowest
+!! - **C**: temp_3d[NTIME][NLEVEL][NLAT][NLON] - slowest to fastest
+!! - **NetCDF dimids**: Fortran (lon, lat, level, time) vs C (time, level, lat, lon)
+!! - **Access**: Fortran temp_3d(j,i,lev,t) vs C temp_3d[t][lev][i][j]
+!!
+!! **Prerequisites:**
+!! - f_simple_2D.f90 - Basic 2D arrays
+!! - var4d.c - C equivalent (note dimension order reversal!)
+!!
+!! **Related Examples:**
+!! - var4d.c - C equivalent (IMPORTANT: dimension order reversed)
+!! - f_coord_vars.f90 - 2D geospatial data
+!! - f_unlimited_dim.f90 - Time-series data
+!!
+!! **Compilation:**
+!! @code
+!! gfortran -o f_var4d f_var4d.f90 -lnetcdff -lnetcdf
+!! @endcode
+!!
+!! **Usage:**
+!! @code
+!! ./f_var4d
+!! ncdump f_var4d.nc
+!! @endcode
+!!
+!! @author Edward Hartnett, Intelligent Data Design, Inc.
+!! @date 2026
 
 program f_var4d
    use netcdf

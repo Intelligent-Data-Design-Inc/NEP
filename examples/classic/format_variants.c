@@ -1,11 +1,68 @@
-/*
- * This is part of the book: Writing NetCDF Programs.
+/**
+ * @file format_variants.c
+ * @brief Demonstrates NetCDF classic format variants (CDF-1, CDF-2, CDF-5)
  *
- * Demonstrates the three classic NetCDF format variants by creating
- * identical data structures in each format and comparing their characteristics.
+ * This example creates identical data structures in three different classic NetCDF
+ * formats to illustrate their differences in file size limits, compatibility, and
+ * use cases. Understanding format variants is crucial for choosing the right format
+ * for your data requirements.
  *
- * Author: Edward Hartnett, Intelligent Data Design, Inc.
- * Copyright: 2026
+ * The program creates three files with the same 3D temperature and pressure data
+ * (time×lat×lon) in different formats, then compares their characteristics including
+ * file size, format detection, and size limitations.
+ *
+ * **Learning Objectives:**
+ * - Understand the three classic NetCDF format variants
+ * - Learn when to use each format based on size requirements
+ * - Master format detection with nc_inq_format() and nc_inq_format_extended()
+ * - Compare file sizes and format overhead
+ * - Make informed format choices for different use cases
+ *
+ * **Key Concepts:**
+ * - **NC_CLASSIC_MODEL (CDF-1)**: Original NetCDF format, 2GB limits
+ * - **NC_64BIT_OFFSET (CDF-2)**: Extended format with 4GB variable limit
+ * - **NC_64BIT_DATA (CDF-5)**: Modern format with unlimited variable sizes
+ * - **Format Detection**: Runtime identification of file format
+ * - **Backward Compatibility**: Older formats work with all NetCDF versions
+ *
+ * **Format Comparison:**
+ *
+ * | Format | File Limit | Variable Limit | NetCDF Version | Use Case |
+ * |--------|-----------|----------------|----------------|----------|
+ * | CDF-1  | 2GB       | 2GB           | 3.0+           | Maximum compatibility |
+ * | CDF-2  | Unlimited | 4GB           | 3.6.0+         | Large files, moderate variables |
+ * | CDF-5  | Unlimited | Unlimited     | 4.4.0+         | Very large variables |
+ *
+ * **Prerequisites:**
+ * - simple_2D.c - Basic file creation
+ * - coord_vars.c - Variable and attribute definitions
+ *
+ * **Related Examples:**
+ * - f_format_variants.f90 - Fortran equivalent
+ * - size_limits.c - Demonstrates actual size limits
+ * - simple_nc4.c - NetCDF-4/HDF5 format (different architecture)
+ *
+ * **Compilation:**
+ * @code
+ * gcc -o format_variants format_variants.c -lnetcdf
+ * @endcode
+ *
+ * **Usage:**
+ * @code
+ * ./format_variants
+ * ls -lh format_*.nc
+ * ncdump -h format_classic.nc
+ * @endcode
+ *
+ * **Expected Output:**
+ * Creates three files:
+ * - format_classic.nc (CDF-1)
+ * - format_64bit_offset.nc (CDF-2)
+ * - format_64bit_data.nc (CDF-5)
+ * All contain identical data with similar file sizes for this small dataset.
+ *
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @date 2026
  */
 
 #include <stdio.h>

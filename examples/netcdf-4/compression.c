@@ -1,11 +1,74 @@
-/*
- * This is part of the book: Writing NetCDF Programs.
+/**
+ * @file compression.c
+ * @brief Demonstrates NetCDF-4 compression filters with performance analysis
  *
- * Demonstrates compression filters in NetCDF-4 with performance analysis.
- * Tests deflate, shuffle, and their combinations with realistic data.
+ * This example explores NetCDF-4's built-in compression capabilities by creating
+ * multiple files with different compression settings and measuring their performance
+ * characteristics. Compression is essential for reducing storage requirements and
+ * I/O bandwidth for large scientific datasets.
  *
- * Author: Edward Hartnett, Intelligent Data Design, Inc.
- * Copyright: 2026
+ * The program generates realistic 3D temperature data (time×lat×lon) and creates
+ * files with various compression configurations: no compression, deflate only,
+ * shuffle only, and shuffle+deflate combinations at different compression levels.
+ * It measures write/read times, file sizes, and compression ratios.
+ *
+ * **Learning Objectives:**
+ * - Understand NetCDF-4 compression filters (deflate, shuffle)
+ * - Learn to configure compression with nc_def_var_deflate() and nc_def_var_shuffle()
+ * - Master compression level selection (1-9 tradeoff between speed and ratio)
+ * - Measure compression performance (time, size, ratio)
+ * - Make informed compression decisions for different data types
+ *
+ * **Key Concepts:**
+ * - **Deflate Filter**: GZIP compression (levels 1-9, higher = better compression)
+ * - **Shuffle Filter**: Byte reordering to improve compression of typed data
+ * - **Compression Ratio**: Original size / compressed size
+ * - **Compression Overhead**: Extra CPU time for compression/decompression
+ * - **Filter Pipeline**: Shuffle then deflate for optimal results
+ *
+ * **Compression Strategies:**
+ * - **No Compression**: Fastest I/O, largest files, use for small datasets
+ * - **Deflate Only**: Good compression, slower, use for mixed data types
+ * - **Shuffle Only**: Minimal overhead, modest gains, use for fast I/O
+ * - **Shuffle+Deflate**: Best compression, moderate overhead, recommended default
+ * - **High Deflate Levels (7-9)**: Maximum compression, slow, use for archival
+ *
+ * **When to Use Compression:**
+ * - Large datasets where storage/bandwidth is limited
+ * - Floating-point data with spatial/temporal correlation
+ * - Archival data where read performance is less critical
+ * - Network transfers where bandwidth is constrained
+ *
+ * **Prerequisites:**
+ * - simple_nc4.c - NetCDF-4 format basics
+ * - var4d.c - Multi-dimensional arrays
+ *
+ * **Related Examples:**
+ * - f_compression.f90 - Fortran equivalent
+ * - chunking_performance.c - Chunking impacts compression
+ * - simple_nc4.c - NetCDF-4 format introduction
+ *
+ * **Compilation:**
+ * @code
+ * gcc -o compression compression.c -lnetcdf -lm
+ * @endcode
+ *
+ * **Usage:**
+ * @code
+ * ./compression
+ * ls -lh compression_*.nc
+ * @endcode
+ *
+ * **Expected Output:**
+ * Creates multiple files with compression analysis:
+ * - compression_none.nc (uncompressed baseline)
+ * - compression_deflate_N.nc (deflate levels 1, 5, 9)
+ * - compression_shuffle.nc (shuffle only)
+ * - compression_shuffle_deflate_N.nc (combined, levels 1, 5, 9)
+ * Displays performance comparison table with times, sizes, and ratios.
+ *
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @date 2026
  */
 
 #include <stdio.h>
