@@ -44,53 +44,32 @@ program f_simple_2D
    end do
    
    ! Create the NetCDF file (NF90_CLOBBER overwrites existing file)
-   retval = nf90_create(FILE_NAME, IOR(NF90_CLOBBER, NF90_NETCDF4), ncid)
-   if (retval /= nf90_noerr) then
-      print *, "Error: ", trim(nf90_strerror(retval))
-      stop 2
-   end if
+   retval = nf90_create(FILE_NAME, NF90_CLOBBER, ncid)
+   if (retval /= nf90_noerr) call handle_err(retval)
    
    ! Define dimensions
    retval = nf90_def_dim(ncid, "x", NX, x_dimid)
-   if (retval /= nf90_noerr) then
-      print *, "Error: ", trim(nf90_strerror(retval))
-      stop 2
-   end if
+   if (retval /= nf90_noerr) call handle_err(retval)
    retval = nf90_def_dim(ncid, "y", NY, y_dimid)
-   if (retval /= nf90_noerr) then
-      print *, "Error: ", trim(nf90_strerror(retval))
-      stop 2
-   end if
+   if (retval /= nf90_noerr) call handle_err(retval)
    
    ! Define the variable (dimension order: x, y for Fortran column-major)
    dimids(1) = x_dimid
    dimids(2) = y_dimid
    retval = nf90_def_var(ncid, "data", NF90_INT, dimids, varid)
-   if (retval /= nf90_noerr) then
-      print *, "Error: ", trim(nf90_strerror(retval))
-      stop 2
-   end if
+   if (retval /= nf90_noerr) call handle_err(retval)
    
    ! End define mode
    retval = nf90_enddef(ncid)
-   if (retval /= nf90_noerr) then
-      print *, "Error: ", trim(nf90_strerror(retval))
-      stop 2
-   end if
+   if (retval /= nf90_noerr) call handle_err(retval)
    
    ! Write the data to the file
    retval = nf90_put_var(ncid, varid, data_out)
-   if (retval /= nf90_noerr) then
-      print *, "Error: ", trim(nf90_strerror(retval))
-      stop 2
-   end if
+   if (retval /= nf90_noerr) call handle_err(retval)
    
    ! Close the file
    retval = nf90_close(ncid)
-   if (retval /= nf90_noerr) then
-      print *, "Error: ", trim(nf90_strerror(retval))
-      stop 2
-   end if
+   if (retval /= nf90_noerr) call handle_err(retval)
    
    print *, "*** SUCCESS writing file!"
    
@@ -100,17 +79,11 @@ program f_simple_2D
    
    ! Open the file for reading
    retval = nf90_open(FILE_NAME, NF90_NOWRITE, ncid)
-   if (retval /= nf90_noerr) then
-      print *, "Error: ", trim(nf90_strerror(retval))
-      stop 2
-   end if
+   if (retval /= nf90_noerr) call handle_err(retval)
    
    ! Verify metadata: check number of dimensions and variables
    retval = nf90_inquire(ncid, ndims_in, nvars_in)
-   if (retval /= nf90_noerr) then
-      print *, "Error: ", trim(nf90_strerror(retval))
-      stop 2
-   end if
+   if (retval /= nf90_noerr) call handle_err(retval)
    
    if (ndims_in /= NDIMS) then
       print *, "Error: Expected ", NDIMS, " dimensions, found ", ndims_in
@@ -126,15 +99,9 @@ program f_simple_2D
    
    ! Verify dimension sizes
    retval = nf90_inquire_dimension(ncid, x_dimid, len=len_x)
-   if (retval /= nf90_noerr) then
-      print *, "Error: ", trim(nf90_strerror(retval))
-      stop 2
-   end if
+   if (retval /= nf90_noerr) call handle_err(retval)
    retval = nf90_inquire_dimension(ncid, y_dimid, len=len_y)
-   if (retval /= nf90_noerr) then
-      print *, "Error: ", trim(nf90_strerror(retval))
-      stop 2
-   end if
+   if (retval /= nf90_noerr) call handle_err(retval)
    
    if (len_x /= NX) then
       print *, "Error: Expected x dimension = ", NX, ", found ", len_x
@@ -148,10 +115,7 @@ program f_simple_2D
    
    ! Verify variable type
    retval = nf90_inquire_variable(ncid, varid, xtype=var_type)
-   if (retval /= nf90_noerr) then
-      print *, "Error: ", trim(nf90_strerror(retval))
-      stop 2
-   end if
+   if (retval /= nf90_noerr) call handle_err(retval)
    
    if (var_type /= NF90_INT) then
       print *, "Error: Expected variable type NF90_INT, found ", var_type
@@ -161,10 +125,7 @@ program f_simple_2D
    
    ! Read the data back
    retval = nf90_get_var(ncid, varid, data_in)
-   if (retval /= nf90_noerr) then
-      print *, "Error: ", trim(nf90_strerror(retval))
-      stop 2
-   end if
+   if (retval /= nf90_noerr) call handle_err(retval)
    
    ! Verify data correctness
    errors = 0
@@ -189,12 +150,16 @@ program f_simple_2D
    
    ! Close the file
    retval = nf90_close(ncid)
-   if (retval /= nf90_noerr) then
-      print *, "Error: ", trim(nf90_strerror(retval))
-      stop 2
-   end if
+   if (retval /= nf90_noerr) call handle_err(retval)
    
    print *, ""
    print *, "*** SUCCESS: All validation checks passed!"
+   
+contains
+   subroutine handle_err(status)
+      integer, intent(in) :: status
+      print *, "Error: ", trim(nf90_strerror(status))
+      stop 2
+   end subroutine handle_err
    
 end program f_simple_2D
