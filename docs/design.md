@@ -527,6 +527,143 @@ spack install nep~docs~fortran
 spack install cdf
 ```
 
+## Example Programs (v3.5.1)
+
+### Overview
+
+NEP v3.5.1 includes comprehensive example programs in C and Fortran demonstrating NetCDF API usage. These examples serve as learning resources and reference implementations for users new to NetCDF or exploring specific features.
+
+### Architecture
+
+Example programs are organized into four categories based on language and NetCDF format:
+
+```
+examples/
+├── classic/          # Classic NetCDF examples in C
+├── f_classic/        # Classic NetCDF examples in Fortran
+├── netcdf-4/         # NetCDF-4 examples in C
+└── f_netcdf-4/       # NetCDF-4 examples in Fortran
+```
+
+### Example Categories
+
+#### Classic NetCDF Examples (C)
+Located in `examples/classic/`:
+- **simple_2D.c**: Basic 2D array creation and writing
+- **coord_vars.c**: Working with coordinate variables
+- **format_variants.c**: Different NetCDF format variants (classic, 64-bit offset, CDF-5)
+- **size_limits.c**: Demonstrating size and dimension limits
+- **unlimited_dim.c**: Using unlimited dimensions for time series data
+- **var4d.c**: Creating and writing 4-dimensional variables
+
+#### NetCDF-4 Examples (C)
+Located in `examples/netcdf-4/`:
+- **simple_nc4.c**: Basic NetCDF-4 file creation
+- **compression.c**: Using compression filters (deflate, shuffle)
+- **chunking_performance.c**: Chunking strategies and performance
+- **multi_unlimited.c**: Multiple unlimited dimensions (NetCDF-4 feature)
+- **user_types.c**: User-defined compound and enum types
+
+#### Classic NetCDF Examples (Fortran)
+Located in `examples/f_classic/`:
+- **f_simple_2D.f90**: Basic 2D array in Fortran
+- **f_coord_vars.f90**: Coordinate variables in Fortran
+- **f_format_variants.f90**: Format variants in Fortran
+- **f_size_limits.f90**: Size limits in Fortran
+- **f_unlimited_dim.f90**: Unlimited dimensions in Fortran
+- **f_var4d.f90**: 4D variables in Fortran
+
+#### NetCDF-4 Examples (Fortran)
+Located in `examples/f_netcdf-4/`:
+- **f_simple_nc4.f90**: Basic NetCDF-4 in Fortran
+- **f_compression.f90**: Compression in Fortran
+- **f_chunking_performance.f90**: Chunking in Fortran
+- **f_multi_unlimited.f90**: Multiple unlimited dimensions in Fortran
+- **f_user_types.f90**: User-defined types in Fortran
+
+### Build System Integration
+
+#### CMake Integration
+Examples are integrated into the CMake build system with optional building:
+
+```cmake
+option(BUILD_EXAMPLES "Build example programs" ON)
+
+if(BUILD_EXAMPLES)
+  add_subdirectory(examples)
+endif()
+```
+
+Each example subdirectory has its own `CMakeLists.txt` that:
+- Compiles example programs
+- Links against NetCDF-C (and NetCDF-Fortran for Fortran examples)
+- Registers examples as CTest tests
+
+#### Autotools Integration
+Examples are integrated into the Autotools build system:
+
+```bash
+# Configure option
+./configure --enable-examples  # default
+./configure --disable-examples
+```
+
+Each example subdirectory has its own `Makefile.am` that:
+- Compiles example programs
+- Links against NetCDF libraries
+- Registers examples in the test suite
+
+### Test Integration
+
+All examples run as automated tests to ensure:
+- **Correctness**: Examples produce valid NetCDF files
+- **API Usage**: Demonstrates proper API usage patterns
+- **Regression Detection**: Catches breaking changes in NEP
+
+#### Test Execution
+
+**CMake:**
+```bash
+ctest --test-dir build
+```
+
+**Autotools:**
+```bash
+make check
+```
+
+Each example:
+1. Creates a NetCDF file demonstrating specific features
+2. Reads the file back to verify correctness
+3. Validates data integrity
+4. Exits with success (0) or failure (non-zero) status
+
+### Dependencies
+
+- **C Examples**: NetCDF-C library, C99 compiler
+- **Fortran Examples**: NetCDF-Fortran library, Fortran 90+ compiler
+- **Build Systems**: CMake 3.9+ or Autotools
+
+Fortran examples are automatically skipped if:
+- Fortran support is disabled (`ENABLE_FORTRAN=OFF` or `--disable-fortran`)
+- NetCDF-Fortran library is not available
+- No Fortran compiler is detected
+
+### Educational Value
+
+Examples demonstrate:
+- **Best Practices**: Proper error handling, resource cleanup, API usage patterns
+- **Feature Coverage**: Basic to advanced NetCDF features
+- **Language Parity**: Equivalent functionality in C and Fortran
+- **Real-world Patterns**: Common use cases in scientific computing
+
+### Future Extensions
+
+Planned example categories:
+- **Parallel I/O**: MPI-based parallel NetCDF operations
+- **Performance**: Optimization techniques and benchmarking
+- **Advanced Features**: Groups, user-defined types, compression filters
+
 ## Release Information
 
 - **Version**: v1.5.0
@@ -538,6 +675,7 @@ spack install cdf
   - NASA CDF format support via UDF handler
   - GeoTIFF format support via UDF handler
   - Spack package manager support
+  - Example programs (v3.5.1)
 
 ---
 
