@@ -21,8 +21,24 @@ if [ ! -f "$EXPECTED_CDL" ]; then
     exit 1
 fi
 
+# Find ncdump from the NetCDF-C library being used
+# Try nc-config first (preferred method)
+if command -v nc-config >/dev/null 2>&1; then
+    NETCDF_BIN=$(nc-config --prefix)/bin
+    NCDUMP="${NETCDF_BIN}/ncdump"
+else
+    # Fall back to PATH
+    NCDUMP="ncdump"
+fi
+
+# Verify ncdump is available
+if ! command -v "$NCDUMP" >/dev/null 2>&1; then
+    echo "ERROR: ncdump not found. Tried: $NCDUMP"
+    exit 1
+fi
+
 # Run ncdump on generated file
-ncdump "$OUTPUT_FILE" > "${OUTPUT_FILE}.cdl" 2>&1
+"$NCDUMP" "$OUTPUT_FILE" > "${OUTPUT_FILE}.cdl" 2>&1
 if [ $? -ne 0 ]; then
     echo "ERROR: ncdump failed on $OUTPUT_FILE"
     cat "${OUTPUT_FILE}.cdl"
