@@ -133,6 +133,7 @@ tst_grib2
 ftst_ncsqueeze_bzip2
 ftst_ncsqueeze_lz4
 tst_cdf_basic
+tst_imap_mag
 
 # GeoTIFF test binaries
 tst_geotiff_handle
@@ -179,6 +180,7 @@ examples/f_netcdf-4/f_simple_nc4
 examples/f_netcdf-4/f_compression
 examples/f_netcdf-4/f_chunking_performance
 examples/f_netcdf-4/f_multi_unlimited
+examples/f_netcdf-4/f_user_types
 
 # Valgrind logs
 valgrind*.log

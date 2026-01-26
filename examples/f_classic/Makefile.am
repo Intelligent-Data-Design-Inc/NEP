@@ -18,8 +18,13 @@ f_var4d_SOURCES = f_var4d.f90
 # Link with NetCDF-Fortran library
 LDADD = -lnetcdff
 
-# All examples run as tests
-TESTS = $(check_PROGRAMS)
+# Test wrapper scripts for CDL validation
+TESTS = test_f_simple_2D.sh test_f_coord_vars.sh test_f_format_variants.sh \
+        test_f_size_limits.sh test_f_unlimited_dim.sh test_f_var4d.sh
 
-# Clean up NetCDF files created by examples
-CLEANFILES = *.nc
+# Include test scripts in distribution
+EXTRA_DIST = test_f_simple_2D.sh test_f_coord_vars.sh test_f_format_variants.sh \
+             test_f_size_limits.sh test_f_unlimited_dim.sh test_f_var4d.sh
+
+# Clean up NetCDF files and generated CDL files
+CLEANFILES = *.nc *.cdl

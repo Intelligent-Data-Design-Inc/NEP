@@ -49,9 +49,7 @@ foreach(example ${NETCDF4_EXAMPLES})
     target_link_libraries(${example} PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl m)
     
     # Add as test
-    # Note: user_types excluded from TESTS - it's a demonstration of upstream NetCDF-4
-    # features (compound, vlen, enum, opaque types) that triggers ASAN errors in NetCDF-C
-    if(BUILD_TESTING AND NOT example STREQUAL "user_types")
+    if(BUILD_TESTING)
         add_test(NAME ${example} COMMAND ${example})
     endif()
 endforeach()

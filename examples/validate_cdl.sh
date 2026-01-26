@@ -1,0 +1,116 @@
+#!/bin/bash
+# Validate NetCDF output against expected CDL
+# Edward Hartnett 1/26/26
+
+EXAMPLE_NAME=$1
+OUTPUT_FILE=$2
+EXPECTED_CDL=$3
+
+if [ $# -ne 3 ]; then
+    echo "Usage: $0 <example_name> <output_file> <expected_cdl>"
+    exit 1
+fi
+
+if [ ! -f "$OUTPUT_FILE" ]; then
+    echo "ERROR: Output file not found: $OUTPUT_FILE"
+    exit 1
+fi
+
+if [ ! -f "$EXPECTED_CDL" ]; then
+    echo "ERROR: Expected CDL file not found: $EXPECTED_CDL"
+    exit 1
+fi
+
+# Find ncdump from the NetCDF-C library being used
+# We MUST use the ncdump from the same NetCDF-C library we compiled with
+NCDUMP=""
+
+# Method 1: Use nc-config (preferred - ensures we get the right NetCDF-C)
+if command -v nc-config >/dev/null 2>&1; then
+    NETCDF_PREFIX=$(nc-config --prefix)
+    if [ -x "${NETCDF_PREFIX}/bin/ncdump" ]; then
+        NCDUMP="${NETCDF_PREFIX}/bin/ncdump"
+        echo "Found ncdump via nc-config: $NCDUMP"
+    fi
+fi
+
+# Method 2: Check GITHUB_WORKSPACE for CI environments
+if [ -z "$NCDUMP" ] && [ -n "$GITHUB_WORKSPACE" ]; then
+    for prefix in "$GITHUB_WORKSPACE/netcdf-c-install" "$GITHUB_WORKSPACE/netcdf-install"; do
+        if [ -x "${prefix}/bin/ncdump" ]; then
+            NCDUMP="${prefix}/bin/ncdump"
+            echo "Found ncdump in CI workspace: $NCDUMP"
+            break
+        fi
+    done
+fi
+
+# Method 3: Check if nf-config is available (for Fortran builds) and use its NetCDF-C
+if [ -z "$NCDUMP" ] && command -v nf-config >/dev/null 2>&1; then
+    # nf-config should point to NetCDF-Fortran, which depends on NetCDF-C
+    # Try to find the NetCDF-C installation it uses
+    NF_LIBS=$(nf-config --flibs 2>/dev/null)
+    if [ -n "$NF_LIBS" ]; then
+        # Extract -L paths to find NetCDF-C lib directory
+        for word in $NF_LIBS; do
+            if [[ "$word" == -L* ]]; then
+                LIBDIR="${word#-L}"
+                # Check if ncdump is in the bin directory next to lib
+                BINDIR="${LIBDIR%/lib}/bin"
+                if [ -x "${BINDIR}/ncdump" ]; then
+                    NCDUMP="${BINDIR}/ncdump"
+                    echo "Found ncdump via nf-config library path: $NCDUMP"
+                    break
+                fi
+            fi
+        done
+    fi
+fi
+
+# Verify ncdump is available
+if [ -z "$NCDUMP" ]; then
+    echo "ERROR: ncdump not found from NetCDF-C library"
+    echo "We need ncdump from the same NetCDF-C library used in the build"
+    echo ""
+    echo "Debugging information:"
+    echo "PATH=$PATH"
+    if command -v nc-config >/dev/null 2>&1; then
+        echo "nc-config found at: $(command -v nc-config)"
+        echo "nc-config --prefix: $(nc-config --prefix)"
+        echo "Checking: $(nc-config --prefix)/bin/ncdump"
+        ls -la "$(nc-config --prefix)/bin/ncdump" 2>&1 || echo "  ncdump not found there"
+    else
+        echo "nc-config not found in PATH"
+    fi
+    if [ -n "$GITHUB_WORKSPACE" ]; then
+        echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
+        echo "Checking for ncdump in CI locations:"
+        ls -la "$GITHUB_WORKSPACE/netcdf-c-install/bin/" 2>/dev/null || echo "  netcdf-c-install/bin not found"
+    fi
+    exit 1
+fi
+
+# Show ncdump version and location for debugging
+echo "Using ncdump: $NCDUMP"
+"$NCDUMP" -h 2>&1 | head -1 || echo "ncdump version check failed"
+
+# Run ncdump on generated file
+"$NCDUMP" "$OUTPUT_FILE" > "${OUTPUT_FILE}.cdl" 2>&1
+if [ $? -ne 0 ]; then
+    echo "ERROR: ncdump failed on $OUTPUT_FILE"
+    cat "${OUTPUT_FILE}.cdl"
+    exit 1
+fi
+
+# Compare with expected CDL
+diff -u "$EXPECTED_CDL" "${OUTPUT_FILE}.cdl"
+if [ $? -ne 0 ]; then
+    echo "ERROR: Output differs from expected for $EXAMPLE_NAME"
+    echo "Expected: $EXPECTED_CDL"
+    echo "Generated: ${OUTPUT_FILE}.cdl"
+    exit 1
+fi
+
+echo "PASS: $EXAMPLE_NAME output matches expected CDL"
+rm -f "${OUTPUT_FILE}.cdl"
+exit 0
