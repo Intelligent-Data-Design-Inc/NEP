@@ -8,9 +8,9 @@ Use these paths for **local development builds on Ed's machine**.
 For CI/GitHub Actions, different paths are used (see `.github/workflows/`).
 
 ## Machine-Specific Dependency Paths
-- **HDF5**: `/usr/local/hdf5-1.14.6_cmake/`
-- **NetCDF-C**: `/usr/local/netcdf-c-4.9.3_cmake/`
-- **NetCDF-Fortran**: `/usr/local/netcdf-fortran/` (if Fortran enabled)
+- **HDF5**: `/usr/local/hdf5-1.14.6/`
+- **NetCDF-C**: `/usr/local/netcdf-c-4.9.3/`
+- **NetCDF-Fortran**: `/usr/local/netcdf-fortran-4.6.2/` (if Fortran enabled)
 - **CDF**: `/usr/local/cdf-3.9.1/` (if CDF enabled)
 - **GeoTIFF**: System packages (`libgeotiff-dev`, `libtiff-dev`)
 

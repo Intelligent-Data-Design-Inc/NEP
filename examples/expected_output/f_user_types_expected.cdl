@@ -1,0 +1,4 @@
+netcdf f_user_types {
+types:
+  opaque(16) calibration_t ;
+}

@@ -17,8 +17,13 @@ f_user_types_SOURCES = f_user_types.f90
 # Link with NetCDF-Fortran library
 LDADD = -lnetcdff
 
-# All examples run as tests
-TESTS = $(check_PROGRAMS)
+# Test wrapper scripts for CDL validation
+TESTS = test_f_simple_nc4.sh test_f_compression.sh test_f_chunking_performance.sh \
+        test_f_multi_unlimited.sh test_f_user_types.sh
 
-# Clean up NetCDF files created by examples
-CLEANFILES = *.nc
+# Include test scripts in distribution
+EXTRA_DIST = test_f_simple_nc4.sh test_f_compression.sh test_f_chunking_performance.sh \
+             test_f_multi_unlimited.sh test_f_user_types.sh
+
+# Clean up NetCDF files and generated CDL files
+CLEANFILES = *.nc *.cdl

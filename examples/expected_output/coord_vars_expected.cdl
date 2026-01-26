@@ -1,0 +1,32 @@
+netcdf coord_vars {
+dimensions:
+	lat = 4 ;
+	lon = 5 ;
+variables:
+	float lat(lat) ;
+		lat:units = "degrees_north" ;
+		lat:standard_name = "latitude" ;
+		lat:long_name = "Latitude" ;
+		lat:axis = "Y" ;
+	float lon(lon) ;
+		lon:units = "degrees_east" ;
+		lon:standard_name = "longitude" ;
+		lon:long_name = "Longitude" ;
+		lon:axis = "X" ;
+	float temperature(lat, lon) ;
+		temperature:units = "K" ;
+		temperature:standard_name = "air_temperature" ;
+		temperature:long_name = "Air Temperature" ;
+		temperature:_FillValue = -999.f ;
+data:
+
+ lat = -45, -15, 15, 45 ;
+
+ lon = -120, -60, 0, 60, 120 ;
+
+ temperature =
+  273.15, 275.15, 277.15, 279.15, 281.15,
+  278.15, 280.15, 282.15, 284.15, 286.15,
+  283.15, 285.15, 287.15, 289.15, 291.15,
+  288.15, 290.15, 292.15, 294.15, 296.15 ;
+}

@@ -51,6 +51,7 @@ endif
 # Build the performance tests, if all filters have been built.
 check_PROGRAMS += tst_perf
 tst_perf_SOURCES = tst_perf.c tst_utils.c
+tst_perf_LDADD = ${top_builddir}/src/libncsqueeze.la -lnetcdf -lhdf5_hl -lhdf5 -lz -ldl -lm
 
 # Build CDF UDF tests, if CDF is enabled.
 if HAVE_CDF
