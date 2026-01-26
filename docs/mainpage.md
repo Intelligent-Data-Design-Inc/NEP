@@ -17,10 +17,35 @@ NEP includes 22 comprehensive example programs demonstrating NetCDF API usage in
 
 ### Example Categories
 
-- **C Classic Examples** (6 programs): Basic 2D arrays, coordinate variables, format variants, size limits, unlimited dimensions, and 4D variables
-- **C NetCDF-4 Examples** (5 programs): NetCDF-4 basics, compression, chunking performance, multiple unlimited dimensions, and user-defined types
-- **Fortran Classic Examples** (6 programs): Fortran equivalents of all classic examples
-- **Fortran NetCDF-4 Examples** (5 programs): Fortran equivalents of all NetCDF-4 examples
+**C Classic Examples** (6 programs):
+- simple_2D.c - Basic 2D arrays
+- coord_vars.c - Coordinate variables
+- format_variants.c - Format variants
+- size_limits.c - Size limits
+- unlimited_dim.c - Unlimited dimensions
+- var4d.c - 4D variables
+
+**C NetCDF-4 Examples** (5 programs):
+- simple_nc4.c - NetCDF-4 basics
+- compression.c - Compression filters
+- chunking_performance.c - Chunking strategies
+- multi_unlimited.c - Multiple unlimited dimensions
+- user_types.c - User-defined types
+
+**Fortran Classic Examples** (6 programs):
+- f_simple_2D.f90 - Basic 2D arrays
+- f_coord_vars.f90 - Coordinate variables
+- f_format_variants.f90 - Format variants
+- f_size_limits.f90 - Size limits
+- f_unlimited_dim.f90 - Unlimited dimensions
+- f_var4d.f90 - 4D variables
+
+**Fortran NetCDF-4 Examples** (5 programs):
+- f_simple_nc4.f90 - NetCDF-4 basics
+- f_compression.f90 - Compression filters
+- f_chunking_performance.f90 - Chunking strategies
+- f_multi_unlimited.f90 - Multiple unlimited dimensions
+- f_user_types.f90 - User-defined types
 
 ### Key Features
 
@@ -31,13 +56,13 @@ NEP includes 22 comprehensive example programs demonstrating NetCDF API usage in
 
 ### Learning Paths
 
-**Beginners**: Start with `simple_2D` → `coord_vars` → `unlimited_dim`
+**Beginners**: Start with simple_2D.c / f_simple_2D.f90 → coord_vars.c / f_coord_vars.f90 → unlimited_dim.c / f_unlimited_dim.f90
 
-**Intermediate**: Progress to `format_variants` → `size_limits` → `var4d`
+**Intermediate**: Progress to format_variants.c / f_format_variants.f90 → size_limits.c / f_size_limits.f90 → var4d.c / f_var4d.f90
 
-**Advanced (NetCDF-4)**: Master `simple_nc4` → `compression` → `chunking_performance` → `multi_unlimited` → `user_types`
+**Advanced (NetCDF-4)**: Master simple_nc4.c / f_simple_nc4.f90 → compression.c / f_compression.f90 → chunking_performance.c / f_chunking_performance.f90 → multi_unlimited.c / f_multi_unlimited.f90 → user_types.c / f_user_types.f90
 
-See the Examples Documentation page for complete details, build instructions, and usage guides.
+See examples/README.md for complete details, build instructions, and usage guides.
 
 ## Compression Algorithms
 
