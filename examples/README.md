@@ -93,6 +93,41 @@ Each example creates NetCDF output files demonstrating the features being illust
 
 Starting in v1.5.1 Sprint 2, example output is validated against expected CDL (Common Data Language) files stored in `expected_output/`. This ensures examples continue producing correct output across code changes.
 
+## C and Fortran Equivalence
+
+The C and Fortran examples are designed to be structurally similar and produce equivalent output:
+
+### Structural Similarities (v1.5.1 Sprint 3)
+- **Error Handling**: Both C and Fortran examples use inline error handling rather than separate error handling functions
+- **Program Flow**: Examples follow the same structure:
+  - Write phase: create file, define dimensions/variables, write data, close
+  - Read phase: reopen file, verify metadata, verify data, close
+- **File Format**: Both use NetCDF-4 format (`NC_NETCDF4` in C, `NF90_NETCDF4` in Fortran)
+
+### Output Equivalence
+C and Fortran versions of the same example produce identical NetCDF files (verified via `ncdump` CDL comparison):
+- Same dimensions, variables, and attributes
+- Same data values
+- Only acceptable difference: filename in CDL header
+
+### Verifying Equivalence
+To verify that C and Fortran examples produce equivalent output:
+
+```bash
+# Run both examples
+./simple_2D
+./f_simple_2D
+
+# Generate CDL from both outputs
+ncdump simple_2D.nc > simple_2D.cdl
+ncdump f_simple_2D.nc > f_simple_2D.cdl
+
+# Compare (should show only filename difference)
+diff -u simple_2D.cdl f_simple_2D.cdl
+```
+
+This equivalence ensures users can learn NetCDF concepts from either language and expect consistent behavior.
+
 ## Dependencies
 
 - NetCDF-C library (required)
