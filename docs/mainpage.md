@@ -11,6 +11,34 @@ NEP (NetCDF Extension Pack) extends NetCDF-4 with high-performance compression a
 
 NEP provides flexible compression options and unified data access for diverse scientific data workflows.
 
+## NetCDF Example Programs
+
+NEP includes 22 comprehensive example programs demonstrating NetCDF API usage in both C and Fortran. These examples cover classic NetCDF and NetCDF-4 features, providing practical learning resources for users at all levels.
+
+### Example Categories
+
+- **C Classic Examples** (6 programs): Basic 2D arrays, coordinate variables, format variants, size limits, unlimited dimensions, and 4D variables
+- **C NetCDF-4 Examples** (5 programs): NetCDF-4 basics, compression, chunking performance, multiple unlimited dimensions, and user-defined types
+- **Fortran Classic Examples** (6 programs): Fortran equivalents of all classic examples
+- **Fortran NetCDF-4 Examples** (5 programs): Fortran equivalents of all NetCDF-4 examples
+
+### Key Features
+
+- **Automated Testing**: All examples run as automated tests with CDL-based output validation
+- **C/Fortran Equivalence**: Parallel implementations produce identical output, enabling cross-language learning
+- **Comprehensive Documentation**: Doxygen-integrated with learning paths from beginner to advanced
+- **Build Integration**: Examples build by default in both CMake and Autotools, can be disabled with `-DBUILD_EXAMPLES=OFF` or `--disable-examples`
+
+### Learning Paths
+
+**Beginners**: Start with `simple_2D` → `coord_vars` → `unlimited_dim`
+
+**Intermediate**: Progress to `format_variants` → `size_limits` → `var4d`
+
+**Advanced (NetCDF-4)**: Master `simple_nc4` → `compression` → `chunking_performance` → `multi_unlimited` → `user_types`
+
+See the Examples Documentation page for complete details, build instructions, and usage guides.
+
 ## Compression Algorithms
 
 ### LZ4 Compression
