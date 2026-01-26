@@ -1,12 +1,60 @@
-! This is part of the book: Writing NetCDF Programs.
-!
-! This program demonstrates basic NetCDF-4 file creation, writing, and reading
-! with a 2D integer array using Fortran 90. This program creates a 
-! file with 2 dimensions and 1 2D variable, writes sequential integer 
-! data, then reopens the file to verify both metadata and data correctness.
-!
-! Author: Edward Hartnett, Intelligent Data Design, Inc.
-! Copyright: 2026
+!> @file f_simple_2D.f90
+!! @brief Basic example demonstrating 2D array creation and reading in NetCDF (Fortran)
+!!
+!! This is the Fortran equivalent of simple_2D.c, demonstrating the fundamental
+!! workflow for working with NetCDF files using the Fortran 90 NetCDF API. The
+!! program creates a 2D integer array, writes it to a NetCDF file, then reopens
+!! the file to verify both metadata and data correctness.
+!!
+!! **Learning Objectives:**
+!! - Understand Fortran NetCDF API (nf90_* functions)
+!! - Learn Fortran column-major vs C row-major array ordering
+!! - Master error handling with nf90_noerr and nf90_strerror()
+!! - Work with Fortran array indexing (1-based vs C's 0-based)
+!! - Verify equivalence with C version (simple_2D.c)
+!!
+!! **Key Concepts:**
+!! - **Fortran Column-Major**: Arrays stored column-first [i,j] vs C row-first [j][i]
+!! - **Dimension Ordering**: Fortran reverses dimension order from C
+!! - **1-Based Indexing**: Fortran arrays start at 1, C arrays start at 0
+!! - **nf90 Module**: Fortran 90 NetCDF interface (use netcdf)
+!! - **Error Handling**: Check retval against nf90_noerr
+!!
+!! **Fortran vs C Differences:**
+!! - **Array Declaration**: Fortran data_out(NX, NY) vs C data_out[NY][NX]
+!! - **Dimension Order**: Fortran dimids(1)=x, dimids(2)=y vs C dimids[0]=y, dimids[1]=x
+!! - **Indexing**: Fortran 1-based (1 to N) vs C 0-based (0 to N-1)
+!! - **API Prefix**: Fortran nf90_* vs C nc_*
+!! - **Error Handling**: Fortran subroutine call vs C macro
+!!
+!! **Prerequisites:** 
+!! - simple_2D.c - C equivalent for comparison
+!!
+!! **Related Examples:**
+!! - simple_2D.c - C equivalent of this example
+!! - f_coord_vars.f90 - Adds coordinate variables
+!! - f_simple_nc4.f90 - NetCDF-4 specific features
+!!
+!! **Compilation:**
+!! @code
+!! gfortran -o f_simple_2D f_simple_2D.f90 -lnetcdff -lnetcdf
+!! @endcode
+!!
+!! **Usage:**
+!! @code
+!! ./f_simple_2D
+!! ncdump f_simple_2D.nc
+!! @endcode
+!!
+!! **Expected Output:**
+!! Creates f_simple_2D.nc containing:
+!! - 2 dimensions: x(6), y(12)
+!! - 1 variable: data(x, y) of type int
+!! - Data: sequential integers from 0 to 71
+!! - Output identical to simple_2D.c (verified via ncdump)
+!!
+!! @author Edward Hartnett, Intelligent Data Design, Inc.
+!! @date 2026
 
 
 program f_simple_2D

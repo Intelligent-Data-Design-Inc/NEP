@@ -1,11 +1,43 @@
-! This is part of the book: Writing NetCDF Programs.
-!
-! Demonstrates unlimited dimensions for time-series data.
-! Creates a file with an unlimited time dimension, writes initial
-! timesteps, then reopens to append additional timesteps.
-!
-! Author: Edward Hartnett, Intelligent Data Design, Inc.
-! Copyright: 2026
+!> @file f_unlimited_dim.f90
+!! @brief Demonstrates unlimited dimensions for appendable time-series data (Fortran)
+!!
+!! This is the Fortran equivalent of unlimited_dim.c, demonstrating unlimited
+!! dimensions using the Fortran 90 NetCDF API. The program creates a file with
+!! an unlimited time dimension and demonstrates appending data.
+!!
+!! **Learning Objectives:**
+!! - Understand NF90_UNLIMITED in Fortran
+!! - Learn to append data to existing files in Fortran
+!! - Work with time-series data patterns in Fortran
+!! - Master file reopening with NF90_WRITE mode
+!!
+!! **Fortran Unlimited Dimension:**
+!! - Define with nf90_def_dim(ncid, "time", NF90_UNLIMITED, dimid)
+!! - Must be first dimension in Fortran (last in C)
+!! - Use nf90_put_var with start and count for appending
+!!
+!! **Prerequisites:**
+!! - f_simple_2D.f90 - Basic file operations
+!! - unlimited_dim.c - C equivalent for comparison
+!!
+!! **Related Examples:**
+!! - unlimited_dim.c - C equivalent
+!! - f_multi_unlimited.f90 - Multiple unlimited dimensions (NetCDF-4)
+!! - f_var4d.f90 - 4D data with time dimension
+!!
+!! **Compilation:**
+!! @code
+!! gfortran -o f_unlimited_dim f_unlimited_dim.f90 -lnetcdff -lnetcdf
+!! @endcode
+!!
+!! **Usage:**
+!! @code
+!! ./f_unlimited_dim
+!! ncdump f_unlimited_dim.nc
+!! @endcode
+!!
+!! @author Edward Hartnett, Intelligent Data Design, Inc.
+!! @date 2026
 
 program f_unlimited_dim
    use netcdf

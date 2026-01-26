@@ -1,11 +1,42 @@
-! This is part of the book: Writing NetCDF Programs.
-!
-! Demonstrates size limits for the three classic NetCDF formats.
-! In default mode, creates small test files and calculates theoretical limits.
-! In large test mode (--enable-large-tests), creates files approaching format limits.
-!
-! Author: Edward Hartnett, Intelligent Data Design, Inc.
-! Copyright: 2026
+!> @file f_size_limits.f90
+!! @brief Demonstrates file size and dimension limits for NetCDF classic formats (Fortran)
+!!
+!! This is the Fortran equivalent of size_limits.c, exploring size limitations of
+!! classic NetCDF formats using the Fortran 90 NetCDF API. The program demonstrates
+!! when format upgrades are necessary for large datasets.
+!!
+!! **Learning Objectives:**
+!! - Understand file size limits in Fortran NetCDF applications
+!! - Learn when to upgrade from CDF-1 to CDF-2 or CDF-5
+!! - Work with large integers (int64) for dimension calculations
+!! - Recognize format-related errors in Fortran
+!!
+!! **Fortran-Specific Considerations:**
+!! - Use iso_fortran_env module for int64 type
+!! - Integer kind selection for large dimension sizes
+!! - Format selection impacts Fortran array size limits
+!!
+!! **Prerequisites:**
+!! - f_format_variants.f90 - Understanding format types
+!! - size_limits.c - C equivalent for comparison
+!!
+!! **Related Examples:**
+!! - size_limits.c - C equivalent
+!! - f_format_variants.f90 - Format comparison
+!! - f_simple_nc4.f90 - NetCDF-4 format (different limits)
+!!
+!! **Compilation:**
+!! @code
+!! gfortran -o f_size_limits f_size_limits.f90 -lnetcdff -lnetcdf
+!! @endcode
+!!
+!! **Usage:**
+!! @code
+!! ./f_size_limits
+!! @endcode
+!!
+!! @author Edward Hartnett, Intelligent Data Design, Inc.
+!! @date 2026
 
 program f_size_limits
    use netcdf

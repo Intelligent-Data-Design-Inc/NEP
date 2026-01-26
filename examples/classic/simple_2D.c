@@ -1,17 +1,59 @@
-/*
- * Program Name: simple_2D.c
- * 
- * Purpose: Demonstrates basic NetCDF-4 file creation, writing, and reading
- *          with a 2D integer array. This program creates a file with 2 dimensions
- *          and 1 2D variable, writes sequential integer data, then reopens the
- *          file to verify both metadata and data correctness.
- * 
- * Author: Edward Hartnett
- * Date: 2026-01-15
- * 
- * Usage: ./simple_2D
- * 
- * Output: simple_2D.nc
+/**
+ * @file simple_2D.c
+ * @brief Basic example demonstrating 2D array creation and reading in NetCDF
+ *
+ * This example shows the fundamental workflow for working with NetCDF files:
+ * - Creating a new NetCDF file
+ * - Defining dimensions and variables
+ * - Writing data to variables
+ * - Closing and reopening the file
+ * - Reading and verifying data
+ *
+ * The program creates a 2D integer array (6x12) with sequential values (0, 1, 2, ..., 71),
+ * writes it to a NetCDF-4 file, then reopens the file to verify both metadata and data
+ * correctness. This demonstrates the complete read-write cycle that forms the foundation
+ * of NetCDF programming.
+ *
+ * **Learning Objectives:**
+ * - Understand basic NetCDF file structure (dimensions, variables, data)
+ * - Learn dimension and variable definition workflow
+ * - Master data writing and reading operations
+ * - Implement error handling patterns with nc_strerror()
+ * - Verify metadata and data integrity
+ *
+ * **Key Concepts:**
+ * - **Dimensions**: Named axes that define array shapes (x=6, y=12)
+ * - **Variables**: Named data arrays with defined dimensions and types
+ * - **NetCDF-4 Format**: HDF5-based format with enhanced features
+ * - **Define Mode**: Metadata definition phase before data writing
+ * - **Data Mode**: Phase where actual data is written/read
+ *
+ * **Prerequisites:** None - this is a beginner example
+ *
+ * **Related Examples:**
+ * - coord_vars.c - Adds coordinate variables and CF metadata
+ * - f_simple_2D.f90 - Fortran equivalent of this example
+ * - simple_nc4.c - NetCDF-4 specific features (compression, chunking)
+ *
+ * **Compilation:**
+ * @code
+ * gcc -o simple_2D simple_2D.c -lnetcdf
+ * @endcode
+ *
+ * **Usage:**
+ * @code
+ * ./simple_2D
+ * ncdump simple_2D.nc
+ * @endcode
+ *
+ * **Expected Output:**
+ * Creates simple_2D.nc containing:
+ * - 2 dimensions: x(6), y(12)
+ * - 1 variable: data(y, x) of type int
+ * - Data: sequential integers from 0 to 71
+ *
+ * @author Edward Hartnett
+ * @date 2026-01-15
  */
 
 #include <stdio.h>

@@ -1,11 +1,36 @@
-! This is part of the book: Writing NetCDF Programs.
-!
-! Demonstrates user-defined types in NetCDF-4.
-! Note: Fortran support for compound types is limited, so this demonstrates
-! vlen, enum, and opaque types primarily.
-!
-! Author: Edward Hartnett, Intelligent Data Design, Inc.
-! Copyright: 2026
+!> @file f_user_types.f90
+!! @brief Demonstrates NetCDF-4 user-defined types (Fortran)
+!!
+!! Fortran equivalent of user_types.c, demonstrating NetCDF-4 user-defined types
+!! using the Fortran 90 NetCDF API. Note: Fortran support for compound types is
+!! limited compared to C, so this focuses on enum, vlen, and opaque types.
+!!
+!! **Learning Objectives:**
+!! - Understand Fortran limitations with compound types
+!! - Work with enum types in Fortran (nf90_def_enum)
+!! - Use vlen types for variable-length arrays
+!! - Handle opaque types for binary data
+!!
+!! **Fortran User Type Limitations:**
+!! - Compound types have limited Fortran support
+!! - Enum, vlen, and opaque types fully supported
+!! - Type definitions similar to C API
+!!
+!! **Prerequisites:**
+!! - f_simple_nc4.f90 - NetCDF-4 format basics
+!! - user_types.c - C equivalent (more complete)
+!!
+!! **Related Examples:**
+!! - user_types.c - C equivalent (full compound type support)
+!! - f_compression.f90 - Compression with user types
+!!
+!! **Compilation:**
+!! @code
+!! gfortran -o f_user_types f_user_types.f90 -lnetcdff -lnetcdf
+!! @endcode
+!!
+!! @author Edward Hartnett, Intelligent Data Design, Inc.
+!! @date 2026
 
 program f_user_types
    use netcdf

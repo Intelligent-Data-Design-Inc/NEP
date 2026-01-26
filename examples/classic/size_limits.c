@@ -1,12 +1,62 @@
-/*
- * This is part of the book: Writing NetCDF Programs.
+/**
+ * @file size_limits.c
+ * @brief Demonstrates file size and dimension limits for NetCDF classic formats
  *
- * Demonstrates size limits for the three classic NetCDF formats.
- * In default mode, creates small test files and calculates theoretical limits.
- * In large test mode (--enable-large-tests), creates files approaching format limits.
+ * This example explores the size limitations of the three classic NetCDF formats
+ * (CDF-1, CDF-2, CDF-5) by creating test files and explaining theoretical limits.
+ * Understanding these limits is essential for choosing the appropriate format for
+ * large datasets.
  *
- * Author: Edward Hartnett, Intelligent Data Design, Inc.
- * Copyright: 2026
+ * The program runs in small test mode (suitable for CI) by default, creating modest-sized
+ * test files and displaying theoretical limits. This helps users understand when they
+ * need to upgrade from CDF-1 to CDF-2 or CDF-5 for larger datasets.
+ *
+ * **Learning Objectives:**
+ * - Understand file size limits for each classic NetCDF format
+ * - Learn when format upgrades are necessary (2GB → 4GB → unlimited)
+ * - Calculate theoretical maximum dimensions for different data types
+ * - Recognize format-related error messages
+ * - Make informed decisions about format selection for large datasets
+ *
+ * **Key Concepts:**
+ * - **File Size Limit**: Maximum total file size (header + data)
+ * - **Variable Size Limit**: Maximum size of a single variable
+ * - **Dimension Limit**: Maximum dimension size based on variable limits
+ * - **Format Upgrade Path**: CDF-1 → CDF-2 → CDF-5 for increasing size needs
+ * - **Practical Limits**: Real-world constraints vs theoretical maximums
+ *
+ * **Format Limits Summary:**
+ * - **CDF-1**: 2GB file limit, 2GB variable limit (NetCDF 3.0+)
+ * - **CDF-2**: Unlimited file, 4GB variable limit (NetCDF 3.6.0+)
+ * - **CDF-5**: Unlimited file and variable sizes (NetCDF 4.4.0+)
+ *
+ * **Prerequisites:**
+ * - format_variants.c - Understanding format types
+ * - simple_2D.c - Basic dimension and variable concepts
+ *
+ * **Related Examples:**
+ * - f_size_limits.f90 - Fortran equivalent
+ * - format_variants.c - Format comparison
+ * - simple_nc4.c - NetCDF-4 format (different size limits)
+ *
+ * **Compilation:**
+ * @code
+ * gcc -o size_limits size_limits.c -lnetcdf
+ * @endcode
+ *
+ * **Usage:**
+ * @code
+ * ./size_limits
+ * @endcode
+ *
+ * **Expected Output:**
+ * - Creates small test files in each format
+ * - Displays theoretical size limits
+ * - Shows file sizes and dimension calculations
+ * - Provides guidance on format selection
+ *
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @date 2026
  */
 
 #include <stdio.h>

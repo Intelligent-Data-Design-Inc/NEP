@@ -38,3 +38,11 @@ The network here is slow and flakey. Follow these specific retry strategies:
 - **bash network commands**: Always test connectivity first
 - **file operations**: Local only - no retries needed
 - **build commands**: Network-dependent parts need retry logic
+
+## GitHub Interactions
+- **Prefer GitHub CLI**: Use `gh` command line tool instead of MCP GitHub tools
+- **MCP GitHub tools**: Unreliable due to TLS handshake timeouts on slow network
+- **Issue creation**: Use `gh issue create --title "..." --body "..."` or `gh issue create --body-file <file>`
+- **PR operations**: Use `gh pr create`, `gh pr view`, `gh pr comment`, etc.
+- **Authentication**: Ensure `gh auth status` shows valid credentials before operations
+- **Fallback**: If `gh` unavailable, document the action needed and ask user to perform manually

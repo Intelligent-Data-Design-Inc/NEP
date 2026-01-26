@@ -1,11 +1,70 @@
-/*
- * This is part of the book: Writing NetCDF Programs.
+/**
+ * @file simple_nc4.c
+ * @brief Basic NetCDF-4/HDF5 format file creation and format detection
  *
- * Demonstrates basic NetCDF-4/HDF5 file creation with format detection.
- * Creates a 2D array using NC_NETCDF4 flag and verifies the format.
+ * This example introduces the NetCDF-4 format, which uses HDF5 as the underlying
+ * storage layer. NetCDF-4 provides enhanced features including compression, chunking,
+ * multiple unlimited dimensions, and user-defined types while maintaining backward
+ * compatibility with the NetCDF API.
  *
- * Author: Edward Hartnett, Intelligent Data Design, Inc.
- * Copyright: 2026
+ * The program creates a simple 2D array using the NC_NETCDF4 flag and demonstrates
+ * format detection to verify the file was created in NetCDF-4/HDF5 format rather
+ * than classic NetCDF format.
+ *
+ * **Learning Objectives:**
+ * - Understand NetCDF-4 format and its HDF5 foundation
+ * - Learn to create NetCDF-4 files with NC_NETCDF4 flag
+ * - Master format detection using nc_inq_format() and nc_inq_format_extended()
+ * - Recognize differences between classic and NetCDF-4 formats
+ * - Prepare for advanced NetCDF-4 features (compression, chunking, groups)
+ *
+ * **Key Concepts:**
+ * - **NetCDF-4 Format**: HDF5-based format with enhanced features
+ * - **NC_NETCDF4 Flag**: Creation flag to specify NetCDF-4 format
+ * - **Format Detection**: Runtime identification of file format type
+ * - **HDF5 Backend**: Underlying storage technology for NetCDF-4
+ * - **Backward Compatibility**: NetCDF-4 files readable with NetCDF-4 library
+ *
+ * **NetCDF-4 vs Classic Comparison:**
+ * - **Classic**: Simple format, 2GB limits (CDF-1) or 4GB variable limits (CDF-2/5)
+ * - **NetCDF-4**: HDF5-based, compression, chunking, unlimited file/variable sizes
+ * - **Classic**: One unlimited dimension maximum
+ * - **NetCDF-4**: Multiple unlimited dimensions supported
+ * - **Classic**: No compression or chunking
+ * - **NetCDF-4**: Built-in compression filters and flexible chunking
+ *
+ * **Prerequisites:**
+ * - simple_2D.c - Basic NetCDF file operations
+ * - format_variants.c - Understanding classic format types
+ *
+ * **Related Examples:**
+ * - f_simple_nc4.f90 - Fortran equivalent
+ * - compression.c - NetCDF-4 compression features
+ * - chunking_performance.c - NetCDF-4 chunking strategies
+ * - multi_unlimited.c - Multiple unlimited dimensions
+ * - user_types.c - User-defined compound types
+ *
+ * **Compilation:**
+ * @code
+ * gcc -o simple_nc4 simple_nc4.c -lnetcdf
+ * @endcode
+ *
+ * **Usage:**
+ * @code
+ * ./simple_nc4
+ * ncdump simple_nc4.nc
+ * h5dump simple_nc4.nc  # View as HDF5 file
+ * @endcode
+ *
+ * **Expected Output:**
+ * Creates simple_nc4.nc in NetCDF-4/HDF5 format containing:
+ * - 2 dimensions: x(6), y(12)
+ * - 1 variable: data(y, x) of type int
+ * - Format: NC_FORMAT_NETCDF4 (HDF5-based)
+ * - File is readable by both NetCDF-4 and HDF5 tools
+ *
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @date 2026
  */
 
 #include <stdio.h>

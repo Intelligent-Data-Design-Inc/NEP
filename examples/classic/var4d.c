@@ -1,12 +1,68 @@
-/*
- * This is part of the book: Writing NetCDF Programs.
+/**
+ * @file var4d.c
+ * @brief Demonstrates multi-dimensional arrays (2D, 3D, 4D) with dimension reuse
  *
- * Demonstrates multi-dimensional arrays with 2D, 3D, and 4D variables.
- * Creates a file with 4 dimensions (time, level, lat, lon) and three
- * variables of different dimensionalities to show dimension reuse.
+ * This example shows how to work with multi-dimensional scientific data by creating
+ * variables of different dimensionalities (2D, 3D, 4D) that share common dimensions.
+ * This pattern is typical in atmospheric and oceanographic data where variables have
+ * different spatial and temporal coverage.
  *
- * Author: Edward Hartnett, Intelligent Data Design, Inc.
- * Copyright: 2026
+ * The program creates a file with 4 dimensions (time, level, lat, lon) and three
+ * temperature variables: surface temperature (2D), temperature profile (3D), and
+ * full 3D atmospheric temperature (4D). This demonstrates dimension reuse and
+ * efficient file organization.
+ *
+ * **Learning Objectives:**
+ * - Understand multi-dimensional array indexing in NetCDF
+ * - Learn dimension reuse across multiple variables
+ * - Master 4D array creation and access patterns
+ * - Work with atmospheric/oceanographic data structures
+ * - Understand C row-major vs NetCDF dimension ordering
+ *
+ * **Key Concepts:**
+ * - **Dimension Reuse**: Same dimension used by multiple variables
+ * - **Dimension Ordering**: NetCDF uses slowest-to-fastest varying (time, level, lat, lon)
+ * - **C Array Indexing**: Row-major order [time][level][lat][lon]
+ * - **Variable Dimensionality**: Variables can use subsets of available dimensions
+ * - **Atmospheric Levels**: Vertical coordinate (pressure, height, sigma)
+ *
+ * **Dimension Ordering Convention:**
+ * - NetCDF convention: (time, level, lat, lon) - slowest to fastest varying
+ * - C array declaration: [time][level][lat][lon] - matches NetCDF order
+ * - Fortran array declaration: (lon, lat, level, time) - reversed from C
+ * - Access pattern: data[t][lev][i][j] for time t, level lev, lat i, lon j
+ *
+ * **Prerequisites:**
+ * - simple_2D.c - Basic 2D arrays
+ * - coord_vars.c - Coordinate variables
+ * - unlimited_dim.c - Time dimension concepts
+ *
+ * **Related Examples:**
+ * - f_var4d.f90 - Fortran equivalent (note dimension order reversal)
+ * - coord_vars.c - 2D geospatial data
+ * - unlimited_dim.c - Time-series data
+ *
+ * **Compilation:**
+ * @code
+ * gcc -o var4d var4d.c -lnetcdf
+ * @endcode
+ *
+ * **Usage:**
+ * @code
+ * ./var4d
+ * ncdump var4d.nc
+ * @endcode
+ *
+ * **Expected Output:**
+ * Creates var4d.nc containing:
+ * - 4 dimensions: time(3), level(2), lat(4), lon(5)
+ * - 3 variables with different dimensionalities:
+ *   - temp_surface(lat, lon) - 2D surface temperature
+ *   - temp_profile(time, lat, lon) - 3D time-varying surface
+ *   - temp_3d(time, level, lat, lon) - 4D full atmosphere
+ *
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @date 2026
  */
 
 #include <stdio.h>

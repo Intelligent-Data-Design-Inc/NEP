@@ -1,11 +1,75 @@
-/*
- * This is part of the book: Writing NetCDF Programs.
+/**
+ * @file chunking_performance.c
+ * @brief Demonstrates chunking strategies and their impact on I/O performance
  *
- * Demonstrates the impact of chunking on I/O performance with NetCDF-4.
- * Creates 3D datasets with different chunking strategies and measures performance.
+ * This example explores NetCDF-4's chunking feature by creating identical 3D datasets
+ * with different chunking strategies and measuring their I/O performance. Chunking is
+ * fundamental to NetCDF-4 performance - the chunk size and shape dramatically affect
+ * read/write speeds for different access patterns.
  *
- * Author: Edward Hartnett, Intelligent Data Design, Inc.
- * Copyright: 2026
+ * The program creates a 3D temperature dataset (time×lat×lon) with three chunking
+ * strategies: contiguous (no chunking), spatial-optimized chunks, and balanced chunks.
+ * It measures write performance and demonstrates how chunk selection affects different
+ * access patterns (time-series vs spatial slices).
+ *
+ * **Learning Objectives:**
+ * - Understand NetCDF-4 chunking and its performance impact
+ * - Learn to configure chunking with nc_def_var_chunking()
+ * - Master chunk size selection for different access patterns
+ * - Measure I/O performance for various chunking strategies
+ * - Make informed chunking decisions based on use cases
+ *
+ * **Key Concepts:**
+ * - **Chunking**: Dividing data into fixed-size blocks for storage
+ * - **Contiguous Storage**: No chunking, sequential layout (NC_CONTIGUOUS)
+ * - **Chunked Storage**: Data divided into chunks (NC_CHUNKED)
+ * - **Chunk Cache**: In-memory cache for recently accessed chunks
+ * - **Access Pattern**: How data is read (time-series, spatial slices, random)
+ *
+ * **Chunking Strategies:**
+ * - **Contiguous**: Best for sequential access of entire dataset, no compression
+ * - **Spatial Chunks**: Optimize for reading spatial slices (all times for one location)
+ * - **Temporal Chunks**: Optimize for time-series (one location across all times)
+ * - **Balanced Chunks**: Compromise for mixed access patterns
+ * - **Chunk Size**: Typically 1KB-1MB, balance between cache efficiency and overhead
+ *
+ * **Chunking Guidelines:**
+ * - Match chunk shape to expected access pattern
+ * - Chunk size should be 10KB-1MB for good performance
+ * - Consider compression: chunking required for compression
+ * - Avoid very small chunks (high overhead) or very large chunks (poor cache use)
+ * - Test with realistic access patterns for your application
+ *
+ * **Prerequisites:**
+ * - simple_nc4.c - NetCDF-4 format basics
+ * - compression.c - Compression requires chunking
+ * - var4d.c - Multi-dimensional data
+ *
+ * **Related Examples:**
+ * - f_chunking_performance.f90 - Fortran equivalent
+ * - compression.c - Compression and chunking interaction
+ * - multi_unlimited.c - Chunking with unlimited dimensions
+ *
+ * **Compilation:**
+ * @code
+ * gcc -o chunking_performance chunking_performance.c -lnetcdf
+ * @endcode
+ *
+ * **Usage:**
+ * @code
+ * ./chunking_performance
+ * ls -lh chunking_performance_*.nc
+ * @endcode
+ *
+ * **Expected Output:**
+ * Creates three files with different chunking strategies:
+ * - chunking_performance_contiguous.nc (no chunking)
+ * - chunking_performance_spatial_optimized.nc (spatial access)
+ * - chunking_performance_balanced.nc (mixed access)
+ * Displays performance comparison and chunking recommendations.
+ *
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @date 2026
  */
 
 #include <stdio.h>

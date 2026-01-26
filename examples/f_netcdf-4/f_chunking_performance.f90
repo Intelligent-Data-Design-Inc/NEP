@@ -1,10 +1,34 @@
-! This is part of the book: Writing NetCDF Programs.
-!
-! Demonstrates the impact of chunking on I/O performance with NetCDF-4.
-! Creates 3D datasets with different chunking strategies and measures performance.
-!
-! Author: Edward Hartnett, Intelligent Data Design, Inc.
-! Copyright: 2026
+!> @file f_chunking_performance.f90
+!! @brief Demonstrates chunking strategies and I/O performance impact (Fortran)
+!!
+!! Fortran equivalent of chunking_performance.c, exploring NetCDF-4 chunking using
+!! the Fortran 90 NetCDF API. Creates datasets with different chunking strategies.
+!!
+!! **Learning Objectives:**
+!! - Configure chunking with nf90_def_var_chunking() in Fortran
+!! - Measure I/O performance for different chunk sizes
+!! - Select optimal chunking for Fortran access patterns
+!!
+!! **Fortran Chunking Functions:**
+!! - nf90_def_var_chunking(ncid, varid, storage, chunksizes)
+!! - storage: NF90_CONTIGUOUS or NF90_CHUNKED
+!! - chunksizes: Integer array with chunk dimensions
+!!
+!! **Prerequisites:**
+!! - f_simple_nc4.f90 - NetCDF-4 format basics
+!! - chunking_performance.c - C equivalent
+!!
+!! **Related Examples:**
+!! - chunking_performance.c - C equivalent
+!! - f_compression.f90 - Compression requires chunking
+!!
+!! **Compilation:**
+!! @code
+!! gfortran -o f_chunking_performance f_chunking_performance.f90 -lnetcdff -lnetcdf
+!! @endcode
+!!
+!! @author Edward Hartnett, Intelligent Data Design, Inc.
+!! @date 2026
 
 program f_chunking_performance
    use netcdf

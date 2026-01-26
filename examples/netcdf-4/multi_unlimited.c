@@ -1,11 +1,74 @@
-/*
- * This is part of the book: Writing NetCDF Programs.
+/**
+ * @file multi_unlimited.c
+ * @brief Demonstrates multiple unlimited dimensions (NetCDF-4 feature)
  *
- * Demonstrates multiple unlimited dimensions in NetCDF-4.
- * Shows appending data to both time and station dimensions.
+ * This example showcases one of NetCDF-4's key enhancements over classic NetCDF:
+ * the ability to have multiple unlimited dimensions. While classic NetCDF allows
+ * only one unlimited dimension, NetCDF-4 supports any number, enabling more flexible
+ * data structures for complex datasets.
  *
- * Author: Edward Hartnett, Intelligent Data Design, Inc.
- * Copyright: 2026
+ * The program creates a file with two unlimited dimensions (station and time),
+ * writes initial data, then demonstrates appending data along both dimensions.
+ * This pattern is common in observational data where both the number of stations
+ * and timesteps can grow over time.
+ *
+ * **Learning Objectives:**
+ * - Understand multiple unlimited dimensions in NetCDF-4
+ * - Learn to create variables with multiple unlimited dimensions
+ * - Master appending data along different unlimited dimensions
+ * - Work with ragged arrays and sparse datasets
+ * - Recognize when multiple unlimited dimensions are beneficial
+ *
+ * **Key Concepts:**
+ * - **Multiple Unlimited Dimensions**: NetCDF-4 allows unlimited dimensions in any position
+ * - **Classic Limitation**: Classic NetCDF allows only one unlimited dimension (first position)
+ * - **Ragged Arrays**: Arrays where one dimension varies for each index of another
+ * - **Sparse Data**: Data where not all dimension combinations have values
+ * - **Dynamic Growth**: Dimensions can grow independently
+ *
+ * **Use Cases for Multiple Unlimited Dimensions:**
+ * - **Observational Networks**: Stations and time both grow
+ * - **Ensemble Forecasts**: Ensemble members and forecast times both unlimited
+ * - **Particle Tracking**: Particles and timesteps both grow
+ * - **Sparse Matrices**: Rows and columns both unlimited
+ * - **Event Data**: Multiple event types and times
+ *
+ * **Design Considerations:**
+ * - Only available in NetCDF-4 format (not classic)
+ * - Can impact performance due to chunking requirements
+ * - Consider whether both dimensions truly need to be unlimited
+ * - Alternative: Use fixed dimensions with generous sizes
+ *
+ * **Prerequisites:**
+ * - unlimited_dim.c - Single unlimited dimension basics
+ * - simple_nc4.c - NetCDF-4 format requirements
+ * - var4d.c - Multi-dimensional data concepts
+ *
+ * **Related Examples:**
+ * - f_multi_unlimited.f90 - Fortran equivalent
+ * - unlimited_dim.c - Single unlimited dimension (classic compatible)
+ * - chunking_performance.c - Chunking with unlimited dimensions
+ *
+ * **Compilation:**
+ * @code
+ * gcc -o multi_unlimited multi_unlimited.c -lnetcdf -lm
+ * @endcode
+ *
+ * **Usage:**
+ * @code
+ * ./multi_unlimited
+ * ncdump multi_unlimited.nc
+ * @endcode
+ *
+ * **Expected Output:**
+ * Creates multi_unlimited.nc containing:
+ * - 2 unlimited dimensions: station(UNLIMITED), time(UNLIMITED)
+ * - Variable: temperature(station, time)
+ * - Demonstrates growth from 3×5 to 5×8 array
+ * - Shows appending along both dimensions independently
+ *
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @date 2026
  */
 
 #include <stdio.h>
