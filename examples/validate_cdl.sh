@@ -28,13 +28,15 @@ if command -v nc-config >/dev/null 2>&1; then
     NETCDF_PREFIX=$(nc-config --prefix)
     if [ -x "${NETCDF_PREFIX}/bin/ncdump" ]; then
         NCDUMP="${NETCDF_PREFIX}/bin/ncdump"
+        echo "Found ncdump via nc-config: $NCDUMP"
     fi
 fi
 
 # If nc-config didn't work, try to find ncdump in PATH
 if [ -z "$NCDUMP" ]; then
     if command -v ncdump >/dev/null 2>&1; then
-        NCDUMP="ncdump"
+        NCDUMP=$(command -v ncdump)
+        echo "Found ncdump in PATH: $NCDUMP"
     fi
 fi
 
@@ -42,8 +44,19 @@ fi
 if [ -z "$NCDUMP" ]; then
     echo "ERROR: ncdump not found in PATH or via nc-config"
     echo "Please ensure NetCDF tools are installed and in PATH"
+    echo "PATH=$PATH"
+    if command -v nc-config >/dev/null 2>&1; then
+        echo "nc-config found at: $(command -v nc-config)"
+        echo "nc-config --prefix: $(nc-config --prefix)"
+    else
+        echo "nc-config not found in PATH"
+    fi
     exit 1
 fi
+
+# Show ncdump version for debugging
+echo "Using ncdump: $NCDUMP"
+"$NCDUMP" -h 2>&1 | head -1 || echo "ncdump version check failed"
 
 # Run ncdump on generated file
 "$NCDUMP" "$OUTPUT_FILE" > "${OUTPUT_FILE}.cdl" 2>&1
