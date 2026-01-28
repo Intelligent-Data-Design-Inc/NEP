@@ -261,7 +261,7 @@ program f_groups
    call validate_groups(ncid, grp1_id, grp2_id, nested_id)
    
    ! Test dimension visibility across group boundaries
-   call test_dimension_visibility(ncid, grp1_id, grp2_id, nested_id)
+   call test_dimension_visibility(grp1_id, grp2_id, nested_id)
    
    ! Validate dimension sizes
    call validate_dimensions(ncid, nested_id)
@@ -365,8 +365,8 @@ contains
       print *, "Verified: All group names correct"
    end subroutine validate_groups
    
-   subroutine test_dimension_visibility(ncid, grp1_id, grp2_id, nested_id)
-      integer, intent(in) :: ncid, grp1_id, grp2_id, nested_id
+   subroutine test_dimension_visibility(grp1_id, grp2_id, nested_id)
+      integer, intent(in) :: grp1_id, grp2_id, nested_id
       integer :: test_dimid, retval
       
       print *, ""
@@ -455,7 +455,6 @@ contains
       integer, intent(in) :: ncid, grp1_id, grp2_id, nested_id
       integer, intent(out) :: ubyte_varid, ushort_varid, uint_varid, int64_varid, uint64_varid
       integer :: retval, vartype, varndims
-      character(len=NF90_MAX_NAME) :: varname
       
       print *, ""
       print *, "=== Phase 4: Validate variable metadata ==="
@@ -463,7 +462,7 @@ contains
       ! Validate ubyte_var in root
       retval = nf90_inq_varid(ncid, "ubyte_var", ubyte_varid)
       if (retval /= nf90_noerr) call handle_err(retval)
-      retval = nf90_inquire_variable(ncid, ubyte_varid, varname, vartype, varndims)
+      retval = nf90_inquire_variable(ncid, ubyte_varid, xtype=vartype, ndims=varndims)
       if (retval /= nf90_noerr) call handle_err(retval)
       if (vartype /= NF90_UBYTE .or. varndims /= NDIMS_2D) then
          print *, "Error: ubyte_var has wrong type or dimensions"
@@ -474,7 +473,7 @@ contains
       ! Validate ushort_var in SubGroup1
       retval = nf90_inq_varid(grp1_id, "ushort_var", ushort_varid)
       if (retval /= nf90_noerr) call handle_err(retval)
-      retval = nf90_inquire_variable(grp1_id, ushort_varid, varname, vartype, varndims)
+      retval = nf90_inquire_variable(grp1_id, ushort_varid, xtype=vartype, ndims=varndims)
       if (retval /= nf90_noerr) call handle_err(retval)
       if (vartype /= NF90_USHORT .or. varndims /= NDIMS_2D) then
          print *, "Error: ushort_var has wrong type or dimensions"
@@ -485,7 +484,7 @@ contains
       ! Validate uint_var in SubGroup2
       retval = nf90_inq_varid(grp2_id, "uint_var", uint_varid)
       if (retval /= nf90_noerr) call handle_err(retval)
-      retval = nf90_inquire_variable(grp2_id, uint_varid, varname, vartype, varndims)
+      retval = nf90_inquire_variable(grp2_id, uint_varid, xtype=vartype, ndims=varndims)
       if (retval /= nf90_noerr) call handle_err(retval)
       if (vartype /= NF90_UINT .or. varndims /= NDIMS_2D) then
          print *, "Error: uint_var has wrong type or dimensions"
@@ -496,7 +495,7 @@ contains
       ! Validate int64_var in NestedGroup
       retval = nf90_inq_varid(nested_id, "int64_var", int64_varid)
       if (retval /= nf90_noerr) call handle_err(retval)
-      retval = nf90_inquire_variable(nested_id, int64_varid, varname, vartype, varndims)
+      retval = nf90_inquire_variable(nested_id, int64_varid, xtype=vartype, ndims=varndims)
       if (retval /= nf90_noerr) call handle_err(retval)
       if (vartype /= NF90_INT64 .or. varndims /= NDIMS_2D) then
          print *, "Error: int64_var has wrong type or dimensions"
@@ -507,7 +506,7 @@ contains
       ! Validate uint64_var in NestedGroup
       retval = nf90_inq_varid(nested_id, "uint64_var", uint64_varid)
       if (retval /= nf90_noerr) call handle_err(retval)
-      retval = nf90_inquire_variable(nested_id, uint64_varid, varname, vartype, varndims)
+      retval = nf90_inquire_variable(nested_id, uint64_varid, xtype=vartype, ndims=varndims)
       if (retval /= nf90_noerr) call handle_err(retval)
       if (vartype /= NF90_UINT64 .or. varndims /= NDIMS_3D) then
          print *, "Error: uint64_var has wrong type or dimensions"
