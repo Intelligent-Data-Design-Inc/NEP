@@ -37,6 +37,7 @@ set(NETCDF4_EXAMPLES
     chunking_performance
     multi_unlimited
     user_types
+    groups
 )
 
 # Build each example using nc-config flags

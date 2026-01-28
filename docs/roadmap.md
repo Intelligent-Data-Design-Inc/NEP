@@ -3,6 +3,78 @@
 ### V1.6.0
 Implement Phase 4 of the GeoTIFF read layer for NEP v1.5.0: Extract and expose coordinate reference system (CRS) and georeferencing information following CF conventions. (see closed GitHub issue 59)
 
+### V1.5.2
+#### Sprint 1: C Groups Example Implementation
+- **C Example Program (groups.c)**: Create comprehensive groups demonstration in `examples/netcdf-4/`
+  - **Group Structure**: Root group + 2 sub-groups (SubGroup1, SubGroup2), with SubGroup2 containing NestedGroup
+  - **Dimension Definitions**: 
+    - Root level: 2 dimensions (e.g., `x=3`, `y=4`)
+    - NestedGroup: 1 additional dimension (e.g., `z=2`)
+  - **Variable Definitions**: 2D variables using all 5 new integer types
+    - NC_UBYTE variable in root group
+    - NC_USHORT variable in SubGroup1
+    - NC_UINT variable in SubGroup2
+    - NC_INT64 variable in NestedGroup (using root dimensions)
+    - NC_UINT64 variable in NestedGroup (3D using root dims + z dimension)
+  - **Dimension Visibility Validation**: Use `nc_inq_dimid()` to explicitly verify root dimensions are accessible in all groups
+  - **Data Operations**: Write minimal test data (3x4 arrays with simple sequential values), close file, reopen, validate all metadata with `nc_inq_*` functions, print data
+  - **Doxygen Documentation**: Comprehensive documentation explaining groups, nested groups, dimension visibility, and new integer types
+- **CMake Build Integration**: Add to `examples/netcdf-4/CMakeLists.txt`
+  - Build groups.c as executable linked against NetCDF-C
+  - Register as CTest test when `BUILD_EXAMPLES=ON`
+  - Follow existing example build patterns
+- **Autotools Build Integration**: Add to `examples/netcdf-4/Makefile.am`
+  - Add to `make check` test suite
+  - Follow existing example build patterns
+- **Test Execution**: Program runs as automated test
+  - Exit code 0 on success
+  - Creates NetCDF file demonstrating groups and new types
+  - No CDL validation in Sprint 1 (deferred to Sprint 3)
+
+#### Sprint 2: Fortran Groups Example Implementation
+- **Fortran Example Program (f_groups.f90)**: Fortran equivalent in `examples/f_netcdf-4/`
+  - Parallel implementation matching C example structure from Sprint 1
+  - Same group hierarchy, dimensions, variables, and data
+  - Fortran-90 API calls (`nf90_def_grp`, `nf90_inq_grp_ncid`, etc.)
+  - Equivalent Doxygen documentation
+- **CMake Build Integration**: Add to `examples/f_netcdf-4/CMakeLists.txt`
+  - Build f_groups.f90 when `ENABLE_FORTRAN=ON` and netcdf-fortran available
+  - Register as CTest test when `BUILD_EXAMPLES=ON`
+  - Follow existing example build patterns
+- **Autotools Build Integration**: Add to `examples/f_netcdf-4/Makefile.am`
+  - Conditional Fortran build using `AM_CONDITIONAL([BUILD_FORTRAN])`
+  - Add to `make check` test suite
+  - Follow existing example build patterns
+- **Test Execution**: Program runs as automated test
+  - Exit code 0 on success
+  - Creates NetCDF file demonstrating groups and new types
+  - No CDL validation in Sprint 2 (deferred to Sprint 3)
+
+#### Sprint 3: CDL Output Validation
+- **CDL Reference Files**: Generate expected output baselines
+  - Run groups.c and f_groups.f90 to create NetCDF files
+  - Use `ncdump` to generate CDL representations
+  - Store in `examples/expected_output/` as `groups_expected.cdl` and `f_groups_expected.cdl`
+  - CDL files serve as regression test baselines
+- **Automated Validation**: Integrate CDL comparison into test suite
+  - CMake: Custom test commands with `add_test()` that run example + ncdump + comparison
+  - Autotools: Shell scripts performing execute → ncdump → compare workflow
+  - Use `diff` or text comparison to validate output matches expected CDL
+  - Clear error messages showing differences on validation failures
+- **Test Enhancement**: Update test scripts
+  - Capture example program output
+  - Run `ncdump` on generated NetCDF files
+  - Compare against stored CDL baselines
+  - Test fails if output differs (indicates regression)
+- **Documentation Updates**: Document validation approach
+  - Update `examples/README.md` with CDL validation explanation
+  - Document CDL regeneration process for intentional changes
+  - Add troubleshooting section for validation failures
+- **CI Integration**: Validation runs automatically in CI pipeline
+  - Examples run as tests when BUILD_EXAMPLES=ON (default)
+  - CDL validation catches regressions
+  - No additional CI workflow changes needed
+  
 ### V1.5.1
 #### Sprint 1: Add Examples Directory and Build Integration
 - **Source Integration**: Copy example programs from `/home/ed/writing_netcdf_programs` to new `examples/` directory in NEP
@@ -86,8 +158,8 @@ Implement Phase 4 of the GeoTIFF read layer for NEP v1.5.0: Extract and expose c
   #### Sprint 4: Example Documented with Doxygen
   - We need doxygen documentation on all the examples, C and Fortran.
   - The documentation should explain the example, assuming the reader does not know much about netCDF.
-  
 
+  
 ### v1.5.0 GeoTIFF Read Support (Released: January 2026)
 #### Sprint 1: GeoTIFF File Open/Close and Data Reading
 - [x] Add GeoTIFF test files in test/data (MODIS NRT Global Flood Product samples)
