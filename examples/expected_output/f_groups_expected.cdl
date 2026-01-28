@@ -1,0 +1,65 @@
+netcdf f_groups {
+
+dimensions:
+	x = 3 ;
+	y = 4 ;
+
+group: SubGroup1 {
+  variables:
+  	ushort ushort_var(y, x) ;
+  data:
+
+   ushort_var =
+    13, 14, 15,
+    16, 17, 18,
+    19, 20, 21,
+    22, 23, 24 ;
+  } // group SubGroup1
+
+group: SubGroup2 {
+  variables:
+  	uint uint_var(y, x) ;
+  data:
+
+   uint_var =
+    25, 26, 27,
+    28, 29, 30,
+    31, 32, 33,
+    34, 35, 36 ;
+
+  group: NestedGroup {
+    dimensions:
+    	z = 2 ;
+    variables:
+    	int64 int64_var(y, x) ;
+    	uint64 uint64_var(z, y, x) ;
+    data:
+
+     int64_var =
+      37, 38, 39,
+      40, 41, 42,
+      43, 44, 45,
+      46, 47, 48 ;
+
+     uint64_var =
+      49, 50, 51,
+      52, 53, 54,
+      55, 56, 57,
+      58, 59, 60,
+      61, 62, 63,
+      64, 65, 66,
+      67, 68, 69,
+      70, 71, 72 ;
+    } // group NestedGroup
+  } // group SubGroup2
+
+variables:
+	ubyte ubyte_var(y, x) ;
+data:
+
+ ubyte_var =
+  1, 2, 3,
+  4, 5, 6,
+  7, 8, 9,
+  10, 11, 12 ;
+}
