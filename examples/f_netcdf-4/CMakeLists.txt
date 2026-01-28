@@ -37,6 +37,7 @@ set(F_NETCDF4_EXAMPLES
     f_chunking_performance
     f_multi_unlimited
     f_user_types
+    f_groups
 )
 
 # Copy validation script to build directory
@@ -75,6 +76,11 @@ if(BUILD_TESTING)
              COMMAND bash validate_cdl.sh f_user_types f_user_types.nc 
                      ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_user_types_expected.cdl)
     set_tests_properties(f_user_types_validate PROPERTIES DEPENDS f_user_types_run)
+    
+    add_test(NAME f_groups_validate 
+             COMMAND bash validate_cdl.sh f_groups f_groups.nc 
+                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_groups_expected.cdl)
+    set_tests_properties(f_groups_validate PROPERTIES DEPENDS f_groups_run)
     
     # Multi-file examples: f_compression
     add_test(NAME f_compression_validate_none
