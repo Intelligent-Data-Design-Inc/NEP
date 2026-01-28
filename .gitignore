@@ -166,6 +166,7 @@ examples/netcdf-4/compression
 examples/netcdf-4/chunking_performance
 examples/netcdf-4/multi_unlimited
 examples/netcdf-4/user_types
+examples/netcdf-4/groups
 
 # Example binaries - Fortran classic
 examples/f_classic/f_simple_2D
