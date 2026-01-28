@@ -20,7 +20,10 @@ user_types_LDADD = -lm
 # All examples run as tests
 # Note: user_types excluded from TESTS - it's a demonstration of upstream NetCDF-4
 # features (compound, vlen, enum, opaque types) that triggers ASAN errors in NetCDF-C
-TESTS = simple_nc4 compression chunking_performance multi_unlimited groups
+TESTS = simple_nc4 compression chunking_performance multi_unlimited groups test_groups.sh
+
+# Include test scripts in distribution
+EXTRA_DIST = test_groups.sh
 
 # Clean up NetCDF files created by examples
 CLEANFILES = *.nc

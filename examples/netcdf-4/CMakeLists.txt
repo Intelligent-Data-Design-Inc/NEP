@@ -54,3 +54,16 @@ foreach(example ${NETCDF4_EXAMPLES})
         add_test(NAME ${example} COMMAND ${example})
     endif()
 endforeach()
+
+# Copy validation script to build directory
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../validate_cdl.sh 
+               ${CMAKE_CURRENT_BINARY_DIR}/validate_cdl.sh 
+               COPYONLY)
+
+# Add CDL validation test for groups example
+if(BUILD_TESTING)
+    add_test(NAME groups_validate 
+             COMMAND bash validate_cdl.sh groups groups.nc 
+                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/groups_expected.cdl)
+    set_tests_properties(groups_validate PROPERTIES DEPENDS groups)
+endif()
