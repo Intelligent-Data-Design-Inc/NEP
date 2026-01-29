@@ -3,6 +3,46 @@
 ### V1.6.0
 Implement Phase 4 of the GeoTIFF read layer for NEP v1.5.0: Extract and expose coordinate reference system (CRS) and georeferencing information following CF conventions. (see closed GitHub issue 59)
 
+### V1.5.3
+#### Sprint 1: Add C Quickstart Example
+**Detailed Plan**: See `docs/plan/v1.5.3-sprint1-c-quickstart.md`
+
+- Add example C program `classic/quickstart.c`
+- Very short intro to NetCDF demonstrating basic operations
+- Define two dimensions: "X" (size 2) and "Y" (size 3)
+- Define one variable of type NC_INT called "data" with dimensions X and Y
+- Create array to hold generated data (simple sequential values)
+- Write array data to file
+- Add global attribute "description" = "a quickstart example"
+- Add variable attribute "units" = "m/s"
+- Close the file
+- Reopen and validate all contents (dimensions, variables, attributes, data)
+- Integrate into CMake and Autotools build systems
+- Add comprehensive Doxygen documentation
+
+#### Sprint 2: Add Fortran Quickstart Example
+**Detailed Plan**: See `docs/plan/v1.5.3-sprint2-fortran-quickstart.md`
+
+- Fortran program `f_classic/f_quickstart.f90`
+- Equivalent to C version using NetCDF-Fortran API (nf90_* functions)
+- Same structure: 2 dimensions, 1 variable, 2 attributes
+- Handle Fortran-specific considerations (column-major arrays, 1-based indexing)
+- Conditional build integration (only when ENABLE_FORTRAN=ON)
+- Cross-language validation ensuring identical output to C version
+- Comprehensive Doxygen documentation
+
+#### Sprint 3: CDL Output Validation
+**Detailed Plan**: See `docs/plan/v1.5.3-sprint3-cdl-validation.md`
+
+- Generate expected CDL baselines for both quickstart examples
+- Store in `examples/expected_output/` directory
+- Implement automated CDL comparison tests using ncdump + diff
+- CMake test integration with add_test()
+- Autotools test integration with shell scripts
+- Document regeneration process for intentional changes
+- CI integration for regression testing
+- Clear error messages and troubleshooting guidance
+
 ### V1.5.2
 #### Sprint 1: C Groups Example Implementation
 - **C Example Program (groups.c)**: Create comprehensive groups demonstration in `examples/netcdf-4/`

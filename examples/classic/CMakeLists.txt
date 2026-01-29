@@ -32,6 +32,7 @@ get_filename_component(HDF5_LIB_DIR "${HDF5_INCLUDE_DIR}/../lib" ABSOLUTE)
 
 # List of classic example programs
 set(CLASSIC_EXAMPLES
+    quickstart
     simple_2D
     coord_vars
     format_variants
