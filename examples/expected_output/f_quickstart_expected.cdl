@@ -3,7 +3,7 @@ dimensions:
 	X = 2 ;
 	Y = 3 ;
 variables:
-	int data(X, Y) ;
+	int data(Y, X) ;
 		data :units = "m/s" ;
 
 // global attributes:
@@ -11,6 +11,7 @@ variables:
 data:
 
  data =
-  1, 2, 3,
-  4, 5, 6 ;
+  1, 2,
+  3, 4,
+  5, 6 ;
 }
