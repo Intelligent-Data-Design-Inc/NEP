@@ -13,9 +13,13 @@ NEP provides flexible compression options and unified data access for diverse sc
 
 ## NetCDF Example Programs
 
-NEP includes 22 comprehensive example programs demonstrating NetCDF API usage in both C and Fortran. These examples cover classic NetCDF and NetCDF-4 features, providing practical learning resources for users at all levels.
+NEP includes 26 comprehensive example programs demonstrating NetCDF API usage in both C and Fortran. These examples cover classic NetCDF and NetCDF-4 features, providing practical learning resources for users at all levels.
 
 ### Example Categories
+
+**Quickstart Examples** (2 programs):
+- quickstart.c - Minimal introduction to NetCDF (C) - the simplest starting point
+- f_quickstart.f90 - Minimal introduction to NetCDF (Fortran) - the simplest starting point
 
 **C Classic Examples** (6 programs):
 - simple_2D.c - Basic 2D arrays
@@ -25,12 +29,13 @@ NEP includes 22 comprehensive example programs demonstrating NetCDF API usage in
 - unlimited_dim.c - Unlimited dimensions
 - var4d.c - 4D variables
 
-**C NetCDF-4 Examples** (5 programs):
+**C NetCDF-4 Examples** (6 programs):
 - simple_nc4.c - NetCDF-4 basics
 - compression.c - Compression filters
 - chunking_performance.c - Chunking strategies
 - multi_unlimited.c - Multiple unlimited dimensions
 - user_types.c - User-defined types
+- groups.c - Hierarchical groups
 
 **Fortran Classic Examples** (6 programs):
 - f_simple_2D.f90 - Basic 2D arrays
@@ -40,12 +45,13 @@ NEP includes 22 comprehensive example programs demonstrating NetCDF API usage in
 - f_unlimited_dim.f90 - Unlimited dimensions
 - f_var4d.f90 - 4D variables
 
-**Fortran NetCDF-4 Examples** (5 programs):
+**Fortran NetCDF-4 Examples** (6 programs):
 - f_simple_nc4.f90 - NetCDF-4 basics
 - f_compression.f90 - Compression filters
 - f_chunking_performance.f90 - Chunking strategies
 - f_multi_unlimited.f90 - Multiple unlimited dimensions
 - f_user_types.f90 - User-defined types
+- f_groups.f90 - Hierarchical groups
 
 ### Key Features
 
@@ -56,11 +62,13 @@ NEP includes 22 comprehensive example programs demonstrating NetCDF API usage in
 
 ### Learning Paths
 
-**Beginners**: Start with simple_2D.c / f_simple_2D.f90 → coord_vars.c / f_coord_vars.f90 → unlimited_dim.c / f_unlimited_dim.f90
+**Absolute Beginners**: Start with quickstart.c / f_quickstart.f90 - the simplest possible introduction with just 6 data values
 
-**Intermediate**: Progress to format_variants.c / f_format_variants.f90 → size_limits.c / f_size_limits.f90 → var4d.c / f_var4d.f90
+**Beginners**: Progress to simple_2D.c / f_simple_2D.f90 → coord_vars.c / f_coord_vars.f90 → unlimited_dim.c / f_unlimited_dim.f90
 
-**Advanced (NetCDF-4)**: Master simple_nc4.c / f_simple_nc4.f90 → compression.c / f_compression.f90 → chunking_performance.c / f_chunking_performance.f90 → multi_unlimited.c / f_multi_unlimited.f90 → user_types.c / f_user_types.f90
+**Intermediate**: Continue with format_variants.c / f_format_variants.f90 → size_limits.c / f_size_limits.f90 → var4d.c / f_var4d.f90
+
+**Advanced (NetCDF-4)**: Master simple_nc4.c / f_simple_nc4.f90 → compression.c / f_compression.f90 → chunking_performance.c / f_chunking_performance.f90 → groups.c / f_groups.f90 → multi_unlimited.c / f_multi_unlimited.f90 → user_types.c / f_user_types.f90
 
 See examples/README.md for complete details, build instructions, and usage guides.
 

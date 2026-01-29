@@ -6,6 +6,7 @@ This directory contains example programs demonstrating NetCDF API usage in both 
 
 ### Classic NetCDF Examples (C)
 Located in `classic/`:
+- **quickstart.c** - Minimal introduction to NetCDF - the simplest starting point for new users
 - **simple_2D.c** - Basic 2D array creation and writing
 - **coord_vars.c** - Working with coordinate variables
 - **format_variants.c** - Different NetCDF format variants (classic, 64-bit offset, CDF-5)
@@ -23,6 +24,7 @@ Located in `netcdf-4/`:
 
 ### Classic NetCDF Examples (Fortran)
 Located in `f_classic/`:
+- **f_quickstart.f90** - Fortran version of quickstart - minimal introduction to NetCDF from Fortran
 - **f_simple_2D.f90** - Basic 2D array in Fortran
 - **f_coord_vars.f90** - Coordinate variables in Fortran
 - **f_format_variants.f90** - Format variants in Fortran
@@ -154,10 +156,11 @@ Or view the online documentation at: https://intelligent-data-design-inc.github.
 
 ### Learning Path
 
-**For NetCDF Beginners:**
-1. Start with `simple_2D.c` / `f_simple_2D.f90` - Learn basic file operations
-2. Progress to `coord_vars.c` / `f_coord_vars.f90` - Add coordinate variables and metadata
-3. Explore `unlimited_dim.c` / `f_unlimited_dim.f90` - Work with time-series data
+**For Absolute Beginners:**
+1. Start with `quickstart.c` / `f_quickstart.f90` - Minimal introduction with just 6 data values
+2. Progress to `simple_2D.c` / `f_simple_2D.f90` - Learn basic file operations with larger arrays
+3. Add metadata with `coord_vars.c` / `f_coord_vars.f90` - Coordinate variables and attributes
+4. Explore `unlimited_dim.c` / `f_unlimited_dim.f90` - Work with time-series data
 
 **For Intermediate Users:**
 4. Study `format_variants.c` / `f_format_variants.f90` - Understand format choices
