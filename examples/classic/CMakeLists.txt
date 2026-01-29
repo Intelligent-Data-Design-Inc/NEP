@@ -41,6 +41,11 @@ set(CLASSIC_EXAMPLES
     var4d
 )
 
+# Copy validation script to build directory
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../validate_cdl.sh 
+               ${CMAKE_CURRENT_BINARY_DIR}/validate_cdl.sh 
+               COPYONLY)
+
 # Build each example using nc-config flags
 foreach(example ${CLASSIC_EXAMPLES})
     add_executable(${example} ${example}.c)
@@ -50,8 +55,16 @@ foreach(example ${CLASSIC_EXAMPLES})
     # NetCDF needs both libhdf5 and libhdf5_hl
     target_link_libraries(${example} PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl)
     
-    # Add as test
+    # Add as test (run example only)
     if(BUILD_TESTING)
-        add_test(NAME ${example} COMMAND ${example})
+        add_test(NAME ${example}_run COMMAND ${example})
     endif()
 endforeach()
+
+# Add CDL validation tests for examples with expected output
+if(BUILD_TESTING)
+    add_test(NAME quickstart_validate 
+             COMMAND bash validate_cdl.sh quickstart quickstart.nc 
+                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/quickstart_expected.cdl)
+    set_tests_properties(quickstart_validate PROPERTIES DEPENDS quickstart_run)
+endif()

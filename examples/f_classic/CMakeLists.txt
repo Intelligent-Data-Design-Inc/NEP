@@ -63,6 +63,11 @@ endforeach()
 
 # Add CDL validation tests for single-file examples
 if(BUILD_TESTING)
+    add_test(NAME f_quickstart_validate 
+             COMMAND bash validate_cdl.sh f_quickstart f_quickstart.nc 
+                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_quickstart_expected.cdl)
+    set_tests_properties(f_quickstart_validate PROPERTIES DEPENDS f_quickstart_run)
+    
     add_test(NAME f_simple_2D_validate 
              COMMAND bash validate_cdl.sh f_simple_2D f_simple_2D.nc 
                      ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_simple_2D_expected.cdl)

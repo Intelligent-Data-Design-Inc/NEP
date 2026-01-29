@@ -13,8 +13,11 @@ size_limits_SOURCES = size_limits.c
 unlimited_dim_SOURCES = unlimited_dim.c
 var4d_SOURCES = var4d.c
 
-# All examples run as tests
-TESTS = $(check_PROGRAMS)
+# Test wrapper scripts for CDL validation
+TESTS = test_quickstart.sh
 
-# Clean up NetCDF files created by examples
-CLEANFILES = *.nc
+# Include test scripts in distribution
+EXTRA_DIST = test_quickstart.sh
+
+# Clean up NetCDF files and generated CDL files
+CLEANFILES = *.nc *.cdl
