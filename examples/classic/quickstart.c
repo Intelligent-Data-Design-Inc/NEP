@@ -153,16 +153,22 @@ int main()
    
    /* Verify global attribute */
    char desc_in[100];
+   size_t desc_len;
+   if ((retval = nc_inq_attlen(ncid, NC_GLOBAL, "description", &desc_len)))
+      ERR(retval);
    if ((retval = nc_get_att_text(ncid, NC_GLOBAL, "description", desc_in)))
       ERR(retval);
-   desc_in[21] = '\0';
+   desc_in[desc_len] = '\0';
    printf("Verified: global attribute 'description' = '%s'\n", desc_in);
    
    /* Verify variable attribute */
    char units_in[100];
+   size_t units_len;
+   if ((retval = nc_inq_attlen(ncid, data_varid, "units", &units_len)))
+      ERR(retval);
    if ((retval = nc_get_att_text(ncid, data_varid, "units", units_in)))
       ERR(retval);
-   units_in[3] = '\0';
+   units_in[units_len] = '\0';
    printf("Verified: variable attribute 'units' = '%s'\n", units_in);
    
    /* Read the data back */
