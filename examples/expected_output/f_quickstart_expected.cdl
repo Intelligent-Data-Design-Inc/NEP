@@ -1,0 +1,16 @@
+netcdf f_quickstart {
+dimensions:
+	X = 2 ;
+	Y = 3 ;
+variables:
+	int data(X, Y) ;
+		data:units = "m/s" ;
+
+// global attributes:
+		:description = "a quickstart example" ;
+data:
+
+ data =
+  1, 2, 3,
+  4, 5, 6 ;
+}

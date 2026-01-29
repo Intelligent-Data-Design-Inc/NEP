@@ -24,6 +24,7 @@ Located in `netcdf-4/`:
 
 ### Classic NetCDF Examples (Fortran)
 Located in `f_classic/`:
+- **f_quickstart.f90** - Fortran version of quickstart - minimal introduction to NetCDF from Fortran
 - **f_simple_2D.f90** - Basic 2D array in Fortran
 - **f_coord_vars.f90** - Coordinate variables in Fortran
 - **f_format_variants.f90** - Format variants in Fortran

@@ -32,6 +32,7 @@ get_filename_component(HDF5_LIB_DIR "${HDF5_INCLUDE_DIR}/../lib" ABSOLUTE)
 
 # List of Fortran classic example programs
 set(F_CLASSIC_EXAMPLES
+    f_quickstart
     f_simple_2D
     f_coord_vars
     f_format_variants
