@@ -225,6 +225,15 @@ fi
 AC_SUBST([GEOTIFF_LIBS])
 AC_SUBST([TIFF_LIBS])
 
+# Check for NetCDF-C UDF self-loading support
+AC_MSG_CHECKING([whether NetCDF-C has UDF self-loading support])
+AC_CHECK_DECLS([NC_HAS_UDF_SELF_LOAD], 
+               [AC_DEFINE([HAVE_NETCDF_UDF_SELF_REGISTRATION], [1], 
+                          [Define if NetCDF-C has UDF self-loading support])
+                AC_MSG_RESULT([yes])], 
+               [AC_MSG_RESULT([no (older NetCDF-C version)])], 
+               [[#include <netcdf_meta.h>]])
+
 # Check for Doxygen if documentation is enabled
 if test "x$enable_docs" != "xno"; then
     AC_CHECK_PROG([DOXYGEN], [doxygen], [doxygen])

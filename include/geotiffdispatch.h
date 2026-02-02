@@ -15,14 +15,15 @@
 #include "config.h"
 #include "ncdispatch.h"
 #include "nc4internal.h"
+#include "NEP.h"
 
 #ifdef HAVE_GEOTIFF
 #include <geotiff/geotiff.h>
 #include <geotiff/geo_normalize.h>
 #endif
 
-/** GeoTIFF format uses UDF1 slot in NetCDF-C dispatch table */
-#define NC_FORMATX_NC_GEOTIFF NC_FORMATX_UDF1
+/** GeoTIFF format uses UDF0 and UDF1 slots (see NEP.h for slot allocation) */
+#define NC_FORMATX_NC_GEOTIFF NEP_UDF_GEOTIFF_STANDARD
 
 /** TIFF magic numbers for format detection */
 #define TIFF_MAGIC_LE 0x4949  /* Little-endian "II" */

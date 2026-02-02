@@ -13,7 +13,7 @@ target_link_libraries(ncsqueeze PRIVATE ${HDF5_C_${LIB_TYPE}_LIBRARY} ${NETCDF_L
 set_target_properties(ncsqueeze PROPERTIES 
     VERSION ${PROJECT_VERSION}
     SOVERSION 1
-    PUBLIC_HEADER "${CMAKE_SOURCE_DIR}/include/ncsqueeze.h"
+    PUBLIC_HEADER "${CMAKE_SOURCE_DIR}/include/ncsqueeze.h;${CMAKE_SOURCE_DIR}/include/NEP.h"
     INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
     INSTALL_RPATH_USE_LINK_PATH TRUE
 )

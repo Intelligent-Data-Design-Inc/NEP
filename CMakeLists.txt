@@ -75,6 +75,17 @@ if(NOT DOCS_ONLY)
     link_directories(${NETCDF_LIBRARY_DIRS})
     set (LINK_LIBS ${LINK_LIBS} ${NETCDF_LIBRARIES})
 
+    # Check for NetCDF-C UDF self-loading support
+    include(CheckSymbolExists)
+    set(CMAKE_REQUIRED_INCLUDES ${NETCDF_INCLUDE_DIRS})
+    check_symbol_exists(NC_HAS_UDF_SELF_LOAD "netcdf_meta.h" HAVE_NETCDF_UDF_SELF_REGISTRATION)
+    if(HAVE_NETCDF_UDF_SELF_REGISTRATION)
+        message(STATUS "NetCDF-C has UDF self-loading support")
+        add_definitions(-DHAVE_NETCDF_UDF_SELF_REGISTRATION)
+    else()
+        message(STATUS "NetCDF-C does not have UDF self-loading support (older version)")
+    endif()
+
     # Find NetCDF-Fortran (optional, for Fortran examples)
     if(ENABLE_FORTRAN)
         pkg_check_modules(NetCDF_Fortran netcdf-fortran)

@@ -3,6 +3,151 @@
 ### V1.6.0
 Implement Phase 4 of the GeoTIFF read layer for NEP v1.5.0: Extract and expose coordinate reference system (CRS) and georeferencing information following CF conventions. (see closed GitHub issue 59)
 
+### V1.5.4: NetCDF Self-Loading UDF Support
+
+NetCDF-C now supports self-loading UDFs via RC file configuration. This version adds initialization functions for GeoTIFF and CDF format handlers to enable automatic loading through the new UDF plugin system.
+
+#### Sprint 1: Master UDF Slot Allocation Header and Configure-Time Detection
+
+**Objective**: Create centralized UDF slot allocation and detect NetCDF-C UDF self-registration capability at configure time.
+
+**Background**: NEP must work with both old and new versions of NetCDF-C. Newer versions support UDF self-registration, while older versions require manual `nc_def_user_format()` calls. We detect capability by checking for `NC_HAS_UDF_SELF_LOAD` in `netcdf_meta.h`.
+
+**Tasks**:
+- **Configure-time detection** (CMake and Autotools):
+  - Check for `NC_HAS_UDF_SELF_LOAD` in `netcdf_meta.h` during configure
+  - Define `HAVE_NETCDF_UDF_SELF_REGISTRATION` if `NC_HAS_UDF_SELF_LOAD` is 1
+  - Add to `config.h` for use in source code
+  - CMake: Use `check_symbol_exists(NC_HAS_UDF_SELF_LOAD netcdf_meta.h HAVE_NETCDF_UDF_SELF_REGISTRATION)`
+  - Autotools: Use `AC_CHECK_DECLS([NC_HAS_UDF_SELF_LOAD], [], [], [[#include <netcdf_meta.h>]])`
+- Create `include/NEP.h` header file with master UDF slot mapping
+- Define constants for each format's UDF slot assignment:
+  - `NEP_UDF_GEOTIFF_STANDARD` → `NC_UDF0` (standard TIFF little-endian, magic: "II*")
+  - `NEP_UDF_GEOTIFF_BIGTIFF` → `NC_UDF1` (BigTIFF little-endian, magic: "II+")
+  - `NEP_UDF_CDF` → `NC_UDF2` (NASA CDF format, magic: "\xCD\xF3\x00\x01")
+  - `NEP_UDF_GRIB2` → `NC_UDF3` (GRIB2 format, reserved for future use)
+  - `NEP_UDF_RESERVED_4` through `NEP_UDF_RESERVED_9` for future formats
+- Add comprehensive Doxygen documentation explaining:
+  - UDF slot allocation strategy
+  - Magic number format for each slot
+  - How to add new format handlers
+  - NetCDF-C UDF system overview
+  - Conditional compilation strategy for UDF support
+- Update `include/geotiffdispatch.h` to include NEP.h and reference slot constants
+- Update `include/cdfdispatch.h` to include NEP.h and reference slot constants
+- Add NEP.h to build systems (CMake and Autotools)
+
+**Definition of Done**:
+- Configure detects `NC_HAS_UDF_SELF_LOAD` and sets `HAVE_NETCDF_UDF_SELF_REGISTRATION` appropriately
+- NEP.h created with all slot constants defined
+- Both dispatch headers updated to use NEP.h constants
+- Header compiles without errors
+- Documentation clearly explains slot allocation and conditional compilation
+
+#### Sprint 2: GeoTIFF Initialization Function
+
+**Objective**: Implement GeoTIFF UDF initialization function with conditional compilation for backward compatibility.
+
+**Implementation Strategy**:
+- **With UDF self-registration** (`HAVE_NETCDF_UDF_SELF_REGISTRATION` defined):
+  - NetCDF-C will call `NC_GEOTIFF_initialize()` automatically via RC file or dlopen
+  - Function should NOT call `nc_def_user_format()` - NetCDF handles registration
+  - Function can perform any other initialization needed
+- **Without UDF self-registration** (older NetCDF-C):
+  - `NC_GEOTIFF_initialize()` must call `nc_def_user_format()` to register dispatch table
+  - Applications must explicitly call `NC_GEOTIFF_initialize()` at startup
+
+**Tasks**:
+- Implement `NC_GEOTIFF_initialize()` function in `src/geotiffdispatch.c`
+- Function must be exported (not static) for dynamic loading via dlopen/LoadLibrary
+- Use conditional compilation:
+  ```c
+  #ifndef HAVE_NETCDF_UDF_SELF_REGISTRATION
+  /* Old NetCDF-C: manually register dispatch table */
+  nc_def_user_format(NEP_UDF_GEOTIFF_STANDARD | NC_NETCDF4, &GEOTIFF_dispatch_table, "II*");
+  nc_def_user_format(NEP_UDF_GEOTIFF_BIGTIFF | NC_NETCDF4, &GEOTIFF_dispatch_table, "II+");
+  #endif
+  /* New NetCDF-C: registration handled by NetCDF, no nc_def_user_format() needed */
+  ```
+- Register both TIFF variants when using old NetCDF-C:
+  - **UDF0 slot**: Standard TIFF little-endian (magic: "II*")
+  - **UDF1 slot**: BigTIFF little-endian (magic: "II+")
+- Same dispatch table handles both TIFF variants (format detection in open function)
+- Return `NC_NOERR` on success, appropriate error code on failure
+- Add comprehensive Doxygen documentation explaining conditional behavior
+- Update all GeoTIFF test programs to call `NC_GEOTIFF_initialize()` at startup
+- Verify existing GeoTIFF tests continue to pass with both old and new NetCDF-C
+
+**Pattern Reference**: See `test_geotiff/tst_*.c` files for current registration pattern
+
+**Definition of Done**:
+- `NC_GEOTIFF_initialize()` implemented with conditional compilation
+- Works correctly with both old and new NetCDF-C versions
+- Both TIFF variants registered correctly (when needed)
+- All existing GeoTIFF tests pass
+- Function documented with Doxygen explaining both code paths
+
+#### Sprint 3: CDF Initialization Function and Integration Testing
+
+**Objective**: Implement CDF UDF initialization function with conditional compilation and validate complete UDF self-loading system.
+
+**Implementation Strategy**:
+- **With UDF self-registration** (`HAVE_NETCDF_UDF_SELF_REGISTRATION` defined):
+  - NetCDF-C will call `NC_CDF_initialize()` automatically via RC file or dlopen
+  - Function should NOT call `nc_def_user_format()` - NetCDF handles registration
+  - Function can perform any other initialization needed
+- **Without UDF self-registration** (older NetCDF-C):
+  - `NC_CDF_initialize()` must call `nc_def_user_format()` to register dispatch table
+  - Applications must explicitly call `NC_CDF_initialize()` at startup
+
+**Tasks**:
+- Implement `NC_CDF_initialize()` function in `src/cdfdispatch.c`
+- Function must be exported (not static) for dynamic loading
+- Use conditional compilation:
+  ```c
+  #ifndef HAVE_NETCDF_UDF_SELF_REGISTRATION
+  /* Old NetCDF-C: manually register dispatch table */
+  nc_def_user_format(NEP_UDF_CDF | NC_NETCDF4, &CDF_dispatch_table, "\xCD\xF3\x00\x01");
+  #endif
+  /* New NetCDF-C: registration handled by NetCDF, no nc_def_user_format() needed */
+  ```
+- Register CDF format when using old NetCDF-C:
+  - **UDF2 slot**: NASA CDF format with CDF3 magic number (0xCDF30001)
+  - Magic bytes: `\xCD\xF3\x00\x01` for automatic format detection
+  - Note: CDF files can have magic bytes 0xCDF30001 (CDF3) or 0xCDF26002 (CDF2.6)
+- Return `NC_NOERR` on success, appropriate error code on failure
+- Add comprehensive Doxygen documentation explaining conditional behavior
+- Update CDF test programs to call `NC_CDF_initialize()` at startup
+- Create integration test validating all initialization functions work with both old and new NetCDF-C
+- Add test for programmatic UDF registration (old NetCDF-C path)
+- Document RC file configuration in user guide (new NetCDF-C only):
+  ```ini
+  # Example .ncrc configuration for GeoTIFF (requires HAVE_NETCDF_UDF_SELF_REGISTRATION)
+  NETCDF.UDF0.LIBRARY=/usr/local/lib/libnep.so
+  NETCDF.UDF0.INIT=NC_GEOTIFF_initialize
+  NETCDF.UDF0.MAGIC=II*
+  
+  # Example .ncrc configuration for CDF
+  NETCDF.UDF2.LIBRARY=/usr/local/lib/libnep.so
+  NETCDF.UDF2.INIT=NC_CDF_initialize
+  NETCDF.UDF2.MAGIC=\xCD\xF3\x00\x01
+  ```
+- Update build documentation with UDF self-loading examples
+- Reference NetCDF-C UDF documentation for configuration details
+- Document backward compatibility strategy
+
+**Pattern Reference**: See `test/tst_cdf_udf.c:195-200` for current registration pattern
+
+**Definition of Done**:
+- `NC_CDF_initialize()` implemented with conditional compilation
+- Works correctly with both old and new NetCDF-C versions
+- CDF format registered correctly in UDF2 slot (when needed)
+- All existing CDF tests pass
+- Integration test validates all initialization functions with both NetCDF-C versions
+- Documentation updated with RC file examples and backward compatibility notes
+- No slot conflicts between GeoTIFF and CDF
+
+
 ### V1.5.3
 #### Sprint 1: Add C Quickstart Example
 **Detailed Plan**: See `docs/plan/v1.5.3-sprint1-c-quickstart.md`
