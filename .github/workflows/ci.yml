@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       HDF5_PLUGIN_PATH: ${{ github.workspace }}/netcdf-c-install/hdf5/lib/plugin
-      LD_LIBRARY_PATH: $GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH
+      LD_LIBRARY_PATH: ${{ github.workspace }}/hdf5-install/lib:${{ github.workspace }}/netcdf-c-install/lib
     steps:
       - name: Checkout NEP code
         uses: actions/checkout@v4
@@ -82,8 +82,9 @@ jobs:
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
           export CFLAGS="-g -O2 -Wall -Werror"
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -Wl,-rpath,$GITHUB_WORKSPACE/hdf5-install/lib -Wl,-rpath,$GITHUB_WORKSPACE/netcdf-c-install/lib"
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
+          export LIBS="-lnetcdf -lhdf5_hl -lhdf5"
           ./configure --enable-geotiff --disable-fortran --disable-bzip2 --disable-lz4 --enable-examples
 
       - name: Build NEP
