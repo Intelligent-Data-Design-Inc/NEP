@@ -14,15 +14,15 @@
  * only provide 2 slots (UDF0-UDF1). NEP adapts to the available slots:
  * 
  * **With newer NetCDF-C (NC_UDF2 defined):**
- * - **UDF0**: GeoTIFF standard TIFF (little-endian, magic: "II*")
- * - **UDF1**: GeoTIFF BigTIFF (little-endian, magic: "II+")
+ * - **UDF0**: GeoTIFF BigTIFF (little-endian, magic: "II+")
+ * - **UDF1**: GeoTIFF standard TIFF (little-endian, magic: "II*")
  * - **UDF2**: NASA CDF format (magic: 0xCDF30001)
  * - **UDF3**: GRIB2 format (reserved for future use)
  * - **UDF4-UDF9**: Reserved for future format extensions
  * 
  * **With older NetCDF-C (only UDF0-UDF1 available):**
- * - **UDF0**: NASA CDF format OR GeoTIFF standard TIFF (conflict!)
- * - **UDF1**: GRIB2 format OR GeoTIFF BigTIFF (conflict!)
+ * - **UDF0**: NASA CDF format OR GeoTIFF BigTIFF (conflict!)
+ * - **UDF1**: GRIB2 format OR GeoTIFF standard TIFF (conflict!)
  * 
  * Note: With older NetCDF-C, only one format can be used at a time due to
  * slot conflicts. Applications must choose which format to enable.
@@ -87,11 +87,11 @@
  * @{
  */
 
-/** GeoTIFF standard TIFF format (little-endian) uses UDF0 slot */
-#define NEP_UDF_GEOTIFF_STANDARD NC_UDF0
+/** GeoTIFF standard TIFF format (little-endian) uses UDF1 slot */
+#define NEP_UDF_GEOTIFF_STANDARD NC_UDF1
 
-/** GeoTIFF BigTIFF format (little-endian) uses UDF1 slot */
-#define NEP_UDF_GEOTIFF_BIGTIFF NC_UDF1
+/** GeoTIFF BigTIFF format (little-endian) uses UDF0 slot */
+#define NEP_UDF_GEOTIFF_BIGTIFF NC_UDF0
 
 /* Extended UDF slots (UDF2-UDF9) are only available in newer NetCDF-C versions.
  * For older versions, we fall back to using available slots. */

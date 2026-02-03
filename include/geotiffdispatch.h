@@ -22,8 +22,8 @@
 #include <geotiff/geo_normalize.h>
 #endif
 
-/** GeoTIFF format uses UDF0 and UDF1 slots (see NEP.h for slot allocation) */
-#define NC_FORMATX_NC_GEOTIFF NEP_UDF_GEOTIFF_STANDARD
+/** GeoTIFF format uses UDF1 slot for dispatch table model field (see NEP.h for slot allocation) */
+#define NC_FORMATX_NC_GEOTIFF NC_FORMATX_UDF1
 
 /** TIFF magic numbers for format detection */
 #define TIFF_MAGIC_LE 0x4949  /* Little-endian "II" */

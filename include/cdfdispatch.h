@@ -15,8 +15,12 @@
 #include "ncdispatch.h"
 #include "NEP.h"
 
-/** CDF format uses UDF2 slot (see NEP.h for slot allocation) */
-#define NC_FORMATX_NC_CDF NEP_UDF_CDF
+/** CDF format uses UDF2 slot for dispatch table model field (see NEP.h for slot allocation) */
+#ifdef NC_FORMATX_UDF2
+#define NC_FORMATX_NC_CDF NC_FORMATX_UDF2
+#else
+#define NC_FORMATX_NC_CDF NC_FORMATX_UDF0
+#endif
 
 /** This is the max number of dimensions for a CDF SD dataset (from
  * CDF documentation). */
