@@ -27,6 +27,84 @@ on:
     branches: [ "main" ]
 
 jobs:
+  # Test against netcdf-c t1 branch from edhartnett fork
+  test-netcdf-c-t1:
+    name: Test with netcdf-c t1 branch (edhartnett fork)
+    runs-on: ubuntu-latest
+    env:
+      HDF5_PLUGIN_PATH: ${{ github.workspace }}/netcdf-c-install/hdf5/lib/plugin
+      LD_LIBRARY_PATH: $GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH
+    steps:
+      - name: Checkout NEP code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake make wget zlib1g-dev libtiff-dev libgeotiff-dev m4 autoconf automake libtool
+
+      - name: Cache HDF5 install
+        id: cache-hdf5-t1
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/hdf5-install
+          key: hdf5-1.14.6-t1-${{ runner.os }}-1
+      
+      - name: Download and build HDF5 1.14.6
+        if: steps.cache-hdf5-t1.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5-1.14.6.tar.gz &> /dev/null
+          tar -xzf hdf5-1.14.6.tar.gz
+          cd hdf5-hdf5-1.14.6
+          mkdir build && cd build
+          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF ..
+          make -j$(nproc)
+          make install
+
+      - name: Checkout and build netcdf-c t1 branch
+        run: |
+          git clone https://github.com/edhartnett/netcdf-c.git netcdf-c-t1
+          cd netcdf-c-t1
+          git checkout t1
+          echo "Building netcdf-c from t1 branch (commit: $(git rev-parse HEAD))"
+          autoreconf -if
+          export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib"
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$LD_LIBRARY_PATH"
+          ./configure --prefix=$GITHUB_WORKSPACE/netcdf-c-install --enable-netcdf-4 --enable-shared
+          make -j$(nproc)
+          make install
+
+      - name: Configure NEP with netcdf-c t1
+        run: |
+          autoreconf -i
+          export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
+          export CFLAGS="-g -O2 -Wall -Werror"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib"
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
+          ./configure --enable-geotiff --disable-fortran --disable-bzip2 --disable-lz4 --enable-examples
+
+      - name: Build NEP
+        run: make -j$(nproc)
+
+      - name: Copy test data files
+        run: |
+          cp -f test/data/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif test_geotiff/
+          cp -f test/data/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif test_geotiff/
+          cp -f test/data/ABBA_2022_C61_HNL.tif test_geotiff/
+
+      - name: Run tests with netcdf-c t1
+        run: |
+          export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
+          export HDF5_PLUGIN_PATH="$GITHUB_WORKSPACE/netcdf-c-install/hdf5/lib/plugin"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib"
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
+          make check || (echo "Tests failed with netcdf-c t1 branch! Test logs:"; cat test_geotiff/test-suite.log 2>/dev/null || true; exit 1)
+          echo "✅ All tests passed with netcdf-c t1 branch!"
+
   # Memory leak testing with AddressSanitizer
   memory-leak-check:
     name: Memory Leak Testing (AddressSanitizer)
