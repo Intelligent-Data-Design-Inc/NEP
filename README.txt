@@ -73,7 +73,7 @@ Scientific data producers need better tools to handle growing data volumes:
 - **Multi-Format Support**: Work with both NetCDF and CDF files using a single API
 - **Production Ready**: Full CMake and Autotools build support, comprehensive test suites, CI validation
 - **HPC Optimized**: Designed for large-scale scientific computing with Spack package manager support
-- **Cost Savings**: Reduce storage and bandwidth costs without sacrificing data access performance
+- **Cost Savings**: Reduce storage and bandwidth costs without sacrificing data access performance.
 
 ## Compression Performance
 
