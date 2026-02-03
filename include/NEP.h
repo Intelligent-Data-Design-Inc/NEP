@@ -9,14 +9,23 @@
  * 
  * @section udf_slots UDF Slot Allocation Strategy
  * 
- * NetCDF-C provides 10 user-defined format slots (UDF0-UDF9) for custom
- * format handlers. NEP uses these slots as follows:
+ * NetCDF-C provides user-defined format slots for custom format handlers.
+ * Newer versions (4.9.3+) provide 10 slots (UDF0-UDF9), while older versions
+ * only provide 2 slots (UDF0-UDF1). NEP adapts to the available slots:
  * 
+ * **With newer NetCDF-C (NC_UDF2 defined):**
  * - **UDF0**: GeoTIFF standard TIFF (little-endian, magic: "II*")
  * - **UDF1**: GeoTIFF BigTIFF (little-endian, magic: "II+")
  * - **UDF2**: NASA CDF format (magic: 0xCDF30001)
  * - **UDF3**: GRIB2 format (reserved for future use)
  * - **UDF4-UDF9**: Reserved for future format extensions
+ * 
+ * **With older NetCDF-C (only UDF0-UDF1 available):**
+ * - **UDF0**: NASA CDF format OR GeoTIFF standard TIFF (conflict!)
+ * - **UDF1**: GRIB2 format OR GeoTIFF BigTIFF (conflict!)
+ * 
+ * Note: With older NetCDF-C, only one format can be used at a time due to
+ * slot conflicts. Applications must choose which format to enable.
  * 
  * @section magic_numbers Magic Number Detection
  * 
@@ -84,29 +93,53 @@
 /** GeoTIFF BigTIFF format (little-endian) uses UDF1 slot */
 #define NEP_UDF_GEOTIFF_BIGTIFF NC_UDF1
 
+/* Extended UDF slots (UDF2-UDF9) are only available in newer NetCDF-C versions.
+ * For older versions, we fall back to using available slots. */
+#ifdef NC_UDF2
 /** NASA CDF format uses UDF2 slot */
 #define NEP_UDF_CDF NC_UDF2
+#else
+/** NASA CDF format uses UDF0 slot (fallback for older NetCDF-C) */
+#define NEP_UDF_CDF NC_UDF0
+#endif
 
+#ifdef NC_UDF3
 /** GRIB2 format uses UDF3 slot (reserved for future implementation) */
 #define NEP_UDF_GRIB2 NC_UDF3
+#else
+/** GRIB2 format uses UDF1 slot (fallback for older NetCDF-C) */
+#define NEP_UDF_GRIB2 NC_UDF1
+#endif
 
+#ifdef NC_UDF4
 /** Reserved for future format - UDF4 slot */
 #define NEP_UDF_RESERVED_4 NC_UDF4
+#endif
 
+#ifdef NC_UDF5
 /** Reserved for future format - UDF5 slot */
 #define NEP_UDF_RESERVED_5 NC_UDF5
+#endif
 
+#ifdef NC_UDF6
 /** Reserved for future format - UDF6 slot */
 #define NEP_UDF_RESERVED_6 NC_UDF6
+#endif
 
+#ifdef NC_UDF7
 /** Reserved for future format - UDF7 slot */
 #define NEP_UDF_RESERVED_7 NC_UDF7
+#endif
 
+#ifdef NC_UDF8
 /** Reserved for future format - UDF8 slot */
 #define NEP_UDF_RESERVED_8 NC_UDF8
+#endif
 
+#ifdef NC_UDF9
 /** Reserved for future format - UDF9 slot */
 #define NEP_UDF_RESERVED_9 NC_UDF9
+#endif
 
 /** @} */ /* end of nep_udf_slots group */
 
