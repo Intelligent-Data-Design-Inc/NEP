@@ -104,8 +104,13 @@ extern "C" {
     NC_GEOTIFF_get_vara(int ncid, int varid, const size_t *start, const size_t *count,
                         void *value, nc_type);
 
+#ifdef HAVE_NETCDF_UDF_SELF_REGISTRATION
+    extern NC_Dispatch*
+    NC_GEOTIFF_initialize(void);
+#else
     extern int
     NC_GEOTIFF_initialize(void);
+#endif
 
     extern int
     NC_GEOTIFF_finalize(void);

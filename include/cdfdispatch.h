@@ -62,8 +62,13 @@ extern "C" {
     NC_CDF_get_vara(int ncid, int varid, const size_t *start, const size_t *count,
                      void *value, nc_type);
 
+#ifdef HAVE_NETCDF_UDF_SELF_REGISTRATION
+    extern NC_Dispatch*
+    NC_CDF_initialize(void);
+#else
     extern int
     NC_CDF_initialize(void);
+#endif
 
     extern int
     NC_CDF_finalize(void);
