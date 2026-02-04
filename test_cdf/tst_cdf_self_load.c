@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <netcdf.h>
 
 #ifdef HAVE_CDF
@@ -63,35 +64,121 @@ static int test_self_load_initialization(void)
 }
 
 /**
- * @brief Test opening CDF file after self-load initialization
+ * @brief Test self-loading behavior explanation
  * 
- * Validates that CDF files can be opened through the NetCDF API
- * after calling NC_CDF_initialize() with self-loading support.
+ * When HAVE_NETCDF_UDF_SELF_REGISTRATION is defined, the initialization
+ * function does NOT register the UDF handler. Instead, NetCDF-C's plugin
+ * system handles registration via RC file or dlopen. This test documents
+ * the expected behavior.
  * 
  * @return 0 on success, non-zero on failure
  */
-static int test_open_after_self_load(void)
+static int test_self_load_behavior(void)
 {
-    int ncid, ret;
-    int ndims, nvars, ngatts, unlimdimid;
-    char varname[NC_MAX_NAME + 1];
+    printf("\n*** Testing self-loading behavior...\n");
     
-    printf("\n*** Testing CDF file open after self-load initialization...\n");
+#ifdef HAVE_NETCDF_UDF_SELF_REGISTRATION
+    printf("    With HAVE_NETCDF_UDF_SELF_REGISTRATION defined:\n");
+    printf("    - NC_CDF_initialize() does NOT call nc_def_user_format()\n");
+    printf("    - UDF registration happens via NetCDF-C plugin system\n");
+    printf("    - Applications configure via RC file (.ncrc):\n");
+    printf("        NETCDF.UDF2.LIBRARY=/path/to/libnep.so\n");
+    printf("        NETCDF.UDF2.INIT=NC_CDF_initialize\n");
+    printf("        NETCDF.UDF2.MAGIC=\\xCD\\xF3\\x00\\x01\n");
+    printf("    - NetCDF-C calls initialization function automatically\n");
+    printf("    ✓ Self-loading behavior documented\n");
+#else
+    printf("    Without HAVE_NETCDF_UDF_SELF_REGISTRATION:\n");
+    printf("    - NC_CDF_initialize() calls nc_def_user_format()\n");
+    printf("    - Applications must call NC_CDF_initialize() explicitly\n");
+    printf("    - Manual registration required at startup\n");
+    printf("    ✓ Manual registration behavior documented\n");
+#endif
+    
+    return 0;
+}
+
+/**
+ * @brief Test with RC file configuration
+ * 
+ * Creates a .ncrc file with UDF configuration and validates that
+ * CDF files can be opened through NetCDF-C's self-loading mechanism.
+ * 
+ * @return 0 on success, non-zero on failure
+ */
+static int test_with_rc_file(void)
+{
+    int ncid, varid, ret;
+    int ndims, nvars, ngatts, unlimdimid;
+    float data[10];
+    size_t start[1] = {0};
+    size_t count[1] = {10};
+    FILE *rc;
+    const char *lib_path;
+    int i;
+    
+    printf("\n*** Testing with RC file configuration...\n");
     
 #ifndef HAVE_NETCDF_UDF_SELF_REGISTRATION
-    printf("    Skipping test (requires HAVE_NETCDF_UDF_SELF_REGISTRATION)\n");
+    printf("    Skipping (requires HAVE_NETCDF_UDF_SELF_REGISTRATION)\n");
     return 0;
 #endif
     
-    /* Open CDF file through NetCDF API */
+    /* Get library path from build system */
+#ifdef NEP_CDF_LIB_PATH
+    lib_path = NEP_CDF_LIB_PATH;
+#else
+    lib_path = getenv("NEP_CDF_LIB_PATH");
+    if (!lib_path)
+    {
+        printf("    ERROR: NEP_CDF_LIB_PATH not defined\n");
+        printf("    Build system must provide library path\n");
+        return 1;
+    }
+#endif
+    
+    printf("    Using library: %s\n", lib_path);
+    
+    /* Verify library exists */
+    if (access(lib_path, F_OK) != 0)
+    {
+        printf("    ERROR: Library not found: %s\n", lib_path);
+        return 1;
+    }
+    
+    /* Create .ncrc in current directory */
+    rc = fopen(".ncrc", "w");
+    if (!rc)
+    {
+        printf("    ERROR: Failed to create .ncrc file\n");
+        return 1;
+    }
+    
+    fprintf(rc, "NETCDF.UDF2.LIBRARY=%s\n", lib_path);
+    fprintf(rc, "NETCDF.UDF2.INIT=NC_CDF_initialize\n");
+    fprintf(rc, "NETCDF.UDF2.MAGIC=\\xCD\\xF3\\x00\\x01\n");
+    fclose(rc);
+    printf("    ✓ Created .ncrc configuration\n");
+    
+    /* Initialize - NetCDF-C will read .ncrc and load plugin */
+    ret = NC_CDF_initialize();
+    if (ret != NC_NOERR)
+    {
+        printf("    ERROR: Initialization failed: %s\n", nc_strerror(ret));
+        remove(".ncrc");
+        return 1;
+    }
+    
+    /* Try to open CDF file through NetCDF API */
     printf("    Opening file: %s\n", TEST_FILE);
     ret = nc_open(TEST_FILE, NC_NOWRITE, &ncid);
     if (ret != NC_NOERR)
     {
         printf("    ERROR: Failed to open CDF file: %s\n", nc_strerror(ret));
+        remove(".ncrc");
         return 1;
     }
-    printf("    ✓ Successfully opened CDF file\n");
+    printf("    ✓ Successfully opened CDF file via self-loading\n");
     
     /* Query file metadata to validate it opened correctly */
     ret = nc_inq(ncid, &ndims, &nvars, &ngatts, &unlimdimid);
@@ -99,56 +186,66 @@ static int test_open_after_self_load(void)
     {
         printf("    ERROR: Failed to query file metadata: %s\n", nc_strerror(ret));
         nc_close(ncid);
+        remove(".ncrc");
         return 1;
     }
     
-    printf("    File metadata:\n");
-    printf("      Dimensions: %d\n", ndims);
-    printf("      Variables: %d\n", nvars);
-    printf("      Global attributes: %d\n", ngatts);
-    printf("    ✓ Successfully queried file metadata\n");
+    printf("    File metadata: %d dims, %d vars, %d global attrs\n", ndims, nvars, ngatts);
     
     /* Validate expected structure (from tst_cdf_basic.c) */
-    if (ndims < 1)
+    if (ndims < 1 || nvars != 1)
     {
-        printf("    ERROR: Expected at least 1 dimension, found %d\n", ndims);
+        printf("    ERROR: Unexpected file structure\n");
         nc_close(ncid);
+        remove(".ncrc");
         return 1;
     }
     
-    if (nvars != 1)
-    {
-        printf("    ERROR: Expected 1 variable, found %d\n", nvars);
-        nc_close(ncid);
-        return 1;
-    }
-    
-    /* Validate variable name */
-    ret = nc_inq_varname(ncid, 0, varname);
+    /* Get variable ID and read data */
+    ret = nc_inq_varid(ncid, "temperature", &varid);
     if (ret != NC_NOERR)
     {
-        printf("    ERROR: Failed to query variable name: %s\n", nc_strerror(ret));
+        printf("    ERROR: Failed to get variable ID: %s\n", nc_strerror(ret));
         nc_close(ncid);
+        remove(".ncrc");
         return 1;
     }
     
-    if (strcmp(varname, "temperature") != 0)
+    ret = nc_get_vara_float(ncid, varid, start, count, data);
+    if (ret != NC_NOERR)
     {
-        printf("    ERROR: Expected variable 'temperature', found '%s'\n", varname);
+        printf("    ERROR: Failed to read data: %s\n", nc_strerror(ret));
         nc_close(ncid);
+        remove(".ncrc");
         return 1;
     }
     
-    printf("    ✓ File structure validated (variable: %s)\n", varname);
+    /* Validate data values (from tst_cdf_basic.c: 20.0 to 24.5) */
+    for (i = 0; i < 10; i++)
+    {
+        float expected = 20.0f + (float)i * 0.5f;
+        if (data[i] != expected)
+        {
+            printf("    ERROR: Expected data[%d] = %.1f, found %.1f\n", i, expected, data[i]);
+            nc_close(ncid);
+            remove(".ncrc");
+            return 1;
+        }
+    }
+    printf("    ✓ File metadata and data validated\n");
     
     /* Close file */
     ret = nc_close(ncid);
     if (ret != NC_NOERR)
     {
         printf("    ERROR: Failed to close file: %s\n", nc_strerror(ret));
+        remove(".ncrc");
         return 1;
     }
-    printf("    ✓ Successfully closed file\n");
+    
+    /* Clean up .ncrc */
+    remove(".ncrc");
+    printf("    ✓ Cleaned up .ncrc\n");
     
     return 0;
 }
@@ -194,79 +291,6 @@ static int test_multiple_initializations(void)
 }
 
 /**
- * @brief Test reading data after self-load initialization
- * 
- * Validates that data can be read from CDF files through the NetCDF API
- * after self-load initialization.
- * 
- * @return 0 on success, non-zero on failure
- */
-static int test_read_data_after_self_load(void)
-{
-    int ncid, varid, ret;
-    float data[10];
-    size_t start[1] = {0};
-    size_t count[1] = {10};
-    int i;
-    
-    printf("\n*** Testing data reading after self-load initialization...\n");
-    
-#ifndef HAVE_NETCDF_UDF_SELF_REGISTRATION
-    printf("    Skipping test (requires HAVE_NETCDF_UDF_SELF_REGISTRATION)\n");
-    return 0;
-#endif
-    
-    /* Open file */
-    ret = nc_open(TEST_FILE, NC_NOWRITE, &ncid);
-    if (ret != NC_NOERR)
-    {
-        printf("    ERROR: Failed to open file: %s\n", nc_strerror(ret));
-        return 1;
-    }
-    
-    /* Get variable ID */
-    ret = nc_inq_varid(ncid, "temperature", &varid);
-    if (ret != NC_NOERR)
-    {
-        printf("    ERROR: Failed to get variable ID: %s\n", nc_strerror(ret));
-        nc_close(ncid);
-        return 1;
-    }
-    
-    /* Read data */
-    ret = nc_get_vara_float(ncid, varid, start, count, data);
-    if (ret != NC_NOERR)
-    {
-        printf("    ERROR: Failed to read data: %s\n", nc_strerror(ret));
-        nc_close(ncid);
-        return 1;
-    }
-    printf("    ✓ Successfully read data\n");
-    
-    /* Validate data values (from tst_cdf_basic.c: 20.0 to 24.5) */
-    printf("    Data values: ");
-    for (i = 0; i < 10; i++)
-    {
-        float expected = 20.0f + (float)i * 0.5f;
-        if (data[i] != expected)
-        {
-            printf("\n    ERROR: Expected data[%d] = %.1f, found %.1f\n", i, expected, data[i]);
-            nc_close(ncid);
-            return 1;
-        }
-        if (i < 5)
-            printf("%.1f ", data[i]);
-    }
-    printf("...\n");
-    printf("    ✓ Data values validated\n");
-    
-    /* Close file */
-    nc_close(ncid);
-    
-    return 0;
-}
-
-/**
  * @brief Main test function
  * 
  * Runs all self-loading tests for CDF UDF handler.
@@ -292,13 +316,13 @@ int main(void)
     if (test_self_load_initialization() != 0)
         errors++;
     
-    if (test_open_after_self_load() != 0)
+    if (test_self_load_behavior() != 0)
+        errors++;
+    
+    if (test_with_rc_file() != 0)
         errors++;
     
     if (test_multiple_initializations() != 0)
-        errors++;
-    
-    if (test_read_data_after_self_load() != 0)
         errors++;
     
     /* Print summary */

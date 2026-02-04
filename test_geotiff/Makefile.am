@@ -82,6 +82,9 @@ TESTS = tst_geotiff_handle tst_geotiff_metadata tst_phase2_acceptance \
 	tst_geotiff_errors tst_geotiff_edge_cases tst_simple_geotiff \
 	tst_geotiff_self_load
 
+# Set environment variable for self-loading test to find library
+TESTS_ENVIRONMENT = NEP_GEOTIFF_LIB_PATH=$(abs_top_builddir)/src/.libs/libncgeotiff.so
+
 endif # HAVE_GEOTIFF
 
 # Extra files to include in distribution

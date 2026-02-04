@@ -37,6 +37,9 @@ target_link_libraries(tst_cdf_self_load
     ${HDF5_LIBRARIES}
     ${CDF_LIBRARY})
 target_include_directories(tst_cdf_self_load PRIVATE ${CDF_INCLUDE_DIR})
+# Pass library path to test at compile time for .ncrc generation
+target_compile_definitions(tst_cdf_self_load PRIVATE
+    NEP_CDF_LIB_PATH="$<TARGET_FILE:nccdf>")
 set_target_properties(tst_cdf_self_load PROPERTIES
     INSTALL_RPATH "${CDF_LIB_DIR}"
     BUILD_RPATH "${CDF_LIB_DIR}")

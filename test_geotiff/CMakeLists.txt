@@ -107,6 +107,9 @@ if(HAVE_GEOTIFF)
         ${HDF5_LIBRARIES}
         ${GEOTIFF_LIBRARY} 
         ${TIFF_LIBRARY})
+    # Pass library path to test at compile time for .ncrc generation
+    target_compile_definitions(tst_geotiff_self_load PRIVATE
+        NEP_GEOTIFF_LIB_PATH="$<TARGET_FILE:ncgeotiff>")
     add_test(NAME tst_geotiff_self_load COMMAND tst_geotiff_self_load)
     set_tests_properties(tst_geotiff_self_load PROPERTIES 
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
