@@ -308,6 +308,51 @@ AC_SEARCH_LIBS([nc_create], [netcdf], [],
                             [AC_MSG_ERROR([Can't find or link to the netCDF C library, set CPPFLAGS/LDFLAGS.])])
 AC_CHECK_HEADERS([netcdf.h netcdf_meta.h])
 
+# Find ncdump from the NetCDF-C installation
+# Extract the library directory from LDFLAGS to find the bin directory
+AC_MSG_CHECKING([for ncdump from NetCDF-C])
+NCDUMP=""
+
+# Extract -L paths from LDFLAGS to find NetCDF-C lib directory
+for flag in $LDFLAGS; do
+    case $flag in
+        -L*)
+            libdir=`echo $flag | sed 's/^-L//'`
+            # Check if this directory contains libnetcdf
+            if test -f "$libdir/libnetcdf.so" || test -f "$libdir/libnetcdf.a" || test -f "$libdir/libnetcdf.dylib"; then
+                # Derive bin directory from lib directory (typically ../bin)
+                bindir=`dirname "$libdir"`/bin
+                if test -x "$bindir/ncdump"; then
+                    NCDUMP="$bindir/ncdump"
+                    break
+                fi
+            fi
+            ;;
+    esac
+done
+
+# Fallback: try nc-config if we didn't find it via LDFLAGS
+if test "x$NCDUMP" = "x"; then
+    AC_CHECK_PROG([NC_CONFIG], [nc-config], [nc-config])
+    if test "x$NC_CONFIG" != "x"; then
+        NETCDF_PREFIX=`$NC_CONFIG --prefix`
+        if test -x "${NETCDF_PREFIX}/bin/ncdump"; then
+            NCDUMP="${NETCDF_PREFIX}/bin/ncdump"
+        fi
+    fi
+fi
+
+# Last resort: try to find ncdump in PATH
+if test "x$NCDUMP" = "x"; then
+    AC_PATH_PROG([NCDUMP], [ncdump])
+fi
+
+if test "x$NCDUMP" = "x"; then
+    AC_MSG_ERROR([ncdump not found. Please ensure NetCDF-C tools are installed and in PATH.])
+fi
+AC_MSG_RESULT([$NCDUMP])
+AC_SUBST([NCDUMP])
+
 # Do we have netCDF-4? If not, we're done.
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([#include "netcdf_meta.h"],
 [[#if !NC_HAS_HDF5
@@ -379,6 +424,7 @@ fi
 AC_CONFIG_FILES([test/run_tests.sh], [chmod ugo+x test/run_tests.sh])
 AC_CONFIG_FILES([ftest/run_tests.sh], [chmod ugo+x ftest/run_tests.sh])
 AC_CONFIG_FILES([test_h5/run_tests.sh], [chmod ugo+x test_h5/run_tests.sh])
+AC_CONFIG_FILES([examples/validate_cdl.sh], [chmod ugo+x examples/validate_cdl.sh])
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
