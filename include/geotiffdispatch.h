@@ -115,6 +115,20 @@ extern "C" {
     extern int
     NC_GEOTIFF_finalize(void);
 
+/** Helper macros for calling NC_GEOTIFF_initialize() portably.
+ *  When self-registration is available, initialize returns NC_Dispatch*.
+ *  When not, it returns int (NC_NOERR on success). */
+#ifdef HAVE_NETCDF_UDF_SELF_REGISTRATION
+#define GEOTIFF_INIT_OK() (NC_GEOTIFF_initialize() != NULL)
+#define GEOTIFF_INIT_AND_ASSIGN(ret) do { \
+        NC_Dispatch *_d = NC_GEOTIFF_initialize(); \
+        (ret) = (_d != NULL) ? NC_NOERR : NC_ENOTNC; \
+    } while(0)
+#else
+#define GEOTIFF_INIT_OK() (NC_GEOTIFF_initialize() == NC_NOERR)
+#define GEOTIFF_INIT_AND_ASSIGN(ret) do { (ret) = NC_GEOTIFF_initialize(); } while(0)
+#endif
+
     extern int
     NC_GEOTIFF_detect_format(const char *path, int *is_geotiff);
 

@@ -52,10 +52,10 @@ static int test_self_load_initialization(void)
 #endif
     
     /* Call initialization function */
-    ret = NC_GEOTIFF_initialize();
+    GEOTIFF_INIT_AND_ASSIGN(ret);
     if (ret != NC_NOERR)
     {
-        printf("    ERROR: NC_GEOTIFF_initialize() failed: %s\n", nc_strerror(ret));
+        printf("    ERROR: NC_GEOTIFF_initialize() failed\n");
         return 1;
     }
     
@@ -157,10 +157,10 @@ static int test_with_rc_file(void)
     printf("    ✓ Created .ncrc configuration\n");
     
     /* Initialize - NetCDF-C will read .ncrc and load plugin */
-    ret = NC_GEOTIFF_initialize();
+    GEOTIFF_INIT_AND_ASSIGN(ret);
     if (ret != NC_NOERR)
     {
-        printf("    ERROR: Initialization failed: %s\n", nc_strerror(ret));
+        printf("    ERROR: Initialization failed\n");
         remove(".ncrc");
         return 1;
     }
@@ -234,19 +234,19 @@ static int test_multiple_initializations(void)
 #endif
     
     /* First initialization */
-    ret = NC_GEOTIFF_initialize();
+    GEOTIFF_INIT_AND_ASSIGN(ret);
     if (ret != NC_NOERR)
     {
-        printf("    ERROR: First initialization failed: %s\n", nc_strerror(ret));
+        printf("    ERROR: First initialization failed\n");
         return 1;
     }
     printf("    ✓ First initialization succeeded\n");
     
     /* Second initialization (should be idempotent) */
-    ret = NC_GEOTIFF_initialize();
+    GEOTIFF_INIT_AND_ASSIGN(ret);
     if (ret != NC_NOERR)
     {
-        printf("    ERROR: Second initialization failed: %s\n", nc_strerror(ret));
+        printf("    ERROR: Second initialization failed\n");
         return 1;
     }
     printf("    ✓ Second initialization succeeded (idempotent)\n");

@@ -510,10 +510,10 @@ test_initialize_finalize(void)
 
     printf("Testing initialize/finalize...");
     
-    ret = NC_GEOTIFF_initialize();
+    GEOTIFF_INIT_AND_ASSIGN(ret);
     if (ret != NC_NOERR)
     {
-        printf("FAILED - initialize returned %s\n", nc_strerror(ret));
+        printf("FAILED - initialize returned error\n");
         return 1;
     }
 
@@ -541,7 +541,7 @@ main(void)
 
 #ifdef HAVE_GEOTIFF
     /* Initialize GeoTIFF dispatch layer */
-    if (NC_GEOTIFF_initialize() != NC_NOERR)
+    if (!GEOTIFF_INIT_OK())
     {
         printf("ERROR: Failed to initialize GeoTIFF dispatch layer\n");
         return 1;

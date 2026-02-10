@@ -43,7 +43,7 @@ main(int argc, char **argv)
     int i;
     
     printf("*** Initializing GeoTIFF...");
-    if (NC_GEOTIFF_initialize() != NC_NOERR)
+    if (!GEOTIFF_INIT_OK())
     {
         printf("FAILED\n");
         return 1;
