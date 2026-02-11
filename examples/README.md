@@ -21,6 +21,7 @@ Located in `netcdf-4/`:
 - **chunking_performance.c** - Chunking strategies and performance
 - **multi_unlimited.c** - Multiple unlimited dimensions (NetCDF-4 feature)
 - **user_types.c** - User-defined compound and enum types
+- **groups.c** - Hierarchical groups, nested groups, and dimension visibility
 
 ### Classic NetCDF Examples (Fortran)
 Located in `f_classic/`:
@@ -39,6 +40,7 @@ Located in `f_netcdf-4/`:
 - **f_chunking_performance.f90** - Chunking in Fortran
 - **f_multi_unlimited.f90** - Multiple unlimited dimensions in Fortran
 - **f_user_types.f90** - User-defined types in Fortran
+- **f_groups.f90** - Hierarchical groups, nested groups, and dimension visibility in Fortran
 
 ### Future Examples
 - `parallelIO/` - Reserved for parallel I/O examples
@@ -173,6 +175,7 @@ Or view the online documentation at: https://intelligent-data-design-inc.github.
 9. Optimize with `chunking_performance.c` / `f_chunking_performance.f90` - Improve I/O performance
 10. Utilize `multi_unlimited.c` / `f_multi_unlimited.f90` - Multiple unlimited dimensions
 11. Explore `user_types.c` / `f_user_types.f90` - Complex data structures
+12. Organize with `groups.c` / `f_groups.f90` - Hierarchical groups and dimension visibility
 
 ### C vs Fortran
 
