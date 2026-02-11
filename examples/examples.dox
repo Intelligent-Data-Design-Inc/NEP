@@ -19,19 +19,20 @@
  * **Beginners** - Start here:
  * 1. @ref simple_2D.c / @ref f_simple_2D.f90 - Basic 2D array operations
  * 2. @ref coord_vars.c / @ref f_coord_vars.f90 - Coordinate variables and CF metadata
- * 3. @ref unlimited_dim.c / @ref f_unlimited_dim.f90 - Time-series with unlimited dimensions
+ * 3. @ref coord.c / @ref f_coord.f90 - 3D surface temperature with time, lat, lon coordinates
+ * 4. @ref unlimited_dim.c / @ref f_unlimited_dim.f90 - Time-series with unlimited dimensions
  * 
  * **Intermediate** - Classic NetCDF features:
- * 4. @ref format_variants.c / @ref f_format_variants.f90 - Format types (CDF-1, CDF-2, CDF-5)
- * 5. @ref size_limits.c / @ref f_size_limits.f90 - Understanding size limitations
- * 6. @ref var4d.c / @ref f_var4d.f90 - Multi-dimensional arrays
+ * 5. @ref format_variants.c / @ref f_format_variants.f90 - Format types (CDF-1, CDF-2, CDF-5)
+ * 6. @ref size_limits.c / @ref f_size_limits.f90 - Understanding size limitations
+ * 7. @ref var4d.c / @ref f_var4d.f90 - Multi-dimensional arrays
  * 
  * **Advanced** - NetCDF-4 features:
- * 7. @ref simple_nc4.c / @ref f_simple_nc4.f90 - NetCDF-4 format introduction
- * 8. @ref compression.c / @ref f_compression.f90 - Compression filters
- * 9. @ref chunking_performance.c / @ref f_chunking_performance.f90 - Chunking strategies
- * 10. @ref multi_unlimited.c / @ref f_multi_unlimited.f90 - Multiple unlimited dimensions
- * 11. @ref user_types.c / @ref f_user_types.f90 - User-defined types
+ * 8. @ref simple_nc4.c / @ref f_simple_nc4.f90 - NetCDF-4 format introduction
+ * 9. @ref compression.c / @ref f_compression.f90 - Compression filters
+ * 10. @ref chunking_performance.c / @ref f_chunking_performance.f90 - Chunking strategies
+ * 11. @ref multi_unlimited.c / @ref f_multi_unlimited.f90 - Multiple unlimited dimensions
+ * 12. @ref user_types.c / @ref f_user_types.f90 - User-defined types
  * 
  * @section examples_categories Example Categories
  * 
@@ -40,6 +41,7 @@
  * Located in `examples/classic/`:
  * - @ref simple_2D.c - Basic 2D array creation and reading
  * - @ref coord_vars.c - Coordinate variables with CF conventions
+ * - @ref coord.c - 3D surface temperature with time, lat, lon coordinate variables
  * - @ref format_variants.c - NetCDF format variants (CDF-1, CDF-2, CDF-5)
  * - @ref size_limits.c - File size and dimension limits
  * - @ref unlimited_dim.c - Unlimited dimensions for time-series
@@ -59,6 +61,7 @@
  * Located in `examples/f_classic/`:
  * - @ref f_simple_2D.f90 - Basic 2D array (Fortran)
  * - @ref f_coord_vars.f90 - Coordinate variables (Fortran)
+ * - @ref f_coord.f90 - 3D surface temperature with time, lat, lon coordinates (Fortran)
  * - @ref f_format_variants.f90 - Format variants (Fortran)
  * - @ref f_size_limits.f90 - Size limits (Fortran)
  * - @ref f_unlimited_dim.f90 - Unlimited dimensions (Fortran)
