@@ -69,7 +69,6 @@ program f_coord
    integer :: ndims_in, nvars_in
    integer :: errors
    character(len=256) :: att_text
-   integer :: att_len
    real :: fill_value, fill_value_in
    integer :: dimlen
 
