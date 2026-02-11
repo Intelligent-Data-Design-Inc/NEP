@@ -123,9 +123,9 @@ int main()
    if ((retval = nc_open(FILE_NAME, NC_NOWRITE, &ncid)))
       ERR(retval);
    
-   /* Verify metadata: check number of dimensions and variables */
-   int ndims_in, nvars_in;
-   if ((retval = nc_inq(ncid, &ndims_in, &nvars_in, NULL, NULL)))
+   /* Verify metadata: check number of dimensions, variables, attributes, unlimited dim */
+   int ndims_in, nvars_in, ngatts_in, unlimdimid_in;
+   if ((retval = nc_inq(ncid, &ndims_in, &nvars_in, &ngatts_in, &unlimdimid_in)))
       ERR(retval);
    
    if (ndims_in != NDIMS) {
@@ -139,6 +139,18 @@ int main()
       exit(ERRCODE);
    }
    printf("Verified: %d variable\n", nvars_in);
+   
+   if (ngatts_in != 0) {
+      printf("Error: Expected 0 global attributes, found %d\n", ngatts_in);
+      exit(ERRCODE);
+   }
+   printf("Verified: %d global attributes\n", ngatts_in);
+   
+   if (unlimdimid_in != -1) {
+      printf("Error: Expected no unlimited dimension, found dimid %d\n", unlimdimid_in);
+      exit(ERRCODE);
+   }
+   printf("Verified: no unlimited dimension\n");
    
    /* Verify dimensions using nc_inq_dim() */
    char dim_name[NC_MAX_NAME + 1];

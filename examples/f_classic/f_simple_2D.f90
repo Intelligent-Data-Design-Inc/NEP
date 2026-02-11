@@ -74,7 +74,7 @@ program f_simple_2D
    integer :: data_in(NX, NY)
    
    integer :: i, j
-   integer :: ndims_in, nvars_in
+   integer :: ndims_in, nvars_in, ngatts_in, unlimdimid_in
    integer :: len_x, len_y
    character(len=NF90_MAX_NAME) :: dim_name
    character(len=NF90_MAX_NAME) :: var_name_in
@@ -133,7 +133,7 @@ program f_simple_2D
    if (retval /= nf90_noerr) call handle_err(retval)
    
    ! Verify metadata: check number of dimensions and variables
-   retval = nf90_inquire(ncid, ndims_in, nvars_in)
+   retval = nf90_inquire(ncid, ndims_in, nvars_in, ngatts_in, unlimdimid_in)
    if (retval /= nf90_noerr) call handle_err(retval)
    
    if (ndims_in /= NDIMS) then
@@ -147,6 +147,18 @@ program f_simple_2D
       stop 2
    end if
    print *, "Verified: ", nvars_in, " variable"
+   
+   if (ngatts_in /= 0) then
+      print *, "Error: Expected 0 global attributes, found ", ngatts_in
+      stop 2
+   end if
+   print *, "Verified: ", ngatts_in, " global attributes"
+   
+   if (unlimdimid_in /= -1) then
+      print *, "Error: Expected no unlimited dimension, found dimid ", unlimdimid_in
+      stop 2
+   end if
+   print *, "Verified: no unlimited dimension"
    
    ! Verify dimensions using nf90_inquire_dimension()
    retval = nf90_inquire_dimension(ncid, x_dimid, name=dim_name, len=len_x)
