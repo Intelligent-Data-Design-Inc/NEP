@@ -1,0 +1,50 @@
+netcdf coord {
+dimensions:
+	time = 3 ;
+	lat = 4 ;
+	lon = 5 ;
+variables:
+	float time(time) ;
+		time:units = "hours since 2026-01-01" ;
+		time:standard_name = "time" ;
+		time:long_name = "Time" ;
+		time:axis = "T" ;
+		time:calendar = "standard" ;
+	float lat(lat) ;
+		lat:units = "degrees_north" ;
+		lat:standard_name = "latitude" ;
+		lat:long_name = "Latitude" ;
+		lat:axis = "Y" ;
+	float lon(lon) ;
+		lon:units = "degrees_east" ;
+		lon:standard_name = "longitude" ;
+		lon:long_name = "Longitude" ;
+		lon:axis = "X" ;
+	float sfc_temp(time, lat, lon) ;
+		sfc_temp:units = "K" ;
+		sfc_temp:standard_name = "surface_temperature" ;
+		sfc_temp:long_name = "Surface Temperature" ;
+		sfc_temp:_FillValue = -999.f ;
+		sfc_temp:coordinates = "time lat lon" ;
+data:
+
+ time = 0, 6, 12 ;
+
+ lat = -45, -15, 15, 45 ;
+
+ lon = -120, -60, 0, 60, 120 ;
+
+ sfc_temp =
+  280, 280.5, 281, 281.5, 282,
+  282, 282.5, 283, 283.5, 284,
+  284, 284.5, 285, 285.5, 286,
+  286, 286.5, 287, 287.5, 288,
+  281, 281.5, 282, 282.5, 283,
+  283, 283.5, 284, 284.5, 285,
+  285, 285.5, 286, 286.5, 287,
+  287, 287.5, 288, 288.5, 289,
+  282, 282.5, 283, 283.5, 284,
+  284, 284.5, 285, 285.5, 286,
+  286, 286.5, 287, 287.5, 288,
+  288, 288.5, 289, 289.5, 290 ;
+}
