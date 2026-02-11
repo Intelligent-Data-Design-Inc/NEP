@@ -15,13 +15,14 @@
 #include "config.h"
 #include "ncdispatch.h"
 #include "nc4internal.h"
+#include "NEP.h"
 
 #ifdef HAVE_GEOTIFF
 #include <geotiff/geotiff.h>
 #include <geotiff/geo_normalize.h>
 #endif
 
-/** GeoTIFF format uses UDF1 slot in NetCDF-C dispatch table */
+/** GeoTIFF format uses UDF1 slot for dispatch table model field (see NEP.h for slot allocation) */
 #define NC_FORMATX_NC_GEOTIFF NC_FORMATX_UDF1
 
 /** TIFF magic numbers for format detection */
@@ -103,11 +104,30 @@ extern "C" {
     NC_GEOTIFF_get_vara(int ncid, int varid, const size_t *start, const size_t *count,
                         void *value, nc_type);
 
+#ifdef HAVE_NETCDF_UDF_SELF_REGISTRATION
+    extern NC_Dispatch*
+    NC_GEOTIFF_initialize(void);
+#else
     extern int
     NC_GEOTIFF_initialize(void);
+#endif
 
     extern int
     NC_GEOTIFF_finalize(void);
+
+/** Helper macros for calling NC_GEOTIFF_initialize() portably.
+ *  When self-registration is available, initialize returns NC_Dispatch*.
+ *  When not, it returns int (NC_NOERR on success). */
+#ifdef HAVE_NETCDF_UDF_SELF_REGISTRATION
+#define GEOTIFF_INIT_OK() (NC_GEOTIFF_initialize() != NULL)
+#define GEOTIFF_INIT_AND_ASSIGN(ret) do { \
+        NC_Dispatch *_d = NC_GEOTIFF_initialize(); \
+        (ret) = (_d != NULL) ? NC_NOERR : NC_ENOTNC; \
+    } while(0)
+#else
+#define GEOTIFF_INIT_OK() (NC_GEOTIFF_initialize() == NC_NOERR)
+#define GEOTIFF_INIT_AND_ASSIGN(ret) do { (ret) = NC_GEOTIFF_initialize(); } while(0)
+#endif
 
     extern int
     NC_GEOTIFF_detect_format(const char *path, int *is_geotiff);

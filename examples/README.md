@@ -8,6 +8,7 @@ This directory contains example programs demonstrating NetCDF API usage in both 
 Located in `classic/`:
 - **quickstart.c** - Minimal introduction to NetCDF - the simplest starting point for new users
 - **simple_2D.c** - Basic 2D array creation and writing
+- **coord.c** - 3D surface temperature with time, latitude, and longitude coordinate variables following CF conventions
 - **coord_vars.c** - Working with coordinate variables
 - **format_variants.c** - Different NetCDF format variants (classic, 64-bit offset, CDF-5)
 - **size_limits.c** - Demonstrating size and dimension limits
@@ -21,11 +22,13 @@ Located in `netcdf-4/`:
 - **chunking_performance.c** - Chunking strategies and performance
 - **multi_unlimited.c** - Multiple unlimited dimensions (NetCDF-4 feature)
 - **user_types.c** - User-defined compound and enum types
+- **groups.c** - Hierarchical groups, nested groups, and dimension visibility
 
 ### Classic NetCDF Examples (Fortran)
 Located in `f_classic/`:
 - **f_quickstart.f90** - Fortran version of quickstart - minimal introduction to NetCDF from Fortran
 - **f_simple_2D.f90** - Basic 2D array in Fortran
+- **f_coord.f90** - 3D surface temperature with time, latitude, and longitude coordinate variables following CF conventions
 - **f_coord_vars.f90** - Coordinate variables in Fortran
 - **f_format_variants.f90** - Format variants in Fortran
 - **f_size_limits.f90** - Size limits in Fortran
@@ -39,6 +42,7 @@ Located in `f_netcdf-4/`:
 - **f_chunking_performance.f90** - Chunking in Fortran
 - **f_multi_unlimited.f90** - Multiple unlimited dimensions in Fortran
 - **f_user_types.f90** - User-defined types in Fortran
+- **f_groups.f90** - Hierarchical groups, nested groups, and dimension visibility in Fortran
 
 ### Future Examples
 - `parallelIO/` - Reserved for parallel I/O examples
@@ -173,6 +177,7 @@ Or view the online documentation at: https://intelligent-data-design-inc.github.
 9. Optimize with `chunking_performance.c` / `f_chunking_performance.f90` - Improve I/O performance
 10. Utilize `multi_unlimited.c` / `f_multi_unlimited.f90` - Multiple unlimited dimensions
 11. Explore `user_types.c` / `f_user_types.f90` - Complex data structures
+12. Organize with `groups.c` / `f_groups.f90` - Hierarchical groups and dimension visibility
 
 ### C vs Fortran
 

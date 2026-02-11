@@ -23,7 +23,7 @@ fi
 
 # Find ncdump from the NetCDF-C library being used
 # We MUST use the ncdump from the same NetCDF-C library we compiled with
-NCDUMP="/usr/local/netcdf-c/bin/ncdump"
+NCDUMP="@NCDUMP@"
 
 # If NCDUMP was set at configure time, use it
 if [ -n "$NCDUMP" ] && [ "$NCDUMP" != "@""NCDUMP""@" ] && [ -x "$NCDUMP" ]; then

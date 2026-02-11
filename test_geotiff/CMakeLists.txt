@@ -99,5 +99,20 @@ if(HAVE_GEOTIFF)
         ${TIFF_LIBRARY})
     # Note: benchmark is not added to tests - run manually for performance analysis
 
+    # Test for UDF self-loading functionality (v1.5.4 Sprint 2)
+    add_executable(tst_geotiff_self_load tst_geotiff_self_load.c)
+    target_link_libraries(tst_geotiff_self_load 
+        ncgeotiff
+        ${NETCDF_LIBRARIES} 
+        ${HDF5_LIBRARIES}
+        ${GEOTIFF_LIBRARY} 
+        ${TIFF_LIBRARY})
+    # Pass library path to test at compile time for .ncrc generation
+    target_compile_definitions(tst_geotiff_self_load PRIVATE
+        NEP_GEOTIFF_LIB_PATH="$<TARGET_FILE:ncgeotiff>")
+    add_test(NAME tst_geotiff_self_load COMMAND tst_geotiff_self_load)
+    set_tests_properties(tst_geotiff_self_load PROPERTIES 
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
     message(STATUS "GeoTIFF tests enabled")
 endif()

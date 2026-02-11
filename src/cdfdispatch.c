@@ -119,15 +119,24 @@ const NC_Dispatch *CDF_dispatch_table = NULL;
 /**
  * @internal Initialize CDF dispatch layer.
  *
- * @return ::NC_NOERR No error.
+ * @return Dispatch table pointer for self-loading, or NC_NOERR for manual registration.
  * @author Ed Hartnett
  */
+#ifdef HAVE_NETCDF_UDF_SELF_REGISTRATION
+NC_Dispatch*
+NC_CDF_initialize(void)
+{
+    CDF_dispatch_table = &CDF_dispatcher;
+    return (NC_Dispatch*)&CDF_dispatcher;
+}
+#else
 int
 NC_CDF_initialize(void)
 {
     CDF_dispatch_table = &CDF_dispatcher;
     return NC_NOERR;
 }
+#endif
 
 /**
  * @internal Finalize CDF dispatch layer.

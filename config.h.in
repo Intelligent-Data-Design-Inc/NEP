@@ -21,6 +21,10 @@
 /* Define to 1 if you have the <cdf.h> header file. */
 #undef HAVE_CDF_H
 
+/* Define to 1 if you have the declaration of `NC_HAS_UDF_SELF_LOAD', and to 0
+   if you don't. */
+#undef HAVE_DECL_NC_HAS_UDF_SELF_LOAD
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
@@ -44,6 +48,9 @@
 
 /* Define to 1 if you have the <netcdf_meta.h> header file. */
 #undef HAVE_NETCDF_META_H
+
+/* Define if NetCDF-C has UDF self-loading support */
+#undef HAVE_NETCDF_UDF_SELF_REGISTRATION
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H

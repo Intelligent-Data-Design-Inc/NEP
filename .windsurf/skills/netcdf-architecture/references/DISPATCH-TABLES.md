@@ -301,13 +301,26 @@ static const NC_Dispatch NCD4_dispatcher = {
 
 ## User-Defined Format Tables
 
-**Files**: `libdispatch/dfile.c:49-52`
+**Files**: `libdispatch/dfile.c`, `libdispatch/ddispatch.c`
 
-**Table Names**: `UDF0_dispatch_table`, `UDF1_dispatch_table`
+**Table Names**: `UDF0_dispatch_table` through `UDF9_dispatch_table`
 
-**Models**: `NC_FORMATX_UDF0`, `NC_FORMATX_UDF1`
+**Models**: `NC_FORMATX_UDF0` through `NC_FORMATX_UDF9`
 
-### Registration
+**Mode Flags**: `NC_UDF0` through `NC_UDF9`
+
+### Overview
+
+NetCDF-C provides 10 user-defined format slots that allow developers to extend the library with custom file formats and storage backends. Each slot can be independently configured with its own dispatch table, initialization function, and optional magic number.
+
+### UDF Slot Organization
+
+- **UDF0, UDF1**: Original slots, mode flags in lower 16 bits
+- **UDF2-UDF9**: Extended slots, mode flags in upper 16 bits
+
+### Registration Methods
+
+#### Programmatic Registration
 
 Users can register custom formats via `nc_def_user_format()`:
 
@@ -317,10 +330,295 @@ int nc_def_user_format(int mode_flag,
                        char* magic_number);
 ```
 
-**Requirements**:
+**Parameters**:
+- `mode_flag`: One of `NC_UDF0` through `NC_UDF9`, optionally combined with other mode flags (e.g., `NC_NETCDF4`)
+- `dispatch_table`: Pointer to your `NC_Dispatch` structure
+- `magic_number`: Optional magic number string (max `NC_MAX_MAGIC_NUMBER_LEN` bytes) for automatic format detection, or NULL
+
+**Example**:
+```c
+extern NC_Dispatch my_format_dispatcher;
+
+// Register UDF in slot 0 with magic number
+nc_def_user_format(NC_UDF0 | NC_NETCDF4, &my_format_dispatcher, "MYFORMAT");
+
+// Now files with "MYFORMAT" magic number will use your dispatcher
+int ncid;
+nc_open("myfile.dat", 0, &ncid);  // Auto-detects format
+```
+
+#### Query Registered UDFs
+
+Use `nc_inq_user_format()` to query registered formats:
+
+```c
+int nc_inq_user_format(int mode_flag, 
+                       NC_Dispatch** dispatch_table,
+                       char* magic_number);
+```
+
+**Example**:
+```c
+NC_Dispatch *disp;
+char magic[NC_MAX_MAGIC_NUMBER_LEN + 1];
+nc_inq_user_format(NC_UDF0, &disp, magic);
+```
+
+#### RC File Configuration
+
+UDFs can be automatically loaded from RC file configuration:
+
+**RC File Format** (`.ncrc`, `.daprc`, or `.dodsrc`):
+```ini
+NETCDF.UDF<N>.LIBRARY=/full/path/to/library.so
+NETCDF.UDF<N>.INIT=initialization_function_name
+NETCDF.UDF<N>.MAGIC=OPTIONAL_MAGIC_NUMBER
+```
+
+**Example**:
+```ini
+# Load custom format in UDF0
+NETCDF.UDF0.LIBRARY=/usr/local/lib/libmyformat.so
+NETCDF.UDF0.INIT=myformat_init
+NETCDF.UDF0.MAGIC=MYFORMAT
+
+# Load scientific data format in UDF3
+NETCDF.UDF3.LIBRARY=/opt/scidata/lib/libscidata.so
+NETCDF.UDF3.INIT=scidata_initialize
+NETCDF.UDF3.MAGIC=SCIDATA
+```
+
+**RC File Requirements**:
+- `LIBRARY`: Must be a full absolute path to the shared library
+- `INIT`: Name of the initialization function in the library
+- `MAGIC`: Optional magic number for automatic format detection
+- Both `LIBRARY` and `INIT` must be present; partial configuration is ignored with a warning
+
+**RC File Search Order**:
+1. `$HOME/.ncrc`
+2. `$HOME/.daprc`
+3. `$HOME/.dodsrc`
+4. `$CWD/.ncrc`
+5. `$CWD/.daprc`
+6. `$CWD/.dodsrc`
+
+### Plugin Loading Process
+
+Plugins are loaded during library initialization (`nc_initialize()`):
+
+1. RC files are parsed
+2. For each configured UDF slot:
+   - Library is loaded using `dlopen()` (Unix) or `LoadLibrary()` (Windows)
+   - Init function is located using `dlsym()` or `GetProcAddress()`
+   - Init function is called
+   - Init function must call `nc_def_user_format()` to register the dispatch table
+3. Dispatch table ABI version is verified
+4. Magic number (if provided) is registered for automatic format detection
+
+**Note**: Library handles are intentionally not closed; they remain loaded for the lifetime of the process.
+
+### Plugin Implementation Requirements
+
+**Dispatch Table Requirements**:
 - Dispatch table version must match `NC_DISPATCH_VERSION`
-- Magic number max 8 bytes (optional)
-- Must implement all required operations
+- Must implement all required operations or use pre-defined stubs
+- Magic number max `NC_MAX_MAGIC_NUMBER_LEN` bytes (optional)
+
+**Initialization Function Requirements**:
+1. Must be exported (not static)
+2. Must call `nc_def_user_format()` to register dispatch table
+3. Should return `NC_NOERR` on success, error code on failure
+4. Name must match RC file `INIT` key
+
+**Example Initialization Function**:
+```c
+#include <netcdf.h>
+
+extern NC_Dispatch my_dispatcher;
+
+// Initialization function - must be exported
+int my_plugin_init(void) {
+    int ret;
+    
+    // Register dispatch table with magic number
+    ret = nc_def_user_format(NC_UDF0 | NC_NETCDF4, 
+                             &my_dispatcher,
+                             "MYFMT");
+    if (ret != NC_NOERR)
+        return ret;
+    
+    // Additional initialization if needed
+    // ...
+    
+    return NC_NOERR;
+}
+```
+
+### Pre-defined Dispatch Functions
+
+For operations your format doesn't support, use these pre-defined functions:
+
+**Read-only stubs** (`libdispatch/dreadonly.c`):
+- `NC_RO_create`, `NC_RO_redef`, `NC_RO__enddef`, `NC_RO_sync`
+- `NC_RO_set_fill`, `NC_RO_def_dim`, `NC_RO_def_var`, `NC_RO_put_att`
+- `NC_RO_put_vara`, `NC_RO_put_vars`, `NC_RO_put_varm`
+- Returns `NC_EPERM` (operation not permitted)
+
+**Not NetCDF-4 stubs** (`libdispatch/dnotnc4.c`):
+- `NC_NOTNC4_def_grp`, `NC_NOTNC4_def_compound`, `NC_NOTNC4_def_vlen`
+- `NC_NOTNC4_def_var_deflate`, `NC_NOTNC4_def_var_chunking`
+- Returns `NC_ENOTNC4` (not a NetCDF-4 file)
+
+**Not NetCDF-3 stubs** (`libdispatch/dnotnc3.c`):
+- Returns `NC_ENOTNC3` (not a NetCDF-3 file)
+
+**No-op stubs**:
+- `NC_NOOP_*` - Returns `NC_NOERR` without doing anything
+
+**Default implementations** (`libdispatch/dvar.c`):
+- `NCDEFAULT_get_vars`, `NCDEFAULT_put_vars` - Strided access using get_vara/put_vara
+- `NCDEFAULT_get_varm`, `NCDEFAULT_put_varm` - Mapped access using get_vars/put_vars
+
+**NetCDF-4 inquiry functions** (`libsrc4/`):
+- `NC4_inq`, `NC4_inq_type`, `NC4_inq_dimid`, `NC4_inq_varid`
+- Use internal metadata model for inquiry operations
+
+### Example Minimal Dispatch Table
+
+```c
+#include "netcdf_dispatch.h"
+
+static NC_Dispatch my_dispatcher = {
+    NC_FORMATX_UDF0,        /* Use UDF slot 0 */
+    NC_DISPATCH_VERSION,    /* Current ABI version */
+    
+    NC_RO_create,           /* Read-only: use predefined function */
+    my_open,                /* Custom open function */
+    NC_RO_redef,
+    NC_RO__enddef,
+    NC_RO_sync,
+    my_abort,
+    my_close,
+    NC_RO_set_fill,
+    my_inq_format,
+    my_inq_format_extended,
+    
+    /* Inquiry functions - can use NC4_* defaults */
+    NC4_inq,
+    NC4_inq_type,
+    NC4_inq_dimid,
+    NC4_inq_varid,
+    
+    /* Variable I/O */
+    my_get_vara,
+    NC_RO_put_vara,         /* Read-only */
+    NCDEFAULT_get_vars,     /* Use default strided implementation */
+    NC_RO_put_vars,
+    NCDEFAULT_get_varm,     /* Use default mapped implementation */
+    NC_RO_put_varm,
+    
+    /* NetCDF-4 features not supported */
+    NC_NOTNC4_def_grp,
+    NC_NOTNC4_def_compound,
+    NC_NOTNC4_def_vlen,
+    NC_NOTNC4_def_var_deflate,
+    NC_NOTNC4_def_var_chunking,
+    
+    /* ... continue for all ~70 function pointers ... */
+};
+```
+
+### Magic Numbers and Format Detection
+
+Magic numbers enable automatic format detection when opening files.
+
+**How Magic Numbers Work**:
+1. When `nc_open()` is called without a specific format flag
+2. The file's first bytes are read
+3. They are compared against all registered magic numbers (built-in and user-defined)
+4. If a match is found, the corresponding dispatcher is used
+
+**Magic Number Best Practices**:
+- Use unique, distinctive strings (4-8 bytes recommended)
+- Place at the beginning of your file format
+- Avoid conflicts with existing formats:
+  - NetCDF-3: "CDF\001", "CDF\002", "CDF\005"
+  - HDF5/NetCDF-4: "\211HDF\r\n\032\n"
+- Maximum length: `NC_MAX_MAGIC_NUMBER_LEN` bytes
+
+### Platform Considerations
+
+**Unix/Linux/macOS**:
+- Shared libraries: `.so` extension
+- Dynamic loading: `dlopen()` and `dlsym()`
+- Library paths: Use absolute paths or ensure libraries are in `LD_LIBRARY_PATH`
+
+**Windows**:
+- Shared libraries: `.dll` extension
+- Dynamic loading: `LoadLibrary()` and `GetProcAddress()`
+- Library paths: Use absolute paths or ensure DLLs are in system `PATH`
+
+**Building Plugins**:
+
+Unix:
+```bash
+gcc -shared -fPIC -o libmyplugin.so myplugin.c -lnetcdf
+```
+
+Windows:
+```batch
+cl /LD myplugin.c netcdf.lib
+```
+
+### Security Considerations
+
+- **Full paths required**: RC files must specify absolute library paths to prevent path injection attacks
+- **Code execution**: Plugins execute arbitrary code in your process; only load trusted libraries
+- **Validation**: The library verifies dispatch table ABI version but cannot validate plugin behavior
+- **Permissions**: Ensure plugin libraries have appropriate file permissions
+
+### Common Errors
+
+**NC_EINVAL: Invalid dispatch table version**
+- Cause: Plugin was compiled against a different version of NetCDF-C
+- Solution: Recompile plugin against current NetCDF-C version
+
+**Plugin not loaded (no error)**
+- Cause: Partial RC configuration (LIBRARY without INIT, or vice versa)
+- Solution: Check that both LIBRARY and INIT keys are present in RC file
+
+**Library not found**
+- Cause: Incorrect path in NETCDF.UDF*.LIBRARY
+- Solution: Use absolute path; verify file exists and has correct permissions
+
+**Init function not found**
+- Cause: Function name mismatch or missing export
+- Solution: Verify function name matches INIT key; ensure function is exported (not static)
+
+### Testing UDFs
+
+**Enable Logging**:
+```bash
+export NC_LOG_LEVEL=3
+./myprogram
+```
+
+**Verify RC File is Read**:
+```bash
+echo "NETCDF.UDF0.LIBRARY=/tmp/test.so" > ~/.ncrc
+echo "NETCDF.UDF0.INIT=test_init" >> ~/.ncrc
+# Run program and check for warnings about missing library
+```
+
+**Check Plugin Exports** (Unix):
+```bash
+nm -D libmyplugin.so | grep init
+```
+
+**Check Plugin Exports** (Windows):
+```batch
+dumpbin /EXPORTS myplugin.dll
+```
 
 ## Dispatch Table Selection
 

@@ -34,6 +34,7 @@ get_filename_component(HDF5_LIB_DIR "${HDF5_INCLUDE_DIR}/../lib" ABSOLUTE)
 set(CLASSIC_EXAMPLES
     quickstart
     simple_2D
+    coord
     coord_vars
     format_variants
     size_limits
@@ -67,4 +68,9 @@ if(BUILD_TESTING)
              COMMAND bash validate_cdl.sh quickstart quickstart.nc 
                      ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/quickstart_expected.cdl)
     set_tests_properties(quickstart_validate PROPERTIES DEPENDS quickstart_run)
+
+    add_test(NAME coord_validate 
+             COMMAND bash validate_cdl.sh coord coord.nc 
+                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/coord_expected.cdl)
+    set_tests_properties(coord_validate PROPERTIES DEPENDS coord_run)
 endif()

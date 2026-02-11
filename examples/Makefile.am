@@ -1,8 +1,8 @@
 # Makefile.am for NEP examples
 # Edward Hartnett 1/25/26
 
-# Distribute the CDL validation script
-EXTRA_DIST = validate_cdl.sh expected_output
+# Distribute the CDL validation script template
+EXTRA_DIST = validate_cdl.sh.in expected_output
 
 # C examples are always built when BUILD_EXAMPLES is enabled
 SUBDIRS = classic netcdf-4

@@ -52,7 +52,7 @@ main(int argc, char **argv)
 
     /* Initialize GeoTIFF dispatch layer */
     printf("*** Initializing GeoTIFF dispatch layer...");
-    if (NC_GEOTIFF_initialize() != NC_NOERR)
+    if (!GEOTIFF_INIT_OK())
     {
         printf("FAILED\n");
         return 1;

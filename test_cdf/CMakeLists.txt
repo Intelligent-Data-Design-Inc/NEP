@@ -28,3 +28,21 @@ set_target_properties(tst_cdf_basic PROPERTIES
 
 # Add the test (matches TESTS = tst_cdf_basic)
 add_test(NAME tst_cdf_basic COMMAND tst_cdf_basic)
+
+# Test for UDF self-loading functionality (v1.5.4 Sprint 3)
+add_executable(tst_cdf_self_load tst_cdf_self_load.c)
+target_link_libraries(tst_cdf_self_load 
+    nccdf
+    ${NETCDF_LIBRARIES}
+    ${HDF5_LIBRARIES}
+    ${CDF_LIBRARY})
+target_include_directories(tst_cdf_self_load PRIVATE ${CDF_INCLUDE_DIR})
+# Pass library path to test at compile time for .ncrc generation
+target_compile_definitions(tst_cdf_self_load PRIVATE
+    NEP_CDF_LIB_PATH="$<TARGET_FILE:nccdf>")
+set_target_properties(tst_cdf_self_load PROPERTIES
+    INSTALL_RPATH "${CDF_LIB_DIR}"
+    BUILD_RPATH "${CDF_LIB_DIR}")
+add_test(NAME tst_cdf_self_load COMMAND tst_cdf_self_load)
+set_tests_properties(tst_cdf_self_load PROPERTIES 
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})

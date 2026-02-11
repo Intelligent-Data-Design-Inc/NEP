@@ -13,7 +13,10 @@ This skill provides comprehensive knowledge of the NetCDF-C library architecture
 
 ## Overview
 
-NetCDF-C is a multi-format I/O library built on a **dispatch table architecture** that provides a unified API across 7+ storage formats. The core design pattern uses function pointer tables to route operations to format-specific implementations.
+NetCDF-C is a multi-format I/O library built on a **dispatch table architecture** that provides a unified API across 7+ built-in storage formats plus 10 user-defined format (UDF) slots. The core design pattern uses function pointer tables to route operations to format-specific implementations.
+
+**Built-in formats**: NetCDF-3 (CDF-1/2/5), NetCDF-4/HDF5, Zarr, DAP2, DAP4
+**User-defined formats**: UDF0-UDF9 slots for custom format plugins
 
 ## Core Architecture Pattern
 
@@ -67,7 +70,7 @@ typedef struct NC {
 
 ### Primary Libraries
 
-- **`libdispatch/`** - Central routing layer, API entry points, utilities
+- **`libdispatch/`** - Central routing layer, API entry points, utilities, UDF plugin loading
 - **`libsrc/`** - Classic NetCDF-3 implementation (CDF-1, CDF-2, CDF-5)
 - **`libsrc4/`** - NetCDF-4 enhanced model coordination
 - **`libhdf5/`** - HDF5 storage backend
@@ -75,6 +78,7 @@ typedef struct NC {
 - **`libdap2/`** + **`oc2/`** - OPeNDAP DAP2 client
 - **`libdap4/`** - OPeNDAP DAP4 client
 - **`libhdf4/`** - HDF4 file access (optional)
+- **User plugins** - External shared libraries for UDF0-UDF9 slots
 
 ### Support Libraries
 
@@ -97,17 +101,19 @@ typedef struct NC {
 - `dinfermodel.c` - Format detection (magic numbers, URLs)
 
 **Format Detection Logic**:
-1. Check magic number (first 8 bytes)
+1. Check magic number (first 8 bytes) - includes user-defined magic numbers
 2. Parse URL scheme (http://, s3://, file://)
-3. Analyze mode flags (NC_NETCDF4, NC_CLASSIC_MODEL, etc.)
-4. Select appropriate dispatch table
+3. Analyze mode flags (NC_NETCDF4, NC_CLASSIC_MODEL, NC_UDF0-NC_UDF9, etc.)
+4. Select appropriate dispatch table (built-in or user-defined)
 
 **Utilities**:
 - `ncjson.c` - JSON parsing
 - `ncuri.c` - URI parsing
-- `dauth.c` - Authentication
+- `dauth.c` - Authentication (includes RC file parsing for UDF configuration)
 - `dhttp.c` - HTTP operations
 - `ds3util.c` - S3/cloud utilities
+- `drc.c` - RC file parsing for UDF plugin configuration
+- `dutil.c` - Plugin loading (dlopen/LoadLibrary)
 
 ### libsrc/ - Classic NetCDF-3
 
@@ -255,6 +261,118 @@ typedef struct NC_VAR_INFO_T {
 - `d4meta.c` (34KB) - Metadata translation to NetCDF model
 - `d4curlfunctions.c` - HTTP operations
 
+### User-Defined Formats (UDFs)
+
+**Purpose**: Extensible plugin system for custom file formats and storage backends.
+
+**Available Slots**: UDF0 through UDF9 (10 independent format slots)
+
+**Dispatch Tables**: Registered via `nc_def_user_format()` or RC file configuration
+
+**Key Features**:
+- **Plugin loading**: Automatic loading from RC files during `nc_initialize()`
+- **Magic number detection**: Optional automatic format detection
+- **Shared libraries**: .so (Unix) or .dll (Windows) plugins
+- **Full API support**: Plugins implement complete `NC_Dispatch` interface
+
+**Plugin Architecture**:
+
+1. **Dispatch Table**: Plugin provides `NC_Dispatch` structure with function pointers
+2. **Initialization Function**: Exported function called during plugin load
+3. **Format-Specific Code**: Custom implementation of file I/O and data operations
+
+**Registration Methods**:
+
+**Programmatic Registration**:
+```c
+// Register UDF in slot 0 with magic number
+nc_def_user_format(NC_UDF0 | NC_NETCDF4, &my_dispatcher, "MYFORMAT");
+
+// Query registered UDF
+NC_Dispatch *disp;
+nc_inq_user_format(NC_UDF0, &disp, magic_buffer);
+```
+
+**RC File Configuration** (`.ncrc`):
+```ini
+NETCDF.UDF0.LIBRARY=/usr/local/lib/libmyformat.so
+NETCDF.UDF0.INIT=myformat_init
+NETCDF.UDF0.MAGIC=MYFORMAT
+```
+
+**Plugin Loading Process**:
+1. RC files parsed during `nc_initialize()`
+2. Library loaded via `dlopen()` (Unix) or `LoadLibrary()` (Windows)
+3. Init function located via `dlsym()` or `GetProcAddress()`
+4. Init function calls `nc_def_user_format()` to register dispatch table
+5. Dispatch table ABI version verified (`NC_DISPATCH_VERSION`)
+6. Plugin remains loaded for process lifetime
+
+**RC File Search Order**:
+1. `$HOME/.ncrc`
+2. `$HOME/.daprc`
+3. `$HOME/.dodsrc`
+4. `$CWD/.ncrc`
+5. `$CWD/.daprc`
+6. `$CWD/.dodsrc`
+
+**UDF Slot Modes**:
+- **UDF0, UDF1**: Original slots, mode flags in lower 16 bits
+- **UDF2-UDF9**: Extended slots, mode flags in upper 16 bits
+
+**Pre-defined Dispatch Functions** (for plugin use):
+- `NC_RO_*` - Read-only stubs (return `NC_EPERM`)
+- `NC_NOTNC4_*` - Not-NetCDF-4 stubs (return `NC_ENOTNC4`)
+- `NC_NOTNC3_*` - Not-NetCDF-3 stubs (return `NC_ENOTNC3`)
+- `NC_NOOP_*` - No-operation stubs (return `NC_NOERR`)
+- `NCDEFAULT_*` - Generic implementations
+- `NC4_*` - NetCDF-4 inquiry functions using internal metadata model
+
+**Critical Files**:
+- `libdispatch/dfile.c` - UDF dispatch table storage (`UDF0_dispatch_table`, etc.)
+- `libdispatch/ddispatch.c` - `nc_def_user_format()`, `nc_inq_user_format()`
+- `libdispatch/drc.c` - RC file parsing for UDF configuration
+- `libdispatch/dutil.c` - Plugin library loading
+- `include/netcdf_dispatch.h` - `NC_Dispatch` structure definition
+- `libdispatch/dreadonly.c` - Pre-defined read-only stubs
+- `libdispatch/dnotnc*.c` - Pre-defined not-supported stubs
+
+**Example Plugin Structure**:
+```c
+#include "netcdf_dispatch.h"
+
+static NC_Dispatch my_dispatcher = {
+    NC_FORMATX_UDF0,        // Use UDF slot 0
+    NC_DISPATCH_VERSION,    // Current ABI version
+    
+    NC_RO_create,           // Read-only: use predefined function
+    my_open,                // Custom open function
+    my_close,               // Custom close function
+    NC4_inq,                // Use NC4 inquiry defaults
+    // ... ~70 function pointers total
+};
+
+// Initialization function - must be exported
+int my_plugin_init(void) {
+    return nc_def_user_format(NC_UDF0 | NC_NETCDF4, 
+                              &my_dispatcher, 
+                              "MYFMT");
+}
+```
+
+**Security Considerations**:
+- RC files must specify absolute library paths
+- Plugins execute arbitrary code in process space
+- Only load trusted libraries
+- Library verifies dispatch table ABI version
+
+**Common Use Cases**:
+- Proprietary or specialized file formats
+- Custom storage backends
+- Format translation layers
+- Domain-specific data formats
+- Integration with legacy systems
+
 ## Common Patterns
 
 ### 1. API Call Flow
@@ -325,10 +443,12 @@ Use this skill when:
 - **Debugging format-specific issues** (e.g., HDF5 vs Zarr differences)
 - **Understanding data flow** through the library
 - **Implementing new dispatch tables** or storage backends
+- **Developing UDF plugins** for custom file formats
 - **Modifying I/O operations** (chunking, compression, filters)
 - **Working with metadata structures** (groups, types, dimensions)
 - **Investigating performance issues** (caching, I/O patterns)
 - **Integrating new protocols** (new remote access methods)
+- **Extending NetCDF-C** with proprietary or domain-specific formats
 
 ## Quick Reference
 
@@ -369,6 +489,8 @@ See [references/COMPONENTS.md](references/COMPONENTS.md) for detailed component 
 See [references/DATA-STRUCTURES.md](references/DATA-STRUCTURES.md) for complete data structure documentation.
 
 See [references/DISPATCH-TABLES.md](references/DISPATCH-TABLES.md) for all dispatch table implementations.
+
+See [references/UDF-PLUGINS.md](references/UDF-PLUGINS.md) for comprehensive UDF plugin development guide.
 
 See [references/EXAMPLES.md](references/EXAMPLES.md) for programming examples and common patterns.
 

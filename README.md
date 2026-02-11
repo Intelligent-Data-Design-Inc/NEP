@@ -323,6 +323,7 @@ NEP v3.5.1 includes comprehensive example programs in C and Fortran to help you 
 ### What's Included
 
 **Classic NetCDF Examples:**
+- Quickstart introduction to NetCDF
 - Basic 2D arrays and coordinate variables
 - Format variants (classic, 64-bit offset, CDF-5)
 - Size limits and unlimited dimensions
@@ -334,6 +335,7 @@ NEP v3.5.1 includes comprehensive example programs in C and Fortran to help you 
 - Chunking strategies and performance
 - Multiple unlimited dimensions
 - User-defined compound and enum types
+- Hierarchical groups and dimension visibility
 
 **Dual Language Support:**
 - All examples provided in both C and Fortran

@@ -603,7 +603,7 @@ main(int argc, char **argv)
     
 #ifdef HAVE_GEOTIFF
     /* Initialize GeoTIFF */
-    if (NC_GEOTIFF_initialize() != NC_NOERR)
+    if (!GEOTIFF_INIT_OK())
     {
         printf("ERROR: Failed to initialize GeoTIFF\n");
         return 1;

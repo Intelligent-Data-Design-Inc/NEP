@@ -13,9 +13,14 @@
 
 #include "config.h"
 #include "ncdispatch.h"
+#include "NEP.h"
 
-/** CDF format uses UDF0 slot in NetCDF-C dispatch table */
+/** CDF format uses UDF2 slot for dispatch table model field (see NEP.h for slot allocation) */
+#ifdef NC_FORMATX_UDF2
+#define NC_FORMATX_NC_CDF NC_FORMATX_UDF2
+#else
 #define NC_FORMATX_NC_CDF NC_FORMATX_UDF0
+#endif
 
 /** This is the max number of dimensions for a CDF SD dataset (from
  * CDF documentation). */
@@ -57,11 +62,30 @@ extern "C" {
     NC_CDF_get_vara(int ncid, int varid, const size_t *start, const size_t *count,
                      void *value, nc_type);
 
+#ifdef HAVE_NETCDF_UDF_SELF_REGISTRATION
+    extern NC_Dispatch*
+    NC_CDF_initialize(void);
+#else
     extern int
     NC_CDF_initialize(void);
+#endif
 
     extern int
     NC_CDF_finalize(void);
+
+/** Helper macros for calling NC_CDF_initialize() portably.
+ *  When self-registration is available, initialize returns NC_Dispatch*.
+ *  When not, it returns int (NC_NOERR on success). */
+#ifdef HAVE_NETCDF_UDF_SELF_REGISTRATION
+#define CDF_INIT_OK() (NC_CDF_initialize() != NULL)
+#define CDF_INIT_AND_ASSIGN(ret) do { \
+        NC_Dispatch *_d = NC_CDF_initialize(); \
+        (ret) = (_d != NULL) ? NC_NOERR : NC_ENOTNC; \
+    } while(0)
+#else
+#define CDF_INIT_OK() (NC_CDF_initialize() == NC_NOERR)
+#define CDF_INIT_AND_ASSIGN(ret) do { (ret) = NC_CDF_initialize(); } while(0)
+#endif
 
     extern const NC_Dispatch *CDF_dispatch_table;
 

@@ -116,15 +116,24 @@ const NC_Dispatch *GEOTIFF_dispatch_table = NULL;
 /**
  * @internal Initialize GeoTIFF dispatch layer.
  *
- * @return NC_NOERR on success.
+ * @return Dispatch table pointer for self-loading, or NC_NOERR for manual registration.
  * @author Edward Hartnett
  */
+#ifdef HAVE_NETCDF_UDF_SELF_REGISTRATION
+NC_Dispatch*
+NC_GEOTIFF_initialize(void)
+{
+    GEOTIFF_dispatch_table = &GEOTIFF_dispatcher;
+    return (NC_Dispatch*)&GEOTIFF_dispatcher;
+}
+#else
 int
 NC_GEOTIFF_initialize(void)
 {
     GEOTIFF_dispatch_table = &GEOTIFF_dispatcher;
     return NC_NOERR;
 }
+#endif
 
 /**
  * @internal Finalize GeoTIFF dispatch layer.
