@@ -5,25 +5,31 @@
  * This example shows the fundamental workflow for working with NetCDF files:
  * - Creating a new NetCDF file
  * - Defining dimensions and variables
+ * - Adding global and variable attributes
  * - Writing data to variables
  * - Closing and reopening the file
- * - Reading and verifying data
+ * - Querying file structure with nc_inq(), nc_inq_dim(), and nc_inq_var()
+ * - Reading and verifying attributes and data
  *
  * The program creates a 2D integer array (6x12) with sequential values (0, 1, 2, ..., 71),
- * writes it to a NetCDF-4 file, then reopens the file to verify both metadata and data
- * correctness. This demonstrates the complete read-write cycle that forms the foundation
- * of NetCDF programming.
+ * writes it to a NetCDF-4 file with a global attribute ("title") and a variable attribute
+ * ("units"), then reopens the file to verify metadata, attributes, and data correctness.
+ * This demonstrates the complete read-write cycle that forms the foundation of NetCDF
+ * programming.
  *
  * **Learning Objectives:**
- * - Understand basic NetCDF file structure (dimensions, variables, data)
+ * - Understand basic NetCDF file structure (dimensions, variables, attributes, data)
  * - Learn dimension and variable definition workflow
+ * - Add global and variable attributes
  * - Master data writing and reading operations
+ * - Query file metadata with nc_inq(), nc_inq_dim(), and nc_inq_var()
  * - Implement error handling patterns with nc_strerror()
- * - Verify metadata and data integrity
+ * - Verify metadata, attribute, and data integrity
  *
  * **Key Concepts:**
  * - **Dimensions**: Named axes that define array shapes (x=6, y=12)
  * - **Variables**: Named data arrays with defined dimensions and types
+ * - **Attributes**: Metadata attached to variables or the file (global)
  * - **NetCDF-4 Format**: HDF5-based format with enhanced features
  * - **Define Mode**: Metadata definition phase before data writing
  * - **Data Mode**: Phase where actual data is written/read
@@ -50,6 +56,8 @@
  * Creates simple_2D.nc containing:
  * - 2 dimensions: x(6), y(12)
  * - 1 variable: data(y, x) of type int
+ * - 1 global attribute: title = "Simple 2D Example"
+ * - 1 variable attribute: units = "m/s"
  * - Data: sequential integers from 0 to 71
  *
  * @author Edward Hartnett

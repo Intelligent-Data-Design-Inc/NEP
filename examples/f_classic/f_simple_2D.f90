@@ -3,12 +3,16 @@
 !!
 !! This is the Fortran equivalent of simple_2D.c, demonstrating the fundamental
 !! workflow for working with NetCDF files using the Fortran 90 NetCDF API. The
-!! program creates a 2D integer array, writes it to a NetCDF file, then reopens
-!! the file to verify both metadata and data correctness.
+!! program creates a 2D integer array, writes it to a NetCDF file with a global
+!! attribute ("title") and a variable attribute ("units"), then reopens the file
+!! to verify metadata, attributes, and data correctness using nf90_inquire(),
+!! nf90_inquire_dimension(), and nf90_inquire_variable().
 !!
 !! **Learning Objectives:**
 !! - Understand Fortran NetCDF API (nf90_* functions)
 !! - Learn Fortran column-major vs C row-major array ordering
+!! - Add global and variable attributes
+!! - Query file metadata with nf90_inquire(), nf90_inquire_dimension(), nf90_inquire_variable()
 !! - Master error handling with nf90_noerr and nf90_strerror()
 !! - Work with Fortran array indexing (1-based vs C's 0-based)
 !! - Verify equivalence with C version (simple_2D.c)
@@ -50,6 +54,8 @@
 !! Creates f_simple_2D.nc containing:
 !! - 2 dimensions: x(6), y(12)
 !! - 1 variable: data(x, y) of type int
+!! - 1 global attribute: title = "Simple 2D Example"
+!! - 1 variable attribute: units = "m/s"
 !! - Data: sequential integers from 0 to 71
 !! - Output identical to simple_2D.c (verified via ncdump)
 !!

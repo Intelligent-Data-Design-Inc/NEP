@@ -17,7 +17,7 @@
  * @section learning_path Recommended Learning Path
  * 
  * **Beginners** - Start here:
- * 1. @ref simple_2D.c / @ref f_simple_2D.f90 - Basic 2D array operations
+ * 1. @ref simple_2D.c / @ref f_simple_2D.f90 - Basic 2D array with attributes and metadata inquiry
  * 2. @ref coord_vars.c / @ref f_coord_vars.f90 - Coordinate variables and CF metadata
  * 3. @ref coord.c / @ref f_coord.f90 - 3D surface temperature with time, lat, lon coordinates
  * 4. @ref unlimited_dim.c / @ref f_unlimited_dim.f90 - Time-series with unlimited dimensions
@@ -39,7 +39,7 @@
  * @subsection classic_c Classic NetCDF (C)
  * 
  * Located in `examples/classic/`:
- * - @ref simple_2D.c - Basic 2D array creation and reading
+ * - @ref simple_2D.c - Basic 2D array with attributes and metadata inquiry (nc_inq, nc_inq_dim, nc_inq_var)
  * - @ref coord_vars.c - Coordinate variables with CF conventions
  * - @ref coord.c - 3D surface temperature with time, lat, lon coordinate variables
  * - @ref format_variants.c - NetCDF format variants (CDF-1, CDF-2, CDF-5)
@@ -59,7 +59,7 @@
  * @subsection classic_fortran Classic NetCDF (Fortran)
  * 
  * Located in `examples/f_classic/`:
- * - @ref f_simple_2D.f90 - Basic 2D array (Fortran)
+ * - @ref f_simple_2D.f90 - Basic 2D array with attributes and metadata inquiry (Fortran)
  * - @ref f_coord_vars.f90 - Coordinate variables (Fortran)
  * - @ref f_coord.f90 - 3D surface temperature with time, lat, lon coordinates (Fortran)
  * - @ref f_format_variants.f90 - Format variants (Fortran)
