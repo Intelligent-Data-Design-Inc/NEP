@@ -102,6 +102,16 @@ int main()
    if ((retval = nc_def_var(ncid, "data", NC_INT, NDIMS, dimids, &varid)))
       ERR(retval);
    
+   /* Add a global attribute */
+   if ((retval = nc_put_att_text(ncid, NC_GLOBAL, "title",
+                                  strlen("Simple 2D Example"), "Simple 2D Example")))
+      ERR(retval);
+   
+   /* Add a variable attribute */
+   if ((retval = nc_put_att_text(ncid, varid, "units",
+                                  strlen("m/s"), "m/s")))
+      ERR(retval);
+   
    /* End define mode */
    if ((retval = nc_enddef(ncid)))
       ERR(retval);
@@ -140,11 +150,11 @@ int main()
    }
    printf("Verified: %d variable\n", nvars_in);
    
-   if (ngatts_in != 0) {
-      printf("Error: Expected 0 global attributes, found %d\n", ngatts_in);
+   if (ngatts_in != 1) {
+      printf("Error: Expected 1 global attribute, found %d\n", ngatts_in);
       exit(ERRCODE);
    }
-   printf("Verified: %d global attributes\n", ngatts_in);
+   printf("Verified: %d global attribute\n", ngatts_in);
    
    if (unlimdimid_in != -1) {
       printf("Error: Expected no unlimited dimension, found dimid %d\n", unlimdimid_in);
@@ -206,6 +216,34 @@ int main()
       exit(ERRCODE);
    }
    printf("Verified: variable '%s' type NC_INT, %d dims\n", var_name, var_ndims);
+   
+   /* Verify global attribute */
+   char title_in[100];
+   size_t title_len;
+   if ((retval = nc_inq_attlen(ncid, NC_GLOBAL, "title", &title_len)))
+      ERR(retval);
+   if ((retval = nc_get_att_text(ncid, NC_GLOBAL, "title", title_in)))
+      ERR(retval);
+   title_in[title_len] = '\0';
+   if (strcmp(title_in, "Simple 2D Example") != 0) {
+      printf("Error: Expected title 'Simple 2D Example', found '%s'\n", title_in);
+      exit(ERRCODE);
+   }
+   printf("Verified: global attribute 'title' = '%s'\n", title_in);
+   
+   /* Verify variable attribute */
+   char units_in[100];
+   size_t units_len;
+   if ((retval = nc_inq_attlen(ncid, varid, "units", &units_len)))
+      ERR(retval);
+   if ((retval = nc_get_att_text(ncid, varid, "units", units_in)))
+      ERR(retval);
+   units_in[units_len] = '\0';
+   if (strcmp(units_in, "m/s") != 0) {
+      printf("Error: Expected units 'm/s', found '%s'\n", units_in);
+      exit(ERRCODE);
+   }
+   printf("Verified: variable attribute 'units' = '%s'\n", units_in);
    
    /* Read the data back */
    if ((retval = nc_get_var_int(ncid, varid, &data_in[0][0])))

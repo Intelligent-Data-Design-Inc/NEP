@@ -80,6 +80,8 @@ program f_simple_2D
    character(len=NF90_MAX_NAME) :: var_name_in
    integer :: var_type, var_ndims
    integer :: var_dimids(NDIMS)
+   character(len=100) :: title_in, units_in
+   integer :: att_len
    integer :: errors
    integer :: expected
    
@@ -108,6 +110,14 @@ program f_simple_2D
    dimids(1) = x_dimid
    dimids(2) = y_dimid
    retval = nf90_def_var(ncid, "data", NF90_INT, dimids, varid)
+   if (retval /= nf90_noerr) call handle_err(retval)
+   
+   ! Add a global attribute
+   retval = nf90_put_att(ncid, NF90_GLOBAL, "title", "Simple 2D Example")
+   if (retval /= nf90_noerr) call handle_err(retval)
+   
+   ! Add a variable attribute
+   retval = nf90_put_att(ncid, varid, "units", "m/s")
    if (retval /= nf90_noerr) call handle_err(retval)
    
    ! End define mode
@@ -148,11 +158,11 @@ program f_simple_2D
    end if
    print *, "Verified: ", nvars_in, " variable"
    
-   if (ngatts_in /= 0) then
-      print *, "Error: Expected 0 global attributes, found ", ngatts_in
+   if (ngatts_in /= 1) then
+      print *, "Error: Expected 1 global attribute, found ", ngatts_in
       stop 2
    end if
-   print *, "Verified: ", ngatts_in, " global attributes"
+   print *, "Verified: ", ngatts_in, " global attribute"
    
    if (unlimdimid_in /= -1) then
       print *, "Error: Expected no unlimited dimension, found dimid ", unlimdimid_in
@@ -209,6 +219,29 @@ program f_simple_2D
       stop 2
    end if
    print *, "Verified: variable '", trim(var_name_in), "' type NF90_INT, ", var_ndims, " dims"
+   
+   ! Verify global attribute
+   retval = nf90_inquire_attribute(ncid, NF90_GLOBAL, "title", len=att_len)
+   if (retval /= nf90_noerr) call handle_err(retval)
+   retval = nf90_get_att(ncid, NF90_GLOBAL, "title", title_in)
+   if (retval /= nf90_noerr) call handle_err(retval)
+   if (title_in(1:att_len) /= "Simple 2D Example") then
+      print *, "Error: Expected title 'Simple 2D Example', found '", &
+               title_in(1:att_len), "'"
+      stop 2
+   end if
+   print *, "Verified: global attribute 'title' = '", title_in(1:att_len), "'"
+   
+   ! Verify variable attribute
+   retval = nf90_inquire_attribute(ncid, varid, "units", len=att_len)
+   if (retval /= nf90_noerr) call handle_err(retval)
+   retval = nf90_get_att(ncid, varid, "units", units_in)
+   if (retval /= nf90_noerr) call handle_err(retval)
+   if (units_in(1:att_len) /= "m/s") then
+      print *, "Error: Expected units 'm/s', found '", units_in(1:att_len), "'"
+      stop 2
+   end if
+   print *, "Verified: variable attribute 'units' = '", units_in(1:att_len), "'"
    
    ! Read the data back
    retval = nf90_get_var(ncid, varid, data_in)
