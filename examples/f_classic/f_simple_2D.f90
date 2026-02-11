@@ -76,7 +76,10 @@ program f_simple_2D
    integer :: i, j
    integer :: ndims_in, nvars_in
    integer :: len_x, len_y
-   integer :: var_type
+   character(len=NF90_MAX_NAME) :: dim_name
+   character(len=NF90_MAX_NAME) :: var_name_in
+   integer :: var_type, var_ndims
+   integer :: var_dimids(NDIMS)
    integer :: errors
    integer :: expected
    
@@ -145,31 +148,55 @@ program f_simple_2D
    end if
    print *, "Verified: ", nvars_in, " variable"
    
-   ! Verify dimension sizes
-   retval = nf90_inquire_dimension(ncid, x_dimid, len=len_x)
-   if (retval /= nf90_noerr) call handle_err(retval)
-   retval = nf90_inquire_dimension(ncid, y_dimid, len=len_y)
+   ! Verify dimensions using nf90_inquire_dimension()
+   retval = nf90_inquire_dimension(ncid, x_dimid, name=dim_name, len=len_x)
    if (retval /= nf90_noerr) call handle_err(retval)
    
+   if (trim(dim_name) /= "x") then
+      print *, "Error: Expected dimension name 'x', found '", trim(dim_name), "'"
+      stop 2
+   end if
    if (len_x /= NX) then
       print *, "Error: Expected x dimension = ", NX, ", found ", len_x
+      stop 2
+   end if
+   print *, "Verified: dimension '", trim(dim_name), "' = ", len_x
+   
+   retval = nf90_inquire_dimension(ncid, y_dimid, name=dim_name, len=len_y)
+   if (retval /= nf90_noerr) call handle_err(retval)
+   
+   if (trim(dim_name) /= "y") then
+      print *, "Error: Expected dimension name 'y', found '", trim(dim_name), "'"
       stop 2
    end if
    if (len_y /= NY) then
       print *, "Error: Expected y dimension = ", NY, ", found ", len_y
       stop 2
    end if
-   print *, "Verified: x dimension = ", len_x, ", y dimension = ", len_y
+   print *, "Verified: dimension '", trim(dim_name), "' = ", len_y
    
-   ! Verify variable type
-   retval = nf90_inquire_variable(ncid, varid, xtype=var_type)
+   ! Verify variable using nf90_inquire_variable()
+   retval = nf90_inquire_variable(ncid, varid, name=var_name_in, xtype=var_type, &
+                                  ndims=var_ndims, dimids=var_dimids)
    if (retval /= nf90_noerr) call handle_err(retval)
    
+   if (trim(var_name_in) /= "data") then
+      print *, "Error: Expected variable name 'data', found '", trim(var_name_in), "'"
+      stop 2
+   end if
    if (var_type /= NF90_INT) then
       print *, "Error: Expected variable type NF90_INT, found ", var_type
       stop 2
    end if
-   print *, "Verified: variable type is NF90_INT"
+   if (var_ndims /= NDIMS) then
+      print *, "Error: Expected ", NDIMS, " dimensions, found ", var_ndims
+      stop 2
+   end if
+   if (var_dimids(1) /= x_dimid .or. var_dimids(2) /= y_dimid) then
+      print *, "Error: Unexpected dimension IDs for variable"
+      stop 2
+   end if
+   print *, "Verified: variable '", trim(var_name_in), "' type NF90_INT, ", var_ndims, " dims"
    
    ! Read the data back
    retval = nf90_get_var(ncid, varid, data_in)

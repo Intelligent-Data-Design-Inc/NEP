@@ -58,6 +58,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <netcdf.h>
 
 #define FILE_NAME "simple_2D.nc"
@@ -139,33 +140,60 @@ int main()
    }
    printf("Verified: %d variable\n", nvars_in);
    
-   /* Verify dimension sizes */
+   /* Verify dimensions using nc_inq_dim() */
+   char dim_name[NC_MAX_NAME + 1];
    size_t len_x, len_y;
-   if ((retval = nc_inq_dimlen(ncid, x_dimid, &len_x)))
-      ERR(retval);
-   if ((retval = nc_inq_dimlen(ncid, y_dimid, &len_y)))
+   if ((retval = nc_inq_dim(ncid, x_dimid, dim_name, &len_x)))
       ERR(retval);
    
+   if (strcmp(dim_name, "x") != 0) {
+      printf("Error: Expected dimension name 'x', found '%s'\n", dim_name);
+      exit(ERRCODE);
+   }
    if (len_x != NX) {
       printf("Error: Expected x dimension = %d, found %zu\n", NX, len_x);
+      exit(ERRCODE);
+   }
+   printf("Verified: dimension '%s' = %zu\n", dim_name, len_x);
+   
+   if ((retval = nc_inq_dim(ncid, y_dimid, dim_name, &len_y)))
+      ERR(retval);
+   
+   if (strcmp(dim_name, "y") != 0) {
+      printf("Error: Expected dimension name 'y', found '%s'\n", dim_name);
       exit(ERRCODE);
    }
    if (len_y != NY) {
       printf("Error: Expected y dimension = %d, found %zu\n", NY, len_y);
       exit(ERRCODE);
    }
-   printf("Verified: x dimension = %zu, y dimension = %zu\n", len_x, len_y);
+   printf("Verified: dimension '%s' = %zu\n", dim_name, len_y);
    
-   /* Verify variable type */
+   /* Verify variable using nc_inq_var() */
+   char var_name[NC_MAX_NAME + 1];
    nc_type var_type;
-   if ((retval = nc_inq_vartype(ncid, varid, &var_type)))
+   int var_ndims;
+   int var_dimids[NDIMS];
+   if ((retval = nc_inq_var(ncid, varid, var_name, &var_type, &var_ndims, var_dimids, NULL)))
       ERR(retval);
    
+   if (strcmp(var_name, "data") != 0) {
+      printf("Error: Expected variable name 'data', found '%s'\n", var_name);
+      exit(ERRCODE);
+   }
    if (var_type != NC_INT) {
       printf("Error: Expected variable type NC_INT, found %d\n", var_type);
       exit(ERRCODE);
    }
-   printf("Verified: variable type is NC_INT\n");
+   if (var_ndims != NDIMS) {
+      printf("Error: Expected %d dimensions, found %d\n", NDIMS, var_ndims);
+      exit(ERRCODE);
+   }
+   if (var_dimids[0] != y_dimid || var_dimids[1] != x_dimid) {
+      printf("Error: Unexpected dimension IDs for variable\n");
+      exit(ERRCODE);
+   }
+   printf("Verified: variable '%s' type NC_INT, %d dims\n", var_name, var_ndims);
    
    /* Read the data back */
    if ((retval = nc_get_var_int(ncid, varid, &data_in[0][0])))
