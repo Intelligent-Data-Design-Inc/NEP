@@ -147,6 +147,25 @@ NetCDF-C now supports self-loading UDFs via RC file configuration. This version 
 - Documentation updated with RC file examples and backward compatibility notes
 - No slot conflicts between GeoTIFF and CDF
 
+#### Sprint 4: More Examples
+**Detailed Plan**: See `docs/plan/v1.5.4-sprint4-more-examples.md`
+
+- Add C example `classic/coord.c` and Fortran example `f_classic/f_coord.f90`
+- Create a classic-format NetCDF file with three fixed dimensions: lat(4), lon(5), time(3)
+- Create coordinate variables for lat, lon, time with full CF convention attributes
+  - Time attributes: `units = "hours since 2026-01-01"`, `standard_name`, `long_name`, `axis`, `calendar`
+  - Lat/lon attributes: `units`, `standard_name`, `long_name`, `axis`
+- Create a variable called "sfc_temp" with dimensions time, lat, lon
+  - Add `coordinates = "time lat lon"` attribute (CF best practice)
+  - Add `_FillValue`, `units`, `standard_name`, `long_name` attributes
+- Fill coordinate vars with reasonable data (lat: -45 to 45, lon: -120 to 120, time: 0/6/12 hours)
+- Generate surface temperature data using formula: `280.0 + lat_idx * 2.0 + lon_idx * 0.5 + time_idx * 1.0`
+- Write all coordinate and sfc_temp variables
+- Close the file
+- Re-open the file and validate all contents (dimensions, variables, attributes, data)
+- Generate CDL expected output files and add CDL validation tests
+- Integrate into CMake and Autotools build systems with test scripts
+
 
 ### V1.5.3
 #### Sprint 1: Add C Quickstart Example

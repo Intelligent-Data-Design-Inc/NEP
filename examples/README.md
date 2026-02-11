@@ -8,6 +8,7 @@ This directory contains example programs demonstrating NetCDF API usage in both 
 Located in `classic/`:
 - **quickstart.c** - Minimal introduction to NetCDF - the simplest starting point for new users
 - **simple_2D.c** - Basic 2D array creation and writing
+- **coord.c** - 3D surface temperature with time, latitude, and longitude coordinate variables following CF conventions
 - **coord_vars.c** - Working with coordinate variables
 - **format_variants.c** - Different NetCDF format variants (classic, 64-bit offset, CDF-5)
 - **size_limits.c** - Demonstrating size and dimension limits
@@ -27,6 +28,7 @@ Located in `netcdf-4/`:
 Located in `f_classic/`:
 - **f_quickstart.f90** - Fortran version of quickstart - minimal introduction to NetCDF from Fortran
 - **f_simple_2D.f90** - Basic 2D array in Fortran
+- **f_coord.f90** - 3D surface temperature with time, latitude, and longitude coordinate variables following CF conventions
 - **f_coord_vars.f90** - Coordinate variables in Fortran
 - **f_format_variants.f90** - Format variants in Fortran
 - **f_size_limits.f90** - Size limits in Fortran

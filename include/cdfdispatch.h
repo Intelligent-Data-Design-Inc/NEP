@@ -73,6 +73,20 @@ extern "C" {
     extern int
     NC_CDF_finalize(void);
 
+/** Helper macros for calling NC_CDF_initialize() portably.
+ *  When self-registration is available, initialize returns NC_Dispatch*.
+ *  When not, it returns int (NC_NOERR on success). */
+#ifdef HAVE_NETCDF_UDF_SELF_REGISTRATION
+#define CDF_INIT_OK() (NC_CDF_initialize() != NULL)
+#define CDF_INIT_AND_ASSIGN(ret) do { \
+        NC_Dispatch *_d = NC_CDF_initialize(); \
+        (ret) = (_d != NULL) ? NC_NOERR : NC_ENOTNC; \
+    } while(0)
+#else
+#define CDF_INIT_OK() (NC_CDF_initialize() == NC_NOERR)
+#define CDF_INIT_AND_ASSIGN(ret) do { (ret) = NC_CDF_initialize(); } while(0)
+#endif
+
     extern const NC_Dispatch *CDF_dispatch_table;
 
 #if defined(__cplusplus)
