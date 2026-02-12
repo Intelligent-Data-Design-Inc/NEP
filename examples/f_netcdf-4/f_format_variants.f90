@@ -1,12 +1,13 @@
 !> @file f_format_variants.f90
-!! @brief Demonstrates NetCDF classic format variants (CDF-1, CDF-2, CDF-5) in Fortran
+!! @brief Demonstrates all five NetCDF binary format variants in Fortran
 !!
-!! This is the Fortran equivalent of format_variants.c, demonstrating the three
-!! classic NetCDF format variants using the Fortran 90 NetCDF API. The program
+!! This is the Fortran equivalent of format_variants.c, demonstrating all five
+!! NetCDF binary format variants using the Fortran 90 NetCDF API. The program
 !! creates identical data structures in each format and compares their characteristics.
 !!
 !! **Learning Objectives:**
-!! - Understand format flags in Fortran (NF90_CLASSIC_MODEL, NF90_64BIT_OFFSET, NF90_64BIT_DATA)
+!! - Understand format flags in Fortran (NF90_CLASSIC_MODEL, NF90_64BIT_OFFSET,
+!!   NF90_64BIT_DATA, NF90_NETCDF4, IOR(NF90_NETCDF4, NF90_CLASSIC_MODEL))
 !! - Learn format detection with nf90_inq_format()
 !! - Compare file sizes and format characteristics
 !! - Make informed format choices in Fortran applications
@@ -15,15 +16,16 @@
 !! - NF90_CLASSIC_MODEL - CDF-1 format (2GB limits)
 !! - NF90_64BIT_OFFSET - CDF-2 format (4GB variable limit)
 !! - NF90_64BIT_DATA - CDF-5 format (unlimited sizes)
+!! - NF90_NETCDF4 - NetCDF-4/HDF5 format (groups, compression, user types)
+!! - IOR(NF90_NETCDF4, NF90_CLASSIC_MODEL) - HDF5 storage, classic data model
 !!
 !! **Prerequisites:**
 !! - f_simple_2D.f90 - Basic file operations
-!! - format_variants.c - C equivalent for comparison
+!! - f_simple_nc4.f90 - NetCDF-4 basics
 !!
 !! **Related Examples:**
 !! - format_variants.c - C equivalent
-!! - f_size_limits.f90 - Demonstrates actual size limits
-!! - f_simple_nc4.f90 - NetCDF-4 format alternative
+!! - f_compression.f90 - NetCDF-4 compression features
 !!
 !! **Compilation:**
 !! @code
@@ -46,10 +48,10 @@ program f_format_variants
    integer, parameter :: NTIME = 10, NLAT = 20, NLON = 30
    integer, parameter :: ERRCODE = 2
    
-   print *, "NetCDF Classic Format Variants Comparison"
+   print *, "NetCDF Format Variants Comparison"
    print *, ""
-   print *, "This program creates three files with identical data structures"
-   print *, "in different classic NetCDF formats to demonstrate their differences."
+   print *, "This program creates five files with identical data structures"
+   print *, "in all five NetCDF binary formats to demonstrate their differences."
    print *, ""
    print *, "Data structure:"
    print *, "  Dimensions: time=", NTIME, ", lat=", NLAT, ", lon=", NLON
@@ -68,14 +70,27 @@ program f_format_variants
                           "NF90_64BIT_OFFSET")
    call create_format_file("f_format_64bit_data.nc", NF90_64BIT_DATA, &
                           "NF90_64BIT_DATA")
+   call create_format_file("f_format_netcdf4.nc", NF90_NETCDF4, &
+                          "NF90_NETCDF4")
+   call create_format_file("f_format_netcdf4_classic.nc", &
+                          IOR(NF90_NETCDF4, NF90_CLASSIC_MODEL), &
+                          "NF90_NETCDF4+NF90_CLASSIC_MODEL")
    
    ! Verify files
    print *, ""
    print *, "=== Verifying Format Files ==="
    
-   call verify_format_file("f_format_classic.nc", "NF90_CLASSIC_MODEL")
-   call verify_format_file("f_format_64bit_offset.nc", "NF90_64BIT_OFFSET")
-   call verify_format_file("f_format_64bit_data.nc", "NF90_64BIT_DATA")
+   call verify_format_file("f_format_classic.nc", NF90_FORMAT_CLASSIC, &
+                          "NF90_FORMAT_CLASSIC")
+   call verify_format_file("f_format_64bit_offset.nc", NF90_FORMAT_64BIT_OFFSET, &
+                          "NF90_FORMAT_64BIT_OFFSET")
+   call verify_format_file("f_format_64bit_data.nc", NF90_FORMAT_64BIT_DATA, &
+                          "NF90_FORMAT_64BIT_DATA")
+   call verify_format_file("f_format_netcdf4.nc", NF90_FORMAT_NETCDF4, &
+                          "NF90_FORMAT_NETCDF4")
+   call verify_format_file("f_format_netcdf4_classic.nc", &
+                          NF90_FORMAT_NETCDF4_CLASSIC, &
+                          "NF90_FORMAT_NETCDF4_CLASSIC")
    
    ! Summary
    print *, ""
@@ -86,25 +101,45 @@ program f_format_variants
    print *, "NF90_CLASSIC_MODEL (CDF-1):"
    print *, "  File size limit: 2GB"
    print *, "  Variable size limit: 2GB"
+   print *, "  Storage backend: CDF binary"
    print *, "  Compatibility: NetCDF 3.0+, all tools"
    print *, "  Use when: Maximum compatibility needed, files < 2GB"
    print *, ""
    print *, "NF90_64BIT_OFFSET (CDF-2):"
    print *, "  File size limit: effectively unlimited"
    print *, "  Variable size limit: 4GB per variable"
+   print *, "  Storage backend: CDF binary"
    print *, "  Compatibility: NetCDF 3.6.0+"
    print *, "  Use when: Large files needed, variables < 4GB each"
    print *, ""
    print *, "NF90_64BIT_DATA (CDF-5):"
    print *, "  File size limit: effectively unlimited"
    print *, "  Variable size limit: effectively unlimited"
+   print *, "  Storage backend: CDF binary"
    print *, "  Compatibility: NetCDF 4.4.0+ or PnetCDF"
    print *, "  Use when: Very large variables needed (> 4GB)"
    print *, ""
+   print *, "NF90_NETCDF4 (HDF5):"
+   print *, "  File size limit: effectively unlimited"
+   print *, "  Variable size limit: effectively unlimited"
+   print *, "  Storage backend: HDF5"
+   print *, "  Compatibility: NetCDF 4.0+"
+   print *, "  Features: groups, compression, chunking, user-defined types"
+   print *, "  Use when: Advanced features needed (compression, groups, etc.)"
+   print *, ""
+   print *, "IOR(NF90_NETCDF4, NF90_CLASSIC_MODEL) (HDF5 Classic Model):"
+   print *, "  File size limit: effectively unlimited"
+   print *, "  Variable size limit: effectively unlimited"
+   print *, "  Storage backend: HDF5"
+   print *, "  Compatibility: NetCDF 4.0+"
+   print *, "  Features: compression, chunking (no groups, no user-defined types)"
+   print *, "  Use when: HDF5 storage benefits needed with classic data model"
+   print *, ""
    print *, "Key Observations:"
-   print *, "  - All three formats store identical data correctly"
-   print *, "  - File sizes are similar for small datasets"
-   print *, "  - Format choice depends on size requirements and compatibility needs"
+   print *, "  - All five formats store identical data correctly"
+   print *, "  - Classic formats (CDF-1/2/5) have smaller overhead for small files"
+   print *, "  - NetCDF-4 formats (HDF5) have larger overhead but support compression"
+   print *, "  - NC4 classic model is a useful middle ground: HDF5 storage, simple model"
    print *, "  - Use nf90_inq_format() to detect format type when reading files"
    print *, ""
    print *, "*** SUCCESS: All format tests passed! ***"
@@ -178,11 +213,12 @@ contains
       retval = nf90_close(ncid)
       if (retval /= nf90_noerr) call handle_err(retval)
       
-      print *, "  ✓ File created successfully"
+      print *, "  File created successfully"
    end subroutine create_format_file
 
-   subroutine verify_format_file(filename, expected_format_name)
+   subroutine verify_format_file(filename, expected_format, expected_format_name)
       character(len=*), intent(in) :: filename, expected_format_name
+      integer, intent(in) :: expected_format
       
       integer :: ncid, retval
       integer :: format_in
@@ -213,11 +249,23 @@ contains
          detected_format = "NF90_FORMAT_64BIT_OFFSET (CDF-2)"
       else if (format_in == NF90_FORMAT_64BIT_DATA) then
          detected_format = "NF90_FORMAT_64BIT_DATA (CDF-5)"
+      else if (format_in == NF90_FORMAT_NETCDF4) then
+         detected_format = "NF90_FORMAT_NETCDF4 (HDF5)"
+      else if (format_in == NF90_FORMAT_NETCDF4_CLASSIC) then
+         detected_format = "NF90_FORMAT_NETCDF4_CLASSIC (HDF5/CM)"
       else
          detected_format = "UNKNOWN"
       end if
       
       print *, "  Format detected: ", trim(detected_format)
+      
+      ! Verify expected format
+      if (format_in /= expected_format) then
+         print *, "Error: Expected format ", trim(expected_format_name), &
+                  " (", expected_format, "), got ", trim(detected_format), &
+                  " (", format_in, ")"
+         stop ERRCODE
+      end if
       
       ! Verify metadata
       retval = nf90_inquire(ncid, ndims, nvars)
@@ -228,7 +276,7 @@ contains
                   ndims, " dims, ", nvars, " vars"
          stop ERRCODE
       end if
-      print *, "  Metadata: ", ndims, " dimensions, ", nvars, " variables ✓"
+      print *, "  Metadata: ", ndims, " dimensions, ", nvars, " variables"
       
       ! Get variable IDs
       retval = nf90_inq_varid(ncid, "temperature", temp_varid)
@@ -260,7 +308,7 @@ contains
       end if
       
       if (errors == 0) then
-         print *, "  Data validation: ", NTIME * NLAT * NLON * 2, " values verified ✓"
+         print *, "  Data validation: ", NTIME * NLAT * NLON * 2, " values verified"
       else
          print *, "*** FAILED: ", errors, " data validation errors"
          stop ERRCODE

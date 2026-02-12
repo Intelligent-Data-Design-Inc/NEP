@@ -2,10 +2,11 @@
 # Edward Hartnett 1/25/26
 
 # List of NetCDF-4 example programs
-check_PROGRAMS = simple_nc4 compression chunking_performance multi_unlimited user_types groups
+check_PROGRAMS = simple_nc4 format_variants compression chunking_performance multi_unlimited user_types groups
 
 # Source files
 simple_nc4_SOURCES = simple_nc4.c
+format_variants_SOURCES = format_variants.c
 compression_SOURCES = compression.c
 chunking_performance_SOURCES = chunking_performance.c
 multi_unlimited_SOURCES = multi_unlimited.c
@@ -21,10 +22,10 @@ user_types_LDADD = -lm
 # Note: user_types excluded from TESTS - it's a demonstration of upstream NetCDF-4
 # features (compound, vlen, enum, opaque types) that triggers ASAN errors in NetCDF-C
 # Note: groups excluded from TESTS - it's run by test_groups.sh to avoid parallel conflicts
-TESTS = simple_nc4 compression chunking_performance multi_unlimited test_groups.sh
+TESTS = simple_nc4 test_format_variants.sh compression chunking_performance multi_unlimited test_groups.sh
 
 # Include test scripts in distribution
-EXTRA_DIST = test_groups.sh
+EXTRA_DIST = test_format_variants.sh test_groups.sh
 
 # Clean up NetCDF files created by examples
 CLEANFILES = *.nc

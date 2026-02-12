@@ -33,6 +33,7 @@ get_filename_component(HDF5_LIB_DIR "${HDF5_INCLUDE_DIR}/../lib" ABSOLUTE)
 # List of Fortran NetCDF-4 example programs
 set(F_NETCDF4_EXAMPLES
     f_simple_nc4
+    f_format_variants
     f_compression
     f_chunking_performance
     f_multi_unlimited
@@ -133,4 +134,30 @@ if(BUILD_TESTING)
              COMMAND bash validate_cdl.sh f_chunking_performance f_chunk_balanced.nc
                      ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_chunking_performance_balanced_expected.cdl)
     set_tests_properties(f_chunking_performance_validate_balanced PROPERTIES DEPENDS f_chunking_performance_run)
+
+    # Multi-file examples: f_format_variants
+    add_test(NAME f_format_variants_validate_classic
+             COMMAND bash validate_cdl.sh f_format_variants f_format_classic.nc
+                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_format_variants_classic_expected.cdl)
+    set_tests_properties(f_format_variants_validate_classic PROPERTIES DEPENDS f_format_variants_run)
+
+    add_test(NAME f_format_variants_validate_64bit_offset
+             COMMAND bash validate_cdl.sh f_format_variants f_format_64bit_offset.nc
+                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_format_variants_64bit_offset_expected.cdl)
+    set_tests_properties(f_format_variants_validate_64bit_offset PROPERTIES DEPENDS f_format_variants_run)
+
+    add_test(NAME f_format_variants_validate_64bit_data
+             COMMAND bash validate_cdl.sh f_format_variants f_format_64bit_data.nc
+                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_format_variants_64bit_data_expected.cdl)
+    set_tests_properties(f_format_variants_validate_64bit_data PROPERTIES DEPENDS f_format_variants_run)
+
+    add_test(NAME f_format_variants_validate_netcdf4
+             COMMAND bash validate_cdl.sh f_format_variants f_format_netcdf4.nc
+                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_format_variants_netcdf4_expected.cdl)
+    set_tests_properties(f_format_variants_validate_netcdf4 PROPERTIES DEPENDS f_format_variants_run)
+
+    add_test(NAME f_format_variants_validate_netcdf4_classic
+             COMMAND bash validate_cdl.sh f_format_variants f_format_netcdf4_classic.nc
+                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_format_variants_netcdf4_classic_expected.cdl)
+    set_tests_properties(f_format_variants_validate_netcdf4_classic PROPERTIES DEPENDS f_format_variants_run)
 endif()

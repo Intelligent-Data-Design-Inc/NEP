@@ -36,7 +36,6 @@ set(CLASSIC_EXAMPLES
     simple_2D
     coord
     coord_vars
-    format_variants
     size_limits
     unlimited_dim
     var4d

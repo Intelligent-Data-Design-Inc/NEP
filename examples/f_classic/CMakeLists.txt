@@ -36,7 +36,6 @@ set(F_CLASSIC_EXAMPLES
     f_simple_2D
     f_coord
     f_coord_vars
-    f_format_variants
     f_size_limits
     f_unlimited_dim
     f_var4d
@@ -93,22 +92,6 @@ if(BUILD_TESTING)
              COMMAND bash validate_cdl.sh f_var4d f_var4d.nc 
                      ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_var4d_expected.cdl)
     set_tests_properties(f_var4d_validate PROPERTIES DEPENDS f_var4d_run)
-    
-    # Multi-file examples: f_format_variants
-    add_test(NAME f_format_variants_validate_classic
-             COMMAND bash validate_cdl.sh f_format_variants f_format_classic.nc
-                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_format_variants_classic_expected.cdl)
-    set_tests_properties(f_format_variants_validate_classic PROPERTIES DEPENDS f_format_variants_run)
-    
-    add_test(NAME f_format_variants_validate_64bit_offset
-             COMMAND bash validate_cdl.sh f_format_variants f_format_64bit_offset.nc
-                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_format_variants_64bit_offset_expected.cdl)
-    set_tests_properties(f_format_variants_validate_64bit_offset PROPERTIES DEPENDS f_format_variants_run)
-    
-    add_test(NAME f_format_variants_validate_64bit_data
-             COMMAND bash validate_cdl.sh f_format_variants f_format_64bit_data.nc
-                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_format_variants_64bit_data_expected.cdl)
-    set_tests_properties(f_format_variants_validate_64bit_data PROPERTIES DEPENDS f_format_variants_run)
     
     # Multi-file examples: f_size_limits
     add_test(NAME f_size_limits_validate_classic
