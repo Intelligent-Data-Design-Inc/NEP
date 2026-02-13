@@ -19,11 +19,12 @@
  * - Make informed format choices for different use cases
  *
  * **Key Concepts:**
- * - **NC_CLASSIC_MODEL (CDF-1)**: Original NetCDF format, 2GB limits
+ * - **NC_CLOBBER (CDF-1)**: Original NetCDF format, 2GB limits (default, no format flag needed)
  * - **NC_64BIT_OFFSET (CDF-2)**: Extended format with 4GB variable limit
  * - **NC_64BIT_DATA (CDF-5)**: Modern format with unlimited variable sizes
  * - **NC_NETCDF4**: NetCDF-4/HDF5 format with groups, compression, user types
  * - **NC_NETCDF4|NC_CLASSIC_MODEL**: HDF5 storage with classic data model
+ * - **NC_CLASSIC_MODEL**: Only used with NC_NETCDF4 to restrict to classic data model
  * - **Format Detection**: Runtime identification of file format
  * - **Backward Compatibility**: Older formats work with all NetCDF versions
  *
@@ -31,7 +32,7 @@
  *
  * | Format | File Limit | Variable Limit | NetCDF Version | Backend | Use Case |
  * |--------|-----------|----------------|----------------|---------|----------|
- * | CDF-1  | 2GB       | 2GB           | 3.0+           | CDF     | Maximum compatibility |
+ * | CDF-1  | 2GB       | 2GB           | 3.0+           | CDF     | Maximum compatibility (default) |
  * | CDF-2  | Unlimited | 4GB           | 3.6.0+         | CDF     | Large files, moderate variables |
  * | CDF-5  | Unlimited | Unlimited     | 4.4.0+         | CDF     | Very large variables |
  * | NC4    | Unlimited | Unlimited     | 4.0+           | HDF5    | Full NetCDF-4 features |
@@ -91,18 +92,17 @@ long get_file_size(const char *filename)
    return -1;
 }
 
-/* Create a file in the specified format with identical data structure */
-void create_format_file(const char *filename, int format_flag, const char *format_name)
+/* Define dimensions, variables, attributes, and write data to an open file.
+ * The nc_create() call is done in main() so the format flag is clearly visible. */
+void populate_file(int ncid)
 {
-   int ncid, time_dimid, lat_dimid, lon_dimid;
+   int time_dimid, lat_dimid, lon_dimid;
    int temp_varid, pressure_varid;
    int dimids[3];
    int retval;
    
    float temperature[NTIME][NLAT][NLON];
    float pressure[NTIME][NLAT][NLON];
-   
-   printf("Creating %s format file: %s\n", format_name, filename);
    
    /* Initialize data */
    for (int t = 0; t < NTIME; t++)
@@ -111,10 +111,6 @@ void create_format_file(const char *filename, int format_flag, const char *forma
             temperature[t][i][j] = 273.15 + t * 1.0 + i * 0.5 + j * 0.2;
             pressure[t][i][j] = 1013.25 + t * 0.1 + i * 0.05 + j * 0.02;
          }
-   
-   /* Create file */
-   if ((retval = nc_create(filename, format_flag | NC_CLOBBER, &ncid)))
-      ERR(retval);
    
    /* Define dimensions */
    if ((retval = nc_def_dim(ncid, "time", NTIME, &time_dimid)))
@@ -149,12 +145,6 @@ void create_format_file(const char *filename, int format_flag, const char *forma
       ERR(retval);
    if ((retval = nc_put_var_float(ncid, pressure_varid, &pressure[0][0][0])))
       ERR(retval);
-   
-   /* Close file */
-   if ((retval = nc_close(ncid)))
-      ERR(retval);
-   
-   printf("  File created successfully\n");
 }
 
 /* Verify a format file */
@@ -277,15 +267,55 @@ int main()
    printf("  Data type: NC_FLOAT (4 bytes per value)\n");
    printf("  Total data: %d values per variable\n\n", NTIME * NLAT * NLON);
    
-   /* Create files in each format */
+   /* Create files in each format.
+    *
+    * The nc_create() calls below show the key difference between formats:
+    * only the format flag changes. Each file gets identical metadata and
+    * data via populate_file(). */
    printf("=== Creating Format Files ===\n\n");
    
-   create_format_file("format_classic.nc", NC_CLASSIC_MODEL, "NC_CLASSIC_MODEL");
-   create_format_file("format_64bit_offset.nc", NC_64BIT_OFFSET, "NC_64BIT_OFFSET");
-   create_format_file("format_64bit_data.nc", NC_64BIT_DATA, "NC_64BIT_DATA");
-   create_format_file("format_netcdf4.nc", NC_NETCDF4, "NC_NETCDF4");
-   create_format_file("format_netcdf4_classic.nc", NC_NETCDF4 | NC_CLASSIC_MODEL,
-                      "NC_NETCDF4|NC_CLASSIC_MODEL");
+   int ncid, retval;
+
+   /* CDF-1: Original classic format (2GB file/variable limit).
+    * No format flag needed — NC_CLOBBER alone creates a classic CDF-1 file. */
+   printf("Creating classic (CDF-1) format file: format_classic.nc\n");
+   if ((retval = nc_create("format_classic.nc", NC_CLOBBER, &ncid)))
+      ERR(retval);
+   populate_file(ncid);
+   if ((retval = nc_close(ncid)))
+      ERR(retval);
+
+   /* CDF-2: 64-bit offset format (4GB variable limit) */
+   printf("Creating NC_64BIT_OFFSET format file: format_64bit_offset.nc\n");
+   if ((retval = nc_create("format_64bit_offset.nc", NC_64BIT_OFFSET | NC_CLOBBER, &ncid)))
+      ERR(retval);
+   populate_file(ncid);
+   if ((retval = nc_close(ncid)))
+      ERR(retval);
+
+   /* CDF-5: 64-bit data format (unlimited variable sizes) */
+   printf("Creating NC_64BIT_DATA format file: format_64bit_data.nc\n");
+   if ((retval = nc_create("format_64bit_data.nc", NC_64BIT_DATA | NC_CLOBBER, &ncid)))
+      ERR(retval);
+   populate_file(ncid);
+   if ((retval = nc_close(ncid)))
+      ERR(retval);
+
+   /* NetCDF-4: HDF5-based format (groups, compression, user-defined types) */
+   printf("Creating NC_NETCDF4 format file: format_netcdf4.nc\n");
+   if ((retval = nc_create("format_netcdf4.nc", NC_NETCDF4 | NC_CLOBBER, &ncid)))
+      ERR(retval);
+   populate_file(ncid);
+   if ((retval = nc_close(ncid)))
+      ERR(retval);
+
+   /* NetCDF-4 Classic Model: HDF5 storage with classic data model restrictions */
+   printf("Creating NC_NETCDF4|NC_CLASSIC_MODEL format file: format_netcdf4_classic.nc\n");
+   if ((retval = nc_create("format_netcdf4_classic.nc", NC_NETCDF4 | NC_CLASSIC_MODEL | NC_CLOBBER, &ncid)))
+      ERR(retval);
+   populate_file(ncid);
+   if ((retval = nc_close(ncid)))
+      ERR(retval);
    
    /* Verify files */
    printf("\n=== Verifying Format Files ===\n");
@@ -311,7 +341,7 @@ int main()
    long size_nc4_classic = get_file_size("format_netcdf4_classic.nc");
    
    printf("File sizes:\n");
-   printf("  NC_CLASSIC_MODEL:            %ld bytes\n", size_classic);
+   printf("  Classic (CDF-1):             %ld bytes\n", size_classic);
    printf("  NC_64BIT_OFFSET:             %ld bytes\n", size_offset);
    printf("  NC_64BIT_DATA:               %ld bytes\n", size_data);
    printf("  NC_NETCDF4:                  %ld bytes\n", size_nc4);
@@ -319,7 +349,7 @@ int main()
    
    printf("\nFormat Characteristics:\n\n");
    
-   printf("NC_CLASSIC_MODEL (CDF-1):\n");
+   printf("Classic CDF-1 (default, no format flag):\n");
    printf("  File size limit: 2GB\n");
    printf("  Variable size limit: 2GB\n");
    printf("  Storage backend: CDF binary\n");

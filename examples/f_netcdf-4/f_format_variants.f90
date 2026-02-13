@@ -13,11 +13,12 @@
 !! - Make informed format choices in Fortran applications
 !!
 !! **Fortran Format Constants:**
-!! - NF90_CLASSIC_MODEL - CDF-1 format (2GB limits)
+!! - NF90_CLOBBER (default) - CDF-1 format (2GB limits, no format flag needed)
 !! - NF90_64BIT_OFFSET - CDF-2 format (4GB variable limit)
 !! - NF90_64BIT_DATA - CDF-5 format (unlimited sizes)
 !! - NF90_NETCDF4 - NetCDF-4/HDF5 format (groups, compression, user types)
 !! - IOR(NF90_NETCDF4, NF90_CLASSIC_MODEL) - HDF5 storage, classic data model
+!! - NF90_CLASSIC_MODEL is only used with NF90_NETCDF4 to restrict to classic data model
 !!
 !! **Prerequisites:**
 !! - f_simple_2D.f90 - Basic file operations
@@ -47,6 +48,7 @@ program f_format_variants
    
    integer, parameter :: NTIME = 10, NLAT = 20, NLON = 30
    integer, parameter :: ERRCODE = 2
+   integer :: ncid, retval
    
    print *, "NetCDF Format Variants Comparison"
    print *, ""
@@ -60,21 +62,55 @@ program f_format_variants
    print *, "  Total data: ", NTIME * NLAT * NLON, " values per variable"
    print *, ""
    
-   ! Create files in each format
+   ! Create files in each format.
+   !
+   ! The nf90_create() calls below show the key difference between formats:
+   ! only the format flag changes. Each file gets identical metadata and
+   ! data via populate_file().
    print *, "=== Creating Format Files ==="
    print *, ""
    
-   call create_format_file("f_format_classic.nc", NF90_CLASSIC_MODEL, &
-                          "NF90_CLASSIC_MODEL")
-   call create_format_file("f_format_64bit_offset.nc", NF90_64BIT_OFFSET, &
-                          "NF90_64BIT_OFFSET")
-   call create_format_file("f_format_64bit_data.nc", NF90_64BIT_DATA, &
-                          "NF90_64BIT_DATA")
-   call create_format_file("f_format_netcdf4.nc", NF90_NETCDF4, &
-                          "NF90_NETCDF4")
-   call create_format_file("f_format_netcdf4_classic.nc", &
-                          IOR(NF90_NETCDF4, NF90_CLASSIC_MODEL), &
-                          "NF90_NETCDF4+NF90_CLASSIC_MODEL")
+   ! CDF-1: Original classic format (2GB file/variable limit).
+   ! No format flag needed - NF90_CLOBBER alone creates a classic CDF-1 file.
+   print *, "Creating classic (CDF-1) format file: f_format_classic.nc"
+   retval = nf90_create("f_format_classic.nc", NF90_CLOBBER, ncid)
+   if (retval /= nf90_noerr) call handle_err(retval)
+   call populate_file(ncid)
+   retval = nf90_close(ncid)
+   if (retval /= nf90_noerr) call handle_err(retval)
+
+   ! CDF-2: 64-bit offset format (4GB variable limit)
+   print *, "Creating NF90_64BIT_OFFSET format file: f_format_64bit_offset.nc"
+   retval = nf90_create("f_format_64bit_offset.nc", NF90_64BIT_OFFSET, ncid)
+   if (retval /= nf90_noerr) call handle_err(retval)
+   call populate_file(ncid)
+   retval = nf90_close(ncid)
+   if (retval /= nf90_noerr) call handle_err(retval)
+
+   ! CDF-5: 64-bit data format (unlimited variable sizes)
+   print *, "Creating NF90_64BIT_DATA format file: f_format_64bit_data.nc"
+   retval = nf90_create("f_format_64bit_data.nc", NF90_64BIT_DATA, ncid)
+   if (retval /= nf90_noerr) call handle_err(retval)
+   call populate_file(ncid)
+   retval = nf90_close(ncid)
+   if (retval /= nf90_noerr) call handle_err(retval)
+
+   ! NetCDF-4: HDF5-based format (groups, compression, user-defined types)
+   print *, "Creating NF90_NETCDF4 format file: f_format_netcdf4.nc"
+   retval = nf90_create("f_format_netcdf4.nc", NF90_NETCDF4, ncid)
+   if (retval /= nf90_noerr) call handle_err(retval)
+   call populate_file(ncid)
+   retval = nf90_close(ncid)
+   if (retval /= nf90_noerr) call handle_err(retval)
+
+   ! NetCDF-4 Classic Model: HDF5 storage with classic data model restrictions
+   print *, "Creating NF90_NETCDF4+NF90_CLASSIC_MODEL format file: f_format_netcdf4_classic.nc"
+   retval = nf90_create("f_format_netcdf4_classic.nc", &
+                        IOR(NF90_NETCDF4, NF90_CLASSIC_MODEL), ncid)
+   if (retval /= nf90_noerr) call handle_err(retval)
+   call populate_file(ncid)
+   retval = nf90_close(ncid)
+   if (retval /= nf90_noerr) call handle_err(retval)
    
    ! Verify files
    print *, ""
@@ -98,7 +134,7 @@ program f_format_variants
    print *, ""
    print *, "Format Characteristics:"
    print *, ""
-   print *, "NF90_CLASSIC_MODEL (CDF-1):"
+   print *, "Classic CDF-1 (default, no format flag):"
    print *, "  File size limit: 2GB"
    print *, "  Variable size limit: 2GB"
    print *, "  Storage backend: CDF binary"
@@ -146,11 +182,13 @@ program f_format_variants
    
 contains
 
-   subroutine create_format_file(filename, format_flag, format_name)
-      character(len=*), intent(in) :: filename, format_name
-      integer, intent(in) :: format_flag
+   ! Define dimensions, variables, attributes, and write data to an open file.
+   ! The nf90_create() call is done in the main program so the format flag
+   ! is clearly visible.
+   subroutine populate_file(ncid)
+      integer, intent(in) :: ncid
       
-      integer :: ncid, time_dimid, lat_dimid, lon_dimid
+      integer :: time_dimid, lat_dimid, lon_dimid
       integer :: temp_varid, pressure_varid
       integer :: dimids(3)
       integer :: retval
@@ -158,8 +196,6 @@ contains
       real :: temperature(NLON, NLAT, NTIME)
       real :: pressure(NLON, NLAT, NTIME)
       integer :: t, i, j
-      
-      print *, "Creating ", trim(format_name), " format file: ", trim(filename)
       
       ! Initialize data
       do t = 1, NTIME
@@ -170,10 +206,6 @@ contains
             end do
          end do
       end do
-      
-      ! Create file
-      retval = nf90_create(filename, format_flag, ncid)
-      if (retval /= nf90_noerr) call handle_err(retval)
       
       ! Define dimensions
       retval = nf90_def_dim(ncid, "time", NTIME, time_dimid)
@@ -208,13 +240,7 @@ contains
       if (retval /= nf90_noerr) call handle_err(retval)
       retval = nf90_put_var(ncid, pressure_varid, pressure)
       if (retval /= nf90_noerr) call handle_err(retval)
-      
-      ! Close file
-      retval = nf90_close(ncid)
-      if (retval /= nf90_noerr) call handle_err(retval)
-      
-      print *, "  File created successfully"
-   end subroutine create_format_file
+   end subroutine populate_file
 
    subroutine verify_format_file(filename, expected_format, expected_format_name)
       character(len=*), intent(in) :: filename, expected_format_name

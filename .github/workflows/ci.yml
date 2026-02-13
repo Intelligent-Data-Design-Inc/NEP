@@ -103,7 +103,7 @@ jobs:
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib"
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
-          make check || (echo "Tests failed with netcdf-c t1 branch! Test logs:"; cat test_geotiff/test-suite.log 2>/dev/null || true; exit 1)
+          make check || (echo "Tests failed with netcdf-c t1 branch! Test logs:"; for f in $(find . -name test-suite.log); do echo "=== $f ==="; cat "$f"; done; exit 1)
           echo "✅ All tests passed with netcdf-c t1 branch!"
 
   # Memory leak testing with AddressSanitizer
@@ -194,7 +194,7 @@ jobs:
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -fsanitize=address"
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
           export ASAN_OPTIONS="detect_leaks=1:halt_on_error=1:abort_on_error=1"
-          make check || (echo "Memory leak detected! Test logs:"; cat test_geotiff/test-suite.log 2>/dev/null || true; exit 1)
+          make check || (echo "Memory leak detected! Test logs:"; for f in $(find . -name test-suite.log); do echo "=== $f ==="; cat "$f"; done; exit 1)
           echo "✅ All tests passed with zero memory leaks!"
 
   build:

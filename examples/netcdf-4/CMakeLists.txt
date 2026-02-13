@@ -63,6 +63,11 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../validate_cdl.sh
 
 # Add CDL validation tests
 if(BUILD_TESTING)
+    add_test(NAME user_types_validate 
+             COMMAND bash validate_cdl.sh user_types user_types.nc 
+                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/user_types_expected.cdl)
+    set_tests_properties(user_types_validate PROPERTIES DEPENDS user_types)
+
     add_test(NAME groups_validate 
              COMMAND bash validate_cdl.sh groups groups.nc 
                      ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/groups_expected.cdl)

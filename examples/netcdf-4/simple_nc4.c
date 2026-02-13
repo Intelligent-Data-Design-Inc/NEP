@@ -26,7 +26,7 @@
  * - **Backward Compatibility**: NetCDF-4 files readable with NetCDF-4 library
  *
  * **NetCDF-4 vs Classic Comparison:**
- * - **Classic**: Simple format, 2GB limits (CDF-1) or 4GB variable limits (CDF-2/5)
+ * - **Classic**: Simple format, 2GB limits (CDF-1) or 4GB variable limits (CDF-2/CDF-5)
  * - **NetCDF-4**: HDF5-based, compression, chunking, unlimited file/variable sizes
  * - **Classic**: One unlimited dimension maximum
  * - **NetCDF-4**: Multiple unlimited dimensions supported

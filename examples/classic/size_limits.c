@@ -87,7 +87,7 @@ void print_format_limits(void)
 {
    printf("\n=== NetCDF Classic Format Size Limits ===\n\n");
    
-   printf("NC_CLASSIC_MODEL (CDF-1):\n");
+   printf("Classic (CDF-1):\n");
    printf("  Total file size limit: 2GB (2,147,483,647 bytes)\n");
    printf("  Single variable limit: 2GB\n");
    printf("  Compatibility: NetCDF 3.0+, all tools\n\n");

@@ -13,12 +13,17 @@ types:
 dimensions:
 	obs = 5 ;
 	day = 3 ;
+	station = 4 ;
 variables:
+	string station_name(station) ;
 	weather_obs_t observations(obs) ;
 	obs_per_day_t obs_per_day(day) ;
 	cloud_cover_t cloud_cover(obs) ;
 	calibration_t calibration ;
 data:
+
+ station_name = "Boulder, CO", "Cape Canaveral, FL", "Wallops Island, VA", 
+    "White Sands, NM" ;
 
  observations = {1000, 20, 1013, 60}, {4600, 22, 1013.5, 55}, 
     {8200, 24, 1014, 50}, {11800, 26, 1014.5, 45}, {15400, 28, 1015, 40} ;
