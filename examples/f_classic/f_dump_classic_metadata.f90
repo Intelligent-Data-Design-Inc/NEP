@@ -47,8 +47,6 @@ program f_dump_classic_metadata
    integer :: dim_len
    integer :: var_type, var_ndims, var_natts
    integer :: var_dimids(NF90_MAX_VAR_DIMS)
-   integer :: att_type, att_len
-   integer :: i
 
    ! Get filename from command line.
    if (command_argument_count() /= 1) then
