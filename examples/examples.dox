@@ -33,6 +33,9 @@
  * 10. @ref chunking_performance.c / @ref f_chunking_performance.f90 - Chunking strategies
  * 11. @ref multi_unlimited.c / @ref f_multi_unlimited.f90 - Multiple unlimited dimensions
  * 12. @ref user_types.c / @ref f_user_types.f90 - User-defined types
+ * 13. @ref groups.c / @ref f_groups.f90 - Hierarchical groups
+ * 14. @ref dump_classic_metadata.c / @ref f_dump_classic_metadata.f90 - Metadata inquiry for classic files
+ * 15. @ref dump_nc4_metadata.c / @ref f_dump_nc4_metadata.f90 - Metadata inquiry for NetCDF-4 files
  * 
  * @section examples_categories Example Categories
  * 
@@ -45,6 +48,7 @@
  * - @ref size_limits.c - File size and dimension limits
  * - @ref unlimited_dim.c - Unlimited dimensions for time-series
  * - @ref var4d.c - Multi-dimensional arrays (2D, 3D, 4D)
+ * - @ref dump_classic_metadata.c - Read any classic NetCDF file and print all metadata (dimensions, attributes, variables)
  * 
  * @subsection netcdf4_c NetCDF-4 Features (C)
  * 
@@ -55,6 +59,8 @@
  * - @ref chunking_performance.c - Chunking strategies and performance
  * - @ref multi_unlimited.c - Multiple unlimited dimensions
  * - @ref user_types.c - User-defined types (compound, enum, vlen, opaque)
+ * - @ref groups.c - Hierarchical groups, nested groups, and dimension visibility
+ * - @ref dump_nc4_metadata.c - Read any NetCDF-4 file and print all metadata including user-defined types and groups
  * 
  * @subsection classic_fortran Classic NetCDF (Fortran)
  * 
@@ -65,6 +71,7 @@
  * - @ref f_size_limits.f90 - Size limits (Fortran)
  * - @ref f_unlimited_dim.f90 - Unlimited dimensions (Fortran)
  * - @ref f_var4d.f90 - Multi-dimensional arrays (Fortran)
+ * - @ref f_dump_classic_metadata.f90 - Read any classic NetCDF file and print all metadata (Fortran)
  * 
  * @subsection netcdf4_fortran NetCDF-4 Features (Fortran)
  * 
@@ -75,6 +82,8 @@
  * - @ref f_chunking_performance.f90 - Chunking (Fortran)
  * - @ref f_multi_unlimited.f90 - Multiple unlimited dimensions (Fortran)
  * - @ref f_user_types.f90 - User-defined types (Fortran)
+ * - @ref f_groups.f90 - Hierarchical groups, nested groups, and dimension visibility (Fortran)
+ * - @ref f_dump_nc4_metadata.f90 - Read any NetCDF-4 file and print all metadata including user-defined types and groups (Fortran)
  * 
  * @section c_vs_fortran C vs Fortran Equivalence
  * 
@@ -157,6 +166,35 @@
  * **Chunking:** NetCDF-4 feature for optimizing I/O performance
  * 
  * **User-Defined Types:** NetCDF-4 feature for complex data structures (compound, enum, vlen, opaque)
+ * 
+ * **Groups:** NetCDF-4 feature for organizing data hierarchically (like directories in a filesystem)
+ * 
+ * @section metadata_dumpers Metadata Inspection Tools
+ * 
+ * The metadata dumper examples demonstrate how to read and inspect any NetCDF file
+ * without prior knowledge of its contents. They use inquiry functions to discover
+ * all dimensions, variables, attributes, and (for NetCDF-4) user-defined types and groups.
+ * 
+ * **Classic metadata dumpers:**
+ * - @ref dump_classic_metadata.c / @ref f_dump_classic_metadata.f90
+ * - Take a filename as a command-line argument
+ * - Print all dimensions, global attributes, and variables with their attributes
+ * - Demonstrate nc_inq/nf90_inquire family of functions
+ * 
+ * **NetCDF-4 metadata dumpers:**
+ * - @ref dump_nc4_metadata.c / @ref f_dump_nc4_metadata.f90
+ * - Extend the classic dumper with user-defined types and recursive group traversal
+ * - C version handles all type classes (compound, enum, vlen, opaque)
+ * - Fortran version handles enum and opaque types (compound and vlen not portable in Fortran)
+ * - Demonstrate nc_inq_user_type/nf90_inq_user_type and nc_inq_grps/nf90_inq_grps
+ * 
+ * **Usage:**
+ * @code
+ * ./dump_classic_metadata coord_vars.nc
+ * ./dump_nc4_metadata user_types.nc
+ * ./f_dump_classic_metadata f_coord_vars.nc
+ * ./f_dump_nc4_metadata f_user_types.nc
+ * @endcode
  * 
  * @section additional_resources Additional Resources
  * 
