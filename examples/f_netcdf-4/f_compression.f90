@@ -14,6 +14,8 @@
 !! - shuffle: 0=off, 1=on
 !! - deflate: 0=off, 1=on
 !! - deflate_level: 1-9 (higher=better compression, slower)
+!! - For almost all real-world data, level 1 is the preferred value.
+!!   Higher levels yield diminishing returns at much greater CPU cost.
 !!
 !! **Prerequisites:**
 !! - f_simple_nc4.f90 - NetCDF-4 format basics
@@ -85,7 +87,7 @@ program f_compression
    deflate_flags(2) = 0
    deflate_levels(2) = 0
    
-   test_names(3) = "Deflate level 1"
+   test_names(3) = "Deflate level 1 (preferred)"
    filenames(3) = "f_compress_deflate1.nc"
    shuffle_flags(3) = 0
    deflate_flags(3) = 1
@@ -103,11 +105,11 @@ program f_compression
    deflate_flags(5) = 1
    deflate_levels(5) = 9
    
-   test_names(6) = "Shuffle + Deflate 5 (recommended)"
-   filenames(6) = "f_compress_shuffle_deflate5.nc"
+   test_names(6) = "Shuffle + Deflate 1 (recommended)"
+   filenames(6) = "f_compress_shuffle_deflate1.nc"
    shuffle_flags(6) = 1
    deflate_flags(6) = 1
-   deflate_levels(6) = 5
+   deflate_levels(6) = 1
    
    ! Run all tests
    do i = 1, NUM_TESTS
@@ -140,11 +142,12 @@ program f_compression
    print *, "=== Recommendations ==="
    print *, "- Uncompressed: Fastest I/O but largest files"
    print *, "- Shuffle only: Reorganizes bytes for better compression (use with deflate)"
-   print *, "- Deflate level 1: Fast compression, moderate space savings"
-   print *, "- Deflate level 5: Good balance of speed and compression"
-   print *, "- Deflate level 9: Maximum compression, slower writes"
-   print *, "- Shuffle + Deflate: RECOMMENDED for scientific data"
-   print *, "- Higher deflate levels increase write time but improve compression"
+   print *, "- Deflate level 1: PREFERRED for almost all real-world data"
+   print *, "- Deflate level 5: Marginally better ratio, significantly slower"
+   print *, "- Deflate level 9: Maximum compression, much slower, rarely worth it"
+   print *, "- Shuffle + Deflate 1: RECOMMENDED default for scientific data"
+   print *, "- Level 1 gives nearly the same compression as higher levels"
+   print *, "- Higher levels cost much more CPU time for diminishing returns"
    print *, "- Read performance generally similar across compression levels"
    print *, "- Compression effectiveness depends on data patterns"
    

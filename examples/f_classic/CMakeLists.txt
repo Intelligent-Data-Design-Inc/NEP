@@ -36,7 +36,6 @@ set(F_CLASSIC_EXAMPLES
     f_simple_2D
     f_coord
     f_coord_vars
-    f_format_variants
     f_size_limits
     f_unlimited_dim
     f_var4d
@@ -61,6 +60,13 @@ foreach(example ${F_CLASSIC_EXAMPLES})
         add_test(NAME ${example}_run COMMAND ${example})
     endif()
 endforeach()
+
+# Build f_dump_classic_metadata separately (it requires a command-line argument,
+# so it cannot use the generic no-args _run test above)
+add_executable(f_dump_classic_metadata f_dump_classic_metadata.f90)
+target_compile_options(f_dump_classic_metadata PRIVATE ${NF_FFLAGS_LIST})
+target_link_directories(f_dump_classic_metadata PRIVATE ${HDF5_LIB_DIR})
+target_link_libraries(f_dump_classic_metadata PRIVATE ${NF_LIBS_LIST} ${NETCDF_LIBRARIES} hdf5 hdf5_hl)
 
 # Add CDL validation tests for single-file examples
 if(BUILD_TESTING)
@@ -94,22 +100,6 @@ if(BUILD_TESTING)
                      ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_var4d_expected.cdl)
     set_tests_properties(f_var4d_validate PROPERTIES DEPENDS f_var4d_run)
     
-    # Multi-file examples: f_format_variants
-    add_test(NAME f_format_variants_validate_classic
-             COMMAND bash validate_cdl.sh f_format_variants f_format_classic.nc
-                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_format_variants_classic_expected.cdl)
-    set_tests_properties(f_format_variants_validate_classic PROPERTIES DEPENDS f_format_variants_run)
-    
-    add_test(NAME f_format_variants_validate_64bit_offset
-             COMMAND bash validate_cdl.sh f_format_variants f_format_64bit_offset.nc
-                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_format_variants_64bit_offset_expected.cdl)
-    set_tests_properties(f_format_variants_validate_64bit_offset PROPERTIES DEPENDS f_format_variants_run)
-    
-    add_test(NAME f_format_variants_validate_64bit_data
-             COMMAND bash validate_cdl.sh f_format_variants f_format_64bit_data.nc
-                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_format_variants_64bit_data_expected.cdl)
-    set_tests_properties(f_format_variants_validate_64bit_data PROPERTIES DEPENDS f_format_variants_run)
-    
     # Multi-file examples: f_size_limits
     add_test(NAME f_size_limits_validate_classic
              COMMAND bash validate_cdl.sh f_size_limits f_size_limits_classic.nc
@@ -125,4 +115,9 @@ if(BUILD_TESTING)
              COMMAND bash validate_cdl.sh f_size_limits f_size_limits_64bit_data.nc
                      ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_size_limits_64bit_data_expected.cdl)
     set_tests_properties(f_size_limits_validate_64bit_data PROPERTIES DEPENDS f_size_limits_run)
+
+    # f_dump_classic_metadata test: run f_coord_vars first to produce f_coord_vars.nc,
+    # then compare f_dump_classic_metadata output against expected text
+    add_test(NAME f_dump_classic_metadata_validate
+             COMMAND bash -c "./f_coord_vars && ./f_dump_classic_metadata f_coord_vars.nc > f_dump_classic_metadata_output.txt && diff -u ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_dump_classic_metadata_coord_vars_expected.txt f_dump_classic_metadata_output.txt && rm -f f_dump_classic_metadata_output.txt")
 endif()

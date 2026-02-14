@@ -36,7 +36,6 @@ set(CLASSIC_EXAMPLES
     simple_2D
     coord
     coord_vars
-    format_variants
     size_limits
     unlimited_dim
     var4d
@@ -62,6 +61,13 @@ foreach(example ${CLASSIC_EXAMPLES})
     endif()
 endforeach()
 
+# Build dump_classic_metadata separately (it requires a command-line argument,
+# so it cannot use the generic no-args _run test above)
+add_executable(dump_classic_metadata dump_classic_metadata.c)
+target_compile_options(dump_classic_metadata PRIVATE ${NC_CFLAGS_LIST})
+target_link_directories(dump_classic_metadata PRIVATE ${HDF5_LIB_DIR})
+target_link_libraries(dump_classic_metadata PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl)
+
 # Add CDL validation tests for examples with expected output
 if(BUILD_TESTING)
     add_test(NAME quickstart_validate 
@@ -73,4 +79,9 @@ if(BUILD_TESTING)
              COMMAND bash validate_cdl.sh coord coord.nc 
                      ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/coord_expected.cdl)
     set_tests_properties(coord_validate PROPERTIES DEPENDS coord_run)
+
+    # dump_classic_metadata test: run coord_vars first to produce coord_vars.nc,
+    # then compare dump_classic_metadata output against expected text
+    add_test(NAME dump_classic_metadata_validate
+             COMMAND bash -c "./coord_vars && ./dump_classic_metadata coord_vars.nc > dump_classic_metadata_output.txt && diff -u ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/dump_classic_metadata_coord_vars_expected.txt dump_classic_metadata_output.txt && rm -f dump_classic_metadata_output.txt")
 endif()

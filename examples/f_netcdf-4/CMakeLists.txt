@@ -33,6 +33,7 @@ get_filename_component(HDF5_LIB_DIR "${HDF5_INCLUDE_DIR}/../lib" ABSOLUTE)
 # List of Fortran NetCDF-4 example programs
 set(F_NETCDF4_EXAMPLES
     f_simple_nc4
+    f_format_variants
     f_compression
     f_chunking_performance
     f_multi_unlimited
@@ -59,6 +60,13 @@ foreach(example ${F_NETCDF4_EXAMPLES})
         add_test(NAME ${example}_run COMMAND ${example})
     endif()
 endforeach()
+
+# Build f_dump_nc4_metadata separately (it requires a command-line argument,
+# so it cannot use the generic no-args _run test above)
+add_executable(f_dump_nc4_metadata f_dump_nc4_metadata.f90)
+target_compile_options(f_dump_nc4_metadata PRIVATE ${NF_FFLAGS_LIST})
+target_link_directories(f_dump_nc4_metadata PRIVATE ${HDF5_LIB_DIR})
+target_link_libraries(f_dump_nc4_metadata PRIVATE ${NF_LIBS_LIST} ${NETCDF_LIBRARIES} hdf5 hdf5_hl)
 
 # Add CDL validation tests for single-file examples
 if(BUILD_TESTING)
@@ -108,10 +116,10 @@ if(BUILD_TESTING)
                      ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_compression_shuffle_expected.cdl)
     set_tests_properties(f_compression_validate_shuffle PROPERTIES DEPENDS f_compression_run)
     
-    add_test(NAME f_compression_validate_shuffle_deflate5
-             COMMAND bash validate_cdl.sh f_compression f_compress_shuffle_deflate5.nc
-                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_compression_shuffle_deflate5_expected.cdl)
-    set_tests_properties(f_compression_validate_shuffle_deflate5 PROPERTIES DEPENDS f_compression_run)
+    add_test(NAME f_compression_validate_shuffle_deflate1
+             COMMAND bash validate_cdl.sh f_compression f_compress_shuffle_deflate1.nc
+                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_compression_shuffle_deflate1_expected.cdl)
+    set_tests_properties(f_compression_validate_shuffle_deflate1 PROPERTIES DEPENDS f_compression_run)
     
     # Multi-file examples: f_chunking_performance
     add_test(NAME f_chunking_performance_validate_contiguous
@@ -133,4 +141,35 @@ if(BUILD_TESTING)
              COMMAND bash validate_cdl.sh f_chunking_performance f_chunk_balanced.nc
                      ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_chunking_performance_balanced_expected.cdl)
     set_tests_properties(f_chunking_performance_validate_balanced PROPERTIES DEPENDS f_chunking_performance_run)
+
+    # Multi-file examples: f_format_variants
+    add_test(NAME f_format_variants_validate_classic
+             COMMAND bash validate_cdl.sh f_format_variants f_format_classic.nc
+                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_format_variants_classic_expected.cdl)
+    set_tests_properties(f_format_variants_validate_classic PROPERTIES DEPENDS f_format_variants_run)
+
+    add_test(NAME f_format_variants_validate_64bit_offset
+             COMMAND bash validate_cdl.sh f_format_variants f_format_64bit_offset.nc
+                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_format_variants_64bit_offset_expected.cdl)
+    set_tests_properties(f_format_variants_validate_64bit_offset PROPERTIES DEPENDS f_format_variants_run)
+
+    add_test(NAME f_format_variants_validate_64bit_data
+             COMMAND bash validate_cdl.sh f_format_variants f_format_64bit_data.nc
+                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_format_variants_64bit_data_expected.cdl)
+    set_tests_properties(f_format_variants_validate_64bit_data PROPERTIES DEPENDS f_format_variants_run)
+
+    add_test(NAME f_format_variants_validate_netcdf4
+             COMMAND bash validate_cdl.sh f_format_variants f_format_netcdf4.nc
+                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_format_variants_netcdf4_expected.cdl)
+    set_tests_properties(f_format_variants_validate_netcdf4 PROPERTIES DEPENDS f_format_variants_run)
+
+    add_test(NAME f_format_variants_validate_netcdf4_classic
+             COMMAND bash validate_cdl.sh f_format_variants f_format_netcdf4_classic.nc
+                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_format_variants_netcdf4_classic_expected.cdl)
+    set_tests_properties(f_format_variants_validate_netcdf4_classic PROPERTIES DEPENDS f_format_variants_run)
+
+    # f_dump_nc4_metadata test: run f_user_types first to produce f_user_types.nc,
+    # then compare f_dump_nc4_metadata output against expected text
+    add_test(NAME f_dump_nc4_metadata_validate
+             COMMAND bash -c "./f_user_types && ./f_dump_nc4_metadata f_user_types.nc > f_dump_nc4_metadata_output.txt && diff -u ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_dump_nc4_metadata_user_types_expected.txt f_dump_nc4_metadata_output.txt && rm -f f_dump_nc4_metadata_output.txt")
 endif()

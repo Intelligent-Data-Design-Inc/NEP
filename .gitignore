@@ -146,6 +146,8 @@ tst_geotiff_errors
 tst_geotiff_edge_cases
 tst_simple_geotiff
 bench_geotiff_performance
+tst_geotiff_self_load
+tst_cdf_self_load
 
 # Copied test data files (should only exist in test/data/)
 test_geotiff/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif
@@ -154,8 +156,10 @@ test_geotiff/ABBA_2022_C61_HNL.tif
 
 # Example binaries - classic
 examples/classic/simple_2D
+examples/classic/coord
 examples/classic/coord_vars
 examples/classic/format_variants
+examples/classic/quickstart
 examples/classic/size_limits
 examples/classic/unlimited_dim
 examples/classic/var4d
@@ -164,14 +168,17 @@ examples/classic/var4d
 examples/netcdf-4/simple_nc4
 examples/netcdf-4/compression
 examples/netcdf-4/chunking_performance
+examples/netcdf-4/format_variants
 examples/netcdf-4/multi_unlimited
 examples/netcdf-4/user_types
 examples/netcdf-4/groups
 
 # Example binaries - Fortran classic
+examples/f_classic/f_coord
 examples/f_classic/f_simple_2D
 examples/f_classic/f_coord_vars
 examples/f_classic/f_format_variants
+examples/f_classic/f_quickstart
 examples/f_classic/f_size_limits
 examples/f_classic/f_unlimited_dim
 examples/f_classic/f_var4d
@@ -180,6 +187,8 @@ examples/f_classic/f_var4d
 examples/f_netcdf-4/f_simple_nc4
 examples/f_netcdf-4/f_compression
 examples/f_netcdf-4/f_chunking_performance
+examples/f_netcdf-4/f_format_variants
+examples/f_netcdf-4/f_groups
 examples/f_netcdf-4/f_multi_unlimited
 examples/f_netcdf-4/f_user_types
 
@@ -188,6 +197,7 @@ valgrind*.log
 **/valgrind*.log
 
 # Test output files
+*.nc
 examples/**/*.nc
 test_netcdf_crs
 
