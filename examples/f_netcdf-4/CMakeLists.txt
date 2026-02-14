@@ -116,10 +116,10 @@ if(BUILD_TESTING)
                      ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_compression_shuffle_expected.cdl)
     set_tests_properties(f_compression_validate_shuffle PROPERTIES DEPENDS f_compression_run)
     
-    add_test(NAME f_compression_validate_shuffle_deflate5
-             COMMAND bash validate_cdl.sh f_compression f_compress_shuffle_deflate5.nc
-                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_compression_shuffle_deflate5_expected.cdl)
-    set_tests_properties(f_compression_validate_shuffle_deflate5 PROPERTIES DEPENDS f_compression_run)
+    add_test(NAME f_compression_validate_shuffle_deflate1
+             COMMAND bash validate_cdl.sh f_compression f_compress_shuffle_deflate1.nc
+                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_compression_shuffle_deflate1_expected.cdl)
+    set_tests_properties(f_compression_validate_shuffle_deflate1 PROPERTIES DEPENDS f_compression_run)
     
     # Multi-file examples: f_chunking_performance
     add_test(NAME f_chunking_performance_validate_contiguous

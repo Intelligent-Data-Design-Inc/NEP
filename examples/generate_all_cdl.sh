@@ -73,13 +73,13 @@ ncdump compress_deflate1.nc > ../expected_output/compression_deflate1_expected.c
 ncdump compress_deflate5.nc > ../expected_output/compression_deflate5_expected.cdl
 ncdump compress_deflate9.nc > ../expected_output/compression_deflate9_expected.cdl
 ncdump compress_shuffle.nc > ../expected_output/compression_shuffle_expected.cdl
-ncdump compress_shuffle_deflate5.nc > ../expected_output/compression_shuffle_deflate5_expected.cdl
+ncdump compress_shuffle_deflate1.nc > ../expected_output/compression_shuffle_deflate1_expected.cdl
 echo "  ✓ compression_none_expected.cdl"
 echo "  ✓ compression_deflate1_expected.cdl"
 echo "  ✓ compression_deflate5_expected.cdl"
 echo "  ✓ compression_deflate9_expected.cdl"
 echo "  ✓ compression_shuffle_expected.cdl"
-echo "  ✓ compression_shuffle_deflate5_expected.cdl"
+echo "  ✓ compression_shuffle_deflate1_expected.cdl"
 
 # chunking_performance (creates 4 files)
 ./chunking_performance
@@ -168,13 +168,13 @@ ncdump f_compress_deflate1.nc > ../expected_output/f_compression_deflate1_expect
 ncdump f_compress_deflate5.nc > ../expected_output/f_compression_deflate5_expected.cdl
 ncdump f_compress_deflate9.nc > ../expected_output/f_compression_deflate9_expected.cdl
 ncdump f_compress_shuffle.nc > ../expected_output/f_compression_shuffle_expected.cdl
-ncdump f_compress_shuffle_deflate5.nc > ../expected_output/f_compression_shuffle_deflate5_expected.cdl
+ncdump f_compress_shuffle_deflate1.nc > ../expected_output/f_compression_shuffle_deflate1_expected.cdl
 echo "  ✓ f_compression_none_expected.cdl"
 echo "  ✓ f_compression_deflate1_expected.cdl"
 echo "  ✓ f_compression_deflate5_expected.cdl"
 echo "  ✓ f_compression_deflate9_expected.cdl"
 echo "  ✓ f_compression_shuffle_expected.cdl"
-echo "  ✓ f_compression_shuffle_deflate5_expected.cdl"
+echo "  ✓ f_compression_shuffle_deflate1_expected.cdl"
 
 # f_chunking_performance (creates 4 files)
 ./f_chunking_performance
