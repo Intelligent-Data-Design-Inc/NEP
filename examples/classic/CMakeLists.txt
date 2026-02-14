@@ -39,6 +39,7 @@ set(CLASSIC_EXAMPLES
     size_limits
     unlimited_dim
     var4d
+    dump_classic_metadata
 )
 
 # Copy validation script to build directory
@@ -72,4 +73,18 @@ if(BUILD_TESTING)
              COMMAND bash validate_cdl.sh coord coord.nc 
                      ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/coord_expected.cdl)
     set_tests_properties(coord_validate PROPERTIES DEPENDS coord_run)
+
+    # dump_classic_metadata test: depends on coord_vars_run to produce coord_vars.nc
+    add_test(NAME dump_classic_metadata_test
+             COMMAND ${CMAKE_COMMAND} -E env
+                     $<TARGET_FILE:dump_classic_metadata> coord_vars.nc)
+    set_tests_properties(dump_classic_metadata_test PROPERTIES
+        DEPENDS coord_vars_run
+        PASS_REGULAR_EXPRESSION "temperature: type float, 2 dimension")
+
+    # Compare dump_classic_metadata output against expected text
+    add_test(NAME dump_classic_metadata_validate
+             COMMAND bash -c "./dump_classic_metadata coord_vars.nc > dump_classic_metadata_output.txt && diff -u ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/dump_classic_metadata_coord_vars_expected.txt dump_classic_metadata_output.txt && rm -f dump_classic_metadata_output.txt")
+    set_tests_properties(dump_classic_metadata_validate PROPERTIES
+        DEPENDS "coord_vars_run;dump_classic_metadata_test")
 endif()
