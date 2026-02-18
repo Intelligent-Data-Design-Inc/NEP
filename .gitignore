@@ -155,6 +155,7 @@ test_geotiff/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif
 test_geotiff/ABBA_2022_C61_HNL.tif
 
 # Example binaries - classic
+examples/classic/dump_classic_metadata
 examples/classic/simple_2D
 examples/classic/coord
 examples/classic/coord_vars
