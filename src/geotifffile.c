@@ -723,7 +723,7 @@ NC_GEOTIFF_inq_format(int ncid, int *formatp)
 {
     (void)ncid;
     if (formatp)
-        *formatp = NC_FORMAT_NETCDF4;
+        *formatp = NC_FORMATX_NC_GEOTIFF;
     return NC_NOERR;
 }
 
