@@ -350,8 +350,10 @@ MPI_Finalize();
 
 ### File Creation
 1. **Always use NC_CLOBBER or NC_NOCLOBBER** to control overwrite behavior
-2. **End define mode** with `nc_enddef()` before writing data
-3. **Close files** with `nc_close()` to ensure data is flushed
+2. **Classic CDF-1 is the default**: `nc_create(path, NC_CLOBBER, &ncid)` creates a classic file — no format flag needed
+3. **NC_CLASSIC_MODEL is only for NetCDF-4**: Use `NC_NETCDF4 | NC_CLASSIC_MODEL` to get HDF5 storage with classic data model restrictions (no groups, no user-defined types). Do NOT use `NC_CLASSIC_MODEL` alone for classic CDF-1 files.
+4. **End define mode** with `nc_enddef()` before writing data
+5. **Close files** with `nc_close()` to ensure data is flushed
 
 ### Dimensions
 1. **Unlimited dimension first** in dimension order for best performance

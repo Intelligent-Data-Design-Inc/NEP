@@ -4,6 +4,10 @@ dimensions:
 	y = 12 ;
 variables:
 	int data(y, x) ;
+		data :units = "m/s" ;
+
+// global attributes:
+		:title = "Simple 2D Example" ;
 data:
 
  data =

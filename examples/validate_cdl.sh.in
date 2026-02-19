@@ -104,7 +104,7 @@ echo "Using ncdump: $NCDUMP"
 "$NCDUMP" -h 2>&1 | head -1 || echo "ncdump version check failed"
 
 # Run ncdump on generated file
-"$NCDUMP" "$OUTPUT_FILE" > "${OUTPUT_FILE}.cdl" 2>&1
+"$NCDUMP" "$OUTPUT_FILE" > "${OUTPUT_FILE}.cdl" 2>/dev/null
 if [ $? -ne 0 ]; then
     echo "ERROR: ncdump failed on $OUTPUT_FILE"
     cat "${OUTPUT_FILE}.cdl"

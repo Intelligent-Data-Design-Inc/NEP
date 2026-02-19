@@ -86,7 +86,7 @@ contains
       print *, ""
       print *, "=== NetCDF Classic Format Size Limits ==="
       print *, ""
-      print *, "NC_CLASSIC_MODEL (CDF-1):"
+      print *, "Classic (CDF-1):"
       print *, "  Total file size limit: 2GB (2,147,483,647 bytes)"
       print *, "  Single variable limit: 2GB"
       print *, "  Compatibility: NetCDF 3.0+, all tools"

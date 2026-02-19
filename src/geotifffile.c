@@ -745,7 +745,7 @@ NC_GEOTIFF_inq_format_extended(int ncid, int *formatp, int *modep)
     if (formatp)
         *formatp = NC_FORMATX_NC_GEOTIFF;
     if (modep)
-        *modep = NC_FORMATX_NC_GEOTIFF;
+        *modep = NC_UDF1;
     return NC_NOERR;
 }
 

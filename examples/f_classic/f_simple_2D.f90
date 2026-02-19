@@ -3,12 +3,16 @@
 !!
 !! This is the Fortran equivalent of simple_2D.c, demonstrating the fundamental
 !! workflow for working with NetCDF files using the Fortran 90 NetCDF API. The
-!! program creates a 2D integer array, writes it to a NetCDF file, then reopens
-!! the file to verify both metadata and data correctness.
+!! program creates a 2D integer array, writes it to a NetCDF file with a global
+!! attribute ("title") and a variable attribute ("units"), then reopens the file
+!! to verify metadata, attributes, and data correctness using nf90_inquire(),
+!! nf90_inquire_dimension(), and nf90_inquire_variable().
 !!
 !! **Learning Objectives:**
 !! - Understand Fortran NetCDF API (nf90_* functions)
 !! - Learn Fortran column-major vs C row-major array ordering
+!! - Add global and variable attributes
+!! - Query file metadata with nf90_inquire(), nf90_inquire_dimension(), nf90_inquire_variable()
 !! - Master error handling with nf90_noerr and nf90_strerror()
 !! - Work with Fortran array indexing (1-based vs C's 0-based)
 !! - Verify equivalence with C version (simple_2D.c)
@@ -50,6 +54,8 @@
 !! Creates f_simple_2D.nc containing:
 !! - 2 dimensions: x(6), y(12)
 !! - 1 variable: data(x, y) of type int
+!! - 1 global attribute: title = "Simple 2D Example"
+!! - 1 variable attribute: units = "m/s"
 !! - Data: sequential integers from 0 to 71
 !! - Output identical to simple_2D.c (verified via ncdump)
 !!
@@ -74,9 +80,14 @@ program f_simple_2D
    integer :: data_in(NX, NY)
    
    integer :: i, j
-   integer :: ndims_in, nvars_in
+   integer :: ndims_in, nvars_in, ngatts_in, unlimdimid_in
    integer :: len_x, len_y
-   integer :: var_type
+   character(len=NF90_MAX_NAME) :: dim_name
+   character(len=NF90_MAX_NAME) :: var_name_in
+   integer :: var_type, var_ndims
+   integer :: var_dimids(NDIMS)
+   character(len=100) :: title_in, units_in
+   integer :: att_len
    integer :: errors
    integer :: expected
    
@@ -107,6 +118,14 @@ program f_simple_2D
    retval = nf90_def_var(ncid, "data", NF90_INT, dimids, varid)
    if (retval /= nf90_noerr) call handle_err(retval)
    
+   ! Add a global attribute
+   retval = nf90_put_att(ncid, NF90_GLOBAL, "title", "Simple 2D Example")
+   if (retval /= nf90_noerr) call handle_err(retval)
+   
+   ! Add a variable attribute
+   retval = nf90_put_att(ncid, varid, "units", "m/s")
+   if (retval /= nf90_noerr) call handle_err(retval)
+   
    ! End define mode
    retval = nf90_enddef(ncid)
    if (retval /= nf90_noerr) call handle_err(retval)
@@ -130,7 +149,7 @@ program f_simple_2D
    if (retval /= nf90_noerr) call handle_err(retval)
    
    ! Verify metadata: check number of dimensions and variables
-   retval = nf90_inquire(ncid, ndims_in, nvars_in)
+   retval = nf90_inquire(ncid, ndims_in, nvars_in, ngatts_in, unlimdimid_in)
    if (retval /= nf90_noerr) call handle_err(retval)
    
    if (ndims_in /= NDIMS) then
@@ -145,31 +164,90 @@ program f_simple_2D
    end if
    print *, "Verified: ", nvars_in, " variable"
    
-   ! Verify dimension sizes
-   retval = nf90_inquire_dimension(ncid, x_dimid, len=len_x)
-   if (retval /= nf90_noerr) call handle_err(retval)
-   retval = nf90_inquire_dimension(ncid, y_dimid, len=len_y)
+   if (ngatts_in /= 1) then
+      print *, "Error: Expected 1 global attribute, found ", ngatts_in
+      stop 2
+   end if
+   print *, "Verified: ", ngatts_in, " global attribute"
+   
+   if (unlimdimid_in /= -1) then
+      print *, "Error: Expected no unlimited dimension, found dimid ", unlimdimid_in
+      stop 2
+   end if
+   print *, "Verified: no unlimited dimension"
+   
+   ! Verify dimensions using nf90_inquire_dimension()
+   retval = nf90_inquire_dimension(ncid, x_dimid, name=dim_name, len=len_x)
    if (retval /= nf90_noerr) call handle_err(retval)
    
+   if (trim(dim_name) /= "x") then
+      print *, "Error: Expected dimension name 'x', found '", trim(dim_name), "'"
+      stop 2
+   end if
    if (len_x /= NX) then
       print *, "Error: Expected x dimension = ", NX, ", found ", len_x
+      stop 2
+   end if
+   print *, "Verified: dimension '", trim(dim_name), "' = ", len_x
+   
+   retval = nf90_inquire_dimension(ncid, y_dimid, name=dim_name, len=len_y)
+   if (retval /= nf90_noerr) call handle_err(retval)
+   
+   if (trim(dim_name) /= "y") then
+      print *, "Error: Expected dimension name 'y', found '", trim(dim_name), "'"
       stop 2
    end if
    if (len_y /= NY) then
       print *, "Error: Expected y dimension = ", NY, ", found ", len_y
       stop 2
    end if
-   print *, "Verified: x dimension = ", len_x, ", y dimension = ", len_y
+   print *, "Verified: dimension '", trim(dim_name), "' = ", len_y
    
-   ! Verify variable type
-   retval = nf90_inquire_variable(ncid, varid, xtype=var_type)
+   ! Verify variable using nf90_inquire_variable()
+   retval = nf90_inquire_variable(ncid, varid, name=var_name_in, xtype=var_type, &
+                                  ndims=var_ndims, dimids=var_dimids)
    if (retval /= nf90_noerr) call handle_err(retval)
    
+   if (trim(var_name_in) /= "data") then
+      print *, "Error: Expected variable name 'data', found '", trim(var_name_in), "'"
+      stop 2
+   end if
    if (var_type /= NF90_INT) then
       print *, "Error: Expected variable type NF90_INT, found ", var_type
       stop 2
    end if
-   print *, "Verified: variable type is NF90_INT"
+   if (var_ndims /= NDIMS) then
+      print *, "Error: Expected ", NDIMS, " dimensions, found ", var_ndims
+      stop 2
+   end if
+   if (var_dimids(1) /= x_dimid .or. var_dimids(2) /= y_dimid) then
+      print *, "Error: Unexpected dimension IDs for variable"
+      stop 2
+   end if
+   print *, "Verified: variable '", trim(var_name_in), "' type NF90_INT, ", var_ndims, " dims"
+   
+   ! Verify global attribute
+   retval = nf90_inquire_attribute(ncid, NF90_GLOBAL, "title", len=att_len)
+   if (retval /= nf90_noerr) call handle_err(retval)
+   retval = nf90_get_att(ncid, NF90_GLOBAL, "title", title_in)
+   if (retval /= nf90_noerr) call handle_err(retval)
+   if (title_in(1:att_len) /= "Simple 2D Example") then
+      print *, "Error: Expected title 'Simple 2D Example', found '", &
+               title_in(1:att_len), "'"
+      stop 2
+   end if
+   print *, "Verified: global attribute 'title' = '", title_in(1:att_len), "'"
+   
+   ! Verify variable attribute
+   retval = nf90_inquire_attribute(ncid, varid, "units", len=att_len)
+   if (retval /= nf90_noerr) call handle_err(retval)
+   retval = nf90_get_att(ncid, varid, "units", units_in)
+   if (retval /= nf90_noerr) call handle_err(retval)
+   if (units_in(1:att_len) /= "m/s") then
+      print *, "Error: Expected units 'm/s', found '", units_in(1:att_len), "'"
+      stop 2
+   end if
+   print *, "Verified: variable attribute 'units' = '", units_in(1:att_len), "'"
    
    ! Read the data back
    retval = nf90_get_var(ncid, varid, data_in)

@@ -25,13 +25,17 @@
  * - **Compression Ratio**: Original size / compressed size
  * - **Compression Overhead**: Extra CPU time for compression/decompression
  * - **Filter Pipeline**: Shuffle then deflate for optimal results
+ * - **Level 1 is best**: For almost all real-world scientific data, deflate
+ *   level 1 provides nearly the same compression ratio as higher levels but
+ *   at a fraction of the CPU cost. Higher levels yield diminishing returns.
  *
  * **Compression Strategies:**
  * - **No Compression**: Fastest I/O, largest files, use for small datasets
  * - **Deflate Only**: Good compression, slower, use for mixed data types
  * - **Shuffle Only**: Minimal overhead, modest gains, use for fast I/O
- * - **Shuffle+Deflate**: Best compression, moderate overhead, recommended default
- * - **High Deflate Levels (7-9)**: Maximum compression, slow, use for archival
+ * - **Shuffle+Deflate 1**: Best tradeoff, recommended default for nearly all data
+ * - **High Deflate Levels (5-9)**: Marginally better compression, much slower,
+ *   rarely worth the cost except for one-time archival of small datasets
  *
  * **When to Use Compression:**
  * - Large datasets where storage/bandwidth is limited
@@ -65,6 +69,7 @@
  * - compression_deflate_N.nc (deflate levels 1, 5, 9)
  * - compression_shuffle.nc (shuffle only)
  * - compression_shuffle_deflate_N.nc (combined, levels 1, 5, 9)
+ * Note: Level 1 is the preferred deflate level for almost all real-world data.
  * Displays performance comparison table with times, sizes, and ratios.
  *
  * @author Edward Hartnett, Intelligent Data Design, Inc.
@@ -284,10 +289,10 @@ int main() {
     CompressionTest tests[] = {
         {"Uncompressed (baseline)", "compress_none.nc", 0, 0, 0, 0, 0, 0, 0},
         {"Shuffle only", "compress_shuffle.nc", 1, 0, 0, 0, 0, 0, 0},
-        {"Deflate level 1", "compress_deflate1.nc", 0, 1, 1, 0, 0, 0, 0},
+        {"Deflate level 1 (preferred)", "compress_deflate1.nc", 0, 1, 1, 0, 0, 0, 0},
         {"Deflate level 5", "compress_deflate5.nc", 0, 1, 5, 0, 0, 0, 0},
         {"Deflate level 9", "compress_deflate9.nc", 0, 1, 9, 0, 0, 0, 0},
-        {"Shuffle + Deflate 5 (recommended)", "compress_shuffle_deflate5.nc", 1, 1, 5, 0, 0, 0, 0}
+        {"Shuffle + Deflate 1 (recommended)", "compress_shuffle_deflate1.nc", 1, 1, 1, 0, 0, 0, 0}
     };
     int num_tests = sizeof(tests) / sizeof(tests[0]);
     
@@ -323,11 +328,12 @@ int main() {
     printf("\n=== Recommendations ===\n");
     printf("- Uncompressed: Fastest I/O but largest files\n");
     printf("- Shuffle only: Reorganizes bytes for better compression (use with deflate)\n");
-    printf("- Deflate level 1: Fast compression, moderate space savings\n");
-    printf("- Deflate level 5: Good balance of speed and compression\n");
-    printf("- Deflate level 9: Maximum compression, slower writes\n");
-    printf("- Shuffle + Deflate: RECOMMENDED for scientific data\n");
-    printf("- Higher deflate levels increase write time but improve compression\n");
+    printf("- Deflate level 1: PREFERRED for almost all real-world data\n");
+    printf("- Deflate level 5: Marginally better ratio, significantly slower\n");
+    printf("- Deflate level 9: Maximum compression, much slower, rarely worth it\n");
+    printf("- Shuffle + Deflate 1: RECOMMENDED default for scientific data\n");
+    printf("- Level 1 gives nearly the same compression as higher levels\n");
+    printf("- Higher levels cost much more CPU time for diminishing returns\n");
     printf("- Read performance generally similar across compression levels\n");
     printf("- Compression effectiveness depends on data patterns\n");
     

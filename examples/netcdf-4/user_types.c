@@ -12,6 +12,7 @@
  * - **Enum types**: Named integer constants (cloud cover categories)
  * - **Variable-length types**: Arrays of varying length (daily measurements)
  * - **Opaque types**: Binary blobs for arbitrary data (calibration data)
+ * - **String type**: Variable-length strings (NC_STRING, station names)
  *
  * **Learning Objectives:**
  * - Understand NetCDF-4 user-defined type system
@@ -19,6 +20,7 @@
  * - Master enum type definition with nc_def_enum()
  * - Work with variable-length arrays using nc_def_vlen()
  * - Use opaque types for binary data with nc_def_opaque()
+ * - Use NC_STRING for variable-length string data
  * - Write and read complex structured data
  *
  * **Key Concepts:**
@@ -26,6 +28,7 @@
  * - **Enum Type**: Integer type with named values (like C enum)
  * - **Variable-Length Type**: Array whose length varies per element
  * - **Opaque Type**: Uninterpreted binary data of fixed size
+ * - **String Type**: Variable-length character strings (NC_STRING)
  * - **Type ID**: Unique identifier for each user-defined type
  *
  * **User-Defined Type Details:**
@@ -81,6 +84,7 @@
  * - Enum type: CloudCover (CLEAR=0, PARTLY_CLOUDY=1, CLOUDY=2, OVERCAST=3)
  * - Vlen type: DailyMeasurements (variable-length float arrays)
  * - Opaque type: CalibrationData (16-byte binary blobs)
+ * - String type: Station names (variable-length strings)
  * - Variables demonstrating each type with realistic data
  *
  * @author Edward Hartnett, Intelligent Data Design, Inc.
@@ -96,6 +100,7 @@
 #define FILE_NAME "user_types.nc"
 #define NOBS 5
 #define NDAYS 3
+#define NSTATIONS 4
 #define CALIB_SIZE 16
 #define ERRCODE 2
 #define ERR(e) {printf("Error: %s\n", nc_strerror(e)); exit(ERRCODE);}
@@ -190,7 +195,16 @@ int main() {
         ERR(retval);
     
     /* Variables using custom types */
-    int compound_varid, vlen_varid, enum_varid, opaque_varid;
+    int compound_varid, vlen_varid, enum_varid, opaque_varid, string_varid;
+    
+    /* 5. Define String Variable */
+    printf("\n--- String Type (station names) ---\n");
+    int station_dimid;
+    if ((retval = nc_def_dim(ncid, "station", NSTATIONS, &station_dimid)))
+        ERR(retval);
+    if ((retval = nc_def_var(ncid, "station_name", NC_STRING, 1, &station_dimid, &string_varid)))
+        ERR(retval);
+    printf("Defined NC_STRING variable for %d station names\n", NSTATIONS);
     
     if ((retval = nc_def_var(ncid, "observations", compound_typeid, 1, &obs_dimid, &compound_varid)))
         ERR(retval);
@@ -242,6 +256,17 @@ int main() {
     if ((retval = nc_put_var(ncid, enum_varid, cloud_data)))
         ERR(retval);
     printf("Wrote %d cloud cover values\n", NOBS);
+    
+    /* Write string data */
+    const char *station_names[NSTATIONS] = {
+        "Boulder, CO",
+        "Cape Canaveral, FL",
+        "Wallops Island, VA",
+        "White Sands, NM"
+    };
+    if ((retval = nc_put_var_string(ncid, string_varid, station_names)))
+        ERR(retval);
+    printf("Wrote %d station name strings\n", NSTATIONS);
     
     /* Write opaque data */
     unsigned char calib_data[CALIB_SIZE];
@@ -336,6 +361,30 @@ int main() {
         printf("Verified: all %d cloud cover values correct\n", NOBS);
     }
     
+    /* Verify string type */
+    printf("\n--- Validating String Type ---\n");
+    if ((retval = nc_inq_varid(ncid, "station_name", &string_varid)))
+        ERR(retval);
+    
+    char *station_read[NSTATIONS];
+    if ((retval = nc_get_var_string(ncid, string_varid, station_read)))
+        ERR(retval);
+    
+    for (int i = 0; i < NSTATIONS; i++) {
+        if (strcmp(station_read[i], station_names[i]) != 0) {
+            printf("Error: string data mismatch at index %d: '%s' != '%s'\n",
+                   i, station_read[i], station_names[i]);
+            errors++;
+        }
+    }
+    if (errors == 0) {
+        printf("Verified: all %d station name strings correct\n", NSTATIONS);
+    }
+    
+    /* Free string memory */
+    if ((retval = nc_free_string(NSTATIONS, station_read)))
+        ERR(retval);
+    
     /* Verify opaque type */
     printf("\n--- Validating Opaque Type ---\n");
     if ((retval = nc_inq_varid(ncid, "calibration", &opaque_varid)))
@@ -368,6 +417,7 @@ int main() {
     printf("- Variable-length types: Store ragged arrays efficiently\n");
     printf("- Enumeration types: Categorical data with named values\n");
     printf("- Opaque types: Binary metadata or proprietary formats\n");
+    printf("- String types: Variable-length text data (station names, labels)\n");
     
     printf("\n*** SUCCESS: All user-defined types demonstrated!\n");
     return 0;

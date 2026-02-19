@@ -1,0 +1,21 @@
+File: f_user_types.nc
+Group: /
+Number of dimensions: 1
+Number of variables: 2
+Number of global attributes: 0
+No unlimited dimension
+
+User-Defined Types:
+  cloud_cover_t: enum of int, 4 member(s)
+    CLEAR = 0
+    PARTLY_CLOUDY = 1
+    CLOUDY = 2
+    OVERCAST = 3
+  calibration_t: opaque, 16 bytes
+
+Dimensions:
+  obs = 5
+
+Variables:
+  cloud_cover: type cloud_cover_t, 1 dimension(s) (obs), 0 attribute(s)
+  calibration: type calibration_t, 0 dimension(s), 0 attribute(s)

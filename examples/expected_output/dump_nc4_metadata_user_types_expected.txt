@@ -1,0 +1,32 @@
+File: user_types.nc
+Group: /
+Number of dimensions: 3
+Number of variables: 5
+Number of global attributes: 0
+No unlimited dimension
+
+User-Defined Types:
+  weather_obs_t: compound, 24 bytes, 4 field(s)
+    field 0: time, type double, offset 0
+    field 1: temperature, type float, offset 8
+    field 2: pressure, type float, offset 12
+    field 3: humidity, type float, offset 16
+  obs_per_day_t: vlen of int
+  cloud_cover_t: enum of int, 4 member(s)
+    CLEAR = 0
+    PARTLY_CLOUDY = 1
+    CLOUDY = 2
+    OVERCAST = 3
+  calibration_t: opaque, 16 bytes
+
+Dimensions:
+  obs = 5
+  day = 3
+  station = 4
+
+Variables:
+  station_name: type string, 1 dimension(s) (station), 0 attribute(s)
+  observations: type weather_obs_t, 1 dimension(s) (obs), 0 attribute(s)
+  obs_per_day: type obs_per_day_t, 1 dimension(s) (day), 0 attribute(s)
+  cloud_cover: type cloud_cover_t, 1 dimension(s) (obs), 0 attribute(s)
+  calibration: type calibration_t, 0 dimension(s), 0 attribute(s)

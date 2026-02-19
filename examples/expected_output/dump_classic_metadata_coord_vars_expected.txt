@@ -1,0 +1,26 @@
+File: coord_vars.nc
+Number of dimensions: 2
+Number of variables: 3
+Number of global attributes: 0
+No unlimited dimension
+
+Dimensions:
+  lat = 4
+  lon = 5
+
+Variables:
+  lat: type float, 1 dimension(s) (lat), 4 attribute(s)
+    units: type char, length 13, value: "degrees_north"
+    standard_name: type char, length 8, value: "latitude"
+    long_name: type char, length 8, value: "Latitude"
+    axis: type char, length 1, value: "Y"
+  lon: type float, 1 dimension(s) (lon), 4 attribute(s)
+    units: type char, length 12, value: "degrees_east"
+    standard_name: type char, length 9, value: "longitude"
+    long_name: type char, length 9, value: "Longitude"
+    axis: type char, length 1, value: "X"
+  temperature: type float, 2 dimension(s) (lat, lon), 4 attribute(s)
+    units: type char, length 1, value: "K"
+    standard_name: type char, length 15, value: "air_temperature"
+    long_name: type char, length 15, value: "Air Temperature"
+    _FillValue: type float, length 1, value: -999

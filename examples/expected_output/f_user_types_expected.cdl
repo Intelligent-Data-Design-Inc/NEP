@@ -1,4 +1,16 @@
 netcdf f_user_types {
 types:
+  int enum cloud_cover_t {CLEAR = 0, PARTLY_CLOUDY = 1, CLOUDY = 2, 
+      OVERCAST = 3} ;
   opaque(16) calibration_t ;
+dimensions:
+	obs = 5 ;
+variables:
+	cloud_cover_t cloud_cover(obs) ;
+	calibration_t calibration ;
+data:
+
+ cloud_cover = CLEAR, PARTLY_CLOUDY, CLOUDY, PARTLY_CLOUDY, OVERCAST ;
+
+ calibration = 0X00112233445566778899AABBCCDDEEFF ;
 }

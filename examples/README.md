@@ -14,6 +14,7 @@ Located in `classic/`:
 - **size_limits.c** - Demonstrating size and dimension limits
 - **unlimited_dim.c** - Using unlimited dimensions for time series data
 - **var4d.c** - Creating and writing 4-dimensional variables
+- **dump_classic_metadata.c** - Read any classic NetCDF file and print all metadata (dimensions, attributes, variables)
 
 ### NetCDF-4 Examples (C)
 Located in `netcdf-4/`:
@@ -23,6 +24,7 @@ Located in `netcdf-4/`:
 - **multi_unlimited.c** - Multiple unlimited dimensions (NetCDF-4 feature)
 - **user_types.c** - User-defined compound and enum types
 - **groups.c** - Hierarchical groups, nested groups, and dimension visibility
+- **dump_nc4_metadata.c** - Read any NetCDF-4 file and print all metadata including user-defined types and groups
 
 ### Classic NetCDF Examples (Fortran)
 Located in `f_classic/`:
@@ -34,6 +36,7 @@ Located in `f_classic/`:
 - **f_size_limits.f90** - Size limits in Fortran
 - **f_unlimited_dim.f90** - Unlimited dimensions in Fortran
 - **f_var4d.f90** - 4D variables in Fortran
+- **f_dump_classic_metadata.f90** - Read any classic NetCDF file and print all metadata (Fortran)
 
 ### NetCDF-4 Examples (Fortran)
 Located in `f_netcdf-4/`:
@@ -43,6 +46,7 @@ Located in `f_netcdf-4/`:
 - **f_multi_unlimited.f90** - Multiple unlimited dimensions in Fortran
 - **f_user_types.f90** - User-defined types in Fortran
 - **f_groups.f90** - Hierarchical groups, nested groups, and dimension visibility in Fortran
+- **f_dump_nc4_metadata.f90** - Read any NetCDF-4 file and print all metadata including user-defined types and groups (Fortran)
 
 ### Future Examples
 - `parallelIO/` - Reserved for parallel I/O examples
@@ -178,6 +182,8 @@ Or view the online documentation at: https://intelligent-data-design-inc.github.
 10. Utilize `multi_unlimited.c` / `f_multi_unlimited.f90` - Multiple unlimited dimensions
 11. Explore `user_types.c` / `f_user_types.f90` - Complex data structures
 12. Organize with `groups.c` / `f_groups.f90` - Hierarchical groups and dimension visibility
+13. Inspect with `dump_classic_metadata.c` / `f_dump_classic_metadata.f90` - Metadata inquiry for classic files
+14. Inspect with `dump_nc4_metadata.c` / `f_dump_nc4_metadata.f90` - Metadata inquiry for NetCDF-4 files
 
 ### C vs Fortran
 
