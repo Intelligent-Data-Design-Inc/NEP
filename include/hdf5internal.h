@@ -1,5 +1,11 @@
 /* Copyright 2018-2022 University Corporation for Atmospheric
    Research/Unidata. */
+/* Copied from netcdf-c v4.9.2 (commit 2360497 in NEP, 2025-09-29).
+ * Source: https://github.com/Unidata/netcdf-c/blob/main/libhdf5/hdf5internal.h
+ * Do not edit. See docs/plan/v1.5.5-header-cleanup-map.md for elimination plan.
+ * Category: DIRECT - used by geotifffile.c, grib2file.c.
+ * Elimination path: Evaluate whether NC_HDF5_FILE_INFO_T access can be
+ *   replaced with a cast from NC_FILE_INFO_T->format_file_info. */
 /**
  * @file This header file contains macros, types, and prototypes for
  * the HDF5 code in libhdf5. This header should not be included in

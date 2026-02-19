@@ -9,8 +9,6 @@
  */
 
 #include "grib2logging.h"
-#include "nc4internal.h"
-#include "nc4dispatch.h"
 
 /**
  * @internal This function only does anything for netcdf-3 files.

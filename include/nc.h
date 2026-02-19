@@ -2,6 +2,11 @@
  *	Copyright 2018, University Corporation for Atmospheric Research
  *      See netcdf/COPYRIGHT file for copying and redistribution conditions.
  */
+/* Copied from netcdf-c v4.9.2 (commit 2360497 in NEP, 2025-09-29).
+ * Source: https://github.com/Unidata/netcdf-c/blob/main/include/nc.h
+ * Do not edit. See docs/plan/v1.5.5-header-cleanup-map.md for elimination plan.
+ * Category: DIRECT - used by geotifffile.c, grib2file.c for NC struct.
+ * Elimination path: Requires upstream netcdf-c public UDF metadata API. */
 #ifndef _NC_H_
 #define _NC_H_
 

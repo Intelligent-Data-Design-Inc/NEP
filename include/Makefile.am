@@ -4,7 +4,7 @@
 # Copyright Intelligent Data Design, Inc. All rights reserved.
 
 # These do not get installed.
-noinst_HEADERS = grib2logging.h
+noinst_HEADERS = grib2logging.h nep_nc4.h
 
 
 # These do get installed.

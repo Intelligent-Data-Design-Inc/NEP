@@ -9,10 +9,7 @@
 
 #include "config.h"
 #include <errno.h>  /* netcdf functions sometimes return system errors */
-#include <ncdimscale.h>
-#include "nc.h"
-#include "nc4internal.h"
-#include "hdf5internal.h"
+#include "nep_nc4.h"
 #include "grib2dispatch.h"
 #include "grib2logging.h"
 #include <strings.h>
@@ -130,7 +127,7 @@ NC_GRIB2_close(int ncid, void *ignore)
 {
     NC_GRP_INFO_T *grp;
     NC *nc;
-    NC_HDF5_FILE_INFO_T *h5;
+    NC_FILE_INFO_T *h5;
     NC_GRIB2_FILE_INFO_T *grib2_file;
     int ret;
 

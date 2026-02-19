@@ -1,5 +1,11 @@
 /* Copyright 2018-2018 University Corporation for Atmospheric
    Research/Unidata. */
+/* Copied from netcdf-c v4.9.2 (commit 2360497 in NEP, 2025-09-29).
+ * Source: https://github.com/Unidata/netcdf-c/blob/main/include/nc4dispatch.h
+ * Do not edit. See docs/plan/v1.5.5-header-cleanup-map.md for elimination plan.
+ * Category: DIRECT - used by cdfdispatch.c, cdfvar.c, geotiffdispatch.c.
+ * Elimination path: NC4_* functions needed for dispatch table; may be
+ *   installable from netcdf-c if exposed as public headers. */
 /**
  * @file
  * @internal Includes prototypes for libsrc4 dispatch functions.

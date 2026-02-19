@@ -6,9 +6,6 @@
  * @copyright Intelligent Data Design, Inc. All rights reserved.
  */
 
-#include <nc4internal.h>
-#include "nc4dispatch.h"
-
 /**
  * @internal Get data from an HDF4 SD dataset.
  *
@@ -70,7 +67,6 @@ int
 GRIB2_get_vara(int ncid, int varid, const size_t *startp,
               const size_t *countp, void *ip, int memtype)
 {
-   NC *nc;
    /* NC_HDF5_FILE_INFO_T* h5; */
 
    /* LOG((2, "%s: ncid 0x%x varid %d memtype %d", __func__, ncid, varid, */

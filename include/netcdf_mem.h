@@ -8,6 +8,12 @@
  * See \ref copyright file for more info.
  *
  */
+/* Copied from netcdf-c v4.9.2 (commit 2360497 in NEP, 2025-09-29).
+ * Source: https://github.com/Unidata/netcdf-c/blob/main/include/netcdf_mem.h
+ * Do not edit. See docs/plan/v1.5.5-header-cleanup-map.md for elimination plan.
+ * Category: TRANSITIVE - pulled in by nc4internal.h. Never directly included
+ *   by NEP .c files.
+ * Elimination path: Eliminate when nc4internal.h is no longer needed. */
 
 /*
  * In order to use any of the netcdf_XXX.h files, it is necessary

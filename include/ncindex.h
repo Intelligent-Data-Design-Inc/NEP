@@ -2,6 +2,12 @@
 Copyright (c) 1998-2018 University Corporation for Atmospheric Research/Unidata
 See COPYRIGHT for license information.
 */
+/* Copied from netcdf-c v4.9.2 (commit 2360497 in NEP, 2025-09-29).
+ * Source: https://github.com/Unidata/netcdf-c/blob/main/include/ncindex.h
+ * Do not edit. See docs/plan/v1.5.5-header-cleanup-map.md for elimination plan.
+ * Category: TRANSITIVE - pulled in by nc4internal.h. Never directly included
+ *   by NEP .c files.
+ * Elimination path: Eliminate when nc4internal.h is no longer needed. */
 
 #ifndef NCINDEX_H
 #define NCINDEX_H

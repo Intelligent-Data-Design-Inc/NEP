@@ -8,7 +8,7 @@
  */
 
 #include "config.h"
-#include <nc4internal.h>
+#include "nep_nc4.h"
 #include "cdfdispatch.h"
 #include "nc4dispatch.h"
 /* Suppress warnings from external CDF library header */

@@ -3,6 +3,68 @@
 ### V1.6.0
 Implement Phase 4 of the GeoTIFF read layer for NEP v1.5.0: Extract and expose coordinate reference system (CRS) and georeferencing information following CF conventions. (see closed GitHub issue 59)
 
+### V1.5.5: Header File Cleanup
+
+NEP copies 14 private headers from `netcdf-c/include` to support UDF handlers that must populate the netcdf-4 in-memory metadata model. This version begins a systematic, incremental effort to reduce and eventually eliminate this dependency.
+
+#### Sprint 1: Header Audit, Dependency Map, and Version Stamping
+**Detailed Plan**: See `docs/plan/v1.5.5-sprint1-header-audit.md`
+
+**Background**: The 14 copied headers fall into two categories:
+
+*Directly included by NEP `.c` files* (6 headers):
+- `nc4internal.h` — `NC_FILE_INFO_T`, `NC_GRP_INFO_T`, `NC_VAR_INFO_T`, etc. Used by 9 source files.
+- `hdf5internal.h` — `NC_HDF5_FILE_INFO_T`. Used by `geotifffile.c`, `grib2file.c`.
+- `nc.h` — `NC` top-level file handle struct. Used by `geotifffile.c`, `grib2file.c`.
+- `ncdimscale.h` — HDF5 dimension scale constants. Used by `grib2file.c`.
+- `nc4dispatch.h` — `NC4_Dispatch` function pointer table. Used by 6 source files.
+- `hdf5dispatch.h` — `HDF5_dispatch_table`. Used by `cdfdispatch.c`, `geotiffdispatch.c`.
+
+*Transitively included only* (9 headers — never directly `#include`d by NEP `.c` files):
+- `ncdispatch.h` → pulled in by `cdfdispatch.h`, `geotiffdispatch.h`, `hdf5dispatch.h`, `nc4dispatch.h`
+- `ncindex.h`, `nc_provenance.h`, `netcdf_mem.h` → pulled in by `nc4internal.h`
+- `nclist.h`, `nchashmap.h` → pulled in by `ncindex.h`
+- `ncexternl.h` → pulled in by `nclist.h` and `ncuri.h`
+- `ncmodel.h`, `ncuri.h` → pulled in by `ncdispatch.h`
+
+**Tasks**:
+- Determine the netcdf-c version each header was copied from (git history + upstream cross-reference)
+- Add version-stamp comment to the top of each copied header
+- Audit each direct include in NEP `.c` files — verify the symbols are actually used
+- Remove dead commented-out includes in `grib2attr.c` and `grib2dim.c`
+- Verify whether `hdf5dispatch.h` is actually needed in `cdfdispatch.c` and `geotiffdispatch.c`
+- Analyze whether `nc.h` access can be replaced with a public API call
+- Create `docs/plan/v1.5.5-header-cleanup-map.md` with full dependency map and elimination path per header
+- File upstream issue against `Unidata/netcdf-c` requesting a public UDF metadata API
+
+**Definition of Done**:
+- All 14 copied headers have version-stamp comments
+- Dead commented-out includes removed
+- `docs/plan/v1.5.5-header-cleanup-map.md` created
+- Upstream netcdf-c issue filed
+- All existing tests continue to pass
+
+#### Sprint 2: NEP Abstraction Layer for Internal netcdf-c Structures
+**Detailed Plan**: See `docs/plan/v1.5.5-sprint2-abstraction-layer.md`
+
+**Objective**: Create `include/nep_nc4.h` — a thin NEP-specific wrapper that centralizes all access to internal netcdf-c structures. This isolates the dependency to a single point and makes future elimination straightforward.
+
+**Tasks**:
+- Create `include/nep_nc4.h` that includes only the minimum copied headers and re-exports only the types/functions NEP actually uses, with documentation on why each is needed and what upstream change would eliminate it
+- Update all NEP `.c` files to `#include "nep_nc4.h"` instead of directly including private headers
+- Evaluate whether `hdf5internal.h` can be dropped from `nep_nc4.h` (check if `NC_HDF5_FILE_INFO_T` is truly needed vs. a cast from `NC_FILE_INFO_T->format_file_info`)
+- Add `nep_nc4.h` to CMake and Autotools build systems
+- Prototype minimal upstream netcdf-c changes: a new `netcdf_udf.h` header with `nc_udf_def_var()`, `nc_udf_def_dim()`, `nc_udf_put_att()` as public wrappers around internal functions
+- Document prototype in `docs/plan/v1.5.5-sprint2-abstraction-layer.md` as a concrete proposal for the upstream issue
+- Update `docs/plan/v1.5.5-header-cleanup-map.md` with final status
+
+**Definition of Done**:
+- `include/nep_nc4.h` created with full Doxygen documentation
+- All NEP `.c` files use `nep_nc4.h` instead of direct private header includes
+- `hdf5internal.h` dependency evaluated and dropped if possible
+- Upstream netcdf-c prototype documented
+- All existing tests continue to pass
+
 ### V1.5.4: NetCDF Self-Loading UDF Support
 
 NetCDF-C now supports self-loading UDFs via RC file configuration. This version adds initialization functions for GeoTIFF and CDF format handlers to enable automatic loading through the new UDF plugin system.

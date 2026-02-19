@@ -1,5 +1,10 @@
 /* Copyright 2018-2018 University Corporation for Atmospheric
    Research/Unidata. */
+/* Copied from netcdf-c v4.9.2 (commit 2360497 in NEP, 2025-09-29).
+ * Source: https://github.com/Unidata/netcdf-c/blob/main/libhdf5/ncdimscale.h
+ * Do not edit. See docs/plan/v1.5.5-header-cleanup-map.md for elimination plan.
+ * Category: DIRECT - used by grib2file.c for HDF5 dimension scale constants.
+ * Elimination path: Requires upstream netcdf-c public UDF metadata API. */
 /**
  * @file
  * @internal Includes for some HDF5 stuff needed by libhdf5 code and

@@ -7,11 +7,6 @@
  * @date Nov 13, 2025
  * @copyright Intelligent Data Design, Inc. All rights reserved.
  */
-/* #include "nc4internal.h" */
-/* #include "nc.h" */
-/* #include "abdispatch.h" */
-/* #include "ncdispatch.h" */
-
 /* int nc4typelen(nc_type type); */
 
 

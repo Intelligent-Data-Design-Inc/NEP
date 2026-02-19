@@ -1,5 +1,11 @@
 /* Copyright 2018-2018 University Corporation for Atmospheric
    Research/Unidata. */
+/* Copied from netcdf-c v4.9.2 (commit 2360497 in NEP, 2025-09-29).
+ * Source: https://github.com/Unidata/netcdf-c/blob/main/include/nc4internal.h
+ * Do not edit. See docs/plan/v1.5.5-header-cleanup-map.md for elimination plan.
+ * Category: DIRECT - used by geotifffile.c, cdffile.c, cdffunc.c, cdfvar.c.
+ * Elimination path: Requires upstream netcdf-c public UDF metadata API.
+ * Tracked: https://github.com/Unidata/netcdf-c/issues (see NEP issue #129) */
 /**
  * @file
  * @internal This header file contains macros, types and prototypes
