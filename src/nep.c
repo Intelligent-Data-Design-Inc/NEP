@@ -29,7 +29,7 @@
  */
 
 #include "config.h"
-#include "ncsqueeze.h"
+#include "nep.h"
 #include <hdf5.h>
 #include <H5DSpublic.h>
 #include <stdlib.h>

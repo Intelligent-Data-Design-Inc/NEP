@@ -11,7 +11,7 @@
 #define _NEP_TEST_H
 
 /* #include "config.h" */
-#include "ncsqueeze.h"
+#include "nep.h"
 #include <assert.h>
 #include <stdlib.h>
 

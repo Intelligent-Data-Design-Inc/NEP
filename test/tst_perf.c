@@ -8,7 +8,7 @@
  */
 
 #include "config.h"
-#include "ncsqueeze.h"
+#include "nep.h"
 #include "nep_test.h"
 #include <hdf5.h>
 #include <H5DSpublic.h>
