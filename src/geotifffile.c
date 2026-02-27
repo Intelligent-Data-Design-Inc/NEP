@@ -18,8 +18,7 @@
 #include <string.h>
 #include <netcdf.h>
 #include "geotiffdispatch.h"
-#include "nc.h"
-#include "nc4internal.h"
+#include "nep_nc4.h"
 
 #ifdef HAVE_GEOTIFF
 #include <tiffio.h>

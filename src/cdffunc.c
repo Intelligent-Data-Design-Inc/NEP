@@ -7,7 +7,7 @@
  */
 
 #include "config.h"
-#include "nc4internal.h"
+#include "nep_nc4.h"
 #include "cdfdispatch.h"
 
 
