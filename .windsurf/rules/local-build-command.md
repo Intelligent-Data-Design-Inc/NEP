@@ -8,8 +8,8 @@ Use these paths for **local development builds on Ed's machine**.
 For CI/GitHub Actions, different paths are used (see `.github/workflows/`).
 
 ## Machine-Specific Dependency Paths
-- **HDF5**: `/usr/local/hdf5-1.14.6/`
-- **NetCDF-C**: `/usr/local/netcdf-c/` (includes new UDF features)
+- **HDF5**: `/usr/local/hdf5-2.0.0/`
+- **NetCDF-C**: `/usr/local/netcdf-c-4.10.0/`
 - **NetCDF-Fortran**: `/usr/local/netcdf-fortran/` (if Fortran enabled)
 - **CDF**: `/usr/local/cdf-3.9.1/` (if CDF enabled)
 - **GeoTIFF**: System packages (`libgeotiff-dev`, `libtiff-dev`)
@@ -17,7 +17,7 @@ For CI/GitHub Actions, different paths are used (see `.github/workflows/`).
 ## Runtime Environment
 Before running tests or executables:
 ```bash
-export LD_LIBRARY_PATH=/usr/local/hdf5-1.14.6/lib:/usr/local/netcdf-c/lib:/usr/local/netcdf-fortran/lib:/usr/local/cdf-3.9.1/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/usr/local/hdf5-2.0.0/lib:/usr/local/netcdf-c-4.10.0/lib:/usr/local/netcdf-fortran/lib:/usr/local/cdf-3.9.1/lib:$LD_LIBRARY_PATH
 ```
 
 ## Build System Options
@@ -37,8 +37,8 @@ Working directory: `/home/ed/NEP`
 ```bash
 autoreconf -i && \
 CFLAGS="-g -O0" \
-CPPFLAGS="-I/usr/local/hdf5-1.14.6/include -I/usr/local/netcdf-c/include -I/usr/local/netcdf-fortran/include -I/usr/local/cdf-3.9.1/include" \
-LDFLAGS="-L/usr/local/hdf5-1.14.6/lib -L/usr/local/netcdf-c/lib -L/usr/local/netcdf-fortran/lib -L/usr/local/cdf-3.9.1/lib -Wl,-rpath,/usr/local/hdf5-1.14.6/lib -Wl,-rpath,/usr/local/netcdf-c/lib -Wl,-rpath,/usr/local/netcdf-fortran/lib" \
+CPPFLAGS="-I/usr/local/hdf5-2.0.0/include -I/usr/local/netcdf-c-4.10.0/include -I/usr/local/netcdf-fortran/include -I/usr/local/cdf-3.9.1/include" \
+LDFLAGS="-L/usr/local/hdf5-2.0.0/lib -L/usr/local/netcdf-c-4.10.0/lib -L/usr/local/netcdf-fortran/lib -L/usr/local/cdf-3.9.1/lib -Wl,-rpath,/usr/local/hdf5-2.0.0/lib -Wl,-rpath,/usr/local/netcdf-c-4.10.0/lib -Wl,-rpath,/usr/local/netcdf-fortran/lib" \
 ./configure --enable-geotiff --enable-cdf --disable-fortran --disable-shared --disable-bzip2 --disable-lz4 && \
 make clean && make -j$(nproc) && make check
 ```
