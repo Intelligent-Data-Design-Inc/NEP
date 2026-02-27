@@ -21,7 +21,7 @@ check-local:
 check_PROGRAMS = tst_geotiff_handle tst_geotiff_metadata tst_phase2_acceptance \
 		 tst_geotiff_organization tst_single_band_read tst_large_geotiff \
 		 tst_geotiff_errors tst_geotiff_edge_cases tst_simple_geotiff \
-		 test_netcdf_crs tst_geotiff_self_load
+		 test_netcdf_crs tst_geotiff_self_load tst_geotiff_ncrc_autoload
 
 # Benchmark programs (not run automatically)
 noinst_PROGRAMS = bench_geotiff_performance
@@ -70,6 +70,10 @@ test_netcdf_crs_LDADD = $(top_builddir)/src/libncgeotiff.la $(NETCDF_LIBS) $(GEO
 tst_geotiff_self_load_SOURCES = tst_geotiff_self_load.c
 tst_geotiff_self_load_LDADD = $(top_builddir)/src/libncgeotiff.la $(NETCDF_LIBS) $(GEOTIFF_LIBS) $(HDF5_LIBS)
 
+# Test for .ncrc autoloading via NETCDF_RC (issue #134)
+tst_geotiff_ncrc_autoload_SOURCES = tst_geotiff_ncrc_autoload.c
+tst_geotiff_ncrc_autoload_LDADD = $(top_builddir)/src/libncgeotiff.la $(NETCDF_LIBS) $(GEOTIFF_LIBS) $(HDF5_LIBS)
+
 # Benchmark for GeoTIFF Phase 3.5a: performance validation
 bench_geotiff_performance_SOURCES = bench_geotiff_performance.c
 bench_geotiff_performance_LDADD = $(top_builddir)/src/libncgeotiff.la $(NETCDF_LIBS) $(GEOTIFF_LIBS) $(HDF5_LIBS)
@@ -80,9 +84,9 @@ bench_geotiff_performance_LDADD = $(top_builddir)/src/libncgeotiff.la $(NETCDF_L
 TESTS = tst_geotiff_handle tst_geotiff_metadata tst_phase2_acceptance \
 	tst_geotiff_organization tst_single_band_read tst_large_geotiff \
 	tst_geotiff_errors tst_geotiff_edge_cases tst_simple_geotiff \
-	tst_geotiff_self_load
+	tst_geotiff_self_load tst_geotiff_ncrc_autoload
 
-# Set environment variable for self-loading test to find library
+# Set environment variable for self-loading tests to find library
 TESTS_ENVIRONMENT = NEP_GEOTIFF_LIB_PATH=$(abs_top_builddir)/src/.libs/libncgeotiff.so
 
 endif # HAVE_GEOTIFF

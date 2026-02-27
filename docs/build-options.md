@@ -106,6 +106,46 @@ The GeoTIFF test suite includes:
 - Memory leak detection (valgrind)
 - Code coverage reporting (>80% target)
 
+## UDF Autoloading via .ncrc (v1.5.5)
+
+NEP installs a `nep.ncrc` file that configures NetCDF-C's UDF self-loading mechanism.
+When present, NetCDF-C automatically loads the NEP shared library when opening any
+GeoTIFF or CDF file, without requiring applications to call `NC_GEOTIFF_initialize()`
+or `NC_CDF_initialize()` explicitly.
+
+### Installed Location
+
+| Build system | Default install path | Override option |
+|---|---|---|
+| CMake | `${CMAKE_INSTALL_PREFIX}/share/nep/nep.ncrc` | `-DNEP_NCRC_INSTALL_DIR=<path>` |
+| Autotools | `${datarootdir}/nep/nep.ncrc` | `--with-ncrc-dir=<path>` |
+
+### Enabling Autoloading
+
+Append the contents of the installed `nep.ncrc` to your `~/.ncrc`:
+
+```bash
+cat $(nep-config --datadir)/nep/nep.ncrc >> ~/.ncrc
+```
+
+Or point `NETCDF_RC` to the directory containing `nep.ncrc`:
+
+```bash
+export NETCDF_RC=/usr/local/share/nep
+nc_open("myfile.tif", NC_NOWRITE, &ncid);   # works without any init call
+```
+
+### UDF Slot Assignments
+
+| Slot | Format | Magic bytes |
+|---|---|---|
+| UDF0 | GeoTIFF BigTIFF (little-endian) | `II+` |
+| UDF1 | GeoTIFF standard TIFF (little-endian) | `II*` |
+| UDF2 | NASA CDF | `\xCD\xF3\x00\x01` |
+
+See [NetCDF UDF documentation](https://docs.unidata.ucar.edu/netcdf/NUG/user_defined_formats.html)
+for full details on the RC file format.
+
 ## Documentation Build
 
 - **CMake**: `-DBUILD_DOCUMENTATION=ON/OFF` (default: `ON`)

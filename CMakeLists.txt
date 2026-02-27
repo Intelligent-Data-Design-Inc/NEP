@@ -264,6 +264,20 @@ if(NOT DOCS_ONLY)
     # Add test directory last so tst_cdf_udf runs after tst_cdf_basic
     add_subdirectory (test)
 
+    # nep.ncrc: .ncrc template for UDF autoloading (issue #134)
+    set(NEP_LIBDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+    set(NEP_NCRC_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/nep"
+        CACHE PATH "Directory where nep.ncrc is installed (default: \${prefix}/share/nep)")
+    configure_file(
+        "${CMAKE_SOURCE_DIR}/nep.ncrc.in"
+        "${CMAKE_BINARY_DIR}/nep.ncrc"
+        @ONLY
+    )
+    install(FILES "${CMAKE_BINARY_DIR}/nep.ncrc"
+        DESTINATION "${NEP_NCRC_INSTALL_DIR}"
+    )
+    message(STATUS "nep.ncrc will be installed to: ${NEP_NCRC_INSTALL_DIR}")
+
     # Generate and install CMake config files
     include(CMakePackageConfigHelpers)
 

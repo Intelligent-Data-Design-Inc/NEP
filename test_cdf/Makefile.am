@@ -15,17 +15,21 @@ LDADD = $(CDF_LIBS)
 
 # Build the CDF test programs
 # Tests create their own CDF file at runtime, no test data needed
-check_PROGRAMS = tst_cdf_basic tst_cdf_self_load
+check_PROGRAMS = tst_cdf_basic tst_cdf_self_load tst_cdf_ncrc_autoload
 tst_cdf_basic_SOURCES = tst_cdf_basic.c
 
 # Test for UDF self-loading functionality (v1.5.4 Sprint 3)
 tst_cdf_self_load_SOURCES = tst_cdf_self_load.c
 tst_cdf_self_load_LDADD = $(top_builddir)/src/libnccdf.la $(NETCDF_LIBS) $(HDF5_LIBS) $(CDF_LIBS)
 
-# Run the tests
-TESTS = tst_cdf_basic tst_cdf_self_load
+# Test for .ncrc autoloading via NETCDF_RC (issue #134)
+tst_cdf_ncrc_autoload_SOURCES = tst_cdf_ncrc_autoload.c
+tst_cdf_ncrc_autoload_LDADD = $(top_builddir)/src/libnccdf.la $(NETCDF_LIBS) $(HDF5_LIBS) $(CDF_LIBS)
 
-# Set environment variable for self-loading test to find library
+# Run the tests
+TESTS = tst_cdf_basic tst_cdf_self_load tst_cdf_ncrc_autoload
+
+# Set environment variable for self-loading tests to find library
 TESTS_ENVIRONMENT = NEP_CDF_LIB_PATH=$(abs_top_builddir)/src/.libs/libnccdf.so
 
 # Clean up test outputs (test creates and removes its own file)

@@ -114,5 +114,19 @@ if(HAVE_GEOTIFF)
     set_tests_properties(tst_geotiff_self_load PROPERTIES 
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
+    # Test for .ncrc autoloading via NETCDF_RC (issue #134)
+    add_executable(tst_geotiff_ncrc_autoload tst_geotiff_ncrc_autoload.c)
+    target_link_libraries(tst_geotiff_ncrc_autoload
+        ncgeotiff
+        ${NETCDF_LIBRARIES}
+        ${HDF5_LIBRARIES}
+        ${GEOTIFF_LIBRARY}
+        ${TIFF_LIBRARY})
+    target_compile_definitions(tst_geotiff_ncrc_autoload PRIVATE
+        NEP_GEOTIFF_LIB_PATH="$<TARGET_FILE:ncgeotiff>")
+    add_test(NAME tst_geotiff_ncrc_autoload COMMAND tst_geotiff_ncrc_autoload)
+    set_tests_properties(tst_geotiff_ncrc_autoload PROPERTIES
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
     message(STATUS "GeoTIFF tests enabled")
 endif()
