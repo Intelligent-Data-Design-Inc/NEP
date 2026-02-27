@@ -6,8 +6,6 @@
  * @copyright Intelligent Data Design, Inc. All rights reserved.
  */
 
-#include <nc4internal.h>
-#include "nc4dispatch.h"
 
 /**
  * @internal Get data from an HDF4 SD dataset.

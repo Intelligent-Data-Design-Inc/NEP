@@ -3,6 +3,29 @@
 ### V1.6.0
 Implement Phase 4 of the GeoTIFF read layer for NEP v1.5.0: Extract and expose coordinate reference system (CRS) and georeferencing information following CF conventions. (see closed GitHub issue 59)
 
+### V1.5.5: Header File Cleanup and Ready for netcdf-c-4.10.0
+
+NEP's UDF handlers depend on 14 private netcdf-c headers (nc4internal.h, hdf5internal.h, nc.h, etc.) with no public API equivalent. This version audits that dependency, creates a thin abstraction layer to isolate it, then drops backward compatibility with older netcdf-c versions and enables UDF self-loading via .ncrc.
+
+#### Sprint 1: Header Audit (complete)
+- (issue #129): Audit all 14 copied headers; add version-stamp comments identifying netcdf-c v4.9.2 as source; remove dead/commented-out includes from grib2 stub files; create `docs/plan/v1.5.5-header-cleanup-map.md` with full dependency map; file upstream netcdf-c issue #3277 requesting a public UDF metadata API.
+
+#### Sprint 2: NEP Abstraction Layer (complete)
+- (issue #130): Create `include/nep_nc4.h` — thin abstraction shim centralizing all private netcdf-c header access; update all NEP `.c` files to use `nep_nc4.h`; eliminate `hdf5internal.h` (confirmed unused in active code); add `nep_nc4.h` to build systems; prototype upstream `netcdf_udf.h` API locally; create `docs/plan/v1.5.5-sprint2-abstraction-layer.md`.
+
+#### Sprint 3: Rename Library
+- Rename from ncsqueeze to nep.
+- Update documentation.
+
+#### Sprint 4: Require netcdf-c-4.10.0
+- Require netcdf-c-4.10.0, earlier versions won't work.
+- Determine this by checking for NC_HAS_UDF_SELF_LOAD in netcdf_meta.h.
+- Check in both autotools and cmake builds.
+- Take out configure code that deals with cases where NC_HAS_UDF_SELF_LOAD is no.
+
+#### Sprint 5: Create .ncrc File
+- Create the .ncrc file needed to autoload the geotiff and/or CDF layers.
+
 ### V1.5.4: NetCDF Self-Loading UDF Support
 
 NetCDF-C now supports self-loading UDFs via RC file configuration. This version adds initialization functions for GeoTIFF and CDF format handlers to enable automatic loading through the new UDF plugin system.

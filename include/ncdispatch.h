@@ -1,3 +1,8 @@
+/* Copied from netcdf-c v4.9.2 on 2025-11-01.
+ * Source: https://github.com/Unidata/netcdf-c/blob/main/include/ncdispatch.h
+ * Category: TRANSITIVE — pulled in by cdfdispatch.h, geotiffdispatch.h, hdf5dispatch.h, nc4dispatch.h
+ * Elimination path: REQUIRES UPSTREAM CHANGE — pulled in transitively; not directly included by NEP .c files.
+ * Do not edit. See docs/plan/v1.5.5-header-cleanup-map.md for elimination plan. */
 /* Copyright 2018-2018 University Corporation for Atmospheric
    Research/Unidata. */
 /**

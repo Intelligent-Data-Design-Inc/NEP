@@ -9,10 +9,7 @@
 
 #include "config.h"
 #include <errno.h>  /* netcdf functions sometimes return system errors */
-#include <ncdimscale.h>
-#include "nc.h"
-#include "nc4internal.h"
-#include "hdf5internal.h"
+#include "nep_nc4.h"
 #include "grib2dispatch.h"
 #include "grib2logging.h"
 #include <strings.h>

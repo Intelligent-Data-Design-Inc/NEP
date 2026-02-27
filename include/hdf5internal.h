@@ -1,3 +1,9 @@
+/* Copied from netcdf-c v4.9.2 on 2025-11-01.
+ * Source: https://github.com/Unidata/netcdf-c/blob/main/include/hdf5internal.h
+ * Category: DIRECT (now eliminated) — was included by geotifffile.c, grib2file.c
+ *   Eliminated in v1.5.5 Sprint 1: NC_HDF5_FILE_INFO_T not used in active code.
+ * Elimination path: COMPLETE — no longer included by any NEP .c file.
+ * Do not edit. See docs/plan/v1.5.5-header-cleanup-map.md for elimination plan. */
 /* Copyright 2018-2022 University Corporation for Atmospheric
    Research/Unidata. */
 /**

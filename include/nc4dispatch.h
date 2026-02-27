@@ -1,3 +1,10 @@
+/* Copied from netcdf-c v4.9.2 on 2025-11-01.
+ * Source: https://github.com/Unidata/netcdf-c/blob/main/include/nc4dispatch.h
+ * Category: DIRECT — included by cdfdispatch.c, cdfvar.c, geotiffdispatch.c
+ * Elimination path: REQUIRES UPSTREAM CHANGE — NC4_Dispatch and NC4_inq_dim
+ *   function prototypes needed by dispatch tables.
+ *   See https://github.com/Unidata/netcdf-c/issues/3277
+ * Do not edit. See docs/plan/v1.5.5-header-cleanup-map.md for elimination plan. */
 /* Copyright 2018-2018 University Corporation for Atmospheric
    Research/Unidata. */
 /**

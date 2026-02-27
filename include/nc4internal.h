@@ -1,3 +1,10 @@
+/* Copied from netcdf-c v4.9.2 on 2025-11-01.
+ * Source: https://github.com/Unidata/netcdf-c/blob/main/include/nc4internal.h
+ * Category: DIRECT — included by geotifffile.c, cdffile.c, cdffunc.c, cdfvar.c, grib2file.c
+ * Elimination path: REQUIRES UPSTREAM CHANGE — nc4_var_list_add_full(), nc4_att_list_add(),
+ *   nc4_dim_list_add(), nc4_grp_list_add() have no public API equivalents.
+ *   See https://github.com/Unidata/netcdf-c/issues/3277
+ * Do not edit. See docs/plan/v1.5.5-header-cleanup-map.md for elimination plan. */
 /* Copyright 2018-2018 University Corporation for Atmospheric
    Research/Unidata. */
 /**

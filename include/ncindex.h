@@ -1,3 +1,8 @@
+/* Copied from netcdf-c v4.9.2 on 2025-11-01.
+ * Source: https://github.com/Unidata/netcdf-c/blob/main/include/ncindex.h
+ * Category: TRANSITIVE — pulled in by nc4internal.h
+ * Elimination path: REQUIRES UPSTREAM CHANGE — not directly included by any NEP .c file.
+ * Do not edit. See docs/plan/v1.5.5-header-cleanup-map.md for elimination plan. */
 /*
 Copyright (c) 1998-2018 University Corporation for Atmospheric Research/Unidata
 See COPYRIGHT for license information.
