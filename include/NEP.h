@@ -10,22 +10,13 @@
  * @section udf_slots UDF Slot Allocation Strategy
  * 
  * NetCDF-C provides user-defined format slots for custom format handlers.
- * Newer versions (4.9.3+) provide 10 slots (UDF0-UDF9), while older versions
- * only provide 2 slots (UDF0-UDF1). NEP adapts to the available slots:
+ * NetCDF-C 4.10.0+ provides 10 slots (UDF0-UDF9):
  * 
- * **With newer NetCDF-C (NC_UDF2 defined):**
  * - **UDF0**: GeoTIFF BigTIFF (little-endian, magic: "II+")
  * - **UDF1**: GeoTIFF standard TIFF (little-endian, magic: "II*")
  * - **UDF2**: NASA CDF format (magic: 0xCDF30001)
  * - **UDF3**: GRIB2 format (reserved for future use)
  * - **UDF4-UDF9**: Reserved for future format extensions
- * 
- * **With older NetCDF-C (only UDF0-UDF1 available):**
- * - **UDF0**: NASA CDF format OR GeoTIFF BigTIFF (conflict!)
- * - **UDF1**: GRIB2 format OR GeoTIFF standard TIFF (conflict!)
- * 
- * Note: With older NetCDF-C, only one format can be used at a time due to
- * slot conflicts. Applications must choose which format to enable.
  * 
  * @section magic_numbers Magic Number Detection
  * 
@@ -38,22 +29,15 @@
  * 
  * NEP supports both old and new versions of NetCDF-C:
  * 
- * - **New NetCDF-C** (with NC_HAS_UDF_SELF_LOAD):
- *   - UDF plugins loaded automatically via RC file configuration
- *   - Initialization functions called by NetCDF-C
- *   - No manual nc_def_user_format() calls needed
+ * NetCDF-C 4.10.0+ automatically loads UDF plugins via RC file configuration.
+ * Initialization functions are called by NetCDF-C; no manual nc_def_user_format()
+ * calls are needed.
  * 
- * - **Old NetCDF-C** (without NC_HAS_UDF_SELF_LOAD):
- *   - Applications must call initialization functions explicitly
- *   - Initialization functions call nc_def_user_format() to register
- *   - Manual registration required at startup
- * 
- * Use HAVE_NETCDF_UDF_SELF_REGISTRATION to conditionally compile:
+ * Example RC file (.ncrc):
  * @code
- * #ifndef HAVE_NETCDF_UDF_SELF_REGISTRATION
- *   // Old NetCDF-C: manually register dispatch table
- *   nc_def_user_format(NEP_UDF_GEOTIFF_STANDARD, &dispatch, magic);
- * #endif
+ * NETCDF.UDF2.LIBRARY=/path/to/libnep.so
+ * NETCDF.UDF2.INIT=NC_CDF_initialize
+ * NETCDF.UDF2.MAGIC=\xCD\xF3\x00\x01
  * @endcode
  * 
  * @section adding_formats Adding New Format Handlers
@@ -93,23 +77,11 @@
 /** GeoTIFF BigTIFF format (little-endian) uses UDF0 slot */
 #define NEP_UDF_GEOTIFF_BIGTIFF NC_UDF0
 
-/* Extended UDF slots (UDF2-UDF9) are only available in newer NetCDF-C versions.
- * For older versions, we fall back to using available slots. */
-#ifdef NC_UDF2
 /** NASA CDF format uses UDF2 slot */
 #define NEP_UDF_CDF NC_UDF2
-#else
-/** NASA CDF format uses UDF0 slot (fallback for older NetCDF-C) */
-#define NEP_UDF_CDF NC_UDF0
-#endif
 
-#ifdef NC_UDF3
 /** GRIB2 format uses UDF3 slot (reserved for future implementation) */
 #define NEP_UDF_GRIB2 NC_UDF3
-#else
-/** GRIB2 format uses UDF1 slot (fallback for older NetCDF-C) */
-#define NEP_UDF_GRIB2 NC_UDF1
-#endif
 
 #ifdef NC_UDF4
 /** Reserved for future format - UDF4 slot */

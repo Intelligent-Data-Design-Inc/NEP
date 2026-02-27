@@ -21,6 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       LD_LIBRARY_PATH: $GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH
+      PKG_CONFIG_PATH: ${{ github.workspace }}/netcdf-c-install/lib/pkgconfig:${{ github.workspace }}/hdf5-install/lib/pkgconfig
     strategy:
       fail-fast: false
       matrix:
@@ -55,16 +56,16 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-1.14.6-${{ runner.os }}-geotiff-1
+          key: hdf5-2.0.0-${{ runner.os }}-geotiff-3
       
-      - name: Download and build HDF5 1.14.6
+      - name: Download and build HDF5 2.0.0
         if: steps.cache-hdf5.outputs.cache-hit != 'true'
         run: |
-          wget https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5-1.14.6.tar.gz &> /dev/null
-          tar -xzf hdf5-1.14.6.tar.gz
-          cd hdf5-hdf5-1.14.6
+          wget https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5_2.0.0.tar.gz &> /dev/null
+          tar -xzf hdf5_2.0.0.tar.gz
+          cd hdf5-hdf5_2.0.0
           mkdir build && cd build
-          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF ..
+          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DHDF5_ENABLE_ZLIB_SUPPORT=ON ..
           make -j$(nproc)
           make install
 
@@ -74,14 +75,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-c-install
-          key: netcdf-c-4.9.3-${{ runner.os }}-geotiff-1
+          key: netcdf-c-4.10.0-${{ runner.os }}-geotiff-1
 
       - name: Download and build NetCDF-C
         if: steps.cache-netcdf-c.outputs.cache-hit != 'true'
         run: |
-          wget https://github.com/Unidata/netcdf-c/archive/v4.9.3.tar.gz &> /dev/null
-          tar -xzf v4.9.3.tar.gz
-          cd netcdf-c-4.9.3
+          wget https://github.com/Unidata/netcdf-c/archive/v4.10.0.tar.gz &> /dev/null
+          tar -xzf v4.10.0.tar.gz
+          cd netcdf-c-4.10.0
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib"
@@ -100,7 +101,6 @@ jobs:
         working-directory: build
         run: |
           echo "=== Testing CMake GeoTIFF Detection ==="
-          export PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
           cmake .. \
             -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install" \
             -DENABLE_GEOTIFF=ON \
@@ -152,6 +152,7 @@ jobs:
         run: |
           echo "=== Testing Autotools GeoTIFF Detection ==="
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
+          export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib"
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
@@ -182,6 +183,7 @@ jobs:
           make distclean || true
           autoreconf -fiv
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
+          export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib"
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
@@ -242,16 +244,16 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-1.14.6-${{ runner.os }}-geotiff-1
+          key: hdf5-2.0.0-${{ runner.os }}-geotiff-3
       
-      - name: Download and build HDF5 1.14.6
+      - name: Download and build HDF5 2.0.0
         if: steps.cache-hdf5.outputs.cache-hit != 'true'
         run: |
-          wget https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5-1.14.6.tar.gz &> /dev/null
-          tar -xzf hdf5-1.14.6.tar.gz
-          cd hdf5-hdf5-1.14.6
+          wget https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5_2.0.0.tar.gz &> /dev/null
+          tar -xzf hdf5_2.0.0.tar.gz
+          cd hdf5-hdf5_2.0.0
           mkdir build && cd build
-          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF ..
+          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DHDF5_ENABLE_ZLIB_SUPPORT=ON ..
           make -j$(nproc)
           make install
 
@@ -260,14 +262,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-c-install
-          key: netcdf-c-4.9.3-${{ runner.os }}-geotiff-1
+          key: netcdf-c-4.10.0-${{ runner.os }}-geotiff-1
 
       - name: Download and build NetCDF-C
         if: steps.cache-netcdf-c.outputs.cache-hit != 'true'
         run: |
-          wget https://github.com/Unidata/netcdf-c/archive/v4.9.3.tar.gz &> /dev/null
-          tar -xzf v4.9.3.tar.gz
-          cd netcdf-c-4.9.3
+          wget https://github.com/Unidata/netcdf-c/archive/v4.10.0.tar.gz &> /dev/null
+          tar -xzf v4.10.0.tar.gz
+          cd netcdf-c-4.10.0
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib"
@@ -309,6 +311,7 @@ jobs:
       - name: Build with CMake
         run: |
           mkdir build && cd build
+          export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
           cmake .. \
             -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install" \
             -DENABLE_GEOTIFF=ON \
@@ -372,16 +375,16 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-1.14.6-${{ runner.os }}-geotiff-1
+          key: hdf5-2.0.0-${{ runner.os }}-geotiff-3
       
-      - name: Download and build HDF5 1.14.6
+      - name: Download and build HDF5 2.0.0
         if: steps.cache-hdf5.outputs.cache-hit != 'true'
         run: |
-          wget https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5-1.14.6.tar.gz &> /dev/null
-          tar -xzf hdf5-1.14.6.tar.gz
-          cd hdf5-hdf5-1.14.6
+          wget https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5_2.0.0.tar.gz &> /dev/null
+          tar -xzf hdf5_2.0.0.tar.gz
+          cd hdf5-hdf5_2.0.0
           mkdir build && cd build
-          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF ..
+          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DHDF5_ENABLE_ZLIB_SUPPORT=ON ..
           make -j$(nproc)
           make install
 
@@ -390,14 +393,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-c-install
-          key: netcdf-c-4.9.3-${{ runner.os }}-geotiff-1
+          key: netcdf-c-4.10.0-${{ runner.os }}-geotiff-1
 
       - name: Download and build NetCDF-C
         if: steps.cache-netcdf-c.outputs.cache-hit != 'true'
         run: |
-          wget https://github.com/Unidata/netcdf-c/archive/v4.9.3.tar.gz &> /dev/null
-          tar -xzf v4.9.3.tar.gz
-          cd netcdf-c-4.9.3
+          wget https://github.com/Unidata/netcdf-c/archive/v4.10.0.tar.gz &> /dev/null
+          tar -xzf v4.10.0.tar.gz
+          cd netcdf-c-4.10.0
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib"
@@ -409,6 +412,7 @@ jobs:
       - name: Build with coverage instrumentation
         run: |
           mkdir build && cd build
+          export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
           cmake .. \
             -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install" \
             -DENABLE_GEOTIFF=ON \

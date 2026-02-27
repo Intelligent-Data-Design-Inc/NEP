@@ -219,14 +219,6 @@ fi
 AC_SUBST([GEOTIFF_LIBS])
 AC_SUBST([TIFF_LIBS])
 
-# Check for NetCDF-C UDF self-loading support
-AC_MSG_CHECKING([whether NetCDF-C has UDF self-loading support])
-AC_CHECK_DECLS([NC_HAS_UDF_SELF_LOAD], 
-               [AC_DEFINE([HAVE_NETCDF_UDF_SELF_REGISTRATION], [1], 
-                          [Define if NetCDF-C has UDF self-loading support])
-                AC_MSG_RESULT([yes])], 
-               [AC_MSG_RESULT([no (older NetCDF-C version)])], 
-               [[#include <netcdf_meta.h>]])
 
 # Check for Doxygen if documentation is enabled
 if test "x$enable_docs" != "xno"; then
@@ -297,10 +289,18 @@ AC_PREFIX_DEFAULT([`pwd`/plugin])
 # Initialize Libtool
 LT_INIT([shared disable-static])
 
-# Check for netCDF C library.
+# Check for netCDF C library (requires 4.10.0+ for UDF self-loading support).
 AC_SEARCH_LIBS([nc_create], [netcdf], [],
                             [AC_MSG_ERROR([Can't find or link to the netCDF C library, set CPPFLAGS/LDFLAGS.])])
 AC_CHECK_HEADERS([netcdf.h netcdf_meta.h])
+
+# Verify netcdf-c >= 4.10.0 via pkg-config
+PKG_CHECK_MODULES([NETCDF], [netcdf >= 4.10.0], [],
+    [AC_MSG_ERROR([netcdf-c >= 4.10.0 is required. Found older version or netcdf not found via pkg-config.])])
+
+# NetCDF-C >= 4.10.0 always has UDF self-loading support
+AC_DEFINE([HAVE_NETCDF_UDF_SELF_REGISTRATION], [1],
+          [Define if NetCDF-C has UDF self-loading support (requires 4.10.0+)])
 
 # Find ncdump from the NetCDF-C installation
 # Extract the library directory from LDFLAGS to find the bin directory
