@@ -56,7 +56,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-2.0.0-${{ runner.os }}-geotiff-2
+          key: hdf5-2.0.0-${{ runner.os }}-geotiff-3
       
       - name: Download and build HDF5 2.0.0
         if: steps.cache-hdf5.outputs.cache-hit != 'true'
@@ -65,7 +65,7 @@ jobs:
           tar -xzf hdf5_2.0.0.tar.gz
           cd hdf5-hdf5_2.0.0
           mkdir build && cd build
-          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DHDF5_ENABLE_Z_LIB_SUPPORT=ON ..
+          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DHDF5_ENABLE_ZLIB_SUPPORT=ON ..
           make -j$(nproc)
           make install
 
@@ -244,7 +244,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-2.0.0-${{ runner.os }}-geotiff-2
+          key: hdf5-2.0.0-${{ runner.os }}-geotiff-3
       
       - name: Download and build HDF5 2.0.0
         if: steps.cache-hdf5.outputs.cache-hit != 'true'
@@ -253,7 +253,7 @@ jobs:
           tar -xzf hdf5_2.0.0.tar.gz
           cd hdf5-hdf5_2.0.0
           mkdir build && cd build
-          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DHDF5_ENABLE_Z_LIB_SUPPORT=ON ..
+          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DHDF5_ENABLE_ZLIB_SUPPORT=ON ..
           make -j$(nproc)
           make install
 
@@ -375,7 +375,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-2.0.0-${{ runner.os }}-geotiff-2
+          key: hdf5-2.0.0-${{ runner.os }}-geotiff-3
       
       - name: Download and build HDF5 2.0.0
         if: steps.cache-hdf5.outputs.cache-hit != 'true'
@@ -384,7 +384,7 @@ jobs:
           tar -xzf hdf5_2.0.0.tar.gz
           cd hdf5-hdf5_2.0.0
           mkdir build && cd build
-          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DHDF5_ENABLE_Z_LIB_SUPPORT=ON ..
+          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DHDF5_ENABLE_ZLIB_SUPPORT=ON ..
           make -j$(nproc)
           make install
 
