@@ -206,4 +206,7 @@ valgrind*.log
 examples/**/*.nc
 test_netcdf_crs
 
+# Machine-specific local build scripts
+examples/validate_cdl.sh
+
 
