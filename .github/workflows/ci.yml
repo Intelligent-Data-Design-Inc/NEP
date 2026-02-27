@@ -72,7 +72,7 @@ jobs:
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib"
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$LD_LIBRARY_PATH"
-          ./configure --prefix=$GITHUB_WORKSPACE/netcdf-c-install --enable-netcdf-4 --enable-shared
+          ./configure --prefix=$GITHUB_WORKSPACE/netcdf-c-install --enable-netcdf-4 --enable-shared --disable-dap
           make -j$(nproc)
           make install
 
@@ -80,6 +80,7 @@ jobs:
         run: |
           autoreconf -i
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
+          export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
           export CFLAGS="-g -O2 -Wall -Werror"
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -Wl,-rpath,$GITHUB_WORKSPACE/hdf5-install/lib -Wl,-rpath,$GITHUB_WORKSPACE/netcdf-c-install/lib"
@@ -150,7 +151,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-c-install
-          key: netcdf-c-4.10.0-asan-${{ runner.os }}-1
+          key: netcdf-c-4.10.0-asan-${{ runner.os }}-2
 
       - name: Download and build NetCDF-C with ASAN
         if: steps.cache-netcdf-c-asan.outputs.cache-hit != 'true'
@@ -163,7 +164,7 @@ jobs:
           export CFLAGS="-g -O0 -fsanitize=address -fno-omit-frame-pointer"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -fsanitize=address"
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$LD_LIBRARY_PATH"
-          ./configure --prefix=$GITHUB_WORKSPACE/netcdf-c-install --enable-netcdf-4 --enable-shared
+          ./configure --prefix=$GITHUB_WORKSPACE/netcdf-c-install --enable-netcdf-4 --enable-shared --disable-dap
           make -j$(nproc)
           make install
 
@@ -299,7 +300,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-c-install
-          key: netcdf-c-4.10.0-${{ runner.os }}-1
+          key: netcdf-c-4.10.0-${{ runner.os }}-2
 
       - name: Download and build NetCDF-C
         if: steps.cache-netcdf-c.outputs.cache-hit != 'true'
@@ -311,7 +312,7 @@ jobs:
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib"
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$LD_LIBRARY_PATH"
-          ./configure --prefix=$GITHUB_WORKSPACE/netcdf-c-install --enable-netcdf-4 --enable-shared
+          ./configure --prefix=$GITHUB_WORKSPACE/netcdf-c-install --enable-netcdf-4 --enable-shared --disable-dap
           make -j$(nproc)
           make install
 
