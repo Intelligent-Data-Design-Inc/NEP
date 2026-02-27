@@ -1,6 +1,6 @@
 /**
  * @file
- * This is the code file for ncsqueeze.
+ * This is the code file for nep.
  *
  * @author Edward Hartnett
  * @date Nov 13, 2025
@@ -8,7 +8,7 @@
  */
 
 /**
- * ncsqueeze supports compression filters for netCDF/HDF5 files which
+ * nep supports compression filters for netCDF/HDF5 files which
  * are not natively supported by the netCDF C library.
  *
  * BZIP2

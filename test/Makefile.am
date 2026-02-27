@@ -5,8 +5,8 @@
 
 ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = -I$(top_builddir)/include -I$(top_srcdir)/include -I$(top_builddir) -I$(top_srcdir)
-AM_LDFLAGS = ${top_builddir}/src/libncsqueeze.la
-LDADD = ${top_builddir}/src/libncsqueeze.la
+AM_LDFLAGS = ${top_builddir}/src/libnep.la
+LDADD = ${top_builddir}/src/libnep.la
 check_PROGRAMS =
 TESTS =
 
@@ -35,7 +35,7 @@ AM_CFLAGS = -g -Wall -Wextra $(HDF5_CFLAGS)
 # Build LZ4 tests, if needed.
 if BUILD_LZ4
 check_PROGRAMS += tst_lz4
-tst_lz4_LDADD = ${top_builddir}/src/libncsqueeze.la
+tst_lz4_LDADD = ${top_builddir}/src/libnep.la
 endif
 
 # Build BZIP2 tests, if needed.
@@ -51,15 +51,15 @@ endif
 # Build the performance tests, if all filters have been built.
 check_PROGRAMS += tst_perf
 tst_perf_SOURCES = tst_perf.c tst_utils.c
-tst_perf_LDADD = ${top_builddir}/src/libncsqueeze.la -lnetcdf -lhdf5_hl -lhdf5 -lz -ldl -lm
+tst_perf_LDADD = ${top_builddir}/src/libnep.la -lnetcdf -lhdf5_hl -lhdf5 -lz -ldl -lm
 
 # Build CDF UDF tests, if CDF is enabled.
 if HAVE_CDF
 check_PROGRAMS += tst_cdf_udf tst_imap_mag
 tst_cdf_udf_LDFLAGS = $(CDF_LDFLAGS)
-tst_cdf_udf_LDADD = ${top_builddir}/src/libnccdf.la ${top_builddir}/src/libncsqueeze.la -lcdf
+tst_cdf_udf_LDADD = ${top_builddir}/src/libnccdf.la ${top_builddir}/src/libnep.la -lcdf
 tst_imap_mag_LDFLAGS = $(CDF_LDFLAGS)
-tst_imap_mag_LDADD = ${top_builddir}/src/libnccdf.la ${top_builddir}/src/libncsqueeze.la -lcdf
+tst_imap_mag_LDADD = ${top_builddir}/src/libnccdf.la ${top_builddir}/src/libnep.la -lcdf
 TESTS += tst_cdf_udf tst_imap_mag
 
 # Copy test data to build directory for out-of-tree builds

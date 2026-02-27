@@ -9,20 +9,20 @@ AM_CPPFLAGS = -I$(top_srcdir)/include
 AM_FCFLAGS = -DBUILD_LZ4=$(BUILD_LZ4_DEF) -DBUILD_BZIP2=$(BUILD_BZIP2_DEF)
 
 #AM_LDFLAGS = ${top_builddir}/hdf5_plugins/BZIP2/src/libh5bz2.la ${top_builddir}/hdf5_plugins/LZ4/src/libh5lz4.la${top_builddir}/hdf5_plugins/LZ4/src/libh5lz4.la ${top_builddir}/hdf5_plugins/LZ4/src/libh5bgr.la ${top_builddir}/hdf5_plugins/LZ4/src/libh5gbr.la ${top_builddir}/hdf5_plugins/LZ4/src/libh5zstd.la
-LIBADD = ${top_builddir}/src/libncsqueeze.la
+LIBADD = ${top_builddir}/src/libnep.la
 
 # This is a libtool library.
-lib_LTLIBRARIES = libncsqueezef.la
-libncsqueezef_la_LDFLAGS = -version-info 1:1:0
+lib_LTLIBRARIES = libnepf.la
+libnepf_la_LDFLAGS = -version-info 1:1:0
 
 # Each convenience library depends on its source.
-libncsqueezef_la_SOURCES = ncsqueeze.F90
+libnepf_la_SOURCES = nep.F90
 
 # Each mod file depends on the .o file.
-ncsqueeze.mod: ncsqueeze.$(OBJEXT)
+nep.mod: nep.$(OBJEXT)
 
 # Mod files are built and then installed as headers.
-MODFILES = ncsqueeze.mod
+MODFILES = nep.mod
 include_HEADERS = $(MODFILES)
 BUILT_SOURCES = $(MODFILES)
 

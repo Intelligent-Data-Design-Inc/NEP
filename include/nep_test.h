@@ -7,8 +7,8 @@
  * @date Nov 13, 2025
  * @copyright Intelligent Data Design, Inc. All rights reserved.
  */
-#ifndef _NCSQUEEZE_TEST_H
-#define _NCSQUEEZE_TEST_H
+#ifndef _NEP_TEST_H
+#define _NEP_TEST_H
 
 /* #include "config.h" */
 #include "ncsqueeze.h"
@@ -75,4 +75,4 @@
    return 0; \
 } while (0)
 
-#endif /* _NCSQUEEZE_TEST_H */
+#endif /* _NEP_TEST_H */

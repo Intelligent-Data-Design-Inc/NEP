@@ -1,4 +1,4 @@
-# This file builds the test_h5 directory for the ncsqueeze library. This
+# This file builds the test_h5 directory for the nep library. This
 # directory has tests that depend only on HDF5, not on netCDF.
 
 # Ed Hartnett 9/9/25

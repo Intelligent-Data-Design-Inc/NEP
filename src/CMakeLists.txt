@@ -7,17 +7,17 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_SOURCE_DIR})
 
-# Build the main ncsqueeze library
-add_library(ncsqueeze SHARED ncsqueeze.c)
-target_link_libraries(ncsqueeze PRIVATE ${HDF5_C_${LIB_TYPE}_LIBRARY} ${NETCDF_LIBRARIES})
-set_target_properties(ncsqueeze PROPERTIES 
+# Build the main nep library
+add_library(nep SHARED nep.c)
+target_link_libraries(nep PRIVATE ${HDF5_C_${LIB_TYPE}_LIBRARY} ${NETCDF_LIBRARIES})
+set_target_properties(nep PROPERTIES 
     VERSION ${PROJECT_VERSION}
     SOVERSION 1
     PUBLIC_HEADER "${CMAKE_SOURCE_DIR}/include/ncsqueeze.h;${CMAKE_SOURCE_DIR}/include/NEP.h"
     INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
     INSTALL_RPATH_USE_LINK_PATH TRUE
 )
-install(TARGETS ncsqueeze
+install(TARGETS nep
     EXPORT NEPTargets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}

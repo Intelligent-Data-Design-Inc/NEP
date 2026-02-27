@@ -933,8 +933,8 @@ WARN_LOGFILE           =
 # spaces. See also FILE_PATTERNS and EXTENSION_MAPPING
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  = @abs_top_srcdir@/src/ncsqueeze.c \
-                         @abs_top_srcdir@/fsrc/ncsqueeze.F90 \
+INPUT                  = @abs_top_srcdir@/src/nep.c \
+                         @abs_top_srcdir@/fsrc/nep.F90 \
                          @abs_top_srcdir@/docs/mainpage.md \
                          @abs_top_srcdir@/docs/build-options.md \
                          @abs_top_srcdir@/examples/README.md \

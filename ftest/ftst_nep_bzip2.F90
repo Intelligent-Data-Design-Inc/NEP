@@ -8,13 +8,13 @@
   !! @date Nov 13, 2025
   !! @copyright Intelligent Data Design, Inc. All rights reserved.
 
-program ftst_ncsqueeze_bzip2
+program ftst_nep_bzip2
   use netcdf
-  use ncsqueeze
+  use nep
   implicit none
 
   ! This is the name of the data file we will create.
-  character (len = *), parameter :: FILE_NAME = "ftst_ncsqueeze_bzip2.nc"
+  character (len = *), parameter :: FILE_NAME = "ftst_nep_bzip2.nc"
   integer :: ncid
 
   ! We are writing 4D data.
@@ -60,7 +60,7 @@ program ftst_ncsqueeze_bzip2
   real, dimension(:,:,:), allocatable :: pres_in
   real, dimension(:,:,:), allocatable :: temp_in
 
-  print *, '*** Testing NCSQUEEZE Fortran library...'
+  print *, '*** Testing NEP Fortran library...'
 
   ! Allocate memory.
   allocate(pres_out(NLONS, NLATS, NLVLS))
@@ -187,4 +187,4 @@ contains
       stop 2
     end if
   end subroutine check
-end program ftst_ncsqueeze_bzip2
+end program ftst_nep_bzip2

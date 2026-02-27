@@ -6,7 +6,7 @@
 !! @date Nov 13, 2025
 !! @copyright Intelligent Data Design, Inc. All rights reserved.
 
-module ncsqueeze
+module nep
 
 #if BUILD_BZIP2
 
@@ -260,4 +260,4 @@ contains
   !   status = nc_inq_var_lzf(ncid, varid - 1, lzfp)
   ! end function nf90_inq_var_lzf
 
-end module ncsqueeze
+end module nep
