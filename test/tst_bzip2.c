@@ -1,6 +1,6 @@
 /**
  * @file
- * Test the bzip2 compression in ncsqueeze.
+ * Test the bzip2 compression in nep.
  *
  * @author Edward Hartnett
  * @date Nov 13, 2025
@@ -8,8 +8,8 @@
  */
 
 #include "config.h"
-#include "ncsqueeze.h"
-#include "ncsqueeze_test.h"
+#include "nep.h"
+#include "nep_test.h"
 #include <hdf5.h>
 #include <H5DSpublic.h>
 #include <netcdf.h>

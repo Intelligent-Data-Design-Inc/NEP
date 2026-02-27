@@ -13,9 +13,9 @@ lib_LTLIBRARIES =
 include_HEADERS =
 
 # This is a libtool library.
-lib_LTLIBRARIES += libncsqueeze.la
-libncsqueeze_la_LDFLAGS = -version-info 1:0:0
-libncsqueeze_la_SOURCES = ncsqueeze.c
+lib_LTLIBRARIES += libnep.la
+libnep_la_LDFLAGS = -version-info 1:0:0
+libnep_la_SOURCES = nep.c
 
 # GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
 # Will be re-enabled in v2.0.0 for GRIB2 UDF support

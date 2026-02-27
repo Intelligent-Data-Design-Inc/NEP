@@ -12,7 +12,7 @@
 #include "grib2dispatch.h"
 #include "grib2logging.h"
 #include <nc4dispatch.h>
-#include "ncsqueeze_test.h"
+#include "nep_test.h"
 #include <stdio.h>
 
 #define TEST_FILE "data/gdaswave.t00z.wcoast.0p16.f000.grib2"

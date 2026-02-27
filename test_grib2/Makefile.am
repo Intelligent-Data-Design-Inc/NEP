@@ -5,8 +5,8 @@
 
 ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = -I$(top_builddir)/include -I$(top_srcdir)/include -I$(top_builddir) -I$(top_srcdir)
-#AM_LDFLAGS = ${top_builddir}/src/libncsqueeze.la
-#LDADD = ${top_builddir}/src/libncsqueeze.la
+#AM_LDFLAGS = ${top_builddir}/src/libnep.la
+#LDADD = ${top_builddir}/src/libnep.la
 
 # Test data file - declare it as noinst_DATA which won't be installed but will be distributed
 TEST_DATA_FILE = data/gdaswave.t00z.wcoast.0p16.f000.grib2

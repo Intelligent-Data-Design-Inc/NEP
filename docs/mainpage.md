@@ -320,8 +320,8 @@ The API documentation is generated directly from the C and Fortran source code.
 
 Key API reference pages:
 
-- [C API (ncsqueeze.c)](ncsqueeze_8c.html)
-- [Fortran API (ncsqueeze.F90)](ncsqueeze_8F90.html)
+- [C API (nep.c)](nep_8c.html)
+- [Fortran API (nep.F90)](nep_8F90.html)
 
 Refer to the documentation header for the exact version of NEP corresponding to this build.
 

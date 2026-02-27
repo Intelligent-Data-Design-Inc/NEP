@@ -6,8 +6,8 @@
  * @date Nov 13, 2025
  * @copyright Intelligent Data Design, Inc. All rights reserved.
  */
-#ifndef _NCCOMPRESS_H
-#define _NCCOMPRESS_H
+#ifndef _NEP_H
+#define _NEP_H
 
 #include <stdio.h>
 #include <netcdf.h>

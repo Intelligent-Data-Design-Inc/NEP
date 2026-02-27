@@ -54,7 +54,7 @@ cd /home/ed/NEP/build_autotools/test
 cd /home/ed/NEP/build_autotools/ftest
 ./run_tests.sh
 ```
-**Expected:** All Fortran tests pass. Tests include ncsqueeze compression tests.
+**Expected:** All Fortran tests pass. Tests include nep compression tests.
 
 ### 5. Verify Test Coverage Requirements
 // turbo

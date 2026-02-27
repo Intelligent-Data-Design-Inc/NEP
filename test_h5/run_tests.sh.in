@@ -1,4 +1,4 @@
-# This script runs the HDF5 tests in the ncsqueeze project.
+# This script runs the HDF5 tests in the nep project.
 #
 # Edward Hartnett, Intelligent Data Design, 9/10/25
 set -x

@@ -222,7 +222,7 @@ nc_get_var_float(ncid, varid, raster_data);
 **A:** Check the project documentation, GitHub issues, and community forums. File bug reports and feature requests through the GitHub issue tracker.
 
 #### Q: Does NEP support Fortran applications?
-**A:** Yes. NEP v1.1.0 added Fortran 90 wrappers (module `ncsqueeze`) for compression functions. Fortran applications can call `nf90_def_var_lz4`, `nf90_inq_var_lz4`, `nf90_def_var_bzip2`, and `nf90_inq_var_bzip2` to enable and query compression.
+**A:** Yes. NEP v1.1.0 added Fortran 90 wrappers (module `nep`) for compression functions. Fortran applications can call `nf90_def_var_lz4`, `nf90_inq_var_lz4`, `nf90_def_var_bzip2`, and `nf90_inq_var_bzip2` to enable and query compression.
 
 #### Q: What is the current version?
 **A:** NEP v1.5.0 is the current release (January 2026), providing:

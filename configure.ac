@@ -4,7 +4,7 @@
 
 AC_PREREQ([2.71])
 AC_INIT([NEP],[1.0.0],[help@intelligentdatadesign.com])
-AC_CONFIG_SRCDIR([src/ncsqueeze.c])
+AC_CONFIG_SRCDIR([src/nep.c])
 AC_CONFIG_HEADERS([config.h])
 
 # Dump all the weird scripts in bin/
@@ -360,7 +360,7 @@ AC_DEFINE([MY_HDF5_PLUGIN_PATH], [$MY_HDF5_PLUGIN_PATH], [HDF5 plugin path])
 AC_SUBST([MY_HDF5_PLUGIN_PATH])
 
 # Build MY_LD_LIBRARY_PATH from -L flags in LDFLAGS for use in run_tests.sh.
-# Prepend the local src/.libs so the freshly built libncsqueeze takes priority
+# Prepend the local src/.libs so the freshly built libnep takes priority
 # over any system-installed version.
 MY_LD_LIBRARY_PATH="${ac_pwd}/src/.libs"
 for flag in $LDFLAGS; do

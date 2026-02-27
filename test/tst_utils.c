@@ -8,7 +8,7 @@
  */
 
 #include "config.h"
-#include "ncsqueeze_test.h"
+#include "nep_test.h"
 #include <time.h>
 #include <sys/time.h>
 

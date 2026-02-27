@@ -17,19 +17,19 @@ pkg_get_variable(NETCDF_PREFIX netcdf prefix)
 
 # Build LZ4 test
 add_executable(tst_lz4 tst_lz4.c)
-target_link_libraries(tst_lz4 PRIVATE ncsqueeze ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
+target_link_libraries(tst_lz4 PRIVATE nep ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
 target_include_directories(tst_lz4 PRIVATE ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
 
 # Build BZIP2 test
 if(BUILD_BZIP2)
     add_executable(tst_bzip2 tst_bzip2.c)
-    target_link_libraries(tst_bzip2 PRIVATE ncsqueeze ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
+    target_link_libraries(tst_bzip2 PRIVATE nep ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
     target_include_directories(tst_bzip2 PRIVATE ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
 endif()
 
 # Build performance test
 add_executable(tst_perf tst_perf.c tst_utils.c)
-target_link_libraries(tst_perf PRIVATE ncsqueeze ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
+target_link_libraries(tst_perf PRIVATE nep ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
 target_include_directories(tst_perf PRIVATE ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
 
 # Build CDF UDF test if CDF is enabled
@@ -39,7 +39,7 @@ if(HAVE_CDF)
     
     add_executable(tst_cdf_udf tst_cdf_udf.c)
     target_link_directories(tst_cdf_udf PRIVATE ${HDF5_LIB_DIR})
-    target_link_libraries(tst_cdf_udf PRIVATE nccdf ncsqueeze ${NETCDF_LIBRARIES} hdf5 hdf5_hl ${CDF_LIBRARY})
+    target_link_libraries(tst_cdf_udf PRIVATE nccdf nep ${NETCDF_LIBRARIES} hdf5 hdf5_hl ${CDF_LIBRARY})
     target_include_directories(tst_cdf_udf PRIVATE ${NETCDF_INCLUDE_DIRS} ${CDF_INCLUDE_DIR})
     
     # Set rpath so the executable can find CDF library at runtime
@@ -54,7 +54,7 @@ if(HAVE_CDF)
     # Build IMAP MAG CDF test
     add_executable(tst_imap_mag tst_imap_mag.c)
     target_link_directories(tst_imap_mag PRIVATE ${HDF5_LIB_DIR})
-    target_link_libraries(tst_imap_mag PRIVATE nccdf ncsqueeze ${NETCDF_LIBRARIES} hdf5 hdf5_hl ${CDF_LIBRARY})
+    target_link_libraries(tst_imap_mag PRIVATE nccdf nep ${NETCDF_LIBRARIES} hdf5 hdf5_hl ${CDF_LIBRARY})
     target_include_directories(tst_imap_mag PRIVATE ${NETCDF_INCLUDE_DIRS} ${CDF_INCLUDE_DIR})
     
     # Set rpath so the executable can find CDF library at runtime
