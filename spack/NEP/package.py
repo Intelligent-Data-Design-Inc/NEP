@@ -23,7 +23,6 @@ class Nep(CMakePackage):
     license("Apache-2.0")
 
     version("develop", branch="main")
-    version("1.3.0", sha256="acf8f8a1360b521cef3f6f57fdeced64d2d78e765e8fd644ce435487fe74a003")
 
     variant("docs", default=True, description="Build documentation with Doxygen")
     variant("lz4", default=True, description="Enable LZ4 compression support")
@@ -58,5 +57,3 @@ class Nep(CMakePackage):
         plugin_dir = join_path(self.prefix.lib, "plugin")
         if "+lz4" in self.spec:
             assert os.path.exists(join_path(plugin_dir, "libh5lz4.so"))
-        if "+bzip2" in self.spec:
-            assert os.path.exists(join_path(plugin_dir, "libh5bzip2.so"))
