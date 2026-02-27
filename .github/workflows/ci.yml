@@ -204,6 +204,7 @@ jobs:
     env:
       HDF5_PLUGIN_PATH: ${{ github.workspace }}/netcdf-c-install/hdf5/lib/plugin
       LD_LIBRARY_PATH: $GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH
+      PKG_CONFIG_PATH: ${{ github.workspace }}/netcdf-c-install/lib/pkgconfig:${{ github.workspace }}/hdf5-install/lib/pkgconfig
     strategy:
       fail-fast: false
       matrix:
