@@ -20,7 +20,6 @@
 #include "geotiffdispatch.h"
 #include "nc.h"
 #include "nc4internal.h"
-#include "hdf5internal.h"
 
 #ifdef HAVE_GEOTIFF
 #include <tiffio.h>

@@ -1,3 +1,8 @@
+/* Copied from netcdf-c v4.9.2 on 2025-11-01.
+ * Source: https://github.com/Unidata/netcdf-c/blob/main/include/nclist.h
+ * Category: TRANSITIVE — pulled in by ncindex.h
+ * Elimination path: REQUIRES UPSTREAM CHANGE — not directly included by any NEP .c file.
+ * Do not edit. See docs/plan/v1.5.5-header-cleanup-map.md for elimination plan. */
 /* Copyright 2018, UCAR/Unidata and OPeNDAP, Inc.
    See the COPYRIGHT file for more information. */
 #ifndef NCLIST_H

@@ -7,7 +7,6 @@
  * @date Nov 13, 2025
  * @copyright Intelligent Data Design, Inc. All rights reserved.
  */
-#include "nc4internal.h"
 #include "grib2dispatch.h"
 #include "grib2logging.h"
 

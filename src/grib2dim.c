@@ -7,8 +7,6 @@
  * @copyright Intelligent Data Design, Inc. All rights reserved.
  */
 
-/* #include "nc4internal.h" */
-/* #include "nc4dispatch.h" */
 
 /* /\** */
 /*  * @internal Dims cannot be defined for AB files. */

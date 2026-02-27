@@ -12,7 +12,6 @@
 #include <ncdimscale.h>
 #include "nc.h"
 #include "nc4internal.h"
-#include "hdf5internal.h"
 #include "grib2dispatch.h"
 #include "grib2logging.h"
 #include <strings.h>

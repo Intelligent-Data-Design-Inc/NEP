@@ -1,3 +1,9 @@
+/* Copied from netcdf-c v4.9.2 on 2025-11-01.
+ * Source: https://github.com/Unidata/netcdf-c/blob/main/include/hdf5dispatch.h
+ * Category: DIRECT — included by cdfdispatch.c, geotiffdispatch.c
+ * Elimination path: REQUIRES UPSTREAM CHANGE — HDF5_inq_dim used in CDF and GeoTIFF
+ *   dispatch tables. Verified NEEDED. See https://github.com/Unidata/netcdf-c/issues/3277
+ * Do not edit. See docs/plan/v1.5.5-header-cleanup-map.md for elimination plan. */
 /* Copyright 2018-2018 University Corporation for Atmospheric
    Research/Unidata. */
 /**
