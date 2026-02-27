@@ -327,6 +327,47 @@ For applications requiring full raster reads, consider using native GeoTIFF tool
 
 ---
 
+## UDF Autoloading via .ncrc
+
+NEP installs a `nep.ncrc` configuration file that enables NetCDF-C's UDF self-loading
+mechanism. Once configured, any application can open GeoTIFF and CDF files through the
+standard `nc_open()` API without calling `NC_GEOTIFF_initialize()` or
+`NC_CDF_initialize()` explicitly.
+
+### Quickstart
+
+After installing NEP, merge the configuration into your `~/.ncrc`:
+
+```bash
+cat /usr/local/share/nep/nep.ncrc >> ~/.ncrc
+```
+
+Then open GeoTIFF or CDF files from any application without extra initialization:
+
+```c
+int ncid;
+nc_open("satellite_image.tif", NC_NOWRITE, &ncid);  /* works automatically */
+nc_open("data.cdf",            NC_NOWRITE, &ncid);  /* works automatically */
+```
+
+### Alternate: per-session via NETCDF_RC
+
+```bash
+export NETCDF_RC=/usr/local/share/nep
+```
+
+### Install Path Override
+
+| Build system | Default | Override |
+|---|---|---|
+| CMake | `${prefix}/share/nep/nep.ncrc` | `-DNEP_NCRC_INSTALL_DIR=<path>` |
+| Autotools | `${datarootdir}/nep/nep.ncrc` | `--with-ncrc-dir=<path>` |
+
+For full details see [docs/build-options.md](docs/build-options.md#udf-autoloading-via-ncrc-v155)
+and the [NetCDF UDF documentation](https://docs.unidata.ucar.edu/netcdf/NUG/user_defined_formats.html).
+
+---
+
 ## Example Programs
 
 NEP v3.5.1 includes comprehensive example programs in C and Fortran to help you learn NetCDF API usage. These examples demonstrate both read and write operations, covering basic to advanced features.

@@ -447,6 +447,13 @@ else
 fi
 AC_SUBST([MY_LZ4_PLUGIN_PATH])
 
+AC_ARG_WITH([ncrc-dir],
+    [AS_HELP_STRING([--with-ncrc-dir=DIR],
+        [install nep.ncrc to DIR (default: ${datarootdir}/nep)])],
+    [NEP_NCRC_DIR="$withval"],
+    [NEP_NCRC_DIR="\${datarootdir}/nep"])
+AC_SUBST([NEP_NCRC_DIR])
+
 AC_CONFIG_FILES([test/run_tests.sh], [chmod ugo+x test/run_tests.sh])
 AC_CONFIG_FILES([ftest/run_tests.sh], [chmod ugo+x ftest/run_tests.sh])
 AC_CONFIG_FILES([test_h5/run_tests.sh], [chmod ugo+x test_h5/run_tests.sh])
