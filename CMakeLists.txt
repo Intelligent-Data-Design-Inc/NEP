@@ -68,28 +68,21 @@ if(NOT DOCS_ONLY)
     include_directories (${HDF5_INCLUDE_DIR})
     set (LINK_LIBS ${LINK_LIBS} ${HDF5_C_${LIB_TYPE}_LIBRARY})
 
-    # Find NetCDF-C
+    # Find NetCDF-C (requires 4.10.0+ for UDF self-loading support)
     find_package(PkgConfig REQUIRED)
-    pkg_check_modules(NETCDF REQUIRED netcdf)
+    pkg_check_modules(NETCDF REQUIRED netcdf>=4.10.0)
     pkg_get_variable(NETCDF_PREFIX netcdf prefix)
     include_directories(${NETCDF_INCLUDE_DIRS})
     link_directories(${NETCDF_LIBRARY_DIRS})
     set (LINK_LIBS ${LINK_LIBS} ${NETCDF_LIBRARIES})
+    message(STATUS "Found NetCDF-C: ${NETCDF_VERSION}")
 
     # Find ncdump from the NetCDF-C installation
     find_program(NCDUMP ncdump HINTS "${NETCDF_PREFIX}/bin" REQUIRED)
     message(STATUS "Found ncdump: ${NCDUMP}")
 
-    # Check for NetCDF-C UDF self-loading support
-    include(CheckSymbolExists)
-    set(CMAKE_REQUIRED_INCLUDES ${NETCDF_INCLUDE_DIRS})
-    check_symbol_exists(NC_HAS_UDF_SELF_LOAD "netcdf_meta.h" HAVE_NETCDF_UDF_SELF_REGISTRATION)
-    if(HAVE_NETCDF_UDF_SELF_REGISTRATION)
-        message(STATUS "NetCDF-C has UDF self-loading support")
-        add_definitions(-DHAVE_NETCDF_UDF_SELF_REGISTRATION)
-    else()
-        message(STATUS "NetCDF-C does not have UDF self-loading support (older version)")
-    endif()
+    # NetCDF-C >= 4.10.0 always has UDF self-loading support
+    add_definitions(-DHAVE_NETCDF_UDF_SELF_REGISTRATION)
 
     # Find NetCDF-Fortran (optional, for Fortran examples)
     if(ENABLE_FORTRAN)

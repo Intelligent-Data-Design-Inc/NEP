@@ -41,15 +41,7 @@ static int test_self_load_initialization(void)
     int ret;
     
     printf("*** Testing GeoTIFF self-loading initialization...\n");
-    
-#ifdef HAVE_NETCDF_UDF_SELF_REGISTRATION
-    printf("    HAVE_NETCDF_UDF_SELF_REGISTRATION is defined\n");
     printf("    NC_GEOTIFF_initialize() should NOT call nc_def_user_format()\n");
-#else
-    printf("    HAVE_NETCDF_UDF_SELF_REGISTRATION is NOT defined\n");
-    printf("    Skipping self-loading test (requires new NetCDF-C)\n");
-    return 0;
-#endif
     
     /* Call initialization function */
     GEOTIFF_INIT_AND_ASSIGN(ret);
@@ -76,9 +68,6 @@ static int test_self_load_initialization(void)
 static int test_self_load_behavior(void)
 {
     printf("\n*** Testing self-loading behavior...\n");
-    
-#ifdef HAVE_NETCDF_UDF_SELF_REGISTRATION
-    printf("    With HAVE_NETCDF_UDF_SELF_REGISTRATION defined:\n");
     printf("    - NC_GEOTIFF_initialize() does NOT call nc_def_user_format()\n");
     printf("    - UDF registration happens via NetCDF-C plugin system\n");
     printf("    - Applications configure via RC file (.ncrc):\n");
@@ -86,14 +75,7 @@ static int test_self_load_behavior(void)
     printf("        NETCDF.UDF0.INIT=NC_GEOTIFF_initialize\n");
     printf("        NETCDF.UDF0.MAGIC=II*\n");
     printf("    - NetCDF-C calls initialization function automatically\n");
-    printf("    ✓ Self-loading behavior documented\n");
-#else
-    printf("    Without HAVE_NETCDF_UDF_SELF_REGISTRATION:\n");
-    printf("    - NC_GEOTIFF_initialize() calls nc_def_user_format()\n");
-    printf("    - Applications must call NC_GEOTIFF_initialize() explicitly\n");
-    printf("    - Manual registration required at startup\n");
-    printf("    ✓ Manual registration behavior documented\n");
-#endif
+    printf("    \u2713 Self-loading behavior documented\n");
     
     return 0;
 }
@@ -114,11 +96,6 @@ static int test_with_rc_file(void)
     const char *lib_path;
     
     printf("\n*** Testing with RC file configuration...\n");
-    
-#ifndef HAVE_NETCDF_UDF_SELF_REGISTRATION
-    printf("    Skipping (requires HAVE_NETCDF_UDF_SELF_REGISTRATION)\n");
-    return 0;
-#endif
     
     /* Get library path from build system */
 #ifdef NEP_GEOTIFF_LIB_PATH
@@ -230,11 +207,6 @@ static int test_multiple_initializations(void)
     
     printf("\n*** Testing multiple initializations...\n");
     
-#ifndef HAVE_NETCDF_UDF_SELF_REGISTRATION
-    printf("    Skipping test (requires HAVE_NETCDF_UDF_SELF_REGISTRATION)\n");
-    return 0;
-#endif
-    
     /* First initialization */
     GEOTIFF_INIT_AND_ASSIGN(ret);
     if (ret != NC_NOERR)
@@ -268,15 +240,6 @@ int main(void)
     int errors = 0;
     
     printf("=== GeoTIFF UDF Self-Loading Test ===\n\n");
-    
-#ifndef HAVE_NETCDF_UDF_SELF_REGISTRATION
-    printf("HAVE_NETCDF_UDF_SELF_REGISTRATION is not defined.\n");
-    printf("This test requires NetCDF-C with UDF self-loading support.\n");
-    printf("Skipping all tests.\n\n");
-    printf("=== Test Summary ===\n");
-    printf("SKIPPED (requires new NetCDF-C with self-loading support)\n");
-    return 0;
-#endif
     
     /* Run tests */
     if (test_self_load_initialization() != 0)

@@ -2,6 +2,14 @@
 
 This page documents the primary build-time options for NEP, including compression and Fortran options referenced from the main page.
 
+## Minimum Version Requirements
+
+| Dependency | Minimum Version | Notes |
+|------------|----------------|-------|
+| NetCDF-C   | 4.10.0         | Required for UDF self-loading support (`NC_HAS_UDF_SELF_LOAD`) |
+| HDF5       | 1.10.0         | |
+| CMake      | 3.9            | |
+
 ## Compression Options
 
 ### LZ4 Compression
@@ -46,7 +54,7 @@ When Fortran support is **disabled**:
 - **Dependencies**: 
   - libgeotiff (latest stable version recommended)
   - libtiff (dependency of libgeotiff)
-  - NetCDF-C v4.9.0 or later
+  - NetCDF-C v4.10.0 or later (required for UDF self-loading support)
 - **Status**: ✅ Fully implemented (Phase 1 & 2 complete)
 
 When GeoTIFF support is **enabled**:
