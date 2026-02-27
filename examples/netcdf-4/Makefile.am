@@ -14,10 +14,17 @@ user_types_SOURCES = user_types.c
 groups_SOURCES = groups.c
 dump_nc4_metadata_SOURCES = dump_nc4_metadata.c
 
+# Link against netcdf and hdf5 (hdf5 needed to resolve symbols in libnetcdf.so)
+LDADD = -lnetcdf -lhdf5_hl -lhdf5
+
 # Link math library for examples that use math functions
-compression_LDADD = -lm
-multi_unlimited_LDADD = -lm
-user_types_LDADD = -lm
+# (per-target LDADD overrides global LDADD, so repeat base libs)
+compression_LDADD = -lnetcdf -lhdf5_hl -lhdf5 -lm
+multi_unlimited_LDADD = -lnetcdf -lhdf5_hl -lhdf5 -lm
+user_types_LDADD = -lnetcdf -lhdf5_hl -lhdf5 -lm
+
+# Set library path for tests so shared libs (netcdf, hdf5) are found at runtime
+AM_TESTS_ENVIRONMENT = LD_LIBRARY_PATH="@MY_LD_LIBRARY_PATH@:$$LD_LIBRARY_PATH"
 
 # All examples run as tests
 # Note: user_types excluded from TESTS - it's a demonstration of upstream NetCDF-4
@@ -28,6 +35,10 @@ TESTS = simple_nc4 test_format_variants.sh compression chunking_performance mult
 
 # Include test scripts in distribution
 EXTRA_DIST = test_format_variants.sh test_groups.sh test_dump_nc4_metadata.sh
+
+# Ensure built binaries are executable before test scripts run them
+check-local:
+	chmod +x $(check_PROGRAMS)
 
 # Clean up NetCDF files created by examples
 CLEANFILES = *.nc

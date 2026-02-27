@@ -32,6 +32,11 @@ SUBDIRS = include src fsrc $(TEST_CDF) $(TEST_GEOTIFF) test ftest $(EXAMPLES_DIR
 else
 SUBDIRS = include src $(TEST_CDF) $(TEST_GEOTIFF) test $(EXAMPLES_DIR)
 endif
+
+if BUILD_LZ4
+all-local:
+	$(MAKE) -C hdf5_plugins all
+endif
 EXTRA_DIST = autogen.sh
 
 # Documentation target

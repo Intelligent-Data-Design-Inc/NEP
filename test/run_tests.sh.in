@@ -11,11 +11,12 @@ else
     export LD_LIBRARY_PATH=@MY_LD_LIBRARY_PATH@
 fi
 
-# This will find the zstd filter with the netcdf-c install.
+# This will find the zstd filter with the netcdf-c install, and the LZ4 plugin
+# built in the local tree.
 if [[ -n "${HDF5_PLUGIN_PATH:-}" ]]; then
-    export HDF5_PLUGIN_PATH=@MY_HDF5_PLUGIN_PATH@:$HDF5_PLUGIN_PATH
+    export HDF5_PLUGIN_PATH=@MY_HDF5_PLUGIN_PATH@:@MY_LZ4_PLUGIN_PATH@:$HDF5_PLUGIN_PATH
 else
-    export HDF5_PLUGIN_PATH=@MY_HDF5_PLUGIN_PATH@
+    export HDF5_PLUGIN_PATH=@MY_HDF5_PLUGIN_PATH@:@MY_LZ4_PLUGIN_PATH@
 fi
 
 # If bzip2 was built, run the bzip2 test.

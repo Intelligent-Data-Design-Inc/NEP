@@ -30,5 +30,9 @@ EXTRA_DIST = test_f_quickstart.sh test_f_simple_2D.sh test_f_coord.sh test_f_coo
              test_f_size_limits.sh test_f_unlimited_dim.sh test_f_var4d.sh \
              test_f_dump_classic_metadata.sh
 
+# Ensure built binaries are executable before test scripts run them
+check-local:
+	chmod +x $(check_PROGRAMS)
+
 # Clean up NetCDF files and generated CDL files
 CLEANFILES = *.nc *.cdl

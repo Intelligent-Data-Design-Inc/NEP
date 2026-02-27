@@ -41,10 +41,10 @@ set(F_CLASSIC_EXAMPLES
     f_var4d
 )
 
-# Copy validation script to build directory
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../validate_cdl.sh 
-               ${CMAKE_CURRENT_BINARY_DIR}/validate_cdl.sh 
-               COPYONLY)
+# Configure validation script with ncdump path from top-level CMakeLists.txt
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../validate_cdl.sh.in
+               ${CMAKE_CURRENT_BINARY_DIR}/validate_cdl.sh
+               @ONLY)
 
 # Build each example using nf-config flags
 foreach(example ${F_CLASSIC_EXAMPLES})

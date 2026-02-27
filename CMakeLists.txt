@@ -71,9 +71,14 @@ if(NOT DOCS_ONLY)
     # Find NetCDF-C
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(NETCDF REQUIRED netcdf)
+    pkg_get_variable(NETCDF_PREFIX netcdf prefix)
     include_directories(${NETCDF_INCLUDE_DIRS})
     link_directories(${NETCDF_LIBRARY_DIRS})
     set (LINK_LIBS ${LINK_LIBS} ${NETCDF_LIBRARIES})
+
+    # Find ncdump from the NetCDF-C installation
+    find_program(NCDUMP ncdump HINTS "${NETCDF_PREFIX}/bin" REQUIRED)
+    message(STATUS "Found ncdump: ${NCDUMP}")
 
     # Check for NetCDF-C UDF self-loading support
     include(CheckSymbolExists)

@@ -30,5 +30,9 @@ EXTRA_DIST = test_f_simple_nc4.sh test_f_format_variants.sh test_f_compression.s
              test_f_multi_unlimited.sh test_f_user_types.sh test_f_groups.sh \
              test_f_dump_nc4_metadata.sh
 
+# Ensure built binaries are executable before test scripts run them
+check-local:
+	chmod +x $(check_PROGRAMS)
+
 # Clean up NetCDF files and generated CDL files
 CLEANFILES = *.nc *.cdl

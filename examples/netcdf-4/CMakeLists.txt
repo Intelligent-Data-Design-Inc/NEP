@@ -63,10 +63,10 @@ target_compile_options(dump_nc4_metadata PRIVATE ${NC_CFLAGS_LIST})
 target_link_directories(dump_nc4_metadata PRIVATE ${HDF5_LIB_DIR})
 target_link_libraries(dump_nc4_metadata PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl m)
 
-# Copy validation script to build directory
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../validate_cdl.sh 
-               ${CMAKE_CURRENT_BINARY_DIR}/validate_cdl.sh 
-               COPYONLY)
+# Configure validation script with ncdump path from top-level CMakeLists.txt
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../validate_cdl.sh.in
+               ${CMAKE_CURRENT_BINARY_DIR}/validate_cdl.sh
+               @ONLY)
 
 # Add CDL validation tests
 if(BUILD_TESTING)

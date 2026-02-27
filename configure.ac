@@ -25,15 +25,9 @@ AC_TYPE_SIZE_T
 # We are using HDF5.
 AC_DEFINE([USE_HDF5], [yes], [Always needed])
 
-MY_HDF5_PLUGIN_PATH=${HDF5_PLUGIN_PATH-.}
-AC_MSG_CHECKING([where to put HDF5 plugins])
 AC_ARG_WITH([hdf5-plugin-path],
             [AS_HELP_STRING([--with-hdf5-plugin-path=<directory>],
-                            [specify HDF5 plugin path (defaults to /usr/local/hdf5/lib/plugin, or value of HDF5_PLUGIN_PATH, if set)])],
-            [MY_HDF5_PLUGIN_PATH=$with_hdf5_plugin_path])
-AC_MSG_RESULT($MY_HDF5_PLUGIN_PATH)
-AC_DEFINE([MY_HDF5_PLUGIN_PATH], [$MY_HDF5_PLUGIN_PATH], [HDF5 plugin path])
-AC_SUBST([MY_HDF5_PLUGIN_PATH], [$MY_HDF5_PLUGIN_PATH])
+                            [specify HDF5 plugin path (defaults to <netcdf-prefix>/hdf5/lib/plugin)])])
 
 # Does the user want to enable netcdf-4 logging?
 AC_MSG_CHECKING([whether logging is enabled])
@@ -321,7 +315,8 @@ for flag in $LDFLAGS; do
             # Check if this directory contains libnetcdf
             if test -f "$libdir/libnetcdf.so" || test -f "$libdir/libnetcdf.a" || test -f "$libdir/libnetcdf.dylib"; then
                 # Derive bin directory from lib directory (typically ../bin)
-                bindir=`dirname "$libdir"`/bin
+                NETCDF_PREFIX=`dirname "$libdir"`
+                bindir="${NETCDF_PREFIX}/bin"
                 if test -x "$bindir/ncdump"; then
                     NCDUMP="$bindir/ncdump"
                     break
@@ -352,6 +347,33 @@ if test "x$NCDUMP" = "x"; then
 fi
 AC_MSG_RESULT([$NCDUMP])
 AC_SUBST([NCDUMP])
+
+# Set HDF5 plugin path now that we know NETCDF_PREFIX.
+if test "x$with_hdf5_plugin_path" != "x"; then
+    MY_HDF5_PLUGIN_PATH=$with_hdf5_plugin_path
+else
+    MY_HDF5_PLUGIN_PATH="${NETCDF_PREFIX}/hdf5/lib/plugin"
+fi
+AC_MSG_CHECKING([where to find HDF5 plugins])
+AC_MSG_RESULT([$MY_HDF5_PLUGIN_PATH])
+AC_DEFINE([MY_HDF5_PLUGIN_PATH], [$MY_HDF5_PLUGIN_PATH], [HDF5 plugin path])
+AC_SUBST([MY_HDF5_PLUGIN_PATH])
+
+# Build MY_LD_LIBRARY_PATH from -L flags in LDFLAGS for use in run_tests.sh.
+# Prepend the local src/.libs so the freshly built libncsqueeze takes priority
+# over any system-installed version.
+MY_LD_LIBRARY_PATH="${ac_pwd}/src/.libs"
+for flag in $LDFLAGS; do
+    case $flag in
+        -L*)
+            libdir=`echo $flag | sed 's/^-L//'`
+            MY_LD_LIBRARY_PATH="$MY_LD_LIBRARY_PATH:$libdir"
+            ;;
+    esac
+done
+AC_MSG_CHECKING([runtime library path for tests])
+AC_MSG_RESULT([$MY_LD_LIBRARY_PATH])
+AC_SUBST([MY_LD_LIBRARY_PATH])
 
 # Do we have netCDF-4? If not, we're done.
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([#include "netcdf_meta.h"],
@@ -419,7 +441,11 @@ fi
 # We need our own, fixed, copy of the LZ4 plugin.
 if test "x$enable_lz4" = xyes; then
    AC_CONFIG_SUBDIRS([hdf5_plugins])
+   MY_LZ4_PLUGIN_PATH="${ac_pwd}/hdf5_plugins/LZ4/src/.libs"
+else
+   MY_LZ4_PLUGIN_PATH=""
 fi
+AC_SUBST([MY_LZ4_PLUGIN_PATH])
 
 AC_CONFIG_FILES([test/run_tests.sh], [chmod ugo+x test/run_tests.sh])
 AC_CONFIG_FILES([ftest/run_tests.sh], [chmod ugo+x ftest/run_tests.sh])

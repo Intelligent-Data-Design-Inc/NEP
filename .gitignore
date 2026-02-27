@@ -169,10 +169,14 @@ examples/classic/var4d
 examples/netcdf-4/simple_nc4
 examples/netcdf-4/compression
 examples/netcdf-4/chunking_performance
+examples/netcdf-4/dump_nc4_metadata
 examples/netcdf-4/format_variants
 examples/netcdf-4/multi_unlimited
 examples/netcdf-4/user_types
 examples/netcdf-4/groups
+
+# LZ4 plugin example binary
+hdf5_plugins/LZ4/example/h5ex_d_lz4
 
 # Example binaries - Fortran classic
 examples/f_classic/f_coord
