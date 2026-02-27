@@ -48,14 +48,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-1.14.6-t1-${{ runner.os }}-1
+          key: hdf5-2.0.0-t1-${{ runner.os }}-1
       
-      - name: Download and build HDF5 1.14.6
+      - name: Download and build HDF5 2.0.0
         if: steps.cache-hdf5-t1.outputs.cache-hit != 'true'
         run: |
-          wget https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5-1.14.6.tar.gz &> /dev/null
-          tar -xzf hdf5-1.14.6.tar.gz
-          cd hdf5-hdf5-1.14.6
+          wget https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5-2_0_0.tar.gz &> /dev/null
+          tar -xzf hdf5-2_0_0.tar.gz
+          cd hdf5-hdf5-2_0_0
           mkdir build && cd build
           cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF ..
           make -j$(nproc)
@@ -128,14 +128,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-1.14.6-asan-${{ runner.os }}-1
+          key: hdf5-2.0.0-asan-${{ runner.os }}-1
       
       - name: Download and build HDF5 with ASAN
         if: steps.cache-hdf5-asan.outputs.cache-hit != 'true'
         run: |
-          wget https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5-1.14.6.tar.gz &> /dev/null
-          tar -xzf hdf5-1.14.6.tar.gz
-          cd hdf5-hdf5-1.14.6
+          wget https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5-2_0_0.tar.gz &> /dev/null
+          tar -xzf hdf5-2_0_0.tar.gz
+          cd hdf5-hdf5-2_0_0
           mkdir build && cd build
           cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install \
                 -DCMAKE_C_FLAGS="-g -O0 -fsanitize=address -fno-omit-frame-pointer" \
@@ -276,16 +276,16 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-1.14.6-${{ runner.os }}-3
+          key: hdf5-2.0.0-${{ runner.os }}-1
       
-      - name: Download and build HDF5 1.14.6
+      - name: Download and build HDF5 2.0.0
         if: steps.cache-hdf5.outputs.cache-hit != 'true'
         id: build-hdf5
         run: |
-          wget https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5-1.14.6.tar.gz &> /dev/null
-          tar -xzf hdf5-1.14.6.tar.gz
+          wget https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5-2_0_0.tar.gz &> /dev/null
+          tar -xzf hdf5-2_0_0.tar.gz
           ls -l
-          cd hdf5-hdf5-1.14.6
+          cd hdf5-hdf5-2_0_0
           mkdir build && cd build
           cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF ..
           make -j$(nproc)
