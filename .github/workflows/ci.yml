@@ -218,7 +218,7 @@ jobs:
 
       - name: Install base dependencies
         run: |
-          sudo apt-get install -y cmake make wget zlib1g-dev 
+          sudo apt-get install -y cmake make wget zlib1g-dev libjpeg-dev
 
       - name: Install documentation dependencies
         if: matrix.fortran == 'on' && matrix.compression == 'all'
