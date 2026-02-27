@@ -48,7 +48,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-2.0.0-t1-${{ runner.os }}-1
+          key: hdf5-2.0.0-t1-${{ runner.os }}-2
       
       - name: Download and build HDF5 2.0.0
         if: steps.cache-hdf5-t1.outputs.cache-hit != 'true'
@@ -57,7 +57,7 @@ jobs:
           tar -xzf hdf5_2.0.0.tar.gz
           cd hdf5-hdf5_2.0.0
           mkdir build && cd build
-          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF ..
+          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DHDF5_ENABLE_Z_LIB_SUPPORT=ON ..
           make -j$(nproc)
           make install
 
@@ -128,7 +128,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-2.0.0-asan-${{ runner.os }}-1
+          key: hdf5-2.0.0-asan-${{ runner.os }}-2
       
       - name: Download and build HDF5 with ASAN
         if: steps.cache-hdf5-asan.outputs.cache-hit != 'true'
@@ -141,7 +141,7 @@ jobs:
                 -DCMAKE_C_FLAGS="-g -O0 -fsanitize=address -fno-omit-frame-pointer" \
                 -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address" \
                 -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=address" \
-                -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF ..
+                -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DHDF5_ENABLE_Z_LIB_SUPPORT=ON ..
           make -j$(nproc)
           make install
 
@@ -278,7 +278,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-2.0.0-${{ runner.os }}-1
+          key: hdf5-2.0.0-${{ runner.os }}-2
       
       - name: Download and build HDF5 2.0.0
         if: steps.cache-hdf5.outputs.cache-hit != 'true'
@@ -289,7 +289,7 @@ jobs:
           ls -l
           cd hdf5-hdf5_2.0.0
           mkdir build && cd build
-          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF ..
+          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DHDF5_ENABLE_Z_LIB_SUPPORT=ON ..
           make -j$(nproc)
           make install
 
