@@ -1,6 +1,6 @@
   !> @file
   !!
-  !! This is a test program for the ncsqueeze BZIP2 compression filter for
+  !! This is a test program for the NEP BZIP2 compression filter for
   !! netCDF. This started as an example nc4_pres_temp_4D_wr.f90 from
   !! the netcdf-fortran project.
   !!

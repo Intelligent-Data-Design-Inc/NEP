@@ -1,6 +1,6 @@
 /**
  * @file
- * Test the jpeg compression in ncsqueeze.
+ * Test the jpeg compression in nep.
  *
  * @author Edward Hartnett
  * @date Nov 13, 2025

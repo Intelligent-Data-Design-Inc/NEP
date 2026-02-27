@@ -1,6 +1,6 @@
 /**
  * @file
- * Test the bzip2 compression in ncsqueeze.
+ * Test the bzip2 compression in nep.
  *
  * @author Edward Hartnett
  * @date Nov 13, 2025
