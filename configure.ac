@@ -181,10 +181,10 @@ if test "x$enable_cdf" = "xyes"; then
         for flag in $LDFLAGS; do
             case $flag in
                 -L*)
-                    libdir=`echo $flag | sed 's/^-L//'`
+                    _ld_dir=`echo $flag | sed 's/^-L//'`
                     # Check if this is the CDF library directory
-                    if test -f "$libdir/libcdf.so" || test -f "$libdir/libcdf.a"; then
-                        CDF_LDFLAGS="-R$libdir"
+                    if test -f "$_ld_dir/libcdf.so" || test -f "$_ld_dir/libcdf.a"; then
+                        CDF_LDFLAGS="-R$_ld_dir"
                         break
                     fi
                     ;;
@@ -277,6 +277,7 @@ fi
 # AM_CONDITIONAL([HAVE_GRIB2], [test "x$HAVE_GRIB2" = "xyes"])
 AM_CONDITIONAL([HAVE_CDF], [test "x$HAVE_CDF" = "xyes"])
 AM_CONDITIONAL([HAVE_GEOTIFF], [test "x$HAVE_GEOTIFF" = "xyes"])
+AM_CONDITIONAL([BUILD_NCRC], [test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes"])
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$HAVE_DOXYGEN" = "xyes"])
 
 # Initialize Automake
@@ -295,12 +296,25 @@ AC_SEARCH_LIBS([nc_create], [netcdf], [],
 AC_CHECK_HEADERS([netcdf.h netcdf_meta.h])
 
 # Verify netcdf-c >= 4.10.0 via pkg-config
+# Auto-discover netcdf.pc by scanning LDFLAGS for the directory containing libnetcdf
+for flag in $LDFLAGS; do
+    case $flag in
+        -L*)
+            _ncdir=`echo $flag | sed 's/^-L//'`
+            if test -f "$_ncdir/libnetcdf.so" || test -f "$_ncdir/libnetcdf.a" || test -f "$_ncdir/libnetcdf.dylib"; then
+                _ncpc="$_ncdir/pkgconfig"
+                if test -f "$_ncpc/netcdf.pc"; then
+                    PKG_CONFIG_PATH="${_ncpc}${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+                    export PKG_CONFIG_PATH
+                    break
+                fi
+            fi
+            ;;
+    esac
+done
 PKG_CHECK_MODULES([NETCDF], [netcdf >= 4.10.0], [],
     [AC_MSG_ERROR([netcdf-c >= 4.10.0 is required. Found older version or netcdf not found via pkg-config.])])
 
-# NetCDF-C >= 4.10.0 always has UDF self-loading support
-AC_DEFINE([HAVE_NETCDF_UDF_SELF_REGISTRATION], [1],
-          [Define if NetCDF-C has UDF self-loading support (requires 4.10.0+)])
 
 # Find ncdump from the NetCDF-C installation
 # Extract the library directory from LDFLAGS to find the bin directory
@@ -311,11 +325,11 @@ NCDUMP=""
 for flag in $LDFLAGS; do
     case $flag in
         -L*)
-            libdir=`echo $flag | sed 's/^-L//'`
+            _ld_dir=`echo $flag | sed 's/^-L//'`
             # Check if this directory contains libnetcdf
-            if test -f "$libdir/libnetcdf.so" || test -f "$libdir/libnetcdf.a" || test -f "$libdir/libnetcdf.dylib"; then
+            if test -f "$_ld_dir/libnetcdf.so" || test -f "$_ld_dir/libnetcdf.a" || test -f "$_ld_dir/libnetcdf.dylib"; then
                 # Derive bin directory from lib directory (typically ../bin)
-                NETCDF_PREFIX=`dirname "$libdir"`
+                NETCDF_PREFIX=`dirname "$_ld_dir"`
                 bindir="${NETCDF_PREFIX}/bin"
                 if test -x "$bindir/ncdump"; then
                     NCDUMP="$bindir/ncdump"
@@ -366,8 +380,8 @@ MY_LD_LIBRARY_PATH="${ac_pwd}/src/.libs"
 for flag in $LDFLAGS; do
     case $flag in
         -L*)
-            libdir=`echo $flag | sed 's/^-L//'`
-            MY_LD_LIBRARY_PATH="$MY_LD_LIBRARY_PATH:$libdir"
+            _ld_dir=`echo $flag | sed 's/^-L//'`
+            MY_LD_LIBRARY_PATH="$MY_LD_LIBRARY_PATH:$_ld_dir"
             ;;
     esac
 done
@@ -449,7 +463,7 @@ AC_SUBST([MY_LZ4_PLUGIN_PATH])
 
 AC_ARG_WITH([ncrc-dir],
     [AS_HELP_STRING([--with-ncrc-dir=DIR],
-        [install nep.ncrc to DIR (default: ${datarootdir}/nep)])],
+        [install .ncrc to DIR (default: ${datarootdir}/nep)])],
     [NEP_NCRC_DIR="$withval"],
     [NEP_NCRC_DIR="\${datarootdir}/nep"])
 AC_SUBST([NEP_NCRC_DIR])

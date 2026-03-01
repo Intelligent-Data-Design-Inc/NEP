@@ -108,7 +108,7 @@ The GeoTIFF test suite includes:
 
 ## UDF Autoloading via .ncrc (v1.5.5)
 
-NEP installs a `nep.ncrc` file that configures NetCDF-C's UDF self-loading mechanism.
+NEP installs a `.ncrc` file that configures NetCDF-C's UDF self-loading mechanism.
 When present, NetCDF-C automatically loads the NEP shared library when opening any
 GeoTIFF or CDF file, without requiring applications to call `NC_GEOTIFF_initialize()`
 or `NC_CDF_initialize()` explicitly.
@@ -117,18 +117,18 @@ or `NC_CDF_initialize()` explicitly.
 
 | Build system | Default install path | Override option |
 |---|---|---|
-| CMake | `${CMAKE_INSTALL_PREFIX}/share/nep/nep.ncrc` | `-DNEP_NCRC_INSTALL_DIR=<path>` |
-| Autotools | `${datarootdir}/nep/nep.ncrc` | `--with-ncrc-dir=<path>` |
+| CMake | `${CMAKE_INSTALL_PREFIX}/share/nep/.ncrc` | `-DNEP_NCRC_INSTALL_DIR=<path>` |
+| Autotools | `${datarootdir}/nep/.ncrc` | `--with-ncrc-dir=<path>` |
 
 ### Enabling Autoloading
 
-Append the contents of the installed `nep.ncrc` to your `~/.ncrc`:
+Append the contents of the installed `.ncrc` to your `~/.ncrc`:
 
 ```bash
-cat $(nep-config --datadir)/nep/nep.ncrc >> ~/.ncrc
+cat $(nep-config --datadir)/nep/.ncrc >> ~/.ncrc
 ```
 
-Or point `NETCDF_RC` to the directory containing `nep.ncrc`:
+Or point `NETCDF_RC` to the directory containing `.ncrc`:
 
 ```bash
 export NETCDF_RC=/usr/local/share/nep
