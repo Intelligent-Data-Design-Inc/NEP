@@ -62,6 +62,7 @@ dkms.conf
 *.dwo
 
 # Autotools generated files
+.ncrc
 Makefile
 Makefile.in
 aclocal.m4
@@ -147,7 +148,9 @@ tst_geotiff_edge_cases
 tst_simple_geotiff
 bench_geotiff_performance
 tst_geotiff_self_load
+tst_geotiff_ncrc_autoload
 tst_cdf_self_load
+tst_cdf_ncrc_autoload
 
 # Copied test data files (should only exist in test/data/)
 test_geotiff/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif
