@@ -45,8 +45,6 @@
 /* Define to 1 if you have the <netcdf_meta.h> header file. */
 #undef HAVE_NETCDF_META_H
 
-/* NetCDF-C >= 4.10.0 always has UDF self-loading support */
-#define HAVE_NETCDF_UDF_SELF_REGISTRATION 1
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H

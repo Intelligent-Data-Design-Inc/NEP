@@ -4,7 +4,7 @@
  *
  * Validates that a GeoTIFF file can be opened through the NetCDF API
  * without any explicit call to NC_GEOTIFF_initialize(). The test sets
- * NETCDF_RC to a temporary directory containing a generated nep.ncrc
+ * NETCDF_RC to a temporary directory containing a generated .ncrc
  * file, then calls nc_open() directly. NetCDF-C reads the RC file and
  * loads libnep automatically.
  *
@@ -26,10 +26,10 @@
 
 #define TEST_FILE "MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif"
 #define TMP_NCRC_DIR "/tmp/nep_ncrc_test_geotiff"
-#define TMP_NCRC_FILE TMP_NCRC_DIR "/nep.ncrc"
+#define TMP_NCRC_FILE TMP_NCRC_DIR "/.ncrc"
 
 /**
- * @brief Write a nep.ncrc into a temp directory and set NETCDF_RC.
+ * @brief Write a .ncrc into a temp directory and set NETCDF_RC.
  *
  * @param lib_path  Path to libnep shared library.
  * @return 0 on success, non-zero on failure.

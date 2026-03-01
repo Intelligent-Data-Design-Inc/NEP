@@ -1,0 +1,28 @@
+# NEP .ncrc configuration template
+# Enables NetCDF-C UDF autoloading for NEP format handlers.
+#
+# Install instructions:
+#   Append this file's contents to your ~/.ncrc, or set the NETCDF_RC
+#   environment variable to a directory containing this file as "nep.ncrc".
+#
+# UDF slot assignments (see include/NEP.h):
+#   UDF0: GeoTIFF BigTIFF little-endian  (magic: II+)
+#   UDF1: GeoTIFF standard TIFF little-endian (magic: II*)
+#   UDF2: NASA CDF format (magic: \xCD\xF3\x00\x01)
+#
+# Reference: https://docs.unidata.ucar.edu/netcdf/NUG/user_defined_formats.html
+
+# GeoTIFF BigTIFF (little-endian, UDF slot 0)
+NETCDF.UDF0.LIBRARY=/usr/local/hdf5-2.0.0/lib/libnep.so
+NETCDF.UDF0.INIT=NC_GEOTIFF_initialize
+NETCDF.UDF0.MAGIC=II+
+
+# GeoTIFF standard TIFF (little-endian, UDF slot 1)
+NETCDF.UDF1.LIBRARY=/usr/local/hdf5-2.0.0/lib/libnep.so
+NETCDF.UDF1.INIT=NC_GEOTIFF_initialize
+NETCDF.UDF1.MAGIC=II*
+
+# NASA CDF format (UDF slot 2)
+NETCDF.UDF2.LIBRARY=/usr/local/hdf5-2.0.0/lib/libnep.so
+NETCDF.UDF2.INIT=NC_CDF_initialize
+NETCDF.UDF2.MAGIC=\xCD\xF3\x00\x01

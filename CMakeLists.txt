@@ -81,9 +81,6 @@ if(NOT DOCS_ONLY)
     find_program(NCDUMP ncdump HINTS "${NETCDF_PREFIX}/bin" REQUIRED)
     message(STATUS "Found ncdump: ${NCDUMP}")
 
-    # NetCDF-C >= 4.10.0 always has UDF self-loading support
-    add_definitions(-DHAVE_NETCDF_UDF_SELF_REGISTRATION)
-
     # Find NetCDF-Fortran (optional, for Fortran examples)
     if(ENABLE_FORTRAN)
         pkg_check_modules(NetCDF_Fortran netcdf-fortran)
@@ -264,19 +261,21 @@ if(NOT DOCS_ONLY)
     # Add test directory last so tst_cdf_udf runs after tst_cdf_basic
     add_subdirectory (test)
 
-    # nep.ncrc: .ncrc template for UDF autoloading (issue #134)
-    set(NEP_LIBDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
-    set(NEP_NCRC_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/nep"
-        CACHE PATH "Directory where nep.ncrc is installed (default: \${prefix}/share/nep)")
-    configure_file(
-        "${CMAKE_SOURCE_DIR}/nep.ncrc.in"
-        "${CMAKE_BINARY_DIR}/nep.ncrc"
-        @ONLY
-    )
-    install(FILES "${CMAKE_BINARY_DIR}/nep.ncrc"
-        DESTINATION "${NEP_NCRC_INSTALL_DIR}"
-    )
-    message(STATUS "nep.ncrc will be installed to: ${NEP_NCRC_INSTALL_DIR}")
+    # .ncrc: .ncrc template for UDF autoloading (issue #134)
+    if(HAVE_GEOTIFF OR HAVE_CDF)
+        set(NEP_LIBDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+        set(NEP_NCRC_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/nep"
+            CACHE PATH "Directory where .ncrc is installed (default: \${prefix}/share/nep)")
+        configure_file(
+            "${CMAKE_SOURCE_DIR}/.ncrc.in"
+            "${CMAKE_BINARY_DIR}/.ncrc"
+            @ONLY
+        )
+        install(FILES "${CMAKE_BINARY_DIR}/.ncrc"
+            DESTINATION "${NEP_NCRC_INSTALL_DIR}"
+        )
+        message(STATUS ".ncrc will be installed to: ${NEP_NCRC_INSTALL_DIR}")
+    endif()
 
     # Generate and install CMake config files
     include(CMakePackageConfigHelpers)
