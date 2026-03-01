@@ -261,17 +261,31 @@ if(NOT DOCS_ONLY)
     # Add test directory last so tst_cdf_udf runs after tst_cdf_basic
     add_subdirectory (test)
 
-    # .ncrc: .ncrc template for UDF autoloading (issue #134)
+    # .ncrc: assemble from fragments for enabled formats (issue #134)
     if(HAVE_GEOTIFF OR HAVE_CDF)
         set(NEP_LIBDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
         set(NEP_NCRC_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/nep"
             CACHE PATH "Directory where .ncrc is installed (default: \${prefix}/share/nep)")
-        configure_file(
-            "${CMAKE_SOURCE_DIR}/.ncrc.in"
-            "${CMAKE_BINARY_DIR}/.ncrc"
-            @ONLY
-        )
-        install(FILES "${CMAKE_BINARY_DIR}/.ncrc"
+
+        # Start with header fragment
+        set(NCRC_FRAGMENTS "${CMAKE_SOURCE_DIR}/.ncrc.in")
+        if(HAVE_GEOTIFF)
+            list(APPEND NCRC_FRAGMENTS "${CMAKE_SOURCE_DIR}/.ncrc-geotiff.in")
+        endif()
+        if(HAVE_CDF)
+            list(APPEND NCRC_FRAGMENTS "${CMAKE_SOURCE_DIR}/.ncrc-cdf.in")
+        endif()
+
+        # Assemble and substitute @NEP_LIBDIR@ in one step via cmake -P script
+        set(NCRC_OUT "${CMAKE_BINARY_DIR}/.ncrc")
+        file(WRITE "${NCRC_OUT}" "")
+        foreach(_frag ${NCRC_FRAGMENTS})
+            file(READ "${_frag}" _content)
+            string(REPLACE "@NEP_LIBDIR@" "${NEP_LIBDIR}" _content "${_content}")
+            file(APPEND "${NCRC_OUT}" "${_content}")
+        endforeach()
+
+        install(FILES "${NCRC_OUT}"
             DESTINATION "${NEP_NCRC_INSTALL_DIR}"
         )
         message(STATUS ".ncrc will be installed to: ${NEP_NCRC_INSTALL_DIR}")

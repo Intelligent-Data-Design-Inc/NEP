@@ -105,7 +105,6 @@ NC_CDF_get_vara(int ncid, int varid, const size_t *startp,
         (void)recNum;
     }
     size_t dimOffset = (var->ndims > 0) ? 1 : 0;
-
     /* Allocate space for indices */
     if (var->ndims > dimOffset) {
         if (!(indices = (long *)calloc(var->ndims - dimOffset, sizeof(long))))
