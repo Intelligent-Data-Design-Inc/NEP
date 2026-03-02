@@ -6,3 +6,18 @@
 #   environment variable to a directory containing this file as ".ncrc".
 #
 # Reference: https://docs.unidata.ucar.edu/netcdf/NUG/user_defined_formats.html
+
+# GeoTIFF BigTIFF (little-endian, UDF slot 0)
+NETCDF.UDF0.LIBRARY=@NEP_LIBDIR@/libncgeotiff.so
+NETCDF.UDF0.INIT=NC_GEOTIFF_initialize
+NETCDF.UDF0.MAGIC=II+
+
+# GeoTIFF standard TIFF (little-endian, UDF slot 1)
+NETCDF.UDF1.LIBRARY=@NEP_LIBDIR@/libncgeotiff.so
+NETCDF.UDF1.INIT=NC_GEOTIFF_initialize
+NETCDF.UDF1.MAGIC=II*
+
+# NASA CDF format (UDF slot 2)
+NETCDF.UDF2.LIBRARY=@NEP_LIBDIR@/libnccdf.so
+NETCDF.UDF2.INIT=NC_CDF_initialize
+NETCDF.UDF2.MAGIC=\xCD\xF3\x00\x01
