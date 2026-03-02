@@ -1,0 +1,10 @@
+
+# GeoTIFF BigTIFF (little-endian, UDF slot 0)
+NETCDF.UDF0.LIBRARY=@NEP_LIBDIR@/libncgeotiff.so
+NETCDF.UDF0.INIT=NC_GEOTIFF_initialize
+NETCDF.UDF0.MAGIC=II+
+
+# GeoTIFF standard TIFF (little-endian, UDF slot 1)
+NETCDF.UDF1.LIBRARY=@NEP_LIBDIR@/libncgeotiff.so
+NETCDF.UDF1.INIT=NC_GEOTIFF_initialize
+NETCDF.UDF1.MAGIC=II*

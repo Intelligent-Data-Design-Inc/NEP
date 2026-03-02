@@ -56,7 +56,6 @@ static int setup_netcdf_rc(const char *lib_path)
 
     fprintf(f, "NETCDF.UDF2.LIBRARY=%s\n", lib_path);
     fprintf(f, "NETCDF.UDF2.INIT=NC_CDF_initialize\n");
-    fprintf(f, "NETCDF.UDF2.MAGIC=\\xCD\\xF3\\x00\\x01\n");
     fclose(f);
 
     if (setenv("NETCDF_RC", TMP_NCRC_DIR, 1) != 0)

@@ -37,16 +37,30 @@ if BUILD_LZ4
 all-local:
 	$(MAKE) -C hdf5_plugins all
 endif
-EXTRA_DIST = autogen.sh .ncrc.in
+EXTRA_DIST = autogen.sh .ncrc.in .ncrc-geotiff.in .ncrc-cdf.in
 
 if BUILD_NCRC
 # Install .ncrc to $(NEP_NCRC_DIR) (default: $(datarootdir)/nep)
-# .ncrc is generated at build time from .ncrc.in
+# .ncrc is assembled at build time from .ncrc.in plus enabled format fragments
 ncrcdir = $(NEP_NCRC_DIR)
 ncrc_DATA = .ncrc
 
-.ncrc: $(srcdir)/.ncrc.in
-	$(AM_V_GEN)sed 's|@NEP_LIBDIR@|$(libdir)|g' $< > $@
+NCRC_DEPS = $(srcdir)/.ncrc.in
+if HAVE_GEOTIFF
+NCRC_DEPS += $(srcdir)/.ncrc-geotiff.in
+endif
+if HAVE_CDF
+NCRC_DEPS += $(srcdir)/.ncrc-cdf.in
+endif
+
+.ncrc: $(NCRC_DEPS)
+	$(AM_V_GEN)sed 's|@NEP_LIBDIR@|$(libdir)|g' $(srcdir)/.ncrc.in > $@
+if HAVE_GEOTIFF
+	sed 's|@NEP_LIBDIR@|$(libdir)|g' $(srcdir)/.ncrc-geotiff.in >> $@
+endif
+if HAVE_CDF
+	sed 's|@NEP_LIBDIR@|$(libdir)|g' $(srcdir)/.ncrc-cdf.in >> $@
+endif
 
 CLEANFILES = .ncrc
 endif

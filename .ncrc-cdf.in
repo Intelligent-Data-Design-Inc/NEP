@@ -1,0 +1,4 @@
+
+# NASA CDF format (UDF slot 2)
+NETCDF.UDF2.LIBRARY=@NEP_LIBDIR@/libnccdf.so
+NETCDF.UDF2.INIT=NC_CDF_initialize

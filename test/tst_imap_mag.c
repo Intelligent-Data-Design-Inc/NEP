@@ -318,7 +318,7 @@ int main(void)
     /* CDF files start with magic bytes 0xCDF30001 or 0xCDF26002 */
     /* Using CDF3 magic number: 0xCD, 0xF3, 0x00, 0x01 */
     char cdf_magic[5] = "\xCD\xF3\x00\x01";
-    retval = nc_def_user_format(NC_UDF0, (NC_Dispatch *)CDF_dispatch_table, cdf_magic);
+    retval = nc_def_user_format(NC_UDF2, (NC_Dispatch *)CDF_dispatch_table, cdf_magic);
     if (retval != NC_NOERR)
     {
         fprintf(stderr, "ERROR: Failed to register CDF UDF handler: %s\n", 
@@ -329,7 +329,7 @@ int main(void)
     
     /* Open the IMAP MAG CDF file using NetCDF API */
     printf("Opening IMAP MAG CDF file via NetCDF API: %s\n", TEST_FILE);
-    if ((retval = nc_open(TEST_FILE, NC_NOWRITE, &ncid)))
+    if ((retval = nc_open(TEST_FILE, NC_UDF2, &ncid)))
     {
         fprintf(stderr, "ERROR: Failed to open IMAP MAG CDF file via NetCDF API: %s\n", 
                 nc_strerror(retval));
