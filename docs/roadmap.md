@@ -3,6 +3,9 @@
 ### V1.6.0
 Implement Phase 4 of the GeoTIFF read layer for NEP v1.5.0: Extract and expose coordinate reference system (CRS) and georeferencing information following CF conventions. (see closed GitHub issue 59)
 
+### V1.5.6: Bugfixes
+- Fixed UDF self-loading and .ncrc bugs.
+
 ### V1.5.5: Header File Cleanup and Ready for netcdf-c-4.10.0
 
 NEP's UDF handlers depend on 14 private netcdf-c headers (nc4internal.h, hdf5internal.h, nc.h, etc.) with no public API equivalent. This version audits that dependency, creates a thin abstraction layer to isolate it, then drops backward compatibility with older netcdf-c versions and enables UDF self-loading via .ncrc.
