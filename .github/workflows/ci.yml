@@ -111,18 +111,18 @@ jobs:
       - name: Generate .ncrc for test_geotiff UDF registration
         run: |
           NEP_LIB="$GITHUB_WORKSPACE/src/.libs/libncgeotiff.so"
-          NCRC_DIR="$GITHUB_WORKSPACE/ncrc_asan"
-          mkdir -p "$NCRC_DIR"
-          cat > "$NCRC_DIR/.ncrc" << EOF
-          NETCDF.UDF0.LIBRARY=${NEP_LIB}
-          NETCDF.UDF0.INIT=NC_GEOTIFF_initialize
-          NETCDF.UDF0.MAGIC=II+
-          NETCDF.UDF1.LIBRARY=${NEP_LIB}
-          NETCDF.UDF1.INIT=NC_GEOTIFF_initialize
-          NETCDF.UDF1.MAGIC=II*
-          EOF
-          echo "Generated .ncrc at $NCRC_DIR/.ncrc:"
-          cat "$NCRC_DIR/.ncrc"
+          NCRC_FILE="$GITHUB_WORKSPACE/ncrc_asan.rc"
+          cat > "$NCRC_FILE" << 'EOF'
+NETCDF.UDF0.LIBRARY=PLACEHOLDER_LIB
+NETCDF.UDF0.INIT=NC_GEOTIFF_initialize
+NETCDF.UDF0.MAGIC=II+
+NETCDF.UDF1.LIBRARY=PLACEHOLDER_LIB
+NETCDF.UDF1.INIT=NC_GEOTIFF_initialize
+NETCDF.UDF1.MAGIC=II*
+EOF
+          sed -i "s|PLACEHOLDER_LIB|${NEP_LIB}|g" "$NCRC_FILE"
+          echo "Generated ncrc at $NCRC_FILE:"
+          cat "$NCRC_FILE"
 
       - name: Run tests with AddressSanitizer
         run: |
@@ -132,7 +132,7 @@ jobs:
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -fsanitize=address"
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
           export ASAN_OPTIONS="detect_leaks=1:halt_on_error=1:abort_on_error=1:detect_odr_violation=0"
-          export NETCDF_RC="$GITHUB_WORKSPACE/ncrc_asan"
+          export NCRCENV_RC="$GITHUB_WORKSPACE/ncrc_asan.rc"
           make check || (echo "Memory leak detected! Test logs:"; for f in $(find . -name test-suite.log); do echo "=== $f ==="; cat "$f"; done; exit 1)
           echo "✅ All tests passed with zero memory leaks!"
 
