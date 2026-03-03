@@ -40,6 +40,8 @@ typedef struct NC_VAR_GEOTIFF_INFO
 {
     int band_num;
     int geotiff_data_type;
+    double *coord_data; /* non-NULL for coordinate variables (lat/lon/x/y) */
+    size_t coord_len;   /* length of coord_data array */
 } NC_VAR_GEOTIFF_INFO_T;
 
 /** CRS coordinate system types */
@@ -52,6 +54,7 @@ typedef struct nc_geotiff_crs_info
 {
     int crs_type; /* geographic or projected */
     int epsg_code;
+    int ct_projection; /* GTIFDefn.CTProjection value (projected CRS only) */
     char crs_name[NC_MAX_NAME + 1];
     double semi_major_axis;
     double inverse_flattening;

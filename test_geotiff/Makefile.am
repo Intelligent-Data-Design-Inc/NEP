@@ -11,11 +11,14 @@ AM_CFLAGS = -g -Wall -Wextra $(HDF5_CFLAGS)
 # Only build tests if GeoTIFF is enabled
 if HAVE_GEOTIFF
 
-# Copy test data files to build directory before running tests
+# Copy test data files to build directory before running tests.
+# Also generate an empty .ncrc so NCRCENV_RC suppresses ~/.ncrc dlopen loading;
+# tests that need UDF registration do so explicitly via nc_def_user_format().
 check-local:
 	cp -f $(top_srcdir)/test/data/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif $(builddir)/
 	cp -f $(top_srcdir)/test/data/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif $(builddir)/
 	cp -f $(top_srcdir)/test/data/ABBA_2022_C61_HNL.tif $(builddir)/
+	echo "" > $(builddir)/empty.ncrc
 
 # Test programs
 check_PROGRAMS = tst_geotiff_handle tst_geotiff_metadata tst_phase2_acceptance \
@@ -84,8 +87,11 @@ TESTS = tst_geotiff_handle tst_geotiff_metadata tst_phase2_acceptance \
 	tst_geotiff_errors tst_geotiff_edge_cases tst_simple_geotiff \
 	test_netcdf_crs tst_geotiff_self_load tst_geotiff_ncrc_autoload
 
-# Set environment variable for self-loading tests to find library
-TESTS_ENVIRONMENT = NEP_GEOTIFF_LIB_PATH=$(abs_top_builddir)/src/.libs/libncgeotiff.so
+# NEP_GEOTIFF_LIB_PATH: path for self-loading tests.
+# NCRCENV_RC: point at empty file to suppress ~/.ncrc dlopen loading so tests
+#             that call nc_def_user_format() use the in-process handler only.
+TESTS_ENVIRONMENT = NEP_GEOTIFF_LIB_PATH=$(abs_top_builddir)/src/.libs/libncgeotiff.so \
+	NCRCENV_RC=$(abs_builddir)/empty.ncrc
 
 endif # HAVE_GEOTIFF
 
