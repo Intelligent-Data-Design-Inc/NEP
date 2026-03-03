@@ -8,6 +8,8 @@ if(HAVE_GEOTIFF)
          DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
     file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../test/data/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif
          DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../test/data/ABBA_2022_C61_HNL.tif
+         DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
     
     # Include directories
     include_directories(${CMAKE_BINARY_DIR}/include)
@@ -85,7 +87,7 @@ if(HAVE_GEOTIFF)
         ${HDF5_LIBRARIES}
         ${GEOTIFF_LIBRARY} 
         ${TIFF_LIBRARY})
-    add_test(NAME test_netcdf_crs COMMAND test_netcdf_crs ${CMAKE_CURRENT_BINARY_DIR}/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif)
+    add_test(NAME test_netcdf_crs COMMAND test_netcdf_crs)
     set_tests_properties(test_netcdf_crs PROPERTIES 
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 

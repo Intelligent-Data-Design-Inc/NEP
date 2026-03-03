@@ -1424,27 +1424,10 @@ validate_crs_completeness(const NC_GEOTIFF_CRS_INFO_T *crs_info)
     if (crs_info->crs_type == NC_GEOTIFF_CRS_UNKNOWN)
         return NC_NOERR;
     
-    /* For foundation implementation, be more permissive:
-       - For geographic CRS, accept if we have any ellipsoid info
-       - For projected CRS, accept if we have basic CRS info
-       - Don't require all parameters to be present */
-    
-    /* For geographic CRS, at least one ellipsoid parameter should be present */
-    if (crs_info->crs_type == NC_GEOTIFF_CRS_GEOGRAPHIC)
-    {
-        if (crs_info->semi_major_axis == 0.0)
-            return NC_EINVAL; /* Need at least semi-major axis */
-    }
-    
-    /* For projected CRS, at least CRS type should be identified */
-    if (crs_info->crs_type == NC_GEOTIFF_CRS_PROJECTED)
-    {
-        /* For foundation implementation, accept projected CRS even without full parameters */
-        /* We only need to know it's a projected CRS */
-        if (crs_info->semi_major_axis == 0.0)
-            return NC_EINVAL; /* Still need basic ellipsoid info */
-    }
-    
+    /* Foundation implementation: accept any CRS with a known type.
+       GTIFGetDefn() may populate Model without ellipsoid parameters for
+       many real-world GeoTIFFs; blocking attribute writing on missing
+       ellipsoid data is too restrictive at this stage. */
     return NC_NOERR;
 }
 
