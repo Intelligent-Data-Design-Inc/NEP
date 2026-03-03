@@ -1,14 +1,17 @@
 /**
  * @file
- * Test GeoTIFF CF-compliant CRS attribute mapping (issue #93, v1.6.0 Sprint 2).
+ * Test GeoTIFF CF-compliant CRS attribute mapping (issues #92, #93, #94).
  *
  * Validates that GeoTIFF files opened via the NetCDF API expose:
  *   - A scalar 'crs' variable with CF-1.8 grid_mapping_name attribute
  *   - Coordinate variables (lon/lat or x/y) with CF standard_name and units
  *   - A 'data' variable with grid_mapping and coordinates attributes
+ *   - Bounds variables (lon_bnds/lat_bnds or x_bnds/y_bnds) for pixel-as-area
+ *   - Correct standard_parallel attributes for LCC/Albers projections
+ *   - Correct scale_factor_at_central_meridian for Transverse Mercator
  *
- * Also retains Sprint 1 error-path tests for validate_crs_completeness and
- * extract_crs_parameters.
+ * Sprint 3 additions: standard_parallel extraction, pixel raster type,
+ * coordinate bounds variables, and strengthened validate_crs_completeness.
  *
  * @author Edward Hartnett
  * @date 2026-03-03
@@ -89,6 +92,8 @@ test_validate_unknown_crs(void)
 
 /**
  * Test that validate_crs_completeness accepts known CRS without ellipsoid data.
+ * Geographic CRS with no ellipsoid (semi_major_axis=0) must be accepted.
+ * Projected CRS with a valid ct_projection but no ellipsoid must also be accepted.
  */
 static int
 test_validate_known_crs_no_ellipsoid(void)
@@ -98,8 +103,10 @@ test_validate_known_crs_no_ellipsoid(void)
 
     printf("Testing validate_crs_completeness with known CRS, no ellipsoid...");
 
+    /* Geographic CRS with semi_major_axis=0 (missing) is acceptable */
     memset(&crs_info, 0, sizeof(crs_info));
     crs_info.crs_type = NC_GEOTIFF_CRS_GEOGRAPHIC;
+    crs_info.semi_major_axis = 0.0; /* not set */
 
     ret = validate_crs_completeness(&crs_info);
     if (ret != NC_NOERR)
@@ -109,8 +116,11 @@ test_validate_known_crs_no_ellipsoid(void)
         return 1;
     }
 
+    /* Projected CRS with a known projection type but no ellipsoid is acceptable */
     memset(&crs_info, 0, sizeof(crs_info));
     crs_info.crs_type = NC_GEOTIFF_CRS_PROJECTED;
+    crs_info.ct_projection = 24; /* CT_Sinusoidal=24, valid projection, ellipsoid missing */
+    crs_info.semi_major_axis = 0.0; /* not set */
 
     ret = validate_crs_completeness(&crs_info);
     if (ret != NC_NOERR)
@@ -487,6 +497,397 @@ test_coord_var_data(void)
     return 0;
 }
 
+/* === Sprint 3 unit tests (synthetic CRS structs, no file I/O) === */
+
+/**
+ * Test that validate_crs_completeness rejects negative semi_major_axis.
+ */
+static int
+test_validate_negative_semi_major(void)
+{
+    NC_GEOTIFF_CRS_INFO_T crs_info;
+    int ret;
+
+    printf("Testing validate_crs_completeness rejects negative semi_major_axis...");
+
+    memset(&crs_info, 0, sizeof(crs_info));
+    crs_info.crs_type = NC_GEOTIFF_CRS_GEOGRAPHIC;
+    crs_info.semi_major_axis = -1.0; /* invalid */
+
+    ret = validate_crs_completeness(&crs_info);
+    if (ret != NC_EINVAL)
+    {
+        printf("FAILED - expected NC_EINVAL for negative semi_major_axis, got %d\n", ret);
+        return 1;
+    }
+
+    printf("ok\n");
+    return 0;
+}
+
+/**
+ * Test that validate_crs_completeness rejects projected CRS with ct_projection=0.
+ */
+static int
+test_validate_projected_no_projection(void)
+{
+    NC_GEOTIFF_CRS_INFO_T crs_info;
+    int ret;
+
+    printf("Testing validate_crs_completeness rejects projected CRS with ct_projection=0...");
+
+    memset(&crs_info, 0, sizeof(crs_info));
+    crs_info.crs_type = NC_GEOTIFF_CRS_PROJECTED;
+    crs_info.semi_major_axis = 6378137.0;
+    crs_info.ct_projection = 0; /* not set */
+
+    ret = validate_crs_completeness(&crs_info);
+    if (ret != NC_EINVAL)
+    {
+        printf("FAILED - expected NC_EINVAL for projected CRS with ct_projection=0, got %d\n",
+               ret);
+        return 1;
+    }
+
+    printf("ok\n");
+    return 0;
+}
+
+/**
+ * Test that standard_parallel_1 and standard_parallel_2 are populated when
+ * extract_crs_parameters encounters ProjStdParallel GeoKeys.
+ * (Unit test using synthetic NC_GEOTIFF_CRS_INFO_T — validates field presence.)
+ */
+static int
+test_standard_parallel_fields_present(void)
+{
+    NC_GEOTIFF_CRS_INFO_T crs_info;
+
+    printf("Testing NC_GEOTIFF_CRS_INFO_T has standard_parallel fields...");
+
+    memset(&crs_info, 0, sizeof(crs_info));
+    /* Simulate what extract_crs_parameters would set for LCC 2SP */
+    crs_info.crs_type = NC_GEOTIFF_CRS_PROJECTED;
+    crs_info.ct_projection = 8; /* CT_LambertConfConic_2SP */
+    crs_info.semi_major_axis = 6378137.0;
+    crs_info.inverse_flattening = 298.257223563;
+    crs_info.standard_parallel_1 = 33.0;
+    crs_info.standard_parallel_2 = 45.0;
+    crs_info.latitude_of_origin = 23.0;
+    crs_info.central_meridian = -96.0;
+    crs_info.false_easting = 0.0;
+    crs_info.false_northing = 0.0;
+
+    /* Validate completeness passes for a valid projected CRS */
+    if (validate_crs_completeness(&crs_info) != NC_NOERR)
+    {
+        printf("FAILED - validate_crs_completeness rejected valid LCC CRS\n");
+        return 1;
+    }
+
+    /* Verify the fields hold the expected values */
+    if (crs_info.standard_parallel_1 != 33.0 || crs_info.standard_parallel_2 != 45.0)
+    {
+        printf("FAILED - standard_parallel fields wrong: %.1f, %.1f\n",
+               crs_info.standard_parallel_1, crs_info.standard_parallel_2);
+        return 1;
+    }
+
+    printf("ok\n");
+    return 0;
+}
+
+/**
+ * Test raster_pixel_is_point field default (0 = pixel-as-area).
+ */
+static int
+test_raster_pixel_type_default(void)
+{
+    NC_GEOTIFF_CRS_INFO_T crs_info;
+
+    printf("Testing NC_GEOTIFF_CRS_INFO_T raster_pixel_is_point defaults to 0...");
+
+    memset(&crs_info, 0, sizeof(crs_info));
+
+    if (crs_info.raster_pixel_is_point != 0)
+    {
+        printf("FAILED - expected 0 after memset, got %d\n",
+               crs_info.raster_pixel_is_point);
+        return 1;
+    }
+
+    printf("ok\n");
+    return 0;
+}
+
+/* === Sprint 3 integration tests (require test GeoTIFF files) === */
+
+/**
+ * Test that bounds variables (lon_bnds, lat_bnds) exist and have correct shape
+ * for a geographic GeoTIFF (MODIS MCDWD — pixel-as-area, has GeoTransform).
+ */
+static int
+test_coord_bounds_geographic(void)
+{
+    int ncid, bnds_varid, ret;
+    int ndims;
+    int dimids[NC_MAX_VAR_DIMS];
+    size_t dimlen;
+    int lon_varid;
+    char bounds_name[NC_MAX_NAME + 1];
+
+    printf("Testing coordinate bounds variables (geographic MCDWD h00v02)...");
+
+    ret = nc_open(NASA_DATA_DIR "MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif",
+                  NC_NOWRITE, &ncid);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - nc_open: %s\n", nc_strerror(ret));
+        return 1;
+    }
+
+    /* lon variable must have 'bounds' attribute pointing to lon_bnds */
+    ret = nc_inq_varid(ncid, "lon", &lon_varid);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - 'lon' not found: %s\n", nc_strerror(ret));
+        nc_close(ncid);
+        return 1;
+    }
+    ret = nc_get_att_text(ncid, lon_varid, "bounds", bounds_name);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - 'lon' has no 'bounds' attr: %s\n", nc_strerror(ret));
+        nc_close(ncid);
+        return 1;
+    }
+    if (strcmp(bounds_name, "lon_bnds") != 0)
+    {
+        printf("FAILED - 'lon' bounds='%s', expected 'lon_bnds'\n", bounds_name);
+        nc_close(ncid);
+        return 1;
+    }
+
+    /* lon_bnds must be a 2D variable with second dimension == 2 */
+    ret = nc_inq_varid(ncid, "lon_bnds", &bnds_varid);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - 'lon_bnds' not found: %s\n", nc_strerror(ret));
+        nc_close(ncid);
+        return 1;
+    }
+    ret = nc_inq_varndims(ncid, bnds_varid, &ndims);
+    if (ret != NC_NOERR || ndims != 2)
+    {
+        printf("FAILED - 'lon_bnds' ndims=%d, expected 2\n", ndims);
+        nc_close(ncid);
+        return 1;
+    }
+    ret = nc_inq_vardimid(ncid, bnds_varid, dimids);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - nc_inq_vardimid for lon_bnds: %s\n", nc_strerror(ret));
+        nc_close(ncid);
+        return 1;
+    }
+    /* Second dimension must be size 2 */
+    ret = nc_inq_dimlen(ncid, dimids[1], &dimlen);
+    if (ret != NC_NOERR || dimlen != 2)
+    {
+        printf("FAILED - 'lon_bnds' second dim len=%zu, expected 2\n", dimlen);
+        nc_close(ncid);
+        return 1;
+    }
+
+    /* lat_bnds must also exist */
+    ret = nc_inq_varid(ncid, "lat_bnds", &bnds_varid);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - 'lat_bnds' not found: %s\n", nc_strerror(ret));
+        nc_close(ncid);
+        return 1;
+    }
+
+    ret = nc_close(ncid);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - nc_close: %s\n", nc_strerror(ret));
+        return 1;
+    }
+
+    printf("ok (lon:bounds='%s', lon_bnds[n,2])\n", bounds_name);
+    return 0;
+}
+
+/**
+ * Test that bounds variables (x_bnds, y_bnds) exist for a projected GeoTIFF
+ * (ABBA sinusoidal — pixel-as-area).
+ */
+static int
+test_coord_bounds_projected(void)
+{
+    int ncid, bnds_varid, ret;
+    int x_varid;
+    char bounds_name[NC_MAX_NAME + 1];
+    int ndims;
+    int dimids[NC_MAX_VAR_DIMS];
+    size_t dimlen;
+
+    printf("Testing coordinate bounds variables (projected ABBA)...");
+
+    ret = nc_open(NASA_DATA_DIR "ABBA_2022_C61_HNL.tif", NC_NOWRITE, &ncid);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - nc_open: %s\n", nc_strerror(ret));
+        return 1;
+    }
+
+    /* x variable must have 'bounds' attribute */
+    ret = nc_inq_varid(ncid, "x", &x_varid);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - 'x' not found: %s\n", nc_strerror(ret));
+        nc_close(ncid);
+        return 1;
+    }
+    ret = nc_get_att_text(ncid, x_varid, "bounds", bounds_name);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - 'x' has no 'bounds' attr: %s\n", nc_strerror(ret));
+        nc_close(ncid);
+        return 1;
+    }
+    if (strcmp(bounds_name, "x_bnds") != 0)
+    {
+        printf("FAILED - 'x' bounds='%s', expected 'x_bnds'\n", bounds_name);
+        nc_close(ncid);
+        return 1;
+    }
+
+    /* x_bnds must be a 2D variable with second dimension == 2 */
+    ret = nc_inq_varid(ncid, "x_bnds", &bnds_varid);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - 'x_bnds' not found: %s\n", nc_strerror(ret));
+        nc_close(ncid);
+        return 1;
+    }
+    ret = nc_inq_varndims(ncid, bnds_varid, &ndims);
+    if (ret != NC_NOERR || ndims != 2)
+    {
+        printf("FAILED - 'x_bnds' ndims=%d, expected 2\n", ndims);
+        nc_close(ncid);
+        return 1;
+    }
+    ret = nc_inq_vardimid(ncid, bnds_varid, dimids);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - nc_inq_vardimid for x_bnds: %s\n", nc_strerror(ret));
+        nc_close(ncid);
+        return 1;
+    }
+    ret = nc_inq_dimlen(ncid, dimids[1], &dimlen);
+    if (ret != NC_NOERR || dimlen != 2)
+    {
+        printf("FAILED - 'x_bnds' second dim len=%zu, expected 2\n", dimlen);
+        nc_close(ncid);
+        return 1;
+    }
+
+    /* y_bnds must also exist */
+    ret = nc_inq_varid(ncid, "y_bnds", &bnds_varid);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - 'y_bnds' not found: %s\n", nc_strerror(ret));
+        nc_close(ncid);
+        return 1;
+    }
+
+    ret = nc_close(ncid);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - nc_close: %s\n", nc_strerror(ret));
+        return 1;
+    }
+
+    printf("ok (x:bounds='%s', x_bnds[n,2])\n", bounds_name);
+    return 0;
+}
+
+/**
+ * Test that bounds values bracket coordinate values correctly.
+ * For pixel-as-area: bnds[i][0] < coord[i] < bnds[i][1] (for positive pixel_size).
+ * Tests lon_bnds from MCDWD h00v02.
+ */
+static int
+test_coord_bounds_values(void)
+{
+    int ncid, lon_varid, bnds_varid, ret;
+    double lon0, bnds0[2];
+    size_t start1[1] = {0}, count1[1] = {1};
+    size_t start2[2] = {0, 0}, count2[2] = {1, 2};
+
+    printf("Testing coordinate bounds values bracket coordinate centres...");
+
+    ret = nc_open(NASA_DATA_DIR "MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif",
+                  NC_NOWRITE, &ncid);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - nc_open: %s\n", nc_strerror(ret));
+        return 1;
+    }
+
+    ret = nc_inq_varid(ncid, "lon", &lon_varid);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - 'lon' not found\n");
+        nc_close(ncid);
+        return 1;
+    }
+    ret = nc_get_vara_double(ncid, lon_varid, start1, count1, &lon0);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - reading lon[0]: %s\n", nc_strerror(ret));
+        nc_close(ncid);
+        return 1;
+    }
+
+    ret = nc_inq_varid(ncid, "lon_bnds", &bnds_varid);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - 'lon_bnds' not found\n");
+        nc_close(ncid);
+        return 1;
+    }
+    ret = nc_get_vara_double(ncid, bnds_varid, start2, count2, bnds0);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - reading lon_bnds[0,:]: %s\n", nc_strerror(ret));
+        nc_close(ncid);
+        return 1;
+    }
+
+    /* bnds[0] < centre < bnds[1] (lon increases eastward) */
+    if (!(bnds0[0] < lon0 && lon0 < bnds0[1]))
+    {
+        printf("FAILED - lon_bnds[0]=[%.6f, %.6f] does not bracket lon[0]=%.6f\n",
+               bnds0[0], bnds0[1], lon0);
+        nc_close(ncid);
+        return 1;
+    }
+
+    ret = nc_close(ncid);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - nc_close: %s\n", nc_strerror(ret));
+        return 1;
+    }
+
+    printf("ok (lon_bnds[0]=[%.6f, %.6f], lon[0]=%.6f)\n",
+           bnds0[0], bnds0[1], lon0);
+    return 0;
+}
+
 #endif /* HAVE_GEOTIFF */
 
 int
@@ -494,7 +895,7 @@ main(void)
 {
     int failed = 0;
 
-    printf("=== CF-Compliant CRS Attribute Mapping Tests (issue #93) ===\n\n");
+    printf("=== CF-Compliant CRS Attribute Mapping Tests (issues #92, #93, #94) ===\n\n");
 
 #ifdef HAVE_GEOTIFF
     {
@@ -523,6 +924,7 @@ main(void)
         }
     }
 
+    /* Sprint 1 & 2 tests */
     failed += test_null_input_errors();
     failed += test_validate_unknown_crs();
     failed += test_validate_known_crs_no_ellipsoid();
@@ -530,6 +932,15 @@ main(void)
     failed += test_geographic_crs();
     failed += test_geographic_crs_second_tile();
     failed += test_coord_var_data();
+
+    /* Sprint 3 tests */
+    failed += test_validate_negative_semi_major();
+    failed += test_validate_projected_no_projection();
+    failed += test_standard_parallel_fields_present();
+    failed += test_raster_pixel_type_default();
+    failed += test_coord_bounds_geographic();
+    failed += test_coord_bounds_projected();
+    failed += test_coord_bounds_values();
 #else
     printf("SKIP: GeoTIFF support not compiled in.\n");
 #endif

@@ -55,6 +55,7 @@ typedef struct nc_geotiff_crs_info
     int crs_type; /* geographic or projected */
     int epsg_code;
     int ct_projection; /* GTIFDefn.CTProjection value (projected CRS only) */
+    int raster_pixel_is_point; /* 1 if GTRasterTypeGeoKey=RasterPixelIsPoint, 0 if area */
     char crs_name[NC_MAX_NAME + 1];
     double semi_major_axis;
     double inverse_flattening;
@@ -63,7 +64,8 @@ typedef struct nc_geotiff_crs_info
     double scale_factor;
     double central_meridian;
     double latitude_of_origin;
-    /* Additional projection parameters as needed */
+    double standard_parallel_1; /* first standard parallel (LCC, Albers) */
+    double standard_parallel_2; /* second standard parallel (LCC 2SP, Albers) */
 } NC_GEOTIFF_CRS_INFO_T;
 
 typedef struct NC_GEOTIFF_FILE_INFO
