@@ -90,7 +90,8 @@ TESTS = tst_geotiff_handle tst_geotiff_metadata tst_phase2_acceptance \
 # NEP_GEOTIFF_LIB_PATH: path for self-loading tests.
 # NCRCENV_RC: point at empty file to suppress ~/.ncrc dlopen loading so tests
 #             that call nc_def_user_format() use the in-process handler only.
-TESTS_ENVIRONMENT = NEP_GEOTIFF_LIB_PATH=$(abs_top_builddir)/src/.libs/libncgeotiff.so \
+TESTS_ENVIRONMENT = LD_LIBRARY_PATH=@MY_LD_LIBRARY_PATH@:$$LD_LIBRARY_PATH \
+	NEP_GEOTIFF_LIB_PATH=$(abs_top_builddir)/src/.libs/libncgeotiff.so \
 	NCRCENV_RC=$(abs_builddir)/empty.ncrc
 
 endif # HAVE_GEOTIFF

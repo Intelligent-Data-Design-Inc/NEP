@@ -648,7 +648,6 @@ NC_GEOTIFF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
         /* Check version compatibility (should be version 1) */
         if (versions[0] > 1)
         {
-            /* Future version - may not be compatible */
             GTIFFree(gtif);
             geotiff_info->gtif_handle = NULL;
         }
@@ -1025,7 +1024,7 @@ NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_
  * Convenience wrapper used by create_cf_crs_variable.
  */
 static int
-add_char_att(NClist *att_list, const char *name, const char *value)
+add_char_att(NCindex *att_list, const char *name, const char *value)
 {
     NC_ATT_INFO_T *att = NULL;
     void *data;
@@ -1054,7 +1053,7 @@ add_char_att(NClist *att_list, const char *name, const char *value)
  * Convenience wrapper used by create_cf_crs_variable.
  */
 static int
-add_double_att(NClist *att_list, const char *name, double value)
+add_double_att(NCindex *att_list, const char *name, double value)
 {
     NC_ATT_INFO_T *att = NULL;
     double *data;
@@ -1083,7 +1082,7 @@ add_double_att(NClist *att_list, const char *name, double value)
  * such as standard_parallel (which may hold 1 or 2 values).
  */
 static int
-add_double_array_att(NClist *att_list, const char *name, const double *values, size_t count)
+add_double_array_att(NCindex *att_list, const char *name, const double *values, size_t count)
 {
     NC_ATT_INFO_T *att = NULL;
     double *data;
@@ -2477,6 +2476,24 @@ NC_GEOTIFF_get_vara(int ncid, int varid, const size_t *startp,
     /* Support both 2D (single-band) and 3D (multi-band) variables */
     if (var->ndims == 2)
     {
+        /* 2D bounds variable (e.g. lon_bnds [n, 2]): serve from cached coord_data */
+        NC_VAR_GEOTIFF_INFO_T *fvi2 = (NC_VAR_GEOTIFF_INFO_T *)var->format_var_info;
+        if (fvi2 && fvi2->coord_data)
+        {
+            size_t n = var->dim[0]->len;
+            size_t m = var->dim[1]->len; /* always 2 for bounds */
+            size_t start0 = startp[0], count0 = countp[0];
+            size_t start1 = startp[1], count1 = countp[1];
+            size_t i, j;
+            double *out = (double *)value;
+            if (start0 + count0 > n || start1 + count1 > m)
+                return NC_EEDGE;
+            for (i = 0; i < count0; i++)
+                for (j = 0; j < count1; j++)
+                    out[i * count1 + j] =
+                        fvi2->coord_data[(start0 + i) * m + (start1 + j)];
+            return NC_NOERR;
+        }
         /* Single-band raster */
         return read_single_band_hyperslab(h5, var, startp, countp, value, type_size);
     }
