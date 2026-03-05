@@ -70,6 +70,8 @@ check-local:
 	fi
 endif
 
+TESTS_ENVIRONMENT = LD_LIBRARY_PATH=@MY_LD_LIBRARY_PATH@:$$LD_LIBRARY_PATH
+
 # Run all the appropriate tests in this script.
 TESTS += run_tests.sh
 
