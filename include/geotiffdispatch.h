@@ -15,7 +15,7 @@
 #include "config.h"
 #include "ncdispatch.h"
 #include "nc4internal.h"
-#include "NEP.h"
+#include "nep.h"
 
 #ifdef HAVE_GEOTIFF
 #include <geotiff/geotiff.h>
