@@ -94,9 +94,9 @@ main(int argc, char **argv)
     if ((ret = nc_inq(ncid, &ndims, &nvars, NULL, NULL)))
         ERR(ret);
     
-    if (ndims != 2 || nvars != 4)
+    if (ndims != 3 || nvars != 6)
     {
-        printf("FAILED: Expected 2 dims and 4 vars (data+crs+x+y), got %d dims and %d vars\n",
+        printf("FAILED: Expected 3 dims and 6 vars (data+crs+x+y+x_bnds+y_bnds), got %d dims and %d vars\n",
                ndims, nvars);
         return 1;
     }

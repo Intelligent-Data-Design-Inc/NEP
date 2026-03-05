@@ -30,7 +30,8 @@ tst_cdf_ncrc_autoload_LDADD = $(top_builddir)/src/libnccdf.la $(NETCDF_LIBS) $(H
 TESTS = tst_cdf_basic tst_cdf_self_load tst_cdf_ncrc_autoload
 
 # Set environment variable for self-loading tests to find library
-TESTS_ENVIRONMENT = NEP_CDF_LIB_PATH=$(abs_top_builddir)/src/.libs/libnccdf.so
+TESTS_ENVIRONMENT = LD_LIBRARY_PATH=@MY_LD_LIBRARY_PATH@:$$LD_LIBRARY_PATH \
+	NEP_CDF_LIB_PATH=$(abs_top_builddir)/src/.libs/libnccdf.so
 
 # Clean up test outputs (test creates and removes its own file)
 CLEANFILES = tst_cdf_simple.cdf

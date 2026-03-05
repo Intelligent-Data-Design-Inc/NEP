@@ -86,6 +86,13 @@ static int create_cf_crs_variable(NC_GRP_INFO_T *grp, NC_VAR_INFO_T *data_var,
                                   NC_DIM_INFO_T *dim_x, NC_DIM_INFO_T *dim_y,
                                   TIFF *tiff, const NC_GEOTIFF_CRS_INFO_T *crs_info,
                                   int is_geographic);
+static int create_coord_var(NC_GRP_INFO_T *grp, const char *name, NC_DIM_INFO_T *dim,
+                            const char *standard_name, const char *long_name,
+                            const char *units, const char *axis,
+                            double origin, double pixel_size, int pixel_is_point);
+static int create_coord_bounds_var(NC_GRP_INFO_T *grp, const char *bounds_name,
+                                   NC_DIM_INFO_T *dim, NC_DIM_INFO_T *dim_bnds,
+                                   double origin, double pixel_size);
 
 /**
  * @internal Map a libgeotiff CTProjection code to a CF-1.8 grid_mapping_name string.
@@ -641,7 +648,6 @@ NC_GEOTIFF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
         /* Check version compatibility (should be version 1) */
         if (versions[0] > 1)
         {
-            /* Future version - may not be compatible */
             GTIFFree(gtif);
             geotiff_info->gtif_handle = NULL;
         }
@@ -1018,7 +1024,7 @@ NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_
  * Convenience wrapper used by create_cf_crs_variable.
  */
 static int
-add_char_att(NClist *att_list, const char *name, const char *value)
+add_char_att(NCindex *att_list, const char *name, const char *value)
 {
     NC_ATT_INFO_T *att = NULL;
     void *data;
@@ -1047,7 +1053,7 @@ add_char_att(NClist *att_list, const char *name, const char *value)
  * Convenience wrapper used by create_cf_crs_variable.
  */
 static int
-add_double_att(NClist *att_list, const char *name, double value)
+add_double_att(NCindex *att_list, const char *name, double value)
 {
     NC_ATT_INFO_T *att = NULL;
     double *data;
@@ -1070,6 +1076,93 @@ add_double_att(NClist *att_list, const char *name, double value)
 }
 
 /**
+ * @internal Add a multi-value NC_DOUBLE attribute to a variable's attribute list.
+ *
+ * Convenience wrapper used by create_cf_crs_variable for array-valued attributes
+ * such as standard_parallel (which may hold 1 or 2 values).
+ */
+static int
+add_double_array_att(NCindex *att_list, const char *name, const double *values, size_t count)
+{
+    NC_ATT_INFO_T *att = NULL;
+    double *data;
+    int retval;
+
+    data = malloc(count * sizeof(double));
+    if (!data)
+        return NC_ENOMEM;
+    memcpy(data, values, count * sizeof(double));
+
+    if ((retval = nc4_att_list_add(att_list, name, &att)) != NC_NOERR)
+    {
+        free(data);
+        return retval;
+    }
+    att->data = data;
+    att->len = count;
+    att->nc_typeid = NC_DOUBLE;
+    return NC_NOERR;
+}
+
+/**
+ * @internal Create a 2D bounds variable ([n, 2]) for a coordinate variable.
+ *
+ * Each row i holds the lower and upper cell edges for pixel i:
+ *   bounds[i][0] = origin + i * pixel_size
+ *   bounds[i][1] = origin + (i+1) * pixel_size
+ *
+ * @param grp Parent group.
+ * @param bounds_name Variable name (e.g. "lon_bnds").
+ * @param dim Primary coordinate dimension (length n).
+ * @param dim_bnds The 2-element "bnds" dimension.
+ * @param origin Top-left corner of pixel 0 in world coordinates.
+ * @param pixel_size Signed pixel size (negative for top-down Y).
+ * @return NC_NOERR on success.
+ */
+static int
+create_coord_bounds_var(NC_GRP_INFO_T *grp, const char *bounds_name,
+                        NC_DIM_INFO_T *dim, NC_DIM_INFO_T *dim_bnds,
+                        double origin, double pixel_size)
+{
+    NC_VAR_INFO_T *bnds_var = NULL;
+    NC_VAR_GEOTIFF_INFO_T *fvi = NULL;
+    double *data = NULL;
+    size_t i, n = dim->len;
+    int retval;
+
+    fvi = calloc(1, sizeof(NC_VAR_GEOTIFF_INFO_T));
+    if (!fvi)
+        return NC_ENOMEM;
+
+    if ((retval = nc4_var_list_add_full(grp, bounds_name, 2, NC_DOUBLE,
+                                        NC_ENDIAN_NATIVE, sizeof(double), "double",
+                                        NULL, NC_TRUE, NULL, fvi, &bnds_var)))
+    {
+        free(fvi);
+        return retval;
+    }
+    bnds_var->dim[0] = dim;
+    bnds_var->dimids[0] = dim->hdr.id;
+    bnds_var->dim[1] = dim_bnds;
+    bnds_var->dimids[1] = dim_bnds->hdr.id;
+
+    /* Allocate flat [n * 2] array: bounds[i*2+0] = lower, bounds[i*2+1] = upper */
+    data = malloc(n * 2 * sizeof(double));
+    if (!data)
+        return NC_ENOMEM;
+    for (i = 0; i < n; i++)
+    {
+        data[i * 2 + 0] = origin + i * pixel_size;
+        data[i * 2 + 1] = origin + (i + 1) * pixel_size;
+    }
+
+    fvi->coord_data = data;
+    fvi->coord_len = n * 2;
+
+    return NC_NOERR;
+}
+
+/**
  * @internal Create a 1D coordinate variable (lat, lon, x, or y) with CF attributes
  * and pre-computed linear coordinate data from GeoTransform parameters.
  *
@@ -1080,15 +1173,16 @@ add_double_att(NClist *att_list, const char *name, double value)
  * @param long_name CF long_name value.
  * @param units CF units value.
  * @param axis CF axis value ("X" or "Y").
- * @param origin Origin coordinate value (pixel-centre of first pixel).
- * @param pixel_size Pixel size (positive for x, may be negative for y).
+ * @param origin Top-left corner of pixel 0 in world coordinates.
+ * @param pixel_size Signed pixel size (negative for top-down Y).
+ * @param pixel_is_point 1 if GTRasterTypeGeoKey=RasterPixelIsPoint, 0 for area.
  * @return NC_NOERR on success.
  */
 static int
 create_coord_var(NC_GRP_INFO_T *grp, const char *name, NC_DIM_INFO_T *dim,
                  const char *standard_name, const char *long_name,
                  const char *units, const char *axis,
-                 double origin, double pixel_size)
+                 double origin, double pixel_size, int pixel_is_point)
 {
     NC_VAR_INFO_T *coord_var = NULL;
     NC_VAR_GEOTIFF_INFO_T *fvi = NULL;
@@ -1110,12 +1204,22 @@ create_coord_var(NC_GRP_INFO_T *grp, const char *name, NC_DIM_INFO_T *dim,
     coord_var->dim[0] = dim;
     coord_var->dimids[0] = dim->hdr.id;
 
-    /* Compute coordinate values: pixel-centre convention */
+    /* Compute coordinate values.
+     * pixel-as-area (default): centre of pixel i = origin + (i + 0.5) * pixel_size
+     * pixel-as-point:          location of pixel i = origin + i * pixel_size */
     data = malloc(n * sizeof(double));
     if (!data)
         return NC_ENOMEM;
-    for (i = 0; i < n; i++)
-        data[i] = origin + (i + 0.5) * pixel_size;
+    if (pixel_is_point)
+    {
+        for (i = 0; i < n; i++)
+            data[i] = origin + i * pixel_size;
+    }
+    else
+    {
+        for (i = 0; i < n; i++)
+            data[i] = origin + (i + 0.5) * pixel_size;
+    }
 
     fvi->coord_data = data;
     fvi->coord_len = n;
@@ -1226,7 +1330,15 @@ create_cf_crs_variable(NC_GRP_INFO_T *grp, NC_VAR_INFO_T *data_var,
         }
         if (crs_info->scale_factor != 0.0)
         {
-            if ((retval = add_double_att(crs_var->att, "scale_factor_at_projection_origin",
+            /* CF-1.8: Transverse Mercator uses scale_factor_at_central_meridian;
+             * other projections (LCC 1SP, Mercator 1SP) use
+             * scale_factor_at_projection_origin. */
+            const char *sf_attr =
+                (crs_info->ct_projection == CT_TransverseMercator ||
+                 crs_info->ct_projection == CT_TransvMercator_SouthOriented)
+                ? "scale_factor_at_central_meridian"
+                : "scale_factor_at_projection_origin";
+            if ((retval = add_double_att(crs_var->att, sf_attr,
                                          crs_info->scale_factor)))
                 return retval;
         }
@@ -1241,6 +1353,25 @@ create_cf_crs_variable(NC_GRP_INFO_T *grp, NC_VAR_INFO_T *data_var,
             if ((retval = add_double_att(crs_var->att, "latitude_of_projection_origin",
                                          crs_info->latitude_of_origin)))
                 return retval;
+        }
+        /* standard_parallel: emit 2-element array for 2SP (LCC 2SP, Albers) when
+         * both parallels are non-zero; scalar when only one is present. */
+        if (crs_info->standard_parallel_1 != 0.0 || crs_info->standard_parallel_2 != 0.0)
+        {
+            if (crs_info->standard_parallel_2 != 0.0)
+            {
+                double sp[2] = { crs_info->standard_parallel_1,
+                                 crs_info->standard_parallel_2 };
+                if ((retval = add_double_array_att(crs_var->att, "standard_parallel",
+                                                   sp, 2)))
+                    return retval;
+            }
+            else
+            {
+                if ((retval = add_double_att(crs_var->att, "standard_parallel",
+                                             crs_info->standard_parallel_1)))
+                    return retval;
+            }
         }
     }
 
@@ -1278,19 +1409,54 @@ create_cf_crs_variable(NC_GRP_INFO_T *grp, NC_VAR_INFO_T *data_var,
 
         if (has_geotransform)
         {
+            int pixel_is_point = crs_info->raster_pixel_is_point;
+            NC_DIM_INFO_T *dim_bnds = NULL;
+
+            /* Create the shared 2-element "bnds" dimension for bounds variables
+             * (pixel-as-area only; pixel-as-point has no cell edges). */
+            if (!pixel_is_point)
+            {
+                if ((retval = nc4_dim_list_add(grp, "bnds", 2, -1, &dim_bnds)))
+                    return retval;
+            }
+
             if (is_geographic)
             {
                 /* Geographic CRS: lon (x) and lat (y) */
                 if ((retval = create_coord_var(grp, "lon", dim_x,
                                                "longitude", "longitude",
                                                "degrees_east", "X",
-                                               origin_x, pixel_x)))
+                                               origin_x, pixel_x, pixel_is_point)))
                     return retval;
                 if ((retval = create_coord_var(grp, "lat", dim_y,
                                                "latitude", "latitude",
                                                "degrees_north", "Y",
-                                               origin_y, pixel_y)))
+                                               origin_y, pixel_y, pixel_is_point)))
                     return retval;
+
+                /* Bounds variables for pixel-as-area */
+                if (!pixel_is_point && dim_bnds)
+                {
+                    NC_VAR_INFO_T *lon_var, *lat_var;
+                    lon_var = (NC_VAR_INFO_T *)ncindexlookup(grp->vars, "lon");
+                    if (lon_var)
+                    {
+                        if ((retval = create_coord_bounds_var(grp, "lon_bnds", dim_x,
+                                                              dim_bnds, origin_x, pixel_x)))
+                            return retval;
+                        if ((retval = add_char_att(lon_var->att, "bounds", "lon_bnds")))
+                            return retval;
+                    }
+                    lat_var = (NC_VAR_INFO_T *)ncindexlookup(grp->vars, "lat");
+                    if (lat_var)
+                    {
+                        if ((retval = create_coord_bounds_var(grp, "lat_bnds", dim_y,
+                                                              dim_bnds, origin_y, pixel_y)))
+                            return retval;
+                        if ((retval = add_char_att(lat_var->att, "bounds", "lat_bnds")))
+                            return retval;
+                    }
+                }
 
                 /* Attach to data variable */
                 if (data_var)
@@ -1308,14 +1474,38 @@ create_cf_crs_variable(NC_GRP_INFO_T *grp, NC_VAR_INFO_T *data_var,
                                                "projection_x_coordinate",
                                                "x coordinate of projection",
                                                "m", "X",
-                                               origin_x, pixel_x)))
+                                               origin_x, pixel_x, pixel_is_point)))
                     return retval;
                 if ((retval = create_coord_var(grp, "y", dim_y,
                                                "projection_y_coordinate",
                                                "y coordinate of projection",
                                                "m", "Y",
-                                               origin_y, pixel_y)))
+                                               origin_y, pixel_y, pixel_is_point)))
                     return retval;
+
+                /* Bounds variables for pixel-as-area */
+                if (!pixel_is_point && dim_bnds)
+                {
+                    NC_VAR_INFO_T *x_var, *y_var;
+                    x_var = (NC_VAR_INFO_T *)ncindexlookup(grp->vars, "x");
+                    if (x_var)
+                    {
+                        if ((retval = create_coord_bounds_var(grp, "x_bnds", dim_x,
+                                                              dim_bnds, origin_x, pixel_x)))
+                            return retval;
+                        if ((retval = add_char_att(x_var->att, "bounds", "x_bnds")))
+                            return retval;
+                    }
+                    y_var = (NC_VAR_INFO_T *)ncindexlookup(grp->vars, "y");
+                    if (y_var)
+                    {
+                        if ((retval = create_coord_bounds_var(grp, "y_bnds", dim_y,
+                                                              dim_bnds, origin_y, pixel_y)))
+                            return retval;
+                        if ((retval = add_char_att(y_var->att, "bounds", "y_bnds")))
+                            return retval;
+                    }
+                }
 
                 /* Attach to data variable */
                 if (data_var)
@@ -1397,6 +1587,15 @@ extract_crs_parameters(GTIF *gtif, NC_GEOTIFF_CRS_INFO_T *crs_info)
     if (defn.SemiMajor != 0.0 && defn.SemiMinor != 0.0 && defn.SemiMajor != defn.SemiMinor)
         crs_info->inverse_flattening = defn.SemiMajor / (defn.SemiMajor - defn.SemiMinor);
     
+    /* Determine pixel raster type (point vs area) */
+    {
+        short raster_type = 0;
+        if (GTIFKeyGet(gtif, GTRasterTypeGeoKey, &raster_type, 0, 1) == 1)
+            crs_info->raster_pixel_is_point = (raster_type == RasterPixelIsPoint) ? 1 : 0;
+        else
+            crs_info->raster_pixel_is_point = 0; /* default: pixel-as-area */
+    }
+
     /* Extract projection parameters for projected CRS */
     if (crs_info->crs_type == NC_GEOTIFF_CRS_PROJECTED)
     {
@@ -1412,7 +1611,7 @@ extract_crs_parameters(GTIF *gtif, NC_GEOTIFF_CRS_INFO_T *crs_info)
                 case ProjFalseNorthingGeoKey:
                     crs_info->false_northing = defn.ProjParm[i];
                     break;
-                case ProjScaleAtOriginGeoKey:
+                case ProjScaleAtNatOriginGeoKey: /* alias: ProjScaleAtOriginGeoKey */
                     crs_info->scale_factor = defn.ProjParm[i];
                     break;
                 case ProjNatOriginLongGeoKey:
@@ -1420,6 +1619,12 @@ extract_crs_parameters(GTIF *gtif, NC_GEOTIFF_CRS_INFO_T *crs_info)
                     break;
                 case ProjNatOriginLatGeoKey:
                     crs_info->latitude_of_origin = defn.ProjParm[i];
+                    break;
+                case ProjStdParallel1GeoKey:
+                    crs_info->standard_parallel_1 = defn.ProjParm[i];
+                    break;
+                case ProjStdParallel2GeoKey:
+                    crs_info->standard_parallel_2 = defn.ProjParm[i];
                     break;
                 default:
                     /* Other projection parameters not used in this implementation */
@@ -1615,11 +1820,26 @@ validate_crs_completeness(const NC_GEOTIFF_CRS_INFO_T *crs_info)
     /* Unknown CRS type is considered incomplete but not an error */
     if (crs_info->crs_type == NC_GEOTIFF_CRS_UNKNOWN)
         return NC_NOERR;
-    
-    /* Foundation implementation: accept any CRS with a known type.
-       GTIFGetDefn() may populate Model without ellipsoid parameters for
-       many real-world GeoTIFFs; blocking attribute writing on missing
-       ellipsoid data is too restrictive at this stage. */
+
+    /* Geographic CRS: require a positive semi-major axis when one is present.
+     * A zero value means GTIFGetDefn() returned no ellipsoid info, which is
+     * acceptable for known EPSG codes that embed ellipsoid parameters
+     * implicitly. We do not error in that case. */
+    if (crs_info->crs_type == NC_GEOTIFF_CRS_GEOGRAPHIC)
+    {
+        if (crs_info->semi_major_axis < 0.0)
+            return NC_EINVAL;
+    }
+
+    /* Projected CRS: require a known projection type. */
+    if (crs_info->crs_type == NC_GEOTIFF_CRS_PROJECTED)
+    {
+        if (crs_info->semi_major_axis < 0.0)
+            return NC_EINVAL;
+        if (crs_info->ct_projection == 0)
+            return NC_EINVAL;
+    }
+
     return NC_NOERR;
 }
 
@@ -2256,6 +2476,24 @@ NC_GEOTIFF_get_vara(int ncid, int varid, const size_t *startp,
     /* Support both 2D (single-band) and 3D (multi-band) variables */
     if (var->ndims == 2)
     {
+        /* 2D bounds variable (e.g. lon_bnds [n, 2]): serve from cached coord_data */
+        NC_VAR_GEOTIFF_INFO_T *fvi2 = (NC_VAR_GEOTIFF_INFO_T *)var->format_var_info;
+        if (fvi2 && fvi2->coord_data)
+        {
+            size_t n = var->dim[0]->len;
+            size_t m = var->dim[1]->len; /* always 2 for bounds */
+            size_t start0 = startp[0], count0 = countp[0];
+            size_t start1 = startp[1], count1 = countp[1];
+            size_t i, j;
+            double *out = (double *)value;
+            if (start0 + count0 > n || start1 + count1 > m)
+                return NC_EEDGE;
+            for (i = 0; i < count0; i++)
+                for (j = 0; j < count1; j++)
+                    out[i * count1 + j] =
+                        fvi2->coord_data[(start0 + i) * m + (start1 + j)];
+            return NC_NOERR;
+        }
         /* Single-band raster */
         return read_single_band_hyperslab(h5, var, startp, countp, value, type_size);
     }

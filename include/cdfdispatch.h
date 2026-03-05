@@ -13,7 +13,7 @@
 
 #include "config.h"
 #include "ncdispatch.h"
-#include "NEP.h"
+#include "nep.h"
 
 /** CDF format uses UDF2 slot for dispatch table model field (see NEP.h for slot allocation) */
 #ifdef NC_FORMATX_UDF2
