@@ -159,6 +159,10 @@ int main()
    if ((retval = nc_get_att_text(ncid, NC_GLOBAL, "description", desc_in)))
       ERR(retval);
    desc_in[desc_len] = '\0';
+   if (strcmp(desc_in, "a quickstart example") != 0) {
+      printf("Error: expected description 'a quickstart example', got '%s'\n", desc_in);
+      return 1;
+   }
    printf("Verified: global attribute 'description' = '%s'\n", desc_in);
    
    /* Verify variable attribute */
@@ -169,6 +173,10 @@ int main()
    if ((retval = nc_get_att_text(ncid, data_varid, "units", units_in)))
       ERR(retval);
    units_in[units_len] = '\0';
+   if (strcmp(units_in, "m/s") != 0) {
+      printf("Error: expected units 'm/s', got '%s'\n", units_in);
+      return 1;
+   }
    printf("Verified: variable attribute 'units' = '%s'\n", units_in);
    
    /* Read the data back */
@@ -176,20 +184,14 @@ int main()
       ERR(retval);
    
    /* Verify data correctness */
-   int errors = 0;
    for (int i = 0; i < 2; i++) {
       for (int j = 0; j < 3; j++) {
          if (data_in[i][j] != data_out[i][j]) {
             printf("Error: data[%d][%d] = %d, expected %d\n", 
                    i, j, data_in[i][j], data_out[i][j]);
-            errors++;
+            return 1;
          }
       }
-   }
-   
-   if (errors > 0) {
-      printf("*** FAILED: %d data validation errors\n", errors);
-      return 1;
    }
    
    printf("Verified: all 6 data values correct (1, 2, 3, 4, 5, 6)\n");
