@@ -463,10 +463,34 @@ AC_SUBST([MY_LZ4_PLUGIN_PATH])
 
 AC_ARG_WITH([ncrc-dir],
     [AS_HELP_STRING([--with-ncrc-dir=DIR],
-        [install .ncrc to DIR (default: ${datarootdir}/nep)])],
+        [install .ncrc to DIR (default: ${datarootdir})])],
     [NEP_NCRC_DIR="$withval"],
-    [NEP_NCRC_DIR="\${datarootdir}/nep"])
+    [NEP_NCRC_DIR="\${datarootdir}"])
 AC_SUBST([NEP_NCRC_DIR])
+
+if test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes"; then
+    # Expand libdir now so AC_CONFIG_COMMANDS receives a concrete path
+    nep_expanded_prefix=$prefix
+    test "x$nep_expanded_prefix" = xNONE && nep_expanded_prefix=$ac_default_prefix
+    nep_expanded_exec_prefix=$exec_prefix
+    test "x$nep_expanded_exec_prefix" = xNONE && nep_expanded_exec_prefix=$nep_expanded_prefix
+    nep_expanded_libdir=$nep_expanded_exec_prefix/lib
+    AC_CONFIG_COMMANDS([.ncrc],
+        [
+            cat "${srcdir}/.ncrc.in" > .ncrc
+            if test "x$nep_have_geotiff" = "xyes"; then
+                sed "s|@NEP_LIBDIR@|${nep_libdir}|g" "${srcdir}/.ncrc-geotiff.in" >> .ncrc
+            fi
+            if test "x$nep_have_cdf" = "xyes"; then
+                sed "s|@NEP_LIBDIR@|${nep_libdir}|g" "${srcdir}/.ncrc-cdf.in" >> .ncrc
+            fi
+        ],
+        [
+            nep_have_geotiff="$HAVE_GEOTIFF"
+            nep_have_cdf="$HAVE_CDF"
+            nep_libdir="$nep_expanded_libdir"
+        ])
+fi
 
 AC_CONFIG_FILES([test/run_tests.sh], [chmod ugo+x test/run_tests.sh])
 AC_CONFIG_FILES([ftest/run_tests.sh], [chmod ugo+x ftest/run_tests.sh])

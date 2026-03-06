@@ -41,28 +41,9 @@ EXTRA_DIST = autogen.sh .ncrc.in .ncrc-geotiff.in .ncrc-cdf.in
 
 if BUILD_NCRC
 # Install .ncrc to $(NEP_NCRC_DIR) (default: $(datarootdir)/nep)
-# .ncrc is assembled at build time from .ncrc.in plus enabled format fragments
+# .ncrc is assembled by configure (AC_CONFIG_COMMANDS) with the correct install libdir
 ncrcdir = $(NEP_NCRC_DIR)
 ncrc_DATA = .ncrc
-
-NCRC_DEPS = $(srcdir)/.ncrc.in
-if HAVE_GEOTIFF
-NCRC_DEPS += $(srcdir)/.ncrc-geotiff.in
-endif
-if HAVE_CDF
-NCRC_DEPS += $(srcdir)/.ncrc-cdf.in
-endif
-
-.ncrc: $(NCRC_DEPS)
-	$(AM_V_GEN)sed 's|@NEP_LIBDIR@|$(libdir)|g' $(srcdir)/.ncrc.in > $@
-if HAVE_GEOTIFF
-	sed 's|@NEP_LIBDIR@|$(libdir)|g' $(srcdir)/.ncrc-geotiff.in >> $@
-endif
-if HAVE_CDF
-	sed 's|@NEP_LIBDIR@|$(libdir)|g' $(srcdir)/.ncrc-cdf.in >> $@
-endif
-
-CLEANFILES = .ncrc
 endif
 
 # Documentation target
