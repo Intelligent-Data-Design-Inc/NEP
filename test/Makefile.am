@@ -43,11 +43,6 @@ if BUILD_BZIP2
 check_PROGRAMS += tst_bzip2
 endif
 
-# Build JPEG tests, if needed.
-if BUILD_JPEG
-check_PROGRAMS += tst_jpeg
-endif
-
 # Build the performance tests, if all filters have been built.
 check_PROGRAMS += tst_perf
 tst_perf_SOURCES = tst_perf.c tst_utils.c

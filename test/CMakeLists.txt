@@ -101,7 +101,6 @@ if(BUILD_BZIP2)
 else()
     set(BUILD_BZIP2 "no")
 endif()
-set(BUILD_JPEG "no")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/run_tests.sh.in 
                ${CMAKE_CURRENT_BINARY_DIR}/run_tests.sh @ONLY)
 

@@ -22,10 +22,6 @@ option(BUILD_BZIP2 "Enable BZIP2 filter support" OFF)
 # Use add_definitions for compatibility with CMake 3.9
 add_definitions(-DUSE_HDF5=yes)
 
-# GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
-# Will be re-enabled in v2.0.0 for GRIB2 UDF support
-# option(ENABLE_GRIB2 "Enable GRIB2 UDF support" ON)
-
 # CDF library detection (v1.3.0) - default OFF, library detection only, no UDF yet
 option(ENABLE_CDF "Enable CDF library detection" OFF)
 
@@ -96,23 +92,6 @@ if(NOT DOCS_ONLY)
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
     set(CMAKE_BUILD_RPATH "${HDF5_LIBRARY_DIRS};${NETCDF_LIBRARY_DIRS}")
 endif()
-
-# GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
-# Will be re-enabled in v2.0.0 for GRIB2 UDF support
-# Find GRIB2 dependencies if enabled
-# if(ENABLE_GRIB2)
-#     find_library(G2C_LIBRARY NAMES g2c)
-#     find_path(G2C_INCLUDE_DIR grib2.h)
-#     
-#     if(G2C_LIBRARY AND G2C_INCLUDE_DIR)
-#         message(STATUS "Found NCEPLIBS-g2: ${G2C_LIBRARY}")
-#         include_directories(${G2C_INCLUDE_DIR})
-#         set(HAVE_GRIB2 TRUE)
-#         message(STATUS "GRIB2 UDF support enabled")
-#     else()
-#         message(FATAL_ERROR "GRIB2 UDF enabled but NCEPLIBS-g2 not found. Install NCEPLIBS-g2 or disable with -DENABLE_GRIB2=OFF")
-#     endif()
-# endif()
 
 # CDF library detection (v1.3.0) - library detection only, no UDF implementation yet
 if(ENABLE_CDF)
@@ -240,13 +219,6 @@ if(NOT DOCS_ONLY)
 
         add_dependencies(hdf5_plugins nep_h5lz4)
     endif()
-    # GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
-    # Will be re-enabled in v2.0.0 for GRIB2 UDF support
-    # If GRIB2 layer has been built, test it.
-    # if(HAVE_GRIB2)
-    #     add_subdirectory (test_grib2)
-    # endif()
-
     # CDF test - v1.3.0 Sprint 2: CDF library integration test
     if(HAVE_CDF)
         add_subdirectory (test_cdf)
@@ -260,6 +232,7 @@ if(NOT DOCS_ONLY)
     # Make tests depend on plugins being built
     # Add test directory last so tst_cdf_udf runs after tst_cdf_basic
     add_subdirectory (test)
+    add_subdirectory (test_h5)
 
     # .ncrc: assemble from fragments for enabled formats (issue #134)
     if(HAVE_GEOTIFF OR HAVE_CDF)

@@ -331,7 +331,8 @@ jobs:
           TESTS="tst_geotiff_handle tst_geotiff_metadata tst_geotiff_errors \
                  tst_geotiff_edge_cases tst_simple_geotiff test_netcdf_crs \
                  tst_phase2_acceptance tst_geotiff_organization \
-                 tst_single_band_read tst_large_geotiff"
+                 tst_single_band_read tst_large_geotiff \
+                 tst_geotiff_self_load tst_geotiff_ncrc_autoload"
 
           VALGRIND_FAILED=0
           for t in $TESTS; do
@@ -440,7 +441,8 @@ jobs:
           TESTS="tst_geotiff_handle tst_geotiff_metadata tst_geotiff_errors \
                  tst_geotiff_edge_cases tst_simple_geotiff test_netcdf_crs \
                  tst_phase2_acceptance tst_geotiff_organization \
-                 tst_single_band_read tst_large_geotiff"
+                 tst_single_band_read tst_large_geotiff \
+                 tst_geotiff_self_load tst_geotiff_ncrc_autoload"
 
           for t in $TESTS; do
             if [ -f "./$t" ]; then

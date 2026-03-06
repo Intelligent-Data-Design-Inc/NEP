@@ -29,11 +29,6 @@ if test "@BUILD_LZ4@" = "yes"; then
     ./tst_lz4
 fi
 
-# If jpeg was built, run the jpeg test.
-if test "@BUILD_JPEG@" = "yes"; then
-    ./tst_jpeg
-fi
-
 # Always run the performance test.
 echo "$HDF5_PLUGIN_PATH"
 ./tst_perf

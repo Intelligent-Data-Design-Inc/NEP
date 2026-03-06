@@ -48,7 +48,6 @@ else
 fi
 if test "x$enable_logging" = xyes; then
    AC_DEFINE([LOGGING], 1, [If true, turn on logging.])
-   AC_DEFINE([GRIB2_LOGGING], 1, [If true, turn on logging.])
 fi
 AM_CONDITIONAL(USE_LOGGING, [test "x$enable_logging" = xyes])
 AC_SUBST(HAS_LOGGING, [$enable_logging])
@@ -79,18 +78,6 @@ if test "x$enable_lz4" = xyes; then
 fi
 AC_SUBST([BUILD_LZ4], [$enable_lz4])
 
-# Does the user want JPEG?
-AC_MSG_CHECKING([whether JPEG filter library should be built and installed])
-AC_ARG_ENABLE([jpeg],
-              [AS_HELP_STRING([--enable-jpeg],
-                              [Enable the build and install of jpeg filter library.])])
-test "x$enable_jpeg" = xyes || enable_jpeg=no
-AC_MSG_RESULT($enable_jpeg)
-AM_CONDITIONAL(BUILD_JPEG, [test "x$enable_jpeg" = xyes])
-if test "x$enable_jpeg" = xyes; then
-   AC_DEFINE([BUILD_JPEG], 1, [If true, build with jpeg filter.])
-fi
-
 # Does the user want LZF?
 AC_MSG_CHECKING([whether LZF filter library should be built and installed])
 AC_ARG_ENABLE([lzf],
@@ -115,14 +102,6 @@ dnl if test "x$enable_lz4" = xyes; then
 dnl    AC_CONFIG_SUBDIRS([LZ4])
 dnl fi
 
-# GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
-# Will be re-enabled in v2.0.0 for GRIB2 UDF support
-# GRIB2 UDF enable/disable option
-# AC_ARG_ENABLE([grib2],
-#     AS_HELP_STRING([--enable-grib2], [Enable GRIB2 UDF support (default: yes)]),
-#     [enable_grib2=$enableval],
-#     [enable_grib2=yes])
-
 AC_ARG_ENABLE([docs],
     AS_HELP_STRING([--enable-docs], [Enable documentation generation with Doxygen (default: yes if Doxygen found)]),
     [enable_docs=$enableval],
@@ -145,27 +124,9 @@ test "x$enable_geotiff" = xyes || enable_geotiff=no
 AC_MSG_RESULT([$enable_geotiff])
 
 # Initialize variables
-HAVE_GRIB2=no
 HAVE_CDF=no
 HAVE_GEOTIFF=no
 HAVE_DOXYGEN=no
-
-# GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
-# Will be re-enabled in v2.0.0 for GRIB2 UDF support
-# Check for GRIB2 dependencies if enabled
-# if test "x$enable_grib2" = "xyes"; then
-#     AC_CHECK_HEADERS([grib2.h], [grib2_header=yes], [grib2_header=no])
-#     AC_SEARCH_LIBS([g2c_inq], [g2c], [G2C_LIBS="-lg2c"; grib2_lib=yes], [grib2_lib=no], [-ljasper])
-#     
-#     if test "x$grib2_header" = "xyes" && test "x$grib2_lib" = "xyes"; then
-#         HAVE_GRIB2=yes
-#         AC_DEFINE([HAVE_GRIB2], [1], [Define if GRIB2 UDF support is enabled])
-#         AC_MSG_NOTICE([GRIB2 UDF support enabled])
-#     else
-#         AC_MSG_ERROR([GRIB2 UDF enabled but NCEPLIBS-g2c not found. Install NCEPLIBS-g2c or disable with --disable-grib2])
-#     fi
-# fi
-# AC_SUBST([G2C_LIBS])
 
 # CDF library detection (v1.3.0) - library detection only, no UDF implementation yet
 if test "x$enable_cdf" = "xyes"; then
@@ -272,9 +233,6 @@ if test "x$enable_fortran" = xyes; then
 fi
 
 # Set up conditionals for Makefile.am
-# GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
-# Will be re-enabled in v2.0.0 for GRIB2 UDF support
-# AM_CONDITIONAL([HAVE_GRIB2], [test "x$HAVE_GRIB2" = "xyes"])
 AM_CONDITIONAL([HAVE_CDF], [test "x$HAVE_CDF" = "xyes"])
 AM_CONDITIONAL([HAVE_GEOTIFF], [test "x$HAVE_GEOTIFF" = "xyes"])
 AM_CONDITIONAL([BUILD_NCRC], [test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes"])
@@ -503,7 +461,7 @@ AC_CONFIG_FILES([Makefile
                  test/Makefile
                  fsrc/Makefile
                  ftest/Makefile
-                 test_grib2/Makefile
+                 test_h5/Makefile
                  test_cdf/Makefile
                  test_geotiff/Makefile
                  examples/Makefile
