@@ -232,7 +232,9 @@ if(NOT DOCS_ONLY)
     # Make tests depend on plugins being built
     # Add test directory last so tst_cdf_udf runs after tst_cdf_basic
     add_subdirectory (test)
-    add_subdirectory (test_h5)
+    if(BUILD_LZ4 OR BUILD_BZIP2)
+        add_subdirectory (test_h5)
+    endif()
 
     # .ncrc: assemble from fragments for enabled formats (issue #134)
     if(HAVE_GEOTIFF OR HAVE_CDF)
