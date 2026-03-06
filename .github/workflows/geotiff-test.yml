@@ -106,6 +106,8 @@ jobs:
             -DENABLE_GEOTIFF=ON \
             -DENABLE_FORTRAN=OFF \
             -DBUILD_TESTING=OFF \
+            -DBUILD_LZ4=OFF \
+            -DBUILD_BZIP2=OFF \
             -DBUILD_DOCUMENTATION=OFF
           echo "=== Checking config.h for HAVE_GEOTIFF ==="
           grep -i "HAVE_GEOTIFF" config.h || echo "HAVE_GEOTIFF not found in config.h"
@@ -130,6 +132,8 @@ jobs:
             -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install" \
             -DENABLE_FORTRAN=OFF \
             -DBUILD_TESTING=OFF \
+            -DBUILD_LZ4=OFF \
+            -DBUILD_BZIP2=OFF \
             -DBUILD_DOCUMENTATION=OFF
           echo "=== Checking that HAVE_GEOTIFF is not defined ==="
           if grep "define HAVE_GEOTIFF" config.h; then
@@ -316,6 +320,8 @@ jobs:
             -DENABLE_GEOTIFF=ON \
             -DENABLE_FORTRAN=OFF \
             -DBUILD_TESTING=ON \
+            -DBUILD_LZ4=OFF \
+            -DBUILD_BZIP2=OFF \
             -DBUILD_DOCUMENTATION=OFF
           make -j$(nproc)
 
@@ -424,6 +430,8 @@ jobs:
             -DENABLE_GEOTIFF=ON \
             -DENABLE_FORTRAN=OFF \
             -DBUILD_TESTING=ON \
+            -DBUILD_LZ4=OFF \
+            -DBUILD_BZIP2=OFF \
             -DBUILD_DOCUMENTATION=OFF \
             -DCMAKE_C_FLAGS="--coverage -fprofile-arcs -ftest-coverage" \
             -DCMAKE_EXE_LINKER_FLAGS="--coverage"
