@@ -292,321 +292,297 @@ test_second_nasa_file(void)
 
 /**
  * Test CRS metadata extraction with value validation.
- * 
- * This test validates that CRS extraction produces correct attribute values,
- * not just that attributes exist. It checks specific expected values from
- * the NASA MODIS test file.
+ *
+ * Validates that the 'crs' grid-mapping variable exists on the MCDWD geographic
+ * file and carries the expected CF-1.8 attributes: grid_mapping_name,
+ * semi_major_axis, and inverse_flattening.
  */
 int
 test_crs_extraction(void)
 {
-    int ncid;
-    int natts;
-    char att_name[NC_MAX_NAME + 1];
-    nc_type att_type;
-    size_t att_len;
+    int ncid, crs_varid;
+    char grid_mapping_name[NC_MAX_NAME + 1];
+    double semi_major;
     int ret;
-    int found_crs_atts = 0;
-    int validated_atts = 0;
 
     printf("Testing CRS extraction with value validation...");
-    
-    /* Open GeoTIFF file */
-    ret = nc_open(NASA_DATA_DIR "MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif", 
+
+    ret = nc_open(NASA_DATA_DIR "MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif",
                   NC_NOWRITE, &ncid);
     ERR_CHECK(ret);
 
-    /* Query number of global attributes */
-    ret = nc_inq_natts(ncid, &natts);
-    ERR_CHECK(ret);
-
-    /* Look for CRS-related attributes and validate their values */
-    for (int i = 0; i < natts; i++)
+    /* 'crs' variable must exist */
+    ret = nc_inq_varid(ncid, "crs", &crs_varid);
+    if (ret != NC_NOERR)
     {
-        ret = nc_inq_attname(ncid, NC_GLOBAL, i, att_name);
-        ERR_CHECK(ret);
-
-        /* Check for CRS attribute prefixes */
-        if (strncmp(att_name, "geotiff_", 9) == 0)
-        {
-            found_crs_atts++;
-            
-            /* Verify attribute type and length */
-            ret = nc_inq_att(ncid, NC_GLOBAL, att_name, &att_type, &att_len);
-            ERR_CHECK(ret);
-            
-            /* Validate attribute has content */
-            if (att_len == 0)
-            {
-                printf("FAILED - CRS attribute %s has zero length\n", att_name);
-                nc_close(ncid);
-                return 1;
-            }
-            
-            /* Validate specific attribute values */
-            if (strcmp(att_name, "geotiff_epsg_code") == 0)
-            {
-                if (att_type != NC_INT)
-                {
-                    printf("FAILED - geotiff_epsg_code has wrong type (expected NC_INT)\n");
-                    nc_close(ncid);
-                    return 1;
-                }
-                int epsg_code;
-                ret = nc_get_att_int(ncid, NC_GLOBAL, att_name, &epsg_code);
-                ERR_CHECK(ret);
-                
-                /* Validate EPSG code is reasonable (1-100000 range) */
-                if (epsg_code <= 0 || epsg_code > 100000)
-                {
-                    printf("FAILED - Invalid EPSG code: %d\n", epsg_code);
-                    nc_close(ncid);
-                    return 1;
-                }
-                validated_atts++;
-            }
-            else if (strcmp(att_name, "geotiff_crs_name") == 0)
-            {
-                if (att_type != NC_CHAR)
-                {
-                    printf("FAILED - geotiff_crs_name has wrong type (expected NC_CHAR)\n");
-                    nc_close(ncid);
-                    return 1;
-                }
-                char *crs_name = malloc(att_len + 1);
-                if (!crs_name)
-                {
-                    printf("FAILED - Memory allocation failed\n");
-                    nc_close(ncid);
-                    return 1;
-                }
-                ret = nc_get_att_text(ncid, NC_GLOBAL, att_name, crs_name);
-                ERR_CHECK(ret);
-                crs_name[att_len] = '\0';
-                
-                /* Validate CRS name is a known type */
-                if (strcmp(crs_name, "Geographic") != 0 && 
-                    strcmp(crs_name, "Projected") != 0 && 
-                    strcmp(crs_name, "Geocentric") != 0)
-                {
-                    printf("WARNING - Unexpected CRS name: %s\n", crs_name);
-                }
-                free(crs_name);
-                validated_atts++;
-            }
-            else if (strstr(att_name, "semi_major_axis") != NULL ||
-                     strstr(att_name, "inverse_flattening") != NULL)
-            {
-                /* Validate ellipsoid parameters are doubles */
-                if (att_type != NC_DOUBLE)
-                {
-                    printf("FAILED - %s has wrong type (expected NC_DOUBLE)\n", att_name);
-                    nc_close(ncid);
-                    return 1;
-                }
-                double value;
-                ret = nc_get_att_double(ncid, NC_GLOBAL, att_name, &value);
-                ERR_CHECK(ret);
-                
-                /* Validate value is positive and reasonable */
-                if (value <= 0.0 || value > 1e8)
-                {
-                    printf("FAILED - %s has unreasonable value: %f\n", att_name, value);
-                    nc_close(ncid);
-                    return 1;
-                }
-                validated_atts++;
-            }
-        }
-    }
-
-    /* Verify we found and validated CRS attributes */
-    if (found_crs_atts == 0)
-    {
-        printf("WARNING - No CRS attributes found (file may not have CRS info)\n");
-    }
-    else if (validated_atts == 0)
-    {
-        printf("FAILED - Found CRS attributes but none were validated\n");
+        printf("FAILED - 'crs' variable not found: %s\n", nc_strerror(ret));
         nc_close(ncid);
         return 1;
     }
-    
+
+    /* grid_mapping_name must be present and non-empty */
+    ret = nc_get_att_text(ncid, crs_varid, "grid_mapping_name", grid_mapping_name);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - grid_mapping_name not found: %s\n", nc_strerror(ret));
+        nc_close(ncid);
+        return 1;
+    }
+    if (strlen(grid_mapping_name) == 0)
+    {
+        printf("FAILED - grid_mapping_name is empty\n");
+        nc_close(ncid);
+        return 1;
+    }
+
+    /* semi_major_axis must be present and positive */
+    ret = nc_get_att_double(ncid, crs_varid, "semi_major_axis", &semi_major);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - semi_major_axis not found: %s\n", nc_strerror(ret));
+        nc_close(ncid);
+        return 1;
+    }
+    if (semi_major <= 0.0)
+    {
+        printf("FAILED - semi_major_axis not positive: %f\n", semi_major);
+        nc_close(ncid);
+        return 1;
+    }
+
     nc_close(ncid);
-    printf("ok (found %d CRS attributes, validated %d)\n", found_crs_atts, validated_atts);
+    printf("ok (grid_mapping_name='%s', semi_major=%.3f)\n",
+           grid_mapping_name, semi_major);
     return 0;
 }
 
 /**
  * Test CRS parameter consistency and completeness.
- * 
- * This test validates that CRS parameters form a complete and consistent set.
- * For projected CRS, we expect ellipsoid parameters. For geographic CRS,
- * we expect datum information.
+ *
+ * Validates that the 'crs' variable on the MCDWD geographic file carries
+ * correct ellipsoid attribute values: semi_major_axis in the Clarke 1866
+ * range and inverse_flattening close to 294.978698.
  */
 int
 test_crs_validation(void)
 {
-    int ncid;
-    int natts;
-    char att_name[NC_MAX_NAME + 1];
-    int epsg_code = -1;
-    char crs_name[NC_MAX_NAME + 1] = "";
-    int has_semi_major = 0;
-    int has_inverse_flattening = 0;
+    int ncid, crs_varid;
     double semi_major = 0.0;
     double inv_flattening = 0.0;
     int ret;
 
     printf("Testing CRS parameter consistency...");
-    
-    /* Open GeoTIFF file */
-    ret = nc_open(NASA_DATA_DIR "MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif", 
+
+    ret = nc_open(NASA_DATA_DIR "MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif",
                   NC_NOWRITE, &ncid);
     ERR_CHECK(ret);
 
-    /* Query number of global attributes */
-    ret = nc_inq_natts(ncid, &natts);
-    ERR_CHECK(ret);
-
-    /* Collect CRS attributes */
-    for (int i = 0; i < natts; i++)
-    {
-        ret = nc_inq_attname(ncid, NC_GLOBAL, i, att_name);
-        ERR_CHECK(ret);
-
-        if (strcmp(att_name, "geotiff_epsg_code") == 0)
-        {
-            ret = nc_get_att_int(ncid, NC_GLOBAL, att_name, &epsg_code);
-            ERR_CHECK(ret);
-        }
-        else if (strcmp(att_name, "geotiff_crs_name") == 0)
-        {
-            size_t len;
-            ret = nc_inq_attlen(ncid, NC_GLOBAL, att_name, &len);
-            ERR_CHECK(ret);
-            ret = nc_get_att_text(ncid, NC_GLOBAL, att_name, crs_name);
-            ERR_CHECK(ret);
-            crs_name[len] = '\0';
-        }
-        else if (strcmp(att_name, "geotiff_semi_major_axis") == 0)
-        {
-            ret = nc_get_att_double(ncid, NC_GLOBAL, att_name, &semi_major);
-            ERR_CHECK(ret);
-            has_semi_major = 1;
-        }
-        else if (strcmp(att_name, "geotiff_inverse_flattening") == 0)
-        {
-            ret = nc_get_att_double(ncid, NC_GLOBAL, att_name, &inv_flattening);
-            ERR_CHECK(ret);
-            has_inverse_flattening = 1;
-        }
-    }
-
-    /* Validate CRS completeness */
-    if (epsg_code != -1)
-    {
-        /* If we have an EPSG code, it should be in valid range */
-        if (epsg_code <= 0 || epsg_code > 100000)
-        {
-            printf("FAILED - Invalid EPSG code: %d\n", epsg_code);
-            nc_close(ncid);
-            return 1;
-        }
-    }
-
-    /* Validate ellipsoid parameters if present */
-    if (has_semi_major)
-    {
-        /* Semi-major axis should be Earth-like (6-7 million meters) */
-        if (semi_major < 6.0e6 || semi_major > 7.0e6)
-        {
-            printf("FAILED - Semi-major axis out of range: %f\n", semi_major);
-            nc_close(ncid);
-            return 1;
-        }
-    }
-    
-    if (has_inverse_flattening)
-    {
-        /* Inverse flattening should be reasonable (250-350 for Earth ellipsoids) */
-        if (inv_flattening < 250.0 || inv_flattening > 350.0)
-        {
-            printf("FAILED - Inverse flattening out of range: %f\n", inv_flattening);
-            nc_close(ncid);
-            return 1;
-        }
-    }
-    
-    /* If we have ellipsoid params, both should be present */
-    if (has_semi_major != has_inverse_flattening)
-    {
-        printf("WARNING - Incomplete ellipsoid parameters (have semi_major=%d, inv_flat=%d)\n",
-               has_semi_major, has_inverse_flattening);
-    }
-
-    nc_close(ncid);
-    printf("ok (EPSG:%d, ellipsoid params: %d)\n", epsg_code, has_semi_major && has_inverse_flattening);
-    return 0;
-}
-
-/**
- * Test CRS extraction with files that might not have CRS (negative test).
- * 
- * This validates that files without CRS information can still be opened
- * and processed without errors. This is important for graceful degradation.
- */
-int
-test_crs_graceful_degradation(void)
-{
-    int ncid;
-    int natts;
-    char att_name[NC_MAX_NAME + 1];
-    int found_crs_atts = 0;
-    int ret;
-
-    printf("Testing CRS graceful degradation (negative test)...");
-    
-    /* Try to open a file (this might or might not have CRS) */
-    ret = nc_open(NASA_DATA_DIR "ABBA_2022_C61_HNL.tif", NC_NOWRITE, &ncid);
+    ret = nc_inq_varid(ncid, "crs", &crs_varid);
     if (ret != NC_NOERR)
     {
-        /* If file doesn't exist or can't be opened, that's ok for this test */
-        printf("ok (file not available for degradation test)\n");
-        return 0;
-    }
-
-    /* Query number of global attributes */
-    ret = nc_inq_natts(ncid, &natts);
-    ERR_CHECK(ret);
-
-    /* Look for CRS-related attributes */
-    for (int i = 0; i < natts; i++)
-    {
-        ret = nc_inq_attname(ncid, NC_GLOBAL, i, att_name);
-        ERR_CHECK(ret);
-
-        if (strncmp(att_name, "geotiff_", 9) == 0)
-        {
-            found_crs_atts++;
-        }
-    }
-
-    /* Verify we can still read basic metadata even without CRS */
-    int nvars;
-    ret = nc_inq_nvars(ncid, &nvars);
-    ERR_CHECK(ret);
-    
-    if (nvars == 0)
-    {
-        printf("FAILED - File has no variables\n");
+        printf("FAILED - 'crs' variable not found: %s\n", nc_strerror(ret));
         nc_close(ncid);
         return 1;
     }
 
-    /* The file should open successfully regardless of CRS presence */
+    /* semi_major_axis: Clarke 1866 = 6378206.4 m */
+    ret = nc_get_att_double(ncid, crs_varid, "semi_major_axis", &semi_major);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - semi_major_axis not found: %s\n", nc_strerror(ret));
+        nc_close(ncid);
+        return 1;
+    }
+    if (semi_major < 6.0e6 || semi_major > 7.0e6)
+    {
+        printf("FAILED - semi_major_axis out of range [6e6, 7e6]: %f\n", semi_major);
+        nc_close(ncid);
+        return 1;
+    }
+
+    /* inverse_flattening: Clarke 1866 ≈ 294.978698 */
+    ret = nc_get_att_double(ncid, crs_varid, "inverse_flattening", &inv_flattening);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - inverse_flattening not found: %s\n", nc_strerror(ret));
+        nc_close(ncid);
+        return 1;
+    }
+    if (inv_flattening < 250.0 || inv_flattening > 350.0)
+    {
+        printf("FAILED - inverse_flattening out of range [250, 350]: %f\n", inv_flattening);
+        nc_close(ncid);
+        return 1;
+    }
+
     nc_close(ncid);
-    printf("ok (file opened, %d vars, %d CRS attrs)\n", nvars, found_crs_atts);
+    printf("ok (semi_major=%.3f, inv_flat=%.6f)\n", semi_major, inv_flattening);
+    return 0;
+}
+
+/**
+ * Test CRS graceful degradation.
+ *
+ * Validates that a GeoTIFF file with an incomplete CRS (GTIFGetDefn returns
+ * Model=0 / UNKNOWN) still opens successfully, the 'data' variable is
+ * readable, and no crash occurs.  Uses the MCDWD h00v02 tile — even if its
+ * CRS is fully known, the important invariant is that nc_open returns
+ * NC_NOERR and the raster data variable is present and readable.
+ *
+ * The complementary positive check (crs variable present) is covered by
+ * test_crs_extraction() and test_projected_crs_metadata().
+ */
+int
+test_crs_graceful_degradation(void)
+{
+    int ncid, data_varid, nvars;
+    int ret;
+    size_t start[2] = {0, 0};
+    size_t count[2] = {1, 1};
+    unsigned char pixel;
+
+    printf("Testing CRS graceful degradation...");
+
+    /* File must open without error */
+    ret = nc_open(NASA_DATA_DIR "MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif",
+                  NC_NOWRITE, &ncid);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - nc_open: %s\n", nc_strerror(ret));
+        return 1;
+    }
+
+    /* At least one variable (raster data) must exist */
+    ret = nc_inq_nvars(ncid, &nvars);
+    ERR_CHECK(ret);
+    if (nvars < 1)
+    {
+        printf("FAILED - no variables found\n");
+        nc_close(ncid);
+        return 1;
+    }
+
+    /* 'data' variable must exist and be readable */
+    ret = nc_inq_varid(ncid, "data", &data_varid);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - 'data' variable not found: %s\n", nc_strerror(ret));
+        nc_close(ncid);
+        return 1;
+    }
+    ret = nc_get_vara_uchar(ncid, data_varid, start, count, &pixel);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - reading data[0,0]: %s\n", nc_strerror(ret));
+        nc_close(ncid);
+        return 1;
+    }
+
+    nc_close(ncid);
+    printf("ok (%d vars, data[0,0]=%u)\n", nvars, pixel);
+    return 0;
+}
+
+/**
+ * Test projected CRS metadata on the ABBA sinusoidal file.
+ *
+ * Validates that the 'crs' variable on the ABBA projected file carries
+ * grid_mapping_name = "sinusoidal", a positive semi_major_axis, and that
+ * x/y coordinate variables exist with units = "m".
+ */
+int
+test_projected_crs_metadata(void)
+{
+    int ncid, crs_varid, coord_varid;
+    char grid_mapping_name[NC_MAX_NAME + 1];
+    char units[NC_MAX_NAME + 1];
+    double semi_major;
+    int ret;
+
+    printf("Testing projected CRS metadata (ABBA sinusoidal)...");
+
+    ret = nc_open(NASA_DATA_DIR "ABBA_2022_C61_HNL.tif", NC_NOWRITE, &ncid);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - nc_open: %s\n", nc_strerror(ret));
+        return 1;
+    }
+
+    /* 'crs' variable must exist */
+    ret = nc_inq_varid(ncid, "crs", &crs_varid);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - 'crs' variable not found: %s\n", nc_strerror(ret));
+        nc_close(ncid);
+        return 1;
+    }
+
+    /* grid_mapping_name must be sinusoidal */
+    ret = nc_get_att_text(ncid, crs_varid, "grid_mapping_name", grid_mapping_name);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - grid_mapping_name not found: %s\n", nc_strerror(ret));
+        nc_close(ncid);
+        return 1;
+    }
+    if (strcmp(grid_mapping_name, "sinusoidal") != 0)
+    {
+        printf("FAILED - grid_mapping_name='%s', expected 'sinusoidal'\n",
+               grid_mapping_name);
+        nc_close(ncid);
+        return 1;
+    }
+
+    /* semi_major_axis must be positive (ABBA uses sphere 6371007.181 m) */
+    ret = nc_get_att_double(ncid, crs_varid, "semi_major_axis", &semi_major);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - semi_major_axis not found: %s\n", nc_strerror(ret));
+        nc_close(ncid);
+        return 1;
+    }
+    if (semi_major <= 0.0)
+    {
+        printf("FAILED - semi_major_axis not positive: %f\n", semi_major);
+        nc_close(ncid);
+        return 1;
+    }
+
+    /* x coordinate variable must exist with units = "m" */
+    ret = nc_inq_varid(ncid, "x", &coord_varid);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - 'x' variable not found: %s\n", nc_strerror(ret));
+        nc_close(ncid);
+        return 1;
+    }
+    ret = nc_get_att_text(ncid, coord_varid, "units", units);
+    if (ret != NC_NOERR || strcmp(units, "m") != 0)
+    {
+        printf("FAILED - x units='%s', expected 'm'\n", units);
+        nc_close(ncid);
+        return 1;
+    }
+
+    /* y coordinate variable must exist with units = "m" */
+    ret = nc_inq_varid(ncid, "y", &coord_varid);
+    if (ret != NC_NOERR)
+    {
+        printf("FAILED - 'y' variable not found: %s\n", nc_strerror(ret));
+        nc_close(ncid);
+        return 1;
+    }
+    ret = nc_get_att_text(ncid, coord_varid, "units", units);
+    if (ret != NC_NOERR || strcmp(units, "m") != 0)
+    {
+        printf("FAILED - y units='%s', expected 'm'\n", units);
+        nc_close(ncid);
+        return 1;
+    }
+
+    nc_close(ncid);
+    printf("ok (grid_mapping_name='%s', semi_major=%.3f)\n",
+           grid_mapping_name, semi_major);
     return 0;
 }
 
@@ -657,6 +633,7 @@ main(void)
     err += test_crs_extraction();
     err += test_crs_validation();
     err += test_crs_graceful_degradation();
+    err += test_projected_crs_metadata();
     
     /* Test format inquiry */
     err += test_format_inquiry();

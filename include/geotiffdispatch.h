@@ -132,10 +132,6 @@ extern "C" {
     extract_crs_parameters(GTIF *gtif, NC_GEOTIFF_CRS_INFO_T *crs_info);
 
     extern int
-    map_geotiff_to_cf_attributes(const NC_GEOTIFF_CRS_INFO_T *crs_info, 
-                                       NC_ATT_INFO_T **atts, int *num_atts);
-
-    extern int
     validate_crs_completeness(const NC_GEOTIFF_CRS_INFO_T *crs_info);
 #endif
 

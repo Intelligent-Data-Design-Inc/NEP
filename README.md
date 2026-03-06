@@ -22,6 +22,7 @@ NEP extends NetCDF-4 with powerful new capabilities for scientific data workflow
 - **Ultra-Fast LZ4 Compression**: 2-3x faster than DEFLATE with excellent compression ratios - ideal for real-time data processing and HPC workflows
 - **High-Ratio BZIP2 Compression**: Superior compression for archival storage - reduce storage costs while maintaining data integrity
 - **NASA CDF File Reader**: Access Common Data Format files directly through the familiar NetCDF API - no conversion needed
+- **GeoTIFF File Reader**: Read GeoTIFF geospatial raster files through the NetCDF API with CF-1.8 compliant CRS metadata
 - **Drop-In Compatibility**: Works with existing NetCDF-4 applications without code changes
 
 ## Why NEP?
@@ -146,7 +147,7 @@ To enable CDF support during build, use the `--enable-cdf` (Autotools) or `-DENA
 
 ## GeoTIFF Reader
 
-NEP v1.5.0 adds support for reading GeoTIFF files through the NetCDF API. GeoTIFF is a widely-used geospatial raster format that embeds geographic metadata within TIFF image files.
+NEP v1.6.0 provides full-featured reading of GeoTIFF files through the NetCDF API, including CF-1.8 compliant CRS metadata, coordinate variables, and coordinate bounds.
 
 ### What is GeoTIFF?
 
@@ -168,58 +169,65 @@ GeoTIFF is a public domain metadata standard that allows georeferencing informat
 
 NEP provides a User-Defined Format (UDF) handler that allows reading GeoTIFF files using NetCDF-style API calls. This enables applications to work with GeoTIFF, NetCDF, and CDF files through a unified interface.
 
-**Current Features (Phase 1, 2 & 3):**
-- ✅ Automatic format detection - GeoTIFF files are recognized by magic number
-- ✅ **BigTIFF support** - handles files >4GB via dual UDF registration
-- ✅ Open/close operations via standard `nc_open()` and `nc_close()` functions
-- ✅ Metadata extraction - dimensions, data types, coordinate reference systems
-- ✅ Support for both little-endian TIFF formats (standard and BigTIFF)
-- ✅ **Multi-band raster reading** - supports 3D variable access (band, y, x)
-- ✅ **Single-band raster reading** - optimized 2D access
-- ✅ **Hyperslab operations** - efficient subsetting and partial reads
-- ✅ Support for both tiled and striped TIFF organizations
-- ✅ Support for PLANARCONFIG_CONTIG and PLANARCONFIG_SEPARATE
-- ⏳ Coordinate transformations (Phase 4 - planned)
+**Current Features (v1.6.0):**
+- ✅ Automatic format detection — GeoTIFF files recognized by magic number
+- ✅ **BigTIFF support** — handles files >4 GB via dual UDF registration
+- ✅ Open/close via standard `nc_open()` and `nc_close()`
+- ✅ Dimension and data type extraction
+- ✅ **CF-1.8 CRS metadata** — `crs` grid-mapping variable with `grid_mapping_name`, `semi_major_axis`, `inverse_flattening`, and projection-specific attributes
+- ✅ **Coordinate variables** — `lon`/`lat` (degrees) for geographic CRS, `x`/`y` (metres) for projected CRS
+- ✅ **Coordinate bounds** — `lon_bnds`/`lat_bnds` or `x_bnds`/`y_bnds` for pixel-as-area rasters
+- ✅ **Pixel raster type** — pixel-as-point and pixel-as-area handling via `GTRasterTypeGeoKey`
+- ✅ **Multi-band raster reading** — 3D variable access (band, y, x)
+- ✅ **Single-band raster reading** — optimised 2D access
+- ✅ **Hyperslab operations** — efficient subsetting and partial reads
+- ✅ Both tiled and striped TIFF organisations; PLANARCONFIG_CONTIG and PLANARCONFIG_SEPARATE
+- ✅ Graceful degradation — files without CRS tags still open and data is readable
+- ⏳ Coordinate transformations via PROJ (future release)
+
+See [docs/cf-compliance.md](docs/cf-compliance.md) for the full CF grid mapping attribute specification.
 
 **Usage Example:**
 
 ```c
 #include <netcdf.h>
 
-int ncid, varid, ndims, nvars;
+int ncid, varid, crs_varid, lon_varid;
 int retval;
 
-/* Open GeoTIFF file - automatically detected (works with standard TIFF and BigTIFF) */
+/* Open GeoTIFF file - automatically detected (standard TIFF and BigTIFF) */
 if ((retval = nc_open("satellite_image.tif", NC_NOWRITE, &ncid)))
     ERR(retval);
 
-/* Query file metadata */
-if ((retval = nc_inq(ncid, &ndims, &nvars, NULL, NULL)))
-    ERR(retval);
-
-printf("Dimensions: %d, Variables: %d\n", ndims, nvars);
-
-/* Get variable ID and dimensions */
+/* Get raster data variable (always named "data" for single-band files) */
 if ((retval = nc_inq_varid(ncid, "data", &varid)))
     ERR(retval);
 
-/* Read raster data - single pixel */
-size_t start[2] = {100, 200};  /* y, x */
+/* Read a single pixel [y=100, x=200] */
+size_t start[2] = {100, 200};
 size_t count[2] = {1, 1};
 unsigned char pixel;
 if ((retval = nc_get_vara_uchar(ncid, varid, start, count, &pixel)))
     ERR(retval);
 
-/* Read hyperslab - 100x100 region */
+/* Read a 100x100 hyperslab from the top-left corner */
 size_t start2[2] = {0, 0};
 size_t count2[2] = {100, 100};
 unsigned char *buffer = malloc(100 * 100);
 if ((retval = nc_get_vara_uchar(ncid, varid, start2, count2, buffer)))
     ERR(retval);
 
+/* Access CF-1.8 CRS metadata on the 'crs' grid-mapping variable */
+char grid_mapping_name[NC_MAX_NAME + 1];
+double semi_major;
+if ((retval = nc_inq_varid(ncid, "crs", &crs_varid)) == NC_NOERR) {
+    nc_get_att_text(ncid, crs_varid, "grid_mapping_name", grid_mapping_name);
+    nc_get_att_double(ncid, crs_varid, "semi_major_axis", &semi_major);
+}
+
 /* Multi-band files: use 3D access (band, y, x) */
 size_t start3[3] = {0, 100, 200};  /* band 0, y=100, x=200 */
-size_t count3[3] = {1, 50, 50};     /* 1 band, 50x50 pixels */
+size_t count3[3] = {1, 50, 50};    /* 1 band, 50×50 pixels */
 unsigned char *multiband = malloc(50 * 50);
 if ((retval = nc_get_vara_uchar(ncid, varid, start3, count3, multiband)))
     ERR(retval);

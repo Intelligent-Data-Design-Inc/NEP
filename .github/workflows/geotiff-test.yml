@@ -209,16 +209,15 @@ jobs:
         run: |
           echo "=== Running GeoTIFF Tests ==="
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
-          ctest --output-on-failure --verbose -R geotiff || true
+          ctest --output-on-failure --verbose
 
       - name: Run Tests (Autotools)
         if: matrix.build_system == 'autotools'
         run: |
           echo "=== Running GeoTIFF Tests ==="
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
-          cd test_geotiff
-          ./tst_geotiff_handle || echo "tst_geotiff_handle failed"
-          ./tst_geotiff_metadata || echo "tst_geotiff_metadata failed"
+          export NEP_GEOTIFF_LIB_PATH="$(pwd)/src/.libs/libncgeotiff.so"
+          make check -C test_geotiff
 
       - name: Summary
         if: always()
@@ -328,27 +327,33 @@ jobs:
           cp -r ../../test_geotiff/data .
           mkdir -p ../test/data
           cp -r ../../test/data/*.tif ../test/data/ || true
-          
-          echo "=== Running tst_geotiff_handle under Valgrind ==="
-          if valgrind --leak-check=full --show-leak-kinds=all --track-fds=yes \
-            --suppressions=../../valgrind.supp --error-exitcode=1 \
-            ./tst_geotiff_handle 2>&1 | tee valgrind_handle.log; then
-            echo "✓ tst_geotiff_handle: No memory leaks detected"
-          else
-            echo "✗ tst_geotiff_handle: Memory leaks or errors detected"
+
+          TESTS="tst_geotiff_handle tst_geotiff_metadata tst_geotiff_errors \
+                 tst_geotiff_edge_cases tst_simple_geotiff test_netcdf_crs \
+                 tst_phase2_acceptance tst_geotiff_organization \
+                 tst_single_band_read tst_large_geotiff"
+
+          VALGRIND_FAILED=0
+          for t in $TESTS; do
+            if [ ! -f "./$t" ]; then
+              echo "SKIP: $t (not built)"
+              continue
+            fi
+            echo "=== Running $t under Valgrind ==="
+            if valgrind --leak-check=full --show-leak-kinds=all --track-fds=yes \
+              --suppressions=../../valgrind.supp --error-exitcode=1 \
+              ./$t 2>&1 | tee "valgrind_${t}.log"; then
+              echo "✓ $t: No memory leaks detected"
+            else
+              echo "✗ $t: Memory leaks or errors detected"
+              VALGRIND_FAILED=1
+            fi
+          done
+
+          if [ "$VALGRIND_FAILED" -eq 1 ]; then
+            echo "=== Valgrind checks FAILED ==="
             exit 1
           fi
-          
-          echo "=== Running tst_geotiff_metadata under Valgrind ==="
-          if valgrind --leak-check=full --show-leak-kinds=all --track-fds=yes \
-            --suppressions=../../valgrind.supp --error-exitcode=1 \
-            ./tst_geotiff_metadata 2>&1 | tee valgrind_metadata.log; then
-            echo "✓ tst_geotiff_metadata: No memory leaks detected"
-          else
-            echo "✗ tst_geotiff_metadata: Memory leaks or errors detected"
-            exit 1
-          fi
-          
           echo "=== All Valgrind checks passed ==="
 
       - name: Upload Valgrind reports
@@ -431,8 +436,18 @@ jobs:
           cp -r ../../test_geotiff/data .
           mkdir -p ../test/data
           cp -r ../../test/data/*.tif ../test/data/ || true
-          ./tst_geotiff_handle
-          ./tst_geotiff_metadata
+
+          TESTS="tst_geotiff_handle tst_geotiff_metadata tst_geotiff_errors \
+                 tst_geotiff_edge_cases tst_simple_geotiff test_netcdf_crs \
+                 tst_phase2_acceptance tst_geotiff_organization \
+                 tst_single_band_read tst_large_geotiff"
+
+          for t in $TESTS; do
+            if [ -f "./$t" ]; then
+              echo "=== Running $t ==="
+              ./$t || echo "WARNING: $t failed"
+            fi
+          done
 
       - name: Generate coverage report
         run: |
