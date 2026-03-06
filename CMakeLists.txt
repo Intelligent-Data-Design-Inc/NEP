@@ -264,7 +264,8 @@ if(NOT DOCS_ONLY)
     # .ncrc: assemble from fragments for enabled formats (issue #134)
     if(HAVE_GEOTIFF OR HAVE_CDF)
         set(NEP_LIBDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
-        set(NEP_NCRC_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/nep")
+        set(NEP_NCRC_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}"
+            CACHE PATH "Directory where .ncrc is installed")
 
         # Start with header fragment
         set(NCRC_FRAGMENTS "${CMAKE_SOURCE_DIR}/.ncrc.in")

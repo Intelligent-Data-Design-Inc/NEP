@@ -463,9 +463,9 @@ AC_SUBST([MY_LZ4_PLUGIN_PATH])
 
 AC_ARG_WITH([ncrc-dir],
     [AS_HELP_STRING([--with-ncrc-dir=DIR],
-        [install .ncrc to DIR (default: ${datarootdir}/nep)])],
+        [install .ncrc to DIR (default: ${datarootdir})])],
     [NEP_NCRC_DIR="$withval"],
-    [NEP_NCRC_DIR="\${datarootdir}/nep"])
+    [NEP_NCRC_DIR="\${datarootdir}"])
 AC_SUBST([NEP_NCRC_DIR])
 
 if test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes"; then
