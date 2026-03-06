@@ -3,17 +3,11 @@
 /* If true, build with bzip2 filter. */
 #undef BUILD_BZIP2
 
-/* If true, build with jpeg filter. */
-#undef BUILD_JPEG
-
 /* If true, build with lz4 filter. */
 #undef BUILD_LZ4
 
 /* If true, build with lzf filter. */
 #undef BUILD_LZF
-
-/* If true, turn on logging. */
-#undef GRIB2_LOGGING
 
 /* Define if CDF library is found */
 #undef HAVE_CDF
