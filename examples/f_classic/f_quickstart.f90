@@ -75,7 +75,6 @@ program f_quickstart
   integer :: ndims_in, nvars_in, ngatts_in
   integer :: len_x, len_y
   character(len=100) :: desc_in, units_in
-  integer :: errors
   
   ! ========== WRITE PHASE ==========
   print *, "Creating NetCDF file: ", FILE_NAME
@@ -165,11 +164,19 @@ program f_quickstart
   ! Verify global attribute
   retval = nf90_get_att(ncid, nf90_global, "description", desc_in)
   call check(retval, "reading global attribute")
+  if (trim(desc_in) /= "a quickstart example") then
+    print *, "Error: expected description 'a quickstart example', got '", trim(desc_in), "'"
+    stop 1
+  end if
   print *, "Verified: global attribute 'description' = '", trim(desc_in), "'"
   
   ! Verify variable attribute
   retval = nf90_get_att(ncid, data_varid, "units", units_in)
   call check(retval, "reading variable attribute")
+  if (trim(units_in) /= "m/s") then
+    print *, "Error: expected units 'm/s', got '", trim(units_in), "'"
+    stop 1
+  end if
   print *, "Verified: variable attribute 'units' = '", trim(units_in), "'"
   
   ! Read the data back
@@ -177,21 +184,15 @@ program f_quickstart
   call check(retval, "reading data")
   
   ! Verify data correctness
-  errors = 0
   do j = 1, YDIM
     do i = 1, XDIM
       if (data_in(i, j) /= data_out(i, j)) then
         print *, "Error: data(", i, ",", j, ") = ", data_in(i, j), &
                  ", expected ", data_out(i, j)
-        errors = errors + 1
+        stop 1
       end if
     end do
   end do
-  
-  if (errors > 0) then
-    print *, "*** FAILED:", errors, "data validation errors"
-    stop 1
-  end if
   
   print *, "Verified: all 6 data values correct (1, 2, 3, 4, 5, 6)"
   
