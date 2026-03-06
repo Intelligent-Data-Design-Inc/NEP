@@ -184,6 +184,8 @@ GeoTIFF is a public domain metadata standard that allows georeferencing informat
 - Rows (height) → NetCDF dimension
 - Columns (width) → NetCDF dimension
 
+**CF-1.8 CRS Metadata**: Coordinate reference system information is emitted as a CF-1.8 compliant `crs` grid-mapping variable with coordinate variables (`lon`/`lat` or `x`/`y`) and optional bounds. See `docs/cf-compliance.md` for the full attribute specification.
+
 **Metadata Preservation**: GeoTIFF tags and geospatial metadata are accessible as NetCDF attributes, including coordinate reference system information.
 
 **Use Cases:**
@@ -263,22 +265,29 @@ No special code is needed—the CDF UDF handler automatically detects and proces
 When GeoTIFF support is enabled, open and read GeoTIFF files using standard NetCDF functions:
 
 ```c
-int ncid, varid;
-size_t width, height, bands;
-float *data;
+int ncid, varid, crs_varid;
+size_t width, height;
 
 // Open GeoTIFF file using NetCDF API
 nc_open("satellite_image.tif", NC_NOWRITE, &ncid);
 
 // Query dimensions
-nc_inq_dimlen(ncid, 0, &bands);
-nc_inq_dimlen(ncid, 1, &height);
-nc_inq_dimlen(ncid, 2, &width);
+nc_inq_dimlen(ncid, 0, &height);  /* y */
+nc_inq_dimlen(ncid, 1, &width);   /* x */
 
-// Read raster data
-data = malloc(width * height * sizeof(float));
-nc_inq_varid(ncid, "raster", &varid);
-nc_get_var_float(ncid, varid, data);
+// Read a 100x100 hyperslab from the raster data variable
+unsigned char *buf = malloc(100 * 100);
+size_t start[2] = {0, 0}, count[2] = {100, 100};
+nc_inq_varid(ncid, "data", &varid);
+nc_get_vara_uchar(ncid, varid, start, count, buf);
+
+// Access CF-1.8 CRS metadata (if present)
+char grid_mapping_name[NC_MAX_NAME + 1];
+double semi_major;
+if (nc_inq_varid(ncid, "crs", &crs_varid) == NC_NOERR) {
+    nc_get_att_text(ncid, crs_varid, "grid_mapping_name", grid_mapping_name);
+    nc_get_att_double(ncid, crs_varid, "semi_major_axis", &semi_major);
+}
 
 // Close file
 nc_close(ncid);
@@ -298,7 +307,8 @@ No special code is needed—the GeoTIFF UDF handler automatically detects and pr
 - **GeoTIFF File Reader**:
   - Read GeoTIFF geospatial raster files via NetCDF API
   - Automatic dimension mapping (bands, rows, columns)
-  - Metadata and coordinate reference system preservation
+  - CF-1.8 compliant CRS metadata (`crs` variable, coordinate variables, bounds)
+  - See `docs/cf-compliance.md` for the CF grid mapping attribute specification
 - **Configurable Build Options**:
   - LZ4 and BZIP2 support can be enabled or disabled at build time
   - CDF support is optional (disabled by default)

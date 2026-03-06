@@ -312,11 +312,11 @@ Based on a 150 MB NetCDF-4 dataset:
 - LZ4 offers minimal performance impact (79% write speed, 88% read speed) with 2.2× compression
 - BZIP2 achieves highest compression ratio (6.7×) at the cost of performance (1% write speed, 2% read speed)
 
-## GeoTIFF Read Layer (v1.5.0)
+## GeoTIFF Read Layer (v1.6.0)
 
 ### Overview
 
-NEP v1.5.0 adds support for GeoTIFF geospatial raster data format through a User Defined Format (UDF) handler. This enables transparent access to GeoTIFF files through the standard NetCDF API, eliminating the need for format conversion in geospatial workflows.
+NEP v1.5.0 introduced support for GeoTIFF geospatial raster data format through a User Defined Format (UDF) handler. NEP v1.6.0 extends this with full CF-1.8 compliant CRS metadata including grid-mapping variables, coordinate variables, and coordinate bounds. This enables transparent access to GeoTIFF files through the standard NetCDF API, eliminating the need for format conversion in geospatial workflows.
 
 For details on NetCDF's User Defined Format mechanism, see `docs/udf.md`.
 
@@ -357,11 +357,17 @@ The GeoTIFF read layer follows the NC_Dispatch pattern used for other UDF handle
 - **Variable Naming**: Configurable naming scheme for bands (default: `band1`, `band2`, etc.)
 
 #### Georeferencing Metadata
-Coordinate reference system (CRS) and georeferencing information stored following CF conventions:
-- **Variable Attributes**: Coordinate system metadata attached to data variables
-- **Global Attributes**: File-level georeferencing information
-- **CF Compliance**: Follows CF conventions for geospatial metadata where applicable
-- **GeoTIFF Tags**: Key GeoTIFF tags exposed as NetCDF attributes
+Coordinate reference system (CRS) and georeferencing information stored following CF-1.8 conventions:
+
+- **`crs` Grid-Mapping Variable**: A scalar variable holding all CRS parameters as attributes (`grid_mapping_name`, `semi_major_axis`, `inverse_flattening`, and projection-specific parameters). The data variable carries a `grid_mapping = "crs"` attribute pointing to it.
+- **Coordinate Variables**: 1D coordinate variables are created from the GeoTIFF GeoTransform tags:
+  - Geographic CRS: `lon[x]` (degrees_east) and `lat[y]` (degrees_north)
+  - Projected CRS: `x[x]` (m) and `y[y]` (m)
+  - The data variable carries a `coordinates = "lon lat"` (or `"x y"`) attribute.
+- **Coordinate Bounds**: For pixel-as-area rasters (the default), bounds variables (`lon_bnds`, `lat_bnds` or `x_bnds`, `y_bnds`) are created and attached via `bounds` attributes on the coordinate variables.
+- **Pixel Raster Type**: The GeoTIFF `GTRasterTypeGeoKey` is read to distinguish pixel-as-point (coordinate at pixel corner) from pixel-as-area (coordinate at pixel centre) rasters.
+- **Graceful Degradation**: If GeoTIFF CRS tags are absent or malformed, `nc_open` succeeds and the raster `data` variable remains readable; no `crs` variable is created.
+- **CF Compliance**: See `docs/cf-compliance.md` for the full attribute specification.
 
 ### Dependencies
 
@@ -371,7 +377,7 @@ Coordinate reference system (CRS) and georeferencing information stored followin
 | Core | NetCDF-C | v4.9+ | NetCDF API |
 | Core | HDF5 | v1.12+ | HDF5 backend |
 
-**Note**: PROJ library support is out of scope for v1.5.0. Coordinate transformations will be addressed in future releases if needed.
+**Note**: PROJ library support is out of scope for v1.6.0. Coordinate transformations will be addressed in future releases if needed.
 
 ### Build System Integration
 
@@ -407,8 +413,10 @@ The GeoTIFF UDF handler is fully implemented in `src/geotifffile.c` and `src/geo
 2. **Metadata Handling**
    - Dimension extraction (bands, rows, columns)
    - Variable creation with appropriate data types
-   - GeoTIFF tag extraction as NetCDF attributes
-   - Coordinate system metadata preservation
+   - CRS extraction via `extract_crs_parameters()` into `NC_GEOTIFF_CRS_INFO_T`
+   - CRS validation via `validate_crs_completeness()`
+   - CF-1.8 `crs` grid-mapping variable creation via `create_cf_crs_variable()`
+   - Coordinate variable and bounds creation from GeoTransform tags
 
 3. **Data Access**
    - `NC_GEOTIFF_get_vara()` for reading raster data
@@ -430,11 +438,18 @@ The GeoTIFF UDF handler is fully implemented in `src/geotifffile.c` and `src/geo
 
 ### Test Data
 
-The project includes sample GeoTIFF files from NASA's VIIRS/MODIS Near Real-Time Global Flood Products:
+The project includes sample GeoTIFF files:
+
+**NASA MODIS NRT Global Flood Products (geographic CRS, Clarke 1866 ellipsoid)**
 - `test/data/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif`
 - `test/data/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif`
 
-These are MODIS Daily L3 Global Flood Composite files at 250m resolution in GeoTIFF format. The files contain flood detection data with georeferencing information suitable for testing the GeoTIFF UDF handler.
+MODIS Daily L3 Global Flood Composite files at 250m resolution. `grid_mapping_name = "latitude_longitude"`, `semi_major_axis = 6378206.4`, `inverse_flattening = 294.978698`.
+
+**ABBA Sinusoidal Projection (projected CRS, spherical Earth)**
+- `test/data/ABBA_2022_C61_HNL.tif`
+
+ABBA fire product in sinusoidal projection. `grid_mapping_name = "sinusoidal"`, `semi_major_axis = 6371007.181`, coordinate variables `x` and `y` in metres.
 
 **Data Source**: NASA LANCE MODIS NRT Global Flood Product (MCDWD_L3_F1C_NRT)
 - **Product**: MODIS Daily L3 Global Flood Composite 250m Linear Lat Lon Grid - NRT
@@ -444,8 +459,10 @@ These are MODIS Daily L3 Global Flood Composite files at 250m resolution in GeoT
 
 ### Reference Documentation
 
+- `docs/cf-compliance.md` - CF-1.8 grid mapping attribute specification for NEP GeoTIFF
 - `docs/ESDS-RFC-040v1.1.pdf` - GeoTIFF format specification
 - `docs/udf.md` - NetCDF User Defined Format documentation
+- https://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#appendix-grid-mappings - CF-1.8 grid mapping appendix
 - https://www.earthdata.nasa.gov/data/instruments/viirs/near-real-time-data/nrt-global-flood-products - VIIRS/MODIS NRT Global Flood Products (test data source)
 
 ## NASA CDF Format Support (v1.3.0)
