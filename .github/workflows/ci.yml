@@ -10,12 +10,6 @@
 # Both CMake and autotools build systems automatically add -Wall -Werror flags
 # for GNU compilers, ensuring all builds fail on any compiler warnings.
 #
-# Future Versions:
-# - v2.0.0: GRIB2 UDF handler support will be restored
-# - v4.0: GeoTIFF UDF handler support will be restored
-#
-# The build matrix and dependencies will be expanded in future releases
-# to support additional format handlers.
 #
 # Edward Hartnett, Intelligent Data Design, Inc., Nov 13, 2025
 name: ci_main
@@ -300,7 +294,7 @@ EOF
             FORTRAN_FLAG="-DENABLE_FORTRAN=OFF"
           fi
           CDF_FLAG="-DENABLE_CDF=OFF"
-          if [ "${{ matrix.fortran }}" = "on" ] && [ "${{ matrix.compression }}" = "all" ]; then
+          if [ "${{ matrix.fortran }}" = "on" ]; then
             CDF_FLAG="-DENABLE_CDF=ON"
           fi
           export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
@@ -395,7 +389,7 @@ EOF
           fi
 
           CDF_FLAG="--disable-cdf"
-          if [ "${{ matrix.fortran }}" = "on" ] && [ "${{ matrix.compression }}" = "all" ]; then
+          if [ "${{ matrix.fortran }}" = "on" ]; then
             CDF_FLAG="--enable-cdf"
           fi
 

@@ -5,13 +5,6 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-# GRIB2 UDF Handler - Disabled for v1.0.0 (LZ4 compression release only)
-# Will be re-enabled in v2.0.0 for GRIB2 UDF support
-# If GRIB2 layer has been built, test it.
-# if HAVE_GRIB2
-# TEST_GRIB2 = test_grib2
-# endif
-
 # CDF test - v1.3.0 Sprint 2: CDF library integration test
 if HAVE_CDF
 TEST_CDF = test_cdf
@@ -28,9 +21,9 @@ EXAMPLES_DIR = examples
 endif
 
 if ENABLE_FORTRAN
-SUBDIRS = include src fsrc $(TEST_CDF) $(TEST_GEOTIFF) test ftest $(EXAMPLES_DIR)
+SUBDIRS = include src fsrc $(TEST_CDF) $(TEST_GEOTIFF) test test_h5 ftest $(EXAMPLES_DIR)
 else
-SUBDIRS = include src $(TEST_CDF) $(TEST_GEOTIFF) test $(EXAMPLES_DIR)
+SUBDIRS = include src $(TEST_CDF) $(TEST_GEOTIFF) test test_h5 $(EXAMPLES_DIR)
 endif
 
 if BUILD_LZ4
