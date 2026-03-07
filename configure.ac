@@ -126,6 +126,7 @@ AC_MSG_RESULT([$enable_geotiff])
 # Initialize variables
 HAVE_CDF=no
 HAVE_GEOTIFF=no
+HAVE_GRIB2=no
 HAVE_DOXYGEN=no
 
 # CDF library detection (v1.3.0) - library detection only, no UDF implementation yet
@@ -180,6 +181,27 @@ fi
 AC_SUBST([GEOTIFF_LIBS])
 AC_SUBST([TIFF_LIBS])
 
+# GRIB2 library detection (v1.7.0) - default OFF
+AC_MSG_CHECKING([whether GRIB2 library detection should be enabled])
+AC_ARG_ENABLE([grib2],
+              [AS_HELP_STRING([--enable-grib2],
+                              [Enable GRIB2 library detection (default: no)])])
+test "x$enable_grib2" = xyes || enable_grib2=no
+AC_MSG_RESULT([$enable_grib2])
+
+if test "x$enable_grib2" = "xyes"; then
+    AC_CHECK_HEADERS([g2c.h], [g2c_header=yes], [g2c_header=no])
+    AC_SEARCH_LIBS([g2c_open], [g2c], [g2c_lib=yes; G2C_LIBS="-lg2c"], [g2c_lib=no])
+
+    if test "x$g2c_header" = "xyes" && test "x$g2c_lib" = "xyes"; then
+        HAVE_GRIB2=yes
+        AC_DEFINE([HAVE_GRIB2], [1], [Define if GRIB2 (g2c) library is found])
+        AC_MSG_NOTICE([GRIB2 library detection enabled])
+    else
+        AC_MSG_ERROR([GRIB2 enabled but NCEPLIBS-g2c not found. Install g2c or disable with --disable-grib2])
+    fi
+fi
+AC_SUBST([G2C_LIBS])
 
 # Check for Doxygen if documentation is enabled
 if test "x$enable_docs" != "xno"; then
@@ -235,6 +257,7 @@ fi
 # Set up conditionals for Makefile.am
 AM_CONDITIONAL([HAVE_CDF], [test "x$HAVE_CDF" = "xyes"])
 AM_CONDITIONAL([HAVE_GEOTIFF], [test "x$HAVE_GEOTIFF" = "xyes"])
+AM_CONDITIONAL([HAVE_GRIB2], [test "x$HAVE_GRIB2" = "xyes"])
 AM_CONDITIONAL([BUILD_NCRC], [test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes"])
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$HAVE_DOXYGEN" = "xyes"])
 

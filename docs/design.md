@@ -465,6 +465,96 @@ ABBA fire product in sinusoidal projection. `grid_mapping_name = "sinusoidal"`, 
 - https://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#appendix-grid-mappings - CF-1.8 grid mapping appendix
 - https://www.earthdata.nasa.gov/data/instruments/viirs/near-real-time-data/nrt-global-flood-products - VIIRS/MODIS NRT Global Flood Products (test data source)
 
+## GRIB2 Format Support (v1.7.0)
+
+### Overview
+
+NEP v1.7.0 adds support for GRIB2 (General Regularly-distributed Information in Binary form, Edition 2) meteorological and oceanographic data files through a User Defined Format (UDF) handler, using the NOAA NCEPLIBS-g2c library. This enables transparent access to GRIB2 files through the standard NetCDF API.
+
+### Architecture
+
+The GRIB2 UDF handler follows the same NC_Dispatch pattern used for CDF and GeoTIFF handlers:
+
+```
+[Application Layer]
+       │
+[NetCDF-4 API]
+       │
+[NC_Dispatch Layer]
+       │
+┌──────┴──────────┐
+│                 │
+[HDF5 Backend]   [GRIB2 UDF Handler]
+│                 │
+│             [NCEPLIBS-g2c]
+│                 │
+└──────┬──────────┘
+       │
+[NetCDF-4/HDF5 Files]  [GRIB2 Files]
+```
+
+### Key Components
+
+#### GRIB2 UDF Handler
+- **Format Detection**: Automatic identification of GRIB2 files via magic number (`GRIB`) registered at UDF slot 3 (`NEP_UDF_GRIB2 = NC_UDF3`)
+- **NC_Dispatch Implementation**: Complete dispatch table for GRIB2 file operations
+- **File Operations**: `NC_GRIB2_open()` and `NC_GRIB2_close()` with proper resource management
+- **Metadata Mapping**: GRIB2 messages mapped to NetCDF variables with dimensions, types, and attributes
+- **Data Access**: `NC_GRIB2_get_vara()` with start/count slicing and bitmap/missing-value handling
+
+#### Message-to-Variable Mapping
+- Each GRIB2 message → one NetCDF variable with `[ny, nx]` dimensions
+- Variable name derived from g2c parameter name lookup (discipline/category/parameter number)
+- Shared grid dimensions reused across variables with identical grid templates
+- `NC_FLOAT` type for unpacked data; g2c handles big-endian wire format conversion
+
+#### Metadata Model
+- **Variable attributes**: `long_name`, `units`, `_FillValue`, `GRIB2_discipline`, `GRIB2_category`, `GRIB2_param_number`
+- **Global attributes**: `Conventions = "GRIB2"`, `source` (originating centre), `GRIB2_edition = 2`
+- **Dispatch pointers**: `inq_ndims`, `inq_nvars`, `inq_natts`, `inq_dimid`, `inq_var`, `inq_att`, `get_att`, `get_vara`
+
+#### UDF Slot and `.ncrc` Registration
+- UDF slot 3 (`NC_UDF3`) reserved for GRIB2 in `include/nep.h`
+- `NC_GRIB2_initialize()` registers dispatch table; supports both manual call and `.ncrc` autoload
+- `nep.ncrc` UDF3 block: `NETCDF.UDF3.LIBRARY`, `NETCDF.UDF3.INIT=NC_GRIB2_initialize`, `NETCDF.UDF3.MAGIC=GRIB`
+
+### Source Files
+
+| File | Purpose |
+|------|---------|
+| `src/grib2dispatch.c` | NC_Dispatch table and `NC_GRIB2_initialize()` |
+| `src/grib2file.c` | `NC_GRIB2_open()`, `NC_GRIB2_close()`, `NC_GRIB2_get_vara()` |
+| `include/grib2dispatch.h` | Public header: `NC_GRIB2_FILE_INFO_T`, prototypes |
+
+### Dependencies
+
+| Component | Library | Version | Purpose |
+|-----------|---------|---------|---------|
+| GRIB2 Handler | NOAA NCEPLIBS-g2c | Latest stable | GRIB2 file operations and data unpacking |
+| Core | NetCDF-C | v4.9+ | NetCDF API |
+| Core | HDF5 | v1.12+ | HDF5 backend |
+
+### Build System Integration
+
+**CMake:**
+```bash
+cmake -DENABLE_GRIB2=ON   # Enable GRIB2 support
+cmake -DENABLE_GRIB2=OFF  # Disable GRIB2 support (default)
+```
+
+**Autotools:**
+```bash
+./configure --enable-grib2   # Enable GRIB2 support
+./configure --disable-grib2  # Disable GRIB2 support (default)
+```
+
+### Known Limitations
+- Read-only access (NC_NOWRITE mode only)
+- 2D grids only; ensemble/time/level dimensions deferred to future releases
+- One NetCDF variable per GRIB2 message; multi-message aggregation not supported
+
+---
+
 ## NASA CDF Format Support (v1.3.0)
 
 ### Overview
