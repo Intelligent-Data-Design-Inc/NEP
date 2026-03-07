@@ -128,6 +128,23 @@ if(ENABLE_GEOTIFF)
     endif()
 endif()
 
+# GRIB2 library detection (v1.7.0) - default OFF
+option(ENABLE_GRIB2 "Enable GRIB2 support" OFF)
+
+if(ENABLE_GRIB2)
+    find_library(G2C_LIBRARY NAMES g2c)
+    find_path(G2C_INCLUDE_DIR g2c.h)
+
+    if(G2C_LIBRARY AND G2C_INCLUDE_DIR)
+        message(STATUS "Found g2c library: ${G2C_LIBRARY}")
+        message(STATUS "Found g2c headers: ${G2C_INCLUDE_DIR}")
+        include_directories(${G2C_INCLUDE_DIR})
+        set(HAVE_GRIB2 TRUE)
+    else()
+        message(FATAL_ERROR "GRIB2 enabled but NCEPLIBS-g2c not found. Install g2c or disable with -DENABLE_GRIB2=OFF")
+    endif()
+endif()
+
 # It's really easy to pick up the wrong HDF5 library if you set the path
 # wrong. Turn this on for added confirmation that you got it right.
 #message (DEPRECATION "Include: ${HDF5_INCLUDE_DIR}")

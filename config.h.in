@@ -3,17 +3,11 @@
 /* If true, build with bzip2 filter. */
 #undef BUILD_BZIP2
 
-/* If true, build with jpeg filter. */
-#undef BUILD_JPEG
-
 /* If true, build with lz4 filter. */
 #undef BUILD_LZ4
 
 /* If true, build with lzf filter. */
 #undef BUILD_LZF
-
-/* If true, turn on logging. */
-#undef GRIB2_LOGGING
 
 /* Define if CDF library is found */
 #undef HAVE_CDF
@@ -24,6 +18,9 @@
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
+/* Define to 1 if you have the <g2c.h> header file. */
+#undef HAVE_G2C_H
+
 /* Define if GeoTIFF library is found */
 #undef HAVE_GEOTIFF
 
@@ -32,6 +29,9 @@
 
 /* Define if geotiff.h header is found */
 #undef HAVE_GEOTIFF_H
+
+/* Define if GRIB2 (g2c) library is found */
+#undef HAVE_GRIB2
 
 /* Defined if you have HDF5 support */
 #undef HAVE_HDF5
