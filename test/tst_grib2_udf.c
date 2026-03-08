@@ -43,11 +43,21 @@
 #define EXPECTED_VAR0_PARAM   1
 #define EXPECTED_VAR0_NAME    "WIND"
 
+/** Data reading constants for WIND variable (gfld expanded grid). */
+#define EXPECTED_NPTS         (EXPECTED_NX * EXPECTED_NY) /**< 151*241=36391 */
+/** fld[row=0,col=100] = 14.24 m/s (ocean point, bmap=1). */
+#define EXPECTED_WIND_ROW0_COL100  14.24f
+/** fld[row=0,col=0] is a land point (bmap=0) -> _FillValue. */
+#define GRIB2_FILL_VALUE           9.999e20f
+
 int
 main(void)
 {
     int ncid, ret;
     int ndims, nvars, natts, unlimdim;
+    float *wind_data;
+    float fill_val;
+    int no_fill;
     int dimid_x, dimid_y;
     size_t len_x, len_y;
     nc_type xtype;
@@ -118,6 +128,35 @@ main(void)
     CHECK(nc_get_att_int(ncid, NC_GLOBAL, "GRIB2_edition", &edition));
     if (edition != 2) ERR;
     printf("PASS: global Conventions=GRIB2 edition=%d\n", edition);
+
+    /* Test 9: read full WIND variable (NC_FLOAT, ny*nx = 151*241 = 36391). */
+    if (!(wind_data = malloc(EXPECTED_NPTS * sizeof(float)))) ERR;
+    CHECK(nc_get_var_float(ncid, 0, wind_data));
+    /* row=0, col=100 is an ocean point: expect 14.24 m/s. */
+    if (fabsf(wind_data[0 * EXPECTED_NX + 100] - EXPECTED_WIND_ROW0_COL100) > 0.01f)
+        ERR;
+    /* row=0, col=0 is a land point: expect _FillValue. */
+    if (fabsf(wind_data[0] / GRIB2_FILL_VALUE - 1.0f) > 1e-3f) ERR;
+    printf("PASS: nc_get_var_float WIND [0,100]=%.4f [0,0]=%.4g\n",
+           wind_data[0 * EXPECTED_NX + 100], wind_data[0]);
+    free(wind_data);
+
+    /* Test 10: read a 2D subset [row 0..3, col 100..103] via nc_get_vara_float. */
+    {
+        size_t st[2]  = {0, 100};
+        size_t cnt[2] = {4, 4};
+        float subset[16];
+        CHECK(nc_get_vara_float(ncid, 0, st, cnt, subset));
+        /* subset[0] = fld[row=0,col=100] = 14.24 */
+        if (fabsf(subset[0] - EXPECTED_WIND_ROW0_COL100) > 0.01f) ERR;
+        printf("PASS: nc_get_vara_float 4x4 subset[0]=%.4f\n", subset[0]);
+    }
+
+    /* Test 11: _FillValue is present and equals 9.999e20f. */
+    CHECK(nc_inq_var_fill(ncid, 0, &no_fill, &fill_val));
+    if (no_fill) ERR;
+    if (fabsf(fill_val / GRIB2_FILL_VALUE - 1.0f) > 1e-3f) ERR;
+    printf("PASS: _FillValue = %g\n", fill_val);
 
     CHECK(nc_close(ncid));
 
