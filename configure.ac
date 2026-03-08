@@ -258,7 +258,7 @@ fi
 AM_CONDITIONAL([HAVE_CDF], [test "x$HAVE_CDF" = "xyes"])
 AM_CONDITIONAL([HAVE_GEOTIFF], [test "x$HAVE_GEOTIFF" = "xyes"])
 AM_CONDITIONAL([HAVE_GRIB2], [test "x$HAVE_GRIB2" = "xyes"])
-AM_CONDITIONAL([BUILD_NCRC], [test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes"])
+AM_CONDITIONAL([BUILD_NCRC], [test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes" || test "x$HAVE_GRIB2" = "xyes"])
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$HAVE_DOXYGEN" = "xyes"])
 
 # Initialize Automake
@@ -449,7 +449,7 @@ AC_ARG_WITH([ncrc-dir],
     [NEP_NCRC_DIR="\${datarootdir}"])
 AC_SUBST([NEP_NCRC_DIR])
 
-if test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes"; then
+if test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes" || test "x$HAVE_GRIB2" = "xyes"; then
     # Expand libdir now so AC_CONFIG_COMMANDS receives a concrete path
     nep_expanded_prefix=$prefix
     test "x$nep_expanded_prefix" = xNONE && nep_expanded_prefix=$ac_default_prefix
@@ -465,10 +465,14 @@ if test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes"; then
             if test "x$nep_have_cdf" = "xyes"; then
                 sed "s|@NEP_LIBDIR@|${nep_libdir}|g" "${srcdir}/.ncrc-cdf.in" >> .ncrc
             fi
+            if test "x$nep_have_grib2" = "xyes"; then
+                sed "s|@NEP_LIBDIR@|${nep_libdir}|g" "${srcdir}/.ncrc-grib2.in" >> .ncrc
+            fi
         ],
         [
             nep_have_geotiff="$HAVE_GEOTIFF"
             nep_have_cdf="$HAVE_CDF"
+            nep_have_grib2="$HAVE_GRIB2"
             nep_libdir="$nep_expanded_libdir"
         ])
 fi

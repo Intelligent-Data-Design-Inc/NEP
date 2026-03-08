@@ -254,7 +254,7 @@ if(NOT DOCS_ONLY)
     endif()
 
     # .ncrc: assemble from fragments for enabled formats (issue #134)
-    if(HAVE_GEOTIFF OR HAVE_CDF)
+    if(HAVE_GEOTIFF OR HAVE_CDF OR HAVE_GRIB2)
         set(NEP_LIBDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
         set(NEP_NCRC_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}"
             CACHE PATH "Directory where .ncrc is installed")
@@ -266,6 +266,9 @@ if(NOT DOCS_ONLY)
         endif()
         if(HAVE_CDF)
             list(APPEND NCRC_FRAGMENTS "${CMAKE_SOURCE_DIR}/.ncrc-cdf.in")
+        endif()
+        if(HAVE_GRIB2)
+            list(APPEND NCRC_FRAGMENTS "${CMAKE_SOURCE_DIR}/.ncrc-grib2.in")
         endif()
 
         # Assemble and substitute @NEP_LIBDIR@ in one step via cmake -P script
