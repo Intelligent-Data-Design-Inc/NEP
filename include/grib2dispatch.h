@@ -29,7 +29,23 @@
 /** GRIB2 magic number length (4 bytes: "GRIB") */
 #define GRIB2_MAGIC_LEN 4
 
-/** Per-message variable information */
+/** Maximum length of a g2c parameter abbreviation string */
+#define NC_GRIB2_ABBREV_LEN 64
+
+/** Per-product inventory entry (one per GRIB2 product/field) */
+typedef struct NC_GRIB2_PROD_INFO
+{
+    int msg_index;                    /**< Zero-based GRIB2 message index */
+    int prod_index;                   /**< Zero-based product index within message */
+    unsigned char discipline;         /**< GRIB2 discipline (Table 0.0) */
+    int category;                     /**< GRIB2 parameter category */
+    int param_number;                 /**< GRIB2 parameter number */
+    size_t nx;                        /**< Grid size in X (longitude) direction */
+    size_t ny;                        /**< Grid size in Y (latitude) direction */
+    char abbrev[NC_GRIB2_ABBREV_LEN]; /**< Parameter abbreviation from g2c_param_abbrev() */
+} NC_GRIB2_PROD_INFO_T;
+
+/** Per-variable format-specific information (used as NC_VAR_INFO_T.format_var_info) */
 typedef struct NC_VAR_GRIB2_INFO
 {
     int msg_index;       /**< Zero-based index of the GRIB2 message */
@@ -41,11 +57,13 @@ typedef struct NC_VAR_GRIB2_INFO
 /** Per-file GRIB2 state */
 typedef struct NC_GRIB2_FILE_INFO
 {
-    int g2cid;           /**< File ID returned by g2c_open() */
-    int num_messages;    /**< Number of GRIB2 messages in the file */
-    int num_y;           /**< Grid size in Y (latitude) direction */
-    int num_x;           /**< Grid size in X (longitude) direction */
-    char *path;          /**< Path to the open GRIB2 file */
+    int g2cid;                    /**< File ID returned by g2c_open() */
+    int num_messages;             /**< Number of GRIB2 messages in the file */
+    int num_products;             /**< Total number of products across all messages */
+    size_t num_y;                 /**< Grid size in Y (latitude) direction */
+    size_t num_x;                 /**< Grid size in X (longitude) direction */
+    char *path;                   /**< Path to the open GRIB2 file */
+    NC_GRIB2_PROD_INFO_T *products; /**< Per-product inventory array (num_products entries) */
 } NC_GRIB2_FILE_INFO_T;
 
 #if defined(__cplusplus)

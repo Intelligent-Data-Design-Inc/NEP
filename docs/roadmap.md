@@ -17,8 +17,8 @@
 
 **Tasks**:
 - **g2c Library Detection** (CMake and Autotools):
-  - CMake: Add `option(ENABLE_GRIB2 "Enable GRIB2 support" OFF)` to `CMakeLists.txt`; use `find_library` / `find_path` to locate `g2c` library and `g2c.h` header; define `HAVE_GRIB2` when found; error if enabled but not found
-  - Autotools: Add `AC_ARG_ENABLE([grib2])` to `configure.ac`; use `AC_CHECK_HEADERS([g2c.h])` and `AC_SEARCH_LIBS([g2c_open], [g2c])` for detection; set `HAVE_GRIB2` automake conditional
+  - CMake: Add `option(ENABLE_GRIB2 "Enable GRIB2 support" OFF)` to `CMakeLists.txt`; use `find_library` / `find_path` to locate `g2c` library and `grib2.h` header; define `HAVE_GRIB2` when found; error if enabled but not found
+  - Autotools: Add `AC_ARG_ENABLE([grib2])` to `configure.ac`; use `AC_CHECK_HEADERS([grib2.h])` and `AC_SEARCH_LIBS([g2c_open], [g2c])` for detection; set `HAVE_GRIB2` automake conditional
   - Mirror the `ENABLE_CDF` / `ENABLE_GEOTIFF` detection pattern exactly
 - **UDF Slot Assignment**: Add `NEP_UDF_GRIB2 NC_UDF3` and `NEP_MAGIC_GRIB2 "GRIB"` to `include/nep.h`; add `NEP_FORMAT_NAME_GRIB2` display name constant
 - **Dispatch Header**: Create `include/grib2dispatch.h` with `NC_GRIB2_initialize()` prototype and extern dispatch table declaration; follow `cdfdispatch.h` / `geotiffdispatch.h` pattern
@@ -49,7 +49,7 @@
 **Objective**: Implement `NC_GRIB2_open()` and `NC_GRIB2_close()` so a GRIB2 file can be opened and closed via the standard NetCDF API.
 
 **Tasks**:
-- **`NC_GRIB2_initialize()`**: Implement in `src/grib2dispatch.c`; register dispatch table with `nc_def_user_format(NEP_UDF_GRIB2 | NC_NETCDF4, &GRIB2_dispatch_table, NEP_MAGIC_GRIB2)` when `HAVE_NETCDF_UDF_SELF_REGISTRATION` is not defined; use conditional compilation matching the CDF/GeoTIFF pattern
+- **`NC_GRIB2_initialize()`**: Implement in `src/grib2dispatch.c`; set `GRIB2_dispatch_table = &GRIB2_dispatcher` and return the dispatch table pointer for NetCDF-C self-loading via `.ncrc`; matches `NC_CDF_initialize()` and `NC_GEOTIFF_initialize()` pattern exactly
 - **`NC_GRIB2_open()`**: Implement in `src/grib2file.c`
   - Call `g2c_open(path, G2C_NOWRITE, &g2cid)` to open the file
   - Allocate and populate `NC_GRIB2_FILE_INFO_T` format-specific struct; store `g2cid`
@@ -79,32 +79,36 @@
 
 **Objective**: Implement metadata extraction so that GRIB2 messages are exposed as named NetCDF variables with correct dimensions, types, and attributes.
 
+**Background**: `NC_GRIB2_open()` (Sprint 2) already calls `g2c_inq()` and stores `num_messages` in `NC_GRIB2_FILE_INFO_T`. Sprint 3 builds on this to populate the full NetCDF-4 metadata model.
+
 **Tasks**:
-- **Message Inventory**: In `NC_GRIB2_open()`, after opening, call `g2c_inq(g2cid, &num_msg)` to count messages; iterate messages with `g2c_inq_msg()` to collect discipline, category, parameter number, grid template, and data representation template
+- **Message Inventory**: In `NC_GRIB2_open()`, after the existing `g2c_inq()` call, iterate messages with `g2c_inq_msg()` to collect discipline, category, parameter number, grid template, and data representation template for each message
 - **Variable Mapping**: Each GRIB2 message → one NetCDF variable
-  - Variable name derived from discipline/category/parameter number (e.g., `wind_speed_1`, using g2c parameter name lookup); fall back to `var{n}` if no name is available
-  - Dimensions derived from grid template: `[ny, nx]` for 2D grids
-  - NetCDF type: `NC_FLOAT` for most GRIB2 parameters (g2c unpacks to float)
-  - Endianness: `NC_ENDIAN_BIG` (GRIB2 is big-endian on wire; g2c handles conversion)
-- **Dimension Creation**: Create shared `x` / `y` (or `lon` / `lat`) dimensions in the root group sized from the grid template; reuse dimensions across variables that share the same grid
-- **Variable Attributes**: For each variable, set:
-  - `long_name` from g2c parameter name
+  - Variable name derived from discipline/category/parameter number (e.g., `wind_speed_1`, using g2c parameter name lookup); fall back to `var_{n}` if no name is available
+  - Dimensions derived from grid template: `[ny, nx]` for 2D grids; store grid size in existing `num_y` / `num_x` fields of `NC_GRIB2_FILE_INFO_T`
+  - NetCDF type: `NC_FLOAT` for all GRIB2 parameters (g2c unpacks to float)
+  - Populate `NC_VAR_GRIB2_INFO_T` per-variable struct (already defined in `include/grib2dispatch.h`) with `msg_index`, `discipline`, `category`, `param_number`
+- **Dimension Creation**: Create shared `x` / `y` dimensions in the root group sized from the grid template; reuse across all variables (single grid assumed for Sprint 3)
+- **Variable Attributes**: For each variable, add:
+  - `long_name` from g2c parameter name lookup
   - `units` from g2c parameter metadata where available
-  - `_FillValue` from GRIB2 bitmap/missing value field
-  - `GRIB2_discipline`, `GRIB2_category`, `GRIB2_param_number` as integer attributes for traceability
-- **Global Attributes**: Set `Conventions = "GRIB2"`, `source` from GRIB2 identification section (originating centre, sub-centre), `GRIB2_edition = 2`
-- **`nc_inq` Support**: Wire `inq_ndims`, `inq_nvars`, `inq_natts`, `inq_dimid`, `inq_var`, `inq_att`, `get_att` dispatch pointers
+  - `_FillValue` set to `NC_FILL_FLOAT` (bitmap/missing value handling deferred to Sprint 4)
+  - `GRIB2_discipline`, `GRIB2_category`, `GRIB2_param_number` as `NC_INT` attributes
+- **Global Attributes**: Set `Conventions = "GRIB2"`, `GRIB2_edition = 2`; add `source` from GRIB2 identification section (originating centre) where available
+- **`nc_inq` Support**: `NC4_inq`, `NC4_inq_var_all`, `NC4_get_att`, `HDF5_inq_dim` are already wired in the dispatch table (Sprint 1); verify they work correctly with the populated metadata model
 - **Test Expansion** (`test/tst_grib2_udf.c`):
-  - After open, query `nc_inq_ndims`, `nc_inq_nvars`, `nc_inq_natts` and assert expected values for the test file
-  - Query dimension names and sizes with `nc_inq_dim`; assert correct grid dimensions
-  - Query variable names and types with `nc_inq_var`; assert expected variable count and names
-  - Query `_FillValue`, `GRIB2_discipline`, `GRIB2_category` attributes on at least one variable
+  - After open, call `nc_inq()` and assert `ndims == 2`, `nvars == num_messages` for the test file
+  - Query dimension sizes with `nc_inq_dim`; assert `x` and `y` match the known GRIB2 grid for `gdaswave.t00z.wcoast.0p16.f000.grib2`
+  - Query variable names and types with `nc_inq_var`; assert type is `NC_FLOAT`
+  - Query `GRIB2_discipline`, `GRIB2_category`, `GRIB2_param_number` attributes on at least one variable
   - Query global `Conventions` and `GRIB2_edition` attributes
 
 **Definition of Done**:
 - `nc_inq_nvars` returns correct variable count matching number of GRIB2 messages
+- `nc_inq_ndims` returns 2 (shared `x`, `y` dimensions)
 - Dimension sizes match the GRIB2 grid template
-- Variable attributes (`_FillValue`, `GRIB2_discipline`, etc.) present and correct
+- Variable attributes (`GRIB2_discipline`, `GRIB2_category`, `GRIB2_param_number`) present and correct
+- Global `Conventions` and `GRIB2_edition` attributes present
 - All metadata assertions in `tst_grib2_udf` pass in CI
 
 #### Sprint 4: Data Reading and CI Completion

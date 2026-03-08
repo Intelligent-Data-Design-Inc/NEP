@@ -10,9 +10,13 @@
 
 #include "config.h"
 #include <stdlib.h>
+#include <string.h>
 #include "nep_nc4.h"
 #include "grib2dispatch.h"
 #include <grib2.h>
+
+/** Maximum number of PDS/GDS/DRS template entries supported. */
+#define GRIB2_MAX_TEMPLATE_LEN 200
 
 /** @internal These flags may not be set for open mode. */
 static const int
@@ -88,6 +92,114 @@ NC_GRIB2_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     grib2_file->num_messages = num_msg;
     h5->format_file_info = grib2_file;
 
+    /* Build per-product inventory across all messages. */
+    if (num_msg > 0)
+    {
+        int total_products = 0;
+        int m;
+
+        /* First pass: count total products. */
+        for (m = 0; m < num_msg; m++)
+        {
+            unsigned char discipline, master_version, local_version;
+            int num_fields, num_local;
+            short center, subcenter;
+
+            if (g2c_inq_msg(g2cid, m, &discipline, &num_fields, &num_local,
+                            &center, &subcenter, &master_version, &local_version))
+            {
+                free(grib2_file);
+                g2c_close(g2cid);
+                return NC_EHDFERR;
+            }
+            total_products += num_fields;
+        }
+
+        /* Allocate product inventory array. */
+        if (total_products > 0)
+        {
+            if (!(grib2_file->products = calloc(total_products,
+                                                sizeof(NC_GRIB2_PROD_INFO_T))))
+            {
+                free(grib2_file);
+                g2c_close(g2cid);
+                return NC_ENOMEM;
+            }
+        }
+        grib2_file->num_products = total_products;
+
+        /* Second pass: populate inventory. */
+        {
+            int prod_idx = 0;
+
+            for (m = 0; m < num_msg; m++)
+            {
+                unsigned char discipline, master_version, local_version;
+                int num_fields, num_local, f;
+                short center, subcenter;
+
+                if (g2c_inq_msg(g2cid, m, &discipline, &num_fields, &num_local,
+                                &center, &subcenter, &master_version,
+                                &local_version))
+                {
+                    free(grib2_file->products);
+                    free(grib2_file);
+                    g2c_close(g2cid);
+                    return NC_EHDFERR;
+                }
+
+                for (f = 0; f < num_fields; f++)
+                {
+                    NC_GRIB2_PROD_INFO_T *p = &grib2_file->products[prod_idx];
+                    long long int pds_template[GRIB2_MAX_TEMPLATE_LEN];
+                    long long int gds_template[GRIB2_MAX_TEMPLATE_LEN];
+                    long long int drs_template[GRIB2_MAX_TEMPLATE_LEN];
+                    int pds_len, gds_len, drs_len;
+                    size_t nx = 0, ny = 0;
+                    char dim_name[64];
+
+                    p->msg_index  = m;
+                    p->prod_index = f;
+                    p->discipline = discipline;
+
+                    /* Get PDS/GDS/DRS templates; category and param are in
+                     * PDS template octets 0 and 1 (indices 0 and 1). */
+                    if (g2c_inq_prod(g2cid, m, f, &pds_len, pds_template,
+                                     &gds_len, gds_template,
+                                     &drs_len, drs_template) == 0)
+                    {
+                        if (pds_len >= 2)
+                        {
+                            p->category    = (int)pds_template[0];
+                            p->param_number = (int)pds_template[1];
+                        }
+                    }
+
+                    /* Get grid dimensions; g2c_inq_dim_info returns size
+                     * without allocating a coordinate value array. */
+                    if (g2c_inq_dim_info(g2cid, m, f, 0, &nx, dim_name) == 0)
+                        p->nx = nx;
+                    if (g2c_inq_dim_info(g2cid, m, f, 1, &ny, dim_name) == 0)
+                        p->ny = ny;
+
+                    /* Store first product's grid size in file-level fields. */
+                    if (prod_idx == 0)
+                    {
+                        grib2_file->num_x = p->nx;
+                        grib2_file->num_y = p->ny;
+                    }
+
+                    /* Look up parameter abbreviation. */
+                    p->abbrev[0] = '\0';
+                    g2c_param_abbrev((int)discipline, p->category,
+                                     p->param_number, p->abbrev);
+
+                    prod_idx++;
+                }
+            }
+        }
+    }
+
     return NC_NOERR;
 }
 
@@ -141,6 +253,7 @@ NC_GRIB2_close(int ncid, void *ignore)
     g2c_close(grib2_file->g2cid);
 
     /* Free GRIB2-specific info. */
+    free(grib2_file->products);
     free(grib2_file->path);
     free(grib2_file);
     h5->format_file_info = NULL;
