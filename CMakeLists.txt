@@ -133,7 +133,7 @@ option(ENABLE_GRIB2 "Enable GRIB2 support" OFF)
 
 if(ENABLE_GRIB2)
     find_library(G2C_LIBRARY NAMES g2c)
-    find_path(G2C_INCLUDE_DIR g2c.h)
+    find_path(G2C_INCLUDE_DIR grib2.h)
 
     if(G2C_LIBRARY AND G2C_INCLUDE_DIR)
         message(STATUS "Found g2c library: ${G2C_LIBRARY}")

@@ -190,7 +190,7 @@ test "x$enable_grib2" = xyes || enable_grib2=no
 AC_MSG_RESULT([$enable_grib2])
 
 if test "x$enable_grib2" = "xyes"; then
-    AC_CHECK_HEADERS([g2c.h], [g2c_header=yes], [g2c_header=no])
+    AC_CHECK_HEADERS([grib2.h], [g2c_header=yes], [g2c_header=no])
     AC_SEARCH_LIBS([g2c_open], [g2c], [g2c_lib=yes; G2C_LIBS="-lg2c"], [g2c_lib=no])
 
     if test "x$g2c_header" = "xyes" && test "x$g2c_lib" = "xyes"; then

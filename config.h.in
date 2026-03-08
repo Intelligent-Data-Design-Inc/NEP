@@ -18,9 +18,6 @@
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
-/* Define to 1 if you have the <g2c.h> header file. */
-#undef HAVE_G2C_H
-
 /* Define if GeoTIFF library is found */
 #undef HAVE_GEOTIFF
 
@@ -32,6 +29,9 @@
 
 /* Define if GRIB2 (g2c) library is found */
 #undef HAVE_GRIB2
+
+/* Define to 1 if you have the <grib2.h> header file. */
+#undef HAVE_GRIB2_H
 
 /* Defined if you have HDF5 support */
 #undef HAVE_HDF5
