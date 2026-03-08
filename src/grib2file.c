@@ -11,12 +11,54 @@
 #include "config.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include "nep_nc4.h"
 #include "grib2dispatch.h"
 #include <grib2.h>
 
 /** Maximum number of PDS/GDS/DRS template entries supported. */
 #define GRIB2_MAX_TEMPLATE_LEN 200
+
+/**
+ * @internal Create a NetCDF-4 variable and insert it into the group's
+ * variable list, wiring in an existing atomic type from the file's type
+ * system. Follows the same pattern as geotifffile.c.
+ *
+ * @param h5 File info struct (needed to look up type).
+ * @param grp Parent group.
+ * @param name Variable name.
+ * @param ndims Number of dimensions.
+ * @param xtype NetCDF atomic type (e.g. NC_FLOAT).
+ * @param format_var_info Format-specific var info (may be NULL).
+ * @param var Output: pointer to the new NC_VAR_INFO_T.
+ *
+ * @return ::NC_NOERR No error.
+ * @return ::NC_ENOMEM Out of memory.
+ */
+static int
+grib2_var_list_add(NC_FILE_INFO_T *h5, NC_GRP_INFO_T *grp, const char *name,
+                   int ndims, nc_type xtype, void *format_var_info,
+                   NC_VAR_INFO_T **var)
+{
+    NC_TYPE_INFO_T *type_info;
+    int retval;
+
+    if ((retval = nc4_var_list_add(grp, name, ndims, var)))
+        return retval;
+    (*var)->created    = NC_TRUE;
+    (*var)->written_to = NC_TRUE;
+    (*var)->atts_read  = 1;
+    (*var)->format_var_info = format_var_info;
+    (*var)->storage = NC_CONTIGUOUS;
+
+    /* Look up the atomic type object from the file's type system. */
+    if ((retval = nc4_find_type(h5, xtype, &type_info)))
+        return retval;
+    (*var)->type_info = type_info;
+    (*var)->type_info->rc++;
+
+    return NC_NOERR;
+}
 
 /** @internal These flags may not be set for open mode. */
 static const int
@@ -197,6 +239,87 @@ NC_GRIB2_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
                     prod_idx++;
                 }
             }
+        }
+    }
+
+    /* Build NetCDF-4 dimensions and variables from product inventory. */
+    if (grib2_file->num_products > 0)
+    {
+        NC_DIM_INFO_T *dim_x, *dim_y;
+        int i;
+
+        /* Create shared x and y dimensions from the first product's grid. */
+        if ((retval = nc4_dim_list_add(h5->root_grp, "x",
+                                       grib2_file->num_x, -1, &dim_x)))
+        {
+            free(grib2_file->products);
+            free(grib2_file);
+            g2c_close(g2cid);
+            return retval;
+        }
+        if ((retval = nc4_dim_list_add(h5->root_grp, "y",
+                                       grib2_file->num_y, -1, &dim_y)))
+        {
+            free(grib2_file->products);
+            free(grib2_file);
+            g2c_close(g2cid);
+            return retval;
+        }
+
+        /* Create one variable per product. */
+        for (i = 0; i < grib2_file->num_products; i++)
+        {
+            NC_GRIB2_PROD_INFO_T *p = &grib2_file->products[i];
+            NC_VAR_GRIB2_INFO_T *var_info;
+            NC_VAR_INFO_T *var;
+            /* NC_MAX_NAME + 1 for the base name; extra headroom for _NNN suffix. */
+            char varname[NC_MAX_NAME + 1];
+            char candidate[NC_MAX_NAME + 16];
+            int suffix;
+
+            /* Build variable name from abbreviation; fall back to var_{i}. */
+            if (p->abbrev[0])
+                snprintf(varname, sizeof(varname), "%s", p->abbrev);
+            else
+                snprintf(varname, sizeof(varname), "var_%d", i);
+
+            /* Uniquify duplicate names by appending _2, _3, etc. */
+            snprintf(candidate, sizeof(candidate), "%s", varname);
+            for (suffix = 2;
+                 nc4_find_var(h5->root_grp, candidate, NULL) == NC_NOERR;
+                 suffix++)
+                snprintf(candidate, sizeof(candidate), "%s_%d", varname, suffix);
+            snprintf(varname, sizeof(varname), "%.*s", NC_MAX_NAME, candidate);
+
+            /* Allocate per-variable GRIB2 info. */
+            if (!(var_info = calloc(1, sizeof(NC_VAR_GRIB2_INFO_T))))
+            {
+                free(grib2_file->products);
+                free(grib2_file);
+                g2c_close(g2cid);
+                return NC_ENOMEM;
+            }
+            var_info->msg_index    = p->msg_index;
+            var_info->discipline   = (int)p->discipline;
+            var_info->category     = p->category;
+            var_info->param_number = p->param_number;
+
+            /* Add 2D (y, x) NC_FLOAT variable. */
+            if ((retval = grib2_var_list_add(h5, h5->root_grp, varname, 2,
+                                             NC_FLOAT, var_info, &var)))
+            {
+                free(var_info);
+                free(grib2_file->products);
+                free(grib2_file);
+                g2c_close(g2cid);
+                return retval;
+            }
+
+            /* Wire dimension pointers (y first, then x). */
+            var->dim[0]    = dim_y;
+            var->dimids[0] = dim_y->hdr.id;
+            var->dim[1]    = dim_x;
+            var->dimids[1] = dim_x->hdr.id;
         }
     }
 
