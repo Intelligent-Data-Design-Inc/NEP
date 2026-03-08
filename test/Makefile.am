@@ -16,21 +16,12 @@ AM_CFLAGS = -g -Wall -Wextra $(HDF5_CFLAGS)
 
 # check_SCRIPTS = test_vol_plugin.sh
 
-# if HAVE_GRIB2
-# check_PROGRAMS += test_grib2_vol
-# test_grib2_vol_LDFLAGS = $(AM_LDFLAGS) $(HDF5_LDFLAGS)
-# test_grib2_vol_LDADD = $(HDF5_LIBS)
-# test_grib2_vol_SOURCES = test_grib2_vol.c
-
-# TESTS += test_vol_plugin.sh
-
-# # Copy test data to build directory only for out-of-tree builds and only during check
-# check-local:
-# 	if test "$(srcdir)" != "$(builddir)" ; then \
-# 		$(MKDIR_P) $(builddir)/data; \
-# 		$(INSTALL_DATA) $(srcdir)/$(TEST_DATA_FILE) $(builddir)/$(TEST_DATA_FILE); \
-# 	fi
-# endif
+# Build GRIB2 UDF placeholder test, if GRIB2 is enabled.
+if HAVE_GRIB2
+check_PROGRAMS += tst_grib2_udf
+tst_grib2_udf_LDADD = ${top_builddir}/src/libncgrib2.la ${top_builddir}/src/libnep.la
+TESTS += tst_grib2_udf
+endif
 
 # Build LZ4 tests, if needed.
 if BUILD_LZ4
