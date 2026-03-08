@@ -499,19 +499,51 @@ The GRIB2 UDF handler follows the same NC_Dispatch pattern used for CDF and GeoT
 - **Format Detection**: Automatic identification of GRIB2 files via magic number (`GRIB`) registered at UDF slot 3 (`NEP_UDF_GRIB2 = NC_UDF3`)
 - **NC_Dispatch Implementation**: Complete dispatch table for GRIB2 file operations
 - **File Operations**: `NC_GRIB2_open()` and `NC_GRIB2_close()` with proper resource management
-- **Metadata Mapping**: GRIB2 messages mapped to NetCDF variables with dimensions, types, and attributes
-- **Data Access**: `NC_GRIB2_get_vara()` with start/count slicing and bitmap/missing-value handling
+- **Metadata Mapping**: GRIB2 products mapped to NetCDF variables with shared `y`/`x` dimensions, `NC_FLOAT` type, and per-variable + global attributes
+- **Data Access**: `NC_GRIB2_get_vara()` expands full grid via `g2_getfld(expand=1)` with bitmap-to-`_FillValue` substitution and `start`/`count` slicing
 
-#### Message-to-Variable Mapping
-- Each GRIB2 message → one NetCDF variable with `[ny, nx]` dimensions
-- Variable name derived from g2c parameter name lookup (discipline/category/parameter number)
-- Shared grid dimensions reused across variables with identical grid templates
-- `NC_FLOAT` type for unpacked data; g2c handles big-endian wire format conversion
+#### Product-to-Variable Mapping
+- Each GRIB2 product (one per message for single-product files) → one `NC_FLOAT` NetCDF variable with shared `[y, x]` dimensions
+- Variable name from `g2c_param_abbrev()`; duplicate names uniquified with `_2`, `_3`, ... suffixes
+- Shared `y` (ny) and `x` (nx) dimensions created once; all variables reference the same dim IDs
+- Grid size taken from the first product via `g2c_inq_dim_info()`
 
 #### Metadata Model
-- **Variable attributes**: `long_name`, `units`, `_FillValue`, `GRIB2_discipline`, `GRIB2_category`, `GRIB2_param_number`
-- **Global attributes**: `Conventions = "GRIB2"`, `source` (originating centre), `GRIB2_edition = 2`
-- **Dispatch pointers**: `inq_ndims`, `inq_nvars`, `inq_natts`, `inq_dimid`, `inq_var`, `inq_att`, `get_att`, `get_vara`
+- **Variable attributes**: `long_name` (from abbreviation), `_FillValue = 9.999e20f`, `GRIB2_discipline`, `GRIB2_category`, `GRIB2_param_number`
+- **Global attributes**: `Conventions = "GRIB2"`, `GRIB2_edition = 2`
+- **Dispatch pointers**: `inq`, `inq_dimid`, `inq_dim`, `inq_var`, `inq_att`, `get_att`, `get_vara` — wired at Sprint 1; metadata populated at Sprint 3
+- Note: `units` attribute is not provided — NCEPLIBS-g2c has no API to retrieve parameter units
+
+#### Key Data Structures
+
+| Struct | Location | Purpose |
+|--------|----------|---------|
+| `NC_GRIB2_FILE_INFO_T` | `include/grib2dispatch.h` | Per-file state: `g2cid`, `num_messages`, `num_products`, `num_x`/`num_y`, `*products` array |
+| `NC_GRIB2_PROD_INFO_T` | `include/grib2dispatch.h` | Per-product inventory: `msg_index`, `prod_index`, `discipline`, `category`, `param_number`, `nx`, `ny`, `abbrev[64]` |
+| `NC_VAR_GRIB2_INFO_T` | `include/grib2dispatch.h` | Per-variable: `msg_index`, `prod_index` (used by `get_vara` to locate raw message) |
+
+#### Memory Ownership
+- `NC_GRIB2_FILE_INFO_T.products` array: allocated in `NC_GRIB2_open()`, freed in `NC_GRIB2_close()`
+- `NC_VAR_GRIB2_INFO_T` per-variable structs: `var->format_var_info`, freed by netcdf-c group teardown
+- Attribute `data` pointers (`NC_ATT_INFO_T.data`): `malloc`'d in `grib2_add_*_att()` helpers, freed by netcdf-c att teardown
+- `g2_getfld()` output (`gribfield *`): freed with `g2_free()` within `NC_GRIB2_get_vara()`
+
+#### `NC_GRIB2_open()` Pipeline
+1. Magic detection: netcdf-c checks `GRIB` prefix before calling `NC_GRIB2_open()`
+2. `g2c_open()` → `grib2_file->g2cid`
+3. Two-pass product inventory: `g2c_inq()` → `g2c_inq_msg()` → `g2c_inq_prod()` → populate `NC_GRIB2_PROD_INFO_T[]`
+4. `nc4_dim_list_add()` for shared `y` and `x` dimensions
+5. Per-product: `grib2_var_list_add()` → set dim IDs → add `GRIB2_*`, `long_name`, `_FillValue` attributes
+6. Global: `Conventions`, `GRIB2_edition` attributes on root group
+
+#### `NC_GRIB2_get_vara()` Data Path
+1. `nc4_find_grp_h5_var()` → `NC_VAR_GRIB2_INFO_T` (msg_index, prod_index)
+2. `g2c_seekmsg(g2cid, msg_index)` → byte offset in file
+3. `g2c_get_msg()` → raw message bytes `cbuf`
+4. `g2_getfld(cbuf, prod_index+1, unpack=1, expand=1, &gfld)` → `gfld->fld[ngrdpts]` full grid, `gfld->bmap[i]` bitmap
+5. Bitmap loop: `bmap[i]==0` (land/missing) → `full_buf[i] = 9.999e20f`; else `full_buf[i] = gfld->fld[i]`
+6. Row-major `start`/`count` copy into caller buffer; `nc4_convert_type()` if `memtype != NC_FLOAT`
+7. `g2_free(gfld)`, `free(full_buf)`
 
 #### UDF Slot and `.ncrc` Registration
 - UDF slot 3 (`NC_UDF3`) reserved for GRIB2 in `include/nep.h`

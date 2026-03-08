@@ -209,11 +209,11 @@ GRIB2 (General Regularly-distributed Information in Binary form, Edition 2) supp
 ### 7.2 Features
 - **File Operations**: `NC_GRIB2_open()` and `NC_GRIB2_close()` with proper resource management
 - **Format Detection**: Automatic GRIB2 magic number detection (`GRIB`) via UDF slot 3
-- **Message Mapping**: Each GRIB2 message exposed as a named NetCDF variable with `[ny, nx]` dimensions
-- **Metadata Extraction**: Variable names from g2c parameter lookup; discipline/category/parameter attributes for traceability
-- **Attribute Conventions**: `_FillValue` from GRIB2 bitmap/missing value; `GRIB2_discipline`, `GRIB2_category`, `GRIB2_param_number` attributes
-- **Global Attributes**: `Conventions`, `source`, `GRIB2_edition` from GRIB2 identification section
-- **Data Reading**: `NC_GRIB2_get_vara()` with `start`/`count` slicing and bitmap/missing-value handling
+- **Product Mapping**: Each GRIB2 product (one per message for single-product messages) exposed as a named `NC_FLOAT` NetCDF variable with shared `[y, x]` dimensions
+- **Metadata Extraction**: Variable names from `g2c_param_abbrev()`; duplicate names uniquified with `_2`, `_3`, ... suffixes
+- **Variable Attributes**: `long_name` (from parameter abbreviation), `_FillValue = 9.999e20f`, `GRIB2_discipline`, `GRIB2_category`, `GRIB2_param_number`
+- **Global Attributes**: `Conventions = "GRIB2"`, `GRIB2_edition = 2`
+- **Data Reading**: `NC_GRIB2_get_vara()` with `start`/`count` slicing; bitmap-masked (land) points filled with `_FillValue`
 - **UDF Self-Loading**: `NC_GRIB2_initialize()` supports both manual registration and `.ncrc` autoload
 
 ### 7.3 Build Configuration
@@ -224,14 +224,18 @@ GRIB2 (General Regularly-distributed Information in Binary form, Edition 2) supp
 - `--enable-grib2/--disable-grib2` - GRIB2 support (default: disabled)
 
 ### 7.4 Dependencies
-- NOAA NCEPLIBS-g2c (required when enabled); user supplies install path at configure time
+- **NOAA NCEPLIBS-g2c** >= 2.1.0 (required when enabled); user supplies install path at configure time
+- **libjasper** >= 3.0.0 (transitive dependency of g2c for JPEG2000 compression)
 - g2c repo: https://github.com/NOAA-EMC/NCEPLIBS-g2c
 - g2c docs: https://noaa-emc.github.io/NCEPLIBS-g2c/
 
 ### 7.5 Known Limitations
-- Read-only access (NC_NOWRITE mode only)
-- 2D grids only (`[ny, nx]`); ensemble/time dimensions deferred to future releases
-- One NetCDF variable per GRIB2 message; multi-message aggregation not supported
+- Read-only access (`NC_NOWRITE` mode only)
+- Single shared grid assumed: all products in a file must share the same `nx`/`ny` (taken from the first product)
+- 2D grids only (`[y, x]`); no time, level, or ensemble dimensions
+- No coordinate variables: `x`/`y` dimensions have no associated lat/lon arrays
+- `units` attribute not available: NCEPLIBS-g2c has no API to retrieve units strings
+- One NetCDF variable per GRIB2 product; multi-product-per-message files use `prod_index` 0 only in Sprint 4
 
 ---
 
