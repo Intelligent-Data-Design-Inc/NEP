@@ -21,6 +21,13 @@ if HAVE_GRIB2
 check_PROGRAMS += tst_grib2_udf
 tst_grib2_udf_LDADD = ${top_builddir}/src/libncgrib2.la ${top_builddir}/src/libnep.la
 TESTS += tst_grib2_udf
+
+# Copy GRIB2 test data to build directory for out-of-tree builds
+check-local:
+	if test "$(srcdir)" != "$(builddir)" ; then \
+		$(MKDIR_P) $(builddir)/data; \
+		cp $(srcdir)/data/gdaswave.t00z.wcoast.0p16.f000.grib2 $(builddir)/data/; \
+	fi
 endif
 
 # Build LZ4 tests, if needed.
@@ -64,7 +71,7 @@ TESTS += run_tests.sh
 # Delete files created in testing.
 CLEANFILES = tst_*.nc
 
-EXTRA_DIST = run_tests.sh.in data/imap_mag_l1b-calibration_20240229_v001.cdf
+EXTRA_DIST = run_tests.sh.in data/imap_mag_l1b-calibration_20240229_v001.cdf data/gdaswave.t00z.wcoast.0p16.f000.grib2
 
 DISTCLEANFILES = run_tests.sh
 

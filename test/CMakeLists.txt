@@ -80,6 +80,12 @@ if(HAVE_GRIB2)
     target_link_libraries(tst_grib2_udf PRIVATE ncgrib2 nep ${NETCDF_LIBRARIES})
     target_include_directories(tst_grib2_udf PRIVATE ${NETCDF_INCLUDE_DIRS})
     add_test(NAME tst_grib2_udf COMMAND tst_grib2_udf)
+
+    # Copy GRIB2 test data to build directory
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/gdaswave.t00z.wcoast.0p16.f000.grib2
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/gdaswave.t00z.wcoast.0p16.f000.grib2
+                   COPYONLY)
 endif()
 
 # Configure run_tests.sh script with proper paths
