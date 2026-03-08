@@ -22,6 +22,9 @@ install(TARGETS nep
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
+install(FILES "${CMAKE_SOURCE_DIR}/include/grib2dispatch.h"
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
 
 # CDF UDF Handler - v1.3.0 Sprint 3
 # Build CDF library if enabled (netCDF UDF support)
