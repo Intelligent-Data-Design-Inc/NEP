@@ -544,7 +544,7 @@ NC_GRIB2_inq_format_extended(int ncid, int *formatp, int *modep)
  *
  * @return ::NC_NOERR No error.
  * @return ::NC_ENOMEM Out of memory.
- * @return ::NC_EHDFERR Error from g2c_get_prod().
+ * @return ::NC_EHDFERR Error from g2c or g2_getfld.
  * @return ::NC_EINVALCOORDS start/count exceeds dimension bounds.
  * @author Edward Hartnett
  */
@@ -557,12 +557,15 @@ NC_GRIB2_get_vara(int ncid, int varid, const size_t *start, const size_t *count,
     NC_VAR_INFO_T *var;
     NC_GRIB2_FILE_INFO_T *grib2_file;
     NC_VAR_GRIB2_INFO_T *var_info;
+    unsigned char *cbuf = NULL;
+    gribfield *gfld = NULL;
     float *full_buf = NULL;
-    size_t nx, ny;
-    int num_data_points;
-    size_t row, col;
-    size_t out_idx;
+    size_t nx, ny, nelem;
+    size_t bytes_to_msg, bytes_in_msg;
+    size_t msg_offset, msg_len;
+    size_t row, col, out_idx;
     int retval;
+    int i;
 
     /* Recover file, group, and variable metadata. */
     if ((retval = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var)))
@@ -577,21 +580,51 @@ NC_GRIB2_get_vara(int ncid, int varid, const size_t *start, const size_t *count,
     if (start[0] + count[0] > ny || start[1] + count[1] > nx)
         return NC_EINVALCOORDS;
 
-    /* Allocate full-grid buffer and unpack via g2c. */
-    if (!(full_buf = calloc(nx * ny, sizeof(float))))
-        return NC_ENOMEM;
+    /* Locate the raw GRIB2 message bytes for this variable's message. */
+    if (g2c_seekmsg(grib2_file->g2cid, (size_t)var_info->msg_index,
+                    &msg_offset, &msg_len))
+        return NC_EHDFERR;
 
-    if (g2c_get_prod(grib2_file->g2cid, var_info->msg_index,
-                     var_info->prod_index, &num_data_points, full_buf))
+    /* Read the full raw message into a heap buffer. */
+    if (g2c_get_msg(grib2_file->g2cid, msg_offset,
+                    msg_offset + msg_len + 1,
+                    &bytes_to_msg, &bytes_in_msg, &cbuf))
+        return NC_EHDFERR;
+
+    /* Expand the requested product to full [ny][nx] grid via g2_getfld.
+     * prod_index is 1-based in the g2_getfld API. */
+    if (g2_getfld(cbuf + bytes_to_msg,
+                  var_info->prod_index + 1, 1, 1, &gfld))
     {
-        free(full_buf);
+        free(cbuf);
         return NC_EHDFERR;
     }
+    free(cbuf);
+    cbuf = NULL;
+
+    /* gfld->fld is full [ny*nx] with land/bitmap=0 points set to 0.0.
+     * Build a float buffer with _FillValue substituted for masked points. */
+    nelem = nx * ny;
+    if (!(full_buf = malloc(nelem * sizeof(float))))
+    {
+        g2_free(gfld);
+        return NC_ENOMEM;
+    }
+    for (i = 0; i < (int)nelem; i++)
+    {
+        if (gfld->ibmap == 0 && gfld->bmap && !gfld->bmap[i])
+            full_buf[i] = 9.999e20f;
+        else
+            full_buf[i] = gfld->fld[i];
+    }
+    g2_free(gfld);
 
     /* Copy the requested [start[0]..start[0]+count[0]) x
-     * [start[1]..start[1]+count[1]) subset into the caller's buffer.
-     * full_buf is row-major [ny][nx]. */
+     * [start[1]..start[1]+count[1]) subset from full_buf [ny][nx]
+     * (row-major) into the caller's buffer. */
     out_idx = 0;
+    nelem = count[0] * count[1];
+
     if (memtype == NC_FLOAT || memtype == NC_NAT)
     {
         float *out = (float *)value;
@@ -601,8 +634,6 @@ NC_GRIB2_get_vara(int ncid, int varid, const size_t *start, const size_t *count,
     }
     else
     {
-        /* Use nc4_convert_type() for any other requested type. */
-        size_t nelem = count[0] * count[1];
         float *tmp;
         int range_error = 0;
 
