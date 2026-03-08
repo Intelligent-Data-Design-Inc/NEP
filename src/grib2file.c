@@ -117,6 +117,34 @@ grib2_add_str_att(NCindex *att_list, const char *name, const char *value)
     return NC_NOERR;
 }
 
+/**
+ * @internal Add a scalar NC_FLOAT attribute to an attribute list.
+ *
+ * @param att_list The NCindex attribute list to add to.
+ * @param name Attribute name.
+ * @param value Float value.
+ *
+ * @return ::NC_NOERR No error.
+ * @return ::NC_ENOMEM Out of memory.
+ */
+static int
+grib2_add_float_att(NCindex *att_list, const char *name, float value)
+{
+    NC_ATT_INFO_T *att;
+    float *data;
+    int retval;
+
+    if ((retval = nc4_att_list_add(att_list, name, &att)))
+        return retval;
+    if (!(data = malloc(sizeof(float))))
+        return NC_ENOMEM;
+    *data = value;
+    att->nc_typeid = NC_FLOAT;
+    att->len = 1;
+    att->data = data;
+    return NC_NOERR;
+}
+
 /** @internal These flags may not be set for open mode. */
 static const int
 ILLEGAL_OPEN_FLAGS = (NC_MMAP|NC_64BIT_OFFSET|NC_DISKLESS|NC_WRITE);
@@ -357,6 +385,7 @@ NC_GRIB2_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
                 return NC_ENOMEM;
             }
             var_info->msg_index    = p->msg_index;
+            var_info->prod_index   = p->prod_index;
             var_info->discipline   = (int)p->discipline;
             var_info->category     = p->category;
             var_info->param_number = p->param_number;
@@ -392,6 +421,9 @@ NC_GRIB2_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
                 if ((retval = grib2_add_str_att(var->att, "long_name",
                                                 p->abbrev)))
                     return retval;
+            if ((retval = grib2_add_float_att(var->att, "_FillValue",
+                                              9.999e20f)))
+                return retval;
         }
 
         /* Global attributes on the root group. */
@@ -510,18 +542,90 @@ NC_GRIB2_inq_format_extended(int ncid, int *formatp, int *modep)
  * @param value Pointer to buffer for the read data.
  * @param memtype Memory type for the data.
  *
- * @return ::NC_ENOTBUILT GRIB2 support not yet implemented.
+ * @return ::NC_NOERR No error.
+ * @return ::NC_ENOMEM Out of memory.
+ * @return ::NC_EHDFERR Error from g2c_get_prod().
+ * @return ::NC_EINVALCOORDS start/count exceeds dimension bounds.
  * @author Edward Hartnett
  */
 int
 NC_GRIB2_get_vara(int ncid, int varid, const size_t *start, const size_t *count,
                   void *value, nc_type memtype)
 {
-    (void)ncid;
-    (void)varid;
-    (void)start;
-    (void)count;
-    (void)value;
-    (void)memtype;
-    return NC_ENOTBUILT;
+    NC_FILE_INFO_T *h5;
+    NC_GRP_INFO_T *grp;
+    NC_VAR_INFO_T *var;
+    NC_GRIB2_FILE_INFO_T *grib2_file;
+    NC_VAR_GRIB2_INFO_T *var_info;
+    float *full_buf = NULL;
+    size_t nx, ny;
+    int num_data_points;
+    size_t row, col;
+    size_t out_idx;
+    int retval;
+
+    /* Recover file, group, and variable metadata. */
+    if ((retval = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var)))
+        return retval;
+
+    grib2_file = (NC_GRIB2_FILE_INFO_T *)h5->format_file_info;
+    var_info    = (NC_VAR_GRIB2_INFO_T *)var->format_var_info;
+    nx = grib2_file->num_x;
+    ny = grib2_file->num_y;
+
+    /* Validate start/count against dimension bounds. */
+    if (start[0] + count[0] > ny || start[1] + count[1] > nx)
+        return NC_EINVALCOORDS;
+
+    /* Allocate full-grid buffer and unpack via g2c. */
+    if (!(full_buf = calloc(nx * ny, sizeof(float))))
+        return NC_ENOMEM;
+
+    if (g2c_get_prod(grib2_file->g2cid, var_info->msg_index,
+                     var_info->prod_index, &num_data_points, full_buf))
+    {
+        free(full_buf);
+        return NC_EHDFERR;
+    }
+
+    /* Copy the requested [start[0]..start[0]+count[0]) x
+     * [start[1]..start[1]+count[1]) subset into the caller's buffer.
+     * full_buf is row-major [ny][nx]. */
+    out_idx = 0;
+    if (memtype == NC_FLOAT || memtype == NC_NAT)
+    {
+        float *out = (float *)value;
+        for (row = start[0]; row < start[0] + count[0]; row++)
+            for (col = start[1]; col < start[1] + count[1]; col++)
+                out[out_idx++] = full_buf[row * nx + col];
+    }
+    else
+    {
+        /* Use nc4_convert_type() for any other requested type. */
+        size_t nelem = count[0] * count[1];
+        float *tmp;
+        int range_error = 0;
+
+        if (!(tmp = malloc(nelem * sizeof(float))))
+        {
+            free(full_buf);
+            return NC_ENOMEM;
+        }
+        for (row = start[0]; row < start[0] + count[0]; row++)
+            for (col = start[1]; col < start[1] + count[1]; col++)
+                tmp[out_idx++] = full_buf[row * nx + col];
+
+        retval = nc4_convert_type(tmp, value, NC_FLOAT, memtype,
+                                  nelem, &range_error, NULL, 0,
+                                  NC_NOQUANTIZE, 0);
+        free(tmp);
+        if (retval)
+        {
+            free(full_buf);
+            return retval;
+        }
+    }
+
+    free(full_buf);
+    return NC_NOERR;
 }

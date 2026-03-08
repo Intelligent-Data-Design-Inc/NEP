@@ -49,6 +49,7 @@ typedef struct NC_GRIB2_PROD_INFO
 typedef struct NC_VAR_GRIB2_INFO
 {
     int msg_index;       /**< Zero-based index of the GRIB2 message */
+    int prod_index;      /**< Zero-based product index within message */
     int discipline;      /**< GRIB2 discipline (Table 0.0) */
     int category;        /**< GRIB2 parameter category */
     int param_number;    /**< GRIB2 parameter number */

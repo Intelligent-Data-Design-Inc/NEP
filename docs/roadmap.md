@@ -113,37 +113,36 @@
 
 #### Sprint 4: Data Reading and CI Completion
 
-**Objective**: Implement `NC_GRIB2_get_vara()` so raster data can be read from GRIB2 variables, and complete CI/documentation/ncrc integration.
+**Objective**: Implement `NC_GRIB2_get_vara()` so raster data can be read from GRIB2 variables via the standard NetCDF API, and complete documentation and CI coverage.
+
+**Background**: The `get_vara` function pointer is already wired in the dispatch table (Sprint 1) pointing at the `NC_ENOTBUILT` stub. `nep.ncrc` is already complete with a UDF3 GRIB2 block. `nc4_convert_type()` is available in `nep_nc4.h` for type conversion.
 
 **Tasks**:
 - **`NC_GRIB2_get_vara()`**: Implement in `src/grib2file.c`
-  - Map NetCDF `varid` back to the corresponding GRIB2 message index
-  - Call `g2c_get_data(g2cid, msg_index, data)` to unpack the full grid into a float array
-  - Apply `start` / `count` slicing from the `vara` call to return the requested subset
-  - Handle missing value / bitmap masking: replace bitmapped points with `_FillValue`
-  - Return `NC_NOERR` on success; appropriate error code on failure (e.g., `NC_ERANGE` for out-of-bounds indices)
-- **Wire Dispatch**: Set `get_vara` function pointer in the `NC_Dispatch` structure
-- **Type Conversion**: g2c unpacks to `float`; handle conversion to other requested NetCDF types using standard NetCDF type conversion utilities
+  - Look up `varid` in the root group's variable list to recover `NC_VAR_GRIB2_INFO_T` (msg_index, prod_index)
+  - Call `g2c_get_prod(g2cid, msg_index, prod_index, &num_data_points, float *data)` to unpack the full grid; g2c fills missing/bitmapped points with `9.999e20` automatically
+  - Apply `start` / `count` slicing to copy the requested 2D subset from the full `[ny, nx]` float array into the caller's buffer
+  - Use `nc4_convert_type()` if the requested `mem_nc_type` differs from `NC_FLOAT`
+  - Return `NC_NOERR` on success; `NC_EINVALCOORDS` for out-of-bounds indices; `NC_ENOMEM` on allocation failure
+- **`_FillValue` attribute**: Add `_FillValue = 9.999e20f` (`NC_FLOAT`) to each variable during `NC_GRIB2_open()` so the fill value is queryable via `nc_inq_var_fill()`
+- **Type Conversion**: Use `nc4_convert_type()` (already in `nep_nc4.h`) to handle requests for types other than `NC_FLOAT`
 - **Test Expansion** (`test/tst_grib2_udf.c`):
-  - Read data from at least one variable using `nc_get_var_float()`
-  - Validate that data array is non-null and that a spot-check value matches expected (known value from the test GRIB2 file)
-  - Read a 2D subset using `nc_get_vara_float()` with explicit `start` / `count`; validate dimensions of result
-  - Verify `_FillValue` substitution: confirm bitmapped missing points carry the fill value
-- **`.ncrc` Finalization**: Ensure `nep.ncrc` UDF3 block is complete and tested end-to-end (open GRIB2 without calling `NC_GRIB2_initialize()` explicitly, relying on `.ncrc` autoload)
+  - Read full variable 0 (WIND, nx×ny = 151×241) using `nc_get_var_float()`; assert return is `NC_NOERR` and a known spot-check value matches (determine from `g2c_get_prod` diagnostic)
+  - Read a small 2D subset using `nc_get_vara_float()` with explicit `start`/`count`; assert correct element count returned
 - **`docs/prd.md` Update**: Add GRIB2 Format Support section (v1.7.0) covering features, build config, dependencies, known limitations
-- **`docs/design.md` Update**: Add GRIB2 UDF handler architecture section with dispatch diagram and key components
+- **`docs/design.md` Update**: Add GRIB2 UDF handler architecture section covering dispatch flow and key components
 - **CI Completion**:
-  - Confirm GRIB2-enabled CI jobs exercise all four test scenarios (open/close, metadata, data reading, error path)
-  - Add GRIB2 Valgrind / AddressSanitizer run to the memory-leak CI job
+  - Confirm GRIB2-enabled CI jobs exercise all test scenarios (open/close, metadata, data reading, error path)
+  - Add GRIB2 AddressSanitizer run to the memory-leak CI job
   - Verify both CMake and Autotools GRIB2 builds pass
 
 **Definition of Done**:
-- `nc_get_var_float()` successfully reads data from a GRIB2 variable
-- Spot-check data values match expected values from the test file
-- `_FillValue` correctly applied for bitmapped missing data
-- `nep.ncrc` autoloads GRIB2 handler without explicit `NC_GRIB2_initialize()` call
+- `nc_get_var_float()` returns `NC_NOERR` and correct data for a GRIB2 variable
+- Spot-check data value matches known value from the test file
+- `nc_get_vara_float()` with explicit `start`/`count` returns correct subset
+- `_FillValue = 9.999e20f` present and queryable on each variable
 - `prd.md` and `design.md` updated
-- All CI jobs pass for GRIB2-enabled builds
+- All CI jobs pass for GRIB2-enabled builds (CMake and Autotools)
 
 
 
