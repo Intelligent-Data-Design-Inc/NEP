@@ -60,6 +60,63 @@ grib2_var_list_add(NC_FILE_INFO_T *h5, NC_GRP_INFO_T *grp, const char *name,
     return NC_NOERR;
 }
 
+/**
+ * @internal Add a scalar NC_INT attribute to an attribute list.
+ *
+ * @param att_list The NCindex attribute list to add to.
+ * @param name Attribute name.
+ * @param value Integer value.
+ *
+ * @return ::NC_NOERR No error.
+ * @return ::NC_ENOMEM Out of memory.
+ */
+static int
+grib2_add_int_att(NCindex *att_list, const char *name, int value)
+{
+    NC_ATT_INFO_T *att;
+    int *data;
+    int retval;
+
+    if ((retval = nc4_att_list_add(att_list, name, &att)))
+        return retval;
+    if (!(data = malloc(sizeof(int))))
+        return NC_ENOMEM;
+    *data = value;
+    att->nc_typeid = NC_INT;
+    att->len = 1;
+    att->data = data;
+    return NC_NOERR;
+}
+
+/**
+ * @internal Add a NC_CHAR string attribute to an attribute list.
+ *
+ * @param att_list The NCindex attribute list to add to.
+ * @param name Attribute name.
+ * @param value String value (not NUL-terminated in att->data per NC_CHAR convention).
+ *
+ * @return ::NC_NOERR No error.
+ * @return ::NC_ENOMEM Out of memory.
+ */
+static int
+grib2_add_str_att(NCindex *att_list, const char *name, const char *value)
+{
+    NC_ATT_INFO_T *att;
+    char *data;
+    int retval;
+    size_t slen = strlen(value);
+
+    if ((retval = nc4_att_list_add(att_list, name, &att)))
+        return retval;
+    if (!(data = malloc(slen ? slen : 1)))
+        return NC_ENOMEM;
+    memcpy(data, value, slen);
+    att->nc_typeid = NC_CHAR;
+    att->len = slen;
+    att->data = data;
+    return NC_NOERR;
+}
+
 /** @internal These flags may not be set for open mode. */
 static const int
 ILLEGAL_OPEN_FLAGS = (NC_MMAP|NC_64BIT_OFFSET|NC_DISKLESS|NC_WRITE);
@@ -320,7 +377,30 @@ NC_GRIB2_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
             var->dimids[0] = dim_y->hdr.id;
             var->dim[1]    = dim_x;
             var->dimids[1] = dim_x->hdr.id;
+
+            /* Per-variable GRIB2 attributes. */
+            if ((retval = grib2_add_int_att(var->att, "GRIB2_discipline",
+                                            var_info->discipline)))
+                return retval;
+            if ((retval = grib2_add_int_att(var->att, "GRIB2_category",
+                                            var_info->category)))
+                return retval;
+            if ((retval = grib2_add_int_att(var->att, "GRIB2_param_number",
+                                            var_info->param_number)))
+                return retval;
+            if (p->abbrev[0])
+                if ((retval = grib2_add_str_att(var->att, "long_name",
+                                                p->abbrev)))
+                    return retval;
         }
+
+        /* Global attributes on the root group. */
+        if ((retval = grib2_add_str_att(h5->root_grp->att, "Conventions",
+                                        "GRIB2")))
+            return retval;
+        if ((retval = grib2_add_int_att(h5->root_grp->att, "GRIB2_edition",
+                                        2)))
+            return retval;
     }
 
     return NC_NOERR;
