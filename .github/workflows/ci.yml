@@ -196,7 +196,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake make wget zlib1g-dev libtiff-dev libgeotiff-dev
+          sudo apt-get install -y cmake make wget zlib1g-dev libtiff-dev libgeotiff-dev autoconf automake libtool pkg-config libjasper-dev libpng-dev
 
       - name: Cache HDF5 install
         id: cache-hdf5-asan
@@ -242,16 +242,41 @@ jobs:
           make -j$(nproc)
           make install
 
+      - name: Cache g2c install (ASAN)
+        id: cache-g2c-asan
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/g2c-install
+          key: g2c-2.3.0-asan-${{ runner.os }}-1
+
+      - name: Download and build NCEPLIBS-g2c 2.3.0 with ASAN
+        if: steps.cache-g2c-asan.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/NOAA-EMC/NCEPLIBS-g2c/archive/refs/tags/v2.3.0.tar.gz &> /dev/null
+          tar -xzf v2.3.0.tar.gz
+          cd NCEPLIBS-g2c-2.3.0
+          mkdir build && cd build
+          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/g2c-install \
+                -DCMAKE_C_FLAGS="-g -O0 -fsanitize=address -fno-omit-frame-pointer" \
+                -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address" \
+                -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=address" \
+                -DBUILD_SHARED_LIBS=ON \
+                -DBUILD_TESTING=OFF \
+                -DBUILD_DOCS=OFF \
+                ..
+          make -j$(nproc)
+          make install
+
       - name: Configure NEP with ASAN
         run: |
           autoreconf -i
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
           export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
           export CFLAGS="-g -O0 -Wall -Werror -fsanitize=address -fno-omit-frame-pointer"
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -fsanitize=address"
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
-          ./configure --enable-geotiff --disable-fortran --disable-shared --disable-bzip2 --disable-lz4 --enable-examples
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/g2c-install/include"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib -fsanitize=address"
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$LD_LIBRARY_PATH"
+          ./configure --enable-geotiff --enable-grib2 --with-g2c=$GITHUB_WORKSPACE/g2c-install --disable-fortran --disable-shared --disable-bzip2 --disable-lz4 --enable-examples
 
       - name: Build NEP with ASAN
         run: make -j$(nproc)
@@ -262,19 +287,24 @@ jobs:
           cp -f test/data/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif test_geotiff/
           cp -f test/data/ABBA_2022_C61_HNL.tif test_geotiff/
 
-      - name: Generate .ncrc for test_geotiff UDF registration
+      - name: Generate .ncrc for UDF registration (GeoTIFF + GRIB2)
         run: |
-          NEP_LIB="$GITHUB_WORKSPACE/src/.libs/libncgeotiff.so"
+          GEOTIFF_LIB="$GITHUB_WORKSPACE/src/.libs/libncgeotiff.so"
+          GRIB2_LIB="$GITHUB_WORKSPACE/src/.libs/libncgrib2.so"
           NCRC_FILE="$GITHUB_WORKSPACE/ncrc_asan.rc"
           cat > "$NCRC_FILE" << 'EOF'
-NETCDF.UDF0.LIBRARY=PLACEHOLDER_LIB
+NETCDF.UDF0.LIBRARY=PLACEHOLDER_GEOTIFF
 NETCDF.UDF0.INIT=NC_GEOTIFF_initialize
 NETCDF.UDF0.MAGIC=II+
-NETCDF.UDF1.LIBRARY=PLACEHOLDER_LIB
+NETCDF.UDF1.LIBRARY=PLACEHOLDER_GEOTIFF
 NETCDF.UDF1.INIT=NC_GEOTIFF_initialize
 NETCDF.UDF1.MAGIC=II*
+NETCDF.UDF3.LIBRARY=PLACEHOLDER_GRIB2
+NETCDF.UDF3.INIT=NC_GRIB2_initialize
+NETCDF.UDF3.MAGIC=GRIB
 EOF
-          sed -i "s|PLACEHOLDER_LIB|${NEP_LIB}|g" "$NCRC_FILE"
+          sed -i "s|PLACEHOLDER_GEOTIFF|${GEOTIFF_LIB}|g" "$NCRC_FILE"
+          sed -i "s|PLACEHOLDER_GRIB2|${GRIB2_LIB}|g" "$NCRC_FILE"
           echo "Generated ncrc at $NCRC_FILE:"
           cat "$NCRC_FILE"
 
@@ -282,9 +312,9 @@ EOF
         run: |
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
           export HDF5_PLUGIN_PATH="$GITHUB_WORKSPACE/netcdf-c-install/hdf5/lib/plugin"
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -fsanitize=address"
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/g2c-install/include"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib -fsanitize=address"
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$LD_LIBRARY_PATH"
           export ASAN_OPTIONS="detect_leaks=1:halt_on_error=1:abort_on_error=1:detect_odr_violation=0"
           export NCRCENV_RC="$GITHUB_WORKSPACE/ncrc_asan.rc"
           make check || (echo "Memory leak detected! Test logs:"; for f in $(find . -name test-suite.log); do echo "=== $f ==="; cat "$f"; done; exit 1)
