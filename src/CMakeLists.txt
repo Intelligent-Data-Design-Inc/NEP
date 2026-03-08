@@ -22,6 +22,9 @@ install(TARGETS nep
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
+install(FILES "${CMAKE_SOURCE_DIR}/include/grib2dispatch.h"
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
 
 # CDF UDF Handler - v1.3.0 Sprint 3
 # Build CDF library if enabled (netCDF UDF support)
@@ -65,4 +68,26 @@ if(HAVE_GEOTIFF)
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     )
     message(STATUS "Building GeoTIFF UDF library: ${GEOTIFF_LIB_NAME}")
+endif()
+
+# GRIB2 UDF Handler - v1.7.0
+# Build GRIB2 library if enabled (netCDF UDF support)
+if(HAVE_GRIB2)
+    set(GRIB2_LIB_NAME ncgrib2)
+    add_library(${GRIB2_LIB_NAME} SHARED
+        grib2dispatch.c grib2file.c)
+    target_include_directories(${GRIB2_LIB_NAME} PRIVATE ${G2C_INCLUDE_DIR})
+    target_link_libraries(${GRIB2_LIB_NAME} PRIVATE
+        ${HDF5_C_${LIB_TYPE}_LIBRARY} ${NETCDF_LIBRARIES} ${G2C_LIBRARY})
+    set_target_properties(${GRIB2_LIB_NAME} PROPERTIES
+        VERSION ${PROJECT_VERSION}
+        SOVERSION 1
+        INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
+        INSTALL_RPATH_USE_LINK_PATH TRUE
+    )
+    install(TARGETS ${GRIB2_LIB_NAME}
+        EXPORT NEPTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
+    message(STATUS "Building GRIB2 UDF library: ${GRIB2_LIB_NAME}")
 endif()

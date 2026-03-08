@@ -11,7 +11,8 @@
  * - UDF0: GeoTIFF BigTIFF (magic: "II+")
  * - UDF1: GeoTIFF standard TIFF (magic: "II*")
  * - UDF2: NASA CDF format (magic: 0xCDF30001)
- * - UDF3-UDF9: Reserved for future use
+ * - UDF3: GRIB2 meteorological data (magic: "GRIB")
+ * - UDF4-UDF9: Reserved for future use
  *
  * @author Edward Hartnett
  * @date Nov 13, 2025
@@ -63,6 +64,9 @@ extern "C" {
 /** NASA CDF format uses UDF2 slot */
 #define NEP_UDF_CDF NC_UDF2
 
+/** GRIB2 meteorological format uses UDF3 slot */
+#define NEP_UDF_GRIB2 NC_UDF3
+
 /** @} */
 
 /**
@@ -79,6 +83,9 @@ extern "C" {
 /** NASA CDF magic number: 0xCDF30001 */
 #define NEP_MAGIC_CDF "\xCD\xF3\x00\x01"
 
+/** GRIB2 magic number: "GRIB" */
+#define NEP_MAGIC_GRIB2 "GRIB"
+
 /** @} */
 
 /**
@@ -91,6 +98,9 @@ extern "C" {
 
 /** NASA CDF format display name */
 #define NEP_FORMAT_NAME_CDF "NASA CDF"
+
+/** GRIB2 format display name */
+#define NEP_FORMAT_NAME_GRIB2 "GRIB2"
 
 /** @} */
 

@@ -74,6 +74,20 @@ if(HAVE_CDF)
     add_test(NAME tst_imap_mag COMMAND tst_imap_mag)
 endif()
 
+# Build GRIB2 UDF placeholder test if GRIB2 is enabled
+if(HAVE_GRIB2)
+    add_executable(tst_grib2_udf tst_grib2_udf.c)
+    target_link_libraries(tst_grib2_udf PRIVATE ncgrib2 nep ${NETCDF_LIBRARIES})
+    target_include_directories(tst_grib2_udf PRIVATE ${NETCDF_INCLUDE_DIRS})
+    add_test(NAME tst_grib2_udf COMMAND tst_grib2_udf)
+
+    # Copy GRIB2 test data to build directory
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/gdaswave.t00z.wcoast.0p16.f000.grib2
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/gdaswave.t00z.wcoast.0p16.f000.grib2
+                   COPYONLY)
+endif()
+
 # Configure run_tests.sh script with proper paths
 # For CMake builds, point to the installed plugin location
 set(MY_HDF5_PLUGIN_PATH "${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin:${NETCDF_PREFIX}/hdf5/lib/plugin:${NETCDF_PREFIX}/lib/plugin:${NETCDF_PREFIX}/lib/hdf5/plugin")
@@ -130,6 +144,9 @@ if(BUILD_BZIP2)
 endif()
 if(HAVE_CDF)
     list(APPEND _test_exe_deps tst_cdf_udf tst_imap_mag)
+endif()
+if(HAVE_GRIB2)
+    list(APPEND _test_exe_deps tst_grib2_udf)
 endif()
 add_custom_target(test_executables ALL DEPENDS ${_test_exe_deps})
 add_dependencies(test_executables hdf5_plugins)

@@ -16,21 +16,19 @@ AM_CFLAGS = -g -Wall -Wextra $(HDF5_CFLAGS)
 
 # check_SCRIPTS = test_vol_plugin.sh
 
-# if HAVE_GRIB2
-# check_PROGRAMS += test_grib2_vol
-# test_grib2_vol_LDFLAGS = $(AM_LDFLAGS) $(HDF5_LDFLAGS)
-# test_grib2_vol_LDADD = $(HDF5_LIBS)
-# test_grib2_vol_SOURCES = test_grib2_vol.c
+# Build GRIB2 UDF placeholder test, if GRIB2 is enabled.
+if HAVE_GRIB2
+check_PROGRAMS += tst_grib2_udf
+tst_grib2_udf_LDADD = ${top_builddir}/src/libncgrib2.la ${top_builddir}/src/libnep.la
+TESTS += tst_grib2_udf
 
-# TESTS += test_vol_plugin.sh
-
-# # Copy test data to build directory only for out-of-tree builds and only during check
-# check-local:
-# 	if test "$(srcdir)" != "$(builddir)" ; then \
-# 		$(MKDIR_P) $(builddir)/data; \
-# 		$(INSTALL_DATA) $(srcdir)/$(TEST_DATA_FILE) $(builddir)/$(TEST_DATA_FILE); \
-# 	fi
-# endif
+# Copy GRIB2 test data to build directory for out-of-tree builds
+check-local:
+	if test "$(srcdir)" != "$(builddir)" ; then \
+		$(MKDIR_P) $(builddir)/data; \
+		cp $(srcdir)/data/gdaswave.t00z.wcoast.0p16.f000.grib2 $(builddir)/data/; \
+	fi
+endif
 
 # Build LZ4 tests, if needed.
 if BUILD_LZ4
@@ -73,7 +71,7 @@ TESTS += run_tests.sh
 # Delete files created in testing.
 CLEANFILES = tst_*.nc
 
-EXTRA_DIST = run_tests.sh.in data/imap_mag_l1b-calibration_20240229_v001.cdf
+EXTRA_DIST = run_tests.sh.in data/imap_mag_l1b-calibration_20240229_v001.cdf data/gdaswave.t00z.wcoast.0p16.f000.grib2
 
 DISTCLEANFILES = run_tests.sh
 

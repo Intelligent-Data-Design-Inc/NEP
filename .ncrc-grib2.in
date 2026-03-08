@@ -1,0 +1,6 @@
+
+# GRIB2 meteorological data (UDF slot 3)
+NETCDF.UDF3.LIBRARY=@NEP_LIBDIR@/libncgrib2.so
+NETCDF.UDF3.INIT=NC_GRIB2_initialize
+NETCDF.UDF3.MAGIC=GRIB
+

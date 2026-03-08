@@ -49,14 +49,15 @@ make clean && make -j$(nproc) && make check
 Working directory: `/home/ed/NEP`
 
 ```bash
-mkdir -p build && cd build
-cmake .. \
-  -DCMAKE_PREFIX_PATH="/usr/local/hdf5-1.14.6_cmake;/usr/local/netcdf-c-4.9.3_cmake;/usr/local/cdf-3.9.1" \
+cmake -S . -B build \
+  -DCMAKE_PREFIX_PATH="/usr/local/hdf5-2.0.0;/usr/local/netcdf-c-4.10.0;/usr/local/cdf-3.9.1" \
   -DCMAKE_BUILD_TYPE=Debug \
   -DENABLE_GEOTIFF=ON \
   -DENABLE_CDF=ON \
-  -DENABLE_FORTRAN=OFF
-make -j$(nproc) && ctest
+  -DENABLE_FORTRAN=OFF \
+  -DCMAKE_SHARED_LINKER_FLAGS="-L/usr/local/hdf5-2.0.0/lib -Wl,-rpath,/usr/local/hdf5-2.0.0/lib" \
+  -DCMAKE_EXE_LINKER_FLAGS="-L/usr/local/hdf5-2.0.0/lib -Wl,-rpath,/usr/local/hdf5-2.0.0/lib"
+make -j$(nproc) -C build && ctest --test-dir build
 ```
 
 **Never create CMake build artifacts outside the `build` directory** to avoid cluttering the repository with untracked files.

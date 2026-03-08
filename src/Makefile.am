@@ -34,3 +34,12 @@ libncgeotiff_la_LDFLAGS = -version-info 1:0:0
 libncgeotiff_la_SOURCES = geotiffdispatch.c geotifffile.c
 libncgeotiff_la_LIBADD = $(HDF5_LIBS) $(NETCDF_LIBS) $(GEOTIFF_LIBS)
 endif
+
+# GRIB2 UDF Handler - v1.7.0
+# GRIB2 library (netCDF UDF support)
+if HAVE_GRIB2
+lib_LTLIBRARIES += libncgrib2.la
+libncgrib2_la_LDFLAGS = -version-info 1:0:0
+libncgrib2_la_SOURCES = grib2dispatch.c grib2file.c
+libncgrib2_la_LIBADD = $(HDF5_LIBS) $(NETCDF_LIBS) $(G2C_LIBS)
+endif

@@ -1,5 +1,148 @@
 # NEP Development Roadmap
 
+### V1.7.0 Read GRIB2 as NetCDF
+- User will pass location of NOAA g2c library install at configure time.
+- g2c repo is here: https://github.com/NOAA-EMC/NCEPLIBS-g2c
+- g2c docs are here: https://noaa-emc.github.io/NCEPLIBS-g2c/
+- We need this in both CMake and Autotools.
+- Need to be options to enable/disable, as with CDF and GeoTIFF
+- Need to copy CDF/GeoTIFF pattern, to create a dispatch layer for GRIB2.
+- In g2c use the following functions: g2c_*.
+- This must be tested in CI.
+- The creation of ncrc files has to accomodate GRIB2 adapter.
+
+#### Sprint 1: Build System Integration and Library Detection
+
+**Objective**: Add g2c library detection to both build systems, establish GRIB2 UDF slot in `nep.h`, update `.ncrc`, retire the stale VOL test, and wire CI to build g2c from source.
+
+**Tasks**:
+- **g2c Library Detection** (CMake and Autotools):
+  - CMake: Add `option(ENABLE_GRIB2 "Enable GRIB2 support" OFF)` to `CMakeLists.txt`; use `find_library` / `find_path` to locate `g2c` library and `g2c.h` header; define `HAVE_GRIB2` when found; error if enabled but not found
+  - Autotools: Add `AC_ARG_ENABLE([grib2])` to `configure.ac`; use `AC_CHECK_HEADERS([g2c.h])` and `AC_SEARCH_LIBS([g2c_open], [g2c])` for detection; set `HAVE_GRIB2` automake conditional
+  - Mirror the `ENABLE_CDF` / `ENABLE_GEOTIFF` detection pattern exactly
+- **UDF Slot Assignment**: Add `NEP_UDF_GRIB2 NC_UDF3` and `NEP_MAGIC_GRIB2 "GRIB"` to `include/nep.h`; add `NEP_FORMAT_NAME_GRIB2` display name constant
+- **Dispatch Header**: Create `include/grib2dispatch.h` with `NC_GRIB2_initialize()` prototype and extern dispatch table declaration; follow `cdfdispatch.h` / `geotiffdispatch.h` pattern
+- **Source Stubs**: Create `src/grib2dispatch.c` and `src/grib2file.c` with stubbed function bodies (return `NC_ENOTBUILT`); preserve all function signatures and dispatch table structure so the library compiles
+- **Build System Wiring**:
+  - CMake: Add `libnc grib2` shared library build in `src/CMakeLists.txt` when `ENABLE_GRIB2=ON`; link against NetCDF-C, HDF5, and g2c
+  - Autotools: Add `libnc grib2.la` conditional build in `src/Makefile.am` under `if HAVE_GRIB2`
+  - Add `grib2dispatch.h` to install headers in both build systems
+- **Update `nep.ncrc`**: Add UDF3 block for GRIB2 (`NETCDF.UDF3.LIBRARY`, `NETCDF.UDF3.INIT=NC_GRIB2_initialize`, `NETCDF.UDF3.MAGIC=GRIB`)
+- **config.h Updates**: Add `HAVE_GRIB2` to `config.h.cmake.in` and `config.h.in`
+- **Retire VOL Test**: Delete `test/test_grib2_vol.c` (stale HDF5 VOL approach); create empty placeholder `test/tst_grib2_udf.c` that builds and exits 0 when `HAVE_GRIB2` is defined
+- **CI Integration**:
+  - Build g2c from source in CI with caching (key: `g2c-{version}-${{ runner.os }}`); install to `$GITHUB_WORKSPACE/g2c-install`
+  - Add `GRIB2`-enabled build configuration to CI matrix for both CMake and Autotools
+  - Add g2c include/lib paths to `CPPFLAGS`, `LDFLAGS`, `LD_LIBRARY_PATH`, and `CMAKE_PREFIX_PATH`
+- **Test Data**: Commit a small public GRIB2 sample file to `test/data/` (e.g., from NOAA NOMADS or g2c test suite); ensure it is copied to build directory in both CMake and Autotools builds
+
+**Definition of Done**:
+- `cmake -DENABLE_GRIB2=ON` and `./configure --enable-grib2` both succeed when g2c is present
+- Both build systems produce `libnc grib2.so` / `libnc grib2.la`
+- `nep.h` defines `NEP_UDF_GRIB2` and `NEP_MAGIC_GRIB2`
+- `nep.ncrc` includes UDF3 GRIB2 block
+- `tst_grib2_udf.c` builds and passes in CI
+- CI runs GRIB2-enabled configurations for both build systems
+
+#### Sprint 2: GRIB2 File Open/Close
+
+**Objective**: Implement `NC_GRIB2_open()` and `NC_GRIB2_close()` so a GRIB2 file can be opened and closed via the standard NetCDF API.
+
+**Tasks**:
+- **`NC_GRIB2_initialize()`**: Implement in `src/grib2dispatch.c`; register dispatch table with `nc_def_user_format(NEP_UDF_GRIB2 | NC_NETCDF4, &GRIB2_dispatch_table, NEP_MAGIC_GRIB2)` when `HAVE_NETCDF_UDF_SELF_REGISTRATION` is not defined; use conditional compilation matching the CDF/GeoTIFF pattern
+- **`NC_GRIB2_open()`**: Implement in `src/grib2file.c`
+  - Call `g2c_open(path, G2C_NOWRITE, &g2cid)` to open the file
+  - Allocate and populate `NC_GRIB2_FILE_INFO_T` format-specific struct; store `g2cid`
+  - Build skeleton `NC_FILE_INFO_T` / `NC_GRP_INFO_T` internal metadata structures (root group, no variables yet)
+  - Return `NC_ENOTNC` if `g2c_open` fails (not a valid GRIB2 file)
+  - Return `NC_NOERR` on success; no error message printing
+- **`NC_GRIB2_close()`**: Call `g2c_close(g2cid)`; free all allocated structures; ensure no memory leaks
+- **Data Structures**: Define `NC_GRIB2_FILE_INFO_T` (holds `g2cid`, message count, grid info) in `include/grib2dispatch.h`
+- **Dispatch Table**: Wire `file_open` and `file_close` pointers in the `NC_Dispatch` structure in `src/grib2dispatch.c`; all other pointers remain stubbed
+- **Test Program** (`test/tst_grib2_udf.c`):
+  - Call `NC_GRIB2_initialize()` to register the handler
+  - Open `test/data/gdaswave.t00z.wcoast.0p16.f000.grib2` via `nc_open()`
+  - Call `g2c_set_log_level(3)` at start, `g2c_set_log_level(0)` at end
+  - Verify `nc_open()` returns `NC_NOERR`
+  - Close via `nc_close()` and verify `NC_NOERR`
+  - Test opens a non-GRIB2 file and verifies an error is returned
+  - Exit 0 on success
+- **Build Integration**: Wire `tst_grib2_udf` into CTest and `make check` when `HAVE_GRIB2` is defined
+
+**Definition of Done**:
+- `nc_open()` / `nc_close()` work on the GRIB2 test file
+- `tst_grib2_udf` passes in CI
+- No memory leaks (confirmed by AddressSanitizer CI job)
+- Error path tested (non-GRIB2 file returns error)
+
+#### Sprint 3: File and Variable Metadata
+
+**Objective**: Implement metadata extraction so that GRIB2 messages are exposed as named NetCDF variables with correct dimensions, types, and attributes.
+
+**Tasks**:
+- **Message Inventory**: In `NC_GRIB2_open()`, after opening, call `g2c_inq(g2cid, &num_msg)` to count messages; iterate messages with `g2c_inq_msg()` to collect discipline, category, parameter number, grid template, and data representation template
+- **Variable Mapping**: Each GRIB2 message → one NetCDF variable
+  - Variable name derived from discipline/category/parameter number (e.g., `wind_speed_1`, using g2c parameter name lookup); fall back to `var{n}` if no name is available
+  - Dimensions derived from grid template: `[ny, nx]` for 2D grids
+  - NetCDF type: `NC_FLOAT` for most GRIB2 parameters (g2c unpacks to float)
+  - Endianness: `NC_ENDIAN_BIG` (GRIB2 is big-endian on wire; g2c handles conversion)
+- **Dimension Creation**: Create shared `x` / `y` (or `lon` / `lat`) dimensions in the root group sized from the grid template; reuse dimensions across variables that share the same grid
+- **Variable Attributes**: For each variable, set:
+  - `long_name` from g2c parameter name
+  - `units` from g2c parameter metadata where available
+  - `_FillValue` from GRIB2 bitmap/missing value field
+  - `GRIB2_discipline`, `GRIB2_category`, `GRIB2_param_number` as integer attributes for traceability
+- **Global Attributes**: Set `Conventions = "GRIB2"`, `source` from GRIB2 identification section (originating centre, sub-centre), `GRIB2_edition = 2`
+- **`nc_inq` Support**: Wire `inq_ndims`, `inq_nvars`, `inq_natts`, `inq_dimid`, `inq_var`, `inq_att`, `get_att` dispatch pointers
+- **Test Expansion** (`test/tst_grib2_udf.c`):
+  - After open, query `nc_inq_ndims`, `nc_inq_nvars`, `nc_inq_natts` and assert expected values for the test file
+  - Query dimension names and sizes with `nc_inq_dim`; assert correct grid dimensions
+  - Query variable names and types with `nc_inq_var`; assert expected variable count and names
+  - Query `_FillValue`, `GRIB2_discipline`, `GRIB2_category` attributes on at least one variable
+  - Query global `Conventions` and `GRIB2_edition` attributes
+
+**Definition of Done**:
+- `nc_inq_nvars` returns correct variable count matching number of GRIB2 messages
+- Dimension sizes match the GRIB2 grid template
+- Variable attributes (`_FillValue`, `GRIB2_discipline`, etc.) present and correct
+- All metadata assertions in `tst_grib2_udf` pass in CI
+
+#### Sprint 4: Data Reading and CI Completion
+
+**Objective**: Implement `NC_GRIB2_get_vara()` so raster data can be read from GRIB2 variables, and complete CI/documentation/ncrc integration.
+
+**Tasks**:
+- **`NC_GRIB2_get_vara()`**: Implement in `src/grib2file.c`
+  - Map NetCDF `varid` back to the corresponding GRIB2 message index
+  - Call `g2c_get_data(g2cid, msg_index, data)` to unpack the full grid into a float array
+  - Apply `start` / `count` slicing from the `vara` call to return the requested subset
+  - Handle missing value / bitmap masking: replace bitmapped points with `_FillValue`
+  - Return `NC_NOERR` on success; appropriate error code on failure (e.g., `NC_ERANGE` for out-of-bounds indices)
+- **Wire Dispatch**: Set `get_vara` function pointer in the `NC_Dispatch` structure
+- **Type Conversion**: g2c unpacks to `float`; handle conversion to other requested NetCDF types using standard NetCDF type conversion utilities
+- **Test Expansion** (`test/tst_grib2_udf.c`):
+  - Read data from at least one variable using `nc_get_var_float()`
+  - Validate that data array is non-null and that a spot-check value matches expected (known value from the test GRIB2 file)
+  - Read a 2D subset using `nc_get_vara_float()` with explicit `start` / `count`; validate dimensions of result
+  - Verify `_FillValue` substitution: confirm bitmapped missing points carry the fill value
+- **`.ncrc` Finalization**: Ensure `nep.ncrc` UDF3 block is complete and tested end-to-end (open GRIB2 without calling `NC_GRIB2_initialize()` explicitly, relying on `.ncrc` autoload)
+- **`docs/prd.md` Update**: Add GRIB2 Format Support section (v1.7.0) covering features, build config, dependencies, known limitations
+- **`docs/design.md` Update**: Add GRIB2 UDF handler architecture section with dispatch diagram and key components
+- **CI Completion**:
+  - Confirm GRIB2-enabled CI jobs exercise all four test scenarios (open/close, metadata, data reading, error path)
+  - Add GRIB2 Valgrind / AddressSanitizer run to the memory-leak CI job
+  - Verify both CMake and Autotools GRIB2 builds pass
+
+**Definition of Done**:
+- `nc_get_var_float()` successfully reads data from a GRIB2 variable
+- Spot-check data values match expected values from the test file
+- `_FillValue` correctly applied for bitmapped missing data
+- `nep.ncrc` autoloads GRIB2 handler without explicit `NC_GRIB2_initialize()` call
+- `prd.md` and `design.md` updated
+- All CI jobs pass for GRIB2-enabled builds
+
+
+
 ### V1.6.0
 Implement Phase 4 of the GeoTIFF read layer for NEP v1.5.0: Extract and expose coordinate reference system (CRS) and georeferencing information following CF conventions. (see closed GitHub issue 59)
 
@@ -410,22 +553,6 @@ NetCDF-C now supports self-loading UDFs via RC file configuration. This version 
 
 **Status**: Released January 1, 2026. Provides read-only access to GeoTIFF files through standard NetCDF API.
 
-### v2.0.0: GRIB2
-#### Sprint 1: GRIB2 File Open/Close
-- **NC_Dispatch Implementation**: Populate file_open and file_close function pointers in GRIB2 UDF handler NC_Dispatch structure
-- **Glue Code Functions**: Create wrapper functions with proper NetCDF dispatch API signatures that interface with NCEPLIBS-g2 library
-- **Test Enhancement**: Modify existing `test/test_grib2_udf` test to open and close actual GRIB2 file using NetCDF API
-- **Test Data**: Use existing `test/data/gdaswave.t00z.wcoast.0p16.f000.grib2` file for file operations testing
-- **Test Data Build Integration**: Ensure test data files are copied from `test/data/` to build directory for both CMake and Autotools builds so tests can find them
-- **g2c Logging Integration**: Simple logging - call g2c_set_log_level(3) at test start, g2c_set_log_level(0) at test end
-- **Error Handling**: Return appropriate NetCDF error codes without printing error messages
-- **Resource Management**: Proper memory management and cleanup in file close operations
-
-#### Sprint 2: File Metadata
-
-#### Sprint 3: Reading Data
-
-#### Sprint 4: Var Metadata
 
 ### v1.4.0 Spack Support
 #### Sprint 1: Spack CI Testing and Spack Integration
