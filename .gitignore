@@ -119,12 +119,13 @@ vol_plugin
 *.bak
 Doxyfile
 
-test_grib2_vol
+tst_grib2_vol
 tst_jpeg
 tst_lz4
 tst_perf
 tst_bzip2
 tst_cdf_udf
+tst_grib2_udf
 tst_*.nc
 tst_*.h5
 tst_*.cdf
@@ -133,8 +134,15 @@ run_tests.sh
 tst_grib2
 ftst_ncsqueeze_bzip2
 ftst_ncsqueeze_lz4
+ftest/ftst_nep_bzip2
+ftest/ftst_nep_lz4
 tst_cdf_basic
 tst_imap_mag
+
+# HDF5 test binaries
+test_h5/tst_h_bzip2
+test_h5/tst_h_lz4
+test_h5/tst_lz4_size
 
 # GeoTIFF test binaries
 tst_geotiff_handle
@@ -193,6 +201,7 @@ examples/f_classic/f_quickstart
 examples/f_classic/f_size_limits
 examples/f_classic/f_unlimited_dim
 examples/f_classic/f_var4d
+examples/f_classic/f_dump_classic_metadata
 
 # Example binaries - Fortran netcdf-4
 examples/f_netcdf-4/f_simple_nc4
@@ -202,6 +211,7 @@ examples/f_netcdf-4/f_format_variants
 examples/f_netcdf-4/f_groups
 examples/f_netcdf-4/f_multi_unlimited
 examples/f_netcdf-4/f_user_types
+examples/f_netcdf-4/f_dump_nc4_metadata
 
 # Valgrind logs
 valgrind*.log

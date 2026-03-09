@@ -1,6 +1,8 @@
 # Makefile.am for NetCDF-4 Fortran examples
 # Edward Hartnett 1/25/26
 
+AUTOMAKE_OPTIONS = serial-tests
+
 # Fortran module path - NetCDF-Fortran modules should be in CPPFLAGS from configure
 AM_FCFLAGS = $(CPPFLAGS)
 

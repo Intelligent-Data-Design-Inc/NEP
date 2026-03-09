@@ -5,6 +5,7 @@
 
 # Find the header files.
 AM_CPPFLAGS = -I$(top_srcdir)/include
+LDADD = -lhdf5
 
 # Build the tests.
 check_PROGRAMS =
