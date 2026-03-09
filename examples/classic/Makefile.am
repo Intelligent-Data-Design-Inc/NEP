@@ -1,6 +1,8 @@
 # Makefile.am for classic NetCDF C examples
 # Edward Hartnett 1/25/26
 
+AUTOMAKE_OPTIONS = serial-tests
+
 # List of classic example programs
 check_PROGRAMS = quickstart simple_2D coord coord_vars size_limits unlimited_dim var4d dump_classic_metadata
 
