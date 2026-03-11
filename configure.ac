@@ -107,20 +107,20 @@ AC_ARG_ENABLE([docs],
     [enable_docs=$enableval],
     [enable_docs=auto])
 
-# CDF library detection (v1.3.0) - library detection only, no UDF yet
+# CDF library detection (v1.3.0) - default ON; disable with --disable-cdf
 AC_MSG_CHECKING([whether CDF library detection should be enabled])
 AC_ARG_ENABLE([cdf],
-              [AS_HELP_STRING([--enable-cdf],
-                              [Enable CDF library detection (default: no)])])
-test "x$enable_cdf" = xyes || enable_cdf=no
+              [AS_HELP_STRING([--disable-cdf],
+                              [Disable CDF library detection (default: enabled)])])
+test "x$enable_cdf" = xno || enable_cdf=yes
 AC_MSG_RESULT([$enable_cdf])
 
-# GeoTIFF library detection (v1.5.0) - library detection only, no UDF yet
+# GeoTIFF library detection (v1.5.0) - default ON; disable with --disable-geotiff
 AC_MSG_CHECKING([whether GeoTIFF library detection should be enabled])
 AC_ARG_ENABLE([geotiff],
-              [AS_HELP_STRING([--enable-geotiff],
-                              [Enable GeoTIFF library detection (default: no)])])
-test "x$enable_geotiff" = xyes || enable_geotiff=no
+              [AS_HELP_STRING([--disable-geotiff],
+                              [Disable GeoTIFF library detection (default: enabled)])])
+test "x$enable_geotiff" = xno || enable_geotiff=yes
 AC_MSG_RESULT([$enable_geotiff])
 
 # Initialize variables
@@ -155,7 +155,7 @@ if test "x$enable_cdf" = "xyes"; then
         
         AC_MSG_NOTICE([CDF library detection enabled (library location only, no UDF yet)])
     else
-        AC_MSG_ERROR([CDF enabled but NASA CDF library not found. Install NASA CDF library or disable with --disable-cdf])
+        AC_MSG_ERROR([libcdf is required for the CDF dispatch layer. Include the library path in CPPFLAGS/LDFLAGS, or use --disable-cdf])
     fi
 fi
 AC_SUBST([CDF_LIBS])
@@ -175,18 +175,18 @@ if test "x$enable_geotiff" = "xyes"; then
         AC_DEFINE([HAVE_TIFF_H], [1], [Define if tiff.h header is found])
         AC_MSG_NOTICE([GeoTIFF library detection enabled (library location only, no UDF yet)])
     else
-        AC_MSG_ERROR([GeoTIFF enabled but libgeotiff or libtiff not found. Install libgeotiff and libtiff or disable with --disable-geotiff])
+        AC_MSG_ERROR([libgeotiff is required for the GeoTIFF dispatch layer. Include the library path in CPPFLAGS/LDFLAGS, or use --disable-geotiff])
     fi
 fi
 AC_SUBST([GEOTIFF_LIBS])
 AC_SUBST([TIFF_LIBS])
 
-# GRIB2 library detection (v1.7.0) - default OFF
+# GRIB2 library detection (v1.7.0) - default ON; disable with --disable-grib2
 AC_MSG_CHECKING([whether GRIB2 library detection should be enabled])
 AC_ARG_ENABLE([grib2],
-              [AS_HELP_STRING([--enable-grib2],
-                              [Enable GRIB2 library detection (default: no)])])
-test "x$enable_grib2" = xyes || enable_grib2=no
+              [AS_HELP_STRING([--disable-grib2],
+                              [Disable GRIB2 library detection (default: enabled)])])
+test "x$enable_grib2" = xno || enable_grib2=yes
 AC_MSG_RESULT([$enable_grib2])
 
 if test "x$enable_grib2" = "xyes"; then
@@ -198,7 +198,7 @@ if test "x$enable_grib2" = "xyes"; then
         AC_DEFINE([HAVE_GRIB2], [1], [Define if GRIB2 (g2c) library is found])
         AC_MSG_NOTICE([GRIB2 library detection enabled])
     else
-        AC_MSG_ERROR([GRIB2 enabled but NCEPLIBS-g2c not found. Install g2c or disable with --disable-grib2])
+        AC_MSG_ERROR([libg2c is required for the GRIB2 dispatch layer. Include the library path in CPPFLAGS/LDFLAGS, or use --disable-grib2])
     fi
 fi
 AC_SUBST([G2C_LIBS])

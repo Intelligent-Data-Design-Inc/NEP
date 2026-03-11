@@ -22,11 +22,11 @@ option(BUILD_BZIP2 "Enable BZIP2 filter support" OFF)
 # Use add_definitions for compatibility with CMake 3.9
 add_definitions(-DUSE_HDF5=yes)
 
-# CDF library detection (v1.3.0) - default OFF, library detection only, no UDF yet
-option(ENABLE_CDF "Enable CDF library detection" OFF)
+# CDF library detection (v1.3.0) - default ON; disable with -DENABLE_CDF=OFF
+option(ENABLE_CDF "Enable CDF library detection" ON)
 
-# GeoTIFF library detection (v1.5.0) - default OFF, library detection only, no UDF yet
-option(ENABLE_GEOTIFF "Enable GeoTIFF library detection" OFF)
+# GeoTIFF library detection (v1.5.0) - default ON; disable with -DENABLE_GEOTIFF=OFF
+option(ENABLE_GEOTIFF "Enable GeoTIFF library detection" ON)
 
 # Documentation option
 option(BUILD_DOCUMENTATION "Build documentation with Doxygen" ON)
@@ -104,7 +104,7 @@ if(ENABLE_CDF)
         set(HAVE_CDF TRUE)
         message(STATUS "CDF library detection enabled (library location only, no UDF yet)")
     else()
-        message(FATAL_ERROR "CDF enabled but NASA CDF library not found. Install NASA CDF library or disable with -DENABLE_CDF=OFF")
+        message(FATAL_ERROR "libcdf is required for the CDF dispatch layer. Include the library path in CPPFLAGS/LDFLAGS, or use -DENABLE_CDF=OFF")
     endif()
 endif()
 
@@ -124,12 +124,12 @@ if(ENABLE_GEOTIFF)
         set(HAVE_GEOTIFF TRUE)
         message(STATUS "GeoTIFF library detection enabled (library location only, no UDF yet)")
     else()
-        message(FATAL_ERROR "GeoTIFF enabled but libgeotiff or libtiff not found. Install libgeotiff and libtiff or disable with -DENABLE_GEOTIFF=OFF")
+        message(FATAL_ERROR "libgeotiff is required for the GeoTIFF dispatch layer. Include the library path in CPPFLAGS/LDFLAGS, or use -DENABLE_GEOTIFF=OFF")
     endif()
 endif()
 
-# GRIB2 library detection (v1.7.0) - default OFF
-option(ENABLE_GRIB2 "Enable GRIB2 support" OFF)
+# GRIB2 library detection (v1.7.0) - default ON; disable with -DENABLE_GRIB2=OFF
+option(ENABLE_GRIB2 "Enable GRIB2 support" ON)
 
 if(ENABLE_GRIB2)
     find_library(G2C_LIBRARY NAMES g2c)
@@ -141,7 +141,7 @@ if(ENABLE_GRIB2)
         include_directories(${G2C_INCLUDE_DIR})
         set(HAVE_GRIB2 TRUE)
     else()
-        message(FATAL_ERROR "GRIB2 enabled but NCEPLIBS-g2c not found. Install g2c or disable with -DENABLE_GRIB2=OFF")
+        message(FATAL_ERROR "libg2c is required for the GRIB2 dispatch layer. Include the library path in CPPFLAGS/LDFLAGS, or use -DENABLE_GRIB2=OFF")
     endif()
 endif()
 
