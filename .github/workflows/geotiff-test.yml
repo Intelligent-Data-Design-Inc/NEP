@@ -104,6 +104,8 @@ jobs:
           cmake .. \
             -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install" \
             -DENABLE_GEOTIFF=ON \
+            -DENABLE_CDF=OFF \
+            -DENABLE_GRIB2=OFF \
             -DENABLE_FORTRAN=OFF \
             -DBUILD_TESTING=OFF \
             -DBUILD_LZ4=OFF \
@@ -121,15 +123,18 @@ jobs:
           make -j$(nproc)
           echo "=== Build completed successfully ==="
 
-      - name: Test CMake with GeoTIFF disabled (default)
+      - name: Test CMake with GeoTIFF disabled
         if: matrix.build_system == 'cmake'
         run: |
-          echo "=== Testing CMake with GeoTIFF disabled (default) ==="
+          echo "=== Testing CMake with GeoTIFF disabled ==="
           rm -rf build_disabled
           mkdir build_disabled
           cd build_disabled
           cmake .. \
             -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install" \
+            -DENABLE_GEOTIFF=OFF \
+            -DENABLE_CDF=OFF \
+            -DENABLE_GRIB2=OFF \
             -DENABLE_FORTRAN=OFF \
             -DBUILD_TESTING=OFF \
             -DBUILD_LZ4=OFF \
@@ -163,6 +168,8 @@ jobs:
           ./configure \
             --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc \
             --enable-geotiff \
+            --disable-cdf \
+            --disable-grib2 \
             --disable-fortran \
             --disable-lz4 \
             --disable-docs \
@@ -180,10 +187,10 @@ jobs:
           make -j$(nproc)
           echo "=== Build completed successfully ==="
 
-      - name: Test Autotools with GeoTIFF disabled (default)
+      - name: Test Autotools with GeoTIFF disabled
         if: matrix.build_system == 'autotools'
         run: |
-          echo "=== Testing Autotools with GeoTIFF disabled (default) ==="
+          echo "=== Testing Autotools with GeoTIFF disabled ==="
           make distclean || true
           autoreconf -fiv
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
@@ -193,6 +200,9 @@ jobs:
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
           ./configure \
             --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc \
+            --disable-geotiff \
+            --disable-cdf \
+            --disable-grib2 \
             --disable-fortran \
             --disable-lz4 \
             --disable-docs \
@@ -318,6 +328,8 @@ jobs:
           cmake .. \
             -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install" \
             -DENABLE_GEOTIFF=ON \
+            -DENABLE_CDF=OFF \
+            -DENABLE_GRIB2=OFF \
             -DENABLE_FORTRAN=OFF \
             -DBUILD_TESTING=ON \
             -DBUILD_LZ4=OFF \
@@ -428,6 +440,8 @@ jobs:
           cmake .. \
             -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install" \
             -DENABLE_GEOTIFF=ON \
+            -DENABLE_CDF=OFF \
+            -DENABLE_GRIB2=OFF \
             -DENABLE_FORTRAN=OFF \
             -DBUILD_TESTING=ON \
             -DBUILD_LZ4=OFF \

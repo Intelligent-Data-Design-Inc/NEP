@@ -117,6 +117,7 @@ jobs:
             -DENABLE_GRIB2=ON \
             -DENABLE_FORTRAN=OFF \
             -DENABLE_CDF=OFF \
+            -DENABLE_GEOTIFF=OFF \
             -DBUILD_TESTING=ON \
             -DBUILD_LZ4=OFF \
             -DBUILD_BZIP2=OFF \
@@ -154,6 +155,8 @@ jobs:
           ./configure \
             --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc \
             --enable-grib2 \
+            --disable-cdf \
+            --disable-geotiff \
             --disable-fortran \
             --disable-lz4 \
             --disable-bzip2 \
@@ -276,7 +279,7 @@ jobs:
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/g2c-install/include"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib -fsanitize=address"
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$LD_LIBRARY_PATH"
-          ./configure --enable-geotiff --enable-grib2 --with-g2c=$GITHUB_WORKSPACE/g2c-install --disable-fortran --disable-shared --disable-bzip2 --disable-lz4 --enable-examples
+          ./configure --enable-geotiff --enable-grib2 --disable-cdf --with-g2c=$GITHUB_WORKSPACE/g2c-install --disable-fortran --disable-shared --disable-bzip2 --disable-lz4 --enable-examples
 
       - name: Build NEP with ASAN
         run: make -j$(nproc)
@@ -488,7 +491,7 @@ EOF
             CDF_FLAG="-DENABLE_CDF=ON"
           fi
           export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
-          cmake .. -DCMAKE_C_FLAGS="-Wall -Werror" -DCMAKE_Fortran_FLAGS="-Wall -Werror" -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install;$GITHUB_WORKSPACE/cdf-install;/usr/include/liblzf" -DBUILD_TESTING=ON -DBUILD_EXAMPLES=ON $DOC_FLAG $FORTRAN_FLAG $CDF_FLAG
+          cmake .. -DCMAKE_C_FLAGS="-Wall -Werror" -DCMAKE_Fortran_FLAGS="-Wall -Werror" -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install;$GITHUB_WORKSPACE/cdf-install;/usr/include/liblzf" -DBUILD_TESTING=ON -DBUILD_EXAMPLES=ON $DOC_FLAG $FORTRAN_FLAG $CDF_FLAG -DENABLE_GEOTIFF=OFF -DENABLE_GRIB2=OFF
 
       - name: Build (CMake)
         if: matrix.build_system == 'cmake'
@@ -583,7 +586,7 @@ EOF
             CDF_FLAG="--enable-cdf"
           fi
 
-          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc $LZ4_FLAG $BZIP2_FLAG $DOCS_FLAG $FORTRAN_FLAG $CDF_FLAG --enable-examples || (echo "Configure failed. Printing config.log:"; cat config.log; echo "hdf5_plugins/config.log:"; cat hdf5_plugins/config.log; exit 1)
+          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc $LZ4_FLAG $BZIP2_FLAG $DOCS_FLAG $FORTRAN_FLAG $CDF_FLAG --disable-geotiff --disable-grib2 --enable-examples || (echo "Configure failed. Printing config.log:"; cat config.log; echo "hdf5_plugins/config.log:"; cat hdf5_plugins/config.log; exit 1)
 
       - name: Build (Autotools)
         if: matrix.build_system == 'autotools'

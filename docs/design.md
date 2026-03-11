@@ -381,19 +381,19 @@ Coordinate reference system (CRS) and georeferencing information stored followin
 
 ### Build System Integration
 
-#### Optional GeoTIFF Support
-GeoTIFF support is optional and controlled via build flags:
+#### GeoTIFF Support
+GeoTIFF support is enabled by default and can be disabled via build flags:
 
 **CMake:**
 ```bash
-cmake -DENABLE_GEOTIFF=ON  # Enable GeoTIFF support
-cmake -DENABLE_GEOTIFF=OFF # Disable GeoTIFF support (default)
+cmake -DENABLE_GEOTIFF=OFF # Disable GeoTIFF support
+cmake -DENABLE_GEOTIFF=ON  # Enable GeoTIFF support (default)
 ```
 
 **Autotools:**
 ```bash
-./configure --enable-geotiff   # Enable GeoTIFF support
-./configure --disable-geotiff  # Disable GeoTIFF support (default)
+./configure --disable-geotiff  # Disable GeoTIFF support
+./configure --enable-geotiff   # Enable GeoTIFF support (default)
 ```
 
 #### Dependency Detection
@@ -570,14 +570,14 @@ The GRIB2 UDF handler follows the same NC_Dispatch pattern used for CDF and GeoT
 
 **CMake:**
 ```bash
-cmake -DENABLE_GRIB2=ON   # Enable GRIB2 support
-cmake -DENABLE_GRIB2=OFF  # Disable GRIB2 support (default)
+cmake -DENABLE_GRIB2=OFF  # Disable GRIB2 support
+cmake -DENABLE_GRIB2=ON   # Enable GRIB2 support (default)
 ```
 
 **Autotools:**
 ```bash
-./configure --enable-grib2   # Enable GRIB2 support
-./configure --disable-grib2  # Disable GRIB2 support (default)
+./configure --disable-grib2  # Disable GRIB2 support
+./configure --enable-grib2   # Enable GRIB2 support (default)
 ```
 
 ### Known Limitations
@@ -635,9 +635,9 @@ The CDF UDF handler follows the same NC_Dispatch pattern used for other format h
 - NASA CDF Library v3.9.x (required when enabled)
 
 #### Build Integration
-- Optional CDF support via build flags:
-  - CMake: `-DENABLE_CDF=ON/OFF`
-  - Autotools: `--enable-cdf/--disable-cdf`
+- CDF support is enabled by default; disable via build flags:
+  - CMake: `-DENABLE_CDF=OFF` to disable (default: ON)
+  - Autotools: `--disable-cdf` to disable (default: enabled)
 
 ## Spack Package Manager Support (v1.4.0)
 
