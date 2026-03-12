@@ -14,7 +14,11 @@ fi
 
 if test "@BUILD_LZ4@" = "yes"; then
     # Set the plugin path to find plugin.
-    export HDF5_PLUGIN_PATH="../hdf5_plugins/LZ4/src/.libs:$HDF5_PLUGIN_PATH"
+    if test -z "$HDF5_PLUGIN_PATH"; then
+        export HDF5_PLUGIN_PATH="../hdf5_plugins/LZ4/src/.libs"
+    else
+        export HDF5_PLUGIN_PATH="../hdf5_plugins/LZ4/src/.libs:$HDF5_PLUGIN_PATH"
+    fi
 
     # Run the HDF5 test.
     ./tst_h_lz4

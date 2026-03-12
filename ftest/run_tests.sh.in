@@ -4,15 +4,21 @@
 set -x
 set -e
 
+# Set HDF5 plugin path to find the pre-built bzip2/zstd plugins from the
+# netcdf-c install, and the locally-built LZ4 plugin.
+if test -n "${HDF5_PLUGIN_PATH:-}"; then
+    export HDF5_PLUGIN_PATH="@MY_HDF5_PLUGIN_PATH@:../hdf5_plugins/LZ4/src/.libs:$HDF5_PLUGIN_PATH"
+else
+    export HDF5_PLUGIN_PATH="@MY_HDF5_PLUGIN_PATH@:../hdf5_plugins/LZ4/src/.libs"
+fi
+
 # If bzip2 was built, run the bzip2 test.
 if test "@BUILD_BZIP2@" = "yes"; then
-    export HDF5_PLUGIN_PATH="../hdf5_plugins/BZIP2/src/.libs:$HDF5_PLUGIN_PATH"
     ./ftst_nep_bzip2
 fi
 
 # If lz4 was built, run the lz4 test.
 if test "@BUILD_LZ4@" = "yes"; then
-    export HDF5_PLUGIN_PATH="../hdf5_plugins/LZ4/src/.libs:$HDF5_PLUGIN_PATH"
     ./ftst_nep_lz4
 fi
 
