@@ -164,6 +164,118 @@ if ((stat = nc_def_user_format(mode_flag, table, (char*)effective_magic)))
 
 ---
 
+## Problem 4: Broken `mode_flag` computation for UDF slots ≥ 3
+
+### Location
+`libdispatch/dudfplugins.c`, function `load_udf_plugin()`
+
+### Current code (line ~120)
+```c
+if (udf_number == 0)
+    mode_flag = NC_UDF0;
+else if (udf_number == 1)
+    mode_flag = NC_UDF1;
+else
+    mode_flag = NC_UDF2 << (udf_number - 2);
+```
+
+### Problem
+The `NC_UDFn` mode flags are **not** a simple bit-shift sequence:
+
+```c
+#define NC_UDF0   0x000040   /* bit 6  */
+#define NC_UDF1   0x000080   /* bit 7  */
+#define NC_UDF2   0x010000   /* bit 16 */
+#define NC_UDF3   0x080000   /* bit 19 */
+#define NC_UDF4   0x100000   /* bit 20 */
+...
+```
+
+For `udf_number=3`, the expression `NC_UDF2 << (3-2) = 0x020000`, but
+`NC_UDF3 = 0x080000`. `udf_mode_to_index()` in `dfile.c` finds no matching
+flag, returns -1, and `nc_def_user_format()` returns `NC_EINVAL` (-36).
+
+This means **any plugin in UDF slot 3 or higher cannot be loaded** from
+`.ncrc` autoloading. The error surfaces as:
+```
+ERR: Failed to register dispatch table for UDF3: -36
+```
+
+### Fix
+Replace the shift expression with a lookup table:
+
+```c
+static const int udf_mode_flags[] = {
+    NC_UDF0, NC_UDF1, NC_UDF2, NC_UDF3, NC_UDF4,
+    NC_UDF5, NC_UDF6, NC_UDF7, NC_UDF8, NC_UDF9
+};
+if (udf_number < 0 || udf_number >= NC_MAX_UDF_FORMATS) {
+    stat = NC_EINVAL;
+    goto done;
+}
+mode_flag = udf_mode_flags[udf_number];
+```
+
+### NEP Workaround (without changing netcdf-c)
+
+Since slots 0 and 1 are hardcoded correctly and slot 2 is correct
+(`NC_UDF2 << 0 = NC_UDF2`), only slots ≥ 3 are broken.
+
+NEP originally assigned:
+- UDF0, UDF1 → GeoTIFF
+- UDF2 → CDF
+- UDF3 → GRIB2  ← broken slot
+
+Three options were considered:
+
+**Option A — Reassign slots so GRIB2 uses slot 2:**
+Swap CDF and GRIB2 in `.ncrc` and update `NC_FORMATX_NC_CDF` /
+`NC_FORMATX_NC_GRIB2` defines accordingly. This keeps all active plugins
+within the working slots (0–2). CDF becomes non-default (opt-in only),
+making it and GRIB2 mutually exclusive occupants of slot 2.
+
+**Option B — Reassign GeoTIFF to one slot, freeing slot 1 or 2 for GRIB2:**
+GeoTIFF currently uses two slots (0 and 1) because it handles two TIFF
+magic variants (`II*` and `II+`). If the GeoTIFF dispatch handler is
+extended to check both magic values internally, it could occupy a single
+slot, freeing one slot for GRIB2 within the working range.
+
+**Option C — Self-register at process startup using `nc_def_user_format()` directly:**
+Each NEP dispatch library exports an `__attribute__((constructor))` function
+that calls `nc_def_user_format(NC_UDF3, &GRIB2_dispatcher, "GRIB")` with the
+correct flag directly, bypassing `dudfplugins.c` entirely. This requires no
+changes to netcdf-c and works correctly with any UDF slot number, but creates
+a tight coupling between the shared library and the running netcdf-c dispatch
+system at `dlopen()` time.
+
+**Implemented solution: Option A.**
+
+NEP v1.7.0 adopts Option A. GRIB2 moves to UDF slot 2. CDF is disabled by
+default and can be enabled with `--enable-cdf` (Autotools) or
+`-DENABLE_CDF=ON` (CMake), but is mutually exclusive with GRIB2 since both
+use slot 2. The slot assignment in `include/nep.h` is:
+
+```
+UDF0: GeoTIFF BigTIFF  (magic: "II+")
+UDF1: GeoTIFF standard TIFF  (magic: "II*")
+UDF2: GRIB2  (magic: "GRIB")  [default]
+      or CDF  (magic: 0xCDF30001)  [if built with --enable-cdf; mutually exclusive]
+```
+
+This keeps all active plugins within the working range (slots 0–2) and
+requires no changes to netcdf-c. Option C (the `__attribute__((constructor))`
+approach) was prototyped but abandoned: it required the GRIB2 library to call
+into netcdf-c during `dlopen()`, which is fragile and depends on internal
+netcdf-c state being initialized at that point.
+
+> **Note:** Problem 4 (`dudfplugins.c` bit-shift bug) is a genuine bug in
+> NetCDF-C 4.10.0. I intend to submit a fix upstream so that future releases
+> of NetCDF-C support all 10 UDF slots correctly from `.ncrc` autoloading,
+> at which point the slot 2 mutual-exclusion constraint between GRIB2 and CDF
+> can be removed and each format can occupy its own dedicated slot.
+
+---
+
 ## Summary of Required Changes
 
 | File | Change | Impact |
@@ -171,6 +283,8 @@ if ((stat = nc_def_user_format(mode_flag, table, (char*)effective_magic)))
 | `libdispatch/dfile.c` | Use `memcpy` instead of `strncpy` for magic storage | Magic with null bytes stored correctly |
 | `libdispatch/dinfermodel.c` | Set `model->format = NC_FORMAT_CLASSIC` in UDF magic match | UDF files auto-detected without explicit mode flag |
 | `libdispatch/dudfplugins.c` | Unescape `\xNN` sequences from RC magic values | Binary magic expressible in `.ncrc` |
+| `libdispatch/dudfplugins.c` | Replace bit-shift `mode_flag` with lookup table | UDF slots 3–9 load correctly from `.ncrc` |
 
 Problems 2 and 3 together are the reason `ncdump` cannot open CDF files via
-`.ncrc` autoloading in NetCDF-C 4.10.0.
+`.ncrc` autoloading in NetCDF-C 4.10.0. Problem 4 is the reason GRIB2 (and
+any plugin in slot 3+) fails to register from `.ncrc` autoloading.

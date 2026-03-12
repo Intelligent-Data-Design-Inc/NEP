@@ -370,10 +370,13 @@ NC_GRIB2_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
 
             /* Uniquify duplicate names by appending _2, _3, etc. */
             snprintf(candidate, sizeof(candidate), "%s", varname);
-            for (suffix = 2;
-                 nc4_find_var(h5->root_grp, candidate, NULL) == NC_NOERR;
-                 suffix++)
-                snprintf(candidate, sizeof(candidate), "%s_%d", varname, suffix);
+            {
+                NC_VAR_INFO_T *dummy_var;
+                for (suffix = 2;
+                     nc4_find_var(h5->root_grp, candidate, &dummy_var) == NC_NOERR;
+                     suffix++)
+                    snprintf(candidate, sizeof(candidate), "%s_%d", varname, suffix);
+            }
             snprintf(varname, sizeof(varname), "%.*s", NC_MAX_NAME, candidate);
 
             /* Allocate per-variable GRIB2 info. */

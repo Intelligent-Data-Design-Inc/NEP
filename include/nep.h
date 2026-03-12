@@ -10,9 +10,10 @@
  * NetCDF-C 4.10.0+ provides 10 UDF slots (UDF0-UDF9):
  * - UDF0: GeoTIFF BigTIFF (magic: "II+")
  * - UDF1: GeoTIFF standard TIFF (magic: "II*")
- * - UDF2: NASA CDF format (magic: 0xCDF30001)
- * - UDF3: GRIB2 meteorological data (magic: "GRIB")
- * - UDF4-UDF9: Reserved for future use
+ * - UDF2: GRIB2 meteorological data (magic: "GRIB") [default]
+ *         or NASA CDF format (magic: 0xCDF30001) [if built with --enable-cdf]
+ *         GRIB2 and CDF are mutually exclusive; only one may be built at a time.
+ * - UDF3-UDF9: Reserved for future use
  *
  * @author Edward Hartnett
  * @date Nov 13, 2025
@@ -61,11 +62,11 @@ extern "C" {
 /** GeoTIFF standard TIFF format uses UDF1 slot */
 #define NEP_UDF_GEOTIFF_STANDARD NC_UDF1
 
-/** NASA CDF format uses UDF2 slot */
-#define NEP_UDF_CDF NC_UDF2
+/** GRIB2 meteorological format uses UDF2 slot */
+#define NEP_UDF_GRIB2 NC_UDF2
 
-/** GRIB2 meteorological format uses UDF3 slot */
-#define NEP_UDF_GRIB2 NC_UDF3
+/** NASA CDF format uses UDF2 slot (mutually exclusive with GRIB2) */
+#define NEP_UDF_CDF NC_UDF2
 
 /** @} */
 

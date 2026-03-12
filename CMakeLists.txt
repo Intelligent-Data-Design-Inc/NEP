@@ -22,8 +22,9 @@ option(BUILD_BZIP2 "Enable BZIP2 filter support" OFF)
 # Use add_definitions for compatibility with CMake 3.9
 add_definitions(-DUSE_HDF5=yes)
 
-# CDF library detection (v1.3.0) - default ON; disable with -DENABLE_CDF=OFF
-option(ENABLE_CDF "Enable CDF library detection" ON)
+# CDF library detection (v1.3.0) - default OFF; enable with -DENABLE_CDF=ON
+# CDF and GRIB2 share UDF slot 2 and are mutually exclusive.
+option(ENABLE_CDF "Enable CDF library detection; mutually exclusive with ENABLE_GRIB2" OFF)
 
 # GeoTIFF library detection (v1.5.0) - default ON; disable with -DENABLE_GEOTIFF=OFF
 option(ENABLE_GEOTIFF "Enable GeoTIFF library detection" ON)
@@ -129,7 +130,13 @@ if(ENABLE_GEOTIFF)
 endif()
 
 # GRIB2 library detection (v1.7.0) - default ON; disable with -DENABLE_GRIB2=OFF
-option(ENABLE_GRIB2 "Enable GRIB2 support" ON)
+# GRIB2 and CDF share UDF slot 2 and are mutually exclusive.
+option(ENABLE_GRIB2 "Enable GRIB2 support; mutually exclusive with ENABLE_CDF" ON)
+
+# Enforce mutual exclusion: GRIB2 and CDF both use UDF slot 2.
+if(ENABLE_GRIB2 AND ENABLE_CDF)
+    message(FATAL_ERROR "ENABLE_GRIB2 and ENABLE_CDF are mutually exclusive: both use UDF slot 2. Enable only one.")
+endif()
 
 if(ENABLE_GRIB2)
     find_library(G2C_LIBRARY NAMES g2c)
