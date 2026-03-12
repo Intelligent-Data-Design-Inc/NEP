@@ -16,9 +16,9 @@
 #include "ncdispatch.h"
 #include "nep.h"
 
-/** GRIB2 format uses UDF3 slot for dispatch table model field (see nep.h for slot allocation) */
-#ifdef NC_FORMATX_UDF3
-#define NC_FORMATX_NC_GRIB2 NC_FORMATX_UDF3
+/** GRIB2 format uses UDF2 slot for dispatch table model field (see nep.h for slot allocation) */
+#ifdef NC_FORMATX_UDF2
+#define NC_FORMATX_NC_GRIB2 NC_FORMATX_UDF2
 #else
 #define NC_FORMATX_NC_GRIB2 NC_FORMATX_UDF0
 #endif

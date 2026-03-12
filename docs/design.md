@@ -496,7 +496,7 @@ The GRIB2 UDF handler follows the same NC_Dispatch pattern used for CDF and GeoT
 ### Key Components
 
 #### GRIB2 UDF Handler
-- **Format Detection**: Automatic identification of GRIB2 files via magic number (`GRIB`) registered at UDF slot 3 (`NEP_UDF_GRIB2 = NC_UDF3`)
+- **Format Detection**: Automatic identification of GRIB2 files via magic number (`GRIB`) registered at UDF slot 2 (`NEP_UDF_GRIB2 = NC_UDF2`)
 - **NC_Dispatch Implementation**: Complete dispatch table for GRIB2 file operations
 - **File Operations**: `NC_GRIB2_open()` and `NC_GRIB2_close()` with proper resource management
 - **Metadata Mapping**: GRIB2 products mapped to NetCDF variables with shared `y`/`x` dimensions, `NC_FLOAT` type, and per-variable + global attributes
@@ -546,9 +546,9 @@ The GRIB2 UDF handler follows the same NC_Dispatch pattern used for CDF and GeoT
 7. `g2_free(gfld)`, `free(full_buf)`
 
 #### UDF Slot and `.ncrc` Registration
-- UDF slot 3 (`NC_UDF3`) reserved for GRIB2 in `include/nep.h`
-- `NC_GRIB2_initialize()` registers dispatch table; supports both manual call and `.ncrc` autoload
-- `nep.ncrc` UDF3 block: `NETCDF.UDF3.LIBRARY`, `NETCDF.UDF3.INIT=NC_GRIB2_initialize`, `NETCDF.UDF3.MAGIC=GRIB`
+- UDF slot 2 (`NC_UDF2`) used for GRIB2 in `include/nep.h`; GRIB2 and CDF are mutually exclusive and share this slot
+- `NC_GRIB2_initialize()` registers dispatch table via `.ncrc` autoload
+- `nep.ncrc` UDF2 block: `NETCDF.UDF2.LIBRARY`, `NETCDF.UDF2.INIT=NC_GRIB2_initialize`, `NETCDF.UDF2.MAGIC=GRIB`
 
 ### Source Files
 
