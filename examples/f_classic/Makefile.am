@@ -1,7 +1,7 @@
 # Makefile.am for classic NetCDF Fortran examples
 # Edward Hartnett 1/25/26
 
-AUTOMAKE_OPTIONS = serial-tests
+AUTOMAKE_OPTIONS = parallel-tests
 
 # Fortran module path - NetCDF-Fortran modules should be in CPPFLAGS from configure
 AM_FCFLAGS = $(CPPFLAGS)
@@ -31,6 +31,9 @@ TESTS = test_f_quickstart.sh test_f_simple_2D.sh test_f_coord.sh test_f_coord_va
 EXTRA_DIST = test_f_quickstart.sh test_f_simple_2D.sh test_f_coord.sh test_f_coord_vars.sh \
              test_f_size_limits.sh test_f_unlimited_dim.sh test_f_var4d.sh \
              test_f_dump_classic_metadata.sh
+
+# Set LD_LIBRARY_PATH so test binaries can find HDF5/NetCDF shared libs at runtime.
+AM_TESTS_ENVIRONMENT = LD_LIBRARY_PATH="@MY_LD_LIBRARY_PATH@:$$LD_LIBRARY_PATH"
 
 # Ensure built binaries are executable before test scripts run them
 check-local:
