@@ -2,9 +2,6 @@
 
 ## 1. Executive Summary
 
-### 1.1 Product Overview
-NEP (NetCDF Extension Pack) extends NetCDF-4 capabilities with high-performance compression filters and User Defined Format (UDF) handlers for accessing diverse scientific data formats through the standard NetCDF API.
-
 ### 1.2 Business Objectives
 - Provide high-performance compression for NetCDF-4/HDF5 files
 - Enable seamless access to multiple scientific data formats without conversion
@@ -94,10 +91,10 @@ NASA Common Data Format (CDF) support via UDF handler enables transparent access
 
 ### 4.3 Build Configuration
 **CMake:**
-- `ENABLE_CDF=ON/OFF` - Enable/disable CDF support (default: OFF)
+- `ENABLE_CDF=ON/OFF` - Enable/disable CDF support (default: OFF; mutually exclusive with GRIB2)
 
 **Autotools:**
-- `--enable-cdf/--disable-cdf` - CDF support
+- `--enable-cdf` - Enable CDF support (default: disabled; mutually exclusive with GRIB2)
 
 ### 4.4 Dependencies
 - NASA CDF Library v3.9.x (required when enabled)
@@ -208,7 +205,7 @@ GRIB2 (General Regularly-distributed Information in Binary form, Edition 2) supp
 
 ### 7.2 Features
 - **File Operations**: `NC_GRIB2_open()` and `NC_GRIB2_close()` with proper resource management
-- **Format Detection**: Automatic GRIB2 magic number detection (`GRIB`) via UDF slot 3
+- **Format Detection**: Automatic GRIB2 magic number detection (`GRIB`) via UDF slot 2
 - **Product Mapping**: Each GRIB2 product (one per message for single-product messages) exposed as a named `NC_FLOAT` NetCDF variable with shared `[y, x]` dimensions
 - **Metadata Extraction**: Variable names from `g2c_param_abbrev()`; duplicate names uniquified with `_2`, `_3`, ... suffixes
 - **Variable Attributes**: `long_name` (from parameter abbreviation), `_FillValue = 9.999e20f`, `GRIB2_discipline`, `GRIB2_category`, `GRIB2_param_number`
@@ -218,15 +215,17 @@ GRIB2 (General Regularly-distributed Information in Binary form, Edition 2) supp
 
 ### 7.3 Build Configuration
 **CMake:**
-- `ENABLE_GRIB2=ON/OFF` - Enable/disable GRIB2 support (default: OFF)
+- `ENABLE_GRIB2=ON/OFF` - Enable/disable GRIB2 support (default: ON)
+- Note: `ENABLE_GRIB2` and `ENABLE_CDF` are mutually exclusive (both use UDF slot 2)
 
 **Autotools:**
-- `--enable-grib2/--disable-grib2` - GRIB2 support (default: disabled)
+- `--disable-grib2` - Disable GRIB2 support (default: enabled)
+- Note: `--enable-cdf` and GRIB2 are mutually exclusive; configure errors if both requested
 
 ### 7.4 Dependencies
 - **NOAA NCEPLIBS-g2c** >= 2.1.0 (required when enabled); user supplies install path at configure time
 - **libjasper** >= 3.0.0 (transitive dependency of g2c for JPEG2000 compression)
-- g2c repo: https://github.com/NOAA-EMC/NCEPLIBS-g2c
+- g2c repo: https://github.com/NOAA-EMC/NCEPLIBS-g2c/
 - g2c docs: https://noaa-emc.github.io/NCEPLIBS-g2c/
 
 ### 7.5 Known Limitations
@@ -409,10 +408,10 @@ Example output is validated to ensure correctness across code changes. Each exam
 - **v1.3.0**: NASA CDF format support via UDF handler
 - **v1.4.0**: Spack package manager support for NEP and CDF
 - **v1.5.0** (Jan 2026): GeoTIFF read support via UDF handler
-- **v1.7.0** (planned): GRIB2 read support via UDF handler
+- **v1.7.0** (March 2026): GRIB2 read support via UDF handler
 
 ---
 
 *Document Version: 1.7.0*  
 *Last Updated: March 2026*  
-*Status: Reflects released features through v1.5.0; v1.7.0 planned*
+*Status: Reflects released features through v1.7.0*
