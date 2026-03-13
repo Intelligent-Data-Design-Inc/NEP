@@ -25,6 +25,12 @@ AC_TYPE_SIZE_T
 # We are using HDF5.
 AC_DEFINE([USE_HDF5], [yes], [Always needed])
 
+# Add HDF5 to LIBS early so all AC_SEARCH_LIBS link tests succeed.
+# libnetcdf and libnetcdff have transitive deps on these.
+# Note: -ljasper is NOT added here; it is only needed when GRIB2 is enabled
+# and is added conditionally in the GRIB2 detection block below.
+LIBS="-lhdf5_hl -lhdf5 $LIBS"
+
 AC_ARG_WITH([hdf5-plugin-path],
             [AS_HELP_STRING([--with-hdf5-plugin-path=<directory>],
                             [specify HDF5 plugin path (defaults to <netcdf-prefix>/hdf5/lib/plugin)])])
@@ -200,6 +206,7 @@ if test "x$enable_grib2" = xyes && test "x$enable_cdf" = xyes; then
 fi
 
 if test "x$enable_grib2" = "xyes"; then
+    LIBS="-ljasper $LIBS"
     AC_CHECK_HEADERS([grib2.h], [g2c_header=yes], [g2c_header=no])
     AC_SEARCH_LIBS([g2c_open], [g2c], [g2c_lib=yes; G2C_LIBS="-lg2c"], [g2c_lib=no])
 

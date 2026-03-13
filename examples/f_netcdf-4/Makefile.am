@@ -24,8 +24,11 @@ LDADD = -lnetcdff
 
 # Test wrapper scripts for CDL validation
 TESTS = test_f_simple_nc4.sh test_f_format_variants.sh test_f_compression.sh test_f_chunking_performance.sh \
-        test_f_multi_unlimited.sh test_f_user_types.sh test_f_groups.sh \
-        test_f_dump_nc4_metadata.sh
+        test_f_multi_unlimited.sh test_f_user_types.sh test_f_groups.sh
+
+# test_f_dump_nc4_metadata.sh shares f_user_types.nc with test_f_user_types.sh;
+# list it in TESTS_SERIAL so it runs after all parallel tests complete.
+TESTS_SERIAL = test_f_dump_nc4_metadata.sh
 
 # Include test scripts in distribution
 EXTRA_DIST = test_f_simple_nc4.sh test_f_format_variants.sh test_f_compression.sh test_f_chunking_performance.sh \
@@ -40,4 +43,4 @@ check-local:
 	chmod +x $(check_PROGRAMS)
 
 # Clean up NetCDF files and generated CDL files
-CLEANFILES = *.nc *.cdl
+CLEANFILES = *.nc *.cdl f_dump_nc4_metadata_output.txt

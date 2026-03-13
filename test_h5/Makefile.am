@@ -27,5 +27,7 @@ TESTS = run_tests.sh
 # Delete files created in testing.
 CLEANFILES = tst_*.h5
 
+AM_TESTS_ENVIRONMENT = LD_LIBRARY_PATH="@MY_LD_LIBRARY_PATH@:$$LD_LIBRARY_PATH"
+
 EXTRA_DIST = run_tests.sh.in
 
