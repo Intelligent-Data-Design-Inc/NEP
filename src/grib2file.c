@@ -20,15 +20,54 @@
 #define GRIB2_MAX_TEMPLATE_LEN 200
 
 /**
+ * @internal Allocate and fill an NC_TYPE_INFO_T for an atomic type.
+ * Atomic types are not stored in the file's type registry for read-only
+ * UDF files, so nc4_find_type returns NULL for them.  This helper
+ * creates a standalone descriptor instead, matching the identical
+ * pattern in geotifffile.c and cdffile.c.
+ */
+static int
+nc4_set_var_type(nc_type xtype, int endianness, size_t type_size,
+                 char *type_name, NC_TYPE_INFO_T **typep)
+{
+    NC_TYPE_INFO_T *type;
+
+    assert(typep);
+    if (!(type = calloc(1, sizeof(NC_TYPE_INFO_T))))
+        return NC_ENOMEM;
+    if (!(type->hdr.name = strdup(type_name)))
+    {
+        free(type);
+        return NC_ENOMEM;
+    }
+    type->hdr.sort = NCTYP;
+    if (xtype == NC_FLOAT)
+        type->nc_type_class = NC_FLOAT;
+    else if (xtype == NC_DOUBLE)
+        type->nc_type_class = NC_DOUBLE;
+    else if (xtype == NC_CHAR)
+        type->nc_type_class = NC_STRING;
+    else
+        type->nc_type_class = NC_INT;
+    type->endianness = endianness;
+    type->size = type_size;
+    type->hdr.id = (size_t)xtype;
+    *typep = type;
+    return NC_NOERR;
+}
+
+/**
  * @internal Create a NetCDF-4 variable and insert it into the group's
- * variable list, wiring in an existing atomic type from the file's type
- * system. Follows the same pattern as geotifffile.c.
+ * variable list.  Matches the nc4_var_list_add_full pattern from
+ * geotifffile.c exactly.
  *
- * @param h5 File info struct (needed to look up type).
  * @param grp Parent group.
  * @param name Variable name.
  * @param ndims Number of dimensions.
  * @param xtype NetCDF atomic type (e.g. NC_FLOAT).
+ * @param endianness Byte order.
+ * @param type_size Size in bytes of the type.
+ * @param type_name Human-readable type name.
  * @param format_var_info Format-specific var info (may be NULL).
  * @param var Output: pointer to the new NC_VAR_INFO_T.
  *
@@ -36,11 +75,11 @@
  * @return ::NC_ENOMEM Out of memory.
  */
 static int
-grib2_var_list_add(NC_FILE_INFO_T *h5, NC_GRP_INFO_T *grp, const char *name,
-                   int ndims, nc_type xtype, void *format_var_info,
-                   NC_VAR_INFO_T **var)
+grib2_var_list_add(NC_GRP_INFO_T *grp, const char *name,
+                   int ndims, nc_type xtype, int endianness,
+                   size_t type_size, char *type_name,
+                   void *format_var_info, NC_VAR_INFO_T **var)
 {
-    NC_TYPE_INFO_T *type_info;
     int retval;
 
     if ((retval = nc4_var_list_add(grp, name, ndims, var)))
@@ -51,10 +90,10 @@ grib2_var_list_add(NC_FILE_INFO_T *h5, NC_GRP_INFO_T *grp, const char *name,
     (*var)->format_var_info = format_var_info;
     (*var)->storage = NC_CONTIGUOUS;
 
-    /* Look up the atomic type object from the file's type system. */
-    if ((retval = nc4_find_type(h5, xtype, &type_info)))
+    if ((retval = nc4_set_var_type(xtype, endianness, type_size, type_name,
+                                   &(*var)->type_info)))
         return retval;
-    (*var)->type_info = type_info;
+    (*var)->endianness = (*var)->type_info->endianness;
     (*var)->type_info->rc++;
 
     return NC_NOERR;
@@ -217,6 +256,7 @@ NC_GRIB2_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     }
     grib2_file->g2cid = g2cid;
     grib2_file->num_messages = num_msg;
+    grib2_file->path = strdup(path);
     h5->format_file_info = grib2_file;
 
     /* Build per-product inventory across all messages. */
@@ -258,12 +298,27 @@ NC_GRIB2_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
         /* Second pass: populate inventory. */
         {
             int prod_idx = 0;
+            size_t file_pos = 0;
 
             for (m = 0; m < num_msg; m++)
             {
                 unsigned char discipline, master_version, local_version;
                 int num_fields, num_local, f;
                 short center, subcenter;
+                size_t msg_btm = 0, msg_bim = 0;
+
+                /* g2c_seekmsg uses hton64 to read the 8-byte GRIB2 message
+                 * length correctly, unlike the legacy seekgb() which truncates
+                 * to 4 bytes. msg_btm is the absolute file byte offset;        
+                 * msg_bim is the full message length in bytes. */
+                if (g2c_seekmsg(g2cid, file_pos, &msg_btm, &msg_bim))
+                {
+                    free(grib2_file->products);
+                    free(grib2_file);
+                    g2c_close(g2cid);
+                    return NC_EHDFERR;
+                }
+                file_pos = msg_btm + msg_bim;
 
                 if (g2c_inq_msg(g2cid, m, &discipline, &num_fields, &num_local,
                                 &center, &subcenter, &master_version,
@@ -283,11 +338,13 @@ NC_GRIB2_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
                     long long int drs_template[GRIB2_MAX_TEMPLATE_LEN];
                     int pds_len, gds_len, drs_len;
                     size_t nx = 0, ny = 0;
-                    char dim_name[64];
+                    char dim_name[1024];
 
-                    p->msg_index  = m;
-                    p->prod_index = f;
-                    p->discipline = discipline;
+                    p->msg_index    = m;
+                    p->prod_index   = f;
+                    p->discipline   = discipline;
+                    p->bytes_to_msg = msg_btm;
+                    p->bytes_in_msg = msg_bim;
 
                     /* Get PDS/GDS/DRS templates; category and param are in
                      * PDS template octets 0 and 1 (indices 0 and 1). */
@@ -318,7 +375,7 @@ NC_GRIB2_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
 
                     /* Look up parameter abbreviation. */
                     p->abbrev[0] = '\0';
-                    g2c_param_abbrev((int)discipline, p->category,
+                    g2c_param_abbrev((int)p->discipline, p->category,
                                      p->param_number, p->abbrev);
 
                     prod_idx++;
@@ -372,10 +429,12 @@ NC_GRIB2_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
             snprintf(candidate, sizeof(candidate), "%s", varname);
             {
                 NC_VAR_INFO_T *dummy_var;
-                for (suffix = 2;
-                     nc4_find_var(h5->root_grp, candidate, &dummy_var) == NC_NOERR;
-                     suffix++)
+                nc4_find_var(h5->root_grp, candidate, &dummy_var);
+                for (suffix = 2; dummy_var != NULL; suffix++)
+                {
                     snprintf(candidate, sizeof(candidate), "%s_%d", varname, suffix);
+                    nc4_find_var(h5->root_grp, candidate, &dummy_var);
+                }
             }
             snprintf(varname, sizeof(varname), "%.*s", NC_MAX_NAME, candidate);
 
@@ -392,10 +451,14 @@ NC_GRIB2_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
             var_info->discipline   = (int)p->discipline;
             var_info->category     = p->category;
             var_info->param_number = p->param_number;
+            var_info->bytes_to_msg = p->bytes_to_msg;
+            var_info->bytes_in_msg = p->bytes_in_msg;
 
             /* Add 2D (y, x) NC_FLOAT variable. */
-            if ((retval = grib2_var_list_add(h5, h5->root_grp, varname, 2,
-                                             NC_FLOAT, var_info, &var)))
+            if ((retval = grib2_var_list_add(h5->root_grp, varname, 2,
+                                             NC_FLOAT, NC_ENDIAN_NATIVE,
+                                             sizeof(float), "float",
+                                             var_info, &var)))
             {
                 free(var_info);
                 free(grib2_file->products);
@@ -512,8 +575,9 @@ int
 NC_GRIB2_inq_format(int ncid, int *formatp)
 {
     (void)ncid;
-    (void)formatp;
-    return NC_ENOTBUILT;
+    if (formatp)
+        *formatp = NC_FORMAT_NETCDF4;
+    return NC_NOERR;
 }
 
 /**
@@ -530,9 +594,11 @@ int
 NC_GRIB2_inq_format_extended(int ncid, int *formatp, int *modep)
 {
     (void)ncid;
-    (void)formatp;
-    (void)modep;
-    return NC_ENOTBUILT;
+    if (formatp)
+        *formatp = NC_FORMATX_NC_GRIB2;
+    if (modep)
+        *modep = NC_NOWRITE;
+    return NC_NOERR;
 }
 
 /**
@@ -560,15 +626,10 @@ NC_GRIB2_get_vara(int ncid, int varid, const size_t *start, const size_t *count,
     NC_VAR_INFO_T *var;
     NC_GRIB2_FILE_INFO_T *grib2_file;
     NC_VAR_GRIB2_INFO_T *var_info;
-    unsigned char *cbuf = NULL;
-    gribfield *gfld = NULL;
     float *full_buf = NULL;
     size_t nx, ny, nelem;
-    size_t bytes_to_msg, bytes_in_msg;
-    size_t msg_offset, msg_len;
     size_t row, col, out_idx;
     int retval;
-    int i;
 
     /* Recover file, group, and variable metadata. */
     if ((retval = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var)))
@@ -583,44 +644,65 @@ NC_GRIB2_get_vara(int ncid, int varid, const size_t *start, const size_t *count,
     if (start[0] + count[0] > ny || start[1] + count[1] > nx)
         return NC_EINVALCOORDS;
 
-    /* Locate the raw GRIB2 message bytes for this variable's message. */
-    if (g2c_seekmsg(grib2_file->g2cid, (size_t)var_info->msg_index,
-                    &msg_offset, &msg_len))
-        return NC_EHDFERR;
-
-    /* Read the full raw message into a heap buffer. */
-    if (g2c_get_msg(grib2_file->g2cid, msg_offset,
-                    msg_offset + msg_len + 1,
-                    &bytes_to_msg, &bytes_in_msg, &cbuf))
-        return NC_EHDFERR;
-
-    /* Expand the requested product to full [ny][nx] grid via g2_getfld.
-     * prod_index is 1-based in the g2_getfld API. */
-    if (g2_getfld(cbuf + bytes_to_msg,
-                  var_info->prod_index + 1, 1, 1, &gfld))
+    /* Read the raw GRIB2 message bytes using the byte offsets captured at
+     * open time by g2c_seekmsg() (which reads the 8-byte GRIB2 message
+     * length correctly via hton64, unlike the legacy seekgb()).
+     * Then use g2_getfld() to unpack and bitmap-expand to a full ny*nx grid. */
     {
-        free(cbuf);
-        return NC_EHDFERR;
-    }
-    free(cbuf);
-    cbuf = NULL;
+        FILE *f;
+        unsigned char *msgbuf;
+        gribfield *gfld = NULL;
+        size_t bytes_read;
+        int i;
 
-    /* gfld->fld is full [ny*nx] with land/bitmap=0 points set to 0.0.
-     * Build a float buffer with _FillValue substituted for masked points. */
-    nelem = nx * ny;
-    if (!(full_buf = malloc(nelem * sizeof(float))))
-    {
-        g2_free(gfld);
-        return NC_ENOMEM;
-    }
-    for (i = 0; i < (int)nelem; i++)
-    {
-        if (gfld->ibmap == 0 && gfld->bmap && !gfld->bmap[i])
-            full_buf[i] = 9.999e20f;
+        if (!(msgbuf = malloc(var_info->bytes_in_msg)))
+            return NC_ENOMEM;
+
+        if (!(f = fopen(grib2_file->path, "rb")))
+        {
+            free(msgbuf);
+            return NC_EHDFERR;
+        }
+        if (fseeko(f, (off_t)var_info->bytes_to_msg, SEEK_SET) != 0 ||
+            (bytes_read = fread(msgbuf, 1, var_info->bytes_in_msg, f)) != var_info->bytes_in_msg)
+        {
+            fclose(f);
+            free(msgbuf);
+            return NC_EHDFERR;
+        }
+        fclose(f);
+
+        /* prod_index is 0-based; g2_getfld ifldnum is 1-based. */
+        if (g2_getfld(msgbuf, var_info->prod_index + 1, 1, 1, &gfld))
+        {
+            free(msgbuf);
+            return NC_EHDFERR;
+        }
+        free(msgbuf);
+
+        /* g2_getfld with expand=1 already expands gfld->fld to ngrdpts
+         * elements (the full grid), inserting zeros for bitmap-masked points.
+         * Substitute _FillValue for any zero-bitmap positions. */
+        nelem = nx * ny;
+        if (!(full_buf = malloc(nelem * sizeof(float))))
+        {
+            g2_free(gfld);
+            return NC_ENOMEM;
+        }
+        if (gfld->expanded && gfld->ibmap == 0 && gfld->bmap)
+        {
+            for (i = 0; i < (int)nelem; i++)
+                full_buf[i] = gfld->bmap[i] ? gfld->fld[i] : 9.999e20f;
+        }
         else
-            full_buf[i] = gfld->fld[i];
+        {
+            for (i = 0; i < (int)nelem; i++)
+                full_buf[i] = gfld->fld[i];
+        }
+        g2_free(gfld);
     }
-    g2_free(gfld);
+
+    nelem = nx * ny;
 
     /* Copy the requested [start[0]..start[0]+count[0]) x
      * [start[1]..start[1]+count[1]) subset from full_buf [ny][nx]

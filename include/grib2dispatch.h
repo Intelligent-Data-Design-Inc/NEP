@@ -42,17 +42,21 @@ typedef struct NC_GRIB2_PROD_INFO
     int param_number;                 /**< GRIB2 parameter number */
     size_t nx;                        /**< Grid size in X (longitude) direction */
     size_t ny;                        /**< Grid size in Y (latitude) direction */
+    size_t bytes_to_msg;              /**< Absolute file byte offset to start of GRIB2 message */
+    size_t bytes_in_msg;              /**< Total length in bytes of the GRIB2 message */
     char abbrev[NC_GRIB2_ABBREV_LEN]; /**< Parameter abbreviation from g2c_param_abbrev() */
 } NC_GRIB2_PROD_INFO_T;
 
 /** Per-variable format-specific information (used as NC_VAR_INFO_T.format_var_info) */
 typedef struct NC_VAR_GRIB2_INFO
 {
-    int msg_index;       /**< Zero-based index of the GRIB2 message */
-    int prod_index;      /**< Zero-based product index within message */
-    int discipline;      /**< GRIB2 discipline (Table 0.0) */
-    int category;        /**< GRIB2 parameter category */
-    int param_number;    /**< GRIB2 parameter number */
+    int msg_index;          /**< Zero-based index of the GRIB2 message */
+    int prod_index;         /**< Zero-based product index within message */
+    int discipline;         /**< GRIB2 discipline (Table 0.0) */
+    int category;           /**< GRIB2 parameter category */
+    int param_number;       /**< GRIB2 parameter number */
+    size_t bytes_to_msg;    /**< Absolute file byte offset to start of GRIB2 message */
+    size_t bytes_in_msg;    /**< Total length in bytes of the GRIB2 message */
 } NC_VAR_GRIB2_INFO_T;
 
 /** Per-file GRIB2 state */
