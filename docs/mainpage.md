@@ -8,6 +8,7 @@ NEP (NetCDF Extension Pack) extends NetCDF-4 with high-performance compression a
 - **BZIP2 Compression**: High-ratio lossless compression for archival storage
 - **CDF File Reader**: Read NASA Common Data Format files through the NetCDF API
 - **GeoTIFF File Reader**: Read GeoTIFF geospatial raster files through the NetCDF API
+- **GRIB2 File Reader**: Read GRIB2 meteorological and oceanographic data files through the NetCDF API
 
 NEP provides flexible compression options and unified data access for diverse scientific data workflows.
 
@@ -146,19 +147,68 @@ The Common Data Format (CDF) is a self-describing data format developed by NASA'
 
 ### Enabling CDF Support
 
-CDF support is optional and disabled by default. To enable:
+CDF support is disabled by default (mutually exclusive with GRIB2). To enable:
 
 ```bash
 # CMake
-cmake -B build -DENABLE_CDF=ON
+cmake -B build -DENABLE_CDF=ON -DENABLE_GRIB2=OFF
 
 # Autotools
-./configure --enable-cdf
+./configure --enable-cdf --disable-grib2
 ```
 
 **Requirements**: NASA CDF library v3.9+ must be installed. Download from: https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/
 
 **Spack Users**: Install CDF separately with `spack install cdf`.
+
+## GRIB2 File Reader
+
+NEP provides a User-Defined Format (UDF) handler that enables reading GRIB2 (General Regularly-distributed Information in Binary form, Edition 2) files using the familiar NetCDF API.
+
+### What is GRIB2?
+
+GRIB2 is the standard binary format used by meteorological and oceanographic agencies worldwide (NOAA, ECMWF, and others) for distributing numerical weather prediction (NWP) model output, wave forecasts, and observational data.
+
+**Key Characteristics:**
+- Binary format optimized for gridded meteorological data
+- Products organized by discipline, category, and parameter number
+- Bitmap-based land/sea masking for ocean and atmosphere grids
+- Used by NOAA GFS, NAM, HRRR, GDAS, and global wave forecast models
+- Accessed via the NOAA NCEPLIBS-g2c library
+
+### GRIB2 Support in NEP
+
+**Transparent Access**: Read GRIB2 files using standard NetCDF functions (`nc_open()`, `nc_get_var()`, `ncdump`) without file conversion.
+
+**Product-to-Variable Mapping**: Each GRIB2 product is exposed as a named `NC_FLOAT` NetCDF variable with shared `[y, x]` dimensions. Variable names come from `g2c_param_abbrev()`; duplicate names are uniquified with `_2`, `_3` suffixes.
+
+**Full Grid Expansion**: `NC_GRIB2_get_vara()` uses `g2_getfld(expand=1)` to expand the full `[ny, nx]` grid, substituting `_FillValue = 9.999e20f` for bitmap-masked (e.g., land) points.
+
+**Metadata**: Per-variable attributes (`long_name`, `_FillValue`, `GRIB2_discipline`, `GRIB2_category`, `GRIB2_param_number`) and global attributes (`Conventions = "GRIB2"`, `GRIB2_edition = 2`).
+
+**`.ncrc` Autoload**: Place the `.ncrc` file in your home directory and `nc_open()` / `ncdump` work on `.grib2` files with no code changes.
+
+**Use Cases:**
+- Weather forecasting and NWP model output analysis
+- Ocean wave and surge forecast data access
+- NOAA GDAS, GFS, NAM, and HRRR data processing
+- Cross-format meteorological workflows (GRIB2 + NetCDF)
+
+### Enabling GRIB2 Support
+
+GRIB2 support is enabled by default. To disable:
+
+```bash
+# CMake
+cmake -B build -DENABLE_GRIB2=OFF
+
+# Autotools
+./configure --disable-grib2
+```
+
+**Requirements**: NOAA NCEPLIBS-g2c (>= 2.1.0) and libjasper (>= 3.0.0) must be installed. Supply the g2c install path at configure time.
+
+**Note**: GRIB2 and CDF are mutually exclusive — both use UDF slot 2. Enable one or the other, not both.
 
 ## GeoTIFF File Reader
 
@@ -196,14 +246,14 @@ GeoTIFF is a public domain metadata standard that allows georeferencing informat
 
 ### Enabling GeoTIFF Support
 
-GeoTIFF support is optional and disabled by default. To enable:
+GeoTIFF support is enabled by default. To disable:
 
 ```bash
 # CMake
-cmake -B build -DENABLE_GEOTIFF=ON
+cmake -B build -DENABLE_GEOTIFF=OFF
 
 # Autotools
-./configure --enable-geotiff
+./configure --disable-geotiff
 ```
 
 **Requirements**: libgeotiff and libtiff libraries must be installed.
@@ -218,8 +268,9 @@ NEP requires:
 - LZ4 library
 - BZIP2 library
 - NetCDF-Fortran library (optional, for Fortran support)
-- NASA CDF library v3.9+ (optional, for CDF file reading)
-- libgeotiff and libtiff (optional, for GeoTIFF file reading)
+- NASA CDF library v3.9+ (optional, for CDF file reading; mutually exclusive with GRIB2)
+- libgeotiff and libtiff (enabled by default, for GeoTIFF file reading)
+- NOAA NCEPLIBS-g2c >= 2.1.0 and libjasper >= 3.0.0 (enabled by default, for GRIB2 file reading)
 
 Build with CMake or Autotools:
 
@@ -260,9 +311,38 @@ nc_close(ncid);
 
 No special code is needed—the CDF UDF handler automatically detects and processes CDF files.
 
+### GRIB2 File Reading
+
+When GRIB2 support is enabled (the default), open and read GRIB2 files using standard NetCDF functions:
+
+```c
+int ncid, varid;
+float data[151 * 241];  /* ny=151, nx=241 for GDAS West Coast wave grid */
+
+/* Open GRIB2 file using NetCDF API */
+nc_open("gdaswave.t00z.wcoast.0p16.f000.grib2", NC_NOWRITE, &ncid);
+
+/* Look up a variable by its GRIB2 parameter abbreviation */
+nc_inq_varid(ncid, "WIND", &varid);
+
+/* Read the full [ny][nx] grid; land points = 9.999e20 (_FillValue) */
+nc_get_var_float(ncid, varid, data);
+
+nc_close(ncid);
+```
+
+Or use `ncdump` directly after installing the `.ncrc` file:
+
+```bash
+ncdump -h gdaswave.t00z.wcoast.0p16.f000.grib2
+ncdump -v WIND gdaswave.t00z.wcoast.0p16.f000.grib2
+```
+
+No special code is needed — the GRIB2 UDF handler automatically detects and processes GRIB2 files.
+
 ### GeoTIFF File Reading
 
-When GeoTIFF support is enabled, open and read GeoTIFF files using standard NetCDF functions:
+When GeoTIFF support is enabled (the default), open and read GeoTIFF files using standard NetCDF functions:
 
 ```c
 int ncid, varid, crs_varid;
@@ -309,10 +389,16 @@ No special code is needed—the GeoTIFF UDF handler automatically detects and pr
   - Automatic dimension mapping (bands, rows, columns)
   - CF-1.8 compliant CRS metadata (`crs` variable, coordinate variables, bounds)
   - See `docs/cf-compliance.md` for the CF grid mapping attribute specification
+- **GRIB2 File Reader**:
+  - Read GRIB2 meteorological/oceanographic files via NetCDF API
+  - Each product exposed as a named `NC_FLOAT` variable with `[y, x]` dimensions
+  - Full grid expansion with `_FillValue` for bitmap-masked (land) points
+  - Per-variable GRIB2 metadata attributes and global `Conventions = "GRIB2"`
+  - `.ncrc` autoload support for zero-code-change `nc_open()` / `ncdump` access
 - **Configurable Build Options**:
   - LZ4 and BZIP2 support can be enabled or disabled at build time
-  - CDF support is optional (disabled by default)
-  - GeoTIFF support is optional (disabled by default)
+  - CDF support is optional (disabled by default; mutually exclusive with GRIB2)
+  - GeoTIFF and GRIB2 support are enabled by default; disable with `--disable-geotiff` / `--disable-grib2`
 - **Fortran Support**:
   - Optional Fortran wrappers for NEP functions
   - Requires `netcdf-fortran` library when enabled
