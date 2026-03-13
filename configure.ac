@@ -25,6 +25,10 @@ AC_TYPE_SIZE_T
 # We are using HDF5.
 AC_DEFINE([USE_HDF5], [yes], [Always needed])
 
+# Add HDF5 and jasper to LIBS early so all AC_SEARCH_LIBS link tests succeed.
+# libnetcdf, libnetcdff, and libg2c all have transitive deps on these.
+LIBS="-ljasper -lhdf5_hl -lhdf5 $LIBS"
+
 AC_ARG_WITH([hdf5-plugin-path],
             [AS_HELP_STRING([--with-hdf5-plugin-path=<directory>],
                             [specify HDF5 plugin path (defaults to <netcdf-prefix>/hdf5/lib/plugin)])])

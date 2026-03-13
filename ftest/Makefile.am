@@ -33,5 +33,7 @@ TESTS = run_tests.sh
 CLEANFILES = ftst_*.nc
 DISTCLEANFILES = run_test.sh
 
+AM_TESTS_ENVIRONMENT = LD_LIBRARY_PATH="@MY_LD_LIBRARY_PATH@:$$LD_LIBRARY_PATH"
+
 # Distrubute this file.
 EXTRA_DIST = run_tests.sh.in

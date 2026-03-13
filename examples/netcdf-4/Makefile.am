@@ -1,7 +1,7 @@
 # Makefile.am for NetCDF-4 C examples
 # Edward Hartnett 1/25/26
 
-AUTOMAKE_OPTIONS = serial-tests
+AUTOMAKE_OPTIONS = parallel-tests
 
 # List of NetCDF-4 example programs
 check_PROGRAMS = simple_nc4 format_variants compression chunking_performance multi_unlimited user_types groups dump_nc4_metadata
