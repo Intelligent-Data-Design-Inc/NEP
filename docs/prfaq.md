@@ -4,11 +4,11 @@
 
 **FOR IMMEDIATE RELEASE**
 
-### NetCDF Extension Pack (NEP) v1.5.0 Adds GeoTIFF Support for Geospatial Data Access
+### NetCDF Extension Pack (NEP) v1.7.0 Adds GRIB2 Support for Meteorological and Oceanographic Data
 
-*Open-source framework now provides high-performance compression (LZ4/BZIP2), NASA CDF support, and transparent GeoTIFF file access through NetCDF API*
+*Open-source framework now provides high-performance compression (LZ4/BZIP2), NASA CDF, GeoTIFF, and transparent GRIB2 file access through the standard NetCDF API*
 
-**January 2026** - The scientific computing community gains powerful new capabilities with NEP (NetCDF Extension Pack) v1.5.0, an open-source framework that extends NetCDF-4 with high-performance compression and seamless access to multiple scientific data formats including GeoTIFF geospatial raster data.
+**March 2026** - The scientific computing community gains powerful new capabilities with NEP (NetCDF Extension Pack) v1.7.0, an open-source framework that extends NetCDF-4 with high-performance compression and seamless access to multiple scientific data formats — now including GRIB2 meteorological and oceanographic model output.
 
 #### The Challenge
 
@@ -34,6 +34,13 @@ NEP provides a comprehensive solution with three key capabilities:
 - **Metadata Preservation**: Georeferencing, coordinate systems, and GeoTIFF tags accessible as NetCDF attributes
 - **Multi-Band Support**: Handle single and multi-band imagery with proper dimension mapping
 
+**GRIB2 Support (v1.7.0):**
+- **Meteorological/Oceanographic Data Access**: Read GRIB2 NWP model output through the standard NetCDF API
+- **Full Grid Expansion**: Bitmap-aware data reading substitutes `_FillValue` for land-masked points
+- **Product Inventory**: All GRIB2 products exposed as named NC_FLOAT variables with `[y, x]` dimensions
+- **Metadata**: Variable names, discipline/category/parameter numbers, and global GRIB2 attributes
+- **`.ncrc` Autoload**: Zero-code-change access — place `.ncrc` in home directory and `nc_open()` works on `.grib2` files
+
 **Example Programs (v3.5.1):**
 - **Learning Resources**: Comprehensive example programs in C and Fortran demonstrating NetCDF API usage
 - **Read and Write**: Each example creates a file and reads it back, demonstrating both operations
@@ -49,12 +56,12 @@ This comprehensive framework enables scientists to:
 - **Maintain data integrity**: Lossless compression and accurate metadata mapping
 - **Deploy easily**: Spack package manager support for HPC environments
 
-"NEP transforms how scientists handle diverse scientific data," said Ed Hartnett, Principal Architect. "Version 1.5.0 brings together high-performance compression with transparent access to NASA CDF and GeoTIFF formats. Researchers can now read space physics data and geospatial imagery using the same NetCDF API they already know, eliminating the need for format conversion and streamlining their analysis workflows."
+"NEP transforms how scientists handle diverse scientific data," said Ed Hartnett, Principal Architect. "Version 1.7.0 completes our meteorological data support with full GRIB2 reading. Operational NWP and ocean wave forecast files — including NOAA GDAS GRIB2 output — are now directly accessible through the same NetCDF API scientists already use for CDF and GeoTIFF data. No format conversion, no separate tools."
 
 
 #### Availability
 
-NEP v1.5.0 is available now as open-source software. Installation options include:
+NEP v1.7.0 is available now as open-source software. Installation options include:
 - **Source Build**: CMake or Autotools build systems
 - **Spack Package Manager**: `spack install nep` for HPC environments
 - **Documentation**: Complete API documentation at https://intelligent-data-design-inc.github.io/NEP/
@@ -139,6 +146,7 @@ All features integrate seamlessly with the standard NetCDF API.
 - **Fortran Support (optional)**: NetCDF-Fortran (v4.5.4+)
 - **CDF Support (optional)**: NASA CDF Library (v3.9.x)
 - **GeoTIFF Support (optional)**: libgeotiff, libtiff
+- **GRIB2 Support (optional)**: NOAA NCEPLIBS-g2c (≥ 2.1.0), libjasper (≥ 3.0.0)
 - **Build Tools**: CMake (v3.9+) or Autotools
 - **Documentation (optional)**: Doxygen and Graphviz
 
@@ -151,8 +159,9 @@ See the README for detailed instructions.
 
 #### Q: Can I enable only specific features?
 **A:** Yes! Use build options to control which features are compiled:
-- **CMake**: `-DBUILD_LZ4=ON/OFF`, `-DBUILD_BZIP2=ON/OFF`, `-DENABLE_FORTRAN=ON/OFF`, `-DENABLE_CDF=ON/OFF`, `-DENABLE_GEOTIFF=ON/OFF`, `-DBUILD_EXAMPLES=ON/OFF`
-- **Autotools**: `--enable-lz4`, `--enable-bzip2`, `--enable-fortran`, `--enable-cdf`, `--enable-geotiff`, `--disable-examples`
+- **CMake**: `-DBUILD_LZ4=ON/OFF`, `-DBUILD_BZIP2=ON/OFF`, `-DENABLE_FORTRAN=ON/OFF`, `-DENABLE_CDF=ON/OFF`, `-DENABLE_GEOTIFF=ON/OFF`, `-DENABLE_GRIB2=ON/OFF`, `-DBUILD_EXAMPLES=ON/OFF`
+- **Autotools**: `--enable-lz4`, `--enable-bzip2`, `--enable-fortran`, `--enable-cdf`, `--enable-geotiff`, `--disable-grib2`, `--disable-examples`
+- Note: `ENABLE_CDF` and `ENABLE_GRIB2` are mutually exclusive (both use UDF slot 2)
 - **Spack**: `spack install nep+lz4+bzip2+fortran` (variants control features)
 
 #### Q: How do I use LZ4 compression in my NetCDF files?
@@ -177,6 +186,15 @@ nc_open("image.tif", NC_NOWRITE, &ncid);
 nc_inq_dimlen(ncid, 0, &bands);
 nc_get_var_float(ncid, varid, raster_data);
 ```
+
+#### Q: How do I read GRIB2 files with NEP?
+**A:** Enable GRIB2 support during build (`-DENABLE_GRIB2=ON`, default), supply NCEPLIBS-g2c path, then use standard NetCDF API:
+```c
+nc_open("forecast.grib2", NC_NOWRITE, &ncid);
+nc_inq_varid(ncid, "WIND", &varid);
+nc_get_var_float(ncid, varid, data);  /* full [ny][nx] grid, land = _FillValue */
+```
+Or use `ncdump forecast.grib2` directly after installing the `.ncrc` file.
 
 ### Compatibility and Performance
 
@@ -225,10 +243,11 @@ nc_get_var_float(ncid, varid, raster_data);
 **A:** Yes. NEP v1.1.0 added Fortran 90 wrappers (module `nep`) for compression functions. Fortran applications can call `nf90_def_var_lz4`, `nf90_inq_var_lz4`, `nf90_def_var_bzip2`, and `nf90_inq_var_bzip2` to enable and query compression.
 
 #### Q: What is the current version?
-**A:** NEP v1.5.0 is the current release (January 2026), providing:
+**A:** NEP v1.7.0 is the current release (March 2026), providing:
 - LZ4 and BZIP2 compression for HDF5/NetCDF-4 files (C and Fortran APIs)
-- NASA CDF format support via UDF handler
+- NASA CDF format support via UDF handler (mutually exclusive with GRIB2)
 - GeoTIFF format support via UDF handler
+- **GRIB2 meteorological/oceanographic data support via UDF handler**
 - Spack package manager support
 - Comprehensive documentation and CI testing
 
@@ -237,6 +256,7 @@ nc_get_var_float(ncid, varid, raster_data);
 - **NetCDF-4/HDF5**: Native format with LZ4/BZIP2 compression
 - **NASA CDF** (v1.3.0): Space physics and satellite data via UDF handler
 - **GeoTIFF** (v1.5.0): Geospatial raster imagery via UDF handler
+- **GRIB2** (v1.7.0): Meteorological and oceanographic NWP model output via UDF handler
 All formats accessible through standard NetCDF API.
 
 #### Q: How stable is NEP?
@@ -250,13 +270,13 @@ All formats accessible through standard NetCDF API.
 
 #### Q: What are typical use cases for NEP?
 **A:** 
-- **Weather forecasting**: Fast compression of large meteorological datasets with LZ4
+- **Weather forecasting**: Fast compression of large meteorological datasets with LZ4; direct GRIB2 NWP output access
 - **Climate modeling**: Efficient storage and access to simulation outputs with BZIP2
 - **Space physics research**: Direct access to NASA CDF satellite and mission data (IMAP, MMS, Van Allen Probes)
 - **Geospatial analysis**: Read GeoTIFF satellite imagery, land cover, and digital elevation models
 - **Remote sensing workflows**: Process MODIS, Landsat, and aerial photography in GeoTIFF format
-- **Satellite data processing**: Optimize storage for large observation datasets
-- **Ocean modeling**: Reduce I/O bottlenecks in simulation workflows
+- **Ocean modeling**: Direct access to NOAA GDAS wave forecast GRIB2 files (e.g., `gdaswave.t00z.wcoast.0p16.f000.grib2`)
+- **Operational meteorology**: Read NWP model output (GFS, NAM, HRRR) in GRIB2 format through the NetCDF API
 - **HPC workflows**: Improve I/O performance with fast LZ4 compression
 - **Data archival**: Maximize storage efficiency with BZIP2 compression
 - **Multi-format analysis**: Unified NetCDF API for NetCDF-4, CDF, and GeoTIFF data
@@ -292,7 +312,8 @@ For more information:
 - **v1.3.0**: NASA CDF format support via UDF handler
 - **v1.4.0**: Spack package manager support for NEP and CDF
 - **v1.5.0** (Jan 2026): GeoTIFF read support via UDF handler
+- **v1.7.0** (Mar 2026): GRIB2 read support via UDF handler
 
 ---
 
-*Last Updated: January 2026 (v1.5.0)*
+*Last Updated: March 2026 (v1.7.0)*

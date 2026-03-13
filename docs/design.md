@@ -1,7 +1,7 @@
-# NEP – NetCDF Extension Pack v1.5.0
+# NEP – NetCDF Extension Pack v1.7.0
 ## Project Overview
 
-The NetCDF Extension Pack (NEP) v1.5.0 extends NetCDF-4 with high-performance compression filters and User Defined Format (UDF) handlers for accessing diverse scientific data formats through the standard NetCDF API. NEP provides flexible lossless compression with two complementary algorithms (LZ4 and BZIP2) and transparent access to NASA CDF and GeoTIFF files.
+The NetCDF Extension Pack (NEP) v1.7.0 extends NetCDF-4 with high-performance compression filters and User Defined Format (UDF) handlers for accessing diverse scientific data formats through the standard NetCDF API. NEP provides flexible lossless compression with two complementary algorithms (LZ4 and BZIP2) and transparent access to NASA CDF, GeoTIFF, and GRIB2 files.
 
 ## Architecture
 
@@ -52,15 +52,15 @@ NEP implements NetCDF's UDF system to provide transparent access to various scie
        │
 [NC_Dispatch Layer]
        │
-┌──────┴────────────┬──────────────┐
-│                   │              │
-[HDF5 Backend]  [CDF Handler]  [GeoTIFF Handler]
-│                   │              │
-│               [CDF Library]  [libgeotiff]
-│                   │              │
-└───────┬───────────┼──────────────┘
-        │           │              │
-[NetCDF-4 Files]  [CDF Files]  [GeoTIFF Files]
+┌──────┴────────────┬──────────────┬──────────────┐
+│                   │              │              │
+[HDF5 Backend]  [CDF Handler]  [GeoTIFF Handler]  [GRIB2 Handler]
+│                   │              │              │
+│               [CDF Library]  [libgeotiff]  [NCEPLIBS-g2c]
+│                   │              │              │
+└───────┬───────────┼──────────────┴──────────────┘
+        │           │              │              │
+[NetCDF-4 Files]  [CDF Files]  [GeoTIFF Files]  [GRIB2 Files]
 ```
 
 ## Project Structure
@@ -519,8 +519,8 @@ The GRIB2 UDF handler follows the same NC_Dispatch pattern used for CDF and GeoT
 | Struct | Location | Purpose |
 |--------|----------|---------|
 | `NC_GRIB2_FILE_INFO_T` | `include/grib2dispatch.h` | Per-file state: `g2cid`, `num_messages`, `num_products`, `num_x`/`num_y`, `*products` array |
-| `NC_GRIB2_PROD_INFO_T` | `include/grib2dispatch.h` | Per-product inventory: `msg_index`, `prod_index`, `discipline`, `category`, `param_number`, `nx`, `ny`, `abbrev[64]` |
-| `NC_VAR_GRIB2_INFO_T` | `include/grib2dispatch.h` | Per-variable: `msg_index`, `prod_index` (used by `get_vara` to locate raw message) |
+| `NC_GRIB2_PROD_INFO_T` | `include/grib2dispatch.h` | Per-product inventory: `msg_index`, `prod_index`, `discipline`, `category`, `param_number`, `nx`, `ny`, `bytes_to_msg`, `bytes_in_msg`, `abbrev[64]` |
+| `NC_VAR_GRIB2_INFO_T` | `include/grib2dispatch.h` | Per-variable: `msg_index`, `prod_index`, `bytes_to_msg`, `bytes_in_msg` (used by `get_vara` for direct file I/O) |
 
 #### Memory Ownership
 - `NC_GRIB2_FILE_INFO_T.products` array: allocated in `NC_GRIB2_open()`, freed in `NC_GRIB2_close()`
@@ -530,20 +530,21 @@ The GRIB2 UDF handler follows the same NC_Dispatch pattern used for CDF and GeoT
 
 #### `NC_GRIB2_open()` Pipeline
 1. Magic detection: netcdf-c checks `GRIB` prefix before calling `NC_GRIB2_open()`
-2. `g2c_open()` → `grib2_file->g2cid`
+2. `g2c_open()` → `grib2_file->g2cid`; `strdup(path)` → `grib2_file->path`
 3. Two-pass product inventory: `g2c_inq()` → `g2c_inq_msg()` → `g2c_inq_prod()` → populate `NC_GRIB2_PROD_INFO_T[]`
-4. `nc4_dim_list_add()` for shared `y` and `x` dimensions
-5. Per-product: `grib2_var_list_add()` → set dim IDs → add `GRIB2_*`, `long_name`, `_FillValue` attributes
-6. Global: `Conventions`, `GRIB2_edition` attributes on root group
+4. Per-message: `g2c_seekmsg()` captures `bytes_to_msg` / `bytes_in_msg` (correct 8-byte length via `hton64`); stored in `PROD_INFO_T` and `NC_VAR_GRIB2_INFO_T`
+5. `nc4_dim_list_add()` for shared `y` and `x` dimensions
+6. Per-product: `grib2_var_list_add()` → set dim IDs → add `GRIB2_*`, `long_name`, `_FillValue` attributes
+7. Global: `Conventions`, `GRIB2_edition` attributes on root group
 
 #### `NC_GRIB2_get_vara()` Data Path
-1. `nc4_find_grp_h5_var()` → `NC_VAR_GRIB2_INFO_T` (msg_index, prod_index)
-2. `g2c_seekmsg(g2cid, msg_index)` → byte offset in file
-3. `g2c_get_msg()` → raw message bytes `cbuf`
-4. `g2_getfld(cbuf, prod_index+1, unpack=1, expand=1, &gfld)` → `gfld->fld[ngrdpts]` full grid, `gfld->bmap[i]` bitmap
-5. Bitmap loop: `bmap[i]==0` (land/missing) → `full_buf[i] = 9.999e20f`; else `full_buf[i] = gfld->fld[i]`
+1. `nc4_find_grp_h5_var()` → `NC_VAR_GRIB2_INFO_T` (`bytes_to_msg`, `bytes_in_msg`, `prod_index`)
+2. `malloc(bytes_in_msg)` → `msgbuf`
+3. `fopen(grib2_file->path, "rb")` + `fseeko(bytes_to_msg)` + `fread(bytes_in_msg bytes)` → raw GRIB2 message in `msgbuf`
+4. `g2_getfld(msgbuf, prod_index+1, unpack=1, expand=1, &gfld)` → `gfld->fld[ngrdpts]` full grid, `gfld->bmap[i]` bitmap
+5. Bitmap loop: `ibmap==0 && bmap[i]==0` (land/missing) → `full_buf[i] = 9.999e20f`; else `full_buf[i] = gfld->fld[i]`
 6. Row-major `start`/`count` copy into caller buffer; `nc4_convert_type()` if `memtype != NC_FLOAT`
-7. `g2_free(gfld)`, `free(full_buf)`
+7. `g2_free(gfld)`, `free(full_buf)`, `free(msgbuf)`
 
 #### UDF Slot and `.ncrc` Registration
 - UDF slot 2 (`NC_UDF2`) used for GRIB2 in `include/nep.h`; GRIB2 and CDF are mutually exclusive and share this slot
@@ -562,7 +563,8 @@ The GRIB2 UDF handler follows the same NC_Dispatch pattern used for CDF and GeoT
 
 | Component | Library | Version | Purpose |
 |-----------|---------|---------|---------|
-| GRIB2 Handler | NOAA NCEPLIBS-g2c | Latest stable | GRIB2 file operations and data unpacking |
+| GRIB2 Handler | NOAA NCEPLIBS-g2c | ≥ 2.1.0 | GRIB2 file operations and data unpacking |
+| GRIB2 Handler | libjasper | ≥ 3.0.0 | JPEG2000 compression (transitive dep of g2c) |
 | Core | NetCDF-C | v4.9+ | NetCDF API |
 | Core | HDF5 | v1.12+ | HDF5 backend |
 
