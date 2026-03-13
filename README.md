@@ -12,6 +12,7 @@ NEP extends NetCDF-4 with powerful new capabilities for scientific data workflow
 - **High-Ratio BZIP2 Compression**: Superior compression for archival storage - reduce storage costs while maintaining data integrity
 - **NASA CDF File Reader**: Access Common Data Format files directly through the familiar NetCDF API - no conversion needed
 - **GeoTIFF File Reader**: Read GeoTIFF geospatial raster files through the NetCDF API with CF-1.8 compliant CRS metadata
+- **GRIB2 File Reader**: Read GRIB2 meteorological and oceanographic data files (NWP model output, wave forecasts) through the NetCDF API
 - **Drop-In Compatibility**: Works with existing NetCDF-4 applications without code changes
 
 ## Why NEP?
@@ -228,15 +229,17 @@ if ((retval = nc_close(ncid)))
 
 **Build Configuration:**
 
-To enable GeoTIFF support during build, use the `--enable-geotiff` (Autotools) or `-DENABLE_GEOTIFF=ON` (CMake) configuration option. You must have libgeotiff and libtiff installed on your system.
+GeoTIFF support is enabled by default. To disable:
 
 ```bash
 # CMake
-cmake -B build -DENABLE_GEOTIFF=ON
+cmake -B build -DENABLE_GEOTIFF=OFF
 
 # Autotools
-./configure --enable-geotiff
+./configure --disable-geotiff
 ```
+
+You must have libgeotiff and libtiff installed on your system.
 
 **Useful Tools for Working with GeoTIFF Files:**
 
@@ -324,12 +327,89 @@ For applications requiring full raster reads, consider using native GeoTIFF tool
 
 ---
 
+## GRIB2 Reader
+
+NEP v1.7.0 provides reading of GRIB2 meteorological and oceanographic data files through the standard NetCDF API.
+
+### What is GRIB2?
+
+GRIB2 (General Regularly-distributed Information in Binary form, Edition 2) is the standard format used by NOAA, ECMWF, and other agencies to distribute numerical weather prediction (NWP) model output and wave forecast data.
+
+**Key characteristics:**
+- Gridded binary format optimized for meteorological data
+- Products organized by discipline, category, and parameter number
+- Bitmap-based land/sea masking
+- Used by NOAA GFS, NAM, HRRR, GDAS, and global wave forecast models
+
+### GRIB2 Support in NEP
+
+**Current Features (v1.7.0):**
+- ✅ Automatic format detection — GRIB2 files recognized by `GRIB` magic number
+- ✅ Open/close via standard `nc_open()` and `nc_close()`; `ncdump` works directly
+- ✅ Product inventory — all GRIB2 products exposed as named `NC_FLOAT` variables
+- ✅ Shared `[y, x]` dimensions — all variables on the same grid share one dim pair
+- ✅ Full grid expansion — `g2_getfld(expand=1)` fills complete `[ny][nx]` grid
+- ✅ Bitmap handling — land/masked points filled with `_FillValue = 9.999e20f`
+- ✅ Variable names from `g2c_param_abbrev()`; duplicates uniquified with `_2`, `_3` suffixes
+- ✅ Per-variable attributes: `long_name`, `_FillValue`, `GRIB2_discipline`, `GRIB2_category`, `GRIB2_param_number`
+- ✅ Global attributes: `Conventions = "GRIB2"`, `GRIB2_edition = 2`
+- ✅ `.ncrc` autoload support
+
+**Usage Example:**
+
+```c
+#include <netcdf.h>
+
+int ncid, varid;
+float data[151 * 241];  /* ny=151, nx=241 for GDAS West Coast wave grid */
+
+/* Open GRIB2 file - automatically detected */
+if ((retval = nc_open("gdaswave.t00z.wcoast.0p16.f000.grib2", NC_NOWRITE, &ncid)))
+    ERR(retval);
+
+/* Look up a variable by GRIB2 parameter abbreviation */
+if ((retval = nc_inq_varid(ncid, "WIND", &varid)))
+    ERR(retval);
+
+/* Read full [ny][nx] grid; land points = 9.999e20 (_FillValue) */
+if ((retval = nc_get_var_float(ncid, varid, data)))
+    ERR(retval);
+
+if ((retval = nc_close(ncid)))
+    ERR(retval);
+```
+
+Or use `ncdump` directly:
+
+```bash
+ncdump -h gdaswave.t00z.wcoast.0p16.f000.grib2
+ncdump -v WIND gdaswave.t00z.wcoast.0p16.f000.grib2
+```
+
+**Build Configuration:**
+
+GRIB2 support is enabled by default. To disable:
+
+```bash
+# CMake
+cmake -B build -DENABLE_GRIB2=OFF
+
+# Autotools
+./configure --disable-grib2
+```
+
+Requires NOAA NCEPLIBS-g2c (>= 2.1.0) and libjasper (>= 3.0.0). Supply the g2c install path via `G2C_PATH` or `--with-g2c` at configure time.
+
+**Note**: GRIB2 and CDF are mutually exclusive — both use UDF slot 2. Enable one or the other, not both.
+
+---
+
 ## UDF Autoloading via .ncrc
 
 NEP installs a `.ncrc` configuration file that enables NetCDF-C's UDF self-loading
-mechanism. Once configured, any application can open GeoTIFF and CDF files through the
-standard `nc_open()` API without calling `NC_GEOTIFF_initialize()` or
-`NC_CDF_initialize()` explicitly.
+mechanism. Once configured, any application can open GeoTIFF, CDF, and GRIB2 files through the
+standard `nc_open()` API without calling `NC_GEOTIFF_initialize()`, `NC_CDF_initialize()`,
+or `NC_GRIB2_initialize()` explicitly.
 
 ### Quickstart
 
@@ -339,12 +419,13 @@ After installing NEP, merge the configuration into your `~/.ncrc`:
 cat /usr/local/share/nep/.ncrc >> ~/.ncrc
 ```
 
-Then open GeoTIFF or CDF files from any application without extra initialization:
+Then open GeoTIFF, CDF, or GRIB2 files from any application without extra initialization:
 
 ```c
 int ncid;
-nc_open("satellite_image.tif", NC_NOWRITE, &ncid);  /* works automatically */
-nc_open("data.cdf",            NC_NOWRITE, &ncid);  /* works automatically */
+nc_open("satellite_image.tif",                        NC_NOWRITE, &ncid);  /* GeoTIFF */
+nc_open("data.cdf",                                   NC_NOWRITE, &ncid);  /* CDF */
+nc_open("gdaswave.t00z.wcoast.0p16.f000.grib2",       NC_NOWRITE, &ncid);  /* GRIB2 */
 ```
 
 ### Alternate: per-session via NETCDF_RC
