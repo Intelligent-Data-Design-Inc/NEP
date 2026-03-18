@@ -5,6 +5,7 @@ dimensions:
 variables:
 	int data(y, x) ;
 		data :units = "m/s" ;
+		data :_FillValue = -9999 ;
 
 // global attributes:
 		:title = "Simple 2D Example" ;
@@ -22,5 +23,5 @@ data:
   48, 49, 50, 51, 52, 53,
   54, 55, 56, 57, 58, 59,
   60, 61, 62, 63, 64, 65,
-  66, 67, 68, 69, 70, 71 ;
+  _, _, _, _, _, _ ;
 }
