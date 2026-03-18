@@ -87,6 +87,7 @@
 #define NLAT 90
 #define NLON 180
 #define NDIMS 3
+#define FILL_VALUE -9999.0f
 #define ERRCODE 2
 #define ERR(e) {printf("Error: %s\n", nc_strerror(e)); exit(ERRCODE);}
 
@@ -167,6 +168,13 @@ void create_compressed_file(CompressionTest *test, float *data) {
     if ((retval = nc_def_var(ncid, "temperature", NC_FLOAT, NDIMS, dimids, &varid)))
         ERR(retval);
     
+    /* Set fill value: nc_def_var_fill() registers the sentinel returned for unwritten
+     * chunks. In chunked/compressed variables, unwritten chunks are stored as fill
+     * value data, making fill value part of the chunk metadata. */
+    float fill_value = FILL_VALUE;
+    if ((retval = nc_def_var_fill(ncid, varid, NC_FILL, &fill_value)))
+        ERR(retval);
+    
     /* Set compression */
     if (test->deflate || test->shuffle) {
         if ((retval = nc_def_var_deflate(ncid, varid, test->shuffle, 
@@ -178,8 +186,12 @@ void create_compressed_file(CompressionTest *test, float *data) {
     if ((retval = nc_enddef(ncid)))
         ERR(retval);
     
-    /* Write data */
-    if ((retval = nc_put_var_float(ncid, varid, data)))
+    /* Write all time steps except the last one (partial write).
+     * The unwritten last time step will return FILL_VALUE when read back,
+     * demonstrating fill value behavior with chunked/compressed storage. */
+    size_t wstart[NDIMS] = {0, 0, 0};
+    size_t wcount[NDIMS] = {NTIME - 1, NLAT, NLON};
+    if ((retval = nc_put_vara_float(ncid, varid, wstart, wcount, data)))
         ERR(retval);
     
     /* Close file */
@@ -236,6 +248,16 @@ void read_compressed_file(CompressionTest *test, float *original_data) {
         exit(ERRCODE);
     }
     
+    /* Verify fill value using nc_inq_var_fill() */
+    int no_fill;
+    float fill_value_in;
+    if ((retval = nc_inq_var_fill(ncid, varid, &no_fill, &fill_value_in)))
+        ERR(retval);
+    if (fill_value_in != FILL_VALUE) {
+        printf("Error: fill value = %f, expected %f\n", fill_value_in, FILL_VALUE);
+        exit(ERRCODE);
+    }
+    
     /* Read data */
     if ((retval = nc_get_var_float(ncid, varid, data)))
         ERR(retval);
@@ -249,11 +271,21 @@ void read_compressed_file(CompressionTest *test, float *original_data) {
     test->read_time = (end.tv_sec - start.tv_sec) + 
                       (end.tv_nsec - start.tv_nsec) / 1e9;
     
-    /* Validate data (check first 100 points) */
+    /* Validate written data (first NTIME-1 time steps, check first 100 points) */
     int errors = 0;
-    for (int i = 0; i < 100 && i < NTIME * NLAT * NLON; i++) {
+    for (int i = 0; i < 100 && i < (NTIME - 1) * NLAT * NLON; i++) {
         if (fabs(data[i] - original_data[i]) > 0.001) {
             printf("Error: data[%d] = %f, expected %f\n", i, data[i], original_data[i]);
+            errors++;
+        }
+    }
+    
+    /* Verify unwritten last time step returns fill value */
+    int last_start = (NTIME - 1) * NLAT * NLON;
+    for (int i = last_start; i < last_start + 10; i++) {
+        if (data[i] != FILL_VALUE) {
+            printf("Error: unwritten data[%d] = %f, expected fill value %f\n",
+                   i, data[i], FILL_VALUE);
             errors++;
         }
     }
@@ -264,7 +296,8 @@ void read_compressed_file(CompressionTest *test, float *original_data) {
     }
     
     printf("Read time: %.3f seconds\n", test->read_time);
-    printf("Data validated successfully\n");
+    printf("Data validated (written steps 0-%d correct, last step = fill value %g)\n",
+           NTIME - 2, FILL_VALUE);
     
     free(data);
 }

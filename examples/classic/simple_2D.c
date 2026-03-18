@@ -33,6 +33,10 @@
  * - **NetCDF-4 Format**: HDF5-based format with enhanced features
  * - **Define Mode**: Metadata definition phase before data writing
  * - **Data Mode**: Phase where actual data is written/read
+ * - **Fill Value**: Sentinel value returned for unwritten or missing data elements;
+ *   set with nc_def_var_fill() during define mode, queried with nc_inq_var_fill().
+ *   Note: coord.c uses nc_put_att_float("_FillValue",...) which is the CF convention
+ *   for documenting fill values as an attribute — a complementary but separate approach.
  *
  * **Prerequisites:** None - this is a beginner example
  *
@@ -55,10 +59,10 @@
  * **Expected Output:**
  * Creates simple_2D.nc containing:
  * - 2 dimensions: x(6), y(12)
- * - 1 variable: data(y, x) of type int
+ * - 1 variable: data(y, x) of type int with fill value -9999
  * - 1 global attribute: title = "Simple 2D Example"
  * - 1 variable attribute: units = "m/s"
- * - Data: sequential integers from 0 to 71
+ * - Data: sequential integers from 0 to 59 (first NY-1 rows); last row = -9999 (fill value)
  *
  * @author Edward Hartnett
  * @date 2026-01-15
@@ -73,6 +77,7 @@
 #define NDIMS 2
 #define NX 6
 #define NY 12
+#define FILL_VALUE -9999
 #define ERRCODE 2
 #define ERR(e) {printf("Error: %s\n", nc_strerror(e)); exit(ERRCODE);}
 
@@ -120,19 +125,28 @@ int main()
                                   strlen("m/s"), "m/s")))
       ERR(retval);
    
+   /* Set fill value: nc_def_var_fill() registers the sentinel value returned for
+    * unwritten or missing elements. NC_FILL enables fill mode for this variable. */
+   int fill_value = FILL_VALUE;
+   if ((retval = nc_def_var_fill(ncid, varid, NC_FILL, &fill_value)))
+      ERR(retval);
+   
    /* End define mode */
    if ((retval = nc_enddef(ncid)))
       ERR(retval);
    
-   /* Write the data to the file */
-   if ((retval = nc_put_var_int(ncid, varid, &data_out[0][0])))
+   /* Write only the first NY-1 rows (partial write), leaving the last row unwritten.
+    * Unwritten elements will return FILL_VALUE when read back. */
+   size_t start[NDIMS] = {0, 0};
+   size_t count[NDIMS] = {NY - 1, NX};
+   if ((retval = nc_put_vara_int(ncid, varid, start, count, &data_out[0][0])))
       ERR(retval);
    
    /* Close the file */
    if ((retval = nc_close(ncid)))
       ERR(retval);
    
-   printf("*** SUCCESS writing file!\n");
+   printf("*** SUCCESS writing file (first %d of %d rows written)!\n", NY - 1, NY);
    
    /* ========== READ PHASE ========== */
    printf("\nReopening file for validation...\n");
@@ -253,13 +267,23 @@ int main()
    }
    printf("Verified: variable attribute 'units' = '%s'\n", units_in);
    
+   /* Verify fill value using nc_inq_var_fill() */
+   int no_fill, fill_value_in;
+   if ((retval = nc_inq_var_fill(ncid, varid, &no_fill, &fill_value_in)))
+      ERR(retval);
+   if (fill_value_in != FILL_VALUE) {
+      printf("Error: fill value = %d, expected %d\n", fill_value_in, FILL_VALUE);
+      exit(ERRCODE);
+   }
+   printf("Verified: fill value = %d\n", fill_value_in);
+   
    /* Read the data back */
    if ((retval = nc_get_var_int(ncid, varid, &data_in[0][0])))
       ERR(retval);
    
-   /* Verify data correctness */
+   /* Verify written rows (0 .. NY-2) contain expected sequential values */
    int errors = 0;
-   for (int i = 0; i < NY; i++) {
+   for (int i = 0; i < NY - 1; i++) {
       for (int j = 0; j < NX; j++) {
          int expected = i * NX + j;
          if (data_in[i][j] != expected) {
@@ -270,13 +294,24 @@ int main()
       }
    }
    
+   /* Verify unwritten last row contains fill value */
+   for (int j = 0; j < NX; j++) {
+      if (data_in[NY - 1][j] != FILL_VALUE) {
+         printf("Error: unwritten data[%d][%d] = %d, expected fill value %d\n",
+                NY - 1, j, data_in[NY - 1][j], FILL_VALUE);
+         errors++;
+      }
+   }
+   
    if (errors > 0) {
       printf("*** FAILED: %d data validation errors\n", errors);
       exit(ERRCODE);
    }
    
-   printf("Verified: all %d data values correct (0, 1, 2, ..., %d)\n", 
-          NX * NY, NX * NY - 1);
+   printf("Verified: %d written values correct (0, 1, 2, ..., %d)\n",
+          NX * (NY - 1), NX * (NY - 1) - 1);
+   printf("Verified: unwritten last row (%d elements) = fill value %d\n",
+          NX, FILL_VALUE);
    
    /* Close the file */
    if ((retval = nc_close(ncid)))

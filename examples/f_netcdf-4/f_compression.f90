@@ -8,6 +8,8 @@
 !! - Configure compression with nf90_def_var_deflate() in Fortran
 !! - Measure compression performance in Fortran applications
 !! - Select appropriate compression levels for different data
+!! - Set fill values with nf90_def_var_fill() for chunked/compressed variables
+!! - Verify that unwritten chunks return the fill value on read
 !!
 !! **Fortran Compression Functions:**
 !! - nf90_def_var_deflate(ncid, varid, shuffle, deflate, deflate_level)
@@ -16,6 +18,11 @@
 !! - deflate_level: 1-9 (higher=better compression, slower)
 !! - For almost all real-world data, level 1 is the preferred value.
 !!   Higher levels yield diminishing returns at much greater CPU cost.
+!!
+!! **Fortran Fill Value Functions:**
+!! - nf90_def_var_fill(ncid, varid, no_fill, fill_value): set fill value (no_fill=0 enables)
+!! - nf90_inq_var_fill(ncid, varid, no_fill, fill_value): query fill value
+!! - In chunked/compressed variables, unwritten chunks return the fill value
 !!
 !! **Prerequisites:**
 !! - f_simple_nc4.f90 - NetCDF-4 format basics
@@ -42,6 +49,7 @@ program f_compression
    integer, parameter :: NLON = 180
    integer, parameter :: NDIMS = 3
    integer, parameter :: NUM_TESTS = 6
+   real, parameter :: FILL_VALUE = -9999.0
    
    real, allocatable :: data(:,:,:)
    real(8) :: write_times(NUM_TESTS), read_times(NUM_TESTS)
@@ -171,6 +179,7 @@ contains
       integer :: retval
       real(8) :: start_time, end_time
       logical :: file_exists
+      integer :: start_idx(NDIMS), count_idx(NDIMS)
       
       print *, ""
       print *, "=== ", trim(test_name), " ==="
@@ -198,10 +207,22 @@ contains
          if (retval /= nf90_noerr) call handle_err(retval)
       end if
       
+      ! Set fill value: nf90_def_var_fill() registers the sentinel returned for unwritten
+      ! chunks. In chunked/compressed variables, unwritten chunks are stored as fill
+      ! value data, making fill value part of the chunk metadata.
+      retval = nf90_def_var_fill(ncid, varid, 0, FILL_VALUE)
+      if (retval /= nf90_noerr) call handle_err(retval)
+      
       retval = nf90_enddef(ncid)
       if (retval /= nf90_noerr) call handle_err(retval)
       
-      retval = nf90_put_var(ncid, varid, data)
+      ! Write all time steps except the last one (partial write).
+      ! The unwritten last time step will return FILL_VALUE when read back,
+      ! demonstrating fill value behavior with chunked/compressed storage.
+      ! Fortran dim order: (lon, lat, time); omit last time index.
+      start_idx = (/ 1, 1, 1 /)
+      count_idx = (/ NLON, NLAT, NTIME - 1 /)
+      retval = nf90_put_var(ncid, varid, data(:,:,1:NTIME-1), start=start_idx, count=count_idx)
       if (retval /= nf90_noerr) call handle_err(retval)
       
       retval = nf90_close(ncid)
@@ -235,6 +256,8 @@ contains
       real, allocatable :: data(:,:,:)
       integer :: shuffle, deflate, deflate_level
       integer :: errors, i
+      integer :: no_fill
+      real :: fill_value_in
       
       allocate(data(NLON, NLAT, NTIME))
       
@@ -255,6 +278,14 @@ contains
          stop 2
       end if
       
+      ! Verify fill value using nf90_inq_var_fill()
+      retval = nf90_inq_var_fill(ncid, varid, no_fill, fill_value_in)
+      if (retval /= nf90_noerr) call handle_err(retval)
+      if (fill_value_in /= FILL_VALUE) then
+         print *, "Error: fill value = ", fill_value_in, ", expected ", FILL_VALUE
+         stop 2
+      end if
+      
       retval = nf90_get_var(ncid, varid, data)
       if (retval /= nf90_noerr) call handle_err(retval)
       
@@ -264,9 +295,19 @@ contains
       call cpu_time(end_time)
       read_time = end_time - start_time
       
+      ! Validate written data (first NTIME-1 time steps, check first 100 lon points)
       errors = 0
-      do i = 1, min(100, NLON * NLAT * NTIME)
+      do i = 1, min(100, NLON)
          if (abs(data(i,1,1) - original_data(i,1,1)) > 0.001) then
+            errors = errors + 1
+         end if
+      end do
+      
+      ! Verify unwritten last time step returns fill value
+      do i = 1, min(10, NLON)
+         if (data(i, 1, NTIME) /= FILL_VALUE) then
+            print *, "Error: unwritten data(", i, ",1,", NTIME, ") = ", data(i,1,NTIME), &
+                     ", expected fill value ", FILL_VALUE
             errors = errors + 1
          end if
       end do
@@ -277,7 +318,7 @@ contains
       end if
       
       print *, "Read time: ", read_time, " seconds"
-      print *, "Data validated successfully"
+      print *, "Data validated (written steps 1-", NTIME-1, " correct, last step = fill value ", FILL_VALUE, ")"
       
       deallocate(data)
       
