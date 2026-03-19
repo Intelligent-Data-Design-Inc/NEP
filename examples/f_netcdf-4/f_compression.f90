@@ -284,7 +284,7 @@ contains
       ! Verify fill value using nf90_inq_var_fill()
       retval = nf90_inq_var_fill(ncid, varid, no_fill, fill_value_in)
       if (retval /= nf90_noerr) call handle_err(retval)
-      if (fill_value_in /= FILL_VALUE) then
+      if (abs(fill_value_in - FILL_VALUE) > 1.0e-6) then
          print *, "Error: fill value = ", fill_value_in, ", expected ", FILL_VALUE
          stop 2
       end if

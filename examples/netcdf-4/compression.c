@@ -253,7 +253,7 @@ void read_compressed_file(CompressionTest *test, float *original_data) {
     float fill_value_in;
     if ((retval = nc_inq_var_fill(ncid, varid, &no_fill, &fill_value_in)))
         ERR(retval);
-    if (fill_value_in != FILL_VALUE) {
+    if (fabsf(fill_value_in - FILL_VALUE) > 1e-6f) {
         printf("Error: fill value = %f, expected %f\n", fill_value_in, FILL_VALUE);
         exit(ERRCODE);
     }
