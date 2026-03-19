@@ -60,7 +60,7 @@
 !! - 1 variable: data(x, y) of type int with fill value -9999
 !! - 1 global attribute: title = "Simple 2D Example"
 !! - 1 variable attribute: units = "m/s"
-!! - Data: sequential integers from 0 to 65 (first NY-1 columns); last column = -9999 (fill value)
+!! - Data: sequential integers from 0 to 65 (first NY-1 rows); last row = -9999 (fill value)
 !! - Output structure identical to simple_2D.c (verified via ncdump)
 !!
 !! @author Edward Hartnett, Intelligent Data Design, Inc.

@@ -11,9 +11,11 @@
  * - Querying file structure with nc_inq(), nc_inq_dim(), and nc_inq_var()
  * - Reading and verifying attributes and data
  *
- * The program creates a 2D integer array (6x12) with sequential values (0, 1, 2, ..., 71),
- * writes it to a NetCDF-4 file with a global attribute ("title") and a variable attribute
- * ("units"), then reopens the file to verify metadata, attributes, and data correctness.
+ * The program creates a 2D integer array (6x12), partially writes sequential values
+ * (0, 1, 2, ..., 59) for the first NY-1 rows (leaving the last row unwritten), and sets a
+ * custom fill value (-9999) so unwritten elements are identifiable. It writes to a NetCDF
+ * file with a global attribute ("title") and a variable attribute ("units"), then reopens
+ * the file to verify metadata, attributes, fill value, and data correctness.
  * This demonstrates the complete read-write cycle that forms the foundation of NetCDF
  * programming.
  *
