@@ -114,7 +114,7 @@ int main()
                temp_3d[t][k][i][j] = 273.15 + t * 1.0 + k * 10.0 + i * 5.0 + j * 2.0;
    
    /* Create the NetCDF file */
-   if ((retval = nc_create(FILE_NAME, NC_CLOBBER|NC_NETCDF4, &ncid)))
+   if ((retval = nc_create(FILE_NAME, NC_CLOBBER, &ncid)))
       ERR(retval);
    
    /* Define dimensions */

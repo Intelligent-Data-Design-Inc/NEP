@@ -42,6 +42,7 @@
 
 program f_compression
    use netcdf
+   use iso_fortran_env, only: int64
    implicit none
    
    integer, parameter :: NTIME = 50
@@ -53,7 +54,7 @@ program f_compression
    
    real, allocatable :: data(:,:,:)
    real(8) :: write_times(NUM_TESTS), read_times(NUM_TESTS)
-   integer :: file_sizes(NUM_TESTS)
+   integer(int64) :: file_sizes(NUM_TESTS)
    real(8) :: compression_ratios(NUM_TESTS)
    character(len=64) :: test_names(NUM_TESTS)
    character(len=128) :: filenames(NUM_TESTS)
@@ -171,20 +172,21 @@ contains
       integer, intent(in) :: shuffle, deflate, deflate_level
       real, intent(in) :: data(:,:,:)
       real(8), intent(out) :: write_time
-      integer, intent(out) :: file_size
+      integer(int64), intent(out) :: file_size
       
       integer :: ncid, varid
       integer :: time_dimid, lat_dimid, lon_dimid
       integer :: dimids(NDIMS)
       integer :: retval
-      real(8) :: start_time, end_time
+      integer(int64) :: start_count, end_count, count_rate
       logical :: file_exists
       integer :: start_idx(NDIMS), count_idx(NDIMS)
+      real(8) :: start_time, end_time
       
       print *, ""
       print *, "=== ", trim(test_name), " ==="
       
-      call cpu_time(start_time)
+      call system_clock(start_count, count_rate)
       
       retval = nf90_create(filename, NF90_CLOBBER + NF90_NETCDF4, ncid)
       if (retval /= nf90_noerr) call handle_err(retval)
@@ -208,8 +210,8 @@ contains
       end if
       
       ! Set fill value: nf90_def_var_fill() registers the sentinel returned for unwritten
-      ! chunks. In chunked/compressed variables, unwritten chunks are stored as fill
-      ! value data, making fill value part of the chunk metadata.
+      ! elements. In chunked/compressed variables, unwritten chunks are stored entirely as
+      ! fill values; in classic format it is stored as a _FillValue attribute.
       retval = nf90_def_var_fill(ncid, varid, 0, FILL_VALUE)
       if (retval /= nf90_noerr) call handle_err(retval)
       
@@ -228,8 +230,8 @@ contains
       retval = nf90_close(ncid)
       if (retval /= nf90_noerr) call handle_err(retval)
       
-      call cpu_time(end_time)
-      write_time = end_time - start_time
+      call system_clock(end_count)
+      write_time = real(end_count - start_count, 8) / real(count_rate, 8)
       
       inquire(file=filename, exist=file_exists, size=file_size)
       if (file_exists) then
@@ -252,6 +254,7 @@ contains
       
       integer :: ncid, varid
       integer :: retval
+      integer(int64) :: start_count, end_count, count_rate
       real(8) :: start_time, end_time
       real, allocatable :: data(:,:,:)
       integer :: shuffle, deflate, deflate_level
@@ -261,7 +264,7 @@ contains
       
       allocate(data(NLON, NLAT, NTIME))
       
-      call cpu_time(start_time)
+      call system_clock(start_count, count_rate)
       
       retval = nf90_open(filename, NF90_NOWRITE, ncid)
       if (retval /= nf90_noerr) call handle_err(retval)
@@ -292,8 +295,8 @@ contains
       retval = nf90_close(ncid)
       if (retval /= nf90_noerr) call handle_err(retval)
       
-      call cpu_time(end_time)
-      read_time = end_time - start_time
+      call system_clock(end_count)
+      read_time = real(end_count - start_count, 8) / real(count_rate, 8)
       
       ! Validate written data (first NTIME-1 time steps, check first 100 lon points)
       errors = 0

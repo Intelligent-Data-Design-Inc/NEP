@@ -102,7 +102,7 @@ int main()
          data_out[i][j] = i * NX + j;
    
    /* Create the NetCDF file (NC_CLOBBER overwrites existing file) */
-   if ((retval = nc_create(FILE_NAME, NC_CLOBBER|NC_NETCDF4, &ncid)))
+   if ((retval = nc_create(FILE_NAME, NC_CLOBBER, &ncid)))
       ERR(retval);
    
    /* Define dimensions */
