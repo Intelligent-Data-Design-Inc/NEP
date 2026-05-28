@@ -151,33 +151,27 @@ int main()
    }
    printf("Verified: X=%zu, Y=%zu\n", len_x, len_y);
    
-   /* Verify global attribute */
-   char desc_in[100];
-   size_t desc_len;
+   /* Verify global and variable attributes */
+   char desc_in[100] = {0}, units_in[100] = {0};
+   size_t desc_len, units_len;
    if ((retval = nc_inq_attlen(ncid, NC_GLOBAL, "description", &desc_len)))
       ERR(retval);
    if ((retval = nc_get_att_text(ncid, NC_GLOBAL, "description", desc_in)))
       ERR(retval);
    desc_in[desc_len] = '\0';
-   if (strcmp(desc_in, "a quickstart example") != 0) {
-      printf("Error: expected description 'a quickstart example', got '%s'\n", desc_in);
-      return 1;
-   }
-   printf("Verified: global attribute 'description' = '%s'\n", desc_in);
-   
-   /* Verify variable attribute */
-   char units_in[100];
-   size_t units_len;
+
    if ((retval = nc_inq_attlen(ncid, data_varid, "units", &units_len)))
       ERR(retval);
    if ((retval = nc_get_att_text(ncid, data_varid, "units", units_in)))
       ERR(retval);
    units_in[units_len] = '\0';
-   if (strcmp(units_in, "m/s") != 0) {
-      printf("Error: expected units 'm/s', got '%s'\n", units_in);
+
+   if (strcmp(desc_in, "a quickstart example") != 0 ||
+       strcmp(units_in, "m/s") != 0) {
+      printf("Error: attributes incorrect\n");
       return 1;
    }
-   printf("Verified: variable attribute 'units' = '%s'\n", units_in);
+   printf("Verified: all attributes correct\n");
    
    /* Read the data back */
    if ((retval = nc_get_var_int(ncid, data_varid, &data_in[0][0])))

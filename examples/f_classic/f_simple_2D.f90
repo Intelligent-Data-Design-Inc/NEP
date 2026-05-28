@@ -87,12 +87,11 @@ program f_simple_2D
    integer :: i, j
    integer :: ndims_in, nvars_in, ngatts_in, unlimdimid_in
    integer :: len_x, len_y
-   character(len=NF90_MAX_NAME) :: dim_name
+   character(len=NF90_MAX_NAME) :: dim_name_x, dim_name_y
    character(len=NF90_MAX_NAME) :: var_name_in
    integer :: var_type, var_ndims
    integer :: var_dimids(NDIMS)
    character(len=100) :: title_in, units_in
-   integer :: att_len
    integer :: errors
    integer :: expected
    integer :: no_fill, fill_value_in
@@ -174,105 +173,52 @@ program f_simple_2D
    end if
    print *, "Verified: ", ndims_in, " dimensions"
    
-   if (nvars_in /= 1) then
-      print *, "Error: Expected 1 variable, found ", nvars_in
+   if (nvars_in /= 1 .or. ngatts_in /= 1 .or. unlimdimid_in /= -1) then
+      print *, "Error: file metadata incorrect (vars=", nvars_in, ", atts=", ngatts_in, ", unlim=", unlimdimid_in, ")"
       stop 2
    end if
-   print *, "Verified: ", nvars_in, " variable"
-   
-   if (ngatts_in /= 1) then
-      print *, "Error: Expected 1 global attribute, found ", ngatts_in
-      stop 2
-   end if
-   print *, "Verified: ", ngatts_in, " global attribute"
-   
-   if (unlimdimid_in /= -1) then
-      print *, "Error: Expected no unlimited dimension, found dimid ", unlimdimid_in
-      stop 2
-   end if
-   print *, "Verified: no unlimited dimension"
+   print *, "Verified: file metadata correct (", ndims_in, " dims, 1 var, 1 att, no unlimited)"
    
    ! Verify dimensions using nf90_inquire_dimension()
-   retval = nf90_inquire_dimension(ncid, x_dimid, name=dim_name, len=len_x)
+   retval = nf90_inquire_dimension(ncid, x_dimid, name=dim_name_x, len=len_x)
    if (retval /= nf90_noerr) call handle_err(retval)
-   
-   if (trim(dim_name) /= "x") then
-      print *, "Error: Expected dimension name 'x', found '", trim(dim_name), "'"
-      stop 2
-   end if
-   if (len_x /= NX) then
-      print *, "Error: Expected x dimension = ", NX, ", found ", len_x
-      stop 2
-   end if
-   print *, "Verified: dimension '", trim(dim_name), "' = ", len_x
-   
-   retval = nf90_inquire_dimension(ncid, y_dimid, name=dim_name, len=len_y)
+   retval = nf90_inquire_dimension(ncid, y_dimid, name=dim_name_y, len=len_y)
    if (retval /= nf90_noerr) call handle_err(retval)
-   
-   if (trim(dim_name) /= "y") then
-      print *, "Error: Expected dimension name 'y', found '", trim(dim_name), "'"
+
+   if (trim(dim_name_x) /= "x" .or. len_x /= NX .or. &
+       trim(dim_name_y) /= "y" .or. len_y /= NY) then
+      print *, "Error: dimension names or sizes incorrect"
       stop 2
    end if
-   if (len_y /= NY) then
-      print *, "Error: Expected y dimension = ", NY, ", found ", len_y
-      stop 2
-   end if
-   print *, "Verified: dimension '", trim(dim_name), "' = ", len_y
+   print *, "Verified: dimensions correct (x=", len_x, ", y=", len_y, ")"
    
    ! Verify variable using nf90_inquire_variable()
    retval = nf90_inquire_variable(ncid, varid, name=var_name_in, xtype=var_type, &
                                   ndims=var_ndims, dimids=var_dimids)
    if (retval /= nf90_noerr) call handle_err(retval)
+
+   if (trim(var_name_in) /= "data" .or. var_type /= NF90_INT .or. &
+       var_ndims /= NDIMS .or. var_dimids(1) /= x_dimid .or. var_dimids(2) /= y_dimid) then
+      print *, "Error: variable metadata incorrect"
+      stop 2
+   end if
+   print *, "Verified: variable metadata correct ('", trim(var_name_in), "', NF90_INT, ", var_ndims, " dims)"
    
-   if (trim(var_name_in) /= "data") then
-      print *, "Error: Expected variable name 'data', found '", trim(var_name_in), "'"
-      stop 2
-   end if
-   if (var_type /= NF90_INT) then
-      print *, "Error: Expected variable type NF90_INT, found ", var_type
-      stop 2
-   end if
-   if (var_ndims /= NDIMS) then
-      print *, "Error: Expected ", NDIMS, " dimensions, found ", var_ndims
-      stop 2
-   end if
-   if (var_dimids(1) /= x_dimid .or. var_dimids(2) /= y_dimid) then
-      print *, "Error: Unexpected dimension IDs for variable"
-      stop 2
-   end if
-   print *, "Verified: variable '", trim(var_name_in), "' type NF90_INT, ", var_ndims, " dims"
-   
-   ! Verify global attribute
-   retval = nf90_inquire_attribute(ncid, NF90_GLOBAL, "title", len=att_len)
-   if (retval /= nf90_noerr) call handle_err(retval)
+   ! Verify global attributes, variable attributes, and fill value
    retval = nf90_get_att(ncid, NF90_GLOBAL, "title", title_in)
-   if (retval /= nf90_noerr) call handle_err(retval)
-   if (title_in(1:att_len) /= "Simple 2D Example") then
-      print *, "Error: Expected title 'Simple 2D Example', found '", &
-               title_in(1:att_len), "'"
-      stop 2
-   end if
-   print *, "Verified: global attribute 'title' = '", title_in(1:att_len), "'"
-   
-   ! Verify variable attribute
-   retval = nf90_inquire_attribute(ncid, varid, "units", len=att_len)
    if (retval /= nf90_noerr) call handle_err(retval)
    retval = nf90_get_att(ncid, varid, "units", units_in)
    if (retval /= nf90_noerr) call handle_err(retval)
-   if (units_in(1:att_len) /= "m/s") then
-      print *, "Error: Expected units 'm/s', found '", units_in(1:att_len), "'"
-      stop 2
-   end if
-   print *, "Verified: variable attribute 'units' = '", units_in(1:att_len), "'"
-   
-   ! Verify fill value using nf90_inq_var_fill()
    retval = nf90_inq_var_fill(ncid, varid, no_fill, fill_value_in)
    if (retval /= nf90_noerr) call handle_err(retval)
-   if (fill_value_in /= FILL_VALUE) then
-      print *, "Error: fill value = ", fill_value_in, ", expected ", FILL_VALUE
+
+   if (trim(title_in) /= "Simple 2D Example" .or. &
+       trim(units_in) /= "m/s" .or. &
+       fill_value_in /= FILL_VALUE) then
+      print *, "Error: attributes or fill value incorrect"
       stop 2
    end if
-   print *, "Verified: fill value = ", fill_value_in
+   print *, "Verified: all attributes and fill value correct"
    
    ! Read the data back
    retval = nf90_get_var(ncid, varid, data_in)

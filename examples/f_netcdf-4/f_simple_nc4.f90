@@ -117,17 +117,11 @@ program f_simple_nc4
    retval = nf90_inquire(ncid, ndims_in, nvars_in)
    if (retval /= nf90_noerr) call handle_err(retval)
    
-   if (ndims_in /= NDIMS) then
-      print *, "Error: Expected ", NDIMS, " dimensions, found ", ndims_in
+   if (ndims_in /= NDIMS .or. nvars_in /= 1) then
+      print *, "Error: Expected ", NDIMS, " dims/1 var, found ", ndims_in, "/", nvars_in
       stop 2
    end if
-   print *, "Verified: ", ndims_in, " dimensions"
-   
-   if (nvars_in /= 1) then
-      print *, "Error: Expected 1 variable, found ", nvars_in
-      stop 2
-   end if
-   print *, "Verified: ", nvars_in, " variable"
+   print *, "Verified: ", ndims_in, " dimensions, ", nvars_in, " variable"
    
    ! Verify dimension sizes
    retval = nf90_inquire_dimension(ncid, x_dimid, len=len_x)
@@ -135,25 +129,21 @@ program f_simple_nc4
    retval = nf90_inquire_dimension(ncid, y_dimid, len=len_y)
    if (retval /= nf90_noerr) call handle_err(retval)
    
-   if (len_x /= NX) then
-      print *, "Error: Expected x dimension = ", NX, ", found ", len_x
+   if (len_x /= NX .or. len_y /= NY) then
+      print *, "Error: Expected x=", NX, "/y=", NY, ", found x=", len_x, "/y=", len_y
       stop 2
    end if
-   if (len_y /= NY) then
-      print *, "Error: Expected y dimension = ", NY, ", found ", len_y
-      stop 2
-   end if
-   print *, "Verified: x dimension = ", len_x, ", y dimension = ", len_y
+   print *, "Verified: x=", len_x, ", y=", len_y
    
    ! Verify variable type
    retval = nf90_inquire_variable(ncid, varid, xtype=var_type)
    if (retval /= nf90_noerr) call handle_err(retval)
    
    if (var_type /= NF90_INT) then
-      print *, "Error: Expected variable type NF90_INT, found ", var_type
+      print *, "Error: Expected NF90_INT, found ", var_type
       stop 2
    end if
-   print *, "Verified: variable type is NF90_INT"
+   print *, "Verified: variable type NF90_INT"
    
    ! Read the data back
    retval = nf90_get_var(ncid, varid, data_in)
