@@ -1,5 +1,9 @@
 # NEP Development Roadmap
 
+### V1.8.0 Simplified Examples
+- Fix some problems.
+- Simplify example code.
+
 ### V1.7.0 Read GRIB2 as NetCDF
 - User will pass location of NOAA g2c library install at configure time.
 - g2c repo is here: https://github.com/NOAA-EMC/NCEPLIBS-g2c
