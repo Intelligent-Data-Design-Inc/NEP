@@ -339,99 +339,81 @@ int main()
     /* Validate dimension sizes */
     printf("\nValidating dimension sizes:\n");
     size_t len_x, len_y, len_z;
-    
+
     if ((retval = nc_inq_dimid(ncid, "x", &x_dimid)))
         ERR(retval);
     if ((retval = nc_inq_dimlen(ncid, x_dimid, &len_x)))
         ERR(retval);
-    if (len_x != NX) {
-        printf("Error: Expected x dimension = %d, found %zu\n", NX, len_x);
-        exit(ERRCODE);
-    }
-    
     if ((retval = nc_inq_dimid(ncid, "y", &y_dimid)))
         ERR(retval);
     if ((retval = nc_inq_dimlen(ncid, y_dimid, &len_y)))
         ERR(retval);
-    if (len_y != NY) {
-        printf("Error: Expected y dimension = %d, found %zu\n", NY, len_y);
-        exit(ERRCODE);
-    }
-    
     if ((retval = nc_inq_dimid(nested_id, "z", &z_dimid)))
         ERR(retval);
     if ((retval = nc_inq_dimlen(nested_id, z_dimid, &len_z)))
         ERR(retval);
-    if (len_z != NZ) {
-        printf("Error: Expected z dimension = %d, found %zu\n", NZ, len_z);
+
+    if (len_x != NX || len_y != NY || len_z != NZ) {
+        printf("Error: Expected x=%d/y=%d/z=%d, found x=%zu/y=%zu/z=%zu\n",
+               NX, NY, NZ, len_x, len_y, len_z);
         exit(ERRCODE);
     }
-    
+
     printf("  x = %zu, y = %zu, z = %zu\n", len_x, len_y, len_z);
     printf("Verified: All dimension sizes correct\n");
     
     /* Query and validate all variable metadata */
     printf("\n=== Phase 4: Validate variable metadata ===\n");
-    
+
     char varname[NC_MAX_NAME + 1];
     nc_type vartype;
     int varndims;
-    
+    int errors = 0;
+
     /* Validate ubyte_var in root */
     if ((retval = nc_inq_varid(ncid, "ubyte_var", &ubyte_varid)))
         ERR(retval);
     if ((retval = nc_inq_var(ncid, ubyte_varid, varname, &vartype, &varndims, NULL, NULL)))
         ERR(retval);
-    if (vartype != NC_UBYTE || varndims != NDIMS_2D) {
-        printf("Error: ubyte_var has wrong type or dimensions\n");
-        exit(ERRCODE);
-    }
-    printf("  ✓ Root: ubyte_var (NC_UBYTE, %dD)\n", varndims);
-    
+    if (vartype != NC_UBYTE || varndims != NDIMS_2D) errors++;
+    else printf("  ✓ Root: ubyte_var (NC_UBYTE, %dD)\n", varndims);
+
     /* Validate ushort_var in SubGroup1 */
     if ((retval = nc_inq_varid(grp1_id, "ushort_var", &ushort_varid)))
         ERR(retval);
     if ((retval = nc_inq_var(grp1_id, ushort_varid, varname, &vartype, &varndims, NULL, NULL)))
         ERR(retval);
-    if (vartype != NC_USHORT || varndims != NDIMS_2D) {
-        printf("Error: ushort_var has wrong type or dimensions\n");
-        exit(ERRCODE);
-    }
-    printf("  ✓ SubGroup1: ushort_var (NC_USHORT, %dD)\n", varndims);
-    
+    if (vartype != NC_USHORT || varndims != NDIMS_2D) errors++;
+    else printf("  ✓ SubGroup1: ushort_var (NC_USHORT, %dD)\n", varndims);
+
     /* Validate uint_var in SubGroup2 */
     if ((retval = nc_inq_varid(grp2_id, "uint_var", &uint_varid)))
         ERR(retval);
     if ((retval = nc_inq_var(grp2_id, uint_varid, varname, &vartype, &varndims, NULL, NULL)))
         ERR(retval);
-    if (vartype != NC_UINT || varndims != NDIMS_2D) {
-        printf("Error: uint_var has wrong type or dimensions\n");
-        exit(ERRCODE);
-    }
-    printf("  ✓ SubGroup2: uint_var (NC_UINT, %dD)\n", varndims);
-    
+    if (vartype != NC_UINT || varndims != NDIMS_2D) errors++;
+    else printf("  ✓ SubGroup2: uint_var (NC_UINT, %dD)\n", varndims);
+
     /* Validate int64_var in NestedGroup */
     if ((retval = nc_inq_varid(nested_id, "int64_var", &int64_varid)))
         ERR(retval);
     if ((retval = nc_inq_var(nested_id, int64_varid, varname, &vartype, &varndims, NULL, NULL)))
         ERR(retval);
-    if (vartype != NC_INT64 || varndims != NDIMS_2D) {
-        printf("Error: int64_var has wrong type or dimensions\n");
-        exit(ERRCODE);
-    }
-    printf("  ✓ NestedGroup: int64_var (NC_INT64, %dD)\n", varndims);
-    
+    if (vartype != NC_INT64 || varndims != NDIMS_2D) errors++;
+    else printf("  ✓ NestedGroup: int64_var (NC_INT64, %dD)\n", varndims);
+
     /* Validate uint64_var in NestedGroup */
     if ((retval = nc_inq_varid(nested_id, "uint64_var", &uint64_varid)))
         ERR(retval);
     if ((retval = nc_inq_var(nested_id, uint64_varid, varname, &vartype, &varndims, NULL, NULL)))
         ERR(retval);
-    if (vartype != NC_UINT64 || varndims != NDIMS_3D) {
-        printf("Error: uint64_var has wrong type or dimensions\n");
+    if (vartype != NC_UINT64 || varndims != NDIMS_3D) errors++;
+    else printf("  ✓ NestedGroup: uint64_var (NC_UINT64, %dD)\n", varndims);
+
+    if (errors > 0) {
+        printf("Error: %d variables have wrong type or dimensions\n", errors);
         exit(ERRCODE);
     }
-    printf("  ✓ NestedGroup: uint64_var (NC_UINT64, %dD)\n", varndims);
-    
     printf("Verified: All variable metadata correct\n");
     
     /* Read and validate all data */
@@ -455,7 +437,7 @@ int main()
         ERR(retval);
     
     /* Validate data correctness */
-    int errors = 0;
+    errors = 0;
     value = 1;
     
     /* Validate NC_UBYTE data */

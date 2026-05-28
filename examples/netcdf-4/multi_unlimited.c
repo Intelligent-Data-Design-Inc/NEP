@@ -247,16 +247,13 @@ int main() {
     
     int expected_stations = INITIAL_STATIONS + ADDED_STATIONS;
     int expected_times = INITIAL_TIMES + ADDED_TIMES;
-    
-    if (nstations != expected_stations) {
-        printf("Error: Expected %d stations, found %zu\n", expected_stations, nstations);
+
+    if (nstations != expected_stations || ntimes != expected_times) {
+        printf("Error: Expected %d stations/%d times, found %zu/%zu\n",
+               expected_stations, expected_times, nstations, ntimes);
         exit(ERRCODE);
     }
-    if (ntimes != expected_times) {
-        printf("Error: Expected %d times, found %zu\n", expected_times, ntimes);
-        exit(ERRCODE);
-    }
-    
+
     printf("Final dimensions: %zu stations × %zu times\n", nstations, ntimes);
     
     /* Read all data */

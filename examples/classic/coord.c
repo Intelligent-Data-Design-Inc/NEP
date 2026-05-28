@@ -246,142 +246,123 @@ int main()
    }
    printf("Verified: lon dimension = %zu\n", dimlen);
 
-   /* Verify time attributes */
-   char att_text[256];
-   size_t att_len;
+   /* Verify time coordinate attributes */
+   char time_units[256] = {0}, time_stdname[256] = {0}, time_axis[256] = {0}, time_cal[256] = {0};
+   size_t time_units_len, time_stdname_len, time_axis_len, time_cal_len;
 
-   if ((retval = nc_inq_attlen(ncid, time_varid, "units", &att_len)))
+   if ((retval = nc_inq_attlen(ncid, time_varid, "units", &time_units_len)))
       ERR(retval);
-   if ((retval = nc_get_att_text(ncid, time_varid, "units", att_text)))
+   if ((retval = nc_get_att_text(ncid, time_varid, "units", time_units)))
       ERR(retval);
-   att_text[att_len] = '\0';
-   if (strcmp(att_text, "hours since 2026-01-01") != 0) {
-      printf("Error: time units = '%s', expected 'hours since 2026-01-01'\n", att_text);
+   time_units[time_units_len] = '\0';
+
+   if ((retval = nc_inq_attlen(ncid, time_varid, "standard_name", &time_stdname_len)))
+      ERR(retval);
+   if ((retval = nc_get_att_text(ncid, time_varid, "standard_name", time_stdname)))
+      ERR(retval);
+   time_stdname[time_stdname_len] = '\0';
+
+   if ((retval = nc_inq_attlen(ncid, time_varid, "axis", &time_axis_len)))
+      ERR(retval);
+   if ((retval = nc_get_att_text(ncid, time_varid, "axis", time_axis)))
+      ERR(retval);
+   time_axis[time_axis_len] = '\0';
+
+   if ((retval = nc_inq_attlen(ncid, time_varid, "calendar", &time_cal_len)))
+      ERR(retval);
+   if ((retval = nc_get_att_text(ncid, time_varid, "calendar", time_cal)))
+      ERR(retval);
+   time_cal[time_cal_len] = '\0';
+
+   if (strcmp(time_units, "hours since 2026-01-01") != 0 ||
+       strcmp(time_stdname, "time") != 0 ||
+       strcmp(time_axis, "T") != 0 ||
+       strcmp(time_cal, "standard") != 0) {
+      printf("Error: time coordinate attributes incorrect\n");
       exit(ERRCODE);
    }
-   printf("Verified: time units = '%s'\n", att_text);
+   printf("Verified: all time coordinate attributes correct\n");
 
-   if ((retval = nc_inq_attlen(ncid, time_varid, "standard_name", &att_len)))
+   /* Verify latitude coordinate attributes */
+   char lat_units[256] = {0}, lat_stdname[256] = {0}, lat_axis[256] = {0};
+   size_t lat_units_len, lat_stdname_len, lat_axis_len;
+
+   if ((retval = nc_inq_attlen(ncid, lat_varid, "units", &lat_units_len)))
       ERR(retval);
-   if ((retval = nc_get_att_text(ncid, time_varid, "standard_name", att_text)))
+   if ((retval = nc_get_att_text(ncid, lat_varid, "units", lat_units)))
       ERR(retval);
-   att_text[att_len] = '\0';
-   if (strcmp(att_text, "time") != 0) {
-      printf("Error: time standard_name = '%s', expected 'time'\n", att_text);
+   lat_units[lat_units_len] = '\0';
+
+   if ((retval = nc_inq_attlen(ncid, lat_varid, "standard_name", &lat_stdname_len)))
+      ERR(retval);
+   if ((retval = nc_get_att_text(ncid, lat_varid, "standard_name", lat_stdname)))
+      ERR(retval);
+   lat_stdname[lat_stdname_len] = '\0';
+
+   if ((retval = nc_inq_attlen(ncid, lat_varid, "axis", &lat_axis_len)))
+      ERR(retval);
+   if ((retval = nc_get_att_text(ncid, lat_varid, "axis", lat_axis)))
+      ERR(retval);
+   lat_axis[lat_axis_len] = '\0';
+
+   if (strcmp(lat_units, "degrees_north") != 0 ||
+       strcmp(lat_stdname, "latitude") != 0 ||
+       strcmp(lat_axis, "Y") != 0) {
+      printf("Error: latitude coordinate attributes incorrect\n");
       exit(ERRCODE);
    }
-   printf("Verified: time standard_name = '%s'\n", att_text);
+   printf("Verified: all latitude coordinate attributes correct\n");
 
-   if ((retval = nc_inq_attlen(ncid, time_varid, "axis", &att_len)))
+   /* Verify longitude coordinate attributes */
+   char lon_units[256] = {0}, lon_stdname[256] = {0};
+   size_t lon_units_len, lon_stdname_len;
+
+   if ((retval = nc_inq_attlen(ncid, lon_varid, "units", &lon_units_len)))
       ERR(retval);
-   if ((retval = nc_get_att_text(ncid, time_varid, "axis", att_text)))
+   if ((retval = nc_get_att_text(ncid, lon_varid, "units", lon_units)))
       ERR(retval);
-   att_text[att_len] = '\0';
-   if (strcmp(att_text, "T") != 0) {
-      printf("Error: time axis = '%s', expected 'T'\n", att_text);
+   lon_units[lon_units_len] = '\0';
+
+   if ((retval = nc_inq_attlen(ncid, lon_varid, "standard_name", &lon_stdname_len)))
+      ERR(retval);
+   if ((retval = nc_get_att_text(ncid, lon_varid, "standard_name", lon_stdname)))
+      ERR(retval);
+   lon_stdname[lon_stdname_len] = '\0';
+
+   if (strcmp(lon_units, "degrees_east") != 0 ||
+       strcmp(lon_stdname, "longitude") != 0) {
+      printf("Error: longitude coordinate attributes incorrect\n");
       exit(ERRCODE);
    }
-   printf("Verified: time axis = '%s'\n", att_text);
+   printf("Verified: all longitude coordinate attributes correct\n");
 
-   if ((retval = nc_inq_attlen(ncid, time_varid, "calendar", &att_len)))
-      ERR(retval);
-   if ((retval = nc_get_att_text(ncid, time_varid, "calendar", att_text)))
-      ERR(retval);
-   att_text[att_len] = '\0';
-   if (strcmp(att_text, "standard") != 0) {
-      printf("Error: time calendar = '%s', expected 'standard'\n", att_text);
-      exit(ERRCODE);
-   }
-   printf("Verified: time calendar = '%s'\n", att_text);
-
-   /* Verify latitude attributes */
-   if ((retval = nc_inq_attlen(ncid, lat_varid, "units", &att_len)))
-      ERR(retval);
-   if ((retval = nc_get_att_text(ncid, lat_varid, "units", att_text)))
-      ERR(retval);
-   att_text[att_len] = '\0';
-   if (strcmp(att_text, "degrees_north") != 0) {
-      printf("Error: lat units = '%s', expected 'degrees_north'\n", att_text);
-      exit(ERRCODE);
-   }
-   printf("Verified: lat units = '%s'\n", att_text);
-
-   if ((retval = nc_inq_attlen(ncid, lat_varid, "standard_name", &att_len)))
-      ERR(retval);
-   if ((retval = nc_get_att_text(ncid, lat_varid, "standard_name", att_text)))
-      ERR(retval);
-   att_text[att_len] = '\0';
-   if (strcmp(att_text, "latitude") != 0) {
-      printf("Error: lat standard_name = '%s', expected 'latitude'\n", att_text);
-      exit(ERRCODE);
-   }
-   printf("Verified: lat standard_name = '%s'\n", att_text);
-
-   if ((retval = nc_inq_attlen(ncid, lat_varid, "axis", &att_len)))
-      ERR(retval);
-   if ((retval = nc_get_att_text(ncid, lat_varid, "axis", att_text)))
-      ERR(retval);
-   att_text[att_len] = '\0';
-   if (strcmp(att_text, "Y") != 0) {
-      printf("Error: lat axis = '%s', expected 'Y'\n", att_text);
-      exit(ERRCODE);
-   }
-   printf("Verified: lat axis = '%s'\n", att_text);
-
-   /* Verify longitude attributes */
-   if ((retval = nc_inq_attlen(ncid, lon_varid, "units", &att_len)))
-      ERR(retval);
-   if ((retval = nc_get_att_text(ncid, lon_varid, "units", att_text)))
-      ERR(retval);
-   att_text[att_len] = '\0';
-   if (strcmp(att_text, "degrees_east") != 0) {
-      printf("Error: lon units = '%s', expected 'degrees_east'\n", att_text);
-      exit(ERRCODE);
-   }
-   printf("Verified: lon units = '%s'\n", att_text);
-
-   if ((retval = nc_inq_attlen(ncid, lon_varid, "standard_name", &att_len)))
-      ERR(retval);
-   if ((retval = nc_get_att_text(ncid, lon_varid, "standard_name", att_text)))
-      ERR(retval);
-   att_text[att_len] = '\0';
-   if (strcmp(att_text, "longitude") != 0) {
-      printf("Error: lon standard_name = '%s', expected 'longitude'\n", att_text);
-      exit(ERRCODE);
-   }
-   printf("Verified: lon standard_name = '%s'\n", att_text);
-
-   /* Verify sfc_temp attributes */
-   if ((retval = nc_inq_attlen(ncid, temp_varid, "units", &att_len)))
-      ERR(retval);
-   if ((retval = nc_get_att_text(ncid, temp_varid, "units", att_text)))
-      ERR(retval);
-   att_text[att_len] = '\0';
-   if (strcmp(att_text, "K") != 0) {
-      printf("Error: sfc_temp units = '%s', expected 'K'\n", att_text);
-      exit(ERRCODE);
-   }
-   printf("Verified: sfc_temp units = '%s'\n", att_text);
-
+   /* Verify sfc_temp variable attributes */
+   char temp_units[256] = {0}, temp_coords[256] = {0};
+   size_t temp_units_len, temp_coords_len;
    float fill_value_in;
+
+   if ((retval = nc_inq_attlen(ncid, temp_varid, "units", &temp_units_len)))
+      ERR(retval);
+   if ((retval = nc_get_att_text(ncid, temp_varid, "units", temp_units)))
+      ERR(retval);
+   temp_units[temp_units_len] = '\0';
+
    if ((retval = nc_get_att_float(ncid, temp_varid, "_FillValue", &fill_value_in)))
       ERR(retval);
-   if (fill_value_in != fill_value) {
-      printf("Error: sfc_temp _FillValue = %f, expected %f\n", fill_value_in, fill_value);
-      exit(ERRCODE);
-   }
-   printf("Verified: sfc_temp _FillValue = %f\n", fill_value_in);
 
-   if ((retval = nc_inq_attlen(ncid, temp_varid, "coordinates", &att_len)))
+   if ((retval = nc_inq_attlen(ncid, temp_varid, "coordinates", &temp_coords_len)))
       ERR(retval);
-   if ((retval = nc_get_att_text(ncid, temp_varid, "coordinates", att_text)))
+   if ((retval = nc_get_att_text(ncid, temp_varid, "coordinates", temp_coords)))
       ERR(retval);
-   att_text[att_len] = '\0';
-   if (strcmp(att_text, "time lat lon") != 0) {
-      printf("Error: sfc_temp coordinates = '%s', expected 'time lat lon'\n", att_text);
+   temp_coords[temp_coords_len] = '\0';
+
+   if (strcmp(temp_units, "K") != 0 ||
+       fill_value_in != fill_value ||
+       strcmp(temp_coords, "time lat lon") != 0) {
+      printf("Error: sfc_temp variable attributes incorrect\n");
       exit(ERRCODE);
    }
-   printf("Verified: sfc_temp coordinates = '%s'\n", att_text);
+   printf("Verified: all sfc_temp variable attributes correct\n");
 
    /* Read coordinate variables */
    if ((retval = nc_get_var_float(ncid, time_varid, time_in)))

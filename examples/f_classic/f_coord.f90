@@ -68,9 +68,12 @@ program f_coord
    integer :: t, i, j
    integer :: ndims_in, nvars_in
    integer :: errors
-   character(len=256) :: att_text
+   character(len=256) :: time_units, time_stdname, time_axis, time_cal
+   character(len=256) :: lat_units, lat_stdname, lat_axis
+   character(len=256) :: lon_units, lon_stdname
+   character(len=256) :: temp_units, temp_coords
    real :: fill_value, fill_value_in
-   integer :: dimlen
+   integer :: time_len, lat_len, lon_len
 
    ! ========== WRITE PHASE ==========
    print *, "Creating NetCDF file: ", FILE_NAME
@@ -200,129 +203,82 @@ program f_coord
    print *, "Verified: ", nvars_in, " variables (time, lat, lon, sfc_temp)"
 
    ! Verify dimension sizes
-   retval = nf90_inquire_dimension(ncid, time_dimid, len=dimlen)
+   retval = nf90_inquire_dimension(ncid, time_dimid, len=time_len)
    if (retval /= nf90_noerr) call handle_err(retval)
-   if (dimlen /= NTIME) then
-      print *, "Error: time dimension = ", dimlen, ", expected ", NTIME
+   retval = nf90_inquire_dimension(ncid, lat_dimid, len=lat_len)
+   if (retval /= nf90_noerr) call handle_err(retval)
+   retval = nf90_inquire_dimension(ncid, lon_dimid, len=lon_len)
+   if (retval /= nf90_noerr) call handle_err(retval)
+
+   if (time_len /= NTIME .or. lat_len /= NLAT .or. lon_len /= NLON) then
+      print *, "Error: dimension sizes incorrect"
       stop 2
    end if
-   print *, "Verified: time dimension = ", dimlen
+   print *, "Verified: dimensions correct (time=", time_len, ", lat=", lat_len, ", lon=", lon_len, ")"
 
-   retval = nf90_inquire_dimension(ncid, lat_dimid, len=dimlen)
+   ! Verify time coordinate attributes
+   retval = nf90_get_att(ncid, time_varid, "units", time_units)
    if (retval /= nf90_noerr) call handle_err(retval)
-   if (dimlen /= NLAT) then
-      print *, "Error: lat dimension = ", dimlen, ", expected ", NLAT
+   retval = nf90_get_att(ncid, time_varid, "standard_name", time_stdname)
+   if (retval /= nf90_noerr) call handle_err(retval)
+   retval = nf90_get_att(ncid, time_varid, "axis", time_axis)
+   if (retval /= nf90_noerr) call handle_err(retval)
+   retval = nf90_get_att(ncid, time_varid, "calendar", time_cal)
+   if (retval /= nf90_noerr) call handle_err(retval)
+
+   if (trim(time_units) /= "hours since 2026-01-01" .or. &
+       trim(time_stdname) /= "time" .or. &
+       trim(time_axis) /= "T" .or. &
+       trim(time_cal) /= "standard") then
+      print *, "Error: time coordinate attributes incorrect"
       stop 2
    end if
-   print *, "Verified: lat dimension = ", dimlen
+   print *, "Verified: all time coordinate attributes correct"
 
-   retval = nf90_inquire_dimension(ncid, lon_dimid, len=dimlen)
+   ! Verify latitude coordinate attributes
+   retval = nf90_get_att(ncid, lat_varid, "units", lat_units)
    if (retval /= nf90_noerr) call handle_err(retval)
-   if (dimlen /= NLON) then
-      print *, "Error: lon dimension = ", dimlen, ", expected ", NLON
+   retval = nf90_get_att(ncid, lat_varid, "standard_name", lat_stdname)
+   if (retval /= nf90_noerr) call handle_err(retval)
+   retval = nf90_get_att(ncid, lat_varid, "axis", lat_axis)
+   if (retval /= nf90_noerr) call handle_err(retval)
+
+   if (trim(lat_units) /= "degrees_north" .or. &
+       trim(lat_stdname) /= "latitude" .or. &
+       trim(lat_axis) /= "Y") then
+      print *, "Error: latitude coordinate attributes incorrect"
       stop 2
    end if
-   print *, "Verified: lon dimension = ", dimlen
+   print *, "Verified: all latitude coordinate attributes correct"
 
-   ! Verify time attributes
-   retval = nf90_get_att(ncid, time_varid, "units", att_text)
+   ! Verify longitude coordinate attributes
+   retval = nf90_get_att(ncid, lon_varid, "units", lon_units)
    if (retval /= nf90_noerr) call handle_err(retval)
-   if (trim(att_text) /= "hours since 2026-01-01") then
-      print *, "Error: time units = '", trim(att_text), "', expected 'hours since 2026-01-01'"
+   retval = nf90_get_att(ncid, lon_varid, "standard_name", lon_stdname)
+   if (retval /= nf90_noerr) call handle_err(retval)
+
+   if (trim(lon_units) /= "degrees_east" .or. &
+       trim(lon_stdname) /= "longitude") then
+      print *, "Error: longitude coordinate attributes incorrect"
       stop 2
    end if
-   print *, "Verified: time units = '", trim(att_text), "'"
+   print *, "Verified: all longitude coordinate attributes correct"
 
-   retval = nf90_get_att(ncid, time_varid, "standard_name", att_text)
+   ! Verify sfc_temp variable attributes
+   retval = nf90_get_att(ncid, temp_varid, "units", temp_units)
    if (retval /= nf90_noerr) call handle_err(retval)
-   if (trim(att_text) /= "time") then
-      print *, "Error: time standard_name = '", trim(att_text), "', expected 'time'"
-      stop 2
-   end if
-   print *, "Verified: time standard_name = '", trim(att_text), "'"
-
-   retval = nf90_get_att(ncid, time_varid, "axis", att_text)
-   if (retval /= nf90_noerr) call handle_err(retval)
-   if (trim(att_text) /= "T") then
-      print *, "Error: time axis = '", trim(att_text), "', expected 'T'"
-      stop 2
-   end if
-   print *, "Verified: time axis = '", trim(att_text), "'"
-
-   retval = nf90_get_att(ncid, time_varid, "calendar", att_text)
-   if (retval /= nf90_noerr) call handle_err(retval)
-   if (trim(att_text) /= "standard") then
-      print *, "Error: time calendar = '", trim(att_text), "', expected 'standard'"
-      stop 2
-   end if
-   print *, "Verified: time calendar = '", trim(att_text), "'"
-
-   ! Verify latitude attributes
-   retval = nf90_get_att(ncid, lat_varid, "units", att_text)
-   if (retval /= nf90_noerr) call handle_err(retval)
-   if (trim(att_text) /= "degrees_north") then
-      print *, "Error: lat units = '", trim(att_text), "', expected 'degrees_north'"
-      stop 2
-   end if
-   print *, "Verified: lat units = '", trim(att_text), "'"
-
-   retval = nf90_get_att(ncid, lat_varid, "standard_name", att_text)
-   if (retval /= nf90_noerr) call handle_err(retval)
-   if (trim(att_text) /= "latitude") then
-      print *, "Error: lat standard_name = '", trim(att_text), "', expected 'latitude'"
-      stop 2
-   end if
-   print *, "Verified: lat standard_name = '", trim(att_text), "'"
-
-   retval = nf90_get_att(ncid, lat_varid, "axis", att_text)
-   if (retval /= nf90_noerr) call handle_err(retval)
-   if (trim(att_text) /= "Y") then
-      print *, "Error: lat axis = '", trim(att_text), "', expected 'Y'"
-      stop 2
-   end if
-   print *, "Verified: lat axis = '", trim(att_text), "'"
-
-   ! Verify longitude attributes
-   retval = nf90_get_att(ncid, lon_varid, "units", att_text)
-   if (retval /= nf90_noerr) call handle_err(retval)
-   if (trim(att_text) /= "degrees_east") then
-      print *, "Error: lon units = '", trim(att_text), "', expected 'degrees_east'"
-      stop 2
-   end if
-   print *, "Verified: lon units = '", trim(att_text), "'"
-
-   retval = nf90_get_att(ncid, lon_varid, "standard_name", att_text)
-   if (retval /= nf90_noerr) call handle_err(retval)
-   if (trim(att_text) /= "longitude") then
-      print *, "Error: lon standard_name = '", trim(att_text), "', expected 'longitude'"
-      stop 2
-   end if
-   print *, "Verified: lon standard_name = '", trim(att_text), "'"
-
-   ! Verify sfc_temp attributes
-   retval = nf90_get_att(ncid, temp_varid, "units", att_text)
-   if (retval /= nf90_noerr) call handle_err(retval)
-   if (trim(att_text) /= "K") then
-      print *, "Error: sfc_temp units = '", trim(att_text), "', expected 'K'"
-      stop 2
-   end if
-   print *, "Verified: sfc_temp units = '", trim(att_text), "'"
-
    retval = nf90_get_att(ncid, temp_varid, "_FillValue", fill_value_in)
    if (retval /= nf90_noerr) call handle_err(retval)
-   if (fill_value_in /= fill_value) then
-      print *, "Error: sfc_temp _FillValue = ", fill_value_in, ", expected ", fill_value
-      stop 2
-   end if
-   print *, "Verified: sfc_temp _FillValue = ", fill_value_in
-
-   retval = nf90_get_att(ncid, temp_varid, "coordinates", att_text)
+   retval = nf90_get_att(ncid, temp_varid, "coordinates", temp_coords)
    if (retval /= nf90_noerr) call handle_err(retval)
-   if (trim(att_text) /= "time lat lon") then
-      print *, "Error: sfc_temp coordinates = '", trim(att_text), "', expected 'time lat lon'"
+
+   if (trim(temp_units) /= "K" .or. &
+       fill_value_in /= fill_value .or. &
+       trim(temp_coords) /= "time lat lon") then
+      print *, "Error: sfc_temp variable attributes incorrect"
       stop 2
    end if
-   print *, "Verified: sfc_temp coordinates = '", trim(att_text), "'"
+   print *, "Verified: all sfc_temp variable attributes correct"
 
    ! Read coordinate variables
    retval = nf90_get_var(ncid, time_varid, time_in)

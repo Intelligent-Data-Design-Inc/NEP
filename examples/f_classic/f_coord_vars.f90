@@ -64,8 +64,9 @@ program f_coord_vars
    integer :: i, j
    integer :: ndims_in, nvars_in
    integer :: errors
-   character(len=256) :: att_text
-   integer :: att_len
+   character(len=256) :: lat_units, lat_stdname, lat_axis
+   character(len=256) :: lon_units, lon_stdname, lon_axis
+   character(len=256) :: temp_units, temp_stdname, temp_longname
    real :: fill_value, fill_value_in
    
    ! ========== WRITE PHASE ==========
@@ -164,78 +165,62 @@ program f_coord_vars
    retval = nf90_inquire(ncid, ndims_in, nvars_in)
    if (retval /= nf90_noerr) call handle_err(retval)
    
-   if (ndims_in /= 2) then
-      print *, "Error: Expected 2 dimensions, found ", ndims_in
+   if (ndims_in /= 2 .or. nvars_in /= 3) then
+      print *, "Error: Expected 2 dims/3 vars, found ", ndims_in, "/", nvars_in
       stop 2
    end if
-   print *, "Verified: ", ndims_in, " dimensions"
+   print *, "Verified: ", ndims_in, " dimensions, ", nvars_in, " variables"
    
-   if (nvars_in /= 3) then
-      print *, "Error: Expected 3 variables, found ", nvars_in
-      stop 2
-   end if
-   print *, "Verified: ", nvars_in, " variables (lat, lon, temperature)"
-   
-   ! Verify latitude attributes
-   retval = nf90_inquire_attribute(ncid, lat_varid, "units", len=att_len)
+   ! Verify latitude coordinate attributes
+   retval = nf90_get_att(ncid, lat_varid, "units", lat_units)
    if (retval /= nf90_noerr) call handle_err(retval)
-   retval = nf90_get_att(ncid, lat_varid, "units", att_text)
+   retval = nf90_get_att(ncid, lat_varid, "standard_name", lat_stdname)
    if (retval /= nf90_noerr) call handle_err(retval)
-   if (trim(att_text) /= "degrees_north") then
-      print *, "Error: lat units = '", trim(att_text), "', expected 'degrees_north'"
+   retval = nf90_get_att(ncid, lat_varid, "axis", lat_axis)
+   if (retval /= nf90_noerr) call handle_err(retval)
+
+   if (trim(lat_units) /= "degrees_north" .or. &
+       trim(lat_stdname) /= "latitude" .or. &
+       trim(lat_axis) /= "Y") then
+      print *, "Error: latitude coordinate attributes incorrect"
       stop 2
    end if
-   print *, "Verified: lat units = '", trim(att_text), "'"
+   print *, "Verified: all latitude coordinate attributes correct"
    
-   retval = nf90_get_att(ncid, lat_varid, "standard_name", att_text)
+   ! Verify longitude coordinate attributes
+   retval = nf90_get_att(ncid, lon_varid, "units", lon_units)
    if (retval /= nf90_noerr) call handle_err(retval)
-   if (trim(att_text) /= "latitude") then
-      print *, "Error: lat standard_name = '", trim(att_text), "', expected 'latitude'"
+   retval = nf90_get_att(ncid, lon_varid, "standard_name", lon_stdname)
+   if (retval /= nf90_noerr) call handle_err(retval)
+   retval = nf90_get_att(ncid, lon_varid, "axis", lon_axis)
+   if (retval /= nf90_noerr) call handle_err(retval)
+
+   if (trim(lon_units) /= "degrees_east" .or. &
+       trim(lon_stdname) /= "longitude" .or. &
+       trim(lon_axis) /= "X") then
+      print *, "Error: longitude coordinate attributes incorrect"
       stop 2
    end if
-   print *, "Verified: lat standard_name = '", trim(att_text), "'"
+   print *, "Verified: all longitude coordinate attributes correct"
    
-   retval = nf90_get_att(ncid, lat_varid, "axis", att_text)
+   ! Verify temperature variable attributes
+   retval = nf90_get_att(ncid, temp_varid, "units", temp_units)
    if (retval /= nf90_noerr) call handle_err(retval)
-   if (trim(att_text) /= "Y") then
-      print *, "Error: lat axis = '", trim(att_text), "', expected 'Y'"
-      stop 2
-   end if
-   print *, "Verified: lat axis = '", trim(att_text), "'"
-   
-   ! Verify longitude attributes
-   retval = nf90_get_att(ncid, lon_varid, "units", att_text)
+   retval = nf90_get_att(ncid, temp_varid, "standard_name", temp_stdname)
    if (retval /= nf90_noerr) call handle_err(retval)
-   if (trim(att_text) /= "degrees_east") then
-      print *, "Error: lon units = '", trim(att_text), "', expected 'degrees_east'"
-      stop 2
-   end if
-   print *, "Verified: lon units = '", trim(att_text), "'"
-   
-   retval = nf90_get_att(ncid, lon_varid, "standard_name", att_text)
+   retval = nf90_get_att(ncid, temp_varid, "long_name", temp_longname)
    if (retval /= nf90_noerr) call handle_err(retval)
-   if (trim(att_text) /= "longitude") then
-      print *, "Error: lon standard_name = '", trim(att_text), "', expected 'longitude'"
-      stop 2
-   end if
-   print *, "Verified: lon standard_name = '", trim(att_text), "'"
-   
-   ! Verify temperature attributes
-   retval = nf90_get_att(ncid, temp_varid, "units", att_text)
-   if (retval /= nf90_noerr) call handle_err(retval)
-   if (trim(att_text) /= "K") then
-      print *, "Error: temperature units = '", trim(att_text), "', expected 'K'"
-      stop 2
-   end if
-   print *, "Verified: temperature units = '", trim(att_text), "'"
-   
    retval = nf90_get_att(ncid, temp_varid, "_FillValue", fill_value_in)
    if (retval /= nf90_noerr) call handle_err(retval)
-   if (fill_value_in /= fill_value) then
-      print *, "Error: temperature _FillValue = ", fill_value_in, ", expected ", fill_value
+
+   if (trim(temp_units) /= "K" .or. &
+       trim(temp_stdname) /= "air_temperature" .or. &
+       trim(temp_longname) /= "Air Temperature" .or. &
+       fill_value_in /= fill_value) then
+      print *, "Error: temperature variable attributes incorrect"
       stop 2
    end if
-   print *, "Verified: temperature _FillValue = ", fill_value_in
+   print *, "Verified: all temperature variable attributes correct"
    
    ! Read coordinate variables
    retval = nf90_get_var(ncid, lat_varid, lat_in)

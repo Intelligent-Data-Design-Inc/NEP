@@ -162,58 +162,28 @@ int main()
    if ((retval = nc_inq(ncid, &ndims_in, &nvars_in, &ngatts_in, &unlimdimid_in)))
       ERR(retval);
    
-   if (ndims_in != NDIMS) {
-      printf("Error: Expected %d dimensions, found %d\n", NDIMS, ndims_in);
+   if (ndims_in != NDIMS || nvars_in != 1 || ngatts_in != 1 || unlimdimid_in != -1) {
+      printf("Error: file metadata incorrect (dims=%d, vars=%d, atts=%d, unlim=%d)\n",
+             ndims_in, nvars_in, ngatts_in, unlimdimid_in);
       exit(ERRCODE);
    }
-   printf("Verified: %d dimensions\n", ndims_in);
-   
-   if (nvars_in != 1) {
-      printf("Error: Expected 1 variable, found %d\n", nvars_in);
-      exit(ERRCODE);
-   }
-   printf("Verified: %d variable\n", nvars_in);
-   
-   if (ngatts_in != 1) {
-      printf("Error: Expected 1 global attribute, found %d\n", ngatts_in);
-      exit(ERRCODE);
-   }
-   printf("Verified: %d global attribute\n", ngatts_in);
-   
-   if (unlimdimid_in != -1) {
-      printf("Error: Expected no unlimited dimension, found dimid %d\n", unlimdimid_in);
-      exit(ERRCODE);
-   }
-   printf("Verified: no unlimited dimension\n");
+   printf("Verified: file metadata correct (%d dims, %d var, %d att, no unlimited)\n",
+          ndims_in, nvars_in, ngatts_in);
    
    /* Verify dimensions using nc_inq_dim() */
-   char dim_name[NC_MAX_NAME + 1];
+   char dim_name_x[NC_MAX_NAME + 1], dim_name_y[NC_MAX_NAME + 1];
    size_t len_x, len_y;
-   if ((retval = nc_inq_dim(ncid, x_dimid, dim_name, &len_x)))
+   if ((retval = nc_inq_dim(ncid, x_dimid, dim_name_x, &len_x)))
       ERR(retval);
-   
-   if (strcmp(dim_name, "x") != 0) {
-      printf("Error: Expected dimension name 'x', found '%s'\n", dim_name);
-      exit(ERRCODE);
-   }
-   if (len_x != NX) {
-      printf("Error: Expected x dimension = %d, found %zu\n", NX, len_x);
-      exit(ERRCODE);
-   }
-   printf("Verified: dimension '%s' = %zu\n", dim_name, len_x);
-   
-   if ((retval = nc_inq_dim(ncid, y_dimid, dim_name, &len_y)))
+   if ((retval = nc_inq_dim(ncid, y_dimid, dim_name_y, &len_y)))
       ERR(retval);
-   
-   if (strcmp(dim_name, "y") != 0) {
-      printf("Error: Expected dimension name 'y', found '%s'\n", dim_name);
+
+   if (strcmp(dim_name_x, "x") != 0 || len_x != NX ||
+       strcmp(dim_name_y, "y") != 0 || len_y != NY) {
+      printf("Error: dimension names or sizes incorrect\n");
       exit(ERRCODE);
    }
-   if (len_y != NY) {
-      printf("Error: Expected y dimension = %d, found %zu\n", NY, len_y);
-      exit(ERRCODE);
-   }
-   printf("Verified: dimension '%s' = %zu\n", dim_name, len_y);
+   printf("Verified: dimensions correct (x=%zu, y=%zu)\n", len_x, len_y);
    
    /* Verify variable using nc_inq_var() */
    char var_name[NC_MAX_NAME + 1];
@@ -222,62 +192,41 @@ int main()
    int var_dimids[NDIMS];
    if ((retval = nc_inq_var(ncid, varid, var_name, &var_type, &var_ndims, var_dimids, NULL)))
       ERR(retval);
+
+   if (strcmp(var_name, "data") != 0 || var_type != NC_INT ||
+       var_ndims != NDIMS || var_dimids[0] != y_dimid || var_dimids[1] != x_dimid) {
+      printf("Error: variable metadata incorrect\n");
+      exit(ERRCODE);
+   }
+   printf("Verified: variable metadata correct ('%s', NC_INT, %d dims)\n", var_name, var_ndims);
    
-   if (strcmp(var_name, "data") != 0) {
-      printf("Error: Expected variable name 'data', found '%s'\n", var_name);
-      exit(ERRCODE);
-   }
-   if (var_type != NC_INT) {
-      printf("Error: Expected variable type NC_INT, found %d\n", var_type);
-      exit(ERRCODE);
-   }
-   if (var_ndims != NDIMS) {
-      printf("Error: Expected %d dimensions, found %d\n", NDIMS, var_ndims);
-      exit(ERRCODE);
-   }
-   if (var_dimids[0] != y_dimid || var_dimids[1] != x_dimid) {
-      printf("Error: Unexpected dimension IDs for variable\n");
-      exit(ERRCODE);
-   }
-   printf("Verified: variable '%s' type NC_INT, %d dims\n", var_name, var_ndims);
-   
-   /* Verify global attribute */
-   char title_in[100];
-   size_t title_len;
+   /* Verify global attributes, variable attributes, and fill value */
+   char title_in[100] = {0}, units_in[100] = {0};
+   size_t title_len, units_len;
+   int no_fill, fill_value_in;
+
    if ((retval = nc_inq_attlen(ncid, NC_GLOBAL, "title", &title_len)))
       ERR(retval);
    if ((retval = nc_get_att_text(ncid, NC_GLOBAL, "title", title_in)))
       ERR(retval);
    title_in[title_len] = '\0';
-   if (strcmp(title_in, "Simple 2D Example") != 0) {
-      printf("Error: Expected title 'Simple 2D Example', found '%s'\n", title_in);
-      exit(ERRCODE);
-   }
-   printf("Verified: global attribute 'title' = '%s'\n", title_in);
-   
-   /* Verify variable attribute */
-   char units_in[100];
-   size_t units_len;
+
    if ((retval = nc_inq_attlen(ncid, varid, "units", &units_len)))
       ERR(retval);
    if ((retval = nc_get_att_text(ncid, varid, "units", units_in)))
       ERR(retval);
    units_in[units_len] = '\0';
-   if (strcmp(units_in, "m/s") != 0) {
-      printf("Error: Expected units 'm/s', found '%s'\n", units_in);
-      exit(ERRCODE);
-   }
-   printf("Verified: variable attribute 'units' = '%s'\n", units_in);
-   
-   /* Verify fill value using nc_inq_var_fill() */
-   int no_fill, fill_value_in;
+
    if ((retval = nc_inq_var_fill(ncid, varid, &no_fill, &fill_value_in)))
       ERR(retval);
-   if (fill_value_in != FILL_VALUE) {
-      printf("Error: fill value = %d, expected %d\n", fill_value_in, FILL_VALUE);
+
+   if (strcmp(title_in, "Simple 2D Example") != 0 ||
+       strcmp(units_in, "m/s") != 0 ||
+       fill_value_in != FILL_VALUE) {
+      printf("Error: attributes or fill value incorrect\n");
       exit(ERRCODE);
    }
-   printf("Verified: fill value = %d\n", fill_value_in);
+   printf("Verified: all attributes and fill value correct\n");
    
    /* Read the data back */
    if ((retval = nc_get_var_int(ncid, varid, &data_in[0][0])))

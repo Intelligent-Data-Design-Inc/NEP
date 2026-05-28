@@ -161,23 +161,17 @@ program f_quickstart
   end if
   print *, "Verified: X=", len_x, ", Y=", len_y
   
-  ! Verify global attribute
+  ! Verify global and variable attributes
   retval = nf90_get_att(ncid, nf90_global, "description", desc_in)
   call check(retval, "reading global attribute")
-  if (trim(desc_in) /= "a quickstart example") then
-    print *, "Error: expected description 'a quickstart example', got '", trim(desc_in), "'"
-    stop 1
-  end if
-  print *, "Verified: global attribute 'description' = '", trim(desc_in), "'"
-  
-  ! Verify variable attribute
   retval = nf90_get_att(ncid, data_varid, "units", units_in)
   call check(retval, "reading variable attribute")
-  if (trim(units_in) /= "m/s") then
-    print *, "Error: expected units 'm/s', got '", trim(units_in), "'"
+
+  if (trim(desc_in) /= "a quickstart example" .or. trim(units_in) /= "m/s") then
+    print *, "Error: attributes incorrect"
     stop 1
   end if
-  print *, "Verified: variable attribute 'units' = '", trim(units_in), "'"
+  print *, "Verified: all attributes correct"
   
   ! Read the data back
   retval = nf90_get_var(ncid, data_varid, data_in)
