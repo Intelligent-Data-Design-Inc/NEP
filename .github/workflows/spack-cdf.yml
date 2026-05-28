@@ -55,8 +55,8 @@ jobs:
           echo "=== Running Spack style check ==="
           . $HOME/spack/share/spack/setup-env.sh
           # F405 warnings are expected for Spack packages using star imports
-          spack style --tool isort spack/cdf/package.py 
-          spack style --tool black spack/cdf/package.py
+          spack style --tool ruff-check spack/cdf/package.py
+          spack style --tool ruff-format spack/cdf/package.py
           echo "=== Style check complete ==="
 
       - name: Run Spack audit check
