@@ -1,5 +1,29 @@
 # NEP Development Roadmap
 
+### V1.9.0 Parallel I/O Builds and Examples
+
+#### Sprint 1: Add mpicc Build to CI
+**Detailed Plan**: See `docs/plan/v1.9.0-sprint1-mpi-ci.md`
+
+- Create `.github/workflows/ci-parallel.yml` (separate from `ci.yml`)
+- Matrix: `cmake` and `autotools` × `openmpi` and `mpich` (4 jobs total)
+- Build NEP with `mpicc`/`mpif90` compilers; no MPI code added to the codebase
+- Minimal configuration: Fortran ON, all format handlers OFF, compression OFF
+- Reuse existing HDF5/NetCDF-C/NetCDF-Fortran cache keys from `ci.yml`
+- Run all existing tests; enforce `-Wall -Werror`
+- No changes to `ci.yml` or any source files
+
+#### Sprint 2: Configure/CMake Changes for Parallel I/O
+- We need to support options: --enable-parallel-tests (default off) and --with-mpiexec (just like netcdf-c)
+- We need to support these in CMake as well.
+- Configure/CMake needs to detect whether it is being built with a parallel-enabled version of netcdf-c. (Check netcdf-meta.h).
+- Configure/CMake needs to have output showing what it found.
+
+#### Sprint 3: Parallel I/O Example
+- Add a parallel I/O example to examples/netcdf-4.
+- Add fortran equivalent program to examples/f_netcdf-4.
+- They should only be run if --enable-parallel-tests is turned on (or cmake equivalent)
+
 ### V1.8.0 Simplified Examples
 - Fix some problems.
 - Simplify example code.
