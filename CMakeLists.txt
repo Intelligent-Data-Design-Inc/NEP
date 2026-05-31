@@ -98,6 +98,9 @@ endif()
 # GRIB2 and CDF share UDF slot 2 and are mutually exclusive.
 option(ENABLE_GRIB2 "Enable GRIB2 support; mutually exclusive with ENABLE_CDF" ON)
 
+# Parallel I/O test support (v1.9.0) - default OFF; enable with -DENABLE_PARALLEL_TESTS=ON
+option(ENABLE_PARALLEL_TESTS "Enable parallel I/O test programs" OFF)
+
 if(NOT DOCS_ONLY)
     # CDF library detection (v1.3.0)
     if(ENABLE_CDF)
@@ -152,6 +155,29 @@ if(NOT DOCS_ONLY)
         else()
             message(FATAL_ERROR "libg2c is required for the GRIB2 dispatch layer. Include the library path in CPPFLAGS/LDFLAGS, or use -DENABLE_GRIB2=OFF")
         endif()
+    endif()
+
+    # Parallel I/O test support (v1.9.0)
+    if(ENABLE_PARALLEL_TESTS)
+        include(CheckSymbolExists)
+        check_symbol_exists(NC_HAS_PARALLEL4 "netcdf_meta.h" HAVE_PARALLEL_NETCDF)
+
+        if(NOT HAVE_PARALLEL_NETCDF)
+            message(FATAL_ERROR "ENABLE_PARALLEL_TESTS requires NetCDF-C built with parallel support (NC_HAS_PARALLEL4 not found)")
+        endif()
+
+        find_program(MPIEXEC_EXECUTABLE
+            NAMES mpiexec mpirun srun
+            DOC "MPI execution command for parallel tests"
+        )
+
+        if(NOT MPIEXEC_EXECUTABLE)
+            message(FATAL_ERROR "ENABLE_PARALLEL_TESTS requires mpiexec/mpirun/srun (set MPIEXEC_EXECUTABLE to specify)")
+        endif()
+
+        set(HAVE_PARALLEL_TESTS ON)
+        message(STATUS "Parallel NetCDF-C: Found (NC_HAS_PARALLEL4)")
+        message(STATUS "mpiexec: ${MPIEXEC_EXECUTABLE}")
     endif()
 endif()
 
@@ -255,7 +281,12 @@ if(NOT DOCS_ONLY)
     if(HAVE_GEOTIFF)
         add_subdirectory (test_geotiff)
     endif()
-    
+
+    # Parallel I/O tests - v1.9.0
+    if(HAVE_PARALLEL_TESTS)
+        add_subdirectory (test_parallel)
+    endif()
+
     # Make tests depend on plugins being built
     # Add test directory last so tst_cdf_udf runs after tst_cdf_basic
     add_subdirectory (test)

@@ -245,6 +245,20 @@ fi
 AC_SUBST([G2C_LIBS])
 AC_SUBST([G2C_LDFLAGS])
 
+# Parallel I/O test support (v1.9.0) - default OFF; enable with --enable-parallel-tests
+AC_MSG_CHECKING([whether parallel I/O tests should be enabled])
+AC_ARG_ENABLE([parallel-tests],
+              [AS_HELP_STRING([--enable-parallel-tests],
+                              [Enable parallel I/O test programs (default: disabled)])])
+test "x$enable_parallel_tests" = xyes || enable_parallel_tests=no
+AC_MSG_RESULT([$enable_parallel_tests])
+
+AC_ARG_WITH([mpiexec],
+            [AS_HELP_STRING([--with-mpiexec=PATH],
+                            [Specify path to mpiexec/mpirun for parallel tests])],
+            [MPIEXEC_PATH=$withval],
+            [MPIEXEC_PATH=auto])
+
 # Check for Doxygen if documentation is enabled
 if test "x$enable_docs" != "xno"; then
     AC_CHECK_PROG([DOXYGEN], [doxygen], [doxygen])
@@ -458,6 +472,50 @@ if test "x$have_zstd" = xno; then
    AC_MSG_ERROR([netcdf-c must be built with zstd and have version > 4.9.0.])
 fi
 
+# Check for parallel NetCDF-C if parallel tests enabled (v1.9.0)
+if test "x$enable_parallel_tests" = xyes; then
+    AC_MSG_CHECKING([whether NetCDF-C has parallel support])
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([#include "netcdf_meta.h"],
+[[#if !NC_HAS_PARALLEL4
+# error
+#endif]
+])], [have_parallel_netcdf=yes], [have_parallel_netcdf=no])
+    AC_MSG_RESULT([$have_parallel_netcdf])
+
+    if test "x$have_parallel_netcdf" = xno; then
+        AC_MSG_ERROR([--enable-parallel-tests requires NetCDF-C built with parallel support (NC_HAS_PARALLEL4 not found)])
+    fi
+
+    # Find mpiexec
+    if test "x$MPIEXEC_PATH" = xauto; then
+        AC_PATH_PROG([MPIEXEC], [mpiexec], [none])
+        if test "x$MPIEXEC" = xnone; then
+            AC_PATH_PROG([MPIEXEC], [mpirun], [none])
+        fi
+        if test "x$MPIEXEC" = xnone; then
+            AC_PATH_PROG([MPIEXEC], [srun], [none])
+        fi
+    else
+        MPIEXEC=$MPIEXEC_PATH
+        AC_MSG_CHECKING([for mpiexec at specified path])
+        if test -x "$MPIEXEC"; then
+            AC_MSG_RESULT([yes])
+        else
+            AC_MSG_RESULT([no])
+            AC_MSG_ERROR([--with-mpiexec=$MPIEXEC_PATH does not exist or is not executable])
+        fi
+    fi
+
+    if test "x$MPIEXEC" = xnone; then
+        AC_MSG_ERROR([--enable-parallel-tests requires mpiexec/mpirun/srun (use --with-mpiexec=PATH to specify)])
+    fi
+
+    AC_DEFINE([HAVE_PARALLEL_TESTS], [1], [Parallel I/O tests enabled])
+    AC_MSG_NOTICE([Parallel I/O tests enabled, mpiexec: $MPIEXEC])
+fi
+AM_CONDITIONAL([HAVE_PARALLEL_TESTS], [test "x$enable_parallel_tests" = xyes])
+AC_SUBST([MPIEXEC])
+
 # Find HDF5. This macro (from gnu.org) adds a --with-hdf5 option for setting
 # a path to any repository.
 # Only use AX_LIB_HDF5 if --with-hdf5 is explicitly specified
@@ -533,6 +591,7 @@ AC_CONFIG_FILES([Makefile
                  test_h5/Makefile
                  test_cdf/Makefile
                  test_geotiff/Makefile
+                 test_parallel/Makefile
                  examples/Makefile
                  examples/classic/Makefile
                  examples/netcdf-4/Makefile

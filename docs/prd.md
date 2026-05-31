@@ -319,36 +319,73 @@ Example output is validated to ensure correctness across code changes. Each exam
 
 ---
 
-## 9. Build Systems
+## 9. Parallel I/O Support (v1.9.0)
 
-### 9.1 CMake
+### 9.1 Overview
+Parallel I/O support enables NEP to build and run test programs with MPI for high-performance computing environments. This provides the foundation for parallel NetCDF-4/HDF5 I/O operations.
+
+### 9.2 Build Configuration
+
+**CMake:**
+- `ENABLE_PARALLEL_TESTS=ON/OFF` - Enable parallel I/O test programs (default: OFF)
+- `MPIEXEC_EXECUTABLE=PATH` - Specify path to mpiexec/mpirun
+
+**Autotools:**
+- `--enable-parallel-tests` - Enable parallel I/O test programs
+- `--with-mpiexec=PATH` - Specify path to mpiexec/mpirun
+
+### 9.3 Dependencies
+- MPI implementation (OpenMPI or MPICH)
+- NetCDF-C built with parallel support (`NC_HAS_PARALLEL4`)
+- NetCDF-Fortran (for Fortran parallel tests)
+
+### 9.4 Configure Output
+The configure step displays parallel I/O status:
+```
+Parallel I/O:
+  Parallel tests enabled: yes
+  Parallel NetCDF-C: yes (NC_HAS_PARALLEL4)
+  mpiexec: /usr/bin/mpiexec
+```
+
+### 9.5 CI Integration
+Parallel I/O builds are tested in a separate CI workflow (`ci-parallel.yml`) with:
+- Matrix: CMake/Autotools × OpenMPI/MPICH
+- All dependencies (HDF5, NetCDF-C, NetCDF-Fortran) built with MPI compilers
+- Parallel test directory structure for parallel I/O examples
+
+---
+
+## 10. Build Systems
+
+### 10.1 CMake
 - Minimum version: 3.9+
 - Full feature support with configurable options
 - Documentation generation with Doxygen
 - Comprehensive test suite integration
 
-### 9.2 Autotools
+### 10.2 Autotools
 - Standard configure/make/make install workflow
 - Feature parity with CMake
 - Documentation generation support
 - Test suite integration
 
-### 9.3 Common Build Options
+### 10.3 Common Build Options
 - `BUILD_DOCUMENTATION=ON/OFF` (CMake) / `--enable-docs/--disable-docs` (Autotools)
 - Doxygen-generated API documentation
 - Zero-warning builds enforced
 
 ---
 
-## 10. Documentation (v1.2.0)
+## 11. Documentation (v1.2.0)
 
-### 10.1 Features
+### 11.1 Features
 - **Version-Driven**: All documentation derives version from `version.txt`
 - **API Documentation**: Complete Doxygen coverage of C and Fortran APIs
 - **Build Options**: Comprehensive documentation of configuration flags
 - **GitHub Pages**: Automated deployment on releases
 
-### 10.2 Documentation Structure
+### 11.2 Documentation Structure
 - Main page: Overview and installation
 - API reference: Generated from source code
 - Build options: Configuration guide
@@ -356,23 +393,23 @@ Example output is validated to ensure correctness across code changes. Each exam
 
 ---
 
-## 11. Testing and Quality Assurance
+## 12. Testing and Quality Assurance
 
-### 11.1 Test Coverage
+### 12.1 Test Coverage
 - **Compression Tests**: C and Fortran tests for LZ4 and BZIP2
 - **CDF Tests**: Basic file operations and IMAP MAG L1B calibration data
 - **GeoTIFF Tests**: 10 comprehensive test programs covering edge cases, errors, performance
 - **Example Programs**: All examples run as tests to validate correctness
 - **CI Integration**: GitHub Actions with multiple build configurations
 
-### 11.2 CI Matrix
+### 12.2 CI Matrix
 - CMake and Autotools builds
 - Compression combinations (all, no-bzip2, no-lz4)
 - Fortran on/off configurations
 - Documentation validation
 - Format-specific tests (CDF, GeoTIFF, GRIB2)
 
-### 11.3 Quality Gates
+### 12.3 Quality Gates
 - Zero-warning builds
 - All tests pass before merge
 - Documentation builds without errors
@@ -380,14 +417,14 @@ Example output is validated to ensure correctness across code changes. Each exam
 
 ---
 
-## 12. Dependencies
+## 13. Dependencies
 
-### 12.1 Core Dependencies
+### 13.1 Core Dependencies
 - NetCDF-C v4.9+ (required)
 - HDF5 v1.12+ (required)
 - CMake v3.9+ or Autotools (build)
 
-### 12.2 Optional Dependencies
+### 13.2 Optional Dependencies
 - LZ4 library (for LZ4 compression)
 - BZIP2 library (for BZIP2 compression)
 - NetCDF-Fortran v4.5.4+ (for Fortran wrappers)
@@ -399,7 +436,7 @@ Example output is validated to ensure correctness across code changes. Each exam
 
 ---
 
-## 13. Release History
+## 14. Release History
 
 - **v0.1.3** (Nov 2025): Architecture shift from HDF5 VOL to NetCDF UDF, Doxygen documentation
 - **v1.0.0**: LZ4 and BZIP2 compression filters
@@ -409,6 +446,7 @@ Example output is validated to ensure correctness across code changes. Each exam
 - **v1.4.0**: Spack package manager support for NEP and CDF
 - **v1.5.0** (Jan 2026): GeoTIFF read support via UDF handler
 - **v1.7.0** (March 2026): GRIB2 read support via UDF handler
+- **v1.9.0** (May 2026): Parallel I/O build system support and parallel test examples
 
 ---
 

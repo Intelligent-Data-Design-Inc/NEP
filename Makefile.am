@@ -15,15 +15,20 @@ if HAVE_GEOTIFF
 TEST_GEOTIFF = test_geotiff
 endif
 
+# Parallel I/O tests - v1.9.0
+if HAVE_PARALLEL_TESTS
+TEST_PARALLEL = test_parallel
+endif
+
 # Examples subdirectory (v1.5.1)
 if BUILD_EXAMPLES
 EXAMPLES_DIR = examples
 endif
 
 if ENABLE_FORTRAN
-SUBDIRS = include src fsrc $(TEST_CDF) $(TEST_GEOTIFF) test test_h5 ftest $(EXAMPLES_DIR)
+SUBDIRS = include src fsrc $(TEST_CDF) $(TEST_GEOTIFF) $(TEST_PARALLEL) test test_h5 ftest $(EXAMPLES_DIR)
 else
-SUBDIRS = include src $(TEST_CDF) $(TEST_GEOTIFF) test test_h5 $(EXAMPLES_DIR)
+SUBDIRS = include src $(TEST_CDF) $(TEST_GEOTIFF) $(TEST_PARALLEL) test test_h5 $(EXAMPLES_DIR)
 endif
 
 if BUILD_LZ4

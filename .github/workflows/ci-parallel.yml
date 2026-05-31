@@ -147,6 +147,7 @@ jobs:
             -DCMAKE_Fortran_FLAGS="-Wall -Werror" \
             -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install" \
             -DENABLE_FORTRAN=ON \
+            -DENABLE_PARALLEL_TESTS=ON \
             -DENABLE_GRIB2=OFF \
             -DENABLE_CDF=OFF \
             -DENABLE_GEOTIFF=OFF \
@@ -184,9 +185,17 @@ jobs:
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib"
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
+          # Determine mpiexec path based on MPI implementation
+          if [ "${{ matrix.mpi }}" = "openmpi" ]; then
+            MPIEXEC_PATH=/usr/bin/mpiexec
+          else
+            MPIEXEC_PATH=/usr/bin/mpirun.mpich
+          fi
           CC=mpicc FC=mpif90 ./configure \
             --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc \
             --enable-fortran \
+            --enable-parallel-tests \
+            --with-mpiexec=$MPIEXEC_PATH \
             --disable-grib2 \
             --disable-cdf \
             --disable-geotiff \

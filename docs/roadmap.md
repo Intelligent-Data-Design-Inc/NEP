@@ -14,10 +14,14 @@
 - No changes to `ci.yml` or any source files
 
 #### Sprint 2: Configure/CMake Changes for Parallel I/O
-- We need to support options: --enable-parallel-tests (default off) and --with-mpiexec (just like netcdf-c)
-- We need to support these in CMake as well.
-- Configure/CMake needs to detect whether it is being built with a parallel-enabled version of netcdf-c. (Check netcdf-meta.h).
-- Configure/CMake needs to have output showing what it found.
+**Detailed Plan**: See `docs/plan/v1.9.0-sprint2-parallel-config.md`
+
+- Add `--enable-parallel-tests` (default off) and `--with-mpiexec=PATH` to `configure.ac`
+- Add `ENABLE_PARALLEL_TESTS` and `MPIEXEC_EXECUTABLE` to `CMakeLists.txt`
+- Detect parallel-enabled NetCDF-C via `NC_HAS_PARALLEL4` in `netcdf_meta.h`
+- Add configure/CMake summary output showing parallel I/O status
+- Create `test_parallel/` directory structure (empty, populated in Sprint 3)
+- Update `ci-parallel.yml` to enable parallel tests in all matrix jobs
 
 #### Sprint 3: Parallel I/O Example
 - Add a parallel I/O example to examples/netcdf-4.
