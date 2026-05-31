@@ -160,10 +160,12 @@ if(NOT DOCS_ONLY)
     # Parallel I/O test support (v1.9.0)
     if(ENABLE_PARALLEL_TESTS)
         include(CheckSymbolExists)
+        # Set up include paths for the symbol check
+        set(CMAKE_REQUIRED_INCLUDES "${NETCDF_INCLUDE_DIRS}")
         check_symbol_exists(NC_HAS_PARALLEL4 "netcdf_meta.h" HAVE_PARALLEL_NETCDF)
 
         if(NOT HAVE_PARALLEL_NETCDF)
-            message(FATAL_ERROR "ENABLE_PARALLEL_TESTS requires NetCDF-C built with parallel support (NC_HAS_PARALLEL4 not found)")
+            message(FATAL_ERROR "ENABLE_PARALLEL_TESTS requires NetCDF-C built with parallel support (NC_HAS_PARALLEL4 not found in ${NETCDF_INCLUDE_DIRS})")
         endif()
 
         find_program(MPIEXEC_EXECUTABLE
