@@ -20,6 +20,9 @@ check_PROGRAMS += f_square16_par
 
 f_square16_par_SOURCES = f_square16_par.f90
 f_square16_par_LDADD = $(NETCDF_Fortran_LDFLAGS) -lnetcdff -lnetcdf
+
+# Fortran module file search path for netcdf.mod
+AM_FCFLAGS = $(NETCDF_Fortran_CFLAGS)
 endif
 
 # Test via the mpiexec-driven run script
