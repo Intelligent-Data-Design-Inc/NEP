@@ -181,8 +181,7 @@ contains
       integer(int64) :: start_count, end_count, count_rate
       logical :: file_exists
       integer :: start_idx(NDIMS), count_idx(NDIMS)
-      real(8) :: start_time, end_time
-      
+
       print *, ""
       print *, "=== ", trim(test_name), " ==="
       
