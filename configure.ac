@@ -581,6 +581,7 @@ AC_CONFIG_FILES([test/run_tests.sh], [chmod ugo+x test/run_tests.sh])
 AC_CONFIG_FILES([ftest/run_tests.sh], [chmod ugo+x ftest/run_tests.sh])
 AC_CONFIG_FILES([test_h5/run_tests.sh], [chmod ugo+x test_h5/run_tests.sh])
 AC_CONFIG_FILES([examples/validate_cdl.sh], [chmod ugo+x examples/validate_cdl.sh])
+AC_CONFIG_FILES([examples/parallelIO/run_par_examples.sh], [chmod ugo+x examples/parallelIO/run_par_examples.sh])
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
@@ -597,6 +598,7 @@ AC_CONFIG_FILES([Makefile
                  examples/netcdf-4/Makefile
                  examples/f_classic/Makefile
                  examples/f_netcdf-4/Makefile
+                 examples/parallelIO/Makefile
                  docs/Doxyfile])
 
 AC_OUTPUT

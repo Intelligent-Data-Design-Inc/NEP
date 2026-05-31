@@ -130,6 +130,7 @@ tst_*.nc
 tst_*.h5
 tst_*.cdf
 run_tests.sh
+run_par_examples.sh
 *.lai
 tst_grib2
 ftst_ncsqueeze_bzip2
@@ -212,6 +213,10 @@ examples/f_netcdf-4/f_groups
 examples/f_netcdf-4/f_multi_unlimited
 examples/f_netcdf-4/f_user_types
 examples/f_netcdf-4/f_dump_nc4_metadata
+
+# Example binaries - parallel I/O
+examples/parallelIO/square16_par
+examples/parallelIO/f_square16_par
 
 # Valgrind logs
 valgrind*.log

@@ -36,9 +36,6 @@
 /* Defined if you have HDF5 support */
 #undef HAVE_HDF5
 
-/* Define if parallel I/O tests are enabled */
-#undef HAVE_PARALLEL_TESTS
-
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
@@ -47,6 +44,9 @@
 
 /* Define to 1 if you have the <netcdf_meta.h> header file. */
 #undef HAVE_NETCDF_META_H
+
+/* Parallel I/O tests enabled */
+#undef HAVE_PARALLEL_TESTS
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H

@@ -12,5 +12,7 @@ if ENABLE_FORTRAN
 SUBDIRS += f_classic f_netcdf-4
 endif
 
-# Placeholder directories for future examples
-# SUBDIRS += parallelIO performance
+# Parallel I/O examples only built when --enable-parallel-tests is specified
+if HAVE_PARALLEL_TESTS
+SUBDIRS += parallelIO
+endif

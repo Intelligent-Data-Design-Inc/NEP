@@ -23,10 +23,17 @@
 - Create `test_parallel/` directory structure (empty, populated in Sprint 3)
 - Update `ci-parallel.yml` to enable parallel tests in all matrix jobs
 
-#### Sprint 3: Parallel I/O Example
-- Add a parallel I/O example to examples/netcdf-4.
-- Add fortran equivalent program to examples/f_netcdf-4.
-- They should only be run if --enable-parallel-tests is turned on (or cmake equivalent)
+#### Sprint 3: Parallel I/O Example Programs in C/Fortran
+**Detailed Plan**: See `docs/plan/v1.9.0-sprint3-parallel-examples.md`
+
+- Add `examples/parallelIO/square16_par.c` (C) and `examples/parallelIO/f_square16_par.f90` (Fortran)
+- Programs initialize MPI, print rank and size, and exit 0 — no NetCDF calls in this sprint
+- Run via `examples/parallelIO/run_par_examples.sh.in` (substituted with `@MPIEXEC@ -n 4` at configure time)
+- Tested via `make check` (Autotools) and `ctest` (CMake); only built when `--enable-parallel-tests` / `ENABLE_PARALLEL_TESTS=ON`
+- Update `ci-parallel.yml` to enable examples build and run; add OpenMPI root workaround
+
+#### Sprint 4: Add Code to Parallel Examples
+- Add actual parallel NetCDF-4/HDF5 I/O to `square16_par.c` and `f_square16_par.f90`
 
 ### V1.8.0 Simplified Examples
 - Fix some problems.

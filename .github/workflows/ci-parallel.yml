@@ -154,7 +154,7 @@ jobs:
             -DBUILD_LZ4=OFF \
             -DBUILD_BZIP2=OFF \
             -DBUILD_DOCUMENTATION=OFF \
-            -DBUILD_EXAMPLES=OFF \
+            -DBUILD_EXAMPLES=ON \
             -DBUILD_TESTING=ON
 
       - name: Build (CMake)
@@ -169,6 +169,10 @@ jobs:
         working-directory: build
         run: |
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
+          if [ "${{ matrix.mpi }}" = "openmpi" ]; then
+            export OMPI_ALLOW_RUN_AS_ROOT=1
+            export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+          fi
           ctest --verbose
 
       # --- Autotools build with MPI compilers ---
@@ -202,7 +206,7 @@ jobs:
             --disable-lz4 \
             --disable-bzip2 \
             --disable-docs \
-            --disable-examples \
+            --enable-examples \
             || (echo "Configure failed. Printing config.log:"; cat config.log; exit 1)
 
       - name: Build (Autotools)
@@ -215,8 +219,15 @@ jobs:
         if: matrix.build_system == 'autotools'
         run: |
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
+          if [ "${{ matrix.mpi }}" = "openmpi" ]; then
+            export OMPI_ALLOW_RUN_AS_ROOT=1
+            export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+          fi
           make check CFLAGS="-Wall -Werror" FCFLAGS="-Wall -Werror -Wno-error=missing-include-dirs" \
-            || (echo "Tests failed. Printing test logs:"; cat test/test-suite.log; exit 1)
+            || (echo "Tests failed. Printing test logs:"; \
+                cat test/test-suite.log 2>/dev/null; \
+                cat examples/parallelIO/test-suite.log 2>/dev/null; \
+                exit 1)
 
       # --- Summary ---
 

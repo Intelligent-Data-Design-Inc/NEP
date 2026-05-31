@@ -15,6 +15,7 @@ if(ENABLE_FORTRAN)
     endif()
 endif()
 
-# Placeholder directories for future examples
-# add_subdirectory(parallelIO)
-# add_subdirectory(performance)
+# Parallel I/O examples only built when ENABLE_PARALLEL_TESTS is ON
+if(ENABLE_PARALLEL_TESTS AND HAVE_PARALLEL_TESTS)
+    add_subdirectory(parallelIO)
+endif()
