@@ -71,7 +71,7 @@ program f_user_types
    ! Variables for type inquiry on reopen
    integer :: ntypes, num_members, base_type_in, base_size_in
    integer :: type_size_in, nfields_in, class_in
-   integer :: member_value
+   integer :: member_value = 0
    character(len=NF90_MAX_NAME) :: type_name_in, member_name_in
    integer :: typeids(2)
 
