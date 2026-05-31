@@ -254,7 +254,6 @@ contains
       integer :: ncid, varid
       integer :: retval
       integer(int64) :: start_count, end_count, count_rate
-      real(8) :: start_time, end_time
       real, allocatable :: data(:,:,:)
       integer :: shuffle, deflate, deflate_level
       integer :: errors, i
