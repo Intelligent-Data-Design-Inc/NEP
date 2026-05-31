@@ -66,7 +66,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-2.0.0-parallel-${{ matrix.mpi }}-${{ runner.os }}-1
+          key: hdf5-2.0.0-parallel-${{ matrix.mpi }}-${{ runner.os }}-2
 
       - name: Download and build HDF5 2.0.0 (parallel)
         if: steps.cache-hdf5.outputs.cache-hit != 'true'
@@ -90,7 +90,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-c-install
-          key: netcdf-c-4.10.0-parallel-${{ matrix.mpi }}-${{ runner.os }}-1
+          key: netcdf-c-4.10.0-parallel-${{ matrix.mpi }}-${{ runner.os }}-2
 
       - name: Download and build NetCDF-C (parallel)
         if: steps.cache-netcdf-c.outputs.cache-hit != 'true'
@@ -116,7 +116,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-fortran-install
-          key: netcdf-fortran-4.5.4-parallel-${{ matrix.mpi }}-${{ runner.os }}-1
+          key: netcdf-fortran-4.5.4-parallel-${{ matrix.mpi }}-${{ runner.os }}-2
 
       - name: Download and build NetCDF-Fortran (parallel)
         if: steps.cache-netcdf-fortran.outputs.cache-hit != 'true'
