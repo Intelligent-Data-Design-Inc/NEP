@@ -1,7 +1,7 @@
 # Makefile.am for parallel I/O examples
 # Only built when --enable-parallel-tests is specified.
 # Edward Hartnett, Intelligent Data Design, Inc.
-# v1.9.0 Sprint 3
+# v1.9.0 Sprint 4
 
 AUTOMAKE_OPTIONS = parallel-tests
 
@@ -13,13 +13,13 @@ AM_CPPFLAGS = -I$(top_srcdir)/include
 check_PROGRAMS = square16_par
 
 square16_par_SOURCES = square16_par.c
-square16_par_LDADD =
+square16_par_LDADD = $(NETCDF_C_LDFLAGS) -lnetcdf
 
 if ENABLE_FORTRAN
 check_PROGRAMS += f_square16_par
 
 f_square16_par_SOURCES = f_square16_par.f90
-f_square16_par_LDADD =
+f_square16_par_LDADD = $(NETCDF_Fortran_LDFLAGS) -lnetcdff -lnetcdf
 endif
 
 # Test via the mpiexec-driven run script
@@ -35,6 +35,6 @@ AM_TESTS_ENVIRONMENT = LD_LIBRARY_PATH="@MY_LD_LIBRARY_PATH@:$$LD_LIBRARY_PATH"
 check-local:
 	chmod +x run_par_examples.sh
 
-CLEANFILES = run_par_examples.sh
+CLEANFILES = run_par_examples.sh *.nc
 
 endif # HAVE_PARALLEL_TESTS

@@ -32,8 +32,17 @@
 - Tested via `make check` (Autotools) and `ctest` (CMake); only built when `--enable-parallel-tests` / `ENABLE_PARALLEL_TESTS=ON`
 - Update `ci-parallel.yml` to enable examples build and run; add OpenMPI root workaround
 
-#### Sprint 4: Add Code to Parallel Examples
+#### Sprint 4: Add NetCDF Parallel I/O to Examples
+**Detailed Plan**: See `docs/plan/v1.9.0-sprint4-netcdf-parallel-io.md`
+
 - Add actual parallel NetCDF-4/HDF5 I/O to `square16_par.c` and `f_square16_par.f90`
+- Each rank fills 8×8 array with its rank number (0-3)
+- Collective parallel write using `nc_create_par()` and `nc_var_par_access(NC_COLLECTIVE)`
+- 2×2 grid decomposition: rank 0→(0,0), rank 1→(8,0), rank 2→(0,8), rank 3→(8,8)
+- Parallel read-back verification ensures data integrity
+- `run_par_examples.sh` runs ncdump for visual inspection
+- Require exactly 4 MPI processes; error if count differs
+- NC_CHK macro error handling following NEP patterns
 
 ### V1.8.0 Simplified Examples
 - Fix some problems.

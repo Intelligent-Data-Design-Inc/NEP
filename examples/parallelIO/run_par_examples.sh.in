@@ -2,17 +2,34 @@
 # run_par_examples.sh.in - Run parallel I/O example programs.
 # Processed at configure time: @MPIEXEC@ is replaced with the mpiexec path.
 # Edward Hartnett, Intelligent Data Design, Inc.
-# v1.9.0 Sprint 3
+# v1.9.0 Sprint 4
 
 set -e
 
 echo ""
-echo "Testing parallel I/O hello (C) with 4 processes..."
+echo "Testing parallel NetCDF I/O (C) with 4 processes..."
 @MPIEXEC@ -n 4 ./square16_par
 
 echo ""
-echo "Testing parallel I/O hello (Fortran) with 4 processes..."
+echo "Dumping C output file (square16_par.nc):"
+ncdump square16_par.nc
+
+echo ""
+echo "Verifying C output data pattern..."
+# Expect: first 8 rows have 0s and 1s, last 8 rows have 2s and 3s
+ncdump square16_par.nc | grep -q "sample_data" || { echo "ERROR: sample_data not found"; exit 1; }
+
+echo ""
+echo "Testing parallel NetCDF I/O (Fortran) with 4 processes..."
 @MPIEXEC@ -n 4 ./f_square16_par
+
+echo ""
+echo "Dumping Fortran output file (f_square16_par.nc):"
+ncdump f_square16_par.nc
+
+echo ""
+echo "Verifying Fortran output data pattern..."
+ncdump f_square16_par.nc | grep -q "sample_data" || { echo "ERROR: sample_data not found"; exit 1; }
 
 echo ""
 echo "All parallel I/O example tests passed."

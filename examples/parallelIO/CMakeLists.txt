@@ -1,20 +1,25 @@
 # CMakeLists.txt for parallel I/O examples
 # Only built when ENABLE_PARALLEL_TESTS is ON (Sprint 2 detection).
 # Edward Hartnett, Intelligent Data Design, Inc.
-# v1.9.0 Sprint 3
+# v1.9.0 Sprint 4
 
 find_package(MPI REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(NETCDF REQUIRED netcdf)
+pkg_check_modules(NETCDFF REQUIRED netcdf-fortran)
 
 # C parallel example
 add_executable(square16_par square16_par.c)
-target_include_directories(square16_par PRIVATE ${MPI_C_INCLUDE_PATH})
-target_link_libraries(square16_par PRIVATE ${MPI_C_LIBRARIES})
+target_include_directories(square16_par PRIVATE ${MPI_C_INCLUDE_PATH} ${NETCDF_INCLUDE_DIRS})
+target_link_libraries(square16_par PRIVATE ${MPI_C_LIBRARIES} ${NETCDF_LDFLAGS})
+target_compile_options(square16_par PRIVATE ${NETCDF_CFLAGS_OTHER})
 
 # Fortran parallel example (only when Fortran is enabled)
 if(ENABLE_FORTRAN)
     add_executable(f_square16_par f_square16_par.f90)
-    target_include_directories(f_square16_par PRIVATE ${MPI_Fortran_INCLUDE_PATH})
-    target_link_libraries(f_square16_par PRIVATE ${MPI_Fortran_LIBRARIES})
+    target_include_directories(f_square16_par PRIVATE ${MPI_Fortran_INCLUDE_PATH} ${NETCDFF_INCLUDE_DIRS})
+    target_link_libraries(f_square16_par PRIVATE ${MPI_Fortran_LIBRARIES} ${NETCDFF_LDFLAGS} ${NETCDF_LDFLAGS})
+    target_compile_options(f_square16_par PRIVATE ${NETCDFF_CFLAGS_OTHER})
 endif()
 
 # Configure the run script: substitute @MPIEXEC@ with the discovered mpiexec path.

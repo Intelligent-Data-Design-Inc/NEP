@@ -348,11 +348,47 @@ Parallel I/O:
   mpiexec: /usr/bin/mpiexec
 ```
 
-### 9.5 CI Integration
+### 9.5 Example Programs
+
+NEP includes parallel I/O example programs demonstrating collective NetCDF-4/HDF5 I/O in `examples/parallelIO/`:
+
+**C: `square16_par.c`**
+- Creates a 16×16 integer dataset using 4 MPI ranks
+- Each rank writes an 8×8 quadrant filled with its rank number (0-3)
+- Uses `nc_create_par()`, `nc_var_par_access(NC_COLLECTIVE)`, and `nc_put_vara_int()`
+- Includes parallel read-back verification with `nc_open_par()` and `nc_get_vara_int()`
+- Requires exactly 4 MPI processes
+
+**Fortran: `f_square16_par.f90`**
+- Identical functionality to C version
+- Uses `nf90_create_par()`, `nf90_var_par_access(NF90_COLLECTIVE)`, and `nf90_put_var()`
+- Demonstrates Fortran 90 NetCDF parallel I/O patterns
+
+**Data Decomposition:**
+```
+Global 16x16 grid:
++--------+--------+
+| Rank 0 | Rank 1 |
+| (0,0)  | (8,0)  |
++--------+--------+
+| Rank 2 | Rank 3 |
+| (0,8)  | (8,8)  |
++--------+--------+
+```
+Each rank fills its quadrant with its rank number.
+
+**Running:**
+```bash
+mpiexec -n 4 ./square16_par
+ncdump square16_par.nc
+```
+
+### 9.6 CI Integration
 Parallel I/O builds are tested in a separate CI workflow (`ci-parallel.yml`) with:
 - Matrix: CMake/Autotools × OpenMPI/MPICH
 - All dependencies (HDF5, NetCDF-C, NetCDF-Fortran) built with MPI compilers
 - Parallel test directory structure for parallel I/O examples
+- ncdump verification of parallel output files
 
 ---
 
