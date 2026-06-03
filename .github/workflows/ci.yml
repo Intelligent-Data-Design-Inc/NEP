@@ -93,11 +93,13 @@ jobs:
           wget https://github.com/jasper-software/jasper/releases/download/version-4.2.4/jasper-4.2.4.tar.gz &> /dev/null
           tar -xzf jasper-4.2.4.tar.gz
           cd jasper-4.2.4
+          rm -rf build
           mkdir build && cd build
           cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/jasper-install \
                 -DBUILD_SHARED_LIBS=ON \
                 -DJAS_ENABLE_DOC=OFF \
                 -DJAS_ENABLE_PROGRAMS=OFF \
+                -DJAS_ENABLE_HDF5=OFF \
                 ..
           make -j$(nproc)
           make install
