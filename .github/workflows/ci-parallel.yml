@@ -214,7 +214,7 @@ jobs:
         if: matrix.build_system == 'autotools'
         run: |
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
-          make -j$(nproc) CFLAGS="-Wall -Werror" FCFLAGS="-Wall -Werror -Wno-error=missing-include-dirs"
+          make -j$(nproc) CFLAGS="-Wall -Werror" FCFLAGS="-Wall -Werror -Wno-error=missing-include-dirs -I$GITHUB_WORKSPACE/netcdf-fortran-install/include"
 
       - name: Test (Autotools)
         if: matrix.build_system == 'autotools'
@@ -224,7 +224,7 @@ jobs:
             export OMPI_ALLOW_RUN_AS_ROOT=1
             export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
           fi
-          make check CFLAGS="-Wall -Werror" FCFLAGS="-Wall -Werror -Wno-error=missing-include-dirs" \
+          make check CFLAGS="-Wall -Werror" FCFLAGS="-Wall -Werror -Wno-error=missing-include-dirs -I$GITHUB_WORKSPACE/netcdf-fortran-install/include" \
             || (echo "Tests failed. Printing test logs:"; \
                 cat test/test-suite.log 2>/dev/null; \
                 cat examples/parallelIO/test-suite.log 2>/dev/null; \
