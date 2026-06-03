@@ -1,7 +1,71 @@
-/* square16_par.c - Parallel NetCDF I/O example: 4 ranks write 16x16 dataset.
- * Each rank writes an 8x8 quadrant filled with its rank number.
- * Edward Hartnett, Intelligent Data Design, Inc.
- * v1.9.0 Sprint 4 */
+/**
+ * @file square16_par.c
+ * @brief Demonstrates parallel NetCDF-4 I/O with MPI using a 2x2 rank decomposition
+ *
+ * This example shows how to use NetCDF-4's parallel I/O capabilities with MPI
+ * to write and read a shared dataset concurrently from multiple processes. Four
+ * MPI ranks cooperate to write a single 16x16 integer array, each contributing
+ * an 8x8 quadrant filled with its own rank number.
+ *
+ * The program demonstrates the fundamental parallel I/O pattern: open a file
+ * collectively, define the full dataset shape once, then have each rank write
+ * only its local portion using hyperslab selections (start/count). After writing,
+ * it performs a parallel read-back to verify correctness.
+ *
+ * **Learning Objectives:**
+ * - Open/create NetCDF files in parallel with nc_create_par() and nc_open_par()
+ * - Use nc_var_par_access() to enable collective I/O mode
+ * - Compute per-rank hyperslab offsets for a 2D domain decomposition
+ * - Write and read variable subsets with nc_put_vara_int() / nc_get_vara_int()
+ * - Verify parallel write correctness with a coordinated read-back
+ *
+ * **Key Concepts:**
+ * - **Collective I/O**: All ranks participate in every I/O call (NC_COLLECTIVE),
+ *   which allows the MPI-IO layer to optimize access patterns
+ * - **Independent I/O**: Alternative mode (NC_INDEPENDENT) where each rank
+ *   calls I/O functions independently; less common for performance-critical code
+ * - **Domain Decomposition**: Dividing a global array among MPI ranks; here a
+ *   simple 2x2 block decomposition maps rank → quadrant
+ * - **Hyperslab**: A rectangular sub-region of a variable selected by start[]
+ *   and count[] arrays passed to nc_put_vara / nc_get_vara functions
+ * - **MPI_INFO_NULL**: Passed when no MPI-IO hints are needed; production code
+ *   may supply hints (e.g., striping) via MPI_Info objects for better performance
+ *
+ * **Rank Layout (2×2 grid):**
+ * @code
+ *   col 0-7    col 8-15
+ *  +----------+----------+
+ *  | rank 0   | rank 2   |  rows 0-7
+ *  +----------+----------+
+ *  | rank 1   | rank 3   |  rows 8-15
+ *  +----------+----------+
+ * @endcode
+ *
+ * **Prerequisites:**
+ * - simple_nc4.c - NetCDF-4 format basics
+ * - An MPI installation and a NetCDF-C library built with parallel support
+ *
+ * **Related Examples:**
+ * - f_square16_par.f90 - Fortran equivalent
+ *
+ * **Compilation:**
+ * @code
+ * mpicc -o square16_par square16_par.c -lnetcdf
+ * @endcode
+ *
+ * **Usage:**
+ * @code
+ * mpirun -n 4 ./square16_par
+ * @endcode
+ *
+ * **Expected Output:**
+ * @code
+ * Parallel I/O write and read-back successful. File: square16_par.nc
+ * @endcode
+ *
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ * @date June 3, 2026
+ */
 #include <netcdf.h>
 #include <netcdf_par.h>
 #include <mpi.h>
