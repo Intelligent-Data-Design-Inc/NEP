@@ -13,7 +13,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/include
 check_PROGRAMS = square16_par
 
 square16_par_SOURCES = square16_par.c
-square16_par_LDADD = $(NETCDF_C_LDFLAGS) -lnetcdf
+square16_par_LDADD = $(NETCDF_LIBS)
 
 if ENABLE_FORTRAN
 check_PROGRAMS += f_square16_par
