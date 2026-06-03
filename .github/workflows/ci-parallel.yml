@@ -21,7 +21,7 @@ on:
 
 jobs:
   parallel-build:
-    name: MPI Build (${{ matrix.build_system }}, ${{ matrix.mpi }})
+    name: MPI Build (${{ matrix.build_system }})
     runs-on: ubuntu-latest
     env:
       LD_LIBRARY_PATH: ${{ github.workspace }}/hdf5-install/lib:${{ github.workspace }}/netcdf-c-install/lib:${{ github.workspace }}/netcdf-fortran-install/lib:$LD_LIBRARY_PATH
@@ -59,7 +59,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-2.1.0-parallel-${{ matrix.mpi }}-${{ runner.os }}-1
+          key: hdf5-2.1.0-parallel-openmpi-${{ runner.os }}-1
 
       - name: Download and build HDF5 2.1.0 (parallel)
         if: steps.cache-hdf5.outputs.cache-hit != 'true'
@@ -83,7 +83,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-c-install
-          key: netcdf-c-4.10.0-parallel-${{ matrix.mpi }}-${{ runner.os }}-3
+          key: netcdf-c-4.10.0-parallel-openmpi-${{ runner.os }}-3
 
       - name: Download and build NetCDF-C (parallel)
         if: steps.cache-netcdf-c.outputs.cache-hit != 'true'
@@ -109,7 +109,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-fortran-install
-          key: netcdf-fortran-4.5.4-parallel-${{ matrix.mpi }}-${{ runner.os }}-3
+          key: netcdf-fortran-4.5.4-parallel-openmpi-${{ runner.os }}-3
 
       - name: Download and build NetCDF-Fortran (parallel)
         if: steps.cache-netcdf-fortran.outputs.cache-hit != 'true'
@@ -220,7 +220,7 @@ jobs:
         if: always()
         run: |
           echo "=== MPI Parallel Build Summary ==="
-          echo "MPI:          ${{ matrix.mpi }}"
+          echo "MPI:          openmpi"
           echo "Build System: ${{ matrix.build_system }}"
           echo "C compiler:   $(mpicc --version 2>&1 | head -1)"
           echo "FC compiler:  $(mpif90 --version 2>&1 | head -1)"
