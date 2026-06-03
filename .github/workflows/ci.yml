@@ -39,7 +39,7 @@ jobs:
       - name: Install base dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake make wget zlib1g-dev autoconf automake libtool pkg-config libjasper-dev libpng-dev
+          sudo apt-get install -y cmake make wget zlib1g-dev autoconf automake libtool pkg-config libpng-dev
 
       - name: Cache HDF5 install
         id: cache-hdf5-grib2
@@ -79,6 +79,31 @@ jobs:
           ./configure --prefix=$GITHUB_WORKSPACE/netcdf-c-install --enable-netcdf-4 --enable-shared --disable-dap
           make -j$(nproc)
           make install
+
+      - name: Cache Jasper install
+        id: cache-jasper
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/jasper-install
+          key: jasper-4.2.4-${{ runner.os }}-1
+
+      - name: Download and build Jasper 4.2.4
+        if: steps.cache-jasper.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/jasper-software/jasper/releases/download/version-4.2.4/jasper-4.2.4.tar.gz &> /dev/null
+          tar -xzf jasper-4.2.4.tar.gz
+          cd jasper-4.2.4
+          mkdir build && cd build
+          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/jasper-install \
+                -DBUILD_SHARED_LIBS=ON \
+                -DJAS_ENABLE_DOC=OFF \
+                -DJAS_ENABLE_PROGRAMS=OFF \
+                ..
+          make -j$(nproc)
+          make install
+          echo "=== Jasper installation ==="
+          ls -l $GITHUB_WORKSPACE/jasper-install/lib/ || true
+          ls -l $GITHUB_WORKSPACE/jasper-install/include/ || true
 
       - name: Cache g2c install
         id: cache-g2c
@@ -199,7 +224,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake make wget zlib1g-dev libtiff-dev libgeotiff-dev autoconf automake libtool pkg-config libjasper-dev libpng-dev
+          sudo apt-get install -y cmake make wget zlib1g-dev libtiff-dev libgeotiff-dev autoconf automake libtool pkg-config libpng-dev
 
       - name: Cache HDF5 install
         id: cache-hdf5-asan
