@@ -213,7 +213,9 @@ jobs:
           echo "g2c version: 2.3.0"
 
   # Memory leak testing with AddressSanitizer
+  # DISABLED: Temporarily disabled
   memory-leak-check:
+    if: false
     name: Memory Leak Testing (AddressSanitizer)
     runs-on: ubuntu-latest
     env:

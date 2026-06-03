@@ -32,8 +32,8 @@ noinst_SCRIPTS = run_par_examples.sh
 
 EXTRA_DIST = run_par_examples.sh.in
 
-# Set LD_LIBRARY_PATH so test binaries can find HDF5/NetCDF shared libs at runtime
-AM_TESTS_ENVIRONMENT = LD_LIBRARY_PATH="@MY_LD_LIBRARY_PATH@:$$LD_LIBRARY_PATH"
+# Set PATH and LD_LIBRARY_PATH so test binaries can find ncdump and shared libs
+AM_TESTS_ENVIRONMENT = PATH="@NETCDF_C_BIN@:$$PATH" LD_LIBRARY_PATH="@MY_LD_LIBRARY_PATH@:$$LD_LIBRARY_PATH"
 
 check-local:
 	chmod +x run_par_examples.sh

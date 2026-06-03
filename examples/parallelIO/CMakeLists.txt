@@ -35,7 +35,9 @@ if(BUILD_TESTING)
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     )
     # Allow OpenMPI to run as root (GitHub Actions CI runners run as root)
+    # Get NetCDF bin directory for ncdump
+    get_filename_component(NETCDF_BIN ${NETCDF_INCLUDE_DIRS} DIRECTORY)
     set_tests_properties(parallel_examples PROPERTIES
-        ENVIRONMENT "OMPI_ALLOW_RUN_AS_ROOT=1;OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1"
+        ENVIRONMENT "OMPI_ALLOW_RUN_AS_ROOT=1;OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1;PATH=${NETCDF_BIN}/bin:$ENV{PATH}"
     )
 endif()
