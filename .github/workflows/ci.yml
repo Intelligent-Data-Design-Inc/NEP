@@ -90,8 +90,7 @@ jobs:
       - name: Download and build Jasper 4.2.4
         if: steps.cache-jasper.outputs.cache-hit != 'true'
         run: |
-          wget https://github.com/jasper-software/jasper/releases/download/version-4.2.4/jasper-4.2.4.tar.gz &> /dev/null
-          tar -xzf jasper-4.2.4.tar.gz
+          git clone --depth 1 --branch version-4.2.4 https://github.com/jasper-software/jasper.git jasper-4.2.4
           cd jasper-4.2.4
           rm -rf build
           mkdir build && cd build
