@@ -77,17 +77,16 @@
 #define DIM_SIZE 16
 
 /* Check NetCDF call result - standard NEP pattern */
-#define NC_CHK(err) do { \
-    if ((err) != NC_NOERR) { \
-        fprintf(stderr, "Error at line %d: %s\n", __LINE__, nc_strerror(err)); \
-        MPI_Abort(MPI_COMM_WORLD, 1); \
-    } \
+#define ERR(e) do { \
+    fprintf(stderr, "Error at line %d: %s\n", __LINE__, nc_strerror(e)); \
+    MPI_Abort(MPI_COMM_WORLD, 1); \
 } while(0)
 
 int main(int argc, char **argv)
 {
     int rank, size;
     int ncid, varid, dimids[NDIMS];
+    int ret;
     int data[QUAD_SIZE][QUAD_SIZE];
     size_t start[NDIMS], count[NDIMS];
     int read_data[QUAD_SIZE][QUAD_SIZE];
@@ -114,21 +113,27 @@ int main(int argc, char **argv)
     }
 
     /* Create file with parallel NetCDF-4 */
-    NC_CHK(nc_create_par("square16_par.nc", NC_NETCDF4 | NC_MPIIO,
-                         MPI_COMM_WORLD, MPI_INFO_NULL, &ncid));
+    if ((ret = nc_create_par("square16_par.nc", NC_NETCDF4 | NC_MPIIO,
+			     MPI_COMM_WORLD, MPI_INFO_NULL, &ncid)))
+	ERR(ret);
 
     /* Define dimensions: i (rows) and j (cols), each length 16 */
-    NC_CHK(nc_def_dim(ncid, "i", DIM_SIZE, &dimids[0]));
-    NC_CHK(nc_def_dim(ncid, "j", DIM_SIZE, &dimids[1]));
+    if ((ret = nc_def_dim(ncid, "i", DIM_SIZE, &dimids[0])))
+	ERR(ret);
+    if ((ret = nc_def_dim(ncid, "j", DIM_SIZE, &dimids[1])))
+	ERR(ret);
 
     /* Define variable sample_data(i,j) as integer */
-    NC_CHK(nc_def_var(ncid, "sample_data", NC_INT, NDIMS, dimids, &varid));
+    if ((ret = nc_def_var(ncid, "sample_data", NC_INT, NDIMS, dimids, &varid)))
+	ERR(ret);
 
     /* End define mode */
-    NC_CHK(nc_enddef(ncid));
+    if ((ret = nc_enddef(ncid)))
+	ERR(ret);
 
     /* Enable collective I/O for this variable */
-    NC_CHK(nc_var_par_access(ncid, varid, NC_COLLECTIVE));
+    if ((ret = nc_var_par_access(ncid, varid, NC_COLLECTIVE)))
+	ERR(ret);
 
     /* Calculate start position based on rank:
      * rank 0: (0, 0)   rank 1: (0, 8)
@@ -139,18 +144,25 @@ int main(int argc, char **argv)
     count[1] = QUAD_SIZE;
 
     /* Collective write - all ranks must participate */
-    NC_CHK(nc_put_vara_int(ncid, varid, start, count, &data[0][0]));
+    if ((ret = nc_put_vara_int(ncid, varid, start, count, &data[0][0])))
+	ERR(ret);
 
     /* Close file */
-    NC_CHK(nc_close(ncid));
+    if ((ret = nc_close(ncid)))
+	ERR(ret);
 
     /* Parallel read-back verification */
-    NC_CHK(nc_open_par("square16_par.nc", NC_MPIIO,
-                       MPI_COMM_WORLD, MPI_INFO_NULL, &ncid));
-    NC_CHK(nc_inq_varid(ncid, "sample_data", &varid));
-    NC_CHK(nc_var_par_access(ncid, varid, NC_COLLECTIVE));
-    NC_CHK(nc_get_vara_int(ncid, varid, start, count, &read_data[0][0]));
-    NC_CHK(nc_close(ncid));
+    if ((ret = nc_open_par("square16_par.nc", NC_MPIIO,
+			   MPI_COMM_WORLD, MPI_INFO_NULL, &ncid)))
+	ERR(ret);
+    if ((ret = nc_inq_varid(ncid, "sample_data", &varid)))
+	ERR(ret);
+    if ((ret = nc_var_par_access(ncid, varid, NC_COLLECTIVE)))
+	ERR(ret);
+    if ((ret = nc_get_vara_int(ncid, varid, start, count, &read_data[0][0])))
+	ERR(ret);
+    if ((ret = nc_close(ncid)))
+	ERR(ret);
 
     /* Verify data */
     for (i = 0; i < QUAD_SIZE; i++) {
