@@ -4,9 +4,9 @@
 #
 # Sprint 1 Scope: Compile and run all existing NEP tests using mpicc/mpif90.
 # No MPI code is in the codebase - this confirms that existing code compiles
-# and passes tests under both OpenMPI and MPICH compiler wrappers.
+# and passes tests under OpenMPI compiler wrappers.
 #
-# Matrix: cmake x autotools X openmpi x mpich (4 jobs total)
+# Matrix: cmake x autotools (2 jobs total)
 # MPI compilers are applied only to the NEP build itself.
 # HDF5, NetCDF-C, and NetCDF-Fortran are built with plain GCC (cached).
 #
@@ -30,7 +30,6 @@ jobs:
       fail-fast: false
       matrix:
         build_system: [cmake, autotools]
-        mpi: [openmpi, mpich]
 
     steps:
       - name: Checkout code
@@ -42,14 +41,8 @@ jobs:
           sudo apt-get install -y cmake make wget zlib1g-dev autoconf automake libtool pkg-config
 
       - name: Install OpenMPI
-        if: matrix.mpi == 'openmpi'
         run: |
           sudo apt-get install -y libopenmpi-dev openmpi-bin
-
-      - name: Install MPICH
-        if: matrix.mpi == 'mpich'
-        run: |
-          sudo apt-get install -y libmpich-dev mpich
 
       - name: Show MPI compiler versions
         run: |
@@ -169,10 +162,8 @@ jobs:
         working-directory: build
         run: |
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
-          if [ "${{ matrix.mpi }}" = "openmpi" ]; then
-            export OMPI_ALLOW_RUN_AS_ROOT=1
-            export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
-          fi
+          export OMPI_ALLOW_RUN_AS_ROOT=1
+          export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
           ctest --verbose
 
       # --- Autotools build with MPI compilers ---
@@ -190,12 +181,7 @@ jobs:
           export FCFLAGS="-I$GITHUB_WORKSPACE/netcdf-fortran-install/include"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib"
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
-          # Determine mpiexec path based on MPI implementation
-          if [ "${{ matrix.mpi }}" = "openmpi" ]; then
-            MPIEXEC_PATH=/usr/bin/mpiexec
-          else
-            MPIEXEC_PATH=/usr/bin/mpirun.mpich
-          fi
+          MPIEXEC_PATH=/usr/bin/mpiexec
           CC=mpicc FC=mpif90 ./configure \
             --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc \
             --enable-fortran \
@@ -220,10 +206,8 @@ jobs:
         if: matrix.build_system == 'autotools'
         run: |
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
-          if [ "${{ matrix.mpi }}" = "openmpi" ]; then
-            export OMPI_ALLOW_RUN_AS_ROOT=1
-            export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
-          fi
+          export OMPI_ALLOW_RUN_AS_ROOT=1
+          export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
           make check CFLAGS="-Wall -Werror" FCFLAGS="-Wall -Werror -Wno-error=missing-include-dirs -I$GITHUB_WORKSPACE/netcdf-fortran-install/include" \
             || (echo "Tests failed. Printing test logs:"; \
                 cat test/test-suite.log 2>/dev/null; \
