@@ -1,5 +1,49 @@
 # NEP Development Roadmap
 
+### V1.9.0 Parallel I/O Builds and Examples
+
+#### Sprint 1: Add mpicc Build to CI
+**Detailed Plan**: See `docs/plan/v1.9.0-sprint1-mpi-ci.md`
+
+- Create `.github/workflows/ci-parallel.yml` (separate from `ci.yml`)
+- Matrix: `cmake` and `autotools` × `openmpi` and `mpich` (4 jobs total)
+- Build NEP with `mpicc`/`mpif90` compilers; no MPI code added to the codebase
+- Minimal configuration: Fortran ON, all format handlers OFF, compression OFF
+- Reuse existing HDF5/NetCDF-C/NetCDF-Fortran cache keys from `ci.yml`
+- Run all existing tests; enforce `-Wall -Werror`
+- No changes to `ci.yml` or any source files
+
+#### Sprint 2: Configure/CMake Changes for Parallel I/O
+**Detailed Plan**: See `docs/plan/v1.9.0-sprint2-parallel-config.md`
+
+- Add `--enable-parallel-tests` (default off) and `--with-mpiexec=PATH` to `configure.ac`
+- Add `ENABLE_PARALLEL_TESTS` and `MPIEXEC_EXECUTABLE` to `CMakeLists.txt`
+- Detect parallel-enabled NetCDF-C via `NC_HAS_PARALLEL4` in `netcdf_meta.h`
+- Add configure/CMake summary output showing parallel I/O status
+- Create `test_parallel/` directory structure (empty, populated in Sprint 3)
+- Update `ci-parallel.yml` to enable parallel tests in all matrix jobs
+
+#### Sprint 3: Parallel I/O Example Programs in C/Fortran
+**Detailed Plan**: See `docs/plan/v1.9.0-sprint3-parallel-examples.md`
+
+- Add `examples/parallelIO/square16_par.c` (C) and `examples/parallelIO/f_square16_par.f90` (Fortran)
+- Programs initialize MPI, print rank and size, and exit 0 — no NetCDF calls in this sprint
+- Run via `examples/parallelIO/run_par_examples.sh.in` (substituted with `@MPIEXEC@ -n 4` at configure time)
+- Tested via `make check` (Autotools) and `ctest` (CMake); only built when `--enable-parallel-tests` / `ENABLE_PARALLEL_TESTS=ON`
+- Update `ci-parallel.yml` to enable examples build and run; add OpenMPI root workaround
+
+#### Sprint 4: Add NetCDF Parallel I/O to Examples
+**Detailed Plan**: See `docs/plan/v1.9.0-sprint4-netcdf-parallel-io.md`
+
+- Add actual parallel NetCDF-4/HDF5 I/O to `square16_par.c` and `f_square16_par.f90`
+- Each rank fills 8×8 array with its rank number (0-3)
+- Collective parallel write using `nc_create_par()` and `nc_var_par_access(NC_COLLECTIVE)`
+- 2×2 grid decomposition: rank 0→(0,0), rank 1→(8,0), rank 2→(0,8), rank 3→(8,8)
+- Parallel read-back verification ensures data integrity
+- `run_par_examples.sh` runs ncdump for visual inspection
+- Require exactly 4 MPI processes; error if count differs
+- NC_CHK macro error handling following NEP patterns
+
 ### V1.8.0 Simplified Examples
 - Fix some problems.
 - Simplify example code.

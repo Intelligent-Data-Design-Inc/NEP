@@ -1,8 +1,7 @@
 
 
 
-
-**The NetCDF Developer's Handbook**
+The NetCDF Developer's Handbook
 
 
 The Authoritative Guide to Writing High-Performance Programs for Scientific Data Management
@@ -20,7 +19,7 @@ The Authoritative Guide to Writing High-Performance Programs for Scientific Data
 
 Edward Hartnett
 
-
+**Copyright Page**
 
 
 
@@ -46,10 +45,11 @@ The outlines of landmasses are not visible in this image. The areas of least hum
 
 CREDIT
 
-Data processed by industrial partners Thales and OHB, under the supervision of Eumetsat and ESA. Visual produced by Eumetsat.
+Data processed by industrial partners Thales and OHB, under the supervision of EUMETSAT and ESA. Visual produced by EUMETSAT.
 
-1 edition 2026
+1.3 edition 2026
 
+Dedication
 
 
 
@@ -63,17 +63,15 @@ Data processed by industrial partners Thales and OHB, under the supervision of E
 
 *For Maureen: without her support, none of this would have been possible.*
 
-*Preface*
+Forward for First Edition
 
-In the beginning, it is said, we only had zeros. Then ones were invented and we could start getting work done. When God created Fortran and gave us Fortran Formatted I/O, we could start to share data with each other. That is, as long as the person you wanted to share with was using the same hardware floating point format, the same hardware endianess, the same operating system and the same compiler. And lastly, you had to go find the program that wrote the data, and copy the Fortran format statement into your reading program.  Then you could share data. This worked until the total number of programmers became greater than 42, and you couldn't remember all of their names.
+In the beginning, it is said, we only had zeros. Then ones were invented and we could start getting work done. When Fortran was invented and gave us Fortran Formatted I/O, we could start to share data with each other - as long as the person you wanted to share with was using the same hardware floating point format, the same endianess, the same operating system and the same compiler. And lastly, you had to go find the program that wrote the data, and copy the Fortran format statement into your reading program.  Then you could share data. This worked until the total number of programmers became greater than 42, and you couldn't remember all of their names.
 
-So this was the problem that NetCDF (and many others) set out to solve. Create a binary file format for scientific data that could be shared across hardware, software, and the great religious chasms known as programming languages. NetCDF-3 followed the Fortran-77 data model of fixed length rectangular arrays of numbers in row-major order. The NetCDF "Classic Format" specification fits on a single one-sided page of paper. When I first implemented a NetCDF-3 reader in Java, it took only a few hundred lines of a notoriously verbose language. Like all great technology, it made itself invisible by just reliably working.
+This was the problem that NetCDF (and many others) set out to solve. Create a binary file format for scientific data that could be shared across hardware, software, and the great religious chasms known as programming languages. NetCDF-3 followed the Fortran-77 data model of fixed length rectangular arrays of numbers in row-major order. The NetCDF "Classic Format" specification fits on a single one-sided page of paper. When a NetCDF-3 reader was implemented in Java, it took only a few hundred lines of a notoriously verbose language. Like all great technology, it made itself invisible by just reliably working.
 
-Other scientific data formats from the same time period as NetCDF were targeted for specific uses, such as FITS for astronomical data, GeoTIFF for image data, and meteorological data from the World Meteorological Organization (WMO).  
+Other scientific data formats from the same time period as NetCDF were targeted for specific uses, such as FITS for astronomical data, GeoTIFF for image data, and meteorological data from the World Meteorological Organization (WMO).
 
-WMO needed a variable length binary format for weather observations from around the world, with severe constraints on communication bandwidth. They also needed an exchange file format for georeferenced 2-D gridded data. These became BUFR and GRIB, respectively. Both rely on metadata tables (that are separately stored and maintained from the data) in order to know what the data means, aka semantics, and in BUFR's case, to be able to even read the data, aka syntax. A correctly managed central repository could have made the dependence on external tables a non-problem, and indeed the formal design requires just that. The communities of practice writing these files, usually national weather services, failed rather miserably on this account, caught between the rock of time critical operational services and the hard place of plodding world bureaucracies. Certain weather services are better than others, and for sure the later versions of GRIB and BUFR offer some improvements. Unfortunately to this day,
-
-to reliably read data in BUFR or GRIB from a source you don't personally have experience with requires tracking down the program that wrote the data, and finding and copying their table into your reading software. Plus ça change ...
+WMO needed a variable length binary format for weather observations from around the world, with severe constraints on communication bandwidth. They also needed an exchange file format for georeferenced 2-D gridded data. These became BUFR and GRIB, respectively. Both rely on metadata tables (that are separately stored and maintained from the data) in order to know what the data means, and in BUFR's case, to be able to even read the data. A correctly managed central repository could have made the dependence on external tables a non-problem, and indeed the formal design requires just that. The communities of practice writing these files, usually national weather services, failed rather miserably on this account, caught between the rock of time critical operational services and the hard place of plodding world bureaucracies. Certain weather services are better than others, and for sure the later versions of GRIB and BUFR offer some improvements. Unfortunately to this day,to reliably read data in BUFR or GRIB from a source you don't personally have experience with requires tracking down the program that wrote the data, and finding and copying their table into your reading software. Plus ça change ...
 
 Along with NetCDF, HDF also was designed as a general purpose scientific data format. While NetCDF-3 followed the KISS principle, HDF went for the feature rich, kitchen sink approach. The first version, HDF4, was used extensively by NASA's Earth Observing System, who built a specialized software layer on top called HDF-EOS, providing georeferencing, coordinate transformations, and other complex services specialized for NASA data. HDF4 was not able to evolve to keep pace with increasingly complex data requirements and had to be abandoned in favor of a completely redesigned HDF5.
 
@@ -81,22 +79,26 @@ HDF5 has been a major success and is widely used, not only for earth science and
 
 The strength of NetCDF-3 is its simple format and its use of arbitrary key/value metadata pairs called attributes. Attributes allow the user to document their data in whatever way they like, no permission needed from the NetCDF library or from the WMO committee on What Attributes Are Allowed and What They Mean.
 
-The weakness of NetCDF-3 is its simple format and its use of arbitrary key/value metadata pairs called attributes. Arbitrary means it is up to the writer as to what attributes are put into the file. We say you can use NetCDF to write crap Fortran-like files, just like you can use modern languages to write crap spaghetti-code Fortran-like programs. NetCDF solves the syntactical problems of reading shared data, but not the semantic problem of what it means. WMO's efforts to control the metadata wasn't misguided, just poorly engineered. In the place of central tables, sets of semantic conventions for NetCDF have emerged to specify metadata required for specific scientific communities. The best example of these are the Climate and Forecast (CF) conventions for climate and forecast model data output. These communities are like "vertical markets", with NetCDF as the common syntactic layer.
+The weakness of NetCDF-3 is its simple format and its use of arbitrary key/value metadata pairs called attributes. Arbitrary means it is up to the writer as to what attributes are put into the file. We say you can use NetCDF to write obscure Fortran-like files, just like you can use modern languages to write spaghetti-code Fortran-like programs. NetCDF solves the syntactical problems of reading shared data, but not the semantic problem of what it means. WMO's efforts to control the metadata wasn't misguided, just poorly engineered. In the place of central tables, sets of semantic conventions for NetCDF have emerged to specify metadata required for specific scientific communities. The best example of these are the Climate and Forecast (CF) conventions for climate and forecast model data output. These communities are vertical markets, with NetCDF as the common syntactic layer.
 
-The simplicity of NetCDF's Fortran-77 data model eventually found its limits in exoscale data sets that beg for more sophisticated data structures and ways to speed up data access. Here's where Ed Hartnett's NetCDF story begins. Ed merged the NetCDF-3 and HDF5 data models and APIs to create NetCDF-4 in a way that keeps the essential simplicity of NetCDF-3 and hides as much of the complexity of the HDF5 APIs as possible. He built the NetCDF-4 library so it could use both the classic NetCDF-3 file format and the HDF5 format as its storage layer, and the user need only build one library to read both.
+The simplicity of NetCDF's Fortran-77 data model eventually found its limits in exoscale data sets that beg for more sophisticated data structures and ways to speed up data access. NetCDF-4 merged the NetCDF-3 and HDF5 data models and APIs to create NetCDF-4 in a way that keeps the essential simplicity of NetCDF-3 and hides as much of the complexity of the HDF5 APIs as possible. The NetCDF-4 library is built so it could use both the classic NetCDF-3 file format and the HDF5 format as its storage layer, and the user need only build one library to read both.
 
 The NetCDF-4 data model adds hierarchical groups, variable length data, and "user defined" types called Compounds, aka structures or records.  The data format inherits the best features of HDF5, such as data chunking and compression. It hides some of the features of HDF5 that create unneeded complexity, such as cyclical groups and multiple names for the same variable.
 
 NetCDF-4 is surprisingly not a strict subset of HDF5. NetCDF has a notion of *coordinate variables *which assign coordinate values to each index in a data array. HDF5 tried to do something more general with *dimension scales, *but missed the boat by not making them correspond one-to-one with array indices. The Netcdf-4 library fixes the problem under the covers, but unless you know the intentions of the data writer, the HDF5 data model alone does not give you coordinate variables. You need the Netcdf-4 data model.
 
-Details aside, NetCDF-4, along with metadata conventions such as CF, is an important contribution to writing earth science data in a way that will be readable in 100 years. Ed continues to make that a reality with this book and many other contributions over the years.
+NetCDF-4, along with metadata conventions such as CF, is an important contribution to writing earth science data in a way that will be readable in 100 years. 
 
-To allow data to be read for an indefinite time into the future is not easy. You can't count on your hardware, OS, or programming language to be around. The software library you are working so assiduously on may not be compilable in the future. The only thing you can be sure of is the data format itself: the way that the data is laid out in a linear sequence of bytes. The data model is a human-readable semantic description of the data format. The format specification is the syntactical description. These two things are the core documents of any data format. The API is a language specific implementation of them. Your future self must be able to reconstruct your library using only these. That means you can't fix problems just in the software library. If there is an error or ambiguity in the file format, you must fix it there and create a new version and document the change. 
+To allow data to be read for an indefinite time into the future is not easy. You can't count on your hardware, OS, or programming language to be around. The software library you are working so assiduously on may not be compilable in the future. The only thing you can be sure of is the data format itself: the way that the data is laid out in a linear sequence of bytes. The data model is a human-readable semantic description of the data format. The format specification is the syntactical description. These two things are the core documents of any data format. The API is a language specific implementation of them. Your future self must be able to reconstruct your library using only these. That means you can't fix problems just in the software library. If there is an error or ambiguity in the file format, you must fix it there and create a new version and document the change.
 
-Ed Hartnett has the luxury of having a commanding height overview of what needs to be documented and why, so that irreplaceable scientific data is not lost during the dark ages. Here is his version of that documentation. Long may it live and prosper. 
+Edward Hartnett has the luxury of having a commanding overview of what needs to be documented and why, so that irreplaceable scientific data is not lost during the dark ages. Here is his version of that documentation. Long may it live and prosper.
 
 
-- John Caron, April 2026
+John Caron
+
+NetCDF Co-Author
+
+April 2026
 
 
 
@@ -114,21 +116,21 @@ Ed Hartnett has the luxury of having a commanding height overview of what needs 
 
 [NASA Earth Observing System (EOSDIS)	2](#__RefHeading___Toc19054_3580142175)
 
-[NOAA Weather and Climate	2](#__RefHeading___Toc19056_3580142175)
+[NOAA Weather and Climate	3](#__RefHeading___Toc19056_3580142175)
 
 [ECMWF and European Climate Infrastructure	3](#__RefHeading___Toc19058_3580142175)
 
 [Global Climate Modeling (CMIP)	3](#__RefHeading___Toc19060_3580142175)
 
-[NCAR and the University Research Community	3](#__RefHeading___Toc19062_3580142175)
+[NCAR and the University Research Community	4](#__RefHeading___Toc19062_3580142175)
 
-[Oceanography	3](#__RefHeading___Toc19064_3580142175)
+[Oceanography	4](#__RefHeading___Toc19064_3580142175)
 
 [What All NetCDF Communities Have in Common	4](#__RefHeading___Toc25423_1089925701)
 
 [Who is this Book for?	4](#__RefHeading___Toc18663_1335040907)
 
-[Example Programs	4](#__RefHeading___Toc18665_1335040907)
+[Example Programs	5](#__RefHeading___Toc18665_1335040907)
 
 [Quick Start in C	5](#__RefHeading___Toc19117_1335040907)
 
@@ -136,7 +138,7 @@ Ed Hartnett has the luxury of having a commanding height overview of what needs 
 
 [Reader Roadmap	11](#__RefHeading___Toc19121_1335040907)
 
-[Introduction – Key Takeaways	11](#__RefHeading___Toc19123_1335040907)
+[Introduction – Key Takeaways	12](#__RefHeading___Toc19123_1335040907)
 
 [Chapter 2 Obtaining NetCDF	13](#__RefHeading___Toc19760_1335040907)
 
@@ -238,13 +240,13 @@ Ed Hartnett has the luxury of having a commanding height overview of what needs 
 
 [Attributes	42](#__RefHeading___Toc56605_1589219758)
 
-[Fill Values and Fill Mode	44](#__RefHeading___Toc25944_3429101019)
+[Fill Values and Fill Mode	43](#__RefHeading___Toc25944_3429101019)
 
-[Reading and Writing Data	46](#__RefHeading___Toc25946_3429101019)
+[Reading and Writing Data	45](#__RefHeading___Toc25946_3429101019)
 
 [The Enhanced Model	48](#__RefHeading___Toc25845_3429101019)
 
-[Why the Enhanced Model Was Needed	49](#__RefHeading___Toc21701_692250577)
+[Why the Enhanced Model Was Needed	48](#__RefHeading___Toc21701_692250577)
 
 [Compatibility Considerations	51](#__RefHeading___Toc21713_692250577)
 
@@ -260,647 +262,679 @@ Ed Hartnett has the luxury of having a commanding height overview of what needs 
 
 [Reading and Writing Data with the Enhanced Model	61](#__RefHeading___Toc25960_3429101019)
 
-[Creating a NetCDF-4 File	61](#__RefHeading___Toc25962_3429101019)
+[Choosing Your Data Model	66](#__RefHeading___Toc22174_692250577)
 
-[Writing and Reading New Atomic Types	62](#__RefHeading___Toc25964_3429101019)
+[Decision Framework	66](#__RefHeading___Toc22176_692250577)
 
-[Variables in Groups	64](#__RefHeading___Toc25966_3429101019)
+[Use Case Examples	67](#__RefHeading___Toc22178_692250577)
 
-[Appending Along Multiple Unlimited Dimensions	65](#__RefHeading___Toc25968_3429101019)
+[Performance Considerations	68](#__RefHeading___Toc22180_692250577)
 
-[Writing and Reading Compound Variables	65](#__RefHeading___Toc25970_3429101019)
+[NetCDF Data Models – Key Takeaways	68](#__RefHeading___Toc56635_1589219758)
 
-[Writing and Reading VLEN Variables	67](#__RefHeading___Toc25972_3429101019)
+[Chapter 4 Binary Formats	69](#__RefHeading___Toc25532_797926190)
 
-[Writing and Reading String Variables	68](#__RefHeading___Toc25974_3429101019)
+[Learning Objectives	69](#__RefHeading___Toc25850_797926190)
 
-[Writing and Reading Enum Variables	69](#__RefHeading___Toc25976_3429101019)
+[History of NetCDF Binary Format Development	69](#__RefHeading___Toc25848_797926190)
 
-[Writing and Reading Opaque Variables	70](#__RefHeading___Toc25978_3429101019)
+[Opening NetCDF Files of Different Formats	70](#__RefHeading___Toc25932_2061993896)
 
-[Summary of I/O Support by Type and Language	72](#__RefHeading___Toc25980_3429101019)
+[Learning About the Binary Format of a NetCDF File	70](#__RefHeading___Toc47113_2228101655)
 
-[Choosing Your Data Model	72](#__RefHeading___Toc22174_692250577)
+[Choosing a Format	71](#__RefHeading___Toc25934_2061993896)
 
-[Decision Framework	72](#__RefHeading___Toc22176_692250577)
+[Format Details	71](#__RefHeading___Toc25936_2061993896)
 
-[Use Case Examples	73](#__RefHeading___Toc22178_692250577)
+[Classic Format	72](#__RefHeading___Toc57768_1589219758)
 
-[Performance Considerations	74](#__RefHeading___Toc22180_692250577)
+[CDF-5	73](#__RefHeading___Toc57772_1589219758)
 
-[NetCDF Data Models – Key Takeaways	74](#__RefHeading___Toc56635_1589219758)
+[NetCDF-4/HDF5 Format	73](#__RefHeading___Toc57774_1589219758)
 
-[Chapter 4 Binary Formats	75](#__RefHeading___Toc25532_797926190)
+[Hierarchical Architecture	74](#__RefHeading___Toc26165_2061993896)
 
-[Learning Objectives	75](#__RefHeading___Toc25850_797926190)
+[Creating and Inspecting NetCDF-4/HDF5 Files	75](#__RefHeading___Toc26175_2061993896)
 
-[History of NetCDF Binary Format Development	75](#__RefHeading___Toc25848_797926190)
+[ncZarr Cloud Format	79](#__RefHeading___Toc57792_1589219758)
 
-[Opening NetCDF Files of Different Formats	76](#__RefHeading___Toc25932_2061993896)
+[Zarr Storage Model	79](#__RefHeading___Toc57794_1589219758)
 
-[Choosing a Format	76](#__RefHeading___Toc25934_2061993896)
+[Using ncZarr	80](#__RefHeading___Toc57796_1589219758)
 
-[Format Details	77](#__RefHeading___Toc25936_2061993896)
+[Zarr and the Enhanced Model	80](#__RefHeading___Toc57798_1589219758)
 
-[Classic Format	78](#__RefHeading___Toc57768_1589219758)
+[When Not to Use ncZarr	80](#__RefHeading___Toc26179_2061993896)
 
-[CDF-5	79](#__RefHeading___Toc57772_1589219758)
+[Converting Between Formats	81](#__RefHeading___Toc26181_2061993896)
 
-[NetCDF-4/HDF5 Format	79](#__RefHeading___Toc57774_1589219758)
+[Legacy Formats	81](#__RefHeading___Toc57790_1589219758)
 
-[Storage Architecture	80](#__RefHeading___Toc26165_2061993896)
+[HDF4 SD (Read-Only)	81](#__RefHeading___Toc26183_2061993896)
 
-[Creating and Inspecting NetCDF-4/HDF5 Files	81](#__RefHeading___Toc26175_2061993896)
+[64-bit Offset Format	82](#__RefHeading___Toc26185_2061993896)
 
-[ncZarr Cloud Format	82](#__RefHeading___Toc57792_1589219758)
+[Binary Formats – Key Takeaways	82](#__RefHeading___Toc57802_1589219758)
 
-[Zarr Storage Model	82](#__RefHeading___Toc57794_1589219758)
+[Chapter 5 Command-Line Utilities	85](#__RefHeading___Toc57804_1589219758)
 
-[Using ncZarr	83](#__RefHeading___Toc57796_1589219758)
+[Learning Objectives	85](#__RefHeading___Toc57806_1589219758)
 
-[Zarr and the Enhanced Model	83](#__RefHeading___Toc57798_1589219758)
+[Working with NetCDF Files on the Command Line	85](#__RefHeading___Toc57808_1589219758)
 
-[When Not to Use ncZarr	83](#__RefHeading___Toc26179_2061993896)
+[Built-in Utilities: ncdump and ncgen	85](#__RefHeading___Toc29239_1760636742)
 
-[Converting Between Formats	84](#__RefHeading___Toc26181_2061993896)
+[ncdump: Inspecting NetCDF Files	85](#__RefHeading___Toc29241_1760636742)
 
-[Legacy Formats	84](#__RefHeading___Toc57790_1589219758)
+[CDL: The Common Data Language	88](#__RefHeading___Toc29257_1760636742)
 
-[HDF4 SD (Read-Only)	84](#__RefHeading___Toc26183_2061993896)
+[ncgen: Creating NetCDF Files from CDL	89](#__RefHeading___Toc29267_1760636742)
 
-[64-bit Offset Format	85](#__RefHeading___Toc26185_2061993896)
+[The ncdump/ncgen Round-Trip Workflow	90](#__RefHeading___Toc29275_1760636742)
 
-[Binary Formats – Key Takeaways	85](#__RefHeading___Toc57802_1589219758)
+[The nccopy Utility	91](#__RefHeading___Toc29059_1547290327)
 
-[Chapter 5 Command-Line Utilities	87](#__RefHeading___Toc57804_1589219758)
+[Hands-On: A Complete ncdump/ncgen/nccopy Workflow	94](#__RefHeading___Toc29081_1547290327)
 
-[Learning Objectives	87](#__RefHeading___Toc57806_1589219758)
+[More Utilities: the NetCDF Command Operators (NCO)	97](#__RefHeading___Toc57844_1589219758)
 
-[Working with NetCDF Files on the Command Line	87](#__RefHeading___Toc57808_1589219758)
+[Command-Line Utilities – Key Takeaways	98](#__RefHeading___Toc57846_1589219758)
 
-[Built-in Utilities: ncdump and ncgen	87](#__RefHeading___Toc29239_1760636742)
+[Chapter 6 NetCDF C Examples	99](#__RefHeading___Toc57900_1589219758)
 
-[ncdump: Inspecting NetCDF Files	87](#__RefHeading___Toc29241_1760636742)
+[Classic Model Examples	99](#__RefHeading___Toc59760_3187565238)
 
-[CDL: The Common Data Language	90](#__RefHeading___Toc29257_1760636742)
+[Simple Example in C	99](#__RefHeading___Toc57902_1589219758)
 
-[ncgen: Creating NetCDF Files from CDL	91](#__RefHeading___Toc29267_1760636742)
+[Coordinate Variables	104](#__RefHeading___Toc20972_692250577)
 
-[The ncdump/ncgen Round-Trip Workflow	92](#__RefHeading___Toc29275_1760636742)
+[Enhanced Model Examples in C	110](#__RefHeading___Toc57916_1589219758)
 
-[The nccopy Utility	93](#__RefHeading___Toc29059_1547290327)
+[Different NetCDF Binary Files	110](#__RefHeading___Toc25624_2061993896)
 
-[Hands-On: A Complete ncdump/ncgen/nccopy Workflow	96](#__RefHeading___Toc29081_1547290327)
+[Compression	118](#__RefHeading___Toc57926_1589219758)
 
-[More Utilities: the NetCDF Command Operators (NCO)	99](#__RefHeading___Toc57844_1589219758)
+[User-Defined Types	124](#__RefHeading___Toc57936_1589219758)
 
-[Command-Line Utilities – Key Takeaways	100](#__RefHeading___Toc57846_1589219758)
+[Groups and New Atomic Types	131](#__RefHeading___Toc57950_1589219758)
 
-[Chapter 6 NetCDF C Examples	101](#__RefHeading___Toc57900_1589219758)
+[Chapter 7 NetCDF Fortran Examples	143](#__RefHeading___Toc59762_3187565238)
 
-[Classic Model Examples	101](#__RefHeading___Toc59760_3187565238)
+[Fortran Classic Model Examples	143](#__RefHeading___Toc59059_1589219758)
 
-[Simple Example in C	101](#__RefHeading___Toc57902_1589219758)
+[Simple Example with Classic Format	143](#__RefHeading___Toc59061_1589219758)
 
-[Coordinate Variables	106](#__RefHeading___Toc20972_692250577)
+[Coordinate Variables	148](#__RefHeading___Toc20980_692250577)
 
-[Enhanced Model Examples in C	112](#__RefHeading___Toc57916_1589219758)
+[Fortran Enhanced Model Examples	153](#__RefHeading___Toc59069_1589219758)
 
-[Different NetCDF Binary Files	112](#__RefHeading___Toc25624_2061993896)
+[Different NetCDF Binary Files	153](#__RefHeading___Toc25632_2061993896)
 
-[Compression	119](#__RefHeading___Toc57926_1589219758)
-
-[User-Defined Types	125](#__RefHeading___Toc57936_1589219758)
-
-[Groups and New Atomic Types	132](#__RefHeading___Toc57950_1589219758)
-
-[Chapter 7 NetCDF Fortran Examples	145](#__RefHeading___Toc59762_3187565238)
-
-[Fortran Classic Model Examples	145](#__RefHeading___Toc59059_1589219758)
-
-[Simple Example with Classic Format	145](#__RefHeading___Toc59061_1589219758)
-
-[Coordinate Variables	150](#__RefHeading___Toc20980_692250577)
-
-[Fortran Enhanced Model Examples	155](#__RefHeading___Toc59069_1589219758)
-
-[Different NetCDF Binary Files	155](#__RefHeading___Toc25632_2061993896)
-
-[Simple File with NetCDF/HDF5 Format	162](#__RefHeading___Toc59071_1589219758)
+[Simple File with NetCDF/HDF5 Format	160](#__RefHeading___Toc59071_1589219758)
 
 [Compression	163](#__RefHeading___Toc59077_1589219758)
 
-[User-Defined Types	164](#__RefHeading___Toc59083_1589219758)
+[User-Defined Types	169](#__RefHeading___Toc59083_1589219758)
 
-[Groups and New Atomic Types	166](#__RefHeading___Toc59089_1589219758)
+[Groups and New Atomic Types	174](#__RefHeading___Toc59089_1589219758)
 
-[Most Important Fortran API Functions	177](#__RefHeading___Toc59101_1589219758)
+[Most Important Fortran API Functions	185](#__RefHeading___Toc59101_1589219758)
 
-[Dataset Operations	177](#__RefHeading___Toc59103_1589219758)
+[Dataset Operations	185](#__RefHeading___Toc59103_1589219758)
 
-[Dimension Operations	178](#__RefHeading___Toc26136_797926190)
+[Dimension Operations	186](#__RefHeading___Toc26136_797926190)
 
-[Variable Operations	178](#__RefHeading___Toc26134_797926190)
+[Variable Operations	186](#__RefHeading___Toc26134_797926190)
 
-[Variable I/O	178](#__RefHeading___Toc26132_797926190)
+[Variable I/O	186](#__RefHeading___Toc26132_797926190)
 
-[Attribute Operations	179](#__RefHeading___Toc26130_797926190)
+[Attribute Operations	186](#__RefHeading___Toc26130_797926190)
 
-[NetCDF-4 Group Operations	179](#__RefHeading___Toc26128_797926190)
+[NetCDF-4 Group Operations	187](#__RefHeading___Toc26128_797926190)
 
-[NetCDF-4 User-Defined Types	179](#__RefHeading___Toc26126_797926190)
+[NetCDF-4 User-Defined Types	187](#__RefHeading___Toc26126_797926190)
 
-[NetCDF-4 Chunking and Compression	179](#__RefHeading___Toc26124_797926190)
+[NetCDF-4 Chunking and Compression	187](#__RefHeading___Toc26124_797926190)
 
-[NetCDF-4 Parallel I/O	180](#__RefHeading___Toc26122_797926190)
+[NetCDF-4 Parallel I/O	187](#__RefHeading___Toc26122_797926190)
 
-[Error Handling	180](#__RefHeading___Toc26120_797926190)
+[Error Handling	188](#__RefHeading___Toc26120_797926190)
 
-[Data Types	180](#__RefHeading___Toc25764_797926190)
+[Data Types	188](#__RefHeading___Toc25764_797926190)
 
-[Mode Flags	180](#__RefHeading___Toc25762_797926190)
+[Mode Flags	188](#__RefHeading___Toc25762_797926190)
 
-[Storage Options (NetCDF-4)	181](#__RefHeading___Toc25760_797926190)
+[Storage Options (NetCDF-4)	189](#__RefHeading___Toc25760_797926190)
 
-[Special Constants	181](#__RefHeading___Toc25758_797926190)
+[Special Constants	189](#__RefHeading___Toc25758_797926190)
 
-[Error Codes	181](#__RefHeading___Toc25756_797926190)
+[Error Codes	189](#__RefHeading___Toc25756_797926190)
 
-[Programming with NetCDF in Fortran – Key Takeaways	181](#__RefHeading___Toc25754_797926190)
+[Programming with NetCDF in Fortran – Key Takeaways	189](#__RefHeading___Toc25754_797926190)
 
-[Chapter 8 Programming with NetCDF in Java	183](#__RefHeading___Toc25524_797926190)
+[Chapter 8 Programming with NetCDF in Java	191](#__RefHeading___Toc25524_797926190)
 
-[Learning Objectives	183](#__RefHeading___Toc25752_797926190)
+[Learning Objectives	191](#__RefHeading___Toc25752_797926190)
 
-[Re-implementation in Java	183](#__RefHeading___Toc25750_797926190)
+[Re-implementation in Java	191](#__RefHeading___Toc25750_797926190)
 
-[Understanding the NetCDF-Java API	183](#__RefHeading___Toc25748_797926190)
+[Understanding the NetCDF-Java API	191](#__RefHeading___Toc25748_797926190)
 
-[Error Handling	184](#__RefHeading___Toc25746_797926190)
+[Error Handling	192](#__RefHeading___Toc25746_797926190)
 
-[Logging	184](#__RefHeading___Toc25744_797926190)
+[Logging	192](#__RefHeading___Toc25744_797926190)
 
-[Opening, Creating, and Closing Files	185](#__RefHeading___Toc25742_797926190)
+[Opening, Creating, and Closing Files	193](#__RefHeading___Toc25742_797926190)
 
-[Opening Files with Options	185](#__RefHeading___Toc26118_797926190)
+[Opening Files with Options	193](#__RefHeading___Toc26118_797926190)
 
-[Creating Files	186](#__RefHeading___Toc26116_797926190)
+[Creating Files	194](#__RefHeading___Toc26116_797926190)
 
-[Metadata	186](#__RefHeading___Toc25740_797926190)
+[Metadata	194](#__RefHeading___Toc25740_797926190)
 
-[Reading Dimensions	186](#__RefHeading___Toc26114_797926190)
+[Reading Dimensions	194](#__RefHeading___Toc26114_797926190)
 
-[Reading Variables	187](#__RefHeading___Toc26112_797926190)
+[Reading Variables	195](#__RefHeading___Toc26112_797926190)
 
-[Reading Attributes	187](#__RefHeading___Toc26110_797926190)
+[Reading Attributes	195](#__RefHeading___Toc26110_797926190)
 
-[Writing Metadata	188](#__RefHeading___Toc26108_797926190)
+[Writing Metadata	196](#__RefHeading___Toc26108_797926190)
 
-[Metadata Best Practices	188](#__RefHeading___Toc26106_797926190)
+[Metadata Best Practices	196](#__RefHeading___Toc26106_797926190)
 
-[Reading and Writing Data	189](#__RefHeading___Toc25738_797926190)
+[Reading and Writing Data	197](#__RefHeading___Toc25738_797926190)
 
-[Reading Entire Variables	189](#__RefHeading___Toc26104_797926190)
+[Reading Entire Variables	197](#__RefHeading___Toc26104_797926190)
 
-[Reading Scalar Variables	189](#__RefHeading___Toc26102_797926190)
+[Reading Scalar Variables	197](#__RefHeading___Toc26102_797926190)
 
-[Reading Subsets with Section Specification	189](#__RefHeading___Toc26100_797926190)
+[Reading Subsets with Section Specification	197](#__RefHeading___Toc26100_797926190)
 
-[Reading with Explicit Ranges	190](#__RefHeading___Toc26098_797926190)
+[Reading with Explicit Ranges	198](#__RefHeading___Toc26098_797926190)
 
-[Accessing Array Elements	190](#__RefHeading___Toc26096_797926190)
+[Accessing Array Elements	198](#__RefHeading___Toc26096_797926190)
 
-[Type-Specific Access	190](#__RefHeading___Toc26094_797926190)
+[Type-Specific Access	198](#__RefHeading___Toc26094_797926190)
 
-[Writing Data	191](#__RefHeading___Toc26092_797926190)
+[Writing Data	199](#__RefHeading___Toc26092_797926190)
 
-[Writing Subsets	191](#__RefHeading___Toc26090_797926190)
+[Writing Subsets	199](#__RefHeading___Toc26090_797926190)
 
-[Common Pitfalls	192](#__RefHeading___Toc26088_797926190)
+[Common Pitfalls	200](#__RefHeading___Toc26088_797926190)
 
-[Performance Considerations	193](#__RefHeading___Toc26086_797926190)
+[Performance Considerations	201](#__RefHeading___Toc26086_797926190)
 
-[Advanced Features	193](#__RefHeading___Toc25736_797926190)
+[Advanced Features	201](#__RefHeading___Toc25736_797926190)
 
-[NetcdfDataset for Enhanced Functionality	193](#__RefHeading___Toc26084_797926190)
+[NetcdfDataset for Enhanced Functionality	201](#__RefHeading___Toc26084_797926190)
 
-[NetCDF Markup Language (NcML)	194](#__RefHeading___Toc26082_797926190)
+[NetCDF Markup Language (NcML)	202](#__RefHeading___Toc26082_797926190)
 
-[Aggregation with NcML	194](#__RefHeading___Toc26080_797926190)
+[Aggregation with NcML	202](#__RefHeading___Toc26080_797926190)
 
-[Working with Groups (NetCDF-4)	194](#__RefHeading___Toc26078_797926190)
+[Working with Groups (NetCDF-4)	202](#__RefHeading___Toc26078_797926190)
 
-[Multiple File Formats	195](#__RefHeading___Toc26076_797926190)
+[Multiple File Formats	203](#__RefHeading___Toc26076_797926190)
 
-[Maven and Gradle Integration	195](#__RefHeading___Toc25734_797926190)
+[Maven and Gradle Integration	203](#__RefHeading___Toc25734_797926190)
 
-[Maven Configuration	195](#__RefHeading___Toc26074_797926190)
+[Maven Configuration	203](#__RefHeading___Toc26074_797926190)
 
-[Gradle Configuration	196](#__RefHeading___Toc26072_797926190)
+[Gradle Configuration	204](#__RefHeading___Toc26072_797926190)
 
-[Modular Dependencies	196](#__RefHeading___Toc26070_797926190)
+[Modular Dependencies	204](#__RefHeading___Toc26070_797926190)
 
-[Comparison with C and Fortran APIs	197](#__RefHeading___Toc25732_797926190)
+[Comparison with C and Fortran APIs	205](#__RefHeading___Toc25732_797926190)
 
-[Key Differences	197](#__RefHeading___Toc26068_797926190)
+[Key Differences	205](#__RefHeading___Toc26068_797926190)
 
-[API Correspondence	197](#__RefHeading___Toc26066_797926190)
+[API Correspondence	205](#__RefHeading___Toc26066_797926190)
 
-[Code Example Comparison	197](#__RefHeading___Toc26064_797926190)
+[Code Example Comparison	205](#__RefHeading___Toc26064_797926190)
 
-[ToolsUI Application	198](#__RefHeading___Toc25730_797926190)
+[ToolsUI Application	206](#__RefHeading___Toc25730_797926190)
 
-[Best Practices	198](#__RefHeading___Toc25728_797926190)
+[Best Practices	206](#__RefHeading___Toc25728_797926190)
 
-[Most Important API Classes and Methods	199](#__RefHeading___Toc25726_797926190)
+[Most Important API Classes and Methods	207](#__RefHeading___Toc25726_797926190)
 
-[Core Classes	199](#__RefHeading___Toc26062_797926190)
+[Core Classes	207](#__RefHeading___Toc26062_797926190)
 
-[Opening and Closing Files	199](#__RefHeading___Toc26060_797926190)
+[Opening and Closing Files	207](#__RefHeading___Toc26060_797926190)
 
-[File Information	200](#__RefHeading___Toc26058_797926190)
+[File Information	208](#__RefHeading___Toc26058_797926190)
 
-[Variable Operations	200](#__RefHeading___Toc26056_797926190)
+[Variable Operations	208](#__RefHeading___Toc26056_797926190)
 
-[Array Operations	200](#__RefHeading___Toc26054_797926190)
+[Array Operations	208](#__RefHeading___Toc26054_797926190)
 
-[Index Operations	201](#__RefHeading___Toc26052_797926190)
+[Index Operations	209](#__RefHeading___Toc26052_797926190)
 
-[Dimension Operations	201](#__RefHeading___Toc26050_797926190)
+[Dimension Operations	209](#__RefHeading___Toc26050_797926190)
 
-[Attribute Operations	201](#__RefHeading___Toc26048_797926190)
+[Attribute Operations	209](#__RefHeading___Toc26048_797926190)
 
-[Group Operations (NetCDF-4)	201](#__RefHeading___Toc26046_797926190)
+[Group Operations (NetCDF-4)	209](#__RefHeading___Toc26046_797926190)
 
-[Coordinate System Support (NetcdfDataset)	201](#__RefHeading___Toc26044_797926190)
+[Coordinate System Support (NetcdfDataset)	209](#__RefHeading___Toc26044_797926190)
 
-[Data Types	202](#__RefHeading___Toc25724_797926190)
+[Data Types	210](#__RefHeading___Toc25724_797926190)
 
-[Array Section Syntax	202](#__RefHeading___Toc25722_797926190)
+[Array Section Syntax	210](#__RefHeading___Toc25722_797926190)
 
-[Remote File Access	202](#__RefHeading___Toc25720_797926190)
+[Remote File Access	210](#__RefHeading___Toc25720_797926190)
 
-[Programming with NetCDF in Java – Key Takeaways	203](#__RefHeading___Toc25718_797926190)
+[Programming with NetCDF in Java – Key Takeaways	211](#__RefHeading___Toc25718_797926190)
 
-[Chapter 9 Attributes and Conventions	205](#__RefHeading___Toc25522_797926190)
+[Chapter 9 Attributes and Conventions	213](#__RefHeading___Toc25522_797926190)
 
-[Learning Objectives	205](#__RefHeading___Toc25716_797926190)
+[Learning Objectives	213](#__RefHeading___Toc25716_797926190)
 
-[Storing Earth Science Data	205](#__RefHeading___Toc25714_797926190)
+[Conventions for Storing Earth Science Data	213](#__RefHeading___Toc25714_797926190)
 
-[The Climate and Forecast (CF) Conventions for Earth Science Data	205](#__RefHeading___Toc25712_797926190)
+[NUG Conventions	213](#__RefHeading___Toc55226_3410523798)
 
-[Essential Attributes for Self-Describing Data	205](#__RefHeading___Toc25710_797926190)
+[COARDS (Cooperative Ocean/Atmosphere Research Data Service)	213](#__RefHeading___Toc26010_797926190)
 
-[Variable Attributes	205](#__RefHeading___Toc26042_797926190)
+[The Climate and Forecast (CF) Conventions for Earth Science Data	213](#__RefHeading___Toc55228_3410523798)
 
-[Global Attributes	206](#__RefHeading___Toc26040_797926190)
+[ACDD (Attribute Convention for Data Discovery)	214](#__RefHeading___Toc26012_797926190)
 
-[Adding Attributes in C	206](#__RefHeading___Toc25708_797926190)
+[Missing Values and Fill Values	214](#__RefHeading___Toc25700_797926190)
 
-[Adding Attributes in Fortran	208](#__RefHeading___Toc25706_797926190)
+[The \_FillValue Attribute	215](#__RefHeading___Toc26026_797926190)
 
-[Coordinate Variables and Coordinate Systems	209](#__RefHeading___Toc25704_797926190)
+[Specifying a Fill Value	216](#__RefHeading___Toc55230_3410523798)
 
-[Defining Coordinate Variables	209](#__RefHeading___Toc26038_797926190)
+[The missing\_value Attribute	216](#__RefHeading___Toc26024_797926190)
 
-[Auxiliary Coordinate Variables	209](#__RefHeading___Toc26036_797926190)
+[Valid Range	216](#__RefHeading___Toc26022_797926190)
 
-[Vertical Coordinates	210](#__RefHeading___Toc26034_797926190)
+[Fill Value Implementation Mistakes	216](#__RefHeading___Toc55232_3410523798)
 
-[Time Encoding and Calendars	210](#__RefHeading___Toc25702_797926190)
+[Units	217](#__RefHeading___Toc25704_797926190)
 
-[Time Units	210](#__RefHeading___Toc26032_797926190)
+[Coordinate Variables and Coordinate Systems	217](#__RefHeading___Toc55234_3410523798)
 
-[Calendar Systems	211](#__RefHeading___Toc26030_797926190)
+[Defining Coordinate Variables	218](#__RefHeading___Toc26038_797926190)
 
-[Example: Complete Time Coordinate	211](#__RefHeading___Toc26028_797926190)
+[Auxiliary Coordinate Variables	218](#__RefHeading___Toc26036_797926190)
 
-[Missing Values and Fill Values	211](#__RefHeading___Toc25700_797926190)
+[Vertical Coordinates	218](#__RefHeading___Toc26034_797926190)
 
-[The \_FillValue Attribute	211](#__RefHeading___Toc26026_797926190)
+[Time Encoding and Calendars	218](#__RefHeading___Toc25702_797926190)
 
-[The missing\_value Attribute	212](#__RefHeading___Toc26024_797926190)
+[Time Units	219](#__RefHeading___Toc26032_797926190)
 
-[Valid Range	212](#__RefHeading___Toc26022_797926190)
+[Calendar Systems	219](#__RefHeading___Toc26030_797926190)
 
-[CF Conventions in Detail	212](#__RefHeading___Toc25698_797926190)
+[Example: Complete Time Coordinate	219](#__RefHeading___Toc26028_797926190)
 
-[Standard Names	212](#__RefHeading___Toc26020_797926190)
+[CF Conventions for Detailed Earth Science Metadata	219](#__RefHeading___Toc25698_797926190)
 
-[Units Conventions	213](#__RefHeading___Toc26018_797926190)
+[Standard Names	220](#__RefHeading___Toc26020_797926190)
 
-[Cell Methods	213](#__RefHeading___Toc26016_797926190)
+[Units Conventions	220](#__RefHeading___Toc26018_797926190)
 
-[Axis Attributes	213](#__RefHeading___Toc26014_797926190)
+[Cell Methods	220](#__RefHeading___Toc26016_797926190)
 
-[Other Common Conventions	213](#__RefHeading___Toc25696_797926190)
+[Axis Attributes	221](#__RefHeading___Toc26014_797926190)
 
-[ACDD (Attribute Convention for Data Discovery)	213](#__RefHeading___Toc26012_797926190)
+[Essential Attributes for Self-Describing Data	221](#__RefHeading___Toc25710_797926190)
 
-[COARDS (Cooperative Ocean/Atmosphere Research Data Service)	214](#__RefHeading___Toc26010_797926190)
+[Variable Attributes	221](#__RefHeading___Toc26042_797926190)
 
-[Best Practices for Attributes and Conventions	214](#__RefHeading___Toc25694_797926190)
+[Global Attributes	221](#__RefHeading___Toc26040_797926190)
 
-[Checking CF Compliance	214](#__RefHeading___Toc25692_797926190)
+[Adding CF Attributes in C	222](#__RefHeading___Toc25708_797926190)
 
-[Summary	215](#__RefHeading___Toc25690_797926190)
+[Adding CF Attributes in Fortran	223](#__RefHeading___Toc25706_797926190)
 
-[Attributes & Conventions – Key Takeaways	215](#__RefHeading___Toc25688_797926190)
+[Best Practices for Attributes and Conventions	225](#__RefHeading___Toc25694_797926190)
 
-[Chapter 10 NetCDF-4/HDF5 Performance Fundamentals	217](#__RefHeading___Toc20999_423639206)
+[Checking CF Compliance	225](#__RefHeading___Toc25692_797926190)
 
-[Learning Objectives	217](#__RefHeading___Toc25686_797926190)
+[Summary	225](#__RefHeading___Toc25690_797926190)
 
-[Getting the Best from NetCDF	217](#__RefHeading___Toc25684_797926190)
+[Attributes & Conventions – Key Takeaways	225](#__RefHeading___Toc25688_797926190)
 
-[Define Mode	217](#__RefHeading___Toc25682_797926190)
+[Chapter 10 NetCDF-4/HDF5 Performance Fundamentals	227](#__RefHeading___Toc20999_423639206)
 
-[Chunk Sizes	217](#__RefHeading___Toc25680_797926190)
+[Learning Objectives	227](#__RefHeading___Toc25686_797926190)
 
-[Why Chunking Matters	218](#__RefHeading___Toc26008_797926190)
+[Getting the Best from NetCDF	227](#__RefHeading___Toc25684_797926190)
 
-[Setting Chunk Sizes	218](#__RefHeading___Toc26006_797926190)
+[Define Mode	227](#__RefHeading___Toc25682_797926190)
 
-[Choosing Optimal Chunk Sizes	218](#__RefHeading___Toc26004_797926190)
+[Chunk Caching	228](#__RefHeading___Toc293040_3827621550)
 
-[The Chunk Cache	218](#__RefHeading___Toc26002_797926190)
+[The File-Level Cache	228](#__RefHeading___Toc293042_3827621550)
 
-[Compression with Deflate	219](#__RefHeading___Toc25678_797926190)
+[The Per-Variable Cache	228](#__RefHeading___Toc293044_3827621550)
 
-[Shuffle Filter	219](#__RefHeading___Toc25676_797926190)
+[Fortran Wrappers	229](#__RefHeading___Toc293046_3827621550)
 
-[Fill Values	220](#__RefHeading___Toc25674_797926190)
+[Chunk Sizes	229](#__RefHeading___Toc293048_3827621550)
 
-[Endianness	221](#__RefHeading___Toc25672_797926190)
+[Why Chunking Matters	230](#__RefHeading___Toc26008_797926190)
 
-[NetCDF-4/HDF5 Performance Fundamentals – Key Takeaways	221](#__RefHeading___Toc25670_797926190)
+[Setting Chunk Sizes	230](#__RefHeading___Toc26006_797926190)
 
-[Chapter 11 Parallel I/O with NetCDF	223](#__RefHeading___Toc25518_797926190)
+[Choosing Optimal Chunk Sizes	230](#__RefHeading___Toc26004_797926190)
 
-[Learning Objectives	223](#__RefHeading___Toc25668_797926190)
+[The Chunk Cache	231](#__RefHeading___Toc26002_797926190)
 
-[NetCDF on Supercomputers	223](#__RefHeading___Toc25666_797926190)
+[Compression with Deflate	231](#__RefHeading___Toc25678_797926190)
 
-[Why Parallel I/O Matters	223](#__RefHeading___Toc25664_797926190)
+[Shuffle Filter	231](#__RefHeading___Toc25676_797926190)
 
-[Building NetCDF with Parallel I/O Support	223](#__RefHeading___Toc25662_797926190)
+[Fill Values	232](#__RefHeading___Toc25674_797926190)
 
-[For NetCDF-4/HDF5 Parallel I/O	224](#__RefHeading___Toc26000_797926190)
+[Endianness	233](#__RefHeading___Toc25672_797926190)
 
-[For PnetCDF (CDF-5) Parallel I/O	224](#__RefHeading___Toc25998_797926190)
+[NetCDF-4/HDF5 Performance Fundamentals – Key Takeaways	233](#__RefHeading___Toc25670_797926190)
 
-[Parallel I/O with NetCDF-4/HDF5	224](#__RefHeading___Toc25660_797926190)
+[Chapter 11 Parallel I/O with NetCDF	235](#__RefHeading___Toc25518_797926190)
 
-[Creating a Parallel NetCDF-4 File	224](#__RefHeading___Toc25996_797926190)
+[Learning Objectives	235](#__RefHeading___Toc25668_797926190)
 
-[Opening an Existing Parallel File	225](#__RefHeading___Toc25994_797926190)
+[NetCDF on Supercomputers	235](#__RefHeading___Toc25666_797926190)
 
-[Collective vs. Independent I/O	225](#__RefHeading___Toc25992_797926190)
+[What is Parallel I/O?	235](#__RefHeading___Toc25664_797926190)
 
-[Writing Data in Parallel	225](#__RefHeading___Toc25990_797926190)
+[Parallel Support in Classic vs. NetCDF-4/HDF5 Files	235](#__RefHeading___Toc64699_3827621550)
 
-[Example: Complete Parallel Write	226](#__RefHeading___Toc25988_797926190)
+[Building NetCDF with Parallel I/O Support	236](#__RefHeading___Toc25662_797926190)
 
-[Parallel I/O with PnetCDF (CDF-5)	227](#__RefHeading___Toc25658_797926190)
+[Parallel I/O with NetCDF-4/HDF5	236](#__RefHeading___Toc25660_797926190)
 
-[Using PnetCDF Through NetCDF	227](#__RefHeading___Toc25986_797926190)
+[For NetCDF-4/HDF5 Parallel I/O	236](#__RefHeading___Toc55236_3410523798)
 
-[PnetCDF Native API	227](#__RefHeading___Toc25984_797926190)
+[For PnetCDF (CDF-5) Parallel I/O	236](#__RefHeading___Toc25998_797926190)
 
-[Domain Decomposition Strategies	228](#__RefHeading___Toc25656_797926190)
+[Creating a Parallel NetCDF-4 File	237](#__RefHeading___Toc25996_797926190)
 
-[1D Decomposition (Time)	228](#__RefHeading___Toc25982_797926190)
+[Opening an Existing Parallel File	237](#__RefHeading___Toc25994_797926190)
 
-[2D Decomposition (Spatial)	228](#__RefHeading___Toc25980_797926190)
+[Collective vs. Independent I/O	237](#__RefHeading___Toc25992_797926190)
 
-[3D Decomposition	229](#__RefHeading___Toc25978_797926190)
+[Parallel I/O Data Decomposition	238](#__RefHeading___Toc64701_3827621550)
 
-[Performance Optimization for Parallel I/O	229](#__RefHeading___Toc25654_797926190)
+[Parallel I/O Programming Challenges	238](#__RefHeading___Toc64703_3827621550)
 
-[Align Chunking with Domain Decomposition	229](#__RefHeading___Toc25976_797926190)
+[Writing Data in Parallel	239](#__RefHeading___Toc25990_797926190)
 
-[Use Collective I/O	230](#__RefHeading___Toc25974_797926190)
+[Example: Complete Parallel Write	239](#__RefHeading___Toc25988_797926190)
 
-[Tune MPI-IO Hints	230](#__RefHeading___Toc25972_797926190)
+[Parallel I/O with PnetCDF (CDF-5)	240](#__RefHeading___Toc25658_797926190)
 
-[Avoid Small, Random Writes	230](#__RefHeading___Toc25970_797926190)
+[Using PnetCDF Through NetCDF	240](#__RefHeading___Toc25986_797926190)
 
-[Common Pitfalls and Solutions	230](#__RefHeading___Toc25652_797926190)
+[PnetCDF Native API	241](#__RefHeading___Toc25984_797926190)
 
-[Pitfall 1: Metadata Operations in Parallel	230](#__RefHeading___Toc25968_797926190)
+[Domain Decomposition Strategies	241](#__RefHeading___Toc25656_797926190)
 
-[Pitfall 2: Mixing Collective and Independent I/O	231](#__RefHeading___Toc25966_797926190)
+[1D Decomposition (Time)	241](#__RefHeading___Toc25982_797926190)
 
-[Pitfall 3: Unbalanced Decomposition	231](#__RefHeading___Toc25964_797926190)
+[2D Decomposition (Spatial)	242](#__RefHeading___Toc25980_797926190)
 
-[Fortran Parallel I/O	231](#__RefHeading___Toc25650_797926190)
+[3D Decomposition	242](#__RefHeading___Toc25978_797926190)
 
-[Benchmarking Parallel I/O Performance	232](#__RefHeading___Toc25648_797926190)
+[Performance Optimization for Parallel I/O	242](#__RefHeading___Toc25654_797926190)
 
-[Summary	232](#__RefHeading___Toc25646_797926190)
+[Align Chunking with Domain Decomposition	242](#__RefHeading___Toc25976_797926190)
 
-[Parallel I/O – Key Takeaways	233](#__RefHeading___Toc25644_797926190)
+[Use Collective I/O	243](#__RefHeading___Toc25974_797926190)
 
-[Chapter 12 Advanced Compression Techniques	235](#__RefHeading___Toc25516_797926190)
+[Tune MPI-IO Hints	243](#__RefHeading___Toc25972_797926190)
 
-[Learning Objectives	235](#__RefHeading___Toc25642_797926190)
+[Avoid Small, Random Writes	243](#__RefHeading___Toc25970_797926190)
 
-[Compression in the Modern Age	235](#__RefHeading___Toc25640_797926190)
+[Common Pitfalls and Solutions	243](#__RefHeading___Toc25652_797926190)
 
-[NetCDF-4.9.0 - zstd and quantization	235](#__RefHeading___Toc25638_797926190)
+[Pitfall 1: Metadata Operations in Parallel	243](#__RefHeading___Toc25968_797926190)
 
-[The NetCDF Expansion Pack (NEP) - lz4 and More	236](#__RefHeading___Toc25636_797926190)
+[Pitfall 2: Mixing Collective and Independent I/O	244](#__RefHeading___Toc25966_797926190)
 
-[Choosing a Compression Algorithm	236](#__RefHeading___Toc25634_797926190)
+[Pitfall 3: Unbalanced Decomposition	244](#__RefHeading___Toc25964_797926190)
 
-[Advanced Compression – Key Takeaways	236](#__RefHeading___Toc25632_797926190)
+[Fortran Parallel I/O	244](#__RefHeading___Toc25650_797926190)
 
-[Chapter 13 NetCDF Architecture and Extensibility	239](#__RefHeading___Toc25514_797926190)
+[Benchmarking Parallel I/O Performance	245](#__RefHeading___Toc25648_797926190)
 
-[Learning Objectives	239](#__RefHeading___Toc25630_797926190)
+[PIO – An Advanced Parallel I/O Library	245](#__RefHeading___Toc25646_797926190)
 
-[Extending NetCDF	239](#__RefHeading___Toc25628_797926190)
+[Intracomm Mode for One Model	246](#__RefHeading___Toc64851_3827621550)
 
-[The Dispatch Table	239](#__RefHeading___Toc25626_797926190)
+[Asynchronous Mode for Model Systems	246](#__RefHeading___Toc64853_3827621550)
 
-[How It Works	239](#__RefHeading___Toc25962_797926190)
+[Getting PIO	246](#__RefHeading___Toc64855_3827621550)
 
-[Format Detection	240](#__RefHeading___Toc25960_797926190)
+[Summary	247](#__RefHeading___Toc64857_3827621550)
 
-[Extensibility	240](#__RefHeading___Toc25958_797926190)
+[Parallel I/O – Key Takeaways	247](#__RefHeading___Toc25644_797926190)
 
-[User-Defined Formats	241](#__RefHeading___Toc25624_797926190)
+[Chapter 12 Advanced Compression Techniques	249](#__RefHeading___Toc25516_797926190)
 
-[The V2 API	241](#__RefHeading___Toc25622_797926190)
+[Learning Objectives	249](#__RefHeading___Toc25642_797926190)
 
-[Architecture & Extensibility – Key Takeaways	241](#__RefHeading___Toc25620_797926190)
+[Compression in the Modern Age	249](#__RefHeading___Toc25640_797926190)
 
-[Chapter 14 Remote Data Access with OPeNDAP	243](#__RefHeading___Toc25512_797926190)
+[Quantization and Zstandard Compression	249](#__RefHeading___Toc25638_797926190)
 
-[Learning Objectives	243](#__RefHeading___Toc25618_797926190)
+[Zstandard Lossless Compression	249](#__RefHeading___Toc55238_3410523798)
 
-[Getting Remote Data	243](#__RefHeading___Toc25616_797926190)
+[Quantization	249](#__RefHeading___Toc55240_3410523798)
 
-[What is OPeNDAP?	243](#__RefHeading___Toc25614_797926190)
+[The NetCDF Expansion Pack (NEP) - lz4 and More	250](#__RefHeading___Toc25636_797926190)
 
-[Client/Server Architecture	243](#__RefHeading___Toc25956_797926190)
+[Choosing a Compression Algorithm	250](#__RefHeading___Toc25634_797926190)
 
-[OPeNDAP URLs	244](#__RefHeading___Toc25612_797926190)
+[Advanced Compression – Key Takeaways	251](#__RefHeading___Toc25632_797926190)
 
-[URL Service Endpoints	244](#__RefHeading___Toc25954_797926190)
+[Chapter 13 NetCDF Architecture and Extensibility	253](#__RefHeading___Toc25514_797926190)
 
-[Constraint Expressions	245](#__RefHeading___Toc25952_797926190)
+[Learning Objectives	253](#__RefHeading___Toc25630_797926190)
 
-[Using OPeNDAP with NetCDF Programs	245](#__RefHeading___Toc25610_797926190)
+[Extending NetCDF	253](#__RefHeading___Toc25628_797926190)
 
-[Constraint Expressions in URLs	246](#__RefHeading___Toc25950_797926190)
+[The Dispatch Table	253](#__RefHeading___Toc25626_797926190)
 
-[Using OPeNDAP with Fortran Programs	246](#__RefHeading___Toc25608_797926190)
+[How It Works	253](#__RefHeading___Toc25962_797926190)
 
-[Exploring Remote Datasets	247](#__RefHeading___Toc25606_797926190)
+[Format Detection	254](#__RefHeading___Toc25960_797926190)
 
-[Using a Web Browser	247](#__RefHeading___Toc25948_797926190)
+[Extensibility	254](#__RefHeading___Toc25958_797926190)
 
-[Using ncdump	247](#__RefHeading___Toc25946_797926190)
+[User-Defined Formats	254](#__RefHeading___Toc25624_797926190)
 
-[Using .info Endpoint	247](#__RefHeading___Toc25944_797926190)
+[The V2 API	255](#__RefHeading___Toc25622_797926190)
 
-[Performance Considerations	248](#__RefHeading___Toc25604_797926190)
+[Architecture & Extensibility – Key Takeaways	255](#__RefHeading___Toc25620_797926190)
 
-[Request Only What You Need	248](#__RefHeading___Toc25942_797926190)
+[Chapter 14 Remote Data Access with OPeNDAP	257](#__RefHeading___Toc25512_797926190)
 
-[Minimize the Number of Requests	248](#__RefHeading___Toc25940_797926190)
+[Learning Objectives	257](#__RefHeading___Toc25618_797926190)
 
-[Request Multiple Variables Together	248](#__RefHeading___Toc25938_797926190)
+[Getting Remote Data	257](#__RefHeading___Toc25616_797926190)
 
-[Use Compression-Aware Servers	249](#__RefHeading___Toc25936_797926190)
+[What is OPeNDAP?	257](#__RefHeading___Toc25614_797926190)
 
-[DAP2 vs DAP4	249](#__RefHeading___Toc25602_797926190)
+[Client/Server Architecture	257](#__RefHeading___Toc25956_797926190)
 
-[DAP2 (Data Access Protocol 2)	249](#__RefHeading___Toc25934_797926190)
+[OPeNDAP URLs	258](#__RefHeading___Toc25612_797926190)
 
-[DAP4 (Data Access Protocol 4)	249](#__RefHeading___Toc25932_797926190)
+[URL Service Endpoints	258](#__RefHeading___Toc25954_797926190)
 
-[Common Issues and Troubleshooting	250](#__RefHeading___Toc25600_797926190)
+[Constraint Expressions	259](#__RefHeading___Toc25952_797926190)
 
-[URL Not Recognized	250](#__RefHeading___Toc25930_797926190)
+[Using OPeNDAP with NetCDF Programs	259](#__RefHeading___Toc25610_797926190)
 
-[Network Timeouts	250](#__RefHeading___Toc25928_797926190)
+[Constraint Expressions in URLs	259](#__RefHeading___Toc25950_797926190)
 
-[Authentication	250](#__RefHeading___Toc25926_797926190)
+[Using OPeNDAP with Fortran Programs	260](#__RefHeading___Toc25608_797926190)
 
-[Constraint Expression Errors	250](#__RefHeading___Toc25924_797926190)
+[Exploring Remote Datasets	260](#__RefHeading___Toc25606_797926190)
 
-[OPeNDAP in Scientific Workflows	250](#__RefHeading___Toc25598_797926190)
+[Using a Web Browser	260](#__RefHeading___Toc25948_797926190)
 
-[Climate Data Analysis	251](#__RefHeading___Toc25922_797926190)
+[Using ncdump	261](#__RefHeading___Toc25946_797926190)
 
-[Satellite Data Distribution	251](#__RefHeading___Toc25920_797926190)
+[Using .info Endpoint	261](#__RefHeading___Toc25944_797926190)
 
-[Real-Time Data Access	251](#__RefHeading___Toc25918_797926190)
+[Performance Considerations	261](#__RefHeading___Toc25604_797926190)
 
-[Federated Data Systems	251](#__RefHeading___Toc25916_797926190)
+[Request Only What You Need	261](#__RefHeading___Toc25942_797926190)
 
-[Best Practices	251](#__RefHeading___Toc25596_797926190)
+[Minimize the Number of Requests	261](#__RefHeading___Toc25940_797926190)
 
-[Summary	252](#__RefHeading___Toc25594_797926190)
+[Request Multiple Variables Together	262](#__RefHeading___Toc25938_797926190)
 
-[Remote Data Access (OPeNDAP) – Key Takeaways	252](#__RefHeading___Toc25592_797926190)
+[Use Compression-Aware Servers	262](#__RefHeading___Toc25936_797926190)
 
-[Chapter 15 Performance Testing and Benchmarking	253](#__RefHeading___Toc25510_797926190)
+[DAP2 vs DAP4	262](#__RefHeading___Toc25602_797926190)
 
-[Learning Objectives	253](#__RefHeading___Toc25590_797926190)
+[DAP2 (Data Access Protocol 2)	262](#__RefHeading___Toc25934_797926190)
 
-[Testing Performance	253](#__RefHeading___Toc25588_797926190)
+[DAP4 (Data Access Protocol 4)	263](#__RefHeading___Toc25932_797926190)
 
-[Why Benchmark?	253](#__RefHeading___Toc25586_797926190)
+[Common Issues and Troubleshooting	263](#__RefHeading___Toc25600_797926190)
 
-[Basic Timing Techniques	253](#__RefHeading___Toc25584_797926190)
+[URL Not Recognized	263](#__RefHeading___Toc25930_797926190)
 
-[Using the time Command	253](#__RefHeading___Toc25914_797926190)
+[Network Timeouts	263](#__RefHeading___Toc25928_797926190)
 
-[Timing in C Code	254](#__RefHeading___Toc25912_797926190)
+[Authentication	263](#__RefHeading___Toc25926_797926190)
 
-[Timing in Fortran Code	254](#__RefHeading___Toc25910_797926190)
+[Constraint Expression Errors	264](#__RefHeading___Toc25924_797926190)
 
-[Measuring File Size and Compression Ratio	255](#__RefHeading___Toc25582_797926190)
+[OPeNDAP in Scientific Workflows	264](#__RefHeading___Toc25598_797926190)
 
-[Benchmarking Chunking Strategies	255](#__RefHeading___Toc25580_797926190)
+[Climate Data Analysis	264](#__RefHeading___Toc25922_797926190)
 
-[Example: Time Series Data	255](#__RefHeading___Toc25908_797926190)
+[Satellite Data Distribution	264](#__RefHeading___Toc25920_797926190)
 
-[Guidelines for Chunk Size Testing	256](#__RefHeading___Toc25906_797926190)
+[Real-Time Data Access	264](#__RefHeading___Toc25918_797926190)
 
-[Benchmarking Compression Settings	256](#__RefHeading___Toc25578_797926190)
+[Federated Data Systems	264](#__RefHeading___Toc25916_797926190)
 
-[Compression Benchmarking Results Interpretation	256](#__RefHeading___Toc25904_797926190)
+[Best Practices	265](#__RefHeading___Toc25596_797926190)
 
-[Testing Access Patterns	257](#__RefHeading___Toc25576_797926190)
+[Summary	265](#__RefHeading___Toc25594_797926190)
 
-[Pattern 1: Sequential Time Slice Access	257](#__RefHeading___Toc25902_797926190)
+[Remote Data Access (OPeNDAP) – Key Takeaways	265](#__RefHeading___Toc25592_797926190)
 
-[Pattern 2: Random Spatial Subsets	257](#__RefHeading___Toc25900_797926190)
+[Chapter 15 Performance Testing and Benchmarking	267](#__RefHeading___Toc25510_797926190)
 
-[Pattern 3: Time Series at Points	257](#__RefHeading___Toc25898_797926190)
+[Learning Objectives	267](#__RefHeading___Toc25590_797926190)
 
-[Chunk Cache Tuning	258](#__RefHeading___Toc25574_797926190)
+[Testing Performance	267](#__RefHeading___Toc25588_797926190)
 
-[Cache Size Guidelines	258](#__RefHeading___Toc25896_797926190)
+[Why Benchmark?	267](#__RefHeading___Toc25586_797926190)
 
-[Creating a Benchmark Suite	258](#__RefHeading___Toc25572_797926190)
+[Basic Timing Techniques	267](#__RefHeading___Toc25584_797926190)
 
-[Interpreting Benchmark Results	260](#__RefHeading___Toc25570_797926190)
+[Using the time Command	267](#__RefHeading___Toc25914_797926190)
 
-[Write Performance	260](#__RefHeading___Toc25894_797926190)
+[Timing in C Code	268](#__RefHeading___Toc25912_797926190)
 
-[Read Performance	260](#__RefHeading___Toc25892_797926190)
+[Timing in Fortran Code	268](#__RefHeading___Toc25910_797926190)
 
-[File Size	260](#__RefHeading___Toc25890_797926190)
+[Measuring File Size and Compression Ratio	268](#__RefHeading___Toc25582_797926190)
 
-[Overall Efficiency	260](#__RefHeading___Toc25888_797926190)
+[The Built-in Benchmarks	269](#__RefHeading___Toc292769_3827621550)
 
-[Best Practices for Benchmarking	260](#__RefHeading___Toc25568_797926190)
+[Benchmarking NetCDF Files with bm\_file	269](#__RefHeading___Toc293050_3827621550)
 
-[Example Benchmark Results	261](#__RefHeading___Toc25566_797926190)
+[Command Line Options	269](#__RefHeading___Toc293052_3827621550)
 
-[Automated Testing	261](#__RefHeading___Toc25564_797926190)
+[Output	271](#__RefHeading___Toc293054_3827621550)
 
-[Performance Testing & Benchmarking – Key Takeaways	262](#__RefHeading___Toc25562_797926190)
+[Running in a Script	271](#__RefHeading___Toc293056_3827621550)
 
-[Chapter 16 The Past, Present, and Future of NetCDF	263](#__RefHeading___Toc25508_797926190)
+[Controlling the Read Pattern	272](#__RefHeading___Toc293058_3827621550)
 
-[Learning Objectives	263](#__RefHeading___Toc25560_797926190)
+[Compression and Quantization	272](#__RefHeading___Toc293060_3827621550)
 
-[How We Got Here	263](#__RefHeading___Toc29410_2796988633)
+[Parallel I/O	273](#__RefHeading___Toc293062_3827621550)
 
-[The Past	263](#__RefHeading___Toc25558_797926190%20Copy%201)
+[Interpreting Results	273](#__RefHeading___Toc293064_3827621550)
 
-[Ancient Times	263](#__RefHeading___Toc29412_2796988633)
+[Benchmarking Chunking Strategies	273](#__RefHeading___Toc25580_797926190)
 
-[NetCDF-3 Era	263](#__RefHeading___Toc29414_2796988633)
+[Example: Time Series Data	274](#__RefHeading___Toc25908_797926190)
 
-[NetCDF-4 Era	264](#__RefHeading___Toc29416_2796988633)
+[Guidelines for Chunk Size Testing	274](#__RefHeading___Toc25906_797926190)
 
-[Modern Times	264](#__RefHeading___Toc29418_2796988633)
+[Benchmarking Compression Settings	274](#__RefHeading___Toc25578_797926190)
 
-[Key Milestones	265](#__RefHeading___Toc29420_2796988633)
+[Compression Benchmarking Results Interpretation	275](#__RefHeading___Toc25904_797926190)
 
-[The Present	269](#__RefHeading___Toc29422_2796988633)
+[Testing Access Patterns	275](#__RefHeading___Toc25576_797926190)
 
-[The Future	271](#__RefHeading___Toc29424_2796988633)
+[Pattern 1: Sequential Time Slice Access	275](#__RefHeading___Toc25902_797926190)
 
-[The Cloud	271](#__RefHeading___Toc29426_2796988633)
+[Pattern 2: Random Spatial Subsets	275](#__RefHeading___Toc25900_797926190)
 
-[Compression	271](#__RefHeading___Toc29428_2796988633)
+[Pattern 3: Time Series at Points	276](#__RefHeading___Toc25898_797926190)
 
-[The NetCDF Expansion Pack	271](#__RefHeading___Toc29430_2796988633)
+[Chunk Cache Tuning	276](#__RefHeading___Toc25574_797926190)
 
-[Parallel I/O	272](#__RefHeading___Toc29432_2796988633)
+[Cache Size Guidelines	276](#__RefHeading___Toc25896_797926190)
 
-[Data, Data, and More Data	272](#__RefHeading___Toc29434_2796988633)
+[Creating a Benchmark Suite	277](#__RefHeading___Toc25572_797926190)
 
-[The Past, Present, and Future of NetCDF – Key Takeaways	272](#__RefHeading___Toc29436_2796988633)
+[Interpreting Benchmark Results	278](#__RefHeading___Toc25570_797926190)
+
+[Write Performance	278](#__RefHeading___Toc25894_797926190)
+
+[Read Performance	278](#__RefHeading___Toc25892_797926190)
+
+[File Size	278](#__RefHeading___Toc25890_797926190)
+
+[Overall Efficiency	279](#__RefHeading___Toc25888_797926190)
+
+[Best Practices for Benchmarking	279](#__RefHeading___Toc25568_797926190)
+
+[Example Benchmark Results	279](#__RefHeading___Toc25566_797926190)
+
+[Automated Testing	280](#__RefHeading___Toc25564_797926190)
+
+[Performance Testing & Benchmarking – Key Takeaways	280](#__RefHeading___Toc25562_797926190)
+
+[Chapter 16 The Past, Present, and Future of NetCDF	281](#__RefHeading___Toc25508_797926190)
+
+[Learning Objectives	281](#__RefHeading___Toc25560_797926190)
+
+[How We Got Here	281](#__RefHeading___Toc29410_2796988633)
+
+[The Past	281](#__RefHeading___Toc25558_797926190%20Copy%201)
+
+[Ancient Times	281](#__RefHeading___Toc29412_2796988633)
+
+[NetCDF-3 Era	281](#__RefHeading___Toc29414_2796988633)
+
+[NetCDF-4 Era	282](#__RefHeading___Toc29416_2796988633)
+
+[Modern Times	282](#__RefHeading___Toc29418_2796988633)
+
+[Key Milestones	283](#__RefHeading___Toc29420_2796988633)
+
+[The Present	286](#__RefHeading___Toc29422_2796988633)
+
+[The Future	287](#__RefHeading___Toc29424_2796988633)
+
+[The Cloud	287](#__RefHeading___Toc29426_2796988633)
+
+[Compression	288](#__RefHeading___Toc29428_2796988633)
+
+[The NetCDF Expansion Pack	288](#__RefHeading___Toc29430_2796988633)
+
+[Parallel I/O	289](#__RefHeading___Toc29432_2796988633)
+
+[Data, Data, and More Data	289](#__RefHeading___Toc29434_2796988633)
+
+[The Past, Present, and Future of NetCDF – Key Takeaways	289](#__RefHeading___Toc29436_2796988633)
 
 
 # Introduction
@@ -921,7 +955,7 @@ At its core, netCDF provides a simple data model:
 
 - Dimensions define the axes of data, such as time, latitude, longitude, or height.
 
-- Variables are multi-dimensional arrays that use those dimensions, such as temperature(time, lat, lon).
+- Variables are multi-dimensional arrays that use those dimensions, such as surface temperature (with dimensions: time, lat, lon).
 
 - Attributes are named metadata attached to a file or a variable, used for units, standard names, coordinate references, and provenance.
 
@@ -937,23 +971,31 @@ Finally, netCDF is not just a file format. It is an ecosystem:
 
 - Command-line tools like ncdump and ncgen make it easy to inspect and generate files without writing code.
 
-Together, the format, the data model, and the APIs make netCDF a practical standard for scientific data that must be large, portable, and self-describing.
+- More advanced command-line tools are available in the NetCDF Command Operators (NCO) project.
+
+- Built-in support for visualization from MATLAB, IDL, ArcGIS, and other geo-spacial software packages.
+
+- Third-party add-ons like OPeNDAP, widely used for remote data access, and the NetCDF Expansion Pack (NEP), which adds read-only access to CDF, GRIB2, and GeoTIFF for netCDF programs.
+
+- Conventions developed by and for the communty, such as the CF (Climate and Forecast) Conventions, and the Attribute Convention for Dataset Discovery (ACDD), which make Earth science data much more interoperable and useful.
+
+Together, the format, the data model, and the APIs make netCDF a practical standard for scientific data that must be large, portable, and self-describing. The rich ecosystem which has grown around netCDF has added tools and conventions which greatly enhance the usefulness and value of the data.
 
 ## Why Does NetCDF Exist?
 
 Before common data formats like netCDF, every instrument and model produced data in its own format. Metadata lived in separate documentation, if it existed at all, and when that documentation was lost, the data became useless.
 
-NetCDF solved three problems at once. Its data model was simple: arrays with named dimensions and descriptive attributes. Its files were machine-independent, so a file written on a Cray could be read on a PC without byte-swapping code. And its metadata was self-describing. Units, coordinates, and provenance traveled with the data, not on a floppy disk that someone might lose.
+NetCDF solved three problems at once. Its data model was simple: arrays with named dimensions and descriptive attributes. Its files were machine-independent, so a file written on a Cray could be read on a PC without byte-swapping code. And its metadata was self-describing. Units, coordinates, and provenance traveled with the data, not on a floppy disk or paper document that might be lost.
 
 The original classic formats hit a wall at 2 GB. In 2008, NetCDF-4.0 switched to HDF5 as a storage back end, removing all size limits and adding compression, groups, new types, and parallel I/O. NASA, ESA, and NOAA adopted it as a standard.
 
-The data keep growing. Higher instrument resolution, cheaper satellite launches, and faster supercomputers all drive exponential increases. Doubling the resolution of an atmospheric model in every dimension produces 16 times more data.
+The data keep growing. Higher instrument resolution, cheaper satellite launches, and faster supercomputers all drive exponential increases. The technologies of super-computing and space-based observation continue to dramatically increase each year, allowing researchers to increase their model resolutions in space and time. Doubling the resolution of an atmospheric model in every dimension produces 16 times more data.
 
-NetCDF continues to evolve, with better performance and a growing ecosystem of tools, to keep pace. For a detailed history, see** Chapter 16 (*The Past, Present, and Future of NetCDF*).**
+NetCDF continues to evolve, with better performance and a growing ecosystem of tools, to keep pace with community needs. For a detailed history, see** Chapter 16 (*The Past, Present, and Future of NetCDF*).**
 
 ## Who Uses NetCDF?
 
-NetCDF is embedded in the infrastructure of Earth science. The following communities represent its largest users.
+NetCDF is embedded in the infrastructure of Earth science. The following communities represent some of its largest users.
 
 ### NASA Earth Observing System (EOSDIS)
 
@@ -965,11 +1007,13 @@ If you work with satellite Level 2 products or large HDF5-based archives, see Ch
 
 NOAA's operational weather models (including the Global Forecast System (GFS), the High-Resolution Rapid Refresh (HRRR), and the Unified Forecast System (UFS)) all produce gridded output in netCDF. Climate Data Records, reanalysis products, and ocean observations rely on netCDF for long-term archival and distribution through the National Centers for Environmental Information. The GOES-R satellite series, which produces approximately 2 TB of data per day, distributes all Level 2 products in netCDF-4; compression and chunking make this volume practical to store and deliver.
 
-For operational model output pipelines and GOES-R data, see Chapter 7 (***NetCDF Fortran Examples***), Chapter 12 (***NetCDF-4/HDF5 Performance Fundamentals***), and Chapter 13 (***Parallel I/O with NetCDF***).
+For operational model output pipelines and GOES-R data, see Chapter 7 (***NetCDF Fortran Examples***), Chapter 10 (***NetCDF-4/HDF5 Performance Fundamentals***), and Chapter 11 (***Parallel I/O with NetCDF***).
 
 ### ECMWF and European Climate Infrastructure
 
-The European Centre for Medium-Range Weather Forecasts produces ERA5, widely considered the most important climate reanalysis dataset, covering the global atmosphere at 31 km resolution from 1940 to the present. ERA5 and dozens of other climate datasets are distributed in netCDF format through the Copernicus Climate Data Store to hundreds of thousands of users worldwide. The European Space Agency's Climate Change Initiative standardized on netCDF with CF conventions for satellite-derived climate records covering sea surface temperature, ice sheets, greenhouse gases, and more.
+The European Centre for Medium-Range Weather Forecasts produces ERA5, widely considered the most important climate reanalysis dataset, covering the global atmosphere at 31 km resolution from 1940 to the present. ERA5 and dozens of other climate datasets are distributed in netCDF format through the Copernicus Climate Data Store to hundreds of thousands of users worldwide. The European Space Agency's (ESA) Climate Change Initiative standardized on netCDF with CF conventions for satellite-derived climate records covering sea surface temperature, ice sheets, greenhouse gases, and more.
+
+This includes the ESA’s Copernicus Program, Europe’s flagship Earth observation initiative. Currently there are 11 operational satellites, with a full pipeline planned for the future, including over 20 more satellites. Copernicus generates about 40 TB of data every day; the total archive size is 80 PB.
 
 For working with reanalysis datasets and CF-compliant satellite records, see Chapter 9 (***Attributes and Conventions***) and Chapter 14 (***Remote Data Access with OPeNDAP***).
 
@@ -981,7 +1025,9 @@ For producing or consuming CF/CMIP compliant model output, see Chapter 9 (***Att
 
 ### NCAR and the University Research Community
 
-The National Center for Atmospheric Research hosts Unidata, the program that created and maintains the netCDF library. The Community Earth System Model (CESM), the Weather Research and Forecasting model (WRF), and the Model for Prediction Across Scales (MPAS) all use netCDF for input and output. Thousands of university researchers worldwide read and write netCDF daily in climate modeling, atmospheric chemistry, and hydrology.
+The National Center for Atmospheric Research hosts the Community Earth System Model (CESM), the Weather Research and Forecasting model (WRF), and the Model for Prediction Across Scales (MPAS) all use netCDF for input and output. Thousands of university researchers worldwide read and write netCDF daily in climate modeling, atmospheric chemistry, and hydrology.
+
+Unidata, the program that created and maintains the netCDF library is part of a sister-organization to NCAR, both are managed by the University Corporation for Atmospheric Research (UCAR), in Boulder, Colorado.
 
 For building research workflows around WRF, CESM, or MPAS, see Chapter 6 (***NetCDF C Examples***), Chapter 7 (***NetCDF Fortran Examples***), and Chapter 15 (***Performance Testing and Benchmarking***).
 
@@ -1018,6 +1064,8 @@ NEP extends NetCDF-4 with powerful new capabilities for scientific data workflow
 - NASA CDF File Reader: Access Common Data Format files directly through the familiar NetCDF API - no conversion needed
 
 - GeoTIFF File Reader: Access GeoTIFF files, as if they are netCDF, with full CF metadata.
+
+- GRIB2 File Reader: Access GRIB2 files as if they are netCDF.
 
 - Drop-In Compatibility: Works with existing NetCDF C and Fortran applications without code changes
 
@@ -1325,38 +1373,38 @@ int main()
 
 After creating this file, we can use the built-in command line utility ncdump to see what it contains. The ncdump command line utility comes with netcdf-c and is installed in the bin directory of the netcdf-c install (you may have to include this bin directory in your PATH).
 
-The ncdump utility will be fully explained in Chapter 5 (***Command Line Utilities***). Briefly, it dumps the contents of a netCDF file to stdout as ASCII. If the file contains much data, this dump is far to large for use, but the -h option causes ncdump to print only the metadata of the file. The ncdump -h output for the file produced by the quickstart program is:
+The ncdump utility will be fully explained in Chapter 5 (***Command Line Utilities***). Briefly, it dumps the contents of a netCDF file to stdout as ASCII. If the file contains much data, this dump is far to large for use, but the -h option causes ncdump to print only the metadata of the file (“h” for “header”). The ncdump -h output for the file produced by the quickstart program is:
 
 ```
-`netcdf quickstart \{`
+netcdf quickstart \{
 
-`dimensions:`
+dimensions:
 
-`	X = 2 ;`
+	X = 2 ;
 
-`	Y = 3 ;`
+	Y = 3 ;
 
-`variables:`
+variables:
 
-`	int data(X, Y) ;`
+	int data(X, Y) ;
 
-`		data :units = "m/s" ;`
-
-
-`// global attributes:`
-
-`		:description = "a quickstart example" ;`
-
-`data:`
+		data :units = "m/s" ;
 
 
-` data =`
+// global attributes:
 
-`  1, 2, 3,`
+		:description = "a quickstart example" ;
 
-`  4, 5, 6 ;`
+data:
 
-`\}`
+
+ data =
+
+  1, 2, 3,
+
+  4, 5, 6 ;
+
+\}
 ```
 
 ## Quick Start in Fortran
@@ -1694,35 +1742,35 @@ end program f\_quickstart
 The ncdump output from the netCDF file created here shows:
 
 ```
-`netcdf f\_quickstart \{`
+netcdf f\_quickstart \{
 
-`dimensions:`
+dimensions:
 
-`	X = 2 ;`
+	X = 2 ;
 
-`	Y = 3 ;`
+	Y = 3 ;
 
-`variables:`
+variables:
 
-`	int data(X, Y) ;`
+	int data(X, Y) ;
 
-`		data :units = "m/s" ;`
-
-
-`// global attributes:`
-
-`		:description = "a quickstart example" ;`
-
-`data:`
+		data :units = "m/s" ;
 
 
-` data =`
+// global attributes:
 
-`  1, 2, 3,`
+		:description = "a quickstart example" ;
 
-`  4, 5, 6 ;`
+data:
 
-`\}`
+
+ data =
+
+  1, 2, 3,
+
+  4, 5, 6 ;
+
+\}
 ```
 
 ## Reader Roadmap
@@ -1757,13 +1805,13 @@ If you want to learn about the past and future of NetCDF: Chapter 16
 
 ## Introduction – Key Takeaways
 
-- **Self-describing and portable:** NetCDF files carry their metadata with them — dimensions, units, coordinate systems, and provenance — so data remains usable across machines and decades without external documentation.
+- **Self-describing and portable:** NetCDF files carry their metadata with them: dimensions, units, coordinate systems, and provenance, so data remains usable across machines and decades without external documentation.
 
 - **Built for scale:** NetCDF-4 removed the classic format's size limits and added compression, chunking, and parallel I/O, enabling it to handle TB-scale daily output from modern instruments like GOES-R.
 
 - **Ubiquitous in Earth science:** NASA, NOAA, ECMWF, ESA, and the global climate modeling community (CMIP) all standardized on netCDF, collectively managing hundreds of petabytes.
 
-- **Three ways in:** You can work with netCDF from the command line (ncdump, ncgen), through C/Fortran APIs, or through Java — this book covers all three paths.
+- **Three ways in:** You can work with netCDF from the command line (ncdump, ncgen, nccopy, NCO), through C/Fortran APIs, or through Java; this book covers all three paths.
 
 - **Quick start pattern:** Create → define dimensions → define variables → add attributes → write data → close. The C and Fortran examples in this chapter demonstrate this workflow in under 50 lines each.
 
@@ -1878,51 +1926,49 @@ NetCDF is distributed as separate packages for different language interfaces:
 Ubuntu/Debian (apt):
 
 ```
-`\# Search for available packages`
+\# Search for available packages
 
-`apt search libnetcdf`
+apt search libnetcdf
 
-`\# Install C library`
+\# Install C library
 
-`sudo apt install libnetcdf-dev`
+sudo apt install libnetcdf-dev
 
-`\# Install Fortran library`
+\# Install Fortran library
 
-`sudo apt install libnetcdff-dev`
+sudo apt install libnetcdff-dev
 ```
-
 
 RHEL/Fedora/CentOS (dnf/yum):
 
 ```
-`\# Search for available packages`
+\# Search for available packages
 
-`dnf search netcdf`
+dnf search netcdf
 
-`\# Install C library`
+\# Install C library
 
-`sudo dnf install netcdf-devel`
+sudo dnf install netcdf-devel
 
-`\# Install Fortran library`
+\# Install Fortran library
 
-`sudo dnf install netcdf-fortran-devel`
+sudo dnf install netcdf-fortran-devel
 ```
-
 
 macOS (Homebrew):
 
 ```
-`\# Search for available packages`
+\# Search for available packages
 
-`brew search netcdf`
+brew search netcdf
 
-`\# Install netCDF (includes C library)`
+\# Install netCDF (includes C library)
 
-`brew install netcdf`
+brew install netcdf
 
-`\# Install Fortran library`
+\# Install Fortran library
 
-`brew install netcdf-fortran`
+brew install netcdf-fortran
 ```
 
 Note that the C library (libnetcdf) and Fortran libraries (libnetcdff) are separate packages. The Fortran library depends on the C library. The legacy C++ library (libnetcdf-cxx-legacy) and the modern C++ library (libnetcdf-c++4) are also available as separate packages on most systems.
@@ -1936,13 +1982,13 @@ NetCDF can be installed on Windows through several methods. Choose the one that 
 vcpkg is a C/C++ package manager that integrates with Visual Studio and CMake. It is the most straightforward way to get netCDF on Windows with a native compiler:
 
 ```
-`vcpkg install netcdf-c vcpkg install netcdf-cxx4`
+vcpkg install netcdf-c vcpkg install netcdf-cxx4
 ```
 
 To use the installed libraries with CMake, pass the vcpkg toolchain file:
 
 ```
-`cmake .. -DCMAKE\_TOOLCHAIN\_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake`
+cmake .. -DCMAKE\_TOOLCHAIN\_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
 ```
 
 vcpkg resolves dependencies automatically, so HDF5 and zlib are installed for you.
@@ -1952,13 +1998,13 @@ vcpkg resolves dependencies automatically, so HDF5 and zlib are installed for yo
 MSYS2 provides a Unix-like environment on Windows with the MinGW-w64 toolchain. It uses pacman, the same package manager as Arch Linux:
 
 ```
-`pacman -S mingw-w64-x86\_64-netcdf pacman -S mingw-w64-x86\_64-netcdf-fortran`
+pacman -S mingw-w64-x86\_64-netcdf pacman -S mingw-w64-x86\_64-netcdf-fortran
 ```
 
 After installation, use the MinGW64 shell to compile programs. The nc-config and nf-config utilities work the same as on Linux:
 
 ```
-`nc-config --cflags --libs`
+nc-config --cflags --libs
 ```
 
 MSYS2 is a good choice if you prefer GCC and a command-line workflow on Windows.
@@ -1972,7 +2018,7 @@ From the Cygwin setup program, select these packages: libnetcdf-devel libnetcdf-
 You can also install packages from the Cygwin terminal using the command-line installer:
 
 ```
-`apt-cyg install libnetcdf-devel libnetcdf-fortran-devel`
+apt-cyg install libnetcdf-devel libnetcdf-fortran-devel
 ```
 
 Programs compiled under Cygwin link against the Cygwin POSIX layer (cygwin1.dll) rather than producing native Windows binaries. This means Cygwin executables must be run from a Cygwin shell. If you need native Windows binaries, use MSYS2 or vcpkg instead.
@@ -1980,7 +2026,7 @@ Programs compiled under Cygwin link against the Cygwin POSIX layer (cygwin1.dll)
 Both Autotools and CMake work under Cygwin, so the Unix build-from-source instructions in this chapter apply directly. The nc-config and nf-config utilities are available after installation:
 
 ```
-`nc-config --version nf-config --version`
+nc-config --version nf-config --version
 ```
 
 ### Windows Subsystem for Linux (WSL)
@@ -1996,29 +2042,29 @@ WSL is the simplest option if you are already comfortable with Linux tools and d
 Conda is widely used in scientific computing and works on Linux, macOS, and Windows. It does not require root access, making it a good choice for shared systems and HPC environments. The conda-forge channel provides up-to-date netCDF packages:
 
 ```
-`\# Install C library`
+\# Install C library
 
-`conda install -c conda-forge libnetcdf`
+conda install -c conda-forge libnetcdf
 
-` `
+ 
 
-`\# Install Fortran library`
+\# Install Fortran library
 
-`conda install -c conda-forge netcdf-fortran`
+conda install -c conda-forge netcdf-fortran
 
-` `
+ 
 
-`\# Install both at once`
+\# Install both at once
 
-`conda install -c conda-forge libnetcdf netcdf-fortran`
+conda install -c conda-forge libnetcdf netcdf-fortran
 ```
 
 Conda automatically resolves dependencies, so HDF5 and zlib are installed for you. To verify the installation:
 
 ```
-`nc-config --version`
+nc-config --version
 
-`nf-config --version`
+nf-config --version
 ```
 
 If you use conda environments, activate the environment before compiling programs, and use nc-config --cflags --libs to get the correct compiler and linker flags for that environment.
@@ -2028,28 +2074,28 @@ If you use conda environments, activate the environment before compiling program
 Spack is a package manager designed for supercomputers and HPC clusters where users cannot install system packages. It builds libraries from source with fine-grained control over compilers, MPI implementations, and feature flags:
 
 ```
-`\# Install C library with default options`
+\# Install C library with default options
 
-`spack install netcdf-c`
+spack install netcdf-c
 
-` `
+ 
 
-`\# Install Fortran library`
+\# Install Fortran library
 
-`spack install netcdf-fortran`
+spack install netcdf-fortran
 
-` `
+ 
 
-`\# Install with specific options`
+\# Install with specific options
 
-`spack install netcdf-c +parallel-netcdf +mpi ^hdf5+mpi`
+spack install netcdf-c +parallel-netcdf +mpi ^hdf5+mpi
 
-`After installation, load the packages into your environment:`
+After installation, load the packages into your environment:
 
 
-`spack load netcdf-c`
+spack load netcdf-c
 
-`spack load netcdf-fortran`
+spack load netcdf-fortran
 ```
 
 Spack handles the entire dependency chain (zlib, HDF5, netCDF-C, netCDF-Fortran) and can build multiple versions side by side with different configurations. This is particularly useful when you need netCDF built with a specific MPI implementation or compiler to match the rest of your software stack.
@@ -2075,17 +2121,17 @@ If you are building netCDF from source and want to use netCDF-4/HDF5 format file
 The easiest approach is to install HDF5 through your system's package manager:
 
 ```
-`\# Ubuntu/Debian`
+\# Ubuntu/Debian
 
-`sudo apt install libhdf5-dev`
+sudo apt install libhdf5-dev
 
-`\# RHEL/Fedora/CentOS`
+\# RHEL/Fedora/CentOS
 
-`sudo dnf install hdf5-devel`
+sudo dnf install hdf5-devel
 
-`\# macOS`
+\# macOS
 
-`brew install hdf5`
+brew install hdf5
 ```
 
 ##### Option 2: Build HDF5 from Source
@@ -2093,9 +2139,9 @@ The easiest approach is to install HDF5 through your system's package manager:
 If you need a specific HDF5 version or custom configuration, you can build from source. Download HDF5 from the HDF Group website (https://www.hdfgroup.org/downloads/hdf5/) and follow their build instructions. HDF5 requires zlib:
 
 ```
-`\# Install zlib development files`
+\# Install zlib development files
 
-`sudo apt-get install zlib1g-dev`
+sudo apt-get install zlib1g-dev
 ```
 
 After building HDF5, verify the installation by examining the hdf5.settings file in your HDF5 installation directory (typically /usr/local/share/ or similar). This file contains important information about how HDF5 was configured, including which features are enabled and where libraries are located.
@@ -2117,11 +2163,11 @@ Some environment variables may be set before the configure step, in order to hel
 To install:
 
 ```
-`./configure`
+./configure
 
-`make check`
+make check
 
-`make install`
+make install
 ```
 
 The configure step may involve many options which control how the netCDF C library is built. There are many options; some of the more commonly-used are listed below.
@@ -2154,17 +2200,17 @@ The netCDF-C library also supports CMake as a build system. CMake is a cross
 To build netCDF-C with CMake, first create a build directory, then run cmake to configure, build, test, and install:
 
 ```
-`mkdir build`
+mkdir build
 
-`cd build`
+cd build
 
-`cmake ..`
+cmake ..
 
-`make`
+make
 
-`ctest`
+ctest
 
-`make install`
+make install
 ```
 
 CMake accepts options on the command line to control which features are enabled. Some commonly used options are listed below.
@@ -2183,29 +2229,29 @@ CMake accepts options on the command line to control which features are ena
 If HDF5 or other dependencies are installed in non-standard locations, you can tell CMake where to find them:
 
 ```
-`cmake .. -DHDF5\_DIR=/usr/local/hdf5-1.14.0 -DCMAKE\_INSTALL\_PREFIX=/usr/local/netcdf`
+cmake .. -DHDF5\_DIR=/usr/local/hdf5-1.14.0 -DCMAKE\_INSTALL\_PREFIX=/usr/local/netcdf
 ```
 
 To build without netCDF-4 support:
 
 ```
-`cmake .. -DENABLE\_NETCDF\_4=OFF`
+cmake .. -DENABLE\_NETCDF\_4=OFF
 ```
 
 The netcdf-fortran library can also be built with CMake. After installing netcdf-c, point the Fortran build at the netcdf-c installation:
 
 ```
-`mkdir build`
+mkdir build
 
-`cd build`
+cd build
 
-`cmake .. -DCMAKE\_PREFIX\_PATH=/usr/local/netcdf`
+cmake .. -DCMAKE\_PREFIX\_PATH=/usr/local/netcdf
 
-`make`
+make
 
-`ctest`
+ctest
 
-`make install`
+make install
 ```
 
 ### Building from Source on Windows
@@ -2239,27 +2285,27 @@ A parallel netCDF installation requires building the dependency chain with MPI s
 You need an MPI implementation installed before building anything else. Most systems provide one through the package manager:
 
 ```
-`\# Ubuntu/Debian`
+\# Ubuntu/Debian
 
-`sudo apt install libopenmpi-dev openmpi-bin`
+sudo apt install libopenmpi-dev openmpi-bin
 
-` \# RHEL/Fedora/CentOS`
+ \# RHEL/Fedora/CentOS
 
-`sudo dnf install openmpi-devel`
+sudo dnf install openmpi-devel
 
-`module load mpi/openmpi-x86\_64`
+module load mpi/openmpi-x86\_64
 
-`\# macOS`
+\# macOS
 
-`brew install open-mpi`
+brew install open-mpi
 ```
 
 Verify MPI is working:
 
 ```
-`mpicc --version`
+mpicc --version
 
-`mpiexec -n 2 echo "MPI works"`
+mpiexec -n 2 echo "MPI works"
 ```
 
 ### Building HDF5 with Parallel Support
@@ -2269,29 +2315,29 @@ HDF5 must be built with --enable-parallel to support parallel netCDF-4 I/O. This
 Using Autotools:
 
 ```
-`CC=mpicc ./configure --enable-parallel --prefix=/usr/local/hdf5-parallel`
+CC=mpicc ./configure --enable-parallel --prefix=/usr/local/hdf5-parallel
 
-`make`
+make
 
-`make check`
+make check
 
-`make install`
+make install
 ```
 
 Using CMake:
 
 ```
-`mkdir build && cd build`
+mkdir build && cd build
 
-`CC=mpicc cmake .. -DHDF5\_ENABLE\_PARALLEL=ON \\`
+CC=mpicc cmake .. -DHDF5\_ENABLE\_PARALLEL=ON \\
 
-`                  -DCMAKE\_INSTALL\_PREFIX=/usr/local/hdf5-parallel`
+                  -DCMAKE\_INSTALL\_PREFIX=/usr/local/hdf5-parallel
 
-`make`
+make
 
-`ctest`
+ctest
 
-`make install`
+make install
 ```
 
 The key points are:
@@ -2309,13 +2355,13 @@ The key points are:
 PnetCDF provides parallel I/O for classic format files (CDF-1, CDF-2, CDF-5). If you only need parallel I/O for netCDF-4 files, you can skip this step.
 
 ```
-`CC=mpicc ./configure --prefix=/usr/local/pnetcdf`
+CC=mpicc ./configure --prefix=/usr/local/pnetcdf
 
-`make`
+make
 
-`make check`
+make check
 
-`make install`
+make install
 ```
 
 #### Building netCDF-C with Parallel Support
@@ -2325,57 +2371,57 @@ With parallel HDF5 installed, build netCDF-C using the MPI compiler and pointing
 Using Autotools:
 
 ```
-`CC=mpicc CPPFLAGS="-I/usr/local/hdf5-parallel/include" \\`
+CC=mpicc CPPFLAGS="-I/usr/local/hdf5-parallel/include" \\
 
-`         LDFLAGS="-L/usr/local/hdf5-parallel/lib" \\`
+         LDFLAGS="-L/usr/local/hdf5-parallel/lib" \\
 
-`         ./configure --prefix=/usr/local/netcdf-parallel \\`
+         ./configure --prefix=/usr/local/netcdf-parallel \\
 
-`                     --enable-parallel-tests`
+                     --enable-parallel-tests
 
-`make`
+make
 
-`make check`
+make check
 
-`make install`
+make install
 ```
 
 To also enable PnetCDF:
 
 ```
-`CC=mpicc CPPFLAGS="-I/usr/local/hdf5-parallel/include -I/usr/local/pnetcdf/include" \\`
+CC=mpicc CPPFLAGS="-I/usr/local/hdf5-parallel/include -I/usr/local/pnetcdf/include" \\
 
-`         LDFLAGS="-L/usr/local/hdf5-parallel/lib -L/usr/local/pnetcdf/lib" \\`
+         LDFLAGS="-L/usr/local/hdf5-parallel/lib -L/usr/local/pnetcdf/lib" \\
 
-`         ./configure --prefix=/usr/local/netcdf-parallel \\`
+         ./configure --prefix=/usr/local/netcdf-parallel \\
 
-`                     --enable-parallel-tests \\`
+                     --enable-parallel-tests \\
 
-`                     --enable-pnetcdf`
+                     --enable-pnetcdf
 
-`make`
+make
 
-`make check`
+make check
 
-`make install`
+make install
 ```
 
 Using CMake:
 
 ```
-`mkdir build && cd build`
+mkdir build && cd build
 
-`CC=mpicc cmake .. -DHDF5\_DIR=/usr/local/hdf5-parallel \\`
+CC=mpicc cmake .. -DHDF5\_DIR=/usr/local/hdf5-parallel \\
 
-`                  -DENABLE\_PARALLEL4=ON \\`
+                  -DENABLE\_PARALLEL4=ON \\
 
-`                  -DCMAKE\_INSTALL\_PREFIX=/usr/local/netcdf-parallel`
+                  -DCMAKE\_INSTALL\_PREFIX=/usr/local/netcdf-parallel
 
-`make`
+make
 
-`ctest`
+ctest
 
-`make install`
+make install
 ```
 
 The --enable-parallel-tests flag (Autotools) tells the test suite to run parallel tests using mpiexec. Without it, the library is still built with parallel support, but the parallel tests are skipped.
@@ -2386,19 +2432,19 @@ Build netCDF-Fortran against the parallel netCDF-C installation. Use both the MP
 
 
 ```
-`CC=mpicc FC=mpif90 \\`
+CC=mpicc FC=mpif90 \\
 
-`   CPPFLAGS="-I/usr/local/netcdf-parallel/include" \\`
+   CPPFLAGS="-I/usr/local/netcdf-parallel/include" \\
 
-`   LDFLAGS="-L/usr/local/netcdf-parallel/lib" \\`
+   LDFLAGS="-L/usr/local/netcdf-parallel/lib" \\
 
-`   ./configure --prefix=/usr/local/netcdf-parallel`
+   ./configure --prefix=/usr/local/netcdf-parallel
 
-`make`
+make
 
-`make check`
+make check
 
-`make install`
+make install
 ```
 
 ## Installing NetCDF-Java
@@ -2410,7 +2456,7 @@ NetCDF-Java is a pure Java implementation of the netCDF data model. Unlike the C
 You need a Java Development Kit (JDK) version 8 or later. Check your Java version:
 
 ```
-`java -version`
+java -version
 ```
 
 If Java is not installed, download it from https://adoptium.net/ or install it through your package manager:
@@ -2418,19 +2464,19 @@ If Java is not installed, download it from https://adoptium.net/ or install it t
 Ubuntu/Debian:
 
 ```
-`sudo apt install default-jdk`
+sudo apt install default-jdk
 ```
 
 RHEL/Fedora:
 
 ```
-`sudo dnf install java-17-openjdk-devel`
+sudo dnf install java-17-openjdk-devel
 ```
 
 macOS:
 
 ```
-`brew install openjdk`
+brew install openjdk
 ```
 
 You also need a build tool. Maven and Gradle are the two standard choices for Java projects. Most of the examples below use Maven.
@@ -2448,9 +2494,9 @@ Run mvn clean compile to download the dependencies and verify the configuration.
 In your build.gradle:
 
 ```
-`repositories \{ mavenCentral() maven \{ url "https://artifacts.unidata.ucar.edu/repository/unidata-releases/" \} \}`
+repositories \{ mavenCentral() maven \{ url "https://artifacts.unidata.ucar.edu/repository/unidata-releases/" \} \}
 
-`dependencies \{ implementation 'edu.ucar:cdm-core:5.5.3' implementation 'ch.qos.logback:logback-classic:1.2.11' \}`
+dependencies \{ implementation 'edu.ucar:cdm-core:5.5.3' implementation 'ch.qos.logback:logback-classic:1.2.11' \}
 ```
 
 Run ./gradlew build to download dependencies and compile.
@@ -2480,19 +2526,19 @@ If you are unsure which artifacts you need, start with netcdfAll. It includes ev
 For simple experiments without a build tool, download the all-in-one JAR directly:
 
 ```
-`https://artifacts.unidata.ucar.edu/repository/unidata-releases/edu/ucar/netcdfAll/5.5.3/netcdfAll-5.5.3.jar`
+https://artifacts.unidata.ucar.edu/repository/unidata-releases/edu/ucar/netcdfAll/5.5.3/netcdfAll-5.5.3.jar
 ```
 
 Then compile and run with the JAR on the classpath:
 
 ```
-`javac -cp netcdfAll-5.5.3.jar MyProgram.java java -cp netcdfAll-5.5.3.jar:. MyProgram`
+javac -cp netcdfAll-5.5.3.jar MyProgram.java java -cp netcdfAll-5.5.3.jar:. MyProgram
 ```
 
 On Windows, use a semicolon instead of a colon:
 
 ```
-`java -cp netcdfAll-5.5.3.jar;. MyProgram`
+java -cp netcdfAll-5.5.3.jar;. MyProgram
 ```
 
 Manual JAR management is fine for learning but not recommended for production projects. Use Maven or Gradle for proper dependency management.
@@ -2506,19 +2552,19 @@ If you only need to read netCDF-4 files, no additional installation is needed. I
 Linux:
 
 ```
-`java -Djava.library.path=/usr/local/lib -jar myapp.jar`
+java -Djava.library.path=/usr/local/lib -jar myapp.jar
 ```
 
 macOS:
 
 ```
-`java -Djava.library.path=/usr/local/lib -jar myapp.jar`
+java -Djava.library.path=/usr/local/lib -jar myapp.jar
 ```
 
 Windows:
 
 ```
-`java -Djava.library.path=C:\\netcdf\\bin -jar myapp.jar`
+java -Djava.library.path=C:\\netcdf\\bin -jar myapp.jar
 ```
 
 Writing netCDF-3 files works in pure Java without any native library.
@@ -2528,13 +2574,13 @@ Writing netCDF-3 files works in pure Java without any native library.
 ToolsUI is a graphical application bundled with netCDF-Java for browsing and debugging netCDF files. Download the standalone JAR:
 
 ```
-`https://downloads.unidata.ucar.edu/netcdf-java/5.5.3/toolsUI-5.5.3.jar`
+https://downloads.unidata.ucar.edu/netcdf-java/5.5.3/toolsUI-5.5.3.jar
 ```
 
 Run it with:
 
 ```
-`java -Xmx1g -jar toolsUI-5.5.3.jar`
+java -Xmx1g -jar toolsUI-5.5.3.jar
 ```
 
 The -Xmx1g flag allocates 1 GB of heap memory. Increase it if you work with large files. ToolsUI can open netCDF, HDF5, GRIB, and OPeNDAP datasets, display metadata and data values, and test coordinate system recognition.
@@ -2550,9 +2596,9 @@ The nc-config utility is installed with the netCDF-C library. It reports the ins
 To see a complete summary of your installation:
 
 ```
-`nc-config --all`
+nc-config --all
 
-`nf-config --all`
+nf-config --all
 ```
 
 This prints the version, installation prefix, compiler used, and which features are enabled. Check that the features you need are listed. If nc-config is not found, the netCDF bin directory may not be in your PATH.
@@ -2560,19 +2606,19 @@ This prints the version, installation prefix, compiler used, and which features 
 You can query individual settings:
 
 ```
-`nc-config --version          \# Library version`
+nc-config --version          \# Library version
 
-`nc-config --prefix           \# Installation prefix`
+nc-config --prefix           \# Installation prefix
 
-`nc-config --has-nc4          \# NetCDF-4/HDF5 support?`
+nc-config --has-nc4          \# NetCDF-4/HDF5 support?
 
-`nc-config --has-dap          \# OPeNDAP remote access?`
+nc-config --has-dap          \# OPeNDAP remote access?
 
-`nc-config --has-parallel     \# Parallel I/O?`
+nc-config --has-parallel     \# Parallel I/O?
 
-`nc-config --has-parallel4    \# Parallel netCDF-4?`
+nc-config --has-parallel4    \# Parallel netCDF-4?
 
-`nc-config --has-pnetcdf      \# PnetCDF for classic parallel?`
+nc-config --has-pnetcdf      \# PnetCDF for classic parallel?
 ```
 
 ~~***If nc-config --has-nc4 *prints no, the library was built without HDF5 support and netCDF-4 features are unavailable. You will need to rebuild from source with HDF5, or install a package that includes netCDF-4 support.**
@@ -2582,27 +2628,27 @@ You can query individual settings:
 Compile and run a minimal program that prints the netCDF library version:
 
 ```
-`\#include \<stdio.h\>`
+\#include \<stdio.h\>
 
-`\#include \<netcdf.h\>`
+\#include \<netcdf.h\>
 
-`int main()`
+int main()
 
-`\{`
+\{
 
-~~`   ***printf("netCDF version: %s\\n", nc\_inq\_libvers());`**
+~~   ***printf("netCDF version: %s\\n", nc\_inq\_libvers());**
 
-~~`   ***return 0;`**
+~~   ***return 0;**
 
-`\}`
+\}
 ```
 
 Compile and run it using nc-config to get the correct flags:
 
 ```
-`cc -o nc\_version nc\_version.c $(nc-config --cflags --libs)`
+cc -o nc\_version nc\_version.c $(nc-config --cflags --libs)
 
-`./nc\_version`
+./nc\_version
 ```
 
 If the program compiles, links, and prints a version string, your C installation is working.
@@ -2612,23 +2658,23 @@ If the program compiles, links, and prints a version string, your C installation
 Compile and run a minimal Fortran program that prints the netCDF-Fortran library version:
 
 ```
-`program nf\_version`
+program nf\_version
 
-~~`   ***use netcdf`**
+~~   ***use netcdf**
 
-~~`   ***implicit none`**
+~~   ***implicit none**
 
-~~`   ***print \*, "netCDF-Fortran version: ", nf90\_inq\_libvers()`**
+~~   ***print \*, "netCDF-Fortran version: ", nf90\_inq\_libvers()**
 
-`end program nf\_version`
+end program nf\_version
 ```
 
 Compile and run it using nf-config:
 
 ```
-`gfortran -o nf\_version nf\_version.f90 $(nf-config --fflags --flibs)`
+gfortran -o nf\_version nf\_version.f90 $(nf-config --fflags --flibs)
 
-`./nf\_version`
+./nf\_version
 ```
 
 If the program compiles, links, and prints a version string, your Fortran installation is working.
@@ -2652,49 +2698,49 @@ All should print yes for a fully parallel build. If --has-parallel4 prints no, n
 If you built netCDF with parallel support, verify it with a minimal MPI program:
 
 ```
-`\#include \<stdio.h\>`
+\#include \<stdio.h\>
 
-`\#include \<mpi.h\>`
+\#include \<mpi.h\>
 
-`\#include \<netcdf.h\>`
+\#include \<netcdf.h\>
 
-`\#include \<netcdf\_par.h\>`
+\#include \<netcdf\_par.h\>
 
-`int main(int argc, char \*\*argv)`
+int main(int argc, char \*\*argv)
 
-`\{`
+\{
 
-~~`   ***int ncid, rank;`**
+~~   ***int ncid, rank;**
 
-~~`   ***MPI\_Init(&argc, &argv);`**
+~~   ***MPI\_Init(&argc, &argv);**
 
-~~`   ***MPI\_Comm\_rank(MPI\_COMM\_WORLD, &rank);`**
+~~   ***MPI\_Comm\_rank(MPI\_COMM\_WORLD, &rank);**
 
-~~`   ***if (nc\_create\_par("parallel\_test.nc", NC\_NETCDF4|NC\_CLOBBER,`**
+~~   ***if (nc\_create\_par("parallel\_test.nc", NC\_NETCDF4|NC\_CLOBBER,**
 
-~~`                      ***MPI\_COMM\_WORLD, MPI\_INFO\_NULL, &ncid))`**
+~~                      ***MPI\_COMM\_WORLD, MPI\_INFO\_NULL, &ncid))**
 
-~~`      ***return 1;`**
+~~      ***return 1;**
 
-~~`   ***nc\_close(ncid);`**
+~~   ***nc\_close(ncid);**
 
-~~`   ***if (rank == 0)`**
+~~   ***if (rank == 0)**
 
-~~`      ***printf("Parallel netCDF is working.\\n");`**
+~~      ***printf("Parallel netCDF is working.\\n");**
 
-~~`   ***MPI\_Finalize();`**
+~~   ***MPI\_Finalize();**
 
-~~`   ***return 0;`**
+~~   ***return 0;**
 
-`\}`
+\}
 ```
 
 Compile and run:
 
 ```
-`mpicc -o par\_test par\_test.c $(nc-config --cflags --libs)`
+mpicc -o par\_test par\_test.c $(nc-config --cflags --libs)
 
-`mpiexec -n 4 ./par\_test`
+mpiexec -n 4 ./par\_test
 ```
 
 ~~***If this prints "Parallel netCDF is working," your parallel installation is correct. If it fails, verify that nc-config --has-parallel4 *prints yes *and that HDF5 was built with --enable-parallel.**
@@ -2704,23 +2750,23 @@ Using nc-config in Makefiles
 The most practical use of nc-config is to get the correct compiler and linker flags without hard-coding paths that differ between systems:
 
 ```
-`CFLAGS  = $(shell nc-config --cflags)`
+CFLAGS  = $(shell nc-config --cflags)
 
-`LDFLAGS = $(shell nc-config --libs)`
+LDFLAGS = $(shell nc-config --libs)
 
-`my\_program: my\_program.c`
+my\_program: my\_program.c
 
-`$(CC) $(CFLAGS) -o $@ $\< $(LDFLAGS)`
+$(CC) $(CFLAGS) -o $@ $\< $(LDFLAGS)
 
-`For Fortran:`
+For Fortran:
 
-`FFLAGS  = $(shell nf-config --fflags)`
+FFLAGS  = $(shell nf-config --fflags)
 
-`FLIBS   = $(shell nf-config --flibs)`
+FLIBS   = $(shell nf-config --flibs)
 
-`my\_program: my\_program.f90`
+my\_program: my\_program.f90
 
-`$(FC) $(FFLAGS) -o $@ $\< $(FLIBS)`
+$(FC) $(FFLAGS) -o $@ $\< $(FLIBS)
 ```
 
 ~~***The --cflags *flag outputs the include directory (e.g., -I/usr/local/include). The --libs *flag outputs the library directory and all required libraries (e.g., -L/usr/local/lib -lnetcdf -lhdf5\_hl -lhdf5 -lz). For Fortran, --fflags *and --flibs *serve the same purpose, and --flibs *includes both -lnetcdff *and -lnetcdf *along with their transitive dependencies.**
@@ -2750,13 +2796,13 @@ The table below lists the errors you are most likely to encounter. Find your err
 The netCDF include directory is not in the compiler search path. Fix it by using nc-config or adding the path manually:
 
 ```
-`cc -o my\_program my\_program.c $(nc-config --cflags --libs)`
+cc -o my\_program my\_program.c $(nc-config --cflags --libs)
 ```
 
 Or explicitly:
 
 ```
-`cc -I/usr/local/include -o my\_program my\_program.c -L/usr/local/lib -lnetcdf`
+cc -I/usr/local/include -o my\_program my\_program.c -L/usr/local/lib -lnetcdf
 ```
 
 #### ~~Fortran module not found: Fatal Error: Cannot open module file 'netcdf.mod'
@@ -2764,13 +2810,13 @@ Or explicitly:
 The netCDF-Fortran module directory is not in the compiler search path. Use nf-config or add the path manually:
 
 ```
-`gfortran -o my\_program my\_program.f90 $(nf-config --fflags --flibs)`
+gfortran -o my\_program my\_program.f90 $(nf-config --fflags --flibs)
 ```
 
 Or explicitly:
 
 ```
-`gfortran -I/usr/local/include -o my\_program my\_program.f90 -L/usr/local/lib -lnetcdff-lnetcdf`
+gfortran -I/usr/local/include -o my\_program my\_program.f90 -L/usr/local/lib -lnetcdff-lnetcdf
 ```
 
 ~~***Note the double f in -lnetcdff. This is the Fortran library, not the C library (-lnetcdf). Mixing these up is a common source of linker errors.**
@@ -2780,13 +2826,13 @@ Or explicitly:
 ~~*The netCDF library directory is not in the linker search path. Add it with -L:
 
 ```
-`cc -o my\_program my\_program.c -L/usr/local/lib -lnetcdf`
+cc -o my\_program my\_program.c -L/usr/local/lib -lnetcdf
 ```
 
 Or set the environment variable before compiling:
 
 ```
-`export LDFLAGS="-L/usr/local/lib"`
+export LDFLAGS="-L/usr/local/lib"
 ```
 
 #### ~~Runtime error: error while loading shared libraries: libnetcdf.so
@@ -2796,17 +2842,17 @@ The system can find the library at compile time but not at runtime. Set the libr
 Linux:
 
 ```
-`export LD\_LIBRARY\_PATH=/usr/local/lib:$LD\_LIBRARY\_PATH`
+export LD\_LIBRARY\_PATH=/usr/local/lib:$LD\_LIBRARY\_PATH
 
-`./my\_program`
+./my\_program
 ```
 
 macOS:
 
 ```
-`export DYLD\_LIBRARY\_PATH=/usr/local/lib:$DYLD\_LIBRARY\_PATH`
+export DYLD\_LIBRARY\_PATH=/usr/local/lib:$DYLD\_LIBRARY\_PATH
 
-`./my\_program`
+./my\_program
 ```
 
 ~~***For a permanent fix on Linux, add the library directory to /etc/ld.so.conf.d/ *and run ldconfig, or install to a standard system prefix like /usr/local.**
@@ -2933,7 +2979,7 @@ In Fortran we use nf90\_create():
 Open existing files in C with the nc\_open() function:
 
 ```
-/\* Open the file for reading \*/
+   /\* Open the file for reading \*/
 
    if ((retval = nc\_open(FILE\_NAME, NC\_NOWRITE, &ncid)))
 
@@ -2978,7 +3024,7 @@ In Fortran we use the nf90\_inquire() function:
 
 #### Closing a NetCDF File
 
-Always close netCDF files with the nc\_close() function in C.
+Always close netCDF files with the nc\_close() function in C. Closing the file releases all internal resources associated with the open file.
 
 ```
   /\* Close the file \*/
@@ -3000,7 +3046,9 @@ Or in Fortran,:
 
 #### Define Mode and Data Mode
 
-A netCDF file operates in one of two modes: define mode and data mode. Understanding these modes is essential with classic formats because the netCDF library enforces strict rules about which operations are permitted in each mode. Calling a function in the wrong mode produces an error. (These rules are greatly relaxed with netCDF/HDF5 files).
+A netCDF file operates in one of two modes: define mode and data mode. Understanding these modes is essential with classic formats because the netCDF library enforces strict rules about which operations are permitted in each mode. Calling a function in the wrong mode produces an error.
+
+Define mode is necessary with classic format netCDF files, but these rules are greatly relaxed with netCDF/HDF5 files. 
 
 When you create a new file with nc\_create(), the file starts in define mode. In define mode you can define dimensions, define variables, and add attributes. You cannot write data to variables while in define mode. 
 
@@ -3009,45 +3057,45 @@ Once you have finished defining the structure of the file, call nc\_enddef() to 
 In C:
 
 ```
-`/\* End define mode, enter data mode \*/`
+/\* End define mode, enter data mode \*/
 
-`if ((retval = nc\_enddef(ncid)))`
+if ((retval = nc\_enddef(ncid)))
 
-`   ERR(retval);`
+   ERR(retval);
 ```
 
 In Fortran:
 
 ```
-`! End define mode, enter data mode`
+! End define mode, enter data mode
 
-`retval = nf90\_enddef(ncid)`
+retval = nf90\_enddef(ncid)
 
-`if (retval /= nf90\_noerr) call handle\_err(retval)`
+if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 If you attempt to write data while still in define mode, the library returns the NC\_EINDEFINE error. If you attempt to define a new dimension or variable while in data mode, the library returns NC\_ENOTINDEFINE.
 
-You can switch back to define mode on an existing file by calling nc\_redef() in C or nf90\_redef() in Fortran. This is useful when you need to add a new variable or attribute to a file that already contains data.
+You can switch back to define mode on an existing file by calling nc\_redef() in C or nf90\_redef() in Fortran. This is useful when you need to add a new variable or attribute to a classic format file that already contains data.
 
 In C:
 
 ```
-`/\* Re-enter define mode \*/`
+/\* Re-enter define mode \*/
 
-`if ((retval = nc\_redef(ncid)))`
+if ((retval = nc\_redef(ncid)))
 
-`   ERR(retval);`
+   ERR(retval);
 ```
 
 In Fortran:
 
 ```
-`! Re-enter define mode`
+! Re-enter define mode
 
-`retval = nf90\_redef(ncid)`
+retval = nf90\_redef(ncid)
 
-`if (retval /= nf90\_noerr) call handle\_err(retval)`
+if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 When you open an existing file with nc\_open(), the file starts in data mode.
@@ -3062,34 +3110,34 @@ For classic format files (NC\_CLASSIC\_MODEL, NC\_64BIT\_OFFSET, NC\_64BIT\_DATA
 
 Dimensions have a name and a length. The length may be fixed, or unlimited.
 
-An unlimited dimension can grow as data are added to the file. In the classic model, only one dimension may be unlimited. This dimension is sometimes called the "record dimension" because each write along this dimension adds a new record to the file.
+An unlimited dimension can grow as data are added to the file. In the classic model, only one dimension may be unlimited. In a netCDF-4/HDF5 file, there many be many unlimited dimensions. An unlimited dimension is sometimes called the "record dimension" because each write along this dimension adds a new record to the file.
 
 In C create dimensions with the nc\_def\_dim() function.
 
 ```
-`   /\* Define dimensions \*/`
+   /\* Define dimensions \*/
 
-`   if ((retval = nc\_def\_dim(ncid, "x", NX, &x\_dimid)))`
+   if ((retval = nc\_def\_dim(ncid, "x", NX, &x\_dimid)))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   if ((retval = nc\_def\_dim(ncid, "y", NY, &y\_dimid)))`
+   if ((retval = nc\_def\_dim(ncid, "y", NY, &y\_dimid)))
 
-`      ERR(retval);`
+      ERR(retval);
 ```
 
 In Fortran, use the nf90\_def\_dim() function.
 
 ```
-`   ! Define dimensions`
+   ! Define dimensions
 
-`   retval = nf90\_def\_dim(ncid, "x", NX, x\_dimid)`
+   retval = nf90\_def\_dim(ncid, "x", NX, x\_dimid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   retval = nf90\_def\_dim(ncid, "y", NY, y\_dimid)`
+   retval = nf90\_def\_dim(ncid, "y", NY, y\_dimid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 Notice that the ncid is required, this must refer to an open file. When the dimension is created, an integer ID is returned, the dimid. This ID is used later to specify the dimensions associated with variables.
@@ -3097,25 +3145,25 @@ Notice that the ncid is required, this must refer to an open file. When the dime
 Once a dimension is defined, the nc\_inq\_dim() function (“inq” for inquire) will return information about it:
 
 ```
-`   /\* Verify dimensions using nc\_inq\_dim() \*/`
+   /\* Verify dimensions using nc\_inq\_dim() \*/
 
-`   char dim\_name\[NC\_MAX\_NAME + 1\];`
+   char dim\_name\[NC\_MAX\_NAME + 1\];
 
-`   size\_t len\_x, len\_y;`
+   size\_t len\_x, len\_y;
 
-`   if ((retval = nc\_inq\_dim(ncid, x\_dimid, dim\_name, &len\_x)))`
+   if ((retval = nc\_inq\_dim(ncid, x\_dimid, dim\_name, &len\_x)))
 
-`      ERR(retval);`
+      ERR(retval);
 ```
 
 In Fortran, use the nf90\_inquire\_dimension() function:
 
 ```
-`   ! Verify dimensions using nf90\_inquire\_dimension()`
+   ! Verify dimensions using nf90\_inquire\_dimension()
 
-`   retval = nf90\_inquire\_dimension(ncid, x\_dimid, name=dim\_name, len=len\_x)`
+   retval = nf90\_inquire\_dimension(ncid, x\_dimid, name=dim\_name, len=len\_x)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 Dimensions are used to construct variables. When a variable is defined, the number and sizes of the dimensions used will determine the size of the data.
@@ -3154,29 +3202,29 @@ Unlike C, the sizes of netCDF types (in bytes) are true on every system. NetCDF 
 The type of the variable, along with its name and dimensions, are provided to the nc\_def\_var() functions:
 
 ```
-`   /\* Define the variable (dimension order: y, x for C row-major) \*/`
+   /\* Define the variable (dimension order: y, x for C row-major) \*/
 
-`   dimids\[0\] = y\_dimid;`
+   dimids\[0\] = y\_dimid;
 
-`   dimids\[1\] = x\_dimid;`
+   dimids\[1\] = x\_dimid;
 
-`   if ((retval = nc\_def\_var(ncid, "data", NC\_INT, NDIMS, dimids, &varid)))`
+   if ((retval = nc\_def\_var(ncid, "data", NC\_INT, NDIMS, dimids, &varid)))
 
-`      ERR(retval);`
+      ERR(retval);
 ```
 
 In Fortran, use nf90\_def\_var():
 
 ```
-`   ! Define the variable (dimension order: x, y for Fortran column-major)`
+   ! Define the variable (dimension order: x, y for Fortran column-major)
 
-`   dimids(1) = x\_dimid`
+   dimids(1) = x\_dimid
 
-`   dimids(2) = y\_dimid`
+   dimids(2) = y\_dimid
 
-`   retval = nf90\_def\_var(ncid, "data", NF90\_INT, dimids, varid)`
+   retval = nf90\_def\_var(ncid, "data", NF90\_INT, dimids, varid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 To write to a var, use one of the nc\_put\_var functions, which will be explained in chapter 6 for C, chapter 7 for Fortran. Here’s an example in C:
@@ -3184,19 +3232,19 @@ To write to a var, use one of the nc\_put\_var functions, which will be explaine
    /\* Write the data to the file \*/
 
 ```
-`   if ((retval = nc\_put\_var\_int(ncid, varid, &data\_out\[0\]\[0\])))`
+   if ((retval = nc\_put\_var\_int(ncid, varid, &data\_out\[0\]\[0\])))
 
-`        ERR(retval);`
+        ERR(retval);
 ```
 
 And in Fortran:
 
 ```
-`   ! Write the data to the file`
+   ! Write the data to the file
 
-`   retval = nf90\_put\_var(ncid, varid, data\_out)`
+   retval = nf90\_put\_var(ncid, varid, data\_out)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 #### Coordinate Variables
@@ -3210,81 +3258,81 @@ To create a coordinate variable, define the dimension, then define a variable wi
 In this code from the NetCDF Expansion Pack example program, coord\_vars.c, we create latitude and longitude dimensions ("lat" and "lon"), then define coordinate variables with the same names.
 
 ```
-`   /\* Define dimensions \*/`
+   /\* Define dimensions \*/
 
-`   if ((retval = nc\_def\_dim(ncid, "lat", NLAT, &lat\_dimid)))`
+   if ((retval = nc\_def\_dim(ncid, "lat", NLAT, &lat\_dimid)))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   if ((retval = nc\_def\_dim(ncid, "lon", NLON, &lon\_dimid)))`
+   if ((retval = nc\_def\_dim(ncid, "lon", NLON, &lon\_dimid)))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   `
+   
 
-`   /\* Define coordinate variables (same name as dimension) \*/`
+   /\* Define coordinate variables (same name as dimension) \*/
 
-`   if ((retval = nc\_def\_var(ncid, "lat", NC\_FLOAT, 1, &lat\_dimid, &lat\_varid)))`
+   if ((retval = nc\_def\_var(ncid, "lat", NC\_FLOAT, 1, &lat\_dimid, &lat\_varid)))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   if ((retval = nc\_def\_var(ncid, "lon", NC\_FLOAT, 1, &lon\_dimid, &lon\_varid)))`
+   if ((retval = nc\_def\_var(ncid, "lon", NC\_FLOAT, 1, &lon\_dimid, &lon\_varid)))
 
-`      ERR(retval);`
+      ERR(retval);
 ```
 
 Later in the code, we write the values of the coordinate variables:
 
 ```
-`   /\* Write coordinate variables \*/`
+   /\* Write coordinate variables \*/
 
-`   if ((retval = nc\_put\_var\_float(ncid, lat\_varid, lat)))`
+   if ((retval = nc\_put\_var\_float(ncid, lat\_varid, lat)))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   if ((retval = nc\_put\_var\_float(ncid, lon\_varid, lon)))`
+   if ((retval = nc\_put\_var\_float(ncid, lon\_varid, lon)))
 
-`      ERR(retval);`
+      ERR(retval);
 ```
 
 In Fortran, we define and write coordinate variables the same way, using the f\_coord\_vars.f90 example from the NetCDF Expansion Pack:
 
 ```
-`   ! Define dimensions`
+   ! Define dimensions
 
-`   retval = nf90\_def\_dim(ncid, "lat", NLAT, lat\_dimid)`
+   retval = nf90\_def\_dim(ncid, "lat", NLAT, lat\_dimid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   retval = nf90\_def\_dim(ncid, "lon", NLON, lon\_dimid)`
+   retval = nf90\_def\_dim(ncid, "lon", NLON, lon\_dimid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   `
+   
 
-`   ! Define coordinate variables (same name as dimension)`
+   ! Define coordinate variables (same name as dimension)
 
-`   retval = nf90\_def\_var(ncid, "lat", NF90\_FLOAT, lat\_dimid, lat\_varid)`
+   retval = nf90\_def\_var(ncid, "lat", NF90\_FLOAT, lat\_dimid, lat\_varid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   retval = nf90\_def\_var(ncid, "lon", NF90\_FLOAT, lon\_dimid, lon\_varid)`
+   retval = nf90\_def\_var(ncid, "lon", NF90\_FLOAT, lon\_dimid, lon\_varid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 And later, writing the coordinate data:
 
 ```
-`! Write coordinate variables`
+! Write coordinate variables
 
-`retval = nf90\_put\_var(ncid, lat\_varid, lat)`
+retval = nf90\_put\_var(ncid, lat\_varid, lat)
 
-`if (retval /= nf90\_noerr) call handle\_err(retval)`
+if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`retval = nf90\_put\_var(ncid, lon\_varid, lon)`
+retval = nf90\_put\_var(ncid, lon\_varid, lon)
 
-`if (retval /= nf90\_noerr) call handle\_err(retval)`
+if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 (The full example for coordinate variables can be seen for C in chapter 6, and for Fortran in chapter 7.)
@@ -3318,23 +3366,23 @@ Attributes are read into memory only when needed. When the user inquires about a
 Global attributes are used to store metadata about the entire file. Instead of a varid, use NC\_GLOBAL (in C):
 
 ```
-`   /\* Add a global attribute \*/`
+   /\* Add a global attribute \*/
 
-`   if ((retval = nc\_put\_att\_text(ncid, NC\_GLOBAL, "title",`
+   if ((retval = nc\_put\_att\_text(ncid, NC\_GLOBAL, "title",
 
-`                                  strlen("Simple 2D Example"), "Simple 2D Example")))`
+                                  strlen("Simple 2D Example"), "Simple 2D Example")))
 
-`      ERR(retval);`
+      ERR(retval);
 ```
 
 or NF90\_GLOBAL in Fortran:
 
 ```
-`   ! Add a global attribute`
+   ! Add a global attribute
 
-`   retval = nf90\_put\_att(ncid, NF90\_GLOBAL, "title", "Simple 2D Example")`
+   retval = nf90\_put\_att(ncid, NF90\_GLOBAL, "title", "Simple 2D Example")
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 #### Variable Attributes
@@ -3354,17 +3402,16 @@ Variable attributes are used to store metadata about a particular variable. For 
 For Fortran:
 
 ```
-`   ! Add a variable attribute`
+   ! Add a variable attribute
 
-`   retval = nf90\_put\_att(ncid, varid, "units", "m/s")`
+   retval = nf90\_put\_att(ncid, varid, "units", "m/s")
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 #### Writing Attributes
 
-~~***In C, the write function name encodes the attribute type. In Fortran, nf90\_put\_att *is overloaded and accepts any scalar or array value directly.**
-
+~~*In C, the write function name encodes the attribute type. In Fortran, nf90\_put\_att *is overloaded and accepts any scalar or array value directly.
 
 | ~~***NetCDF type** | ~~***C write function** | ~~***C read function** |
 | :-: | :-: | :-: |
@@ -3380,21 +3427,21 @@ For Fortran:
 ~~*The most common attribute type is text. coord\_vars.c *attaches CF convention metadata to coordinate variables:
 
 ```
-`if ((retval = nc\_put\_att\_text(ncid, lat\_varid, "units", 13, "degrees\_north")))`
+if ((retval = nc\_put\_att\_text(ncid, lat\_varid, "units", 13, "degrees\_north")))
 
-~~`    ***ERR(retval);`**
+~~    ***ERR(retval);**
 
-`if ((retval = nc\_put\_att\_float(ncid, temp\_varid, "\_FillValue", NC\_FLOAT, 1, &fill\_value)))`
+if ((retval = nc\_put\_att\_float(ncid, temp\_varid, "\_FillValue", NC\_FLOAT, 1, &fill\_value)))
 
-~~`    ***ERR(retval);`**
+~~    ***ERR(retval);**
 ```
 
 The Fortran equivalent passes the value directly without a length or type argument:
 
 ```
-`retval = nf90\_put\_att(ncid, lat\_varid, "units", "degrees\_north")`
+retval = nf90\_put\_att(ncid, lat\_varid, "units", "degrees\_north")
 
-`retval = nf90\_put\_att(ncid, temp\_varid, "\_FillValue", fill\_value)`
+retval = nf90\_put\_att(ncid, temp\_varid, "\_FillValue", fill\_value)
 ```
 
 #### Reading Attributes
@@ -3402,27 +3449,27 @@ The Fortran equivalent passes the value directly without a length or type argume
 ~~*Before reading a text attribute in C, call nc\_inq\_attlen() *to get the length so you can allocate the right buffer. Numeric attributes have a known size from their type. (This code is from the NetCDF Expansion Pack example coord\_vars.c.)
 
 ```
-`size\_t att\_len;`
+size\_t att\_len;
 
-`char att\_text\[NC\_MAX\_NAME + 1\];`
+char att\_text\[NC\_MAX\_NAME + 1\];
 
-`if ((retval = nc\_inq\_attlen(ncid, lat\_varid, "units", &att\_len)))`
+if ((retval = nc\_inq\_attlen(ncid, lat\_varid, "units", &att\_len)))
 
-~~`    ***ERR(retval);`**
+~~    ***ERR(retval);**
 
-`if ((retval = nc\_get\_att\_text(ncid, lat\_varid, "units", att\_text)))`
+if ((retval = nc\_get\_att\_text(ncid, lat\_varid, "units", att\_text)))
 
-~~`    ***ERR(retval);`**
+~~    ***ERR(retval);**
 
-`att\_text\[att\_len\] = '\\0';`
+att\_text\[att\_len\] = '\\0';
 ```
 
 ~~*In Fortran, nf90\_get\_att *writes directly into a character variable of sufficient length; nf90\_inquire\_attribute *provides the length if you need it.
 
 ```
-`retval = nf90\_inquire\_attribute(ncid, lat\_varid, "units", len=att\_len)`
+retval = nf90\_inquire\_attribute(ncid, lat\_varid, "units", len=att\_len)
 
-`retval = nf90\_get\_att(ncid, lat\_varid, "units", att\_text)`
+retval = nf90\_get\_att(ncid, lat\_varid, "units", att\_text)
 ```
 
 ~~*The NetCDF Expansion Pack program dump\_classic\_metadata.c *shows the general pattern for reading an attribute of unknown type: call nc\_inq\_att() *to get the type and length, then dispatch to the appropriate typed getter.
@@ -3451,19 +3498,19 @@ Use the default when any out-of-range sentinel is acceptable. Override it when y
 ~~*Call nc\_def\_var\_fill() *(C) or nf90\_def\_var\_fill() *(Fortran) during define mode, before nc\_enddef(). The second argument is the *no-fill flag*: pass NC\_FILL *(0) to enable fill mode, NC\_NOFILL *(1) to disable it. The fill value must match the variable's type exactly; passing a float fill value for an integer variable will truncate it silently. (This example code is from the NetCDF Expansion Pack program simple\_2D.c.)
 
 ```
-`int fill\_value = FILL\_VALUE;   /\* FILL\_VALUE = -9999 \*/`
+int fill\_value = FILL\_VALUE;   /\* FILL\_VALUE = -9999 \*/
 
-`if ((retval = nc\_def\_var\_fill(ncid, varid, NC\_FILL, &fill\_value)))`
+if ((retval = nc\_def\_var\_fill(ncid, varid, NC\_FILL, &fill\_value)))
 
-~~`    ***ERR(retval);`**
+~~    ***ERR(retval);**
 ```
 
 In Fortran, we use the F90 version of the function (example from NetCDF Expansion Pack program f\_simple\_2D.f90.)
 
 ```
-`retval = nf90\_def\_var\_fill(ncid, varid, 0, FILL\_VALUE)`
+retval = nf90\_def\_var\_fill(ncid, varid, 0, FILL\_VALUE)
 
-`if (retval /= nf90\_noerr) call handle\_err(retval)`
+if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 ~~*The example program simple\_2D.c *writes a 6×12 integer array but leaves the last row unwritten. Those 6 elements return −9999 on any subsequent read.
@@ -3479,19 +3526,19 @@ In Fortran, we use the F90 version of the function (example from NetCDF Expansio
 ~~*To check the fill value on an existing file, use nc\_inq\_var\_fill() *(C) or nf90\_inq\_var\_fill() *(Fortran). Both return the no-fill flag and the fill value itself.
 
 ```
-`int no\_fill, fill\_value\_in;`
+int no\_fill, fill\_value\_in;
 
-`if ((retval = nc\_inq\_var\_fill(ncid, varid, &no\_fill, &fill\_value\_in)))`
+if ((retval = nc\_inq\_var\_fill(ncid, varid, &no\_fill, &fill\_value\_in)))
 
-~~`    ***ERR(retval);`**
+~~    ***ERR(retval);**
 ```
 
 In Fortran:
 
 ```
-`retval = nf90\_inq\_var\_fill(ncid, varid, no\_fill, fill\_value\_in)`
+retval = nf90\_inq\_var\_fill(ncid, varid, no\_fill, fill\_value\_in)
 
-`if (retval /= nf90\_noerr) call handle\_err(retval)`
+if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 #### ~~*The \_FillValue *Attribute
@@ -3503,25 +3550,24 @@ In Fortran:
 ~~*CF Conventions require the fill value to appear as \_FillValue. The NetCDF Expansion Pack program coord\_vars.c *writes it directly as an attribute, which is the typical CF pattern:
 
 ```
-`float fill\_value = -999.0;`
+float fill\_value = -999.0;
 
-`if ((retval = nc\_put\_att\_float(ncid, temp\_varid, "\_FillValue", NC\_FLOAT, 1, &fill\_value)))`
+if ((retval = nc\_put\_att\_float(ncid, temp\_varid, "\_FillValue", NC\_FLOAT, 1, &fill\_value)))
 
-~~`    ***ERR(retval);`**
+~~    ***ERR(retval);**
 ```
 
 In Fortran:
 
 ```
-`fill\_value = -999.0`
+fill\_value = -999.0
 
-`retval = nf90\_put\_att(ncid, temp\_varid, "\_FillValue", fill\_value)`
+retval = nf90\_put\_att(ncid, temp\_varid, "\_FillValue", fill\_value)
 
-`if (retval /= nf90\_noerr) call handle\_err(retval)`
+if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 Writing \_FillValue directly is equivalent to calling nc\_def\_var\_fill() with NC\_FILL; the library implementation deletes any existing \_FillValue attribute and writes a new one with the given value. Use nc\_def\_var\_fill() when you also need to control the no-fill flag; use nc\_put\_att\_\* when the CF attribute pattern is more readable in context. Either way, the resulting file is identical.
-
 
 ### Reading and Writing Data
 
@@ -3532,21 +3578,21 @@ Variables are defined during define mode but data is written and read only in da
 ~~*The simplest write operation transfers all elements of a variable in one call. In C, use nc\_put\_var\_\<type\>() *where \<type\> *matches the variable's netCDF type:
 
 ```
-`/\* Write entire 2D integer array \*/`
+/\* Write entire 2D integer array \*/
 
-`if ((retval = nc\_put\_var\_int(ncid, varid, &data\_out\[0\]\[0\])))`
+if ((retval = nc\_put\_var\_int(ncid, varid, &data\_out\[0\]\[0\])))
 
-~~`   ***ERR(retval);`**
+~~   ***ERR(retval);**
 ```
 
 ~~***In Fortran, nf90\_put\_var() *is overloaded and accepts any array type directly:**
 
 ```
-`! Write entire 2D integer array`
+! Write entire 2D integer array
 
-`retval = nf90\_put\_var(ncid, varid, data\_out)`
+retval = nf90\_put\_var(ncid, varid, data\_out)
 
-`if (retval /= nf90\_noerr) call handle\_err(retval)`
+if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 ~~***The full set of typed write functions in C mirrors the attribute functions:**
@@ -3569,51 +3615,51 @@ Variables are defined during define mode but data is written and read only in da
 ~~*This example from simple\_2D.c *in the NetCDF Expansion Pack writes the first NY-1 *rows of a two-dimensional integer variable, leaving the last row unwritten:
 
 ```
-`size\_t start\[NDIMS\] = \{0, 0\};`
+size\_t start\[NDIMS\] = \{0, 0\};
 
-`size\_t count\[NDIMS\] = \{NY - 1, NX\};`
+size\_t count\[NDIMS\] = \{NY - 1, NX\};
 
-`if ((retval = nc\_put\_vara\_int(ncid, varid, start, count, &data\_out\[0\]\[0\])))`
+if ((retval = nc\_put\_vara\_int(ncid, varid, start, count, &data\_out\[0\]\[0\])))
 
-~~`   ***ERR(retval);`**
+~~   ***ERR(retval);**
 ```
 
 ~~*The Fortran equivalent passes start *and count *as keyword arguments to nf90\_put\_var(). In Fortran the indices are 1-based and the dimension order is reversed relative to C:
 
 ```
-`start\_idx = (/ 1, 1 /)`
+start\_idx = (/ 1, 1 /)
 
-`count\_idx = (/ NX, NY - 1 /)`
+count\_idx = (/ NX, NY - 1 /)
 
-`retval = nf90\_put\_var(ncid, varid, data\_out(:, 1:NY-1), start=start\_idx, count=count\_idx)`
+retval = nf90\_put\_var(ncid, varid, data\_out(:, 1:NY-1), start=start\_idx, count=count\_idx)
 
-`if (retval /= nf90\_noerr) call handle\_err(retval)`
+if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 ~~*The same start/count *mechanism works for appending to an unlimited dimension. The unlimited\_dim.c *example in the NetCDF Expansion Pack writes three initial time steps and then reopens the file to append two more:
 
 ```
-`/\* Write initial timesteps (0, 1, 2) \*/`
+/\* Write initial timesteps (0, 1, 2) \*/
 
-`size\_t start\[3\] = \{0, 0, 0\};`
+size\_t start\[3\] = \{0, 0, 0\};
 
-`size\_t count\[3\] = \{INITIAL\_TIMESTEPS, NLAT, NLON\};`
+size\_t count\[3\] = \{INITIAL\_TIMESTEPS, NLAT, NLON\};
 
-`if ((retval = nc\_put\_vara\_float(ncid, temp\_varid, start, count, &temp\_data\[0\]\[0\]\[0\])))`
+if ((retval = nc\_put\_vara\_float(ncid, temp\_varid, start, count, &temp\_data\[0\]\[0\]\[0\])))
 
-~~`   ***ERR(retval);`**
+~~   ***ERR(retval);**
 
-`/\* Later: append timesteps 3 and 4 \*/`
+/\* Later: append timesteps 3 and 4 \*/
 
-`start\[0\] = INITIAL\_TIMESTEPS;`
+start\[0\] = INITIAL\_TIMESTEPS;
 
-`count\[0\] = APPEND\_TIMESTEPS;`
+count\[0\] = APPEND\_TIMESTEPS;
 
-`if ((retval = nc\_put\_vara\_float(ncid, temp\_varid, start, count,`
+if ((retval = nc\_put\_vara\_float(ncid, temp\_varid, start, count,
 
-~~`                                 ***&temp\_data\[INITIAL\_TIMESTEPS\]\[0\]\[0\])))`**
+~~                                 ***&temp\_data\[INITIAL\_TIMESTEPS\]\[0\]\[0\])))**
 
-~~`   ***ERR(retval);`**
+~~   ***ERR(retval);**
 ```
 
 #### Reading an Entire Variable
@@ -3621,21 +3667,21 @@ Variables are defined during define mode but data is written and read only in da
 ~~*To read all elements of a variable in one call, use nc\_get\_var\_\<type\>() *in C:
 
 ```
-`/\* Read entire 2D integer array \*/`
+/\* Read entire 2D integer array \*/
 
-`if ((retval = nc\_get\_var\_int(ncid, varid, &data\_in\[0\]\[0\])))`
+if ((retval = nc\_get\_var\_int(ncid, varid, &data\_in\[0\]\[0\])))
 
-~~`   ***ERR(retval);`**
+~~   ***ERR(retval);**
 ```
 
 ~~***In Fortran, use nf90\_get\_var():**
 
 ```
-`! Read entire 2D integer array`
+! Read entire 2D integer array
 
-`retval = nf90\_get\_var(ncid, varid, data\_in)`
+retval = nf90\_get\_var(ncid, varid, data\_in)
 
-`if (retval /= nf90\_noerr) call handle\_err(retval)`
+if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 ~~*The buffer you pass must be large enough to hold the entire variable. For large variables this can be impractical; use nc\_get\_vara\_\<type\>() *with start and count to read one hyperslab at a time.
@@ -3645,21 +3691,21 @@ Variables are defined during define mode but data is written and read only in da
 ~~*When you write a file and immediately reopen it, you know the variable IDs from the define phase. When you open a file written by someone else—or open your own file in a later program run—you must look up the IDs by name. Use nc\_inq\_varid() *in C:
 
 ```
-`/\* Look up variable ID by name \*/`
+/\* Look up variable ID by name \*/
 
-`if ((retval = nc\_inq\_varid(ncid, "temperature", &temp\_varid)))`
+if ((retval = nc\_inq\_varid(ncid, "temperature", &temp\_varid)))
 
-~~`   ***ERR(retval);`**
+~~   ***ERR(retval);**
 ```
 
 ~~*In Fortran, use nf90\_inq\_varid():
 
 ```
-`! Look up variable ID by name`
+! Look up variable ID by name
 
-`retval = nf90\_inq\_varid(ncid, "temperature", temp\_varid)`
+retval = nf90\_inq\_varid(ncid, "temperature", temp\_varid)
 
-`if (retval /= nf90\_noerr) call handle\_err(retval)`
+if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 ~~*Once you have the variable ID you can query its type, number of dimensions, and dimension IDs with nc\_inq\_var() *in C or nf90\_inquire\_variable() *in Fortran, as shown in the Inquiring about an Open NetCDF File section above.
@@ -3726,7 +3772,7 @@ A typical use case is to use the unlimited dimension as the time dimension in we
 Due to the way the classic binary format stores data, only one unlimited dimension can be permitted. As each record is added, the netCDF classic format file is increased in size to hold the new record, which is appended to the end of the file.
 
 ```
-`\#define NC\_EUNLIMIT    	(-54)	   /\*\*\< NC\_UNLIMITED size already in use \*/`
+\#define NC\_EUNLIMIT    	(-54)	   /\*\*\< NC\_UNLIMITED size already in use \*/
 ```
 
 This error is returned when the user attempts to define a second dimension in a classic binary format file, or a netCDF-4/HDF5 file with NC\_CLASSIC\_MODEL specified.
@@ -3734,7 +3780,7 @@ This error is returned when the user attempts to define a second dimension in a 
 An additional restriction is that for any variable using the unlimited dimension, that dimension must be the slowest-varying dimension. In C this means the unlimited dimension must come first in the list of dimensions for the variable. In Fortran, the unlimited dimension must be last.
 
 ```
-`\#define NC\_EUNLIMPOS	(-47)	   /\*\*\< NC\_UNLIMITED in the wrong index \*/`
+\#define NC\_EUNLIMPOS	(-47)	   /\*\*\< NC\_UNLIMITED in the wrong index \*/
 ```
 
 The NC\_EUNLIMPOS error is returned if the user attempts to define a variable with the unlimited dimension not the slowest varying dimension, if the file is a classic format file, or a netCDF-4/HDF5 file with NC\_CLASSIC\_MODEL defined.
@@ -3744,49 +3790,49 @@ With HDF5, multiple unlimited dimensions are permitted. Since data are written i
 For netCDF-4/HDF5 files, any number of unlimited dimensions may be defined. Any variable may use one or more unlimited dimensions, and those dimensions can appear anywhere in the variable’s list of dimensions.
 
 ```
-`    /\* Define two unlimited dimensions \*/`
+    /\* Define two unlimited dimensions \*/
 
-`    if ((retval = nc\_def\_dim(ncid, "station", NC\_UNLIMITED, &station\_dimid)))`
+    if ((retval = nc\_def\_dim(ncid, "station", NC\_UNLIMITED, &station\_dimid)))
 
-`        ERR(retval);`
+        ERR(retval);
 
-`    if ((retval = nc\_def\_dim(ncid, "time", NC\_UNLIMITED, &time\_dimid)))`
+    if ((retval = nc\_def\_dim(ncid, "time", NC\_UNLIMITED, &time\_dimid)))
 
-`        ERR(retval);`
+        ERR(retval);
 
-`    `
+    
 
-`    /\* Define variable using both unlimited dimensions \*/`
+    /\* Define variable using both unlimited dimensions \*/
 
-`    dimids\[0\] = station\_dimid;`
+    dimids\[0\] = station\_dimid;
 
-`    dimids\[1\] = time\_dimid;`
+    dimids\[1\] = time\_dimid;
 
-`    if ((retval = nc\_def\_var(ncid, "temperature", NC\_FLOAT, NDIMS, dimids, &varid)))`
+    if ((retval = nc\_def\_var(ncid, "temperature", NC\_FLOAT, NDIMS, dimids, &varid)))
 
-`        ERR(retval);`
+        ERR(retval);
 ```
 
 In Fortran:
 
 ```
-`   retval = nf90\_def\_dim(ncid, "station", NF90\_UNLIMITED, station\_dimid)`
+   retval = nf90\_def\_dim(ncid, "station", NF90\_UNLIMITED, station\_dimid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   retval = nf90\_def\_dim(ncid, "time", NF90\_UNLIMITED, time\_dimid)`
+   retval = nf90\_def\_dim(ncid, "time", NF90\_UNLIMITED, time\_dimid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   `
+   
 
-`   dimids(1) = time\_dimid`
+   dimids(1) = time\_dimid
 
-`   dimids(2) = station\_dimid`
+   dimids(2) = station\_dimid
 
-`   retval = nf90\_def\_var(ncid, "temperature", NF90\_FLOAT, dimids, varid)`
+   retval = nf90\_def\_var(ncid, "temperature", NF90\_FLOAT, dimids, varid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 If NC\_CLASSIC\_MODEL is used when the file is created (or NF90\_CLASSIC\_MODEL in Fortran), then the classic model behavior is enforced; only one unlimited dimension will be permitted in the file, and variables that use it must define it as their slowest varying dimension.
@@ -3800,87 +3846,87 @@ Each group acts as a file in the classic model. That is, each group may contain 
 In the groups.c example in the NetCDF Expansion Pack, we create a file:
 
 ```
-`    if ((retval = nc\_create(FILE\_NAME, NC\_CLOBBER|NC\_NETCDF4, &ncid)))`
+    if ((retval = nc\_create(FILE\_NAME, NC\_CLOBBER|NC\_NETCDF4, &ncid)))
 
-`        ERR(retval);`
+        ERR(retval);
 ```
 
 The ncid returned as a parameter in this function points to the root group. To create subgroups:
 
 ```
-`    /\* Create SubGroup1 \*/`
+    /\* Create SubGroup1 \*/
 
-`    printf("Creating SubGroup1\\n");`
+    printf("Creating SubGroup1\\n");
 
-`    if ((retval = nc\_def\_grp(ncid, "SubGroup1", &grp1\_id)))`
+    if ((retval = nc\_def\_grp(ncid, "SubGroup1", &grp1\_id)))
 
-`        ERR(retval);`
+        ERR(retval);
 
-`    `
+    
 
-`    /\* Create SubGroup2 \*/`
+    /\* Create SubGroup2 \*/
 
-`    printf("Creating SubGroup2\\n");`
+    printf("Creating SubGroup2\\n");
 
-`    if ((retval = nc\_def\_grp(ncid, "SubGroup2", &grp2\_id)))`
+    if ((retval = nc\_def\_grp(ncid, "SubGroup2", &grp2\_id)))
 
-`        ERR(retval);`
+        ERR(retval);
 ```
 
 We can then create a nested group under subgroup 2:
 
 ```
-`    if ((retval = nc\_def\_grp(grp2\_id, "NestedGroup", &nested\_id)))`
+    if ((retval = nc\_def\_grp(grp2\_id, "NestedGroup", &nested\_id)))
 
-`        ERR(retval);`
+        ERR(retval);
 ```
 
 When creating a variable in a group, use the group ID as the ncid in the nc\_def\_var() call:
 
 ```
-`   /\* SubGroup1: NC\_USHORT variable (2D: x, y) \*/`
+   /\* SubGroup1: NC\_USHORT variable (2D: x, y) \*/
 
-`    printf("  SubGroup1: ushort\_var (NC\_USHORT, 2D: x, y)\\n");`
+    printf("  SubGroup1: ushort\_var (NC\_USHORT, 2D: x, y)\\n");
 
-`    if ((retval = nc\_def\_var(grp1\_id, "ushort\_var", NC\_USHORT, NDIMS\_2D, `
+    if ((retval = nc\_def\_var(grp1\_id, "ushort\_var", NC\_USHORT, NDIMS\_2D, 
 
-`                             dimids\_2d, &ushort\_varid)))`
+                             dimids\_2d, &ushort\_varid)))
 
-`        ERR(retval);`
+        ERR(retval);
 ```
 
 In Fortran:
 
 ```
-`   ! Create SubGroup1`
+   ! Create SubGroup1
 
-`   print \*, "Creating SubGroup1"`
+   print \*, "Creating SubGroup1"
 
-`   retval = nf90\_def\_grp(ncid, "SubGroup1", grp1\_id)`
+   retval = nf90\_def\_grp(ncid, "SubGroup1", grp1\_id)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   `
+   
 
-`   ! Create SubGroup2`
+   ! Create SubGroup2
 
-`   print \*, "Creating SubGroup2"`
+   print \*, "Creating SubGroup2"
 
-`   retval = nf90\_def\_grp(ncid, "SubGroup2", grp2\_id)`
+   retval = nf90\_def\_grp(ncid, "SubGroup2", grp2\_id)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 ![]()  
 
 ```
-`   ! Create NestedGroup under SubGroup2`
+   ! Create NestedGroup under SubGroup2
 
-`   print \*, "Creating NestedGroup under SubGroup2"`
+   print \*, "Creating NestedGroup under SubGroup2"
 
-`   retval = nf90\_def\_grp(grp2\_id, "NestedGroup", nested\_id)`
+   retval = nf90\_def\_grp(grp2\_id, "NestedGroup", nested\_id)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 #### Visibility of Dimensions
@@ -3907,17 +3953,17 @@ NetCDF classic format supports 32-bit integers as the largest integer type. Star
 Starting in version 4.5.0, the CDF-5 binary format was added, which is an extension of the netCDF classic binary format. CDF-5 also allows 64-bit signed and unsigned integer types. Define these like any other variable, with one of the new types:
 
 ```
-`if ((retval = nc\_def\_var(nested\_id, "int64\_var", NC\_INT64,NDIMS\_2D, dimids\_2d,&int64\_varid)))`
+if ((retval = nc\_def\_var(nested\_id, "int64\_var", NC\_INT64,NDIMS\_2D, dimids\_2d,&int64\_varid)))
 
-`   ERR(retval);`
+   ERR(retval);
 ```
 
 Or in Fortran:
 
 ```
-`   retval = nf90\_def\_var(nested\_id, "int64\_var", NF90\_INT64, dimids\_2d, int64\_varid)`
+   retval = nf90\_def\_var(nested\_id, "int64\_var", NF90\_INT64, dimids\_2d, int64\_varid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 #### Unsigned Integer Types
@@ -3927,17 +3973,17 @@ NetCDF-4 adds unsigned integer types when using netCDF-4/HDF5 files.
 We can define an unsigned short in C like this:
 
 ```
-` if ((retval = nc\_def\_var(grp1\_id,"ushort\_var",NC\_USHORT,NDIMS\_2D,dimids\_2d, &ushort\_varid)))`
+ if ((retval = nc\_def\_var(grp1\_id,"ushort\_var",NC\_USHORT,NDIMS\_2D,dimids\_2d, &ushort\_varid)))
 
-`        ERR(retval);`
+        ERR(retval);
 ```
 
 In Fortran:
 
 ```
-`   retval = nf90\_def\_var(grp1\_id, "ushort\_var", NF90\_USHORT, dimids\_2d, ushort\_varid)`
+   retval = nf90\_def\_var(grp1\_id, "ushort\_var", NF90\_USHORT, dimids\_2d, ushort\_varid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 ### User Defined Types and Strings
@@ -4079,55 +4125,55 @@ Fortran does not deal well with VLENS. Data in VLENS may be hard to read from Fo
 In this example from user\_types.c in the NetCDF Expansion Pack, we define a VLEN of NC\_INT:
 
 ```
-`   nc\_type vlen\_typeid;`
+   nc\_type vlen\_typeid;
 
-`    if ((retval = nc\_def\_vlen(ncid, "obs\_per\_day\_t", NC\_INT, &vlen\_typeid)))`
+    if ((retval = nc\_def\_vlen(ncid, "obs\_per\_day\_t", NC\_INT, &vlen\_typeid)))
 
-`        ERR(retval);`
+        ERR(retval);
 ```
 
 We can the define a variable of this type:
 
 ```
-`    if ((retval = nc\_def\_var(ncid, "obs\_per\_day", vlen\_typeid, 1, &day\_dimid,`
+    if ((retval = nc\_def\_var(ncid, "obs\_per\_day", vlen\_typeid, 1, &day\_dimid,
 
-`                            &vlen\_varid)))`
+                            &vlen\_varid)))
 
-`        ERR(retval);`
+        ERR(retval);
 ```
 
 We construct some variable length arrays, and write them to this variable:
 
 ```
-`    /\* Write vlen data \*/`
+    /\* Write vlen data \*/
 
-`    nc\_vlen\_t vlen\_data\[NDAYS\];`
+    nc\_vlen\_t vlen\_data\[NDAYS\];
 
-`    int day1\_obs\[\] = \{10, 15, 20\};`
+    int day1\_obs\[\] = \{10, 15, 20\};
 
-`    int day2\_obs\[\] = \{12, 18, 22, 25\};`
+    int day2\_obs\[\] = \{12, 18, 22, 25\};
 
-`    int day3\_obs\[\] = \{8, 14\};`
+    int day3\_obs\[\] = \{8, 14\};
 
-`    `
+    
 
-`    vlen\_data\[0\].len = 3;`
+    vlen\_data\[0\].len = 3;
 
-`    vlen\_data\[0\].p = day1\_obs;`
+    vlen\_data\[0\].p = day1\_obs;
 
-`    vlen\_data\[1\].len = 4;`
+    vlen\_data\[1\].len = 4;
 
-`    vlen\_data\[1\].p = day2\_obs;`
+    vlen\_data\[1\].p = day2\_obs;
 
-`    vlen\_data\[2\].len = 2;`
+    vlen\_data\[2\].len = 2;
 
-`    vlen\_data\[2\].p = day3\_obs;`
+    vlen\_data\[2\].p = day3\_obs;
 
-`    `
+    
 
-`    if ((retval = nc\_put\_var(ncid, vlen\_varid, vlen\_data)))`
+    if ((retval = nc\_put\_var(ncid, vlen\_varid, vlen\_data)))
 
-`        ERR(retval);`
+        ERR(retval);
 ```
 
 ##### VLENs and Fortran
@@ -4245,41 +4291,41 @@ Now we can write an array of enum:
 An enum type can also be defined and used in Fortran:
 
 ```
-`   ! Define enum type: cloud\_cover\_t based on NF90\_INT`
+   ! Define enum type: cloud\_cover\_t based on NF90\_INT
 
-`   retval = nf90\_def\_enum(ncid, NF90\_INT, "cloud\_cover\_t", enum\_typeid)`
+   retval = nf90\_def\_enum(ncid, NF90\_INT, "cloud\_cover\_t", enum\_typeid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   retval = nf90\_insert\_enum(ncid, enum\_typeid, "CLEAR", CLEAR)`
+   retval = nf90\_insert\_enum(ncid, enum\_typeid, "CLEAR", CLEAR)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   retval = nf90\_insert\_enum(ncid, enum\_typeid, "PARTLY\_CLOUDY", PARTLY\_CLOUDY)`
+   retval = nf90\_insert\_enum(ncid, enum\_typeid, "PARTLY\_CLOUDY", PARTLY\_CLOUDY)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   retval = nf90\_insert\_enum(ncid, enum\_typeid, "CLOUDY", CLOUDY)`
+   retval = nf90\_insert\_enum(ncid, enum\_typeid, "CLOUDY", CLOUDY)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   retval = nf90\_insert\_enum(ncid, enum\_typeid, "OVERCAST", OVERCAST)`
+   retval = nf90\_insert\_enum(ncid, enum\_typeid, "OVERCAST", OVERCAST)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   print \*, "Defined enum type cloud\_cover\_t with 4 members"`
+   print \*, "Defined enum type cloud\_cover\_t with 4 members"
 ```
 
 When writing data, the nf\_put\_var() function from the V2 F77 API. It allows generic, untyped I/O.
 
 ```
-`   ! Write enum data using nf\_put\_var (generic untyped I/O)`
+   ! Write enum data using nf\_put\_var (generic untyped I/O)
 
-`   retval = nf\_put\_var(ncid, enum\_varid, cloud\_out)`
+   retval = nf\_put\_var(ncid, enum\_varid, cloud\_out)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   print \*, "Wrote ", NOBS, " cloud cover values"`
+   print \*, "Wrote ", NOBS, " cloud cover values"
 ```
 
 #### The Opaque Type
@@ -4291,70 +4337,70 @@ The opaque type is provided for maximal HDF5 compatibility. Most netCDF users wi
 The example program user\_types.c in the NetCDF Expansion Pack demonstrates how to use the opaque type. First we define the type, specifying its size and a name for the type:
 
 ```
-`    nc\_type opaque\_typeid;`
+    nc\_type opaque\_typeid;
 
-`    if ((retval = nc\_def\_opaque(ncid, CALIB\_SIZE, "calibration\_t", `
+    if ((retval = nc\_def\_opaque(ncid, CALIB\_SIZE, "calibration\_t", 
 
-`                                &opaque\_typeid)))`
+                                &opaque\_typeid)))
 
-`        ERR(retval);`
+        ERR(retval);
 ```
 
 With the type defined, we can define a variable:
 
 ```
-`    if ((retval = nc\_def\_var(ncid, "calibration", opaque\_typeid, 0, NULL,`
+    if ((retval = nc\_def\_var(ncid, "calibration", opaque\_typeid, 0, NULL,
 
-`                             &opaque\_varid)))`
+                             &opaque\_varid)))
 
-`        ERR(retval);`
+        ERR(retval);
 ```
 
 And then we can write some data:
 
 ```
-`    /\* Write opaque data \*/`
+    /\* Write opaque data \*/
 
-`    unsigned char calib\_data\[CALIB\_SIZE\];`
+    unsigned char calib\_data\[CALIB\_SIZE\];
 
-`    for (int i = 0; i \< CALIB\_SIZE; i++) \{`
+    for (int i = 0; i \< CALIB\_SIZE; i++) \{
 
-`        calib\_data\[i\] = (unsigned char)(i \* 17);`
+        calib\_data\[i\] = (unsigned char)(i \* 17);
 
-`    \}`
+    \}
 
-`    if ((retval = nc\_put\_var(ncid, opaque\_varid, calib\_data)))`
+    if ((retval = nc\_put\_var(ncid, opaque\_varid, calib\_data)))
 
-`        ERR(retval);`
+        ERR(retval);
 
-`    printf("Wrote %d bytes of opaque calibration data\\n", CALIB\_SIZE);`
+    printf("Wrote %d bytes of opaque calibration data\\n", CALIB\_SIZE);
 ```
 
 We can also define and wite opaque data with Fortran:
 
 ```
-`   ! Define opaque type: calibration\_t with CALIB\_SIZE bytes`
+   ! Define opaque type: calibration\_t with CALIB\_SIZE bytes
 
-`   retval = nf90\_def\_opaque(ncid, CALIB\_SIZE, "calibration\_t", opaque\_typeid)`
+   retval = nf90\_def\_opaque(ncid, CALIB\_SIZE, "calibration\_t", opaque\_typeid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 We can write data with the nf\_put\_var1() function:
 
 ```
-`   ! Write opaque data using nf\_put\_var1 (generic untyped I/O)`
+   ! Write opaque data using nf\_put\_var1 (generic untyped I/O)
 
-`   index(1) = 1`
+   index(1) = 1
 
-`   retval = nf\_put\_var1(ncid, opaque\_varid, index, calib\_out)`
+   retval = nf\_put\_var1(ncid, opaque\_varid, index, calib\_out)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 ### NetCDF-4 Attribute Functions
 
-~~***NetCDF-4 (HDF5-backed files) extends the classic type set with six additional atomic types. The C API adds a typed function for each one. Fortran continues to use the same overloaded nf90\_put\_att *and nf90\_get\_att; the compiler selects the correct implementation from the type of the value argument.**
+~~*NetCDF-4 (HDF5-backed files) extends the classic type set with six additional atomic types. The C API adds a typed function for each one. Fortran continues to use the same overloaded nf90\_put\_att *and nf90\_get\_att; the compiler selects the correct implementation from the type of the value argument.
 
 #### New Types in NetCDF-4
 
@@ -4376,19 +4422,19 @@ We can write data with the nf\_put\_var1() function:
 ~~*NC\_STRING *stores variable-length character strings, unlike NC\_CHAR *which stores fixed-length character arrays. Attributes of type NC\_STRING *are arrays of pointers; the library allocates the string memory on read and you must free it with nc\_free\_string(). dump\_nc4\_metadata.c *shows the pattern (example code from NetCDF Expansion Pack program dump\_nc4\_metadata.c.)
 
 ```
-`char \*\*val = malloc(len \* sizeof(char \*));`
+char \*\*val = malloc(len \* sizeof(char \*));
 
-`if ((retval = nc\_get\_att\_string(ncid, varid, att\_name, val)))`
+if ((retval = nc\_get\_att\_string(ncid, varid, att\_name, val)))
 
-~~`    ***ERR(retval);`**
+~~    ***ERR(retval);**
 
-`for (i = 0; i \< len; i++)`
+for (i = 0; i \< len; i++)
 
-~~`    ***printf("%s\\"%s\\"", i ? ", " : "", val\[i\] ? val\[i\] : "(null)");`**
+~~    ***printf("%s\\"%s\\"", i ? ", " : "", val\[i\] ? val\[i\] : "(null)");**
 
-`nc\_free\_string(len, val);`
+nc\_free\_string(len, val);
 
-`free(val);`
+free(val);
 ```
 
 ~~*In Fortran, NC\_STRING *variables and attributes are not handled portably by the Fortran 90 interface. The Fortran dump\_nc4\_metadata *example notes this explicitly and reports string-typed attributes by type name only, without reading their values.
@@ -4397,38 +4443,35 @@ We can write data with the nf\_put\_var1() function:
 
 ~~*When reading a file whose attribute types are not known in advance, use nc\_inq\_att() *(C) or nf90\_inquire\_attribute() *(Fortran) to retrieve the type and length, then dispatch to the appropriate typed getter. The NetCDF Expansion Pack program dump\_nc4\_metadata.c *does this for every attribute it encounters, covering all classic and NetCDF-4 types including NC\_STRING.
 
-## ~~***Reading and Writing Data with the Enhanced Model**
+### Reading and Writing Data with the Enhanced Model
 
-~~***The enhanced model extends the read/write API in several directions. New atomic types require typed functions in C. Variables inside groups need the group's ncid *rather than the file's root ncid. User-defined types introduce their own write and read patterns. Strings require memory management that differs from all other types. This section covers each area in turn, following the pattern established in the Classic Model section above.**
+~~*The enhanced model extends the read/write API in several directions. New atomic types require typed functions in C. Variables inside groups need the group's ncid *rather than the file's root ncid. User-defined types introduce their own write and read patterns. Strings require memory management that differs from all other types. This section covers each area in turn, following the pattern established in the Classic Model section above.
 
-### ~~***Creating a NetCDF-4 File**
+#### Creating a NetCDF-4 File
 
-~~***All enhanced-model features require the NC\_NETCDF4 *flag at file creation. Without it, the library creates a classic-format file and rejects any enhanced-model operation.**
+~~*All enhanced-model features require the NC\_NETCDF4 *flag at file creation. Without it, the library creates a classic-format file and rejects any enhanced-model operation.
 
+In C:
 
-~~***In C:**
+```
+`if ((retval = nc\_create(FILE\_NAME, NC\_CLOBBER|NC\_NETCDF4, &ncid)))`
 
+~~`    ***ERR(retval);`**
+```
 
-~~***if ((retval = nc\_create(FILE\_NAME, NC\_CLOBBER|NC\_NETCDF4, &ncid)))**
+In Fortran:
 
+```
+`retval = nf90\_create(FILE\_NAME, NF90\_CLOBBER + NF90\_NETCDF4, ncid)`
 
-~~    ***ERR(retval);**
-
-
-~~***In Fortran:**
-
-
-~~***retval = nf90\_create(FILE\_NAME, NF90\_CLOBBER + NF90\_NETCDF4, ncid)**
-
-
-~~***if (retval /= nf90\_noerr) call handle\_err(retval)**
-
+`if (retval /= nf90\_noerr) call handle\_err(retval)`
+```
 
 ~~***To enforce classic-model behavior in a netCDF-4/HDF5 file, add NC\_CLASSIC\_MODEL *(C) or NF90\_CLASSIC\_MODEL *(Fortran) alongside NC\_NETCDF4. This prevents enhanced features from being used while still producing an HDF5 file.**
 
-### ~~***Writing and Reading New Atomic Types**
+#### Writing and Reading New Atomic Types
 
-~~***The five additional integer types available in netCDF-4 each have their own typed C functions. These follow the same naming pattern as the classic types but use the type name as a suffix.**
+The five additional integer types available in netCDF-4 each have their own typed C functions. These follow the same naming pattern as the classic types but use the type name as a suffix.
 
 
 | ~~***NetCDF-4 type** | ~~***C write function** | ~~***C read function** |
@@ -4439,416 +4482,316 @@ We can write data with the nf\_put\_var1() function:
 | ~~***NC\_INT64** | ~~***nc\_put\_var\_longlong** | ~~***nc\_get\_var\_longlong** |
 | ~~***NC\_UINT64** | ~~***nc\_put\_var\_ulonglong** | ~~***nc\_get\_var\_ulonglong** |
 
+~~*This code from groups.c *in the NetCDF Expansion Pack writes one variable of each type, each into a different group:
 
-~~***This code from groups.c *in the NetCDF Expansion Pack writes one variable of each type, each into a different group:**
+```
+`if ((retval = nc\_put\_var\_uchar(ncid, ubyte\_varid, &ubyte\_data\[0\]\[0\])))`
 
+~~`    ***ERR(retval);`**
 
-~~***if ((retval = nc\_put\_var\_uchar(ncid, ubyte\_varid, &ubyte\_data\[0\]\[0\])))**
+`if ((retval = nc\_put\_var\_ushort(grp1\_id, ushort\_varid, &ushort\_data\[0\]\[0\])))`
 
+~~`    ***ERR(retval);`**
 
-~~    ***ERR(retval);**
+`if ((retval = nc\_put\_var\_uint(grp2\_id, uint\_varid, &uint\_data\[0\]\[0\])))`
 
+~~`    ***ERR(retval);`**
 
-~~***if ((retval = nc\_put\_var\_ushort(grp1\_id, ushort\_varid, &ushort\_data\[0\]\[0\])))**
+`if ((retval = nc\_put\_var\_longlong(nested\_id, int64\_varid, &int64\_data\[0\]\[0\])))`
 
+~~`    ***ERR(retval);`**
 
-~~    ***ERR(retval);**
+`if ((retval = nc\_put\_var\_ulonglong(nested\_id, uint64\_varid, &uint64\_data\[0\]\[0\]\[0\])))`
 
-
-~~***if ((retval = nc\_put\_var\_uint(grp2\_id, uint\_varid, &uint\_data\[0\]\[0\])))**
-
-
-~~    ***ERR(retval);**
-
-
-~~***if ((retval = nc\_put\_var\_longlong(nested\_id, int64\_varid, &int64\_data\[0\]\[0\])))**
-
-
-~~    ***ERR(retval);**
-
-
-~~***if ((retval = nc\_put\_var\_ulonglong(nested\_id, uint64\_varid, &uint64\_data\[0\]\[0\]\[0\])))**
-
-
-~~    ***ERR(retval);**
-
+~~`    ***ERR(retval);`**
+```
 
 ~~***Reading them back uses the parallel nc\_get\_var\_\* *functions:**
 
+```
+`if ((retval = nc\_get\_var\_uchar(ncid, ubyte\_varid, &ubyte\_in\[0\]\[0\])))`
 
-~~***if ((retval = nc\_get\_var\_uchar(ncid, ubyte\_varid, &ubyte\_in\[0\]\[0\])))**
+~~`    ***ERR(retval);`**
 
+`if ((retval = nc\_get\_var\_ushort(grp1\_id, ushort\_varid, &ushort\_in\[0\]\[0\])))`
 
-~~    ***ERR(retval);**
+~~`    ***ERR(retval);`**
 
+`if ((retval = nc\_get\_var\_longlong(nested\_id, int64\_varid, &int64\_in\[0\]\[0\])))`
 
-~~***if ((retval = nc\_get\_var\_ushort(grp1\_id, ushort\_varid, &ushort\_in\[0\]\[0\])))**
+~~`    ***ERR(retval);`**
 
+`if ((retval = nc\_get\_var\_ulonglong(nested\_id, uint64\_varid, &uint64\_in\[0\]\[0\]\[0\])))`
 
-~~    ***ERR(retval);**
-
-
-~~***if ((retval = nc\_get\_var\_longlong(nested\_id, int64\_varid, &int64\_in\[0\]\[0\])))**
-
-
-~~    ***ERR(retval);**
-
-
-~~***if ((retval = nc\_get\_var\_ulonglong(nested\_id, uint64\_varid, &uint64\_in\[0\]\[0\]\[0\])))**
-
-
-~~    ***ERR(retval);**
-
+~~`    ***ERR(retval);`**
+```
 
 ~~***Notice that the ncid *passed to each call is the group ID where that variable lives, not the root file ID. Variables defined in a group are only accessible through that group's ncid.**
 
-
 ~~***In Fortran, nf90\_put\_var *and nf90\_get\_var *are overloaded and handle all five new types automatically. The correct implementation is selected from the declared type of the array argument, just as with classic types. No new function names are needed.**
 
-### ~~***Variables in Groups**
+#### Variables in Groups
 
-~~***When reading a file with groups, use nc\_inq\_grp\_ncid() *to navigate to a group by name. The returned group ID then serves as the ncid *for all variable operations in that group. This code from groups.c *navigates the group hierarchy after reopening the file:**
+~~*When reading a file with groups, use nc\_inq\_grp\_ncid() *to navigate to a group by name. The returned group ID then serves as the ncid *for all variable operations in that group. This code from groups.c *navigates the group hierarchy after reopening the file:
 
+```
+`if ((retval = nc\_inq\_grp\_ncid(ncid, "SubGroup1", &grp1\_id)))`
 
-~~***if ((retval = nc\_inq\_grp\_ncid(ncid, "SubGroup1", &grp1\_id)))**
+~~`    ***ERR(retval);`**
 
+`if ((retval = nc\_inq\_grp\_ncid(ncid, "SubGroup2", &grp2\_id)))`
 
-~~    ***ERR(retval);**
+~~`    ***ERR(retval);`**
 
+`if ((retval = nc\_inq\_grp\_ncid(grp2\_id, "NestedGroup", &nested\_id)))`
 
-~~***if ((retval = nc\_inq\_grp\_ncid(ncid, "SubGroup2", &grp2\_id)))**
-
-
-~~    ***ERR(retval);**
-
-
-~~***if ((retval = nc\_inq\_grp\_ncid(grp2\_id, "NestedGroup", &nested\_id)))**
-
-
-~~    ***ERR(retval);**
-
+~~`    ***ERR(retval);`**
+```
 
 ~~***Once you have the group ID, nc\_inq\_varid() *and the typed get/put functions work exactly as they do in the root group. Variable IDs are scoped to their group; the same integer ID value in two different groups refers to two different variables.**
 
-
 ~~***In Fortran, nf90\_inq\_grp\_ncid() *returns the group ID:**
 
+```
+`retval = nf90\_inq\_grp\_ncid(ncid, "SubGroup1", grp1\_id)`
 
-~~***retval = nf90\_inq\_grp\_ncid(ncid, "SubGroup1", grp1\_id)**
+`if (retval /= nf90\_noerr) call handle\_err(retval)`
+```
 
+#### Appending Along Multiple Unlimited Dimensions
 
-~~***if (retval /= nf90\_noerr) call handle\_err(retval)**
+~~*In the classic model only one unlimited dimension is permitted. In netCDF-4/HDF5 files any number of unlimited dimensions may be defined, and they may appear in any position in a variable's dimension list. The multi\_unlimited.c *example in the NetCDF Expansion Pack demonstrates a variable indexed by both an unlimited station *dimension and an unlimited time *dimension:
 
-### ~~***Appending Along Multiple Unlimited Dimensions**
+```
+`if ((retval = nc\_def\_dim(ncid, "station", NC\_UNLIMITED, &station\_dimid)))`
 
-~~***In the classic model only one unlimited dimension is permitted. In netCDF-4/HDF5 files any number of unlimited dimensions may be defined, and they may appear in any position in a variable's dimension list. The multi\_unlimited.c *example in the NetCDF Expansion Pack demonstrates a variable indexed by both an unlimited station *dimension and an unlimited time *dimension:**
+~~`    ***ERR(retval);`**
 
+`if ((retval = nc\_def\_dim(ncid, "time", NC\_UNLIMITED, &time\_dimid)))`
 
-~~***if ((retval = nc\_def\_dim(ncid, "station", NC\_UNLIMITED, &station\_dimid)))**
+~~`    ***ERR(retval);`**
 
+`dimids\[0\] = station\_dimid;`
 
-~~    ***ERR(retval);**
+`dimids\[1\] = time\_dimid;`
 
+`if ((retval = nc\_def\_var(ncid, "temperature", NC\_FLOAT, NDIMS, dimids, &varid)))`
 
-~~***if ((retval = nc\_def\_dim(ncid, "time", NC\_UNLIMITED, &time\_dimid)))**
-
-
-~~    ***ERR(retval);**
-
-
-~~***dimids\[0\] = station\_dimid;**
-
-
-~~***dimids\[1\] = time\_dimid;**
-
-
-~~***if ((retval = nc\_def\_var(ncid, "temperature", NC\_FLOAT, NDIMS, dimids, &varid)))**
-
-
-~~    ***ERR(retval);**
-
+~~`    ***ERR(retval);`**
+```
 
 ~~***Appending along either dimension uses nc\_put\_vara\_float() *with the appropriate start *and count *arrays, exactly as with a single unlimited dimension. Because HDF5 stores data in chunks, there is no restriction on which dimension is unlimited or where unlimited dimensions appear.**
 
-### ~~***Writing and Reading Compound Variables**
+#### Writing and Reading Compound Variables
 
-~~***Compound type variables are written and read with the generic nc\_put\_var() *and nc\_get\_var() *functions in C. These functions transfer raw bytes between the file and a C struct whose layout matches the compound type definition. The user\_types.c *example from the NetCDF Expansion Pack writes an array of WeatherObs *structs:**
+~~*Compound type variables are written and read with the generic nc\_put\_var() *and nc\_get\_var() *functions in C. These functions transfer raw bytes between the file and a C struct whose layout matches the compound type definition. The user\_types.c *example from the NetCDF Expansion Pack writes an array of WeatherObs *structs:
 
+```
+`WeatherObs obs\_data\[NOBS\];`
 
-~~***WeatherObs obs\_data\[NOBS\];**
+`for (int i = 0; i \< NOBS; i++) \{`
 
+~~`    ***obs\_data\[i\].time = 1000.0 + i \* 3600.0;`**
 
-~~***for (int i = 0; i \< NOBS; i++) \{**
+~~`    ***obs\_data\[i\].temperature = 20.0 + i \* 2.0;`**
 
+~~`    ***obs\_data\[i\].pressure = 1013.0 + i \* 0.5;`**
 
-~~    ***obs\_data\[i\].time = 1000.0 + i \* 3600.0;**
+~~`    ***obs\_data\[i\].humidity = 60.0 - i \* 5.0;`**
 
+`\}`
 
-~~    ***obs\_data\[i\].temperature = 20.0 + i \* 2.0;**
+`if ((retval = nc\_put\_var(ncid, compound\_varid, obs\_data)))`
 
+~~`    ***ERR(retval);`**
 
-~~    ***obs\_data\[i\].pressure = 1013.0 + i \* 0.5;**
+~~***`Reading uses nc\_get\_var() *into a matching struct array:`**
 
+`WeatherObs obs\_read\[NOBS\];`
 
-~~    ***obs\_data\[i\].humidity = 60.0 - i \* 5.0;**
+`if ((retval = nc\_get\_var(ncid, compound\_varid, obs\_read)))`
 
-
-~~***\}**
-
-
-~~***if ((retval = nc\_put\_var(ncid, compound\_varid, obs\_data)))**
-
-
-~~    ***ERR(retval);**
-
-
-~~***Reading uses nc\_get\_var() *into a matching struct array:**
-
-
-~~***WeatherObs obs\_read\[NOBS\];**
-
-
-~~***if ((retval = nc\_get\_var(ncid, compound\_varid, obs\_read)))**
-
-
-~~    ***ERR(retval);**
-
+~~`    ***ERR(retval);`**
+```
 
 ~~***The struct layout must match the byte offsets registered when the type was defined with nc\_insert\_compound(). Use offsetof() *when defining the type and declare the struct fields in the same order to ensure the layouts agree.**
 
-
 ~~***Compound variable I/O is not available from Fortran. The Fortran interface has no mechanism to match derived type memory layouts to the byte offsets required by a compound type definition. Fortran users who need to store grouped fields should decompose them into separate scalar variables, or call the NetCDF C API directly through ISO\_C\_BINDING. See the discussion under The Compound Type above for a full explanation.**
 
-### ~~***Writing and Reading VLEN Variables**
+#### Writing and Reading VLEN Variables
 
-~~***Variable-length type variables are written and read with nc\_put\_var() *and nc\_get\_var() *using arrays of nc\_vlen\_t. Each element of the array has a len *field for the number of values and a p *pointer to the data for that element. After reading, call nc\_free\_vlen() *to release the library-allocated memory. This code from user\_types.c *demonstrates both:**
+~~*Variable-length type variables are written and read with nc\_put\_var() *and nc\_get\_var() *using arrays of nc\_vlen\_t. Each element of the array has a len *field for the number of values and a p *pointer to the data for that element. After reading, call nc\_free\_vlen() *to release the library-allocated memory. This code from user\_types.c *demonstrates both:
 
+```
+`/\* Write \*/`
 
-~~***/\* Write \*/**
+`nc\_vlen\_t vlen\_data\[NDAYS\];`
 
+`int day1\_obs\[\] = \{10, 15, 20\};`
 
-~~***nc\_vlen\_t vlen\_data\[NDAYS\];**
+`int day2\_obs\[\] = \{12, 18, 22, 25\};`
 
+`int day3\_obs\[\] = \{8, 14\};`
 
-~~***int day1\_obs\[\] = \{10, 15, 20\};**
+`vlen\_data\[0\].len = 3; vlen\_data\[0\].p = day1\_obs;`
 
+`vlen\_data\[1\].len = 4; vlen\_data\[1\].p = day2\_obs;`
 
-~~***int day2\_obs\[\] = \{12, 18, 22, 25\};**
+`vlen\_data\[2\].len = 2; vlen\_data\[2\].p = day3\_obs;`
 
+`if ((retval = nc\_put\_var(ncid, vlen\_varid, vlen\_data)))`
 
-~~***int day3\_obs\[\] = \{8, 14\};**
+~~`    ***ERR(retval);`**
 
+`/\* Read \*/`
 
-~~***vlen\_data\[0\].len = 3; vlen\_data\[0\].p = day1\_obs;**
+`nc\_vlen\_t vlen\_read\[NDAYS\];`
 
+`if ((retval = nc\_get\_var(ncid, vlen\_varid, vlen\_read)))`
 
-~~***vlen\_data\[1\].len = 4; vlen\_data\[1\].p = day2\_obs;**
+~~`    ***ERR(retval);`**
 
+`/\* ... use vlen\_read\[d\].len and (int \*)vlen\_read\[d\].p ... \*/`
 
-~~***vlen\_data\[2\].len = 2; vlen\_data\[2\].p = day3\_obs;**
+`if ((retval = nc\_free\_vlen(vlen\_read)))`
 
+~~`    ***ERR(retval);`**
+```
 
-~~***if ((retval = nc\_put\_var(ncid, vlen\_varid, vlen\_data)))**
 
+~~*VLEN variable I/O is not available from Fortran for the same reasons as compound types. The nc\_vlen\_t *struct depends on C pointer semantics and heap management that have no portable Fortran equivalent. See the discussion under The VLEN Type above.
 
-~~    ***ERR(retval);**
+#### Writing and Reading String Variables
 
+~~*String variables in C use nc\_put\_var\_string() *and nc\_get\_var\_string(). The write call accepts an array of const char \* *pointers. The read call fills an array of char \* *pointers, each pointing to library-allocated memory; call nc\_free\_string() *after use. This code from user\_types.c *writes station names and then reads them back:
 
-~~***/\* Read \*/**
+```
+`/\* Write \*/`
 
+`const char \*station\_names\[NSTATIONS\] = \{`
 
-~~***nc\_vlen\_t vlen\_read\[NDAYS\];**
+~~`    ***"Boulder, CO", "Cape Canaveral, FL",`**
 
+~~`    ***"Wallops Island, VA", "White Sands, NM"`**
 
-~~***if ((retval = nc\_get\_var(ncid, vlen\_varid, vlen\_read)))**
+`\};`
 
+`if ((retval = nc\_put\_var\_string(ncid, string\_varid, station\_names)))`
 
-~~    ***ERR(retval);**
+~~`    ***ERR(retval);`**
 
+`/\* Read \*/`
 
-~~***/\* ... use vlen\_read\[d\].len and (int \*)vlen\_read\[d\].p ... \*/**
+`char \*station\_read\[NSTATIONS\];`
 
+`if ((retval = nc\_get\_var\_string(ncid, string\_varid, station\_read)))`
 
-~~***if ((retval = nc\_free\_vlen(vlen\_read)))**
+~~`    ***ERR(retval);`**
 
+`/\* ... use station\_read\[i\] ... \*/`
 
-~~    ***ERR(retval);**
+`if ((retval = nc\_free\_string(NSTATIONS, station\_read)))`
 
-
-~~***VLEN variable I/O is not available from Fortran for the same reasons as compound types. The nc\_vlen\_t *struct depends on C pointer semantics and heap management that have no portable Fortran equivalent. See the discussion under The VLEN Type above.**
-
-### ~~***Writing and Reading String Variables**
-
-~~***String variables in C use nc\_put\_var\_string() *and nc\_get\_var\_string(). The write call accepts an array of const char \* *pointers. The read call fills an array of char \* *pointers, each pointing to library-allocated memory; call nc\_free\_string() *after use. This code from user\_types.c *writes station names and then reads them back:**
-
-
-~~***/\* Write \*/**
-
-
-~~***const char \*station\_names\[NSTATIONS\] = \{**
-
-
-~~    ***"Boulder, CO", "Cape Canaveral, FL",**
-
-
-~~    ***"Wallops Island, VA", "White Sands, NM"**
-
-
-~~***\};**
-
-
-~~***if ((retval = nc\_put\_var\_string(ncid, string\_varid, station\_names)))**
-
-
-~~    ***ERR(retval);**
-
-
-~~***/\* Read \*/**
-
-
-~~***char \*station\_read\[NSTATIONS\];**
-
-
-~~***if ((retval = nc\_get\_var\_string(ncid, string\_varid, station\_read)))**
-
-
-~~    ***ERR(retval);**
-
-
-~~***/\* ... use station\_read\[i\] ... \*/**
-
-
-~~***if ((retval = nc\_free\_string(NSTATIONS, station\_read)))**
-
-
-~~    ***ERR(retval);**
-
+~~`    ***ERR(retval);`**
+```
 
 ~~***String variable I/O is not supported in the Fortran interface. Fortran programs that need to store text should use NF90\_CHAR *variables with an extra character-length dimension instead. See the discussion under Strings and Fortran above.**
 
-### ~~***Writing and Reading Enum Variables**
+#### Writing and Reading Enum Variables
 
-~~***Enum variables store integer data, so the write and read operations transfer integer arrays. In C, use nc\_put\_var() *and nc\_get\_var() *with a buffer whose C type matches the enum's base integer type. In the user\_types.c *example the enum is based on NC\_INT *and the underlying C type is CloudCover *(an int-sized enum):**
+~~*Enum variables store integer data, so the write and read operations transfer integer arrays. In C, use nc\_put\_var() *and nc\_get\_var() *with a buffer whose C type matches the enum's base integer type. In the user\_types.c *example the enum is based on NC\_INT *and the underlying C type is CloudCover *(an int-sized enum):
 
+```
+`CloudCover cloud\_data\[NOBS\] = \{CLEAR, PARTLY\_CLOUDY, CLOUDY, PARTLY\_CLOUDY, OVERCAST\};`
 
-~~***CloudCover cloud\_data\[NOBS\] = \{CLEAR, PARTLY\_CLOUDY, CLOUDY, PARTLY\_CLOUDY, OVERCAST\};**
+`if ((retval = nc\_put\_var(ncid, enum\_varid, cloud\_data)))`
 
+~~`    ***ERR(retval);`**
 
-~~***if ((retval = nc\_put\_var(ncid, enum\_varid, cloud\_data)))**
+`CloudCover cloud\_read\[NOBS\];`
 
+`if ((retval = nc\_get\_var(ncid, enum\_varid, cloud\_read)))`
 
-~~    ***ERR(retval);**
-
-
-~~***CloudCover cloud\_read\[NOBS\];**
-
-
-~~***if ((retval = nc\_get\_var(ncid, enum\_varid, cloud\_read)))**
-
-
-~~    ***ERR(retval);**
-
+~~`    ***ERR(retval);`**
+```
 
 ~~***In Fortran, enum variable I/O uses the F77 generic functions nf\_put\_var *and nf\_get\_var, which transfer raw bytes without type checking. The variable must be defined with nf\_def\_var *rather than nf90\_def\_var, because nf90\_def\_var *validates the type argument against built-in types and rejects user-defined type IDs. This code from the f\_user\_types.f90 *example in the NetCDF Expansion Pack shows the pattern:**
 
+```
+`! Define using F77 API (nf\_def\_var accepts user-defined type IDs)`
 
-~~***! Define using F77 API (nf\_def\_var accepts user-defined type IDs)**
+`retval = nf\_def\_var(ncid, "cloud\_cover", enum\_typeid, 1, dimids, enum\_varid)`
 
+`if (retval /= nf90\_noerr) call handle\_err(retval)`
 
-~~***retval = nf\_def\_var(ncid, "cloud\_cover", enum\_typeid, 1, dimids, enum\_varid)**
+`! Write enum data as integer array`
 
+`retval = nf\_put\_var(ncid, enum\_varid, cloud\_out)`
 
-~~***if (retval /= nf90\_noerr) call handle\_err(retval)**
+`if (retval /= nf90\_noerr) call handle\_err(retval)`
 
+`! Read enum data back`
 
-~~***! Write enum data as integer array**
+`retval = nf\_get\_var(ncid, enum\_varid, cloud\_in)`
 
+`if (retval /= nf90\_noerr) call handle\_err(retval)`
+```
 
-~~***retval = nf\_put\_var(ncid, enum\_varid, cloud\_out)**
+The integer values written must be members of the enum type; the library enforces this on write.
 
+#### Writing and Reading Opaque Variables
 
-~~***if (retval /= nf90\_noerr) call handle\_err(retval)**
+~~*Opaque variables store fixed-size binary blobs. In C, nc\_put\_var() *and nc\_get\_var() *treat the buffer as raw bytes; no type conversion is performed. In user\_types.c *an array of unsigned char *fills a scalar opaque variable:
 
+```
+`unsigned char calib\_data\[CALIB\_SIZE\];`
 
-~~***! Read enum data back**
+`for (int i = 0; i \< CALIB\_SIZE; i++)`
 
+~~`    ***calib\_data\[i\] = (unsigned char)(i \* 17);`**
 
-~~***retval = nf\_get\_var(ncid, enum\_varid, cloud\_in)**
+`if ((retval = nc\_put\_var(ncid, opaque\_varid, calib\_data)))`
 
+`    ***ERR(retval);`**
 
-~~***if (retval /= nf90\_noerr) call handle\_err(retval)**
+`unsigned char calib\_read\[CALIB\_SIZE\];`
 
+`if ((retval = nc\_get\_var(ncid, opaque\_varid, calib\_read)))`
 
-~~***The integer values written must be members of the enum type; the library enforces this on write.**
+~~`    ***ERR(retval);`**
+```
 
-### ~~***Writing and Reading Opaque Variables**
+~~*In Fortran, a fixed-length character *buffer of the correct size serves as the container. As with enum variables, nf\_def\_var *is needed to define the variable, and nf\_put\_var1 */ nf\_get\_var1 *handle single-element I/O. From f\_user\_types.f90:
 
-~~***Opaque variables store fixed-size binary blobs. In C, nc\_put\_var() *and nc\_get\_var() *treat the buffer as raw bytes; no type conversion is performed. In user\_types.c *an array of unsigned char *fills a scalar opaque variable:**
+```
+`character(len=CALIB\_SIZE) :: calib\_out, calib\_in`
 
+`! Write opaque data`
 
-~~***unsigned char calib\_data\[CALIB\_SIZE\];**
+`index(1) = 1`
 
+`retval = nf\_put\_var1(ncid, opaque\_varid, index, calib\_out)`
 
-~~***for (int i = 0; i \< CALIB\_SIZE; i++)**
+`if (retval /= nf90\_noerr) call handle\_err(retval)`
 
+`! Read opaque data`
 
-~~    ***calib\_data\[i\] = (unsigned char)(i \* 17);**
+`retval = nf\_get\_var1(ncid, opaque\_varid, index, calib\_in)`
 
+`if (retval /= nf90\_noerr) call handle\_err(retval)`
+```
 
-~~***if ((retval = nc\_put\_var(ncid, opaque\_varid, calib\_data)))**
-
-
-~~    ***ERR(retval);**
-
-
-~~***unsigned char calib\_read\[CALIB\_SIZE\];**
-
-
-~~***if ((retval = nc\_get\_var(ncid, opaque\_varid, calib\_read)))**
-
-
-~~    ***ERR(retval);**
-
-
-~~***In Fortran, a fixed-length character *buffer of the correct size serves as the container. As with enum variables, nf\_def\_var *is needed to define the variable, and nf\_put\_var1 */ nf\_get\_var1 *handle single-element I/O. From f\_user\_types.f90:**
-
-
-~~***character(len=CALIB\_SIZE) :: calib\_out, calib\_in**
-
-
-~~***! Write opaque data**
-
-
-~~***index(1) = 1**
-
-
-~~***retval = nf\_put\_var1(ncid, opaque\_varid, index, calib\_out)**
-
-
-~~***if (retval /= nf90\_noerr) call handle\_err(retval)**
-
-
-~~***! Read opaque data**
-
-
-~~***retval = nf\_get\_var1(ncid, opaque\_varid, index, calib\_in)**
-
-
-~~***if (retval /= nf90\_noerr) call handle\_err(retval)**
-
-### ~~***Summary of I/O Support by Type and Language**
+#### Summary of I/O Support by Type and Language
 
 | ~~***Type** | ~~***C write/read** | ~~***Fortran write/read** |
 | :-: | :-: | :-: |
-| ~~***New atomics** | ~~***nc\_put\_var\_*/nc\_get\_var\_*** | ~~***nf90\_put\_var / nf90\_get\_var (overloaded)** |
+| ~~***New atomics** | ~~***nc\_put\_var\_/nc\_get\_var\_** | ~~***nf90\_put\_var / nf90\_get\_var (overloaded)** |
 | ~~***Compound** | ~~***nc\_put\_var / nc\_get\_var** | ~~***Not supported** |
 | ~~***VLEN** | ~~***nc\_put\_var / nc\_get\_var + nc\_free\_vlen** | ~~***Not supported** |
 | ~~***String** | ~~***nc\_put\_var\_string / nc\_get\_var\_string + nc\_free\_string** | ~~***Not supported** |
 | ~~***Enum** | ~~***nc\_put\_var / nc\_get\_var** | ~~***nf\_put\_var / nf\_get\_var (F77 API)** |
 | ~~***Opaque** | ~~***nc\_put\_var / nc\_get\_var** | ~~***nf\_put\_var1 / nf\_get\_var1 (F77 API)** |
 
-
-~~***(The full enhanced-model examples for C are covered in chapter 6 and for Fortran in chapter 7.)**
 
 ## Choosing Your Data Model
 
@@ -4922,17 +4865,17 @@ Enhanced model compression can reduce file sizes by fifty to ninety percent for 
 
 ## History of NetCDF Binary Format Development
 
-NetCDF was first released in 1989 with a single binary data format, now known as netCDF classic format. This remains the default format for netCDF files.
+NetCDF was first released in 1989 with a single binary data format, now known as netCDF classic format (a.k.a. “CDF1”). This remains the default format for netCDF files. Because it used 32-bit integers as data offsets in the file header, there are many 2 GB limits in the CDF1 format.
 
-At the time, the 2 GB file size limitation of the classic format was not a practical concern. Operating systems and storage hardware imposed the same constraints. A file larger than 2 GB was simply not possible. As manufacturers and operating systems moved to 64-bit architectures through the 1990s and 2000s, those limits fell away, and netCDF had to evolve.
+At the time, the 2 GB file size limitation of the CDF1 format was not a practical concern. Operating systems and storage hardware imposed the same constraints. A file larger than 2 GB was simply not possible. As manufacturers and operating systems moved to 64-bit architectures through the 1990s and 2000s, those limits fell away, and netCDF had to evolve.
 
 The timeline of format introductions:
 
-- 2004, netCDF 3.6.0: The 64-bit offset format raised the file size ceiling beyond 2 GB, though individual variables remained limited to about 4 GB.
+- 2004, netCDF 3.6.0: The 64-bit offset format raised the file size ceiling beyond 2 GB, though individual variables remained limited to about 4 GB. (This is also known as CDF2.)
 
 - 2008, netCDF 4.0: The netCDF-4/HDF5 format used HDF5 as a storage layer, adding compression, groups, user-defined types, and multiple unlimited dimensions.
 
-- 2016, netCDF 4.4.0: The CDF-5 format extended the classic binary layout with 64-bit integers throughout, removing all size limitations while preserving the simplicity of the classic data model. CDF-5 originated in the PnetCDF project for high-performance parallel I/O.
+- 2016, netCDF 4.4.0: The CDF5 format extended the classic binary layout with 64-bit integers throughout, removing all size limitations while preserving the simplicity of the classic data model. CDF5 originated in the PnetCDF project for high-performance parallel I/O.
 
 - 2021, netCDF 4.8.0: The ncZarr format added support for Zarr, a cloud-native storage format designed for efficient HTTP access to data in object stores like Amazon S3, Google Cloud Storage, and Azure Blob Storage.
 
@@ -4944,16 +4887,18 @@ When opening a netCDF file, you do not need to specify or even know the binary f
 
 Format only needs to be specified when creating a file.
 
+## Learning About the Binary Format of a NetCDF File
+
 From the command line, learn the format of a file with ncdump’s -k option:
 
 ```
-`$ ncdump -k format\_classic.nc`
+$ ncdump -k format\_classic.nc
 
-`classic`
+classic
 
-` $ ncdump -k format\_netcdf4.nc`
+ $ ncdump -k format\_netcdf4.nc
 
-`netCDF-4`
+netCDF-4
 ```
 
 The format can also be determined programmatically. After opening a file, you can query which format it uses with nc\_inq\_format(). This returns one of five format constants:
@@ -4961,55 +4906,55 @@ The format can also be determined programmatically. After opening a file, you ca
 In C:
 
 ```
-`int ncid, format;`
+int ncid, format;
 
-` `
+ 
 
-`if ((retval = nc\_open("mydata.nc", NC\_NOWRITE, &ncid)))`
+if ((retval = nc\_open("mydata.nc", NC\_NOWRITE, &ncid)))
 
-`   ERR(retval);`
+   ERR(retval);
 
-` `
+ 
 
-`if ((retval = nc\_inq\_format(ncid, &format)))`
+if ((retval = nc\_inq\_format(ncid, &format)))
 
-`   ERR(retval);`
+   ERR(retval);
 
-` `
+ 
 
-`if (format == NC\_FORMAT\_CLASSIC)`
+if (format == NC\_FORMAT\_CLASSIC)
 
-`   printf("Classic (CDF-1)\\n");`
+   printf("Classic (CDF-1)\\n");
 
-`else if (format == NC\_FORMAT\_64BIT\_OFFSET)`
+else if (format == NC\_FORMAT\_64BIT\_OFFSET)
 
-`   printf("64-bit Offset (CDF-2)\\n");`
+   printf("64-bit Offset (CDF-2)\\n");
 
-`else if (format == NC\_FORMAT\_64BIT\_DATA)`
+else if (format == NC\_FORMAT\_64BIT\_DATA)
 
-`   printf("CDF-5\\n");`
+   printf("CDF-5\\n");
 
-`else if (format == NC\_FORMAT\_NETCDF4)`
+else if (format == NC\_FORMAT\_NETCDF4)
 
-`   printf("NetCDF-4/HDF5\\n");`
+   printf("NetCDF-4/HDF5\\n");
 
-`else if (format == NC\_FORMAT\_NETCDF4\_CLASSIC)`
+else if (format == NC\_FORMAT\_NETCDF4\_CLASSIC)
 
-`   printf("NetCDF-4/HDF5 Classic Model\\n");`
+   printf("NetCDF-4/HDF5 Classic Model\\n");
 ```
 
 In Fortran:
 
 ```
-`integer :: ncid, format\_type`
+integer :: ncid, format\_type
 
-`retval = nf90\_open("mydata.nc", NF90\_NOWRITE, ncid)`
+retval = nf90\_open("mydata.nc", NF90\_NOWRITE, ncid)
 
-`if (retval /= nf90\_noerr) call handle\_err(retval)`
+if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`retval = nf90\_inquire(ncid, formatNum=format\_type)`
+retval = nf90\_inquire(ncid, formatNum=format\_type)
 
-`if (retval /= nf90\_noerr) call handle\_err(retval)`
+if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 This is useful when writing tools that need to handle files of any format, or when verifying that a file was created in the expected format. The format\_variants example program in this book demonstrates this technique.
@@ -5063,11 +5008,11 @@ The sections that follow describe each format in detail. The table below summari
 | ~~***64-bit Integers** | ~~***No** | ~~***No** | ~~***Yes** | ~~***Yes** | ~~***No** | ~~***Yes** |
 | ~~***Cloud Optimized** | ~~***No** | ~~***No** | ~~***No** | ~~***No** | ~~***No** | ~~***Yes** |
 
-*\*Fixed variable limit and record size limit ~4GB*
+\*Fixed variable limit and record size limit ~4GB
 
-*†Requires PnetCDF*
+†Requires PnetCDF
 
-*‡Requires Zarr-compatible storage*
+‡Requires Zarr-compatible storage
 
 Understanding which format to use can help ensure optimal performance and compatibility for your application.
 
@@ -5084,27 +5029,27 @@ The classic format starts to hit limitations at the 2 GB range. This relates to 
 Since the classic format is the default, there is no flag to select it. The NC\_CLOBBER flag can be used to overwrite existing files of the same name. In C:
 
 ```
-`   /\* CDF-1: Original classic format (2GB file/variable limit).`
+   /\* CDF-1: Original classic format (2GB file/variable limit).
 
-`    \* No format flag needed — NC\_CLOBBER alone creates a classic CDF-1 file. \*/`
+    \* No format flag needed — NC\_CLOBBER alone creates a classic CDF-1 file. \*/
 
-`   printf("Creating classic (CDF-1) format file: format\_classic.nc\\n");`
+   printf("Creating classic (CDF-1) format file: format\_classic.nc\\n");
 
-`   if ((retval = nc\_create("format\_classic.nc", NC\_CLOBBER, &ncid)))`
+   if ((retval = nc\_create("format\_classic.nc", NC\_CLOBBER, &ncid)))
 
-`      ERR(retval);`
+      ERR(retval);
 ```
 
 In Fortran:
 
 ```
-`   ! CDF-1: Original classic format (2GB file/variable limit).`
+   ! CDF-1: Original classic format (2GB file/variable limit).
 
-`   ! No format flag needed - NF90\_CLOBBER alone creates a classic CDF-1 file.`
+   ! No format flag needed - NF90\_CLOBBER alone creates a classic CDF-1 file.
 
-`   print \*, "Creating classic (CDF-1) format file: f\_format\_classic.nc"`
+   print \*, "Creating classic (CDF-1) format file: f\_format\_classic.nc"
 
-`   retval = nf90\_create("f\_format\_classic.nc", NF90\_CLOBBER, ncid)`
+   retval = nf90\_create("f\_format\_classic.nc", NF90\_CLOBBER, ncid)
 ```
 
 ## CDF-5
@@ -5130,42 +5075,40 @@ Limitations: no built-in compression, no groups, no user-defined types, and not 
 To create a CDF-5 file, pass NC\_64BIT\_DATA (or the equivalent NC\_CDF5) to nc\_create():
 
 ```
-`   /\* CDF-5: 64-bit data format (unlimited variable sizes) \*/`
+   /\* CDF-5: 64-bit data format (unlimited variable sizes) \*/
 
-`   printf("Creating NC\_64BIT\_DATA format file: format\_64bit\_data.nc\\n");`
+   printf("Creating NC\_64BIT\_DATA format file: format\_64bit\_data.nc\\n");
 
-`   if ((retval = nc\_create("format\_64bit\_data.nc", NC\_64BIT\_DATA | NC\_CLOBBER, &ncid)))`
+   if ((retval = nc\_create("format\_64bit\_data.nc", NC\_64BIT\_DATA | NC\_CLOBBER, &ncid)))
 
-`      ERR(retval);`
+      ERR(retval);
 ```
 
 In Fortran:
 
 ```
-`   ! CDF-5: 64-bit data format (unlimited variable sizes)`
+   ! CDF-5: 64-bit data format (unlimited variable sizes)
 
-`   print \*, "Creating NF90\_64BIT\_DATA format file: f\_format\_64bit\_data.nc"`
+   print \*, "Creating NF90\_64BIT\_DATA format file: f\_format\_64bit\_data.nc"
 
-`   retval = nf90\_create("f\_format\_64bit\_data.nc", NF90\_64BIT\_DATA, ncid)`
+   retval = nf90\_create("f\_format\_64bit\_data.nc", NF90\_64BIT\_DATA, ncid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 The file then works like any other netCDF file through the same API. For parallel I/O, build netCDF with PnetCDF support and use nc\_create\_par()/nc\_open\_par() instead of nc\_create()/nc\_open().
 
 ## NetCDF-4/HDF5 Format
 
-Starting with version 4.0, the netCDF C library can read and write HDF5 files.
+Starting with version 4.0, in 2008, the netCDF C library can read and write HDF5 files.
 
 HDF5 (Hierarchical Data Format 5) is a data format and associated libraries originally developed at the Supercomputer Center at the University of Illinois Champaign-Urbana campus. The HDF5 team later formed their own company, the HDF Group, to manage and develop the HDF5 and HDF4 formats. HDF5 was a completely new data format, written using the lessons learned from the HDF4 project.
 
 HDF5 includes many advanced features. In addition to supporting almost all of the features of the classic netCDF library, HDF5 supports hierarchical groups, additional types, user-defined types, and pluggable filters for data. These filters allow for built-in data compression, among other features.
 
-### Storage Architecture
+### Hierarchical Architecture
 
 HDF5 organizes a file as a rooted tree of groups and datasets. Every HDF5 file begins with a superblock that points to the root group. Groups contain other groups or datasets, forming a hierarchy similar to a filesystem. Metadata such as dimension information, attributes, and dataspace descriptions are stored in B-tree and heap structures that allow efficient lookup even when a file contains thousands of objects. The netCDF-4 library maps its flat namespace of dimensions, variables, and attributes onto this tree, placing everything in the root group unless the program explicitly creates subgroups.
-
-Each dataset in an HDF5 file can use one of two storage layouts. Contiguous layout stores all of a variable's data in a single, unbroken block, which gives the best sequential read performance but does not support compression or extensible dimensions. Chunked layout divides the data into fixed-size rectangular tiles that can be stored anywhere in the file. Chunked storage is required for compression, because HDF5 applies filters to individual chunks rather than to the dataset as a whole. It also allows datasets to grow along any dimension without rewriting existing data. The netCDF-4 library defaults to chunked storage for any variable that has an unlimited dimension or that has compression enabled, and uses contiguous storage otherwise.
 
 #### Data Types
 
@@ -5187,6 +5130,8 @@ One performance issue emerged over time: when files contain hundreds or thousand
 
 One of the most important features of HDF5 is chunked storage. In the classic netCDF formats, variable data are stored contiguously in the file. HDF5 offers an alternative: chunked storage, where data are divided into fixed-size chunks that can be scattered throughout the file.
 
+Each dataset in an HDF5 file can use one of two storage layouts. Contiguous layout stores all of a variable's data in a single, unbroken block, which gives the best sequential read performance but does not support compression or extensible dimensions. Chunked layout divides the data into fixed-size rectangular tiles that can be stored anywhere in the file. Chunked storage is required for compression, because HDF5 applies filters to individual chunks rather than to the dataset as a whole. It also allows datasets to grow along any dimension without rewriting existing data. The netCDF-4 library defaults to chunked storage for any variable that has an unlimited dimension or that has compression enabled, and uses contiguous storage otherwise.
+
 Chunking enables compression (HDF5 can only compress chunked datasets), allows efficient partial I/O by reading only the chunks containing requested data, and permits datasets to grow along any dimension. The chunk size is set with the nc\_def\_var\_chunking() function.
 
 For detailed information on chunking and how to optimize chunk sizes for your application, see Chapter 10: NetCDF-4/HDF5 Performance Fundamentals.
@@ -5195,10 +5140,11 @@ For detailed information on chunking and how to optimize chunk sizes for your ap
 
 HDF5 filters are operations applied to data as it is written to or read from a file. The most common use is compression, but filters can also perform checksumming, encryption, or custom data transformations. Filters are applied to each chunk independently.
 
+The netCDF C library provides direct API support for several HDF5 filters, including deflate (zlib compression) and shuffle filters, szip, and (since netcdf-c-4.9.0) zstandard. Filters are specified on a per-variable basis, allowing optimization of each variable based on its characteristics.
 
-The netCDF C library provides access to several HDF5 filters, including deflate (zlib compression) and shuffle filters. Filters are specified on a per-variable basis, allowing optimization of each variable based on its characteristics.
+For detailed information on compression filters, the shuffle filter, and choosing compression settings, see Chapter 10: NetCDF-4/HDF5 Performance Fundamentals and Chapter 12 (**Advanced Compression Techniques**).
 
-For detailed information on compression filters, the shuffle filter, and choosing compression settings, see Chapter 10: NetCDF-4/HDF5 Performance Fundamentals and Chapter 12: Advanced Compression Techniques.
+NetCDF also provides full access to the HDF5 filter features from the netCDF C library. C library users can call any arbitrary HDF5 file, with full control over arguments.
 
 ### Creating and Inspecting NetCDF-4/HDF5 Files
 
@@ -5259,16 +5205,324 @@ Or in Fortran:
 
    retval = nf90\_create("f\_format\_netcdf4\_classic.nc", &
 
-`                        IOR(NF90\_NETCDF4, NF90\_CLASSIC\_MODEL), ncid)`
+                        IOR(NF90\_NETCDF4, NF90\_CLASSIC\_MODEL), ncid)
 
-`if (retval /= nf90\_noerr) call handle\_err(retval)`
+if (retval /= nf90\_noerr) call handle\_err(retval)
 ```
 
 #### Using h5dump
 
 HDF5 comes with the h5dump utility. Just as ncdump shows the contents of a netCDF file, h5dump shows the contents of an HDF5 file.
 
-h5dump is an invaluable tool for debugging netCDF-4 programming problems. With h5dump, programmers can see exactly how HDF5 is expressing the netCDF-4 file.
+h5dump is an invaluable tool for debugging netCDF-4 programming problems. With h5dump, programmers can see exactly how HDF5 is expressing the netCDF-4 file. Here’s the h5dump of the simple\_nc4.nc file created by the NetCDF Expansion Pack example, netcdf-4/simple\_nc4.c.
+
+```
+`$ h5dump simple\_nc4.nc `
+
+`HDF5 "simple\_nc4.nc" \{`
+
+`GROUP "/" \{`
+
+`   ATTRIBUTE "\_NCProperties" \{`
+
+`      DATATYPE  H5T\_STRING \{`
+
+`         STRSIZE 34;`
+
+`         STRPAD H5T\_STR\_NULLTERM;`
+
+`         CSET H5T\_CSET\_ASCII;`
+
+`         CTYPE H5T\_C\_S1;`
+
+`      \}`
+
+`      DATASPACE  SCALAR`
+
+`      DATA \{`
+
+`      (0): "version=2,netcdf=4.10.0,hdf5=2.0.0"`
+
+`      \}`
+
+`   \}`
+
+`   DATASET "data" \{`
+
+`      DATATYPE  H5T\_STD\_I32LE`
+
+`      DATASPACE  SIMPLE \{ ( 12, 6 ) / ( 12, 6 ) \}`
+
+`      DATA \{`
+
+`      (0,0): 0, 1, 2, 3, 4, 5,`
+
+`      (1,0): 6, 7, 8, 9, 10, 11,`
+
+`      (2,0): 12, 13, 14, 15, 16, 17,`
+
+`      (3,0): 18, 19, 20, 21, 22, 23,`
+
+`      (4,0): 24, 25, 26, 27, 28, 29,`
+
+`      (5,0): 30, 31, 32, 33, 34, 35,`
+
+`      (6,0): 36, 37, 38, 39, 40, 41,`
+
+`      (7,0): 42, 43, 44, 45, 46, 47,`
+
+`      (8,0): 48, 49, 50, 51, 52, 53,`
+
+`      (9,0): 54, 55, 56, 57, 58, 59,`
+
+`      (10,0): 60, 61, 62, 63, 64, 65,`
+
+`      (11,0): 66, 67, 68, 69, 70, 71`
+
+`      \}`
+
+`      ATTRIBUTE "DIMENSION\_LIST" \{`
+
+`         DATATYPE  H5T\_VLEN \{ H5T\_REFERENCE \{ H5T\_STD\_REF\_OBJECT \} \}`
+
+`         DATASPACE  SIMPLE \{ ( 2 ) / ( 2 ) \}`
+
+`         DATA \{`
+
+`         (0): (DATASET 97047505498608 "/y"), (DATASET 97047505497200 "/x")`
+
+`         \}`
+
+`      \}`
+
+`      ATTRIBUTE "\_Netcdf4Coordinates" \{`
+
+`         DATATYPE  H5T\_STD\_I32LE`
+
+`         DATASPACE  SIMPLE \{ ( 2 ) / ( 2 ) \}`
+
+`         DATA \{`
+
+`         (0): 1, 0`
+
+`         \}`
+
+`      \}`
+
+`   \}`
+
+`   DATASET "x" \{`
+
+`      DATATYPE  H5T\_IEEE\_F32BE`
+
+`      DATASPACE  SIMPLE \{ ( 6 ) / ( 6 ) \}`
+
+`      DATA \{`
+
+`      (0): 0, 0, 0, 0, 0, 0`
+
+`      \}`
+
+`      ATTRIBUTE "CLASS" \{`
+
+`         DATATYPE  H5T\_STRING \{`
+
+`            STRSIZE 16;`
+
+`            STRPAD H5T\_STR\_NULLTERM;`
+
+`            CSET H5T\_CSET\_ASCII;`
+
+`            CTYPE H5T\_C\_S1;`
+
+`         \}`
+
+`         DATASPACE  SCALAR`
+
+`         DATA \{`
+
+`         (0): "DIMENSION\_SCALE"`
+
+`         \}`
+
+`      \}`
+
+`      ATTRIBUTE "NAME" \{`
+
+`         DATATYPE  H5T\_STRING \{`
+
+`            STRSIZE 64;`
+
+`            STRPAD H5T\_STR\_NULLTERM;`
+
+`            CSET H5T\_CSET\_ASCII;`
+
+`            CTYPE H5T\_C\_S1;`
+
+`         \}`
+
+`         DATASPACE  SCALAR`
+
+`         DATA \{`
+
+`         (0): "This is a netCDF dimension but not a netCDF variable.         6"`
+
+`         \}`
+
+`      \}`
+
+`      ATTRIBUTE "REFERENCE\_LIST" \{`
+
+`         DATATYPE  H5T\_COMPOUND \{`
+
+`            H5T\_REFERENCE \{ H5T\_STD\_REF\_OBJECT \} "dataset";`
+
+`            H5T\_STD\_U32LE "dimension";`
+
+`         \}`
+
+`         DATASPACE  SIMPLE \{ ( 1 ) / ( 1 ) \}`
+
+`         DATA \{`
+
+`         (0): \{`
+
+`               DATASET 97047505516464 "/data",`
+
+`               1`
+
+`            \}`
+
+`         \}`
+
+`      \}`
+
+`      ATTRIBUTE "\_Netcdf4Dimid" \{`
+
+`         DATATYPE  H5T\_STD\_I32LE`
+
+`         DATASPACE  SCALAR`
+
+`         DATA \{`
+
+`         (0): 0`
+
+`         \}`
+
+`      \}`
+
+`   \}`
+
+`   DATASET "y" \{`
+
+`      DATATYPE  H5T\_IEEE\_F32BE`
+
+`      DATASPACE  SIMPLE \{ ( 12 ) / ( 12 ) \}`
+
+`      DATA \{`
+
+`      (0): 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0`
+
+`      \}`
+
+`      ATTRIBUTE "CLASS" \{`
+
+`         DATATYPE  H5T\_STRING \{`
+
+`            STRSIZE 16;`
+
+`            STRPAD H5T\_STR\_NULLTERM;`
+
+`            CSET H5T\_CSET\_ASCII;`
+
+`            CTYPE H5T\_C\_S1;`
+
+`         \}`
+
+`         DATASPACE  SCALAR`
+
+`         DATA \{`
+
+`         (0): "DIMENSION\_SCALE"`
+
+`         \}`
+
+`      \}`
+
+`      ATTRIBUTE "NAME" \{`
+
+`         DATATYPE  H5T\_STRING \{`
+
+`            STRSIZE 64;`
+
+`            STRPAD H5T\_STR\_NULLTERM;`
+
+`            CSET H5T\_CSET\_ASCII;`
+
+`            CTYPE H5T\_C\_S1;`
+
+`         \}`
+
+`         DATASPACE  SCALAR`
+
+`         DATA \{`
+
+`         (0): "This is a netCDF dimension but not a netCDF variable.        12"`
+
+`         \}`
+
+`      \}`
+
+`      ATTRIBUTE "REFERENCE\_LIST" \{`
+
+`         DATATYPE  H5T\_COMPOUND \{`
+
+`            H5T\_REFERENCE \{ H5T\_STD\_REF\_OBJECT \} "dataset";`
+
+`            H5T\_STD\_U32LE "dimension";`
+
+`         \}`
+
+`         DATASPACE  SIMPLE \{ ( 1 ) / ( 1 ) \}`
+
+`         DATA \{`
+
+`         (0): \{`
+
+`               DATASET 97047505522800 "/data",`
+
+`               0`
+
+`            \}`
+
+`         \}`
+
+`      \}`
+
+`      ATTRIBUTE "\_Netcdf4Dimid" \{`
+
+`         DATATYPE  H5T\_STD\_I32LE`
+
+`         DATASPACE  SCALAR`
+
+`         DATA \{`
+
+`         (0): 1`
+
+`         \}`
+
+`      \}`
+
+`   \}`
+
+`\}`
+
+`\}`
+```
+
+Note that the variable and attributes from the netCDF API are stored as HDF5 dataset and attributes. Opening this file with a HDF5 program will reveal a perfectly normal HDF5 file, with data and attributes that make sense. The only additional information in the HDF5 is the storage of special netCDF information like the shared dimensions (not supported by HDF5).
+
+This interoperability is an important feature of netCDF. Files written by netCDF can easily be used by HDF5 programs. Files written with HDF5 can likewise be read by NetCDF; in this case netCDF assumes there are no shared dimensions.
 
 ## ncZarr Cloud Format
 
@@ -5289,9 +5543,9 @@ Zarr datasets can be stored in multiple backends: local filesystem directories (
 To create a Zarr dataset, use the NC\_ZARR flag when calling nc\_create(). The path may be a local directory or a URL pointing to cloud storage:
 
 ```
-`nc\_create("s3://mybucket/mydata.zarr\#mode=nczarr,s3",                `
+nc\_create("s3://mybucket/mydata.zarr\#mode=nczarr,s3",                
 
-`          NC\_ZARR|NC\_NETCDF4, &ncid);`
+          NC\_ZARR|NC\_NETCDF4, &ncid);
 ```
 
 The fragment portion of the URL (after the \#) contains parameters that control how ncZarr accesses the storage. For S3 storage, authentication credentials are typically provided through environment variables or AWS configuration files.
@@ -5299,7 +5553,7 @@ The fragment portion of the URL (after the \#) contains parameters that control 
 Reading Zarr datasets works similarly. The nc\_open() function will automatically detect the Zarr format and use the appropriate dispatch layer:
 
 ```
-`nc\_open("s3://mybucket/mydata.zarr\#mode=nczarr,s3",NC\_NOWRITE, &ncid);`
+nc\_open("s3://mybucket/mydata.zarr\#mode=nczarr,s3",NC\_NOWRITE, &ncid);
 ```
 
 ### Zarr and the Enhanced Model
@@ -5327,18 +5581,18 @@ ncZarr is the right choice for cloud object storage, but it is not the best fit 
 The nccopy utility, included with the netCDF C distribution, converts files from one format to another. The -k flag selects the output format. To convert a classic file to NetCDF-4/HDF5:
 
 ```
-`nccopy -k nc4 input.nc output.nc`
+nccopy -k nc4 input.nc output.nc
 ```
 
 To convert back to classic format:
 
 ```
-`nccopy -k classic input.nc output.nc`
+nccopy -k classic input.nc output.nc
 ```
 
 The supported format names are classic, 64-bit-offset, cdf5, nc4, and nc4-classic.
 
-You can also add compression during conversion with the -d flag, which sets the deflate level from 0 (no compression) to 9 (maximum compression). For example, nccopy -k nc4 -d 4 input.nc output.nc converts to NetCDF-4/HDF5 and applies level-4 deflate compression to every variable. The -s flag enables the shuffle filter, which often improves compression ratios for integer data.
+You can also add compression during conversion with the -d flag, which sets the deflate level from 0 (no compression) to 9 (maximum compression). For example, nccopy -k nc4 -d 4 input.nc output.nc converts to NetCDF-4/HDF5 and applies level-4 deflate compression to every variable. The -s flag enables the shuffle filter, which often improves compression ratios for integer and floating point data.
 
 Not every conversion works. Converting a NetCDF-4/HDF5 file that uses groups, user-defined types, or multiple unlimited dimensions to a classic format will fail, because those features have no representation in the classic data model. nccopy will report an error rather than silently dropping data. If you need to move data from the enhanced model to a classic format, first flatten the group hierarchy and simplify the types, then convert. For files that stay within the classic data model, conversion between any of the classic-family formats (classic, 64-bit offset, CDF-5) and NetCDF-4/HDF5 classic model is straightforward.
 
@@ -5350,7 +5604,7 @@ The formats in this section cannot (HDF4) and should not (64-bit offset) be crea
 
 The netCDF C library supports read-only access to HDF4 SD files. This functionality is available to all of the language libraries that use the C library as their base, including the netCDF Fortran APIs.
 
-The HDF4 format was developed at the Champaign-Urbana campus of the University of Illinois. The team that created HDF4 later went on to create HDF5, which is the basis for the netCDF-4/HDF5 format.
+The HDF4 format was developed at the Champaign-Urbana campus of the University of Illinois, and first released in 1996. The team that created HDF4 later went on to create HDF5, which is the basis for the netCDF-4/HDF5 format.
 
 HDF4 included several sub-formats, including image data. One of these sub-formats was the SD file type, for Scientific Data. The HDF4 SD model closely matches the netCDF classic data model.
 
@@ -5378,7 +5632,7 @@ The 64-bit offset format uses 64-bit integers for file offsets instead of 32-bit
 
 - Format detection is automatic on read. The same nc\_open() call works for all formats. Format only matters at file creation time.
 
-- NetCDF-4/HDF5 is the recommended default for new applications. It supports compression, groups, user-defined types, and multiple unlimited dimensions.
+- NetCDF-4/HDF5 is the recommended default for new applications. It supports compression, groups, user-defined types, multiple unlimited dimensions, and parallel I/O.
 
 - CDF-5 removes all size limitations of the classic data model without requiring HDF5. It is the preferred format for parallel I/O with PnetCDF.
 
@@ -5433,50 +5687,50 @@ The ncdump utility reads a netCDF file and prints its contents as CDL text. It i
 The -h flag prints only the header: dimensions, variables, and attributes, with no data values. This is the flag you will use most often.
 
 ```
-`ncdump -h example.nc`
+ncdump -h example.nc
 ```
 
 ~~***Output looks like this:**
 
 ```
-`netcdf example \{`
+netcdf example \{
 
 
-`dimensions:`
+dimensions:
 
-`time = UNLIMITED ; // (12 currently)`
+time = UNLIMITED ; // (12 currently)
 
-`lat = 180 ;`
+lat = 180 ;
 
-`lon = 360 ;`
+lon = 360 ;
 
-`variables:`
+variables:
 
-`float temperature(time, lat, lon) ;`
+float temperature(time, lat, lon) ;
 
-`temperature:units = "K" ;`
+temperature:units = "K" ;
 
-`temperature:\_FillValue = -999.f ;`
+temperature:\_FillValue = -999.f ;
 
-`double time(time) ;`
+double time(time) ;
 
-`time:units = "days since 2000-01-01" ;`
+time:units = "days since 2000-01-01" ;
 
-`float lat(lat) ;`
+float lat(lat) ;
 
-`lat:units = "degrees\_north" ;`
+lat:units = "degrees\_north" ;
 
-`float lon(lon) ;`
+float lon(lon) ;
 
-`lon:units = "degrees\_east" ;`
+lon:units = "degrees\_east" ;
 
-`// global attributes:`
+// global attributes:
 
-`:title = "Monthly surface temperature" ;`
+:title = "Monthly surface temperature" ;
 
-`:Conventions = "CF-1.8" ;`
+:Conventions = "CF-1.8" ;
 
-`\}`
+\}
 ```
 
 This tells you everything about the file structure at a glance: three dimensions, four variables, and two global attributes.
@@ -5486,7 +5740,7 @@ This tells you everything about the file structure at a glance: three dimensions
 To display the data for specific variables, use the -v flag followed by a comma-separated list of variable names:
 
 ```
-`ncdump -v lat,lon example.nc`
+ncdump -v lat,lon example.nc
 ```
 
 This prints the full header plus the data values for the lat and lon variables. It is useful for checking coordinate variables without dumping a large data variable.
@@ -5494,13 +5748,13 @@ This prints the full header plus the data values for the lat and lon variables. 
 The -c flag is a shortcut that displays data for all coordinate variables (variables that share a name with a dimension). For a file with time, lat, and lon dimensions that also has time, lat, and lon variables, -c displays the data for all three:
 
 ```
-`ncdump -c example.nc`
+ncdump -c example.nc
 ```
 
 To dump the entire file including all data values, run ncdump with no data-selection flags:
 
 ```
-`ncdump example.nc`
+ncdump example.nc
 ```
 
 For large files this produces enormous output. Use -v to select only the variables you need.
@@ -5510,7 +5764,7 @@ For large files this produces enormous output. Use -v to select only the variabl
 NetCDF-4/HDF5 files store chunking and compression settings as special attributes that ncdump -h does not show by default. The -s flag adds these to the output:
 
 ```
-`ncdump -hs example.nc`
+ncdump -hs example.nc
 ```
 
 This reveals attributes like \_ChunkSizes, \_DeflateLevel, \_Shuffle, and \_Endianness. Use -hs when you need to verify compression or chunking settings.
@@ -5520,7 +5774,7 @@ This reveals attributes like \_ChunkSizes, \_DeflateLevel, \_Shuffle, and \_Endi
 By default ncdump prints floating-point values with enough digits to distinguish adjacent representable values. You can override this with the -p flag:
 
 ```
-`ncdump -p 3 -v temperature example.nc`
+ncdump -p 3 -v temperature example.nc
 ```
 
 This prints floating-point values with 3 significant digits, which produces more compact output when full precision is not needed.
@@ -5530,13 +5784,13 @@ This prints floating-point values with 3 significant digits, which produces more
 When a time variable has a units attribute in the form "days since 2000-01-01" or similar, the -t flag tells ncdump to print time values as date-time strings instead of raw numbers:
 
 ```
-`ncdump -t -v time example.nc`
+ncdump -t -v time example.nc
 ```
 
 Output:
 
 ```
-~~` ***time = "2000-01-01", "2000-02-01", "2000-03-01", ... ;`**
+~~ ***time = "2000-01-01", "2000-02-01", "2000-03-01", ... ;**
 ```
 
 This is much easier to read than raw offset values.
@@ -5567,7 +5821,7 @@ When a program creates a netCDF file, the first step in verifying the output is 
 If the structure looks correct, use -v to spot-check data values. For example, after writing a temperature array, verify a few values:
 
 ```
-`ncdump -v temperature example.nc | head -30`
+ncdump -v temperature example.nc | head -30
 ```
 
 If values are all zeros or all fill values, the program likely wrote to the wrong variable or used incorrect start/count arrays. If values are present but wrong, check the data type and byte order.
@@ -5581,33 +5835,33 @@ CDL is the text format that ncdump produces and ncgen consumes. Understanding CD
 A CDL file has four sections, all contained within a top-level block named after the dataset:
 
 ```
-`netcdf example \{`
+netcdf example \{
 
-`dimensions:`
+dimensions:
 
-`x = 10 ;`
+x = 10 ;
 
-`y = 20 ;`
+y = 20 ;
 
-`time = UNLIMITED ;`
+time = UNLIMITED ;
 
-`variables:`
+variables:
 
-`float temperature(time, y, x) ;`
+float temperature(time, y, x) ;
 
-`temperature:units = "K" ;`
+temperature:units = "K" ;
 
-`temperature:\_FillValue = -999.f ;`
+temperature:\_FillValue = -999.f ;
 
-`int time(time) ;`
+int time(time) ;
 
-`time:units = "hours since 2000-01-01" ;`
+time:units = "hours since 2000-01-01" ;
 
-`data:`
+data:
 
-`time = 0, 1, 2, 3, 4, 5 ;`
+time = 0, 1, 2, 3, 4, 5 ;
 
-`\}`
+\}
 ```
 
 ~~***The dimensions *section declares dimension names and sizes. Use UNLIMITED for a dimension that can grow.**
@@ -5639,13 +5893,13 @@ In the variables section, use the type keywords: byte, short, int, float, double
 NetCDF-4 CDL supports groups, which are declared with the group keyword:
 
 ```
-`netcdf example \{`
+netcdf example \{
 
-`dimensions:`
+dimensions:
 
-`x = 10 ;`
+x = 10 ;
 
-`group: observations \{`
+group: observations \{
 
 ~~`  ***variables:`**
 
@@ -5665,13 +5919,13 @@ NetCDF-4 CDL supports groups, which are declared with the group keyword:
 
 ~~`  ***variables:`**
 
-`float temperature(x) ;`
+float temperature(x) ;
 
-`temperature:units = "K" ;`
+temperature:units = "K" ;
 
-~~`  ***\}`**
+~~  ***\}**
 
-`\}`
+\}
 ```
 
 Groups can contain their own dimensions, variables, attributes, and nested groups.
@@ -5681,9 +5935,9 @@ Groups can contain their own dimensions, variables, attributes, and nested group
 ~~*The special value \_ *(underscore) represents a fill value in CDL data:
 
 ```
-`data:`
+data:
 
-`temperature = 300.1, 300.2, \_, \_, 300.5 ;`
+temperature = 300.1, 300.2, \_, \_, 300.5 ;
 ```
 
 This writes fill values at positions 3 and 4. The fill value used depends on the variable's \_FillValue attribute, or the default fill value for the type if no \_FillValue is set.
@@ -5697,7 +5951,7 @@ The ncgen utility reads a CDL file and creates a binary netCDF file. It is the c
 To create a netCDF file from a CDL description:
 
 ```
-`ncgen -o example.nc example.cdl`
+ncgen -o example.nc example.cdl
 ```
 
 The -o flag specifies the output file name. Without -o, ncgen writes to standard output as a C program (which is rarely what you want).
@@ -5707,13 +5961,13 @@ The -o flag specifies the output file name. Without -o, ncgen writes to standard
 The -k flag selects the output format:
 
 ```
-`ncgen -k nc3 -o classic.nc example.cdl`
+ncgen -k nc3 -o classic.nc example.cdl
 
-`ncgen -k nc4 -o netcdf4.nc example.cdl`
+ncgen -k nc4 -o netcdf4.nc example.cdl
 
-`ncgen -k nc7 -o nc4classic.nc example.cdl`
+ncgen -k nc7 -o nc4classic.nc example.cdl
 
-`ncgen -k nc5 -o cdf5.nc example.cdl`
+ncgen -k nc5 -o cdf5.nc example.cdl
 ```
 
 ~~***Valid -k values:**
@@ -5727,7 +5981,6 @@ The -k flag selects the output format:
 | ~~***nc7 or netCDF-4 classic model** | ~~***NetCDF-4 classic model** |
 | ~~***nc5 or 64-bit-data** | ~~***CDF-5** |
 
-
 If you omit -k, ncgen creates a classic format file by default. If the CDL uses NetCDF-4 features like groups or user-defined types, ncgen automatically selects NetCDF-4 format.
 
 #### Generating Code Instead of Files
@@ -5735,9 +5988,9 @@ If you omit -k, ncgen creates a classic format file by default. If the CDL uses 
 ncgen can also generate C or Fortran source code that creates the described netCDF file. This is useful for bootstrapping programs:
 
 ```
-`ncgen -lc example.cdl \> create\_example.c`
+ncgen -lc example.cdl \> create\_example.c
 
-`ncgen -lf example.cdl \> create\_example.f90`
+ncgen -lf example.cdl \> create\_example.f90
 ```
 
 The generated code includes all the nc\_create, nc\_def\_dim, nc\_def\_var, and nc\_put\_var calls needed to produce the file. You can use this as a starting point and modify it for your needs.
@@ -5749,7 +6002,7 @@ One of the most practical uses of ncdump and ncgen together is editing netCDF fi
 1. Dump the file to CDL:
 
 ```
-`ncdump example.nc \> example.cdl`
+ncdump example.nc \> example.cdl
 ```
 
 2. Edit the CDL file with any text editor. You can rename variables, change attribute values, add new attributes, modify data values, or restructure dimensions.
@@ -5757,7 +6010,7 @@ One of the most practical uses of ncdump and ncgen together is editing netCDF fi
 3. Regenerate the netCDF file:
 
 ```
-`ncgen -o modified.nc example.cdl`
+ncgen -o modified.nc example.cdl
 ```
 
 This workflow is useful for:
@@ -5784,7 +6037,9 @@ The nccopy utility copies a netCDF file while optionally converting its format, 
 
 At its simplest, nccopy copies a file:
 
-~~***nccopy input.nc output.nc**
+```
+`nccopy input.nc output.nc`
+```
 
 This produces an identical copy. The utility becomes useful when you add flags to change the output format, compression, or chunking.
 
@@ -5793,11 +6048,11 @@ This produces an identical copy. The utility becomes useful when you add flags t
 The -k flag selects the output format:
 
 ```
-`nccopy -k nc4 classic.nc netcdf4.nc`
+nccopy -k nc4 classic.nc netcdf4.nc
 
-`nccopy -k nc3 netcdf4.nc classic.nc`
+nccopy -k nc3 netcdf4.nc classic.nc
 
-`nccopy -k nc5 classic.nc cdf5.nc`
+nccopy -k nc5 classic.nc cdf5.nc
 ```
 
 Valid -k values:
@@ -5817,7 +6072,7 @@ Not every conversion succeeds. Converting a NetCDF-4/HDF5 file that uses groups,
 The -d flag applies zlib deflate compression to every variable in the output file. The argument is a compression level from 0 (no compression) to 9 (maximum compression). Use level 1. Higher levels are much slower and produce little additional compression for typical scientific data.
 
 ```
-`nccopy -k nc4 -d 1 input.nc compressed.nc`
+nccopy -k nc4 -d 1 input.nc compressed.nc
 ```
 
 Compression requires NetCDF-4/HDF5 format. If the input file is classic format, combine -k nc4 with -d to convert and compress in one step.
@@ -5825,7 +6080,7 @@ Compression requires NetCDF-4/HDF5 format. If the input file is classic format, 
 The -s flag enables the shuffle filter, which rearranges bytes within each chunk before compression. Shuffle improves compression ratios for integer data and for floating-point data with slowly varying values. It adds negligible overhead and is worth enabling whenever you compress.
 
 ```
-`nccopy -k nc4 -d 1 -s input.nc compressed.nc`
+nccopy -k nc4 -d 1 -s input.nc compressed.nc
 ```
 
 The shuffle filter provides little benefit for random or noisy data, already-compressed data, or character strings.
@@ -5837,7 +6092,7 @@ NetCDF-4/HDF5 files store variable data in chunks. The chunk shape determines wh
 The -c flag specifies chunk sizes. The format is dimension\_name/size for each dimension, separated by commas:
 
 ```
-`nccopy -k nc4 -c "time/1,lat/180,lon/360" input.nc rechunked.nc`
+nccopy -k nc4 -c "time/1,lat/180,lon/360" input.nc rechunked.nc
 ```
 
 This sets the chunk shape for every variable that uses the time, lat, and lon dimensions. A time chunk size of 1 with large spatial chunks is good for reading individual time slices. Reversing the proportions (large time, small spatial) is better for extracting time series at a single location.
@@ -5845,7 +6100,7 @@ This sets the chunk shape for every variable that uses the time, lat, and lon di
 You can also specify chunks per variable by using the variable name instead of dimension names:
 
 ```
-`nccopy -k nc4 -c "temperature/1,180,360" input.nc rechunked.nc`
+nccopy -k nc4 -c "temperature/1,180,360" input.nc rechunked.nc
 ```
 
 Guidelines for choosing chunk sizes:
@@ -5865,16 +6120,16 @@ Guidelines for choosing chunk sizes:
 The flags compose naturally. A common operation is to convert a classic file to NetCDF-4/HDF5 with compression, shuffle, and new chunking in a single command:
 
 ```
-`nccopy -k nc4 -d 1 -s -c "time/1,lat/180,lon/360" input.nc optimized.nc`
+nccopy -k nc4 -d 1 -s -c "time/1,lat/180,lon/360" input.nc optimized.nc
 ```
 
 #### Subsetting Variables
 
-~~***The -v flag copies only the named variables (plus any coordinate variables they depend on):**
+The -v flag copies only the named variables (plus any coordinate variables they depend on):
 
-~~***nccopy -v temperature,pressure input.nc subset.nc**
+nccopy -v temperature,pressure input.nc subset.nc
 
-~~***The -V flag copies only the named variables without pulling in coordinate variables automatically.**
+The -V flag copies only the named variables without pulling in coordinate variables automatically.
 
 #### Other Useful Flags
 
@@ -5886,132 +6141,130 @@ The flags compose naturally. A common operation is to convert a classic file to 
 
 #### Verifying Results
 
-~~***After running nccopy, verify the output:**
+After running nccopy, verify the output:
 
 ```
-`ncdump -h output.nc`
+ncdump -h output.nc
 ```
 
-~~***Check that dimensions, variables, and attributes match expectations. To verify compression and chunking settings:**
+Check that dimensions, variables, and attributes match expectations. To verify compression and chunking settings:
 
 ```
-`ncdump -hs output.nc`
+ncdump -hs output.nc
 ```
 
-~~***To confirm that data values are identical:**
+To confirm that data values are identical:
 
 ```
-`ncdump -v temperature input.nc \> in.cdl`
+ncdump -v temperature input.nc \> in.cdl
 
-`ncdump -v temperature output.nc \> out.cdl`
+ncdump -v temperature output.nc \> out.cdl
 
-`diff in.cdl out.cdl`
+diff in.cdl out.cdl
 ```
 
-~~***For compressed files, the data values will be identical even though the binary files differ. Compression and decompression are transparent to all netCDF readers.**
+For compressed files, the data values will be identical even though the binary files differ. Compression and decompression are transparent to all netCDF readers.
 
-~~***To check the effect on file size:**
+To check the effect on file size:
 
 ```
-`ls -lh input.nc output.nc`
+ls -lh input.nc output.nc
 ```
 
 #### Practical Examples
 
-~~***Convert a classic file to compressed NetCDF-4/HDF5:**
+Convert a classic file to compressed NetCDF-4/HDF5:
 
 ```
-`nccopy -k nc4 -d 1 -s legacy.nc modern.nc`
+nccopy -k nc4 -d 1 -s legacy.nc modern.nc
 ```
 
-~~***Rechunk a file for time-slice access:**
+Rechunk a file for time-slice access:
 
 ```
-`nccopy -k nc4 -c "time/1,lat/180,lon/360" badly\_chunked.nc rechunked.nc`
+nccopy -k nc4 -c "time/1,lat/180,lon/360" badly\_chunked.nc rechunked.nc
 ```
 
-~~***Prepare a file for cloud object storage with larger chunks to reduce the number of HTTP requests:**
+Prepare a file for cloud object storage with larger chunks to reduce the number of HTTP requests:
 
 ```
-`nccopy -k nc4 -d 1 -s -c "time/10,lat/180,lon/360" local.nc cloud.nc`
+nccopy -k nc4 -d 1 -s -c "time/10,lat/180,lon/360" local.nc cloud.nc
 ```
 
-~~***Extract two variables into a smaller file:**
+Extract two variables into a smaller file:
 
 ```
-`nccopy -v temperature,pressure large.nc small.nc`
+nccopy -v temperature,pressure large.nc small.nc
 ```
 
 #### Limitations
 
-- ~~***nccopy always creates a new file. It cannot modify a file in place.**
+- nccopy always creates a new file. It cannot modify a file in place.
 
-- ~~***Compression and chunking require NetCDF-4/HDF5 format. Classic formats store data contiguously without chunks.**
+- Compression and chunking require NetCDF-4/HDF5 format. Classic formats store data contiguously without chunks.
 
-- ~~***CDF-5 supports chunking but not compression.**
+- Very large files may need a larger copy buffer (-m) to avoid excessive I/O operations.
 
-- ~~***Very large files may need a larger copy buffer (-m) to avoid excessive I/O operations.**
-
-- ~~***Some advanced HDF5 features (such as external links or non-netCDF datatypes) may not survive conversion.**
+- Some advanced HDF5 features (such as external links or non-netCDF datatypes) may not survive conversion.
 
 ### Hands-On: A Complete ncdump/ncgen/nccopy Workflow
 
-~~***The previous sections described each utility and its flags. This section walks through a complete workflow so you can see how the tools fit together. All you need is a system with the netCDF C library installed.**
+The previous sections described each utility and its flags. This section walks through a complete workflow so you can see how the tools fit together. All you need is a system with the netCDF C library installed.
 
 #### Step 1: Write a CDL File
 
-~~***Create a file called var\_var.cdl *with the following contents:**
+~~*Create a file called var\_var.cdl *with the following contents:
 
 ```
-`netcdf var\_var \{`
+netcdf var\_var \{
 
-`dimensions:`
+dimensions:
 
-`time = UNLIMITED ;`
+time = UNLIMITED ;
 
-`lat = 4 ;`
+lat = 4 ;
 
-`lon = 8 ;`
+lon = 8 ;
 
-`variables:`
+variables:
 
-`float temperature(time, lat, lon) ;`
+float temperature(time, lat, lon) ;
 
-`temperature:units = "K" ;`
+temperature:units = "K" ;
 
-`temperature:long\_name = "surface temperature" ;`
+temperature:long\_name = "surface temperature" ;
 
-`temperature:\_FillValue = -999.f ;`
+temperature:\_FillValue = -999.f ;
 
-`double time(time) ;`
+double time(time) ;
 
-`time:units = "days since 2025-01-01" ;`
+time:units = "days since 2025-01-01" ;
 
-`time:calendar = "standard" ;`
+time:calendar = "standard" ;
 
-`float lat(lat) ;`
+float lat(lat) ;
 
-`lat:units = "degrees\_north" ;`
+lat:units = "degrees\_north" ;
 
-`float lon(lon) ;`
+float lon(lon) ;
 
-`lon:units = "degrees\_east" ;`
+lon:units = "degrees\_east" ;
 
-`// global attributes:`
+// global attributes:
 
-`:title = "Example surface temperature" ;`
+:title = "Example surface temperature" ;
 
-`:Conventions = "CF-1.8" ;`
+:Conventions = "CF-1.8" ;
 
-`data:`
+data:
 
-`time = 0, 1, 2 ;`
+time = 0, 1, 2 ;
 
-`lat = -60, -20, 20, 60 ;`
+lat = -60, -20, 20, 60 ;
 
-`lon = 0, 45, 90, 135, 180, 225, 270, 315 ;`
+lon = 0, 45, 90, 135, 180, 225, 270, 315 ;
 
-`temperature =`
+temperature =
 
 ~~`  ***271.5, 275.3, 280.1, 285.7, 290.2, 288.4, 276.9, 272.0,`**
 
@@ -6044,191 +6297,201 @@ The flags compose naturally. A common operation is to convert a classic file to 
 
 #### Step 2: Create a NetCDF File
 
-~~***Use ncgen to produce a classic-format netCDF file:**
+Use ncgen to produce a classic-format netCDF file:
 
 ```
-`ncgen -o var\_var.nc var\_var.cdl`
+ncgen -o var\_var.nc var\_var.cdl
 ```
 
-~~***ncgen reads the CDL and writes a binary netCDF file. The file is small (about 1 KB), but it has the same structure as a real climate dataset.**
+ncgen reads the CDL and writes a binary netCDF file. The file is small (about 1 KB), but it has the same structure as a real climate dataset.
 
 #### Step 3: Inspect the File with ncdump
 
-~~***View the header:**
+View the header:
 
 ```
-`ncdump -h var\_var.nc`
+ncdump -h var\_var.nc
 ```
 
-~~***Output:**
+Output:
 
 ```
-`netcdf var\_var \{`
+netcdf var\_var \{
 
-`dimensions:`
+dimensions:
 
-`time = UNLIMITED ; // (3 currently)`
+time = UNLIMITED ; // (3 currently)
 
-`lat = 4 ;`
+lat = 4 ;
 
-`lon = 8 ;`
+lon = 8 ;
 
-`variables:`
+variables:
 
-`float temperature(time, lat, lon) ;`
+float temperature(time, lat, lon) ;
 
-`temperature:units = "K" ;`
+temperature:units = "K" ;
 
-`temperature:long\_name = "surface temperature" ;`
+temperature:long\_name = "surface temperature" ;
 
-`temperature:\_FillValue = -999.f ;`
+temperature:\_FillValue = -999.f ;
 
-`double time(time) ;`
+double time(time) ;
 
-`time:units = "days since 2025-01-01" ;`
+time:units = "days since 2025-01-01" ;
 
-`time:calendar = "standard" ;`
+time:calendar = "standard" ;
 
-`float lat(lat) ;`
+float lat(lat) ;
 
-`lat:units = "degrees\_north" ;`
+lat:units = "degrees\_north" ;
 
-`float lon(lon) ;`
+float lon(lon) ;
 
-`lon:units = "degrees\_east" ;`
+lon:units = "degrees\_east" ;
 
-`// global attributes:`
+// global attributes:
 
-`:title = "Example surface temperature" ;`
+:title = "Example surface temperature" ;
 
-`:Conventions = "CF-1.8" ;`
+:Conventions = "CF-1.8" ;
 
-`\}`
+\}
 ```
 
-~~***Check the coordinate variables:**
+Check the coordinate variables:
 
 ```
-`ncdump -c var\_var.nc`
+ncdump -c var\_var.nc
 ```
 
-~~***This prints the header plus the data for time, lat, and lon. Verify that the three time values, four latitudes, and eight longitudes match what you wrote in the CDL.**
+This prints the header plus the data for time, lat, and lon. Verify that the three time values, four latitudes, and eight longitudes match what you wrote in the CDL.
 
-~~***View the time variable as dates:**
-
-```
-`ncdump -t -v time var\_var.nc`
-```
-
-~~***Output:**
+View the time variable as dates:
 
 ```
-~~` ***time = "2025-01-01", "2025-01-02", "2025-01-03" ;`**
+ncdump -t -v time var\_var.nc
 ```
 
-~~***Check the format:**
+Output:
 
 ```
-`ncdump -k var\_var.nc`
+~~ ***time = "2025-01-01", "2025-01-02", "2025-01-03" ;**
 ```
 
-~~***Output:**
+Check the format:
 
 ```
-`classic`
+ncdump -k var\_var.nc
+```
+
+Output:
+
+```
+classic
 ```
 
 #### Step 4: Edit Metadata with the Round-Trip
 
-~~***Suppose the title attribute is wrong and you want to fix it. Dump the file to CDL:**
+Suppose the title attribute is wrong and you want to fix it. Dump the file to CDL:
 
-~~***ncdump var\_var.nc \> var\_var\_edit.cdl**
+```
+`ncdump var\_var.nc \> var\_var\_edit.cdl`
+```
 
 ~~***Open var\_var\_edit.cdl *in a text editor and change the title:**
 
-~~***:title = "Example surface temperature, January 2025" ;**
+```
+`:title = "Example surface temperature, January 2025" ;`
+```
 
-~~***Regenerate the file:**
+Regenerate the file:
 
-~~***ncgen -o var\_var\_fixed.nc var\_var\_edit.cdl**
+```
+`ncgen -o var\_var\_fixed.nc var\_var\_edit.cdl`
+```
 
-~~***Verify the change:**
+Verify the change:
 
-~~***ncdump -h var\_var\_fixed.nc | grep title**
+```
+`ncdump -h var\_var\_fixed.nc | grep title`
+```
 
-~~***Output:**
+Output:
 
-~~***:title = "Example surface temperature, January 2025" ;**
+```
+`:title = "Example surface temperature, January 2025" ;`
+```
 
-~~***The data values are unchanged. Only the attribute was modified.**
+The data values are unchanged. Only the attribute was modified.
 
 #### Step 5: Convert and Compress with nccopy
 
-~~***Convert the classic file to NetCDF-4/HDF5 with compression and shuffle:**
+Convert the classic file to NetCDF-4/HDF5 with compression and shuffle:
 
 ```
-`nccopy -k nc4 -d 1 -s var\_var.nc var\_var\_nc4.nc`
+nccopy -k nc4 -d 1 -s var\_var.nc var\_var\_nc4.nc
 ```
 
-~~***Verify the format and compression settings:**
+Verify the format and compression settings:
 
 ```
-`ncdump -hs var\_var\_nc4.nc`
+ncdump -hs var\_var\_nc4.nc
 ```
 
-~~***The output now includes special attributes showing the storage details:**
+The output now includes special attributes showing the storage details:
 
 ```
-`temperature:\_DeflateLevel = 1 ;`
+temperature:\_DeflateLevel = 1 ;
 
-`temperature:\_Shuffle = "true" ;`
+temperature:\_Shuffle = "true" ;
 
-`temperature:\_ChunkSizes = 3, 4, 8 ;`
+temperature:\_ChunkSizes = 3, 4, 8 ;
 ```
 
-~~***Compare file sizes:**
+Compare file sizes:
 
 ```
-`ls -l var\_var.nc var\_var\_nc4.nc`
+ls -l var\_var.nc var\_var\_nc4.nc
 ```
 
-~~***For this small file the compressed version may actually be larger because of HDF5 metadata overhead. Compression pays off with larger datasets where data values dominate the file size.**
+For this small file the compressed version may actually be larger because of HDF5 metadata overhead. Compression pays off with larger datasets where data values dominate the file size.
 
 #### Step 6: Rechunk for a Different Access Pattern
 
-~~***The default chunking stores the entire array in one chunk. Rechunk so that each time step is a separate chunk:**
+The default chunking stores the entire array in one chunk. Rechunk so that each time step is a separate chunk:
 
 ```
-`nccopy -k nc4 -d 1 -s -c "time/1,lat/4,lon/8" var\_var.nc var\_var\_chunked.nc`
+nccopy -k nc4 -d 1 -s -c "time/1,lat/4,lon/8" var\_var.nc var\_var\_chunked.nc
 ```
 
-~~***Verify:**
+Verify:
 
 ```
-`ncdump -hs var\_var\_chunked.nc`
+ncdump -hs var\_var\_chunked.nc
 ```
 
-~~***Look for:**
+Look for:
 
 ```
-`temperature:\_ChunkSizes = 1, 4, 8 ;`
+temperature:\_ChunkSizes = 1, 4, 8 ;
 ```
 
-~~***Each chunk now holds one time slice. Reading a single time step requires reading one chunk instead of the entire variable. For a large dataset this difference determines whether a time-slice read takes milliseconds or minutes.**
+Each chunk now holds one time slice. Reading a single time step requires reading one chunk instead of the entire variable. For a large dataset this difference determines whether a time-slice read takes milliseconds or minutes.
 
 #### What You Have Now
 
-~~***After these steps you have four files:**
+After these steps you have four files:
 
 - ~~***var\_var.nc -- classic format, no compression**
 
-- ~~***var\_var\_fixed.nc -- classic format with corrected metadata**
+- var\_var\_fixed.nc -- classic format with corrected metadata
 
-- ~~***var\_var\_nc4.nc -- NetCDF-4/HDF5, compressed, default chunking**
+- var\_var\_nc4.nc -- NetCDF-4/HDF5, compressed, default chunking
 
-- ~~***var\_var\_chunked.nc -- NetCDF-4/HDF5, compressed, one-time-step chunks**
+- var\_var\_chunked.nc -- NetCDF-4/HDF5, compressed, one-time-step chunks
 
-~~***You created all of them without writing a single line of C or Fortran. The rest of this chapter describes each utility and its options in detail. You can use these files to experiment with any of the flags discussed in the sections that follow.**
+You created all of them without writing a single line of C or Fortran. The rest of this chapter describes each utility and its options in detail. You can use these files to experiment with any of the flags discussed in the sections that follow.
 
 ## More Utilities: the NetCDF Command Operators (NCO)
 
@@ -6238,7 +6501,7 @@ NCO provides operators for common tasks such as averaging, concatenating, subset
 
 | ~~***Tool** | ~~***Name** | ~~***Description** | ~~***Example Usage** |
 | :-: | :-: | :-: | :-: |
-| ~~***ncks** | ~~***NetCDF Kitchen Sink** | ~~***Swiss Army knife of NCO. Extracts variables, subsets dimensions, changes metadata, and converts between formats.** | ~~***Extract variable: ncks -v temperature input.nc output.nc**  ~~***Subset dimension: \`ncks -d time,0,9 input.nc output.nc\` (first 10 time steps)** |
+| ~~***ncks** | ~~***NetCDF Kitchen Sink** | ~~***Swiss Army knife of NCO. Extracts variables, subsets dimensions, changes metadata, and converts between formats.** | ~~***Extract variable: ncks -v temperature input.nc output.nc**  ~~***Subset dimension: ncks -d time,0,9 input.nc output.nc (first 10 time steps)** |
 | ~~***ncrcat** | ~~***NetCDF Record Concatenator** | ~~***Concatenates files along the record (unlimited) dimension.** | ~~***ncrcat file1.nc file2.nc file3.nc output.nc**  ~~***Combines multiple time steps from different files into one.** |
 | ~~***ncra** | ~~***NetCDF Record Averager** | ~~***Averages files along the record dimension.** | ~~***ncra file1.nc file2.nc file3.nc output.nc**  ~~***Creates a file containing the average of input files.** |
 | ~~***ncap2** | ~~***NetCDF Arithmetic Processor** | ~~***Performs arbitrary arithmetic operations on variables.** | ~~***ncap2 -s 'temp\_k=temp\_c+273.15' input.nc output.nc**  ~~***Creates a new variable by adding 273.15 to temp\_c.** |
@@ -6270,13 +6533,13 @@ The NCO documentation on-line includes a detailed user guide, operator reference
 
 # NetCDF C Examples
 
-The examples in this chapter are from the NetCDF Expansion Pack. The examples can be built and run as part of that package. Each example is a complete, self-contained C program that creates a netCDF file, writes data, then reopens the file to verify that all metadata and data were stored correctly. The programs increase in complexity, starting with basic 2D array I/O, then adding coordinate variables and CF conventions, then demonstrating compression filters, user-defined types, and hierarchical groups. All examples use the same error-handling macro introduced earlier in this chapter.
+The examples in this chapter are from the NetCDF Expansion Pack. The examples can be built and run as part of that package. Each example is a complete, self-contained C program that creates a netCDF file, writes data, then reopens the file to verify that all metadata and data were stored correctly. The programs increase in complexity, starting with basic 2D array I/O, then adding coordinate variables and CF conventions, then demonstrating compression filters, user-defined types, and hierarchical groups. All examples use the same error-handling macro.
 
 ## Classic Model Examples
 
 ### Simple Example in C
 
-This is a basic example demonstrating 2D array creation and reading in NetCDF.
+This is a basic example demonstrating 2D array creation and reading in NetCDF. This example can be found in the NetCDF Expansion Pack, in examples/classic/simple\_2d.c.
 
 This example shows the fundamental workflow for working with NetCDF files:
 
@@ -6335,499 +6598,453 @@ programming.
 - **Data Mode**: Phase where actual data is written/read
 
 ```
-`\#include \<stdio.h\>`
+\#include \<stdio.h\>
 
-`\#include \<stdlib.h\>`
+\#include \<stdlib.h\>
 
-`\#include \<string.h\>`
+\#include \<string.h\>
 
-`\#include \<netcdf.h\>`
+\#include \<netcdf.h\>
 
 
-`\#define FILE\_NAME "simple\_2D.nc"`
+\#define FILE\_NAME "simple\_2D.nc"
 
-`\#define NDIMS 2`
+\#define NDIMS 2
 
-`\#define NX 6`
+\#define NX 6
 
-`\#define NY 12`
+\#define NY 12
 
-`\#define ERRCODE 2`
+\#define FILL\_VALUE -9999
 
-`\#define ERR(e) \{printf("Error: %s\\n", nc\_strerror(e)); exit(ERRCODE);\}`
+\#define ERRCODE 2
 
+\#define ERR(e) \{printf("Error: %s\\n", nc\_strerror(e)); exit(ERRCODE);\}
 
-`int main()`
 
-`\{`
+int main()
 
-`   int ncid, varid;`
+\{
 
-`   int x\_dimid, y\_dimid;`
+   int ncid, varid;
 
-`   int dimids\[NDIMS\];`
+   int x\_dimid, y\_dimid;
 
-`   int retval;`
+   int dimids\[NDIMS\];
 
-`   `
+   int retval;
 
-`   int data\_out\[NY\]\[NX\];`
+   
 
-`   int data\_in\[NY\]\[NX\];`
+   int data\_out\[NY\]\[NX\];
 
-`   `
+   int data\_in\[NY\]\[NX\];
 
-`   /\* ========== WRITE PHASE ========== \*/`
+   
 
-`   printf("Creating NetCDF file: %s\\n", FILE\_NAME);`
+   /\* ========== WRITE PHASE ========== \*/
 
-`   `
+   printf("Creating NetCDF file: %s\\n", FILE\_NAME);
 
-`   /\* Initialize data with sequential integers (0, 1, 2, 3, ...) \*/`
+   
 
-`   for (int i = 0; i \< NY; i++)`
+   /\* Initialize data with sequential integers (0, 1, 2, 3, ...) \*/
 
-`      for (int j = 0; j \< NX; j++)`
+   for (int i = 0; i \< NY; i++)
 
-`         data\_out\[i\]\[j\] = i \* NX + j;`
+      for (int j = 0; j \< NX; j++)
 
-`   `
+         data\_out\[i\]\[j\] = i \* NX + j;
 
-`   /\* Create the NetCDF file (NC\_CLOBBER overwrites existing file) \*/`
+   
 
-`   if ((retval = nc\_create(FILE\_NAME, NC\_CLOBBER|NC\_NETCDF4, &ncid)))`
+   /\* Create the NetCDF file (NC\_CLOBBER overwrites existing file) \*/
 
-`      ERR(retval);`
+   if ((retval = nc\_create(FILE\_NAME, NC\_CLOBBER, &ncid)))
 
-`   `
+      ERR(retval);
 
-`   /\* Define dimensions \*/`
+   
 
-`   if ((retval = nc\_def\_dim(ncid, "x", NX, &x\_dimid)))`
+   /\* Define dimensions \*/
 
-`      ERR(retval);`
+   if ((retval = nc\_def\_dim(ncid, "x", NX, &x\_dimid)))
 
-`   if ((retval = nc\_def\_dim(ncid, "y", NY, &y\_dimid)))`
+      ERR(retval);
 
-`      ERR(retval);`
+   if ((retval = nc\_def\_dim(ncid, "y", NY, &y\_dimid)))
 
-`   `
+      ERR(retval);
 
-`   /\* Define the variable (dimension order: y, x for C row-major) \*/`
+   
 
-`   dimids\[0\] = y\_dimid;`
+   /\* Define the variable (dimension order: y, x for C row-major) \*/
 
-`   dimids\[1\] = x\_dimid;`
+   dimids\[0\] = y\_dimid;
 
-`   if ((retval = nc\_def\_var(ncid, "data", NC\_INT, NDIMS, dimids, &varid)))`
+   dimids\[1\] = x\_dimid;
 
-`      ERR(retval);`
+   if ((retval = nc\_def\_var(ncid, "data", NC\_INT, NDIMS, dimids, &varid)))
 
-`   `
+      ERR(retval);
 
-`   /\* Add a global attribute \*/`
+   
 
-`   if ((retval = nc\_put\_att\_text(ncid, NC\_GLOBAL, "title",`
+   /\* Add a global attribute \*/
 
-`                                  strlen("Simple 2D Example"), "Simple 2D Example")))`
+   if ((retval = nc\_put\_att\_text(ncid, NC\_GLOBAL, "title",
 
-`      ERR(retval);`
+                                  strlen("Simple 2D Example"), "Simple 2D Example")))
 
-`   `
+      ERR(retval);
 
-`   /\* Add a variable attribute \*/`
+   
 
-`   if ((retval = nc\_put\_att\_text(ncid, varid, "units",`
+   /\* Add a variable attribute \*/
 
-`                                  strlen("m/s"), "m/s")))`
+   if ((retval = nc\_put\_att\_text(ncid, varid, "units",
 
-`      ERR(retval);`
+                                  strlen("m/s"), "m/s")))
 
-`   `
+      ERR(retval);
 
-`   /\* End define mode \*/`
+   
 
-`   if ((retval = nc\_enddef(ncid)))`
+   /\* Set fill value: nc\_def\_var\_fill() registers the sentinel value returned for
 
-`      ERR(retval);`
+    \* unwritten or missing elements. NC\_FILL enables fill mode for this variable. \*/
 
-`   `
+   int fill\_value = FILL\_VALUE;
 
-`   /\* Write the data to the file \*/`
+   if ((retval = nc\_def\_var\_fill(ncid, varid, NC\_FILL, &fill\_value)))
 
-`   if ((retval = nc\_put\_var\_int(ncid, varid, &data\_out\[0\]\[0\])))`
+      ERR(retval);
 
-`      ERR(retval);`
+   
 
-`   `
+   /\* End define mode \*/
 
-`   /\* Close the file \*/`
+   if ((retval = nc\_enddef(ncid)))
 
-`   if ((retval = nc\_close(ncid)))`
+      ERR(retval);
 
-`      ERR(retval);`
+   
 
-`   `
+   /\* Write only the first NY-1 rows (partial write), leaving the last row unwritten.
 
-`   printf("\*\*\* SUCCESS writing file!\\n");`
+    \* Unwritten elements will return FILL\_VALUE when read back. \*/
 
-`   `
+   size\_t start\[NDIMS\] = \{0, 0\};
 
-`   /\* ========== READ PHASE ========== \*/`
+   size\_t count\[NDIMS\] = \{NY - 1, NX\};
 
-`   printf("\\nReopening file for validation...\\n");`
+   if ((retval = nc\_put\_vara\_int(ncid, varid, start, count, &data\_out\[0\]\[0\])))
 
-`   `
+      ERR(retval);
 
-`   /\* Open the file for reading \*/`
+   
 
-`   if ((retval = nc\_open(FILE\_NAME, NC\_NOWRITE, &ncid)))`
+   /\* Close the file \*/
 
-`      ERR(retval);`
+   if ((retval = nc\_close(ncid)))
 
-`   `
+      ERR(retval);
 
-`   /\* Verify metadata: check number of dimensions, variables, attributes, unlimited dim \*/`
+   
 
-`   int ndims\_in, nvars\_in, ngatts\_in, unlimdimid\_in;`
+   printf("\*\*\* SUCCESS writing file (first %d of %d rows written)!\\n", NY - 1, NY);
 
-`   if ((retval = nc\_inq(ncid, &ndims\_in, &nvars\_in, &ngatts\_in, &unlimdimid\_in)))`
+   
 
-`      ERR(retval);`
+   /\* ========== READ PHASE ========== \*/
 
-`   `
+   printf("\\nReopening file for validation...\\n");
 
-`   if (ndims\_in != NDIMS) \{`
+   
 
-`      printf("Error: Expected %d dimensions, found %d\\n", NDIMS, ndims\_in);`
+   /\* Open the file for reading \*/
 
-`      exit(ERRCODE);`
+   if ((retval = nc\_open(FILE\_NAME, NC\_NOWRITE, &ncid)))
 
-`   \}`
+      ERR(retval);
 
-`   printf("Verified: %d dimensions\\n", ndims\_in);`
+   
 
-`   `
+   /\* Verify metadata: check number of dimensions, variables, attributes, unlimited dim \*/
 
-`   if (nvars\_in != 1) \{`
+   int ndims\_in, nvars\_in, ngatts\_in, unlimdimid\_in;
 
-`      printf("Error: Expected 1 variable, found %d\\n", nvars\_in);`
+   if ((retval = nc\_inq(ncid, &ndims\_in, &nvars\_in, &ngatts\_in, &unlimdimid\_in)))
 
-`      exit(ERRCODE);`
+      ERR(retval);
 
-`   \}`
+   
 
-`   printf("Verified: %d variable\\n", nvars\_in);`
+   if (ndims\_in != NDIMS || nvars\_in != 1 || ngatts\_in != 1 || unlimdimid\_in != -1) \{
 
-`   `
+      printf("Error: file metadata incorrect (dims=%d, vars=%d, atts=%d, unlim=%d)\\n",
 
-`   if (ngatts\_in != 1) \{`
+             ndims\_in, nvars\_in, ngatts\_in, unlimdimid\_in);
 
-`      printf("Error: Expected 1 global attribute, found %d\\n", ngatts\_in);`
+      exit(ERRCODE);
 
-`      exit(ERRCODE);`
+   \}
 
-`   \}`
+   printf("Verified: file metadata correct (%d dims, %d var, %d att, no unlimited)\\n",
 
-`   printf("Verified: %d global attribute\\n", ngatts\_in);`
+          ndims\_in, nvars\_in, ngatts\_in);
 
-`   `
+   
 
-`   if (unlimdimid\_in != -1) \{`
+   /\* Verify dimensions using nc\_inq\_dim() \*/
 
-`      printf("Error: Expected no unlimited dimension, found dimid %d\\n", unlimdimid\_in);`
+   char dim\_name\_x\[NC\_MAX\_NAME + 1\], dim\_name\_y\[NC\_MAX\_NAME + 1\];
 
-`      exit(ERRCODE);`
+   size\_t len\_x, len\_y;
 
-`   \}`
+   if ((retval = nc\_inq\_dim(ncid, x\_dimid, dim\_name\_x, &len\_x)))
 
-`   printf("Verified: no unlimited dimension\\n");`
+      ERR(retval);
 
-`   `
+   if ((retval = nc\_inq\_dim(ncid, y\_dimid, dim\_name\_y, &len\_y)))
 
-`   /\* Verify dimensions using nc\_inq\_dim() \*/`
+      ERR(retval);
 
-`   char dim\_name\[NC\_MAX\_NAME + 1\];`
 
-`   size\_t len\_x, len\_y;`
+   if (strcmp(dim\_name\_x, "x") != 0 || len\_x != NX ||
 
-`   if ((retval = nc\_inq\_dim(ncid, x\_dimid, dim\_name, &len\_x)))`
+       strcmp(dim\_name\_y, "y") != 0 || len\_y != NY) \{
 
-`      ERR(retval);`
+      printf("Error: dimension names or sizes incorrect\\n");
 
-`   `
+      exit(ERRCODE);
 
-`   if (strcmp(dim\_name, "x") != 0) \{`
+   \}
 
-`      printf("Error: Expected dimension name 'x', found '%s'\\n", dim\_name);`
+   printf("Verified: dimensions correct (x=%zu, y=%zu)\\n", len\_x, len\_y);
 
-`      exit(ERRCODE);`
+   
 
-`   \}`
+   /\* Verify variable using nc\_inq\_var() \*/
 
-`   if (len\_x != NX) \{`
+   char var\_name\[NC\_MAX\_NAME + 1\];
 
-`      printf("Error: Expected x dimension = %d, found %zu\\n", NX, len\_x);`
+   nc\_type var\_type;
 
-`      exit(ERRCODE);`
+   int var\_ndims;
 
-`   \}`
+   int var\_dimids\[NDIMS\];
 
-`   printf("Verified: dimension '%s' = %zu\\n", dim\_name, len\_x);`
+   if ((retval = nc\_inq\_var(ncid, varid, var\_name, &var\_type, &var\_ndims, var\_dimids, NULL)))
 
-`   `
+      ERR(retval);
 
-`   if ((retval = nc\_inq\_dim(ncid, y\_dimid, dim\_name, &len\_y)))`
 
-`      ERR(retval);`
+   if (strcmp(var\_name, "data") != 0 || var\_type != NC\_INT ||
 
-`   `
+       var\_ndims != NDIMS || var\_dimids\[0\] != y\_dimid || var\_dimids\[1\] != x\_dimid) \{
 
-`   if (strcmp(dim\_name, "y") != 0) \{`
+      printf("Error: variable metadata incorrect\\n");
 
-`      printf("Error: Expected dimension name 'y', found '%s'\\n", dim\_name);`
+      exit(ERRCODE);
 
-`      exit(ERRCODE);`
+   \}
 
-`   \}`
+   printf("Verified: variable metadata correct ('%s', NC\_INT, %d dims)\\n", var\_name, var\_ndims);
 
-`   if (len\_y != NY) \{`
+   
 
-`      printf("Error: Expected y dimension = %d, found %zu\\n", NY, len\_y);`
+   /\* Verify global attributes, variable attributes, and fill value \*/
 
-`      exit(ERRCODE);`
+   char title\_in\[100\] = \{0\}, units\_in\[100\] = \{0\};
 
-`   \}`
+   size\_t title\_len, units\_len;
 
-`   printf("Verified: dimension '%s' = %zu\\n", dim\_name, len\_y);`
+   int no\_fill, fill\_value\_in;
 
-`   `
 
-`   /\* Verify variable using nc\_inq\_var() \*/`
+   if ((retval = nc\_inq\_attlen(ncid, NC\_GLOBAL, "title", &title\_len)))
 
-`   char var\_name\[NC\_MAX\_NAME + 1\];`
+      ERR(retval);
 
-`   nc\_type var\_type;`
+   if ((retval = nc\_get\_att\_text(ncid, NC\_GLOBAL, "title", title\_in)))
 
-`   int var\_ndims;`
+      ERR(retval);
 
-`   int var\_dimids\[NDIMS\];`
+   title\_in\[title\_len\] = '\\0';
 
-`   if ((retval = nc\_inq\_var(ncid, varid, var\_name, &var\_type, &var\_ndims, var\_dimids, NULL)))`
 
-`      ERR(retval);`
+   if ((retval = nc\_inq\_attlen(ncid, varid, "units", &units\_len)))
 
-`   `
+      ERR(retval);
 
-`   if (strcmp(var\_name, "data") != 0) \{`
+   if ((retval = nc\_get\_att\_text(ncid, varid, "units", units\_in)))
 
-`      printf("Error: Expected variable name 'data', found '%s'\\n", var\_name);`
+      ERR(retval);
 
-`      exit(ERRCODE);`
+   units\_in\[units\_len\] = '\\0';
 
-`   \}`
 
-`   if (var\_type != NC\_INT) \{`
+   if ((retval = nc\_inq\_var\_fill(ncid, varid, &no\_fill, &fill\_value\_in)))
 
-`      printf("Error: Expected variable type NC\_INT, found %d\\n", var\_type);`
+      ERR(retval);
 
-`      exit(ERRCODE);`
 
-`   \}`
+   if (strcmp(title\_in, "Simple 2D Example") != 0 ||
 
-`   if (var\_ndims != NDIMS) \{`
+       strcmp(units\_in, "m/s") != 0 ||
 
-`      printf("Error: Expected %d dimensions, found %d\\n", NDIMS, var\_ndims);`
+       fill\_value\_in != FILL\_VALUE) \{
 
-`      exit(ERRCODE);`
+      printf("Error: attributes or fill value incorrect\\n");
 
-`   \}`
+      exit(ERRCODE);
 
-`   if (var\_dimids\[0\] != y\_dimid || var\_dimids\[1\] != x\_dimid) \{`
+   \}
 
-`      printf("Error: Unexpected dimension IDs for variable\\n");`
+   printf("Verified: all attributes and fill value correct\\n");
 
-`      exit(ERRCODE);`
+   
 
-`   \}`
+   /\* Read the data back \*/
 
-`   printf("Verified: variable '%s' type NC\_INT, %d dims\\n", var\_name, var\_ndims);`
+   if ((retval = nc\_get\_var\_int(ncid, varid, &data\_in\[0\]\[0\])))
 
-`   `
+      ERR(retval);
 
-`   /\* Verify global attribute \*/`
+   
 
-`   char title\_in\[100\];`
+   /\* Verify written rows (0 .. NY-2) contain expected sequential values \*/
 
-`   size\_t title\_len;`
+   int errors = 0;
 
-`   if ((retval = nc\_inq\_attlen(ncid, NC\_GLOBAL, "title", &title\_len)))`
+   for (int i = 0; i \< NY - 1; i++) \{
 
-`      ERR(retval);`
+      for (int j = 0; j \< NX; j++) \{
 
-`   if ((retval = nc\_get\_att\_text(ncid, NC\_GLOBAL, "title", title\_in)))`
+         int expected = i \* NX + j;
 
-`      ERR(retval);`
+         if (data\_in\[i\]\[j\] != expected) \{
 
-`   title\_in\[title\_len\] = '\\0';`
+            printf("Error: data\[%d\]\[%d\] = %d, expected %d\\n", 
 
-`   if (strcmp(title\_in, "Simple 2D Example") != 0) \{`
+                   i, j, data\_in\[i\]\[j\], expected);
 
-`      printf("Error: Expected title 'Simple 2D Example', found '%s'\\n", title\_in);`
+            errors++;
 
-`      exit(ERRCODE);`
+         \}
 
-`   \}`
+      \}
 
-`   printf("Verified: global attribute 'title' = '%s'\\n", title\_in);`
+   \}
 
-`   `
+   
 
-`   /\* Verify variable attribute \*/`
+   /\* Verify unwritten last row contains fill value \*/
 
-`   char units\_in\[100\];`
+   for (int j = 0; j \< NX; j++) \{
 
-`   size\_t units\_len;`
+      if (data\_in\[NY - 1\]\[j\] != FILL\_VALUE) \{
 
-`   if ((retval = nc\_inq\_attlen(ncid, varid, "units", &units\_len)))`
+         printf("Error: unwritten data\[%d\]\[%d\] = %d, expected fill value %d\\n",
 
-`      ERR(retval);`
+                NY - 1, j, data\_in\[NY - 1\]\[j\], FILL\_VALUE);
 
-`   if ((retval = nc\_get\_att\_text(ncid, varid, "units", units\_in)))`
+         errors++;
 
-`      ERR(retval);`
+      \}
 
-`   units\_in\[units\_len\] = '\\0';`
+   \}
 
-`   if (strcmp(units\_in, "m/s") != 0) \{`
+   
 
-`      printf("Error: Expected units 'm/s', found '%s'\\n", units\_in);`
+   if (errors \> 0) \{
 
-`      exit(ERRCODE);`
+      printf("\*\*\* FAILED: %d data validation errors\\n", errors);
 
-`   \}`
+      exit(ERRCODE);
 
-`   printf("Verified: variable attribute 'units' = '%s'\\n", units\_in);`
+   \}
 
-`   `
+   
 
-`   /\* Read the data back \*/`
+   printf("Verified: %d written values correct (0, 1, 2, ..., %d)\\n",
 
-`   if ((retval = nc\_get\_var\_int(ncid, varid, &data\_in\[0\]\[0\])))`
+          NX \* (NY - 1), NX \* (NY - 1) - 1);
 
-`      ERR(retval);`
+   printf("Verified: unwritten last row (%d elements) = fill value %d\\n",
 
-`   `
+          NX, FILL\_VALUE);
 
-`   /\* Verify data correctness \*/`
+   
 
-`   int errors = 0;`
+   /\* Close the file \*/
 
-`   for (int i = 0; i \< NY; i++) \{`
+   if ((retval = nc\_close(ncid)))
 
-`      for (int j = 0; j \< NX; j++) \{`
+      ERR(retval);
 
-`         int expected = i \* NX + j;`
+   
 
-`         if (data\_in\[i\]\[j\] != expected) \{`
+   printf("\\n\*\*\* SUCCESS: All validation checks passed!\\n");
 
-`            printf("Error: data\[%d\]\[%d\] = %d, expected %d\\n", `
+   return 0;
 
-`                   i, j, data\_in\[i\]\[j\], expected);`
-
-`            errors++;`
-
-`         \}`
-
-`      \}`
-
-`   \}`
-
-`   `
-
-`   if (errors \> 0) \{`
-
-`      printf("\*\*\* FAILED: %d data validation errors\\n", errors);`
-
-`      exit(ERRCODE);`
-
-`   \}`
-
-`   `
-
-`   printf("Verified: all %d data values correct (0, 1, 2, ..., %d)\\n", `
-
-`          NX \* NY, NX \* NY - 1);`
-
-`   `
-
-`   /\* Close the file \*/`
-
-`   if ((retval = nc\_close(ncid)))`
-
-`      ERR(retval);`
-
-`   `
-
-`   printf("\\n\*\*\* SUCCESS: All validation checks passed!\\n");`
-
-`   return 0;`
-
-`\}`
+\}
 ```
 
 This results in the following netCDF file:
 
 ```
-`netcdf simple\_2D \{`
+netcdf simple\_2D \{
 
-`dimensions:`
+dimensions:
 
-`	x = 6 ;`
+	x = 6 ;
 
-`	y = 12 ;`
+	y = 12 ;
 
-`variables:`
+variables:
 
-`	int data(y, x) ;`
+	int data(y, x) ;
 
-`		data:units = "m/s" ;`
-
-
-`// global attributes:`
-
-`		:title = "Simple 2D Example" ;`
-
-`data:`
+		data:units = "m/s" ;
 
 
-` data =`
+// global attributes:
 
-`  0, 1, 2, 3, 4, 5,`
+		:title = "Simple 2D Example" ;
 
-`  6, 7, 8, 9, 10, 11,`
+data:
 
-`  12, 13, 14, 15, 16, 17,`
 
-`  18, 19, 20, 21, 22, 23,`
+ data =
 
-`  24, 25, 26, 27, 28, 29,`
+  0, 1, 2, 3, 4, 5,
 
-`  30, 31, 32, 33, 34, 35,`
+  6, 7, 8, 9, 10, 11,
 
-`  36, 37, 38, 39, 40, 41,`
+  12, 13, 14, 15, 16, 17,
 
-`  42, 43, 44, 45, 46, 47,`
+  18, 19, 20, 21, 22, 23,
 
-`  48, 49, 50, 51, 52, 53,`
+  24, 25, 26, 27, 28, 29,
 
-`  54, 55, 56, 57, 58, 59,`
+  30, 31, 32, 33, 34, 35,
 
-`  60, 61, 62, 63, 64, 65,`
+  36, 37, 38, 39, 40, 41,
 
-`  66, 67, 68, 69, 70, 71 ;`
+  42, 43, 44, 45, 46, 47,
 
-`\}`
+  48, 49, 50, 51, 52, 53,
+
+  54, 55, 56, 57, 58, 59,
+
+  60, 61, 62, 63, 64, 65,
+
+  66, 67, 68, 69, 70, 71 ;
+
+\}
 ```
 
 ### Coordinate Variables
@@ -6836,7 +7053,7 @@ This example introduces the concept of coordinate variables - special 1D variabl
 
 The program creates a 2D temperature field (4x5 grid) with latitude and longitude coordinate variables following Climate and Forecast (CF) conventions. CF conventions are the standard metadata conventions for climate and forecast data.
 
-This example can be found in the NetCDF Expansion Pack.
+This example can be found in the NetCDF Expansion Pack in examples/classic/coord\_vars.c.
 
 #### Learning Objectives
 
@@ -6864,619 +7081,634 @@ This example can be found in the NetCDF Expansion Pack.
 
 #### CF Convention Attributes Used
 
-- \`units\`: Physical units (degrees\_north, degrees\_east, K)
+- units: Physical units (degrees\_north, degrees\_east, K)
 
-- \`standard\_name\`: CF standard name vocabulary (latitude, longitude, air\_temperature)
+- standard\_name: CF standard name vocabulary (latitude, longitude, air\_temperature)
 
-- \`long\_name\`: Human-readable descriptive name
+- long\_name: Human-readable descriptive name
 
-- \`axis\`: Coordinate axis identifier (X, Y, Z, T)
+- axis: Coordinate axis identifier (X, Y, Z, T)
 
-- \`\_FillValue\`: Value representing missing data
+- \_FillValue: Value representing missing data
 
 ```
-`\#include \<stdio.h\>`
+\#include \<stdio.h\>
 
-`\#include \<stdlib.h\>`
+\#include \<stdlib.h\>
 
-`\#include \<string.h\>`
+\#include \<string.h\>
 
-`\#include \<netcdf.h\>`
+\#include \<netcdf.h\>
 
 
-`\#define FILE\_NAME "coord\_vars.nc"`
+\#define FILE\_NAME "coord\_vars.nc"
 
-`\#define NLAT 4`
+\#define NLAT 4
 
-`\#define NLON 5`
+\#define NLON 5
 
-`\#define ERRCODE 2`
+\#define ERRCODE 2
 
-`\#define ERR(e) \{printf("Error: %s\\n", nc\_strerror(e)); exit(ERRCODE);\}`
+\#define ERR(e) \{printf("Error: %s\\n", nc\_strerror(e)); exit(ERRCODE);\}
 
 
-`int main()`
+int main()
 
-`\{`
+\{
 
-`   int ncid, lat\_varid, lon\_varid, temp\_varid;`
+   int ncid, lat\_varid, lon\_varid, temp\_varid;
 
-`   int lat\_dimid, lon\_dimid;`
+   int lat\_dimid, lon\_dimid;
 
-`   int dimids\[2\];`
+   int dimids\[2\];
 
-`   int retval;`
+   int retval;
 
-`   `
+   
 
-`   float lat\[NLAT\] = \{-45.0, -15.0, 15.0, 45.0\};`
+   float lat\[NLAT\] = \{-45.0, -15.0, 15.0, 45.0\};
 
-`   float lon\[NLON\] = \{-120.0, -60.0, 0.0, 60.0, 120.0\};`
+   float lon\[NLON\] = \{-120.0, -60.0, 0.0, 60.0, 120.0\};
 
-`   float temperature\[NLAT\]\[NLON\];`
+   float temperature\[NLAT\]\[NLON\];
 
-`   `
+   
 
-`   float lat\_in\[NLAT\];`
+   float lat\_in\[NLAT\];
 
-`   float lon\_in\[NLON\];`
+   float lon\_in\[NLON\];
 
-`   float temperature\_in\[NLAT\]\[NLON\];`
+   float temperature\_in\[NLAT\]\[NLON\];
 
-`   `
+   
 
-`   /\* ========== WRITE PHASE ========== \*/`
+   /\* ========== WRITE PHASE ========== \*/
 
-`   printf("Creating NetCDF file: %s\\n", FILE\_NAME);`
+   printf("Creating NetCDF file: %s\\n", FILE\_NAME);
 
-`   `
+   
 
-`   /\* Initialize temperature data (synthetic: varies with lat and lon) \*/`
+   /\* Initialize temperature data (synthetic: varies with lat and lon) \*/
 
-`   for (int i = 0; i \< NLAT; i++)`
+   for (int i = 0; i \< NLAT; i++)
 
-`      for (int j = 0; j \< NLON; j++)`
+      for (int j = 0; j \< NLON; j++)
 
-`         temperature\[i\]\[j\] = 273.15 + i \* 5.0 + j \* 2.0;`
+         temperature\[i\]\[j\] = 273.15 + i \* 5.0 + j \* 2.0;
 
-`   `
+   
 
-`   /\* Create the NetCDF file \*/`
+   /\* Create the NetCDF file \*/
 
-`   if ((retval = nc\_create(FILE\_NAME, NC\_CLOBBER|NC\_NETCDF4, &ncid)))`
+   if ((retval = nc\_create(FILE\_NAME, NC\_CLOBBER, &ncid)))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   `
+   
 
-`   /\* Define dimensions \*/`
+   /\* Define dimensions \*/
 
-`   if ((retval = nc\_def\_dim(ncid, "lat", NLAT, &lat\_dimid)))`
+   if ((retval = nc\_def\_dim(ncid, "lat", NLAT, &lat\_dimid)))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   if ((retval = nc\_def\_dim(ncid, "lon", NLON, &lon\_dimid)))`
+   if ((retval = nc\_def\_dim(ncid, "lon", NLON, &lon\_dimid)))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   `
+   
 
-`   /\* Define coordinate variables (same name as dimension) \*/`
+   /\* Define coordinate variables (same name as dimension) \*/
 
-`   if ((retval = nc\_def\_var(ncid, "lat", NC\_FLOAT, 1, &lat\_dimid, &lat\_varid)))`
+   if ((retval = nc\_def\_var(ncid, "lat", NC\_FLOAT, 1, &lat\_dimid, &lat\_varid)))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   if ((retval = nc\_def\_var(ncid, "lon", NC\_FLOAT, 1, &lon\_dimid, &lon\_varid)))`
+   if ((retval = nc\_def\_var(ncid, "lon", NC\_FLOAT, 1, &lon\_dimid, &lon\_varid)))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   `
+   
 
-`   /\* Add CF convention attributes to latitude \*/`
+   /\* Add CF convention attributes to latitude \*/
 
-`   if ((retval = nc\_put\_att\_text(ncid, lat\_varid, "units", 13, "degrees\_north")))`
+   if ((retval = nc\_put\_att\_text(ncid, lat\_varid, "units", 13, "degrees\_north")))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   if ((retval = nc\_put\_att\_text(ncid, lat\_varid, "standard\_name", 8, "latitude")))`
+   if ((retval = nc\_put\_att\_text(ncid, lat\_varid, "standard\_name", 8, "latitude")))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   if ((retval = nc\_put\_att\_text(ncid, lat\_varid, "long\_name", 8, "Latitude")))`
+   if ((retval = nc\_put\_att\_text(ncid, lat\_varid, "long\_name", 8, "Latitude")))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   if ((retval = nc\_put\_att\_text(ncid, lat\_varid, "axis", 1, "Y")))`
+   if ((retval = nc\_put\_att\_text(ncid, lat\_varid, "axis", 1, "Y")))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   `
+   
 
-`   /\* Add CF convention attributes to longitude \*/`
+   /\* Add CF convention attributes to longitude \*/
 
-`   if ((retval = nc\_put\_att\_text(ncid, lon\_varid, "units", 12, "degrees\_east")))`
+   if ((retval = nc\_put\_att\_text(ncid, lon\_varid, "units", 12, "degrees\_east")))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   if ((retval = nc\_put\_att\_text(ncid, lon\_varid, "standard\_name", 9, "longitude")))`
+   if ((retval = nc\_put\_att\_text(ncid, lon\_varid, "standard\_name", 9, "longitude")))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   if ((retval = nc\_put\_att\_text(ncid, lon\_varid, "long\_name", 9, "Longitude")))`
+   if ((retval = nc\_put\_att\_text(ncid, lon\_varid, "long\_name", 9, "Longitude")))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   if ((retval = nc\_put\_att\_text(ncid, lon\_varid, "axis", 1, "X")))`
+   if ((retval = nc\_put\_att\_text(ncid, lon\_varid, "axis", 1, "X")))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   `
+   
 
-`   /\* Define temperature variable \*/`
+   /\* Define temperature variable \*/
 
-`   dimids\[0\] = lat\_dimid;`
+   dimids\[0\] = lat\_dimid;
 
-`   dimids\[1\] = lon\_dimid;`
+   dimids\[1\] = lon\_dimid;
 
-`   if ((retval = nc\_def\_var(ncid, "temperature", NC\_FLOAT, 2, dimids, &temp\_varid)))`
+   if ((retval = nc\_def\_var(ncid, "temperature", NC\_FLOAT, 2, dimids, &temp\_varid)))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   `
+   
 
-`   /\* Add CF convention attributes to temperature \*/`
+   /\* Add CF convention attributes to temperature \*/
 
-`   if ((retval = nc\_put\_att\_text(ncid, temp\_varid, "units", 1, "K")))`
+   if ((retval = nc\_put\_att\_text(ncid, temp\_varid, "units", 1, "K")))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   if ((retval = nc\_put\_att\_text(ncid, temp\_varid, "standard\_name", 15, "air\_temperature")))`
+   if ((retval = nc\_put\_att\_text(ncid, temp\_varid, "standard\_name", 15, "air\_temperature")))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   if ((retval = nc\_put\_att\_text(ncid, temp\_varid, "long\_name", 15, "Air Temperature")))`
+   if ((retval = nc\_put\_att\_text(ncid, temp\_varid, "long\_name", 15, "Air Temperature")))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   `
+   
 
-`   float fill\_value = -999.0;`
+   float fill\_value = -999.0;
 
-`   if ((retval = nc\_put\_att\_float(ncid, temp\_varid, "\_FillValue", NC\_FLOAT, 1, &fill\_value)))`
+   if ((retval = nc\_put\_att\_float(ncid, temp\_varid, "\_FillValue", NC\_FLOAT, 1, &fill\_value)))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   `
+   
 
-`   /\* End define mode \*/`
+   /\* End define mode \*/
 
-`   if ((retval = nc\_enddef(ncid)))`
+   if ((retval = nc\_enddef(ncid)))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   `
+   
 
-`   /\* Write coordinate variables \*/`
+   /\* Write coordinate variables \*/
 
-`   if ((retval = nc\_put\_var\_float(ncid, lat\_varid, lat)))`
+   if ((retval = nc\_put\_var\_float(ncid, lat\_varid, lat)))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   if ((retval = nc\_put\_var\_float(ncid, lon\_varid, lon)))`
+   if ((retval = nc\_put\_var\_float(ncid, lon\_varid, lon)))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   `
+   
 
-`   /\* Write temperature data \*/`
+   /\* Write temperature data \*/
 
-`   if ((retval = nc\_put\_var\_float(ncid, temp\_varid, &temperature\[0\]\[0\])))`
+   if ((retval = nc\_put\_var\_float(ncid, temp\_varid, &temperature\[0\]\[0\])))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   `
+   
 
-`   /\* Close the file \*/`
+   /\* Close the file \*/
 
-`   if ((retval = nc\_close(ncid)))`
+   if ((retval = nc\_close(ncid)))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   `
+   
 
-`   printf("\*\*\* SUCCESS writing file!\\n");`
+   printf("\*\*\* SUCCESS writing file!\\n");
 
-`   `
+   
 
-`   /\* ========== READ PHASE ========== \*/`
+   /\* ========== READ PHASE ========== \*/
 
-`   printf("\\nReopening file for validation...\\n");`
+   printf("\\nReopening file for validation...\\n");
 
-`   `
+   
 
-`   /\* Open the file for reading \*/`
+   /\* Open the file for reading \*/
 
-`   if ((retval = nc\_open(FILE\_NAME, NC\_NOWRITE, &ncid)))`
+   if ((retval = nc\_open(FILE\_NAME, NC\_NOWRITE, &ncid)))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   `
+   
 
-`   /\* Verify metadata \*/`
+   /\* Verify metadata \*/
 
-`   int ndims\_in, nvars\_in;`
+   int ndims\_in, nvars\_in;
 
-`   if ((retval = nc\_inq(ncid, &ndims\_in, &nvars\_in, NULL, NULL)))`
+   if ((retval = nc\_inq(ncid, &ndims\_in, &nvars\_in, NULL, NULL)))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   `
+   
 
-`   if (ndims\_in != 2) \{`
+   if (ndims\_in != 2) \{
 
-`      printf("Error: Expected 2 dimensions, found %d\\n", ndims\_in);`
+      printf("Error: Expected 2 dimensions, found %d\\n", ndims\_in);
 
-`      exit(ERRCODE);`
+      exit(ERRCODE);
 
-`   \}`
+   \}
 
-`   printf("Verified: %d dimensions\\n", ndims\_in);`
+   printf("Verified: %d dimensions\\n", ndims\_in);
 
-`   `
+   
 
-`   if (nvars\_in != 3) \{`
+   if (nvars\_in != 3) \{
 
-`      printf("Error: Expected 3 variables, found %d\\n", nvars\_in);`
+      printf("Error: Expected 3 variables, found %d\\n", nvars\_in);
 
-`      exit(ERRCODE);`
+      exit(ERRCODE);
 
-`   \}`
+   \}
 
-`   printf("Verified: %d variables (lat, lon, temperature)\\n", nvars\_in);`
+   printf("Verified: %d variables (lat, lon, temperature)\\n", nvars\_in);
 
-`   `
+   
 
-`   /\* Verify latitude attributes \*/`
+   /\* Verify latitude coordinate attributes \*/
 
-`   char att\_text\[256\];`
+   char lat\_units\[256\] = \{0\}, lat\_stdname\[256\] = \{0\}, lat\_axis\[256\] = \{0\};
 
-`   size\_t att\_len;`
+   size\_t lat\_units\_len, lat\_stdname\_len, lat\_axis\_len;
 
-`   `
 
-`   if ((retval = nc\_inq\_attlen(ncid, lat\_varid, "units", &att\_len)))`
+   if ((retval = nc\_inq\_attlen(ncid, lat\_varid, "units", &lat\_units\_len)))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   if ((retval = nc\_get\_att\_text(ncid, lat\_varid, "units", att\_text)))`
+   if ((retval = nc\_get\_att\_text(ncid, lat\_varid, "units", lat\_units)))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   att\_text\[att\_len\] = '\\0';`
+   lat\_units\[lat\_units\_len\] = '\\0';
 
-`   if (strcmp(att\_text, "degrees\_north") != 0) \{`
 
-`      printf("Error: lat units = '%s', expected 'degrees\_north'\\n", att\_text);`
+   if ((retval = nc\_inq\_attlen(ncid, lat\_varid, "standard\_name", &lat\_stdname\_len)))
 
-`      exit(ERRCODE);`
+      ERR(retval);
 
-`   \}`
+   if ((retval = nc\_get\_att\_text(ncid, lat\_varid, "standard\_name", lat\_stdname)))
 
-`   printf("Verified: lat units = '%s'\\n", att\_text);`
+      ERR(retval);
 
-`   `
+   lat\_stdname\[lat\_stdname\_len\] = '\\0';
 
-`   if ((retval = nc\_inq\_attlen(ncid, lat\_varid, "standard\_name", &att\_len)))`
 
-`      ERR(retval);`
+   if ((retval = nc\_inq\_attlen(ncid, lat\_varid, "axis", &lat\_axis\_len)))
 
-`   if ((retval = nc\_get\_att\_text(ncid, lat\_varid, "standard\_name", att\_text)))`
+      ERR(retval);
 
-`      ERR(retval);`
+   if ((retval = nc\_get\_att\_text(ncid, lat\_varid, "axis", lat\_axis)))
 
-`   att\_text\[att\_len\] = '\\0';`
+      ERR(retval);
 
-`   if (strcmp(att\_text, "latitude") != 0) \{`
+   lat\_axis\[lat\_axis\_len\] = '\\0';
 
-`      printf("Error: lat standard\_name = '%s', expected 'latitude'\\n", att\_text);`
 
-`      exit(ERRCODE);`
+   if (strcmp(lat\_units, "degrees\_north") != 0 ||
 
-`   \}`
+       strcmp(lat\_stdname, "latitude") != 0 ||
 
-`   printf("Verified: lat standard\_name = '%s'\\n", att\_text);`
+       strcmp(lat\_axis, "Y") != 0) \{
 
-`   `
+      printf("Error: latitude coordinate attributes incorrect\\n");
 
-`   if ((retval = nc\_inq\_attlen(ncid, lat\_varid, "axis", &att\_len)))`
+      exit(ERRCODE);
 
-`      ERR(retval);`
+   \}
 
-`   if ((retval = nc\_get\_att\_text(ncid, lat\_varid, "axis", att\_text)))`
+   printf("Verified: all latitude coordinate attributes correct\\n");
 
-`      ERR(retval);`
+   
 
-`   att\_text\[att\_len\] = '\\0';`
+   /\* Verify longitude coordinate attributes \*/
 
-`   if (strcmp(att\_text, "Y") != 0) \{`
+   char lon\_units\[256\] = \{0\}, lon\_stdname\[256\] = \{0\}, lon\_axis\[256\] = \{0\};
 
-`      printf("Error: lat axis = '%s', expected 'Y'\\n", att\_text);`
+   size\_t lon\_units\_len, lon\_stdname\_len, lon\_axis\_len;
 
-`      exit(ERRCODE);`
 
-`   \}`
+   if ((retval = nc\_inq\_attlen(ncid, lon\_varid, "units", &lon\_units\_len)))
 
-`   printf("Verified: lat axis = '%s'\\n", att\_text);`
+      ERR(retval);
 
-`   `
+   if ((retval = nc\_get\_att\_text(ncid, lon\_varid, "units", lon\_units)))
 
-`   /\* Verify longitude attributes \*/`
+      ERR(retval);
 
-`   if ((retval = nc\_inq\_attlen(ncid, lon\_varid, "units", &att\_len)))`
+   lon\_units\[lon\_units\_len\] = '\\0';
 
-`      ERR(retval);`
 
-`   if ((retval = nc\_get\_att\_text(ncid, lon\_varid, "units", att\_text)))`
+   if ((retval = nc\_inq\_attlen(ncid, lon\_varid, "standard\_name", &lon\_stdname\_len)))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   att\_text\[att\_len\] = '\\0';`
+   if ((retval = nc\_get\_att\_text(ncid, lon\_varid, "standard\_name", lon\_stdname)))
 
-`   if (strcmp(att\_text, "degrees\_east") != 0) \{`
+      ERR(retval);
 
-`      printf("Error: lon units = '%s', expected 'degrees\_east'\\n", att\_text);`
+   lon\_stdname\[lon\_stdname\_len\] = '\\0';
 
-`      exit(ERRCODE);`
 
-`   \}`
+   if ((retval = nc\_inq\_attlen(ncid, lon\_varid, "axis", &lon\_axis\_len)))
 
-`   printf("Verified: lon units = '%s'\\n", att\_text);`
+      ERR(retval);
 
-`   `
+   if ((retval = nc\_get\_att\_text(ncid, lon\_varid, "axis", lon\_axis)))
 
-`   if ((retval = nc\_inq\_attlen(ncid, lon\_varid, "standard\_name", &att\_len)))`
+      ERR(retval);
 
-`      ERR(retval);`
+   lon\_axis\[lon\_axis\_len\] = '\\0';
 
-`   if ((retval = nc\_get\_att\_text(ncid, lon\_varid, "standard\_name", att\_text)))`
 
-`      ERR(retval);`
+   if (strcmp(lon\_units, "degrees\_east") != 0 ||
 
-`   att\_text\[att\_len\] = '\\0';`
+       strcmp(lon\_stdname, "longitude") != 0 ||
 
-`   if (strcmp(att\_text, "longitude") != 0) \{`
+       strcmp(lon\_axis, "X") != 0) \{
 
-`      printf("Error: lon standard\_name = '%s', expected 'longitude'\\n", att\_text);`
+      printf("Error: longitude coordinate attributes incorrect\\n");
 
-`      exit(ERRCODE);`
+      exit(ERRCODE);
 
-`   \}`
+   \}
 
-`   printf("Verified: lon standard\_name = '%s'\\n", att\_text);`
+   printf("Verified: all longitude coordinate attributes correct\\n");
 
-`   `
+   
 
-`   /\* Verify temperature attributes \*/`
+   /\* Verify temperature variable attributes \*/
 
-`   if ((retval = nc\_inq\_attlen(ncid, temp\_varid, "units", &att\_len)))`
+   char temp\_units\[256\] = \{0\}, temp\_stdname\[256\] = \{0\}, temp\_longname\[256\] = \{0\};
 
-`      ERR(retval);`
+   size\_t temp\_units\_len, temp\_stdname\_len, temp\_longname\_len;
 
-`   if ((retval = nc\_get\_att\_text(ncid, temp\_varid, "units", att\_text)))`
+   float fill\_value\_in;
 
-`      ERR(retval);`
 
-`   att\_text\[att\_len\] = '\\0';`
+   if ((retval = nc\_inq\_attlen(ncid, temp\_varid, "units", &temp\_units\_len)))
 
-`   if (strcmp(att\_text, "K") != 0) \{`
+      ERR(retval);
 
-`      printf("Error: temperature units = '%s', expected 'K'\\n", att\_text);`
+   if ((retval = nc\_get\_att\_text(ncid, temp\_varid, "units", temp\_units)))
 
-`      exit(ERRCODE);`
+      ERR(retval);
 
-`   \}`
+   temp\_units\[temp\_units\_len\] = '\\0';
 
-`   printf("Verified: temperature units = '%s'\\n", att\_text);`
 
-`   `
+   if ((retval = nc\_inq\_attlen(ncid, temp\_varid, "standard\_name", &temp\_stdname\_len)))
 
-`   float fill\_value\_in;`
+      ERR(retval);
 
-`   if ((retval = nc\_get\_att\_float(ncid, temp\_varid, "\_FillValue", &fill\_value\_in)))`
+   if ((retval = nc\_get\_att\_text(ncid, temp\_varid, "standard\_name", temp\_stdname)))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   if (fill\_value\_in != fill\_value) \{`
+   temp\_stdname\[temp\_stdname\_len\] = '\\0';
 
-`      printf("Error: temperature \_FillValue = %f, expected %f\\n", fill\_value\_in, fill\_value);`
 
-`      exit(ERRCODE);`
+   if ((retval = nc\_inq\_attlen(ncid, temp\_varid, "long\_name", &temp\_longname\_len)))
 
-`   \}`
+      ERR(retval);
 
-`   printf("Verified: temperature \_FillValue = %f\\n", fill\_value\_in);`
+   if ((retval = nc\_get\_att\_text(ncid, temp\_varid, "long\_name", temp\_longname)))
 
-`   `
+      ERR(retval);
 
-`   /\* Read coordinate variables \*/`
+   temp\_longname\[temp\_longname\_len\] = '\\0';
 
-`   if ((retval = nc\_get\_var\_float(ncid, lat\_varid, lat\_in)))`
 
-`      ERR(retval);`
+   if ((retval = nc\_get\_att\_float(ncid, temp\_varid, "\_FillValue", &fill\_value\_in)))
 
-`   if ((retval = nc\_get\_var\_float(ncid, lon\_varid, lon\_in)))`
+      ERR(retval);
 
-`      ERR(retval);`
 
-`   `
+   if (strcmp(temp\_units, "K") != 0 ||
 
-`   /\* Verify coordinate data \*/`
+       strcmp(temp\_stdname, "air\_temperature") != 0 ||
 
-`   int errors = 0;`
+       strcmp(temp\_longname, "Air Temperature") != 0 ||
 
-`   for (int i = 0; i \< NLAT; i++) \{`
+       fill\_value\_in != fill\_value) \{
 
-`      if (lat\_in\[i\] != lat\[i\]) \{`
+      printf("Error: temperature variable attributes incorrect\\n");
 
-`         printf("Error: lat\[%d\] = %f, expected %f\\n", i, lat\_in\[i\], lat\[i\]);`
+      exit(ERRCODE);
 
-`         errors++;`
+   \}
 
-`      \}`
+   printf("Verified: all temperature variable attributes correct\\n");
 
-`   \}`
+   
 
-`   `
+   /\* Read coordinate variables \*/
 
-`   for (int j = 0; j \< NLON; j++) \{`
+   if ((retval = nc\_get\_var\_float(ncid, lat\_varid, lat\_in)))
 
-`      if (lon\_in\[j\] != lon\[j\]) \{`
+      ERR(retval);
 
-`         printf("Error: lon\[%d\] = %f, expected %f\\n", j, lon\_in\[j\], lon\[j\]);`
+   if ((retval = nc\_get\_var\_float(ncid, lon\_varid, lon\_in)))
 
-`         errors++;`
+      ERR(retval);
 
-`      \}`
+   
 
-`   \}`
+   /\* Verify coordinate data \*/
 
-`   `
+   int errors = 0;
 
-`   if (errors == 0) \{`
+   for (int i = 0; i \< NLAT; i++) \{
 
-`      printf("Verified: coordinate arrays correct\\n");`
+      if (lat\_in\[i\] != lat\[i\]) \{
 
-`      printf("  lat: \[%g, %g, %g, %g\]\\n", lat\[0\], lat\[1\], lat\[2\], lat\[3\]);`
+         printf("Error: lat\[%d\] = %f, expected %f\\n", i, lat\_in\[i\], lat\[i\]);
 
-`      printf("  lon: \[%g, %g, %g, %g, %g\]\\n", lon\[0\], lon\[1\], lon\[2\], lon\[3\], lon\[4\]);`
+         errors++;
 
-`   \}`
+      \}
 
-`   `
+   \}
 
-`   /\* Read temperature data \*/`
+   
 
-`   if ((retval = nc\_get\_var\_float(ncid, temp\_varid, &temperature\_in\[0\]\[0\])))`
+   for (int j = 0; j \< NLON; j++) \{
 
-`      ERR(retval);`
+      if (lon\_in\[j\] != lon\[j\]) \{
 
-`   `
+         printf("Error: lon\[%d\] = %f, expected %f\\n", j, lon\_in\[j\], lon\[j\]);
 
-`   /\* Verify temperature data \*/`
+         errors++;
 
-`   for (int i = 0; i \< NLAT; i++) \{`
+      \}
 
-`      for (int j = 0; j \< NLON; j++) \{`
+   \}
 
-`         if (temperature\_in\[i\]\[j\] != temperature\[i\]\[j\]) \{`
+   
 
-`            printf("Error: temperature\[%d\]\[%d\] = %f, expected %f\\n", `
+   if (errors == 0) \{
 
-`                   i, j, temperature\_in\[i\]\[j\], temperature\[i\]\[j\]);`
+      printf("Verified: coordinate arrays correct\\n");
 
-`            errors++;`
+      printf("  lat: \[%g, %g, %g, %g\]\\n", lat\[0\], lat\[1\], lat\[2\], lat\[3\]);
 
-`         \}`
+      printf("  lon: \[%g, %g, %g, %g, %g\]\\n", lon\[0\], lon\[1\], lon\[2\], lon\[3\], lon\[4\]);
 
-`      \}`
+   \}
 
-`   \}`
+   
 
-`   `
+   /\* Read temperature data \*/
 
-`   if (errors \> 0) \{`
+   if ((retval = nc\_get\_var\_float(ncid, temp\_varid, &temperature\_in\[0\]\[0\])))
 
-`      printf("\*\*\* FAILED: %d data validation errors\\n", errors);`
+      ERR(retval);
 
-`      exit(ERRCODE);`
+   
 
-`   \}`
+   /\* Verify temperature data \*/
 
-`   `
+   for (int i = 0; i \< NLAT; i++) \{
 
-`   printf("Verified: all temperature data correct (%d values)\\n", NLAT \* NLON);`
+      for (int j = 0; j \< NLON; j++) \{
 
-`   `
+         if (temperature\_in\[i\]\[j\] != temperature\[i\]\[j\]) \{
 
-`   /\* Close the file \*/`
+            printf("Error: temperature\[%d\]\[%d\] = %f, expected %f\\n", 
 
-`   if ((retval = nc\_close(ncid)))`
+                   i, j, temperature\_in\[i\]\[j\], temperature\[i\]\[j\]);
 
-`      ERR(retval);`
+            errors++;
 
-`   `
+         \}
 
-`   printf("\\n\*\*\* SUCCESS: All validation checks passed!\\n");`
+      \}
 
-`   return 0;`
+   \}
 
-`\}`
+   
+
+   if (errors \> 0) \{
+
+      printf("\*\*\* FAILED: %d data validation errors\\n", errors);
+
+      exit(ERRCODE);
+
+   \}
+
+   
+
+   printf("Verified: all temperature data correct (%d values)\\n", NLAT \* NLON);
+
+   
+
+   /\* Close the file \*/
+
+   if ((retval = nc\_close(ncid)))
+
+      ERR(retval);
+
+   
+
+   printf("\\n\*\*\* SUCCESS: All validation checks passed!\\n");
+
+   return 0;
+
+\}
 ```
 
 The file produced by this example has the following CDL:
 
 ```
-`netcdf coord\_vars \{`
+netcdf coord\_vars \{
 
-`dimensions:`
+dimensions:
 
-`	lat = 4 ;`
+	lat = 4 ;
 
-`	lon = 5 ;`
+	lon = 5 ;
 
-`variables:`
+variables:
 
-`	float lat(lat) ;`
+	float lat(lat) ;
 
-`		lat:units = "degrees\_north" ;`
+		lat:units = "degrees\_north" ;
 
-`		lat:standard\_name = "latitude" ;`
+		lat:standard\_name = "latitude" ;
 
-`		lat:long\_name = "Latitude" ;`
+		lat:long\_name = "Latitude" ;
 
-`		lat:axis = "Y" ;`
+		lat:axis = "Y" ;
 
-`	float lon(lon) ;`
+	float lon(lon) ;
 
-`		lon:units = "degrees\_east" ;`
+		lon:units = "degrees\_east" ;
 
-`		lon:standard\_name = "longitude" ;`
+		lon:standard\_name = "longitude" ;
 
-`		lon:long\_name = "Longitude" ;`
+		lon:long\_name = "Longitude" ;
 
-`		lon:axis = "X" ;`
+		lon:axis = "X" ;
 
-`	float temperature(lat, lon) ;`
+	float temperature(lat, lon) ;
 
-`		temperature:units = "K" ;`
+		temperature:units = "K" ;
 
-`		temperature:standard\_name = "air\_temperature" ;`
+		temperature:standard\_name = "air\_temperature" ;
 
-`		temperature:long\_name = "Air Temperature" ;`
+		temperature:long\_name = "Air Temperature" ;
 
-`		temperature:\_FillValue = -999.f ;`
+		temperature:\_FillValue = -999.f ;
 
-`data:`
-
-
-` lat = -45, -15, 15, 45 ;`
+data:
 
 
-` lon = -120, -60, 0, 60, 120 ;`
+ lat = -45, -15, 15, 45 ;
 
 
-` temperature =`
+ lon = -120, -60, 0, 60, 120 ;
 
-`  273.15, 275.15, 277.15, 279.15, 281.15,`
 
-`  278.15, 280.15, 282.15, 284.15, 286.15,`
+ temperature =
 
-`  283.15, 285.15, 287.15, 289.15, 291.15,`
+  273.15, 275.15, 277.15, 279.15, 281.15,
 
-`  288.15, 290.15, 292.15, 294.15, 296.15 ;`
+  278.15, 280.15, 282.15, 284.15, 286.15,
 
-`\}`
+  283.15, 285.15, 287.15, 289.15, 291.15,
+
+  288.15, 290.15, 292.15, 294.15, 296.15 ;
+
+\}
 ```
 
 ## Enhanced Model Examples in C
@@ -7530,747 +7762,800 @@ The program creates five files with the same 3D temperature and pressure data (t
 | ~~***NetCDF/HDF5 Classic Model** | ~~***unlimited** | ~~***unlimited** | ~~***4.0.0** | ~~***HDF5** | ~~***Only needed to maintain compatibility with very old software** |
 
 ```
-`\#include \<stdio.h\>`
+\#include \<stdio.h\>
 
-`\#include \<stdlib.h\>`
+\#include \<stdlib.h\>
 
-`\#include \<netcdf.h\>`
+\#include \<netcdf.h\>
 
-`\#include \<sys/stat.h\>`
+\#include \<sys/stat.h\>
 
 
-`\#define NTIME 10`
+\#define NTIME 10
 
-`\#define NLAT 20`
+\#define NLAT 20
 
-`\#define NLON 30`
+\#define NLON 30
 
-`\#define ERRCODE 2`
+\#define ERRCODE 2
 
-`\#define ERR(e) \{printf("Error: %s\\n", nc\_strerror(e)); exit(ERRCODE);\}`
+\#define ERR(e) \{printf("Error: %s\\n", nc\_strerror(e)); exit(ERRCODE);\}
 
 
-`/\* Get file size in bytes \*/`
+/\* Get file size in bytes \*/
 
-`long get\_file\_size(const char \*filename)`
+long get\_file\_size(const char \*filename)
 
-`\{`
+\{
 
-`   struct stat st;`
+   struct stat st;
 
-`   if (stat(filename, &st) == 0)`
+   if (stat(filename, &st) == 0)
 
-`      return st.st\_size;`
+      return st.st\_size;
 
-`   return -1;`
+   return -1;
 
-`\}`
+\}
 
 
-`/\* Create a file in the specified format with identical data structure \*/`
+/\* Define dimensions, variables, attributes, and write data to an open file.
 
-`void create\_format\_file(const char \*filename, int format\_flag, const char \*format\_name)`
+ \* The nc\_create() call is done in main() so the format flag is clearly visible. \*/
 
-`\{`
+void populate\_file(int ncid)
 
-`   int ncid, time\_dimid, lat\_dimid, lon\_dimid;`
+\{
 
-`   int temp\_varid, pressure\_varid;`
+   int time\_dimid, lat\_dimid, lon\_dimid;
 
-`   int dimids\[3\];`
+   int temp\_varid, pressure\_varid;
 
-`   int retval;`
+   int dimids\[3\];
 
-`   `
+   int retval;
 
-`   float temperature\[NTIME\]\[NLAT\]\[NLON\];`
+   
 
-`   float pressure\[NTIME\]\[NLAT\]\[NLON\];`
+   float temperature\[NTIME\]\[NLAT\]\[NLON\];
 
-`   `
+   float pressure\[NTIME\]\[NLAT\]\[NLON\];
 
-`   printf("Creating %s format file: %s\\n", format\_name, filename);`
+   
 
-`   `
+   /\* Initialize data \*/
 
-`   /\* Initialize data \*/`
+   for (int t = 0; t \< NTIME; t++)
 
-`   for (int t = 0; t \< NTIME; t++)`
+      for (int i = 0; i \< NLAT; i++)
 
-`      for (int i = 0; i \< NLAT; i++)`
+         for (int j = 0; j \< NLON; j++) \{
 
-`         for (int j = 0; j \< NLON; j++) \{`
+            temperature\[t\]\[i\]\[j\] = 273.15 + t \* 1.0 + i \* 0.5 + j \* 0.2;
 
-`            temperature\[t\]\[i\]\[j\] = 273.15 + t \* 1.0 + i \* 0.5 + j \* 0.2;`
+            pressure\[t\]\[i\]\[j\] = 1013.25 + t \* 0.1 + i \* 0.05 + j \* 0.02;
 
-`            pressure\[t\]\[i\]\[j\] = 1013.25 + t \* 0.1 + i \* 0.05 + j \* 0.02;`
+         \}
 
-`         \}`
+   
 
-`   `
+   /\* Define dimensions \*/
 
-`   /\* Create file \*/`
+   if ((retval = nc\_def\_dim(ncid, "time", NTIME, &time\_dimid)))
 
-`   if ((retval = nc\_create(filename, format\_flag | NC\_CLOBBER, &ncid)))`
+      ERR(retval);
 
-`      ERR(retval);`
+   if ((retval = nc\_def\_dim(ncid, "lat", NLAT, &lat\_dimid)))
 
-`   `
+      ERR(retval);
 
-`   /\* Define dimensions \*/`
+   if ((retval = nc\_def\_dim(ncid, "lon", NLON, &lon\_dimid)))
 
-`   if ((retval = nc\_def\_dim(ncid, "time", NTIME, &time\_dimid)))`
+      ERR(retval);
 
-`      ERR(retval);`
+   
 
-`   if ((retval = nc\_def\_dim(ncid, "lat", NLAT, &lat\_dimid)))`
+   /\* Define variables \*/
 
-`      ERR(retval);`
+   dimids\[0\] = time\_dimid;
 
-`   if ((retval = nc\_def\_dim(ncid, "lon", NLON, &lon\_dimid)))`
+   dimids\[1\] = lat\_dimid;
 
-`      ERR(retval);`
+   dimids\[2\] = lon\_dimid;
 
-`   `
+   
 
-`   /\* Define variables \*/`
+   if ((retval = nc\_def\_var(ncid, "temperature", NC\_FLOAT, 3, dimids, &temp\_varid)))
 
-`   dimids\[0\] = time\_dimid;`
+      ERR(retval);
 
-`   dimids\[1\] = lat\_dimid;`
+   if ((retval = nc\_def\_var(ncid, "pressure", NC\_FLOAT, 3, dimids, &pressure\_varid)))
 
-`   dimids\[2\] = lon\_dimid;`
+      ERR(retval);
 
-`   `
+   
 
-`   if ((retval = nc\_def\_var(ncid, "temperature", NC\_FLOAT, 3, dimids, &temp\_varid)))`
+   /\* Add attributes \*/
 
-`      ERR(retval);`
+   if ((retval = nc\_put\_att\_text(ncid, temp\_varid, "units", 1, "K")))
 
-`   if ((retval = nc\_def\_var(ncid, "pressure", NC\_FLOAT, 3, dimids, &pressure\_varid)))`
+      ERR(retval);
 
-`      ERR(retval);`
+   if ((retval = nc\_put\_att\_text(ncid, pressure\_varid, "units", 3, "hPa")))
 
-`   `
+      ERR(retval);
 
-`   /\* Add attributes \*/`
+   
 
-`   if ((retval = nc\_put\_att\_text(ncid, temp\_varid, "units", 1, "K")))`
+   /\* End define mode \*/
 
-`      ERR(retval);`
+   if ((retval = nc\_enddef(ncid)))
 
-`   if ((retval = nc\_put\_att\_text(ncid, pressure\_varid, "units", 3, "hPa")))`
+      ERR(retval);
 
-`      ERR(retval);`
+   
 
-`   `
+   /\* Write data \*/
 
-`   /\* End define mode \*/`
+   if ((retval = nc\_put\_var\_float(ncid, temp\_varid, &temperature\[0\]\[0\]\[0\])))
 
-`   if ((retval = nc\_enddef(ncid)))`
+      ERR(retval);
 
-`      ERR(retval);`
+   if ((retval = nc\_put\_var\_float(ncid, pressure\_varid, &pressure\[0\]\[0\]\[0\])))
 
-`   `
+      ERR(retval);
 
-`   /\* Write data \*/`
+\}
 
-`   if ((retval = nc\_put\_var\_float(ncid, temp\_varid, &temperature\[0\]\[0\]\[0\])))`
 
-`      ERR(retval);`
+/\* Verify a format file \*/
 
-`   if ((retval = nc\_put\_var\_float(ncid, pressure\_varid, &pressure\[0\]\[0\]\[0\])))`
+void verify\_format\_file(const char \*filename, int expected\_format,
 
-`      ERR(retval);`
+                        const char \*expected\_format\_name)
 
-`   `
+\{
 
-`   /\* Close file \*/`
+   int ncid, retval;
 
-`   if ((retval = nc\_close(ncid)))`
+   int format\_in;
 
-`      ERR(retval);`
+   int ndims, nvars;
 
-`   `
+   float temperature\[NTIME\]\[NLAT\]\[NLON\];
 
-`   printf("  File created successfully\\n");`
+   float pressure\[NTIME\]\[NLAT\]\[NLON\];
 
-`\}`
+   int temp\_varid, pressure\_varid;
 
+   
 
-`/\* Verify a format file \*/`
+   printf("\\nVerifying file: %s\\n", filename);
 
-`void verify\_format\_file(const char \*filename, int expected\_format,`
+   
 
-`                        const char \*expected\_format\_name)`
+   /\* Open file \*/
 
-`\{`
+   if ((retval = nc\_open(filename, NC\_NOWRITE, &ncid)))
 
-`   int ncid, retval;`
+      ERR(retval);
 
-`   int format\_in;`
+   
 
-`   int ndims, nvars;`
+   /\* Check format \*/
 
-`   float temperature\[NTIME\]\[NLAT\]\[NLON\];`
+   if ((retval = nc\_inq\_format(ncid, &format\_in)))
 
-`   float pressure\[NTIME\]\[NLAT\]\[NLON\];`
+      ERR(retval);
 
-`   int temp\_varid, pressure\_varid;`
+   
 
-`   `
+   /\* Determine format name \*/
 
-`   printf("\\nVerifying file: %s\\n", filename);`
+   const char \*detected\_format = "UNKNOWN";
 
-`   `
+   if (format\_in == NC\_FORMAT\_CLASSIC)
 
-`   /\* Open file \*/`
+      detected\_format = "NC\_FORMAT\_CLASSIC (CDF-1)";
 
-`   if ((retval = nc\_open(filename, NC\_NOWRITE, &ncid)))`
+   else if (format\_in == NC\_FORMAT\_64BIT\_OFFSET)
 
-`      ERR(retval);`
+      detected\_format = "NC\_FORMAT\_64BIT\_OFFSET (CDF-2)";
 
-`   `
+   else if (format\_in == NC\_FORMAT\_64BIT\_DATA)
 
-`   /\* Check format \*/`
+      detected\_format = "NC\_FORMAT\_64BIT\_DATA (CDF-5)";
 
-`   if ((retval = nc\_inq\_format(ncid, &format\_in)))`
+   else if (format\_in == NC\_FORMAT\_NETCDF4)
 
-`      ERR(retval);`
+      detected\_format = "NC\_FORMAT\_NETCDF4 (HDF5)";
 
-`   `
+   else if (format\_in == NC\_FORMAT\_NETCDF4\_CLASSIC)
 
-`   /\* Determine format name \*/`
+      detected\_format = "NC\_FORMAT\_NETCDF4\_CLASSIC (HDF5/Classic)";
 
-`   const char \*detected\_format = "UNKNOWN";`
+   
 
-`   if (format\_in == NC\_FORMAT\_CLASSIC)`
+   printf("  Format detected: %s\\n", detected\_format);
 
-`      detected\_format = "NC\_FORMAT\_CLASSIC (CDF-1)";`
+   
 
-`   else if (format\_in == NC\_FORMAT\_64BIT\_OFFSET)`
+   /\* Verify expected format \*/
 
-`      detected\_format = "NC\_FORMAT\_64BIT\_OFFSET (CDF-2)";`
+   if (format\_in != expected\_format) \{
 
-`   else if (format\_in == NC\_FORMAT\_64BIT\_DATA)`
+      printf("Error: Expected format %s (%d), got %s (%d)\\n",
 
-`      detected\_format = "NC\_FORMAT\_64BIT\_DATA (CDF-5)";`
+             expected\_format\_name, expected\_format, detected\_format, format\_in);
 
-`   else if (format\_in == NC\_FORMAT\_NETCDF4)`
+      exit(ERRCODE);
 
-`      detected\_format = "NC\_FORMAT\_NETCDF4 (HDF5)";`
+   \}
 
-`   else if (format\_in == NC\_FORMAT\_NETCDF4\_CLASSIC)`
+   
 
-`      detected\_format = "NC\_FORMAT\_NETCDF4\_CLASSIC (HDF5/Classic)";`
+   /\* Get file size \*/
 
-`   `
+   long file\_size = get\_file\_size(filename);
 
-`   printf("  Format detected: %s\\n", detected\_format);`
+   if (file\_size \>= 0) \{
 
-`   `
+      printf("  File size: ");
 
-`   /\* Verify expected format \*/`
+      if (file\_size \>= 1048576)
 
-`   if (format\_in != expected\_format) \{`
+         printf("%.2f MB (%ld bytes)\\n", file\_size / 1048576.0, file\_size);
 
-`      printf("Error: Expected format %s (%d), got %s (%d)\\n",`
+      else if (file\_size \>= 1024)
 
-`             expected\_format\_name, expected\_format, detected\_format, format\_in);`
+         printf("%.2f KB (%ld bytes)\\n", file\_size / 1024.0, file\_size);
 
-`      exit(ERRCODE);`
+      else
 
-`   \}`
+         printf("%ld bytes\\n", file\_size);
 
-`   `
+   \}
 
-`   /\* Get file size \*/`
+   
 
-`   long file\_size = get\_file\_size(filename);`
+   /\* Verify metadata \*/
 
-`   if (file\_size \>= 0) \{`
+   if ((retval = nc\_inq(ncid, &ndims, &nvars, NULL, NULL)))
 
-`      printf("  File size: ");`
+      ERR(retval);
 
-`      if (file\_size \>= 1048576)`
+   
 
-`         printf("%.2f MB (%ld bytes)\\n", file\_size / 1048576.0, file\_size);`
+   if (ndims != 3 || nvars != 2) \{
 
-`      else if (file\_size \>= 1024)`
+      printf("Error: Expected 3 dimensions and 2 variables, found %d dims, %d vars\\n", 
 
-`         printf("%.2f KB (%ld bytes)\\n", file\_size / 1024.0, file\_size);`
+             ndims, nvars);
 
-`      else`
+      exit(ERRCODE);
 
-`         printf("%ld bytes\\n", file\_size);`
+   \}
 
-`   \}`
+   printf("  Metadata: %d dimensions, %d variables\\n", ndims, nvars);
 
-`   `
+   
 
-`   /\* Verify metadata \*/`
+   /\* Get variable IDs \*/
 
-`   if ((retval = nc\_inq(ncid, &ndims, &nvars, NULL, NULL)))`
+   if ((retval = nc\_inq\_varid(ncid, "temperature", &temp\_varid)))
 
-`      ERR(retval);`
+      ERR(retval);
 
-`   `
+   if ((retval = nc\_inq\_varid(ncid, "pressure", &pressure\_varid)))
 
-`   if (ndims != 3 || nvars != 2) \{`
+      ERR(retval);
 
-`      printf("Error: Expected 3 dimensions and 2 variables, found %d dims, %d vars\\n", `
+   
 
-`             ndims, nvars);`
+   /\* Read data \*/
 
-`      exit(ERRCODE);`
+   if ((retval = nc\_get\_var\_float(ncid, temp\_varid, &temperature\[0\]\[0\]\[0\])))
 
-`   \}`
+      ERR(retval);
 
-`   printf("  Metadata: %d dimensions, %d variables\\n", ndims, nvars);`
+   if ((retval = nc\_get\_var\_float(ncid, pressure\_varid, &pressure\[0\]\[0\]\[0\])))
 
-`   `
+      ERR(retval);
 
-`   /\* Get variable IDs \*/`
+   
 
-`   if ((retval = nc\_inq\_varid(ncid, "temperature", &temp\_varid)))`
+   /\* Verify a few data values \*/
 
-`      ERR(retval);`
+   int errors = 0;
 
-`   if ((retval = nc\_inq\_varid(ncid, "pressure", &pressure\_varid)))`
+   float expected\_temp = 273.15;
 
-`      ERR(retval);`
+   float expected\_pressure = 1013.25;
 
-`   `
+   
 
-`   /\* Read data \*/`
+   if (temperature\[0\]\[0\]\[0\] != expected\_temp) \{
 
-`   if ((retval = nc\_get\_var\_float(ncid, temp\_varid, &temperature\[0\]\[0\]\[0\])))`
+      printf("Error: temperature\[0\]\[0\]\[0\] = %f, expected %f\\n", 
 
-`      ERR(retval);`
+             temperature\[0\]\[0\]\[0\], expected\_temp);
 
-`   if ((retval = nc\_get\_var\_float(ncid, pressure\_varid, &pressure\[0\]\[0\]\[0\])))`
+      errors++;
 
-`      ERR(retval);`
+   \}
 
-`   `
+   
 
-`   /\* Verify a few data values \*/`
+   if (pressure\[0\]\[0\]\[0\] != expected\_pressure) \{
 
-`   int errors = 0;`
+      printf("Error: pressure\[0\]\[0\]\[0\] = %f, expected %f\\n", 
 
-`   float expected\_temp = 273.15;`
+             pressure\[0\]\[0\]\[0\], expected\_pressure);
 
-`   float expected\_pressure = 1013.25;`
+      errors++;
 
-`   `
+   \}
 
-`   if (temperature\[0\]\[0\]\[0\] != expected\_temp) \{`
+   
 
-`      printf("Error: temperature\[0\]\[0\]\[0\] = %f, expected %f\\n", `
+   if (errors == 0)
 
-`             temperature\[0\]\[0\]\[0\], expected\_temp);`
+      printf("  Data validation: %d values verified\\n", NTIME \* NLAT \* NLON \* 2);
 
-`      errors++;`
+   else \{
 
-`   \}`
+      printf("\*\*\* FAILED: %d data validation errors\\n", errors);
 
-`   `
+      exit(ERRCODE);
 
-`   if (pressure\[0\]\[0\]\[0\] != expected\_pressure) \{`
+   \}
 
-`      printf("Error: pressure\[0\]\[0\]\[0\] = %f, expected %f\\n", `
+   
 
-`             pressure\[0\]\[0\]\[0\], expected\_pressure);`
+   /\* Close file \*/
 
-`      errors++;`
+   if ((retval = nc\_close(ncid)))
 
-`   \}`
+      ERR(retval);
 
-`   `
+\}
 
-`   if (errors == 0)`
 
-`      printf("  Data validation: %d values verified\\n", NTIME \* NLAT \* NLON \* 2);`
+int main()
 
-`   else \{`
+\{
 
-`      printf("\*\*\* FAILED: %d data validation errors\\n", errors);`
+   printf("NetCDF Format Variants Comparison\\n\\n");
 
-`      exit(ERRCODE);`
+   
 
-`   \}`
+   printf("This program creates five files with identical data structures\\n");
 
-`   `
+   printf("in all five NetCDF binary formats to demonstrate their differences.\\n\\n");
 
-`   /\* Close file \*/`
+   
 
-`   if ((retval = nc\_close(ncid)))`
+   printf("Data structure:\\n");
 
-`      ERR(retval);`
+   printf("  Dimensions: time=%d, lat=%d, lon=%d\\n", NTIME, NLAT, NLON);
 
-`\}`
+   printf("  Variables: temperature(time,lat,lon), pressure(time,lat,lon)\\n");
 
+   printf("  Data type: NC\_FLOAT (4 bytes per value)\\n");
 
-`int main()`
+   printf("  Total data: %d values per variable\\n\\n", NTIME \* NLAT \* NLON);
 
-`\{`
+   
 
-`   printf("NetCDF Format Variants Comparison\\n\\n");`
+   /\* Create files in each format.
 
-`   `
+    \*
 
-`   printf("This program creates five files with identical data structures\\n");`
+    \* The nc\_create() calls below show the key difference between formats:
 
-`   printf("in all five NetCDF binary formats to demonstrate their differences.\\n\\n");`
+    \* only the format flag changes. Each file gets identical metadata and
 
-`   `
+    \* data via populate\_file(). \*/
 
-`   printf("Data structure:\\n");`
+   printf("=== Creating Format Files ===\\n\\n");
 
-`   printf("  Dimensions: time=%d, lat=%d, lon=%d\\n", NTIME, NLAT, NLON);`
+   
 
-`   printf("  Variables: temperature(time,lat,lon), pressure(time,lat,lon)\\n");`
+   int ncid, retval;
 
-`   printf("  Data type: NC\_FLOAT (4 bytes per value)\\n");`
 
-`   printf("  Total data: %d values per variable\\n\\n", NTIME \* NLAT \* NLON);`
+   /\* CDF-1: Original classic format (2GB file/variable limit).
 
-`   `
+    \* No format flag needed — NC\_CLOBBER alone creates a classic CDF-1 file. \*/
 
-`   /\* Create files in each format \*/`
+   printf("Creating classic (CDF-1) format file: format\_classic.nc\\n");
 
-`   printf("=== Creating Format Files ===\\n\\n");`
+   if ((retval = nc\_create("format\_classic.nc", NC\_CLOBBER, &ncid)))
 
-`   `
+      ERR(retval);
 
-`   create\_format\_file("format\_classic.nc", NC\_CLASSIC\_MODEL, "NC\_CLASSIC\_MODEL");`
+   populate\_file(ncid);
 
-`   create\_format\_file("format\_64bit\_offset.nc", NC\_64BIT\_OFFSET, "NC\_64BIT\_OFFSET");`
+   if ((retval = nc\_close(ncid)))
 
-`   create\_format\_file("format\_64bit\_data.nc", NC\_64BIT\_DATA, "NC\_64BIT\_DATA");`
+      ERR(retval);
 
-`   create\_format\_file("format\_netcdf4.nc", NC\_NETCDF4, "NC\_NETCDF4");`
 
-`   create\_format\_file("format\_netcdf4\_classic.nc", NC\_NETCDF4 | NC\_CLASSIC\_MODEL,`
+   /\* CDF-2: 64-bit offset format (4GB variable limit) \*/
 
-`                      "NC\_NETCDF4|NC\_CLASSIC\_MODEL");`
+   printf("Creating NC\_64BIT\_OFFSET format file: format\_64bit\_offset.nc\\n");
 
-`   `
+   if ((retval = nc\_create("format\_64bit\_offset.nc", NC\_64BIT\_OFFSET | NC\_CLOBBER, &ncid)))
 
-`   /\* Verify files \*/`
+      ERR(retval);
 
-`   printf("\\n=== Verifying Format Files ===\\n");`
+   populate\_file(ncid);
 
-`   `
+   if ((retval = nc\_close(ncid)))
 
-`   verify\_format\_file("format\_classic.nc", NC\_FORMAT\_CLASSIC,`
+      ERR(retval);
 
-`                      "NC\_FORMAT\_CLASSIC");`
 
-`   verify\_format\_file("format\_64bit\_offset.nc", NC\_FORMAT\_64BIT\_OFFSET,`
+   /\* CDF-5: 64-bit data format (unlimited variable sizes) \*/
 
-`                      "NC\_FORMAT\_64BIT\_OFFSET");`
+   printf("Creating NC\_64BIT\_DATA format file: format\_64bit\_data.nc\\n");
 
-`   verify\_format\_file("format\_64bit\_data.nc", NC\_FORMAT\_64BIT\_DATA,`
+   if ((retval = nc\_create("format\_64bit\_data.nc", NC\_64BIT\_DATA | NC\_CLOBBER, &ncid)))
 
-`                      "NC\_FORMAT\_64BIT\_DATA");`
+      ERR(retval);
 
-`   verify\_format\_file("format\_netcdf4.nc", NC\_FORMAT\_NETCDF4,`
+   populate\_file(ncid);
 
-`                      "NC\_FORMAT\_NETCDF4");`
+   if ((retval = nc\_close(ncid)))
 
-`   verify\_format\_file("format\_netcdf4\_classic.nc", NC\_FORMAT\_NETCDF4\_CLASSIC,`
+      ERR(retval);
 
-`                      "NC\_FORMAT\_NETCDF4\_CLASSIC");`
 
-`   `
+   /\* NetCDF-4: HDF5-based format (groups, compression, user-defined types) \*/
 
-`   /\* Summary \*/`
+   printf("Creating NC\_NETCDF4 format file: format\_netcdf4.nc\\n");
 
-`   printf("\\n=== Format Comparison Summary ===\\n\\n");`
+   if ((retval = nc\_create("format\_netcdf4.nc", NC\_NETCDF4 | NC\_CLOBBER, &ncid)))
 
-`   `
+      ERR(retval);
 
-`   long size\_classic = get\_file\_size("format\_classic.nc");`
+   populate\_file(ncid);
 
-`   long size\_offset = get\_file\_size("format\_64bit\_offset.nc");`
+   if ((retval = nc\_close(ncid)))
 
-`   long size\_data = get\_file\_size("format\_64bit\_data.nc");`
+      ERR(retval);
 
-`   long size\_nc4 = get\_file\_size("format\_netcdf4.nc");`
 
-`   long size\_nc4\_classic = get\_file\_size("format\_netcdf4\_classic.nc");`
+   /\* NetCDF-4 Classic Model: HDF5 storage with classic data model restrictions \*/
 
-`   `
+   printf("Creating NC\_NETCDF4|NC\_CLASSIC\_MODEL format file: format\_netcdf4\_classic.nc\\n");
 
-`   printf("File sizes:\\n");`
+   if ((retval = nc\_create("format\_netcdf4\_classic.nc", NC\_NETCDF4 | NC\_CLASSIC\_MODEL | NC\_CLOBBER, &ncid)))
 
-`   printf("  NC\_CLASSIC\_MODEL:            %ld bytes\\n", size\_classic);`
+      ERR(retval);
 
-`   printf("  NC\_64BIT\_OFFSET:             %ld bytes\\n", size\_offset);`
+   populate\_file(ncid);
 
-`   printf("  NC\_64BIT\_DATA:               %ld bytes\\n", size\_data);`
+   if ((retval = nc\_close(ncid)))
 
-`   printf("  NC\_NETCDF4:                  %ld bytes\\n", size\_nc4);`
+      ERR(retval);
 
-`   printf("  NC\_NETCDF4|NC\_CLASSIC\_MODEL: %ld bytes\\n", size\_nc4\_classic);`
+   
 
-`   `
+   /\* Verify files \*/
 
-`   printf("\\nFormat Characteristics:\\n\\n");`
+   printf("\\n=== Verifying Format Files ===\\n");
 
-`   `
+   
 
-`   printf("NC\_CLASSIC\_MODEL (CDF-1):\\n");`
+   verify\_format\_file("format\_classic.nc", NC\_FORMAT\_CLASSIC,
 
-`   printf("  File size limit: 2GB\\n");`
+                      "NC\_FORMAT\_CLASSIC");
 
-`   printf("  Variable size limit: 2GB\\n");`
+   verify\_format\_file("format\_64bit\_offset.nc", NC\_FORMAT\_64BIT\_OFFSET,
 
-`   printf("  Storage backend: CDF binary\\n");`
+                      "NC\_FORMAT\_64BIT\_OFFSET");
 
-`   printf("  Compatibility: NetCDF 3.0+, all tools\\n");`
+   verify\_format\_file("format\_64bit\_data.nc", NC\_FORMAT\_64BIT\_DATA,
 
-`   printf("  Use when: Maximum compatibility needed, files \< 2GB\\n\\n");`
+                      "NC\_FORMAT\_64BIT\_DATA");
 
-`   `
+   verify\_format\_file("format\_netcdf4.nc", NC\_FORMAT\_NETCDF4,
 
-`   printf("NC\_64BIT\_OFFSET (CDF-2):\\n");`
+                      "NC\_FORMAT\_NETCDF4");
 
-`   printf("  File size limit: effectively unlimited\\n");`
+   verify\_format\_file("format\_netcdf4\_classic.nc", NC\_FORMAT\_NETCDF4\_CLASSIC,
 
-`   printf("  Variable size limit: 4GB per variable\\n");`
+                      "NC\_FORMAT\_NETCDF4\_CLASSIC");
 
-`   printf("  Storage backend: CDF binary\\n");`
+   
 
-`   printf("  Compatibility: NetCDF 3.6.0+\\n");`
+   /\* Summary \*/
 
-`   printf("  Use when: Large files needed, variables \< 4GB each\\n\\n");`
+   printf("\\n=== Format Comparison Summary ===\\n\\n");
 
-`   `
+   
 
-`   printf("NC\_64BIT\_DATA (CDF-5):\\n");`
+   long size\_classic = get\_file\_size("format\_classic.nc");
 
-`   printf("  File size limit: effectively unlimited\\n");`
+   long size\_offset = get\_file\_size("format\_64bit\_offset.nc");
 
-`   printf("  Variable size limit: effectively unlimited\\n");`
+   long size\_data = get\_file\_size("format\_64bit\_data.nc");
 
-`   printf("  Storage backend: CDF binary\\n");`
+   long size\_nc4 = get\_file\_size("format\_netcdf4.nc");
 
-`   printf("  Compatibility: NetCDF 4.4.0+ or PnetCDF\\n");`
+   long size\_nc4\_classic = get\_file\_size("format\_netcdf4\_classic.nc");
 
-`   printf("  Use when: Very large variables needed (\> 4GB)\\n\\n");`
+   
 
-`   `
+   printf("File sizes:\\n");
 
-`   printf("NC\_NETCDF4 (HDF5):\\n");`
+   printf("  Classic (CDF-1):             %ld bytes\\n", size\_classic);
 
-`   printf("  File size limit: effectively unlimited\\n");`
+   printf("  NC\_64BIT\_OFFSET:             %ld bytes\\n", size\_offset);
 
-`   printf("  Variable size limit: effectively unlimited\\n");`
+   printf("  NC\_64BIT\_DATA:               %ld bytes\\n", size\_data);
 
-`   printf("  Storage backend: HDF5\\n");`
+   printf("  NC\_NETCDF4:                  %ld bytes\\n", size\_nc4);
 
-`   printf("  Compatibility: NetCDF 4.0+\\n");`
+   printf("  NC\_NETCDF4|NC\_CLASSIC\_MODEL: %ld bytes\\n", size\_nc4\_classic);
 
-`   printf("  Features: groups, compression, chunking, user-defined types\\n");`
+   
 
-`   printf("  Use when: Advanced features needed (compression, groups, etc.)\\n\\n");`
+   printf("\\nFormat Characteristics:\\n\\n");
 
-`   `
+   
 
-`   printf("NC\_NETCDF4|NC\_CLASSIC\_MODEL (HDF5 Classic Model):\\n");`
+   printf("Classic CDF-1 (default, no format flag):\\n");
 
-`   printf("  File size limit: effectively unlimited\\n");`
+   printf("  File size limit: 2GB\\n");
 
-`   printf("  Variable size limit: effectively unlimited\\n");`
+   printf("  Variable size limit: 2GB\\n");
 
-`   printf("  Storage backend: HDF5\\n");`
+   printf("  Storage backend: CDF binary\\n");
 
-`   printf("  Compatibility: NetCDF 4.0+\\n");`
+   printf("  Compatibility: NetCDF 3.0+, all tools\\n");
 
-`   printf("  Features: compression, chunking (no groups, no user-defined types)\\n");`
+   printf("  Use when: Maximum compatibility needed, files \< 2GB\\n\\n");
 
-`   printf("  Use when: HDF5 storage benefits needed with classic data model\\n\\n");`
+   
 
-`   `
+   printf("NC\_64BIT\_OFFSET (CDF-2):\\n");
 
-`   printf("Key Observations:\\n");`
+   printf("  File size limit: effectively unlimited\\n");
 
-`   printf("  - All five formats store identical data correctly\\n");`
+   printf("  Variable size limit: 4GB per variable\\n");
 
-`   printf("  - Classic formats (CDF-1/2/5) have smaller overhead for small files\\n");`
+   printf("  Storage backend: CDF binary\\n");
 
-`   printf("  - NetCDF-4 formats (HDF5) have larger overhead but support compression\\n");`
+   printf("  Compatibility: NetCDF 3.6.0+\\n");
 
-`   printf("  - NC4 classic model is a useful middle ground: HDF5 storage, simple model\\n");`
+   printf("  Use when: Large files needed, variables \< 4GB each\\n\\n");
 
-`   printf("  - Use nc\_inq\_format() to detect format type when reading files\\n\\n");`
+   
 
-`   `
+   printf("NC\_64BIT\_DATA (CDF-5):\\n");
 
-`   printf("\*\*\* SUCCESS: All format tests passed! \*\*\*\\n");`
+   printf("  File size limit: effectively unlimited\\n");
 
-`   return 0;`
+   printf("  Variable size limit: effectively unlimited\\n");
 
-`\}`
+   printf("  Storage backend: CDF binary\\n");
+
+   printf("  Compatibility: NetCDF 4.4.0+ or PnetCDF\\n");
+
+   printf("  Use when: Very large variables needed (\> 4GB)\\n\\n");
+
+   
+
+   printf("NC\_NETCDF4 (HDF5):\\n");
+
+   printf("  File size limit: effectively unlimited\\n");
+
+   printf("  Variable size limit: effectively unlimited\\n");
+
+   printf("  Storage backend: HDF5\\n");
+
+   printf("  Compatibility: NetCDF 4.0+\\n");
+
+   printf("  Features: groups, compression, chunking, user-defined types\\n");
+
+   printf("  Use when: Advanced features needed (compression, groups, etc.)\\n\\n");
+
+   
+
+   printf("NC\_NETCDF4|NC\_CLASSIC\_MODEL (HDF5 Classic Model):\\n");
+
+   printf("  File size limit: effectively unlimited\\n");
+
+   printf("  Variable size limit: effectively unlimited\\n");
+
+   printf("  Storage backend: HDF5\\n");
+
+   printf("  Compatibility: NetCDF 4.0+\\n");
+
+   printf("  Features: compression, chunking (no groups, no user-defined types)\\n");
+
+   printf("  Use when: HDF5 storage benefits needed with classic data model\\n\\n");
+
+   
+
+   printf("Key Observations:\\n");
+
+   printf("  - All five formats store identical data correctly\\n");
+
+   printf("  - Classic formats (CDF-1/2/5) have smaller overhead for small files\\n");
+
+   printf("  - NetCDF-4 formats (HDF5) have larger overhead but support compression\\n");
+
+   printf("  - NC4 classic model is a useful middle ground: HDF5 storage, simple model\\n");
+
+   printf("  - Use nc\_inq\_format() to detect format type when reading files\\n\\n");
+
+   
+
+   printf("\*\*\* SUCCESS: All format tests passed! \*\*\*\\n");
+
+   return 0;
+
+\}
 ```
 
 This results in a number of output files. Using ncdump with the -s (secret) and the -h (header) options, we can see the format of the files produced. Note the special \_Format attribute – it is not a real attribute in the file, it is added by the ncdump to show the format:
 
 ```
-`ncdump -sh format\_classic.nc `
+ncdump -sh format\_classic.nc 
 
-`netcdf format\_classic \{`
+netcdf format\_classic \{
 
-`dimensions:`
+dimensions:
 
-`	time = 10 ;`
+	time = 10 ;
 
-`	lat = 20 ;`
+	lat = 20 ;
 
-`	lon = 30 ;`
+	lon = 30 ;
 
-`variables:`
+variables:
 
-`	float temperature(time, lat, lon) ;`
+	float temperature(time, lat, lon) ;
 
-`		temperature:units = "K" ;`
+		temperature:units = "K" ;
 
-`	float pressure(time, lat, lon) ;`
+	float pressure(time, lat, lon) ;
 
-`		pressure:units = "hPa" ;`
+		pressure:units = "hPa" ;
 
 
-`// global attributes:`
+// global attributes:
 
-`		:\_Format = "classic" ;`
+		:\_Format = "classic" ;
 
-`\}`
+\}
 
-`ncdump -sh format\_64bit\_offset.nc `
+ncdump -sh format\_64bit\_offset.nc 
 
-`netcdf format\_64bit\_offset \{`
+netcdf format\_64bit\_offset \{
 
-`dimensions:`
+dimensions:
 
-`	time = 10 ;`
+	time = 10 ;
 
-`	lat = 20 ;`
+	lat = 20 ;
 
-`	lon = 30 ;`
+	lon = 30 ;
 
-`variables:`
+variables:
 
-`	float temperature(time, lat, lon) ;`
+	float temperature(time, lat, lon) ;
 
-`		temperature:units = "K" ;`
+		temperature:units = "K" ;
 
-`	float pressure(time, lat, lon) ;`
+	float pressure(time, lat, lon) ;
 
-`		pressure:units = "hPa" ;`
+		pressure:units = "hPa" ;
 
 
-`// global attributes:`
+// global attributes:
 
-`		:\_Format = "64-bit offset" ;`
+		:\_Format = "64-bit offset" ;
 
-`\}`
+\}
 
-`ncdump -sh format\_netcdf4\_classic.nc `
+ncdump -sh format\_netcdf4\_classic.nc 
 
-`netcdf format\_netcdf4\_classic \{`
+netcdf format\_netcdf4\_classic \{
 
-`dimensions:`
+dimensions:
 
-`	time = 10 ;`
+	time = 10 ;
 
-`	lat = 20 ;`
+	lat = 20 ;
 
-`	lon = 30 ;`
+	lon = 30 ;
 
-`variables:`
+variables:
 
-`	float temperature(time, lat, lon) ;`
+	float temperature(time, lat, lon) ;
 
-`		temperature:units = "K" ;`
+		temperature:units = "K" ;
 
-`		temperature:\_Storage = "contiguous" ;`
+		temperature:\_Storage = "contiguous" ;
 
-`		temperature:\_Endianness = "little" ;`
+		temperature:\_Endianness = "little" ;
 
-`	float pressure(time, lat, lon) ;`
+	float pressure(time, lat, lon) ;
 
-`		pressure:units = "hPa" ;`
+		pressure:units = "hPa" ;
 
-`		pressure:\_Storage = "contiguous" ;`
+		pressure:\_Storage = "contiguous" ;
 
-`		pressure:\_Endianness = "little" ;`
+		pressure:\_Endianness = "little" ;
 
 
-`// global attributes:`
+// global attributes:
 
-`		:\_NCProperties = "version=2,netcdf=4.10.0-development,hdf5=1.14.6" ;`
+		:\_NCProperties = "version=2,netcdf=4.10.0-development,hdf5=1.14.6" ;
 
-`		:\_SuperblockVersion = 2 ;`
+		:\_SuperblockVersion = 2 ;
 
-`		:\_IsNetcdf4 = 1 ;`
+		:\_IsNetcdf4 = 1 ;
 
-`		:\_Format = "netCDF-4 classic model" ;`
+		:\_Format = "netCDF-4 classic model" ;
 
-`\}`
+\}
 
-`ncdump -sh format\_netcdf4.nc `
+ncdump -sh format\_netcdf4.nc 
 
-`netcdf format\_netcdf4 \{`
+netcdf format\_netcdf4 \{
 
-`dimensions:`
+dimensions:
 
-`	time = 10 ;`
+	time = 10 ;
 
-`	lat = 20 ;`
+	lat = 20 ;
 
-`	lon = 30 ;`
+	lon = 30 ;
 
-`variables:`
+variables:
 
-`	float temperature(time, lat, lon) ;`
+	float temperature(time, lat, lon) ;
 
-`		temperature:units = "K" ;`
+		temperature:units = "K" ;
 
-`		temperature:\_Storage = "contiguous" ;`
+		temperature:\_Storage = "contiguous" ;
 
-`		temperature:\_Endianness = "little" ;`
+		temperature:\_Endianness = "little" ;
 
-`	float pressure(time, lat, lon) ;`
+	float pressure(time, lat, lon) ;
 
-`		pressure:units = "hPa" ;`
+		pressure:units = "hPa" ;
 
-`		pressure:\_Storage = "contiguous" ;`
+		pressure:\_Storage = "contiguous" ;
 
-`		pressure:\_Endianness = "little" ;`
+		pressure:\_Endianness = "little" ;
 
 
-`// global attributes:`
+// global attributes:
 
-`		:\_NCProperties = "version=2,netcdf=4.10.0-development,hdf5=1.14.6" ;`
+		:\_NCProperties = "version=2,netcdf=4.10.0-development,hdf5=1.14.6" ;
 
-`		:\_SuperblockVersion = 2 ;`
+		:\_SuperblockVersion = 2 ;
 
-`		:\_IsNetcdf4 = 1 ;`
+		:\_IsNetcdf4 = 1 ;
 
-`		:\_Format = "netCDF-4" ;`
+		:\_Format = "netCDF-4" ;
 
-`\}`
+\}
 ```
 
 ### Compression
 
 This example explores NetCDF-4's built-in compression capabilities by creating multiple files with different compression settings and measuring their performance characteristics. Compression is essential for reducing storage requirements and I/O bandwidth for large scientific datasets.
 
-e program generates realistic 3D temperature data (time×lat×lon) and creates files with various compression configurations: no compression, deflate only, shuffle only, and shuffle+deflate combinations at different compression levels.
+The program generates realistic 3D temperature data (time×lat×lon) and creates files with various compression configurations: no compression, deflate only, shuffle only, and shuffle+deflate combinations at different compression levels. It measures write/read times, file sizes, and compression ratios.
 
-It measures write/read times, file sizes, and compression ratios.
+This example can be found in the NetCDF Expansion Pack in examples/netcdf-4/compression.c.
 
 #### Learning Objectives:
 
@@ -8319,571 +8604,637 @@ It measures write/read times, file sizes, and compression ratios.
 - Network transfers where bandwidth is constrained
 
 ```
-`\#include \<stdio.h\>`
+\#include \<stdio.h\>
 
-`\#include \<stdlib.h\>`
+\#include \<stdlib.h\>
 
-`\#include \<string.h\>`
+\#include \<string.h\>
 
-`\#include \<time.h\>`
+\#include \<time.h\>
 
-`\#include \<math.h\>`
+\#include \<math.h\>
 
-`\#include \<netcdf.h\>`
+\#include \<netcdf.h\>
 
 
-`\#define NTIME 50`
+\#define NTIME 50
 
-`\#define NLAT 90`
+\#define NLAT 90
 
-`\#define NLON 180`
+\#define NLON 180
 
-`\#define NDIMS 3`
+\#define NDIMS 3
 
-`\#define ERRCODE 2`
+\#define FILL\_VALUE -9999.0f
 
-`\#define ERR(e) \{printf("Error: %s\\n", nc\_strerror(e)); exit(ERRCODE);\}`
+\#define ERRCODE 2
 
+\#define ERR(e) \{printf("Error: %s\\n", nc\_strerror(e)); exit(ERRCODE);\}
 
-`typedef struct \{`
 
-`    char name\[64\];`
+typedef struct \{
 
-`    char filename\[128\];`
+    char name\[64\];
 
-`    int shuffle;`
+    char filename\[128\];
 
-`    int deflate;`
+    int shuffle;
 
-`    int deflate\_level;`
+    int deflate;
 
-`    double write\_time;`
+    int deflate\_level;
 
-`    double read\_time;`
+    double write\_time;
 
-`    long file\_size;`
+    double read\_time;
 
-`    double compression\_ratio;`
+    long file\_size;
 
-`\} CompressionTest;`
+    double compression\_ratio;
 
+\} CompressionTest;
 
-`/\* Generate realistic temperature data with spatial/temporal patterns \*/`
 
-`void generate\_temperature\_data(float \*data) \{`
+/\* Generate realistic temperature data with spatial/temporal patterns \*/
 
-`    for (int t = 0; t \< NTIME; t++) \{`
+void generate\_temperature\_data(float \*data) \{
 
-`        for (int lat = 0; lat \< NLAT; lat++) \{`
+    for (int t = 0; t \< NTIME; t++) \{
 
-`            for (int lon = 0; lon \< NLON; lon++) \{`
+        for (int lat = 0; lat \< NLAT; lat++) \{
 
-`                int idx = t \* NLAT \* NLON + lat \* NLON + lon;`
+            for (int lon = 0; lon \< NLON; lon++) \{
 
-`                `
+                int idx = t \* NLAT \* NLON + lat \* NLON + lon;
 
-`                /\* Base temperature with latitude gradient \*/`
+                
 
-`                float base\_temp = 15.0 - (lat - NLAT/2) \* 0.5;`
+                /\* Base temperature with latitude gradient \*/
 
-`                `
+                float base\_temp = 15.0 - (lat - NLAT/2) \* 0.5;
 
-`                /\* Seasonal variation \*/`
+                
 
-`                float seasonal = 10.0 \* sin(2.0 \* M\_PI \* t / NTIME);`
+                /\* Seasonal variation \*/
 
-`                `
+                float seasonal = 10.0 \* sin(2.0 \* M\_PI \* t / NTIME);
 
-`                /\* Spatial variation \*/`
+                
 
-`                float spatial = 5.0 \* sin(2.0 \* M\_PI \* lon / NLON) \* `
+                /\* Spatial variation \*/
 
-`                               cos(2.0 \* M\_PI \* lat / NLAT);`
+                float spatial = 5.0 \* sin(2.0 \* M\_PI \* lon / NLON) \* 
 
-`                `
+                               cos(2.0 \* M\_PI \* lat / NLAT);
 
-`                data\[idx\] = base\_temp + seasonal + spatial;`
+                
 
-`            \}`
+                data\[idx\] = base\_temp + seasonal + spatial;
 
-`        \}`
+            \}
 
-`    \}`
+        \}
 
-`\}`
+    \}
 
+\}
 
-`/\* Get file size \*/`
 
-`long get\_file\_size(const char \*filename) \{`
+/\* Get file size \*/
 
-`    FILE \*fp = fopen(filename, "rb");`
+long get\_file\_size(const char \*filename) \{
 
-`    if (!fp) return -1;`
+    FILE \*fp = fopen(filename, "rb");
 
-`    fseek(fp, 0, SEEK\_END);`
+    if (!fp) return -1;
 
-`    long size = ftell(fp);`
+    fseek(fp, 0, SEEK\_END);
 
-`    fclose(fp);`
+    long size = ftell(fp);
 
-`    return size;`
+    fclose(fp);
 
-`\}`
+    return size;
 
+\}
 
-`/\* Create compressed file and measure performance \*/`
 
-`void create\_compressed\_file(CompressionTest \*test, float \*data) \{`
+/\* Create compressed file and measure performance \*/
 
-`    int ncid, varid;`
+void create\_compressed\_file(CompressionTest \*test, float \*data) \{
 
-`    int time\_dimid, lat\_dimid, lon\_dimid;`
+    int ncid, varid;
 
-`    int dimids\[NDIMS\];`
+    int time\_dimid, lat\_dimid, lon\_dimid;
 
-`    int retval;`
+    int dimids\[NDIMS\];
 
-`    struct timespec start, end;`
+    int retval;
 
-`    `
+    struct timespec start, end;
 
-`    printf("\\n=== %s ===\\n", test-\>name);`
+    
 
-`    `
+    printf("\\n=== %s ===\\n", test-\>name);
 
-`    /\* Start timing \*/`
+    
 
-`    clock\_gettime(CLOCK\_MONOTONIC, &start);`
+    /\* Start timing \*/
 
-`    `
+    clock\_gettime(CLOCK\_MONOTONIC, &start);
 
-`    /\* Create file \*/`
+    
 
-`    if ((retval = nc\_create(test-\>filename, NC\_CLOBBER|NC\_NETCDF4, &ncid)))`
+    /\* Create file \*/
 
-`        ERR(retval);`
+    if ((retval = nc\_create(test-\>filename, NC\_CLOBBER|NC\_NETCDF4, &ncid)))
 
-`    `
+        ERR(retval);
 
-`    /\* Define dimensions \*/`
+    
 
-`    if ((retval = nc\_def\_dim(ncid, "time", NTIME, &time\_dimid)))`
+    /\* Define dimensions \*/
 
-`        ERR(retval);`
+    if ((retval = nc\_def\_dim(ncid, "time", NTIME, &time\_dimid)))
 
-`    if ((retval = nc\_def\_dim(ncid, "lat", NLAT, &lat\_dimid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    if ((retval = nc\_def\_dim(ncid, "lat", NLAT, &lat\_dimid)))
 
-`    if ((retval = nc\_def\_dim(ncid, "lon", NLON, &lon\_dimid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    if ((retval = nc\_def\_dim(ncid, "lon", NLON, &lon\_dimid)))
 
-`    `
+        ERR(retval);
 
-`    /\* Define variable \*/`
+    
 
-`    dimids\[0\] = time\_dimid;`
+    /\* Define variable \*/
 
-`    dimids\[1\] = lat\_dimid;`
+    dimids\[0\] = time\_dimid;
 
-`    dimids\[2\] = lon\_dimid;`
+    dimids\[1\] = lat\_dimid;
 
-`    if ((retval = nc\_def\_var(ncid, "temperature", NC\_FLOAT, NDIMS, dimids, &varid)))`
+    dimids\[2\] = lon\_dimid;
 
-`        ERR(retval);`
+    if ((retval = nc\_def\_var(ncid, "temperature", NC\_FLOAT, NDIMS, dimids, &varid)))
 
-`    `
+        ERR(retval);
 
-`    /\* Set compression \*/`
+    
 
-`    if (test-\>deflate || test-\>shuffle) \{`
+    /\* Set fill value: nc\_def\_var\_fill() registers the sentinel returned for unwritten
 
-`        if ((retval = nc\_def\_var\_deflate(ncid, varid, test-\>shuffle, `
+     \* chunks. In chunked/compressed variables, unwritten chunks are stored as fill
 
-`                                         test-\>deflate, test-\>deflate\_level)))`
+     \* value data, making fill value part of the chunk metadata. \*/
 
-`            ERR(retval);`
+    float fill\_value = FILL\_VALUE;
 
-`    \}`
+    if ((retval = nc\_def\_var\_fill(ncid, varid, NC\_FILL, &fill\_value)))
 
-`    `
+        ERR(retval);
 
-`    /\* End define mode \*/`
+    
 
-`    if ((retval = nc\_enddef(ncid)))`
+    /\* Set compression \*/
 
-`        ERR(retval);`
+    if (test-\>deflate || test-\>shuffle) \{
 
-`    `
+        if ((retval = nc\_def\_var\_deflate(ncid, varid, test-\>shuffle, 
 
-`    /\* Write data \*/`
+                                         test-\>deflate, test-\>deflate\_level)))
 
-`    if ((retval = nc\_put\_var\_float(ncid, varid, data)))`
+            ERR(retval);
 
-`        ERR(retval);`
+    \}
 
-`    `
+    
 
-`    /\* Close file \*/`
+    /\* End define mode \*/
 
-`    if ((retval = nc\_close(ncid)))`
+    if ((retval = nc\_enddef(ncid)))
 
-`        ERR(retval);`
+        ERR(retval);
 
-`    `
+    
 
-`    /\* End timing \*/`
+    /\* Write all time steps except the last one (partial write).
 
-`    clock\_gettime(CLOCK\_MONOTONIC, &end);`
+     \* The unwritten last time step will return FILL\_VALUE when read back,
 
-`    test-\>write\_time = (end.tv\_sec - start.tv\_sec) + `
+     \* demonstrating fill value behavior with chunked/compressed storage. \*/
 
-`                       (end.tv\_nsec - start.tv\_nsec) / 1e9;`
+    size\_t wstart\[NDIMS\] = \{0, 0, 0\};
 
-`    `
+    size\_t wcount\[NDIMS\] = \{NTIME - 1, NLAT, NLON\};
 
-`    /\* Get file size \*/`
+    if ((retval = nc\_put\_vara\_float(ncid, varid, wstart, wcount, data)))
 
-`    test-\>file\_size = get\_file\_size(test-\>filename);`
+        ERR(retval);
 
-`    `
+    
 
-`    printf("Write time: %.3f seconds\\n", test-\>write\_time);`
+    /\* Close file \*/
 
-`    printf("File size: %ld bytes (%.2f MB)\\n", `
+    if ((retval = nc\_close(ncid)))
 
-`           test-\>file\_size, test-\>file\_size / 1048576.0);`
+        ERR(retval);
 
-`    `
+    
 
-`    if (test-\>shuffle) printf("Shuffle: enabled\\n");`
+    /\* End timing \*/
 
-`    if (test-\>deflate) printf("Deflate: level %d\\n", test-\>deflate\_level);`
+    clock\_gettime(CLOCK\_MONOTONIC, &end);
 
-`\}`
+    test-\>write\_time = (end.tv\_sec - start.tv\_sec) + 
 
+                       (end.tv\_nsec - start.tv\_nsec) / 1e9;
 
-`/\* Read and validate compressed file \*/`
+    
 
-`void read\_compressed\_file(CompressionTest \*test, float \*original\_data) \{`
+    /\* Get file size \*/
 
-`    int ncid, varid;`
+    test-\>file\_size = get\_file\_size(test-\>filename);
 
-`    int retval;`
+    
 
-`    struct timespec start, end;`
+    printf("Write time: %.3f seconds\\n", test-\>write\_time);
 
-`    int shuffle, deflate, deflate\_level;`
+    printf("File size: %ld bytes (%.2f MB)\\n", 
 
-`    `
+           test-\>file\_size, test-\>file\_size / 1048576.0);
 
-`    float \*data = malloc(NTIME \* NLAT \* NLON \* sizeof(float));`
+    
 
-`    if (!data) \{`
+    if (test-\>shuffle) printf("Shuffle: enabled\\n");
 
-`        printf("Error: Memory allocation failed\\n");`
+    if (test-\>deflate) printf("Deflate: level %d\\n", test-\>deflate\_level);
 
-`        exit(ERRCODE);`
+\}
 
-`    \}`
 
-`    `
+/\* Read and validate compressed file \*/
 
-`    /\* Start timing \*/`
+void read\_compressed\_file(CompressionTest \*test, float \*original\_data) \{
 
-`    clock\_gettime(CLOCK\_MONOTONIC, &start);`
+    int ncid, varid;
 
-`    `
+    int retval;
 
-`    /\* Open file \*/`
+    struct timespec start, end;
 
-`    if ((retval = nc\_open(test-\>filename, NC\_NOWRITE, &ncid)))`
+    int shuffle, deflate, deflate\_level;
 
-`        ERR(retval);`
+    
 
-`    `
+    float \*data = malloc(NTIME \* NLAT \* NLON \* sizeof(float));
 
-`    /\* Get variable ID \*/`
+    if (!data) \{
 
-`    if ((retval = nc\_inq\_varid(ncid, "temperature", &varid)))`
+        printf("Error: Memory allocation failed\\n");
 
-`        ERR(retval);`
+        exit(ERRCODE);
 
-`    `
+    \}
 
-`    /\* Verify compression settings \*/`
+    
 
-`    if ((retval = nc\_inq\_var\_deflate(ncid, varid, &shuffle, &deflate, &deflate\_level)))`
+    /\* Start timing \*/
 
-`        ERR(retval);`
+    clock\_gettime(CLOCK\_MONOTONIC, &start);
 
-`    `
+    
 
-`    if (shuffle != test-\>shuffle || deflate != test-\>deflate || `
+    /\* Open file \*/
 
-`        (deflate && deflate\_level != test-\>deflate\_level)) \{`
+    if ((retval = nc\_open(test-\>filename, NC\_NOWRITE, &ncid)))
 
-`        printf("Error: Compression settings mismatch\\n");`
+        ERR(retval);
 
-`        exit(ERRCODE);`
+    
 
-`    \}`
+    /\* Get variable ID \*/
 
-`    `
+    if ((retval = nc\_inq\_varid(ncid, "temperature", &varid)))
 
-`    /\* Read data \*/`
+        ERR(retval);
 
-`    if ((retval = nc\_get\_var\_float(ncid, varid, data)))`
+    
 
-`        ERR(retval);`
+    /\* Verify compression settings \*/
 
-`    `
+    if ((retval = nc\_inq\_var\_deflate(ncid, varid, &shuffle, &deflate, &deflate\_level)))
 
-`    /\* Close file \*/`
+        ERR(retval);
 
-`    if ((retval = nc\_close(ncid)))`
+    
 
-`        ERR(retval);`
+    if (shuffle != test-\>shuffle || deflate != test-\>deflate || 
 
-`    `
+        (deflate && deflate\_level != test-\>deflate\_level)) \{
 
-`    /\* End timing \*/`
+        printf("Error: Compression settings mismatch\\n");
 
-`    clock\_gettime(CLOCK\_MONOTONIC, &end);`
+        exit(ERRCODE);
 
-`    test-\>read\_time = (end.tv\_sec - start.tv\_sec) + `
+    \}
 
-`                      (end.tv\_nsec - start.tv\_nsec) / 1e9;`
+    
 
-`    `
+    /\* Verify fill value using nc\_inq\_var\_fill() \*/
 
-`    /\* Validate data (check first 100 points) \*/`
+    int no\_fill;
 
-`    int errors = 0;`
+    float fill\_value\_in;
 
-`    for (int i = 0; i \< 100 && i \< NTIME \* NLAT \* NLON; i++) \{`
+    if ((retval = nc\_inq\_var\_fill(ncid, varid, &no\_fill, &fill\_value\_in)))
 
-`        if (fabs(data\[i\] - original\_data\[i\]) \> 0.001) \{`
+        ERR(retval);
 
-`            printf("Error: data\[%d\] = %f, expected %f\\n", i, data\[i\], original\_data\[i\]);`
+    if (fabsf(fill\_value\_in - FILL\_VALUE) \> 1e-6f) \{
 
-`            errors++;`
+        printf("Error: fill value = %f, expected %f\\n", fill\_value\_in, FILL\_VALUE);
 
-`        \}`
+        exit(ERRCODE);
 
-`    \}`
+    \}
 
-`    `
+    
 
-`    if (errors \> 0) \{`
+    /\* Read data \*/
 
-`        printf("\*\*\* FAILED: %d validation errors\\n", errors);`
+    if ((retval = nc\_get\_var\_float(ncid, varid, data)))
 
-`        exit(ERRCODE);`
+        ERR(retval);
 
-`    \}`
+    
 
-`    `
+    /\* Close file \*/
 
-`    printf("Read time: %.3f seconds\\n", test-\>read\_time);`
+    if ((retval = nc\_close(ncid)))
 
-`    printf("Data validated successfully\\n");`
+        ERR(retval);
 
-`    `
+    
 
-`    free(data);`
+    /\* End timing \*/
 
-`\}`
+    clock\_gettime(CLOCK\_MONOTONIC, &end);
 
+    test-\>read\_time = (end.tv\_sec - start.tv\_sec) + 
 
-`int main() \{`
+                      (end.tv\_nsec - start.tv\_nsec) / 1e9;
 
-`    printf("Compression Filter Demonstration\\n");`
+    
 
-`    printf("=================================\\n");`
+    /\* Validate written data (first NTIME-1 time steps, check first 100 points) \*/
 
-`    printf("Dataset dimensions: \[time=%d, lat=%d, lon=%d\]\\n", NTIME, NLAT, NLON);`
+    int errors = 0;
 
-`    printf("Total data points: %d\\n", NTIME \* NLAT \* NLON);`
+    for (int i = 0; i \< 100 && i \< (NTIME - 1) \* NLAT \* NLON; i++) \{
 
-`    printf("Total data size: %.2f MB\\n", `
+        if (fabs(data\[i\] - original\_data\[i\]) \> 0.001) \{
 
-`           (NTIME \* NLAT \* NLON \* sizeof(float)) / 1048576.0);`
+            printf("Error: data\[%d\] = %f, expected %f\\n", i, data\[i\], original\_data\[i\]);
 
-`    `
+            errors++;
 
-`    /\* Generate realistic temperature data \*/`
+        \}
 
-`    float \*data = malloc(NTIME \* NLAT \* NLON \* sizeof(float));`
+    \}
 
-`    if (!data) \{`
+    
 
-`        printf("Error: Memory allocation failed\\n");`
+    /\* Verify unwritten last time step returns fill value \*/
 
-`        return ERRCODE;`
+    int last\_start = (NTIME - 1) \* NLAT \* NLON;
 
-`    \}`
+    for (int i = last\_start; i \< last\_start + 10; i++) \{
 
-`    generate\_temperature\_data(data);`
+        if (data\[i\] != FILL\_VALUE) \{
 
-`    `
+            printf("Error: unwritten data\[%d\] = %f, expected fill value %f\\n",
 
-`    /\* Define compression tests \*/`
+                   i, data\[i\], FILL\_VALUE);
 
-`    CompressionTest tests\[\] = \{`
+            errors++;
 
-`        \{"Uncompressed (baseline)", "compress\_none.nc", 0, 0, 0, 0, 0, 0, 0\},`
+        \}
 
-`        \{"Shuffle only", "compress\_shuffle.nc", 1, 0, 0, 0, 0, 0, 0\},`
+    \}
 
-`        \{"Deflate level 1 (preferred)", "compress\_deflate1.nc", 0, 1, 1, 0, 0, 0, 0\},`
+    
 
-`        \{"Deflate level 5", "compress\_deflate5.nc", 0, 1, 5, 0, 0, 0, 0\},`
+    if (errors \> 0) \{
 
-`        \{"Deflate level 9", "compress\_deflate9.nc", 0, 1, 9, 0, 0, 0, 0\},`
+        printf("\*\*\* FAILED: %d validation errors\\n", errors);
 
-`        \{"Shuffle + Deflate 1 (recommended)", "compress\_shuffle\_deflate1.nc", 1, 1, 1, 0, 0, 0, 0\}`
+        exit(ERRCODE);
 
-`    \};`
+    \}
 
-`    int num\_tests = sizeof(tests) / sizeof(tests\[0\]);`
+    
 
-`    `
+    printf("Read time: %.3f seconds\\n", test-\>read\_time);
 
-`    /\* Run all tests \*/`
+    printf("Data validated (written steps 0-%d correct, last step = fill value %g)\\n",
 
-`    for (int i = 0; i \< num\_tests; i++) \{`
+           NTIME - 2, FILL\_VALUE);
 
-`        create\_compressed\_file(&tests\[i\], data);`
+    
 
-`        read\_compressed\_file(&tests\[i\], data);`
+    free(data);
 
-`    \}`
+\}
 
-`    `
 
-`    /\* Calculate compression ratios \*/`
+int main() \{
 
-`    long baseline\_size = tests\[0\].file\_size;`
+    printf("Compression Filter Demonstration\\n");
 
-`    for (int i = 0; i \< num\_tests; i++) \{`
+    printf("=================================\\n");
 
-`        tests\[i\].compression\_ratio = (double)baseline\_size / tests\[i\].file\_size;`
+    printf("Dataset dimensions: \[time=%d, lat=%d, lon=%d\]\\n", NTIME, NLAT, NLON);
 
-`    \}`
+    printf("Total data points: %d\\n", NTIME \* NLAT \* NLON);
 
-`    `
+    printf("Total data size: %.2f MB\\n", 
 
-`    /\* Print summary table \*/`
+           (NTIME \* NLAT \* NLON \* sizeof(float)) / 1048576.0);
 
-`    printf("\\n=== Performance Summary ===\\n");`
+    
 
-`    printf("%-35s %12s %12s %12s %10s\\n", `
+    /\* Generate realistic temperature data \*/
 
-`           "Strategy", "Write (s)", "Read (s)", "Size (MB)", "Ratio");`
+    float \*data = malloc(NTIME \* NLAT \* NLON \* sizeof(float));
 
-`    printf("%-35s %12s %12s %12s %10s\\n",`
+    if (!data) \{
 
-`           "--------", "---------", "--------", "---------", "-----");`
+        printf("Error: Memory allocation failed\\n");
 
-`    `
+        return ERRCODE;
 
-`    for (int i = 0; i \< num\_tests; i++) \{`
+    \}
 
-`        printf("%-35s %12.3f %12.3f %12.2f %10.2fx\\n",`
+    generate\_temperature\_data(data);
 
-`               tests\[i\].name,`
+    
 
-`               tests\[i\].write\_time,`
+    /\* Define compression tests \*/
 
-`               tests\[i\].read\_time,`
+    CompressionTest tests\[\] = \{
 
-`               tests\[i\].file\_size / 1048576.0,`
+        \{"Uncompressed (baseline)", "compress\_none.nc", 0, 0, 0, 0, 0, 0, 0\},
 
-`               tests\[i\].compression\_ratio);`
+        \{"Shuffle only", "compress\_shuffle.nc", 1, 0, 0, 0, 0, 0, 0\},
 
-`    \}`
+        \{"Deflate level 1 (preferred)", "compress\_deflate1.nc", 0, 1, 1, 0, 0, 0, 0\},
 
-`    `
+        \{"Deflate level 5", "compress\_deflate5.nc", 0, 1, 5, 0, 0, 0, 0\},
 
-`    /\* Print recommendations \*/`
+        \{"Deflate level 9", "compress\_deflate9.nc", 0, 1, 9, 0, 0, 0, 0\},
 
-`    printf("\\n=== Recommendations ===\\n");`
+        \{"Shuffle + Deflate 1 (recommended)", "compress\_shuffle\_deflate1.nc", 1, 1, 1, 0, 0, 0, 0\}
 
-`    printf("- Uncompressed: Fastest I/O but largest files\\n");`
+    \};
 
-`    printf("- Shuffle only: Reorganizes bytes for better compression (use with deflate)\\n");`
+    int num\_tests = sizeof(tests) / sizeof(tests\[0\]);
 
-`    printf("- Deflate level 1: PREFERRED for almost all real-world data\\n");`
+    
 
-`    printf("- Deflate level 5: Marginally better ratio, significantly slower\\n");`
+    /\* Run all tests \*/
 
-`    printf("- Deflate level 9: Maximum compression, much slower, rarely worth it\\n");`
+    for (int i = 0; i \< num\_tests; i++) \{
 
-`    printf("- Shuffle + Deflate 1: RECOMMENDED default for scientific data\\n");`
+        create\_compressed\_file(&tests\[i\], data);
 
-`    printf("- Level 1 gives nearly the same compression as higher levels\\n");`
+        read\_compressed\_file(&tests\[i\], data);
 
-`    printf("- Higher levels cost much more CPU time for diminishing returns\\n");`
+    \}
 
-`    printf("- Read performance generally similar across compression levels\\n");`
+    
 
-`    printf("- Compression effectiveness depends on data patterns\\n");`
+    /\* Calculate compression ratios \*/
 
-`    `
+    long baseline\_size = tests\[0\].file\_size;
 
-`    free(data);`
+    for (int i = 0; i \< num\_tests; i++) \{
 
-`    printf("\\n\*\*\* SUCCESS: All compression strategies tested!\\n");`
+        tests\[i\].compression\_ratio = (double)baseline\_size / tests\[i\].file\_size;
 
-`    return 0;`
+    \}
 
-`\}`
+    
+
+    /\* Print summary table \*/
+
+    printf("\\n=== Performance Summary ===\\n");
+
+    printf("%-35s %12s %12s %12s %10s\\n", 
+
+           "Strategy", "Write (s)", "Read (s)", "Size (MB)", "Ratio");
+
+    printf("%-35s %12s %12s %12s %10s\\n",
+
+           "--------", "---------", "--------", "---------", "-----");
+
+    
+
+    for (int i = 0; i \< num\_tests; i++) \{
+
+        printf("%-35s %12.3f %12.3f %12.2f %10.2fx\\n",
+
+               tests\[i\].name,
+
+               tests\[i\].write\_time,
+
+               tests\[i\].read\_time,
+
+               tests\[i\].file\_size / 1048576.0,
+
+               tests\[i\].compression\_ratio);
+
+    \}
+
+    
+
+    /\* Print recommendations \*/
+
+    printf("\\n=== Recommendations ===\\n");
+
+    printf("- Uncompressed: Fastest I/O but largest files\\n");
+
+    printf("- Shuffle only: Reorganizes bytes for better compression (use with deflate)\\n");
+
+    printf("- Deflate level 1: PREFERRED for almost all real-world data\\n");
+
+    printf("- Deflate level 5: Marginally better ratio, significantly slower\\n");
+
+    printf("- Deflate level 9: Maximum compression, much slower, rarely worth it\\n");
+
+    printf("- Shuffle + Deflate 1: RECOMMENDED default for scientific data\\n");
+
+    printf("- Level 1 gives nearly the same compression as higher levels\\n");
+
+    printf("- Higher levels cost much more CPU time for diminishing returns\\n");
+
+    printf("- Read performance generally similar across compression levels\\n");
+
+    printf("- Compression effectiveness depends on data patterns\\n");
+
+    
+
+    free(data);
+
+    printf("\\n\*\*\* SUCCESS: All compression strategies tested!\\n");
+
+    return 0;
+
+\}
 ```
 
 Doing an ncdump -hs on one of the the resulting files shows the metadata:
 
 ```
-`ncdump -hs ../netcdf-4/compress\_shuffle\_deflate1.nc `
+ncdump -hs ../netcdf-4/compress\_shuffle\_deflate1.nc 
 
-`netcdf compress\_shuffle\_deflate1 \{`
+netcdf compress\_shuffle\_deflate1 \{
 
-`dimensions:`
+dimensions:
 
-`	time = 50 ;`
+	time = 50 ;
 
-`	lat = 90 ;`
+	lat = 90 ;
 
-`	lon = 180 ;`
+	lon = 180 ;
 
-`variables:`
+variables:
 
-`	float temperature(time, lat, lon) ;`
+	float temperature(time, lat, lon) ;
 
-`		temperature:\_Storage = "chunked" ;`
+		temperature:\_Storage = "chunked" ;
 
-`		temperature:\_ChunkSizes = 50, 90, 180 ;`
+		temperature:\_ChunkSizes = 50, 90, 180 ;
 
-`		temperature:\_Shuffle = "true" ;`
+		temperature:\_Shuffle = "true" ;
 
-`		temperature:\_DeflateLevel = 1 ;`
+		temperature:\_DeflateLevel = 1 ;
 
-`		temperature:\_Endianness = "little" ;`
+		temperature:\_Endianness = "little" ;
 
 
-`// global attributes:`
+// global attributes:
 
-`		:\_NCProperties = "version=2,netcdf=4.10.0-development,hdf5=1.14.6" ;`
+		:\_NCProperties = "version=2,netcdf=4.10.0-development,hdf5=1.14.6" ;
 
-`		:\_SuperblockVersion = 2 ;`
+		:\_SuperblockVersion = 2 ;
 
-`		:\_IsNetcdf4 = 1 ;`
+		:\_IsNetcdf4 = 1 ;
 
-`		:\_Format = "netCDF-4" ;`
+		:\_Format = "netCDF-4" ;
 
-`\}`
+\}
 ```
 
 ### User-Defined Types
@@ -8892,14 +9243,13 @@ This example showcases NetCDF-4's powerful type system, which extends beyond the
 
 The program demonstrates four types of user-defined types:
 
-Compound types: Structured records like C structs (weather observations)
+- Compound types: Structured records like C structs (weather observations)
 
-Enum types: Named integer constants (cloud cover categories)
+- Enum types: Named integer constants (cloud cover categories)
 
-Variable-length types: Arrays of varying length (daily measurements)
+- Variable-length types: Arrays of varying length (daily measurements)
 
-Opaque types: Binary blobs for arbitrary data (calibration data)
-
+- Opaque types: Binary blobs for arbitrary data (calibration data)
 
 #### Learning Objectives:
 
@@ -8917,7 +9267,6 @@ Opaque types: Binary blobs for arbitrary data (calibration data)
 
 - Write and read complex structured data
 
-
 #### Key Concepts:
 
 - **Compound Type**: Structured type with named fields (like C struct)
@@ -8932,7 +9281,6 @@ Opaque types: Binary blobs for arbitrary data (calibration data)
 
 - **Type ID**: Unique identifier for each user-defined type
 
-
 #### Compound Types:
 
 - Define with nc\_def\_compound(), add fields with nc\_insert\_compound()
@@ -8942,7 +9290,6 @@ Opaque types: Binary blobs for arbitrary data (calibration data)
 - Useful for observations, records, structured metadata
 
 - Example: Weather observation with time, temp, pressure, humidity
-
 
 #### Enum Types:
 
@@ -8954,7 +9301,6 @@ Opaque types: Binary blobs for arbitrary data (calibration data)
 
 - Example: Cloud cover (CLEAR, PARTLY\_CLOUDY, CLOUDY, OVERCAST)
 
-
 #### Variable-Length Types:
 
 - Define with nc\_def\_vlen() specifying base type
@@ -8964,7 +9310,6 @@ Opaque types: Binary blobs for arbitrary data (calibration data)
 - Useful for ragged arrays, particle lists, event sequences
 
 - Example: Daily measurements (different counts per day)
-
 
 #### Opaque Types:
 
@@ -8976,665 +9321,666 @@ Opaque types: Binary blobs for arbitrary data (calibration data)
 
 - Example: Instrument calibration data
 
-
 ```
-`\#include \<stdio.h\>`
+\#include \<stdio.h\>
 
-`\#include \<stdlib.h\>`
+\#include \<stdio.h\>
 
-`\#include \<string.h\>`
+\#include \<stdlib.h\>
 
-`\#include \<math.h\>`
+\#include \<string.h\>
 
-`\#include \<netcdf.h\>`
+\#include \<math.h\>
 
+\#include \<netcdf.h\>
 
-`\#define FILE\_NAME "user\_types.nc"`
 
-`\#define NOBS 5`
+\#define FILE\_NAME "user\_types.nc"
 
-`\#define NDAYS 3`
+\#define NOBS 5
 
-`\#define NSTATIONS 4`
+\#define NDAYS 3
 
-`\#define CALIB\_SIZE 16`
+\#define NSTATIONS 4
 
-`\#define ERRCODE 2`
+\#define CALIB\_SIZE 16
 
-`\#define ERR(e) \{printf("Error: %s\\n", nc\_strerror(e)); exit(ERRCODE);\}`
+\#define ERRCODE 2
 
+\#define ERR(e) \{printf("Error: %s\\n", nc\_strerror(e)); exit(ERRCODE);\}
 
-`/\* Compound type: Weather observation \*/`
 
-`typedef struct \{`
+/\* Compound type: Weather observation \*/
 
-`    double time;`
+typedef struct \{
 
-`    float temperature;`
+    double time;
 
-`    float pressure;`
+    float temperature;
 
-`    float humidity;`
+    float pressure;
 
-`\} WeatherObs;`
+    float humidity;
 
+\} WeatherObs;
 
-`/\* Enum type: Cloud cover categories \*/`
 
-`typedef enum \{`
+/\* Enum type: Cloud cover categories \*/
 
-`    CLEAR = 0,`
+typedef enum \{
 
-`    PARTLY\_CLOUDY = 1,`
+    CLEAR = 0,
 
-`    CLOUDY = 2,`
+    PARTLY\_CLOUDY = 1,
 
-`    OVERCAST = 3`
+    CLOUDY = 2,
 
-`\} CloudCover;`
+    OVERCAST = 3
 
+\} CloudCover;
 
-`int main() \{`
 
-`    int ncid, retval;`
+int main() \{
 
-`    `
+    int ncid, retval;
 
-`    printf("User-Defined Types Demonstration\\n");`
+    
 
-`    printf("=================================\\n");`
+    printf("User-Defined Types Demonstration\\n");
 
-`    `
+    printf("=================================\\n");
 
-`    /\* ========== CREATE FILE AND DEFINE TYPES ========== \*/`
+    
 
-`    printf("\\n=== Phase 1: Create file and define user types ===\\n");`
+    /\* ========== CREATE FILE AND DEFINE TYPES ========== \*/
 
-`    `
+    printf("\\n=== Phase 1: Create file and define user types ===\\n");
 
-`    if ((retval = nc\_create(FILE\_NAME, NC\_CLOBBER|NC\_NETCDF4, &ncid)))`
+    
 
-`        ERR(retval);`
+    if ((retval = nc\_create(FILE\_NAME, NC\_CLOBBER|NC\_NETCDF4, &ncid)))
 
-`    `
+        ERR(retval);
 
-`    /\* 1. Define Compound Type \*/`
+    
 
-`    printf("\\n--- Compound Type (weather observation) ---\\n");`
+    /\* 1. Define Compound Type \*/
 
-`    nc\_type compound\_typeid;`
+    printf("\\n--- Compound Type (weather observation) ---\\n");
 
-`    if ((retval = nc\_def\_compound(ncid, sizeof(WeatherObs), "weather\_obs\_t", &compound\_typeid)))`
+    nc\_type compound\_typeid;
 
-`        ERR(retval);`
+    if ((retval = nc\_def\_compound(ncid, sizeof(WeatherObs), "weather\_obs\_t", &compound\_typeid)))
 
-`    if ((retval = nc\_insert\_compound(ncid, compound\_typeid, "time", `
+        ERR(retval);
 
-`                                     offsetof(WeatherObs, time), NC\_DOUBLE)))`
+    if ((retval = nc\_insert\_compound(ncid, compound\_typeid, "time", 
 
-`        ERR(retval);`
+                                     offsetof(WeatherObs, time), NC\_DOUBLE)))
 
-`    if ((retval = nc\_insert\_compound(ncid, compound\_typeid, "temperature",`
+        ERR(retval);
 
-`                                     offsetof(WeatherObs, temperature), NC\_FLOAT)))`
+    if ((retval = nc\_insert\_compound(ncid, compound\_typeid, "temperature",
 
-`        ERR(retval);`
+                                     offsetof(WeatherObs, temperature), NC\_FLOAT)))
 
-`    if ((retval = nc\_insert\_compound(ncid, compound\_typeid, "pressure",`
+        ERR(retval);
 
-`                                     offsetof(WeatherObs, pressure), NC\_FLOAT)))`
+    if ((retval = nc\_insert\_compound(ncid, compound\_typeid, "pressure",
 
-`        ERR(retval);`
+                                     offsetof(WeatherObs, pressure), NC\_FLOAT)))
 
-`    if ((retval = nc\_insert\_compound(ncid, compound\_typeid, "humidity",`
+        ERR(retval);
 
-`                                     offsetof(WeatherObs, humidity), NC\_FLOAT)))`
+    if ((retval = nc\_insert\_compound(ncid, compound\_typeid, "humidity",
 
-`        ERR(retval);`
+                                     offsetof(WeatherObs, humidity), NC\_FLOAT)))
 
-`    printf("Defined compound type with 4 fields\\n");`
+        ERR(retval);
 
-`    `
+    printf("Defined compound type with 4 fields\\n");
 
-`    /\* 2. Define Variable-Length Type \*/`
+    
 
-`    printf("\\n--- Variable-Length Type (ragged arrays) ---\\n");`
+    /\* 2. Define Variable-Length Type \*/
 
-`    nc\_type vlen\_typeid;`
+    printf("\\n--- Variable-Length Type (ragged arrays) ---\\n");
 
-`    if ((retval = nc\_def\_vlen(ncid, "obs\_per\_day\_t", NC\_INT, &vlen\_typeid)))`
+    nc\_type vlen\_typeid;
 
-`        ERR(retval);`
+    if ((retval = nc\_def\_vlen(ncid, "obs\_per\_day\_t", NC\_INT, &vlen\_typeid)))
 
-`    printf("Defined vlen type for variable-length integer arrays\\n");`
+        ERR(retval);
 
-`    `
+    printf("Defined vlen type for variable-length integer arrays\\n");
 
-`    /\* 3. Define Enumeration Type \*/`
+    
 
-`    printf("\\n--- Enumeration Type (cloud cover) ---\\n");`
+    /\* 3. Define Enumeration Type \*/
 
-`    nc\_type enum\_typeid;`
+    printf("\\n--- Enumeration Type (cloud cover) ---\\n");
 
-`    if ((retval = nc\_def\_enum(ncid, NC\_INT, "cloud\_cover\_t", &enum\_typeid)))`
+    nc\_type enum\_typeid;
 
-`        ERR(retval);`
+    if ((retval = nc\_def\_enum(ncid, NC\_INT, "cloud\_cover\_t", &enum\_typeid)))
 
-`    CloudCover clear = CLEAR;`
+        ERR(retval);
 
-`    CloudCover partly = PARTLY\_CLOUDY;`
+    CloudCover clear = CLEAR;
 
-`    CloudCover cloudy = CLOUDY;`
+    CloudCover partly = PARTLY\_CLOUDY;
 
-`    CloudCover overcast = OVERCAST;`
+    CloudCover cloudy = CLOUDY;
 
-`    if ((retval = nc\_insert\_enum(ncid, enum\_typeid, "CLEAR", &clear)))`
+    CloudCover overcast = OVERCAST;
 
-`        ERR(retval);`
+    if ((retval = nc\_insert\_enum(ncid, enum\_typeid, "CLEAR", &clear)))
 
-`    if ((retval = nc\_insert\_enum(ncid, enum\_typeid, "PARTLY\_CLOUDY", &partly)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    if ((retval = nc\_insert\_enum(ncid, enum\_typeid, "PARTLY\_CLOUDY", &partly)))
 
-`    if ((retval = nc\_insert\_enum(ncid, enum\_typeid, "CLOUDY", &cloudy)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    if ((retval = nc\_insert\_enum(ncid, enum\_typeid, "CLOUDY", &cloudy)))
 
-`    if ((retval = nc\_insert\_enum(ncid, enum\_typeid, "OVERCAST", &overcast)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    if ((retval = nc\_insert\_enum(ncid, enum\_typeid, "OVERCAST", &overcast)))
 
-`    printf("Defined enum type with 4 categories\\n");`
+        ERR(retval);
 
-`    `
+    printf("Defined enum type with 4 categories\\n");
 
-`    /\* 4. Define Opaque Type \*/`
+    
 
-`    printf("\\n--- Opaque Type (binary calibration data) ---\\n");`
+    /\* 4. Define Opaque Type \*/
 
-`    nc\_type opaque\_typeid;`
+    printf("\\n--- Opaque Type (binary calibration data) ---\\n");
 
-`    if ((retval = nc\_def\_opaque(ncid, CALIB\_SIZE, "calibration\_t", &opaque\_typeid)))`
+    nc\_type opaque\_typeid;
 
-`        ERR(retval);`
+    if ((retval = nc\_def\_opaque(ncid, CALIB\_SIZE, "calibration\_t", &opaque\_typeid)))
 
-`    printf("Defined opaque type with %d-byte size\\n", CALIB\_SIZE);`
+        ERR(retval);
 
-`    `
+    printf("Defined opaque type with %d-byte size\\n", CALIB\_SIZE);
 
-`    /\* ========== DEFINE DIMENSIONS AND VARIABLES ========== \*/`
+    
 
-`    printf("\\n=== Phase 2: Define dimensions and variables ===\\n");`
+    /\* ========== DEFINE DIMENSIONS AND VARIABLES ========== \*/
 
-`    `
+    printf("\\n=== Phase 2: Define dimensions and variables ===\\n");
 
-`    int obs\_dimid, day\_dimid;`
+    
 
-`    if ((retval = nc\_def\_dim(ncid, "obs", NOBS, &obs\_dimid)))`
+    int obs\_dimid, day\_dimid;
 
-`        ERR(retval);`
+    if ((retval = nc\_def\_dim(ncid, "obs", NOBS, &obs\_dimid)))
 
-`    if ((retval = nc\_def\_dim(ncid, "day", NDAYS, &day\_dimid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    if ((retval = nc\_def\_dim(ncid, "day", NDAYS, &day\_dimid)))
 
-`    `
+        ERR(retval);
 
-`    /\* Variables using custom types \*/`
+    
 
-`    int compound\_varid, vlen\_varid, enum\_varid, opaque\_varid, string\_varid;`
+    /\* Variables using custom types \*/
 
-`    `
+    int compound\_varid, vlen\_varid, enum\_varid, opaque\_varid, string\_varid;
 
-`    /\* 5. Define String Variable \*/`
+    
 
-`    printf("\\n--- String Type (station names) ---\\n");`
+    /\* 5. Define String Variable \*/
 
-`    int station\_dimid;`
+    printf("\\n--- String Type (station names) ---\\n");
 
-`    if ((retval = nc\_def\_dim(ncid, "station", NSTATIONS, &station\_dimid)))`
+    int station\_dimid;
 
-`        ERR(retval);`
+    if ((retval = nc\_def\_dim(ncid, "station", NSTATIONS, &station\_dimid)))
 
-`    if ((retval = nc\_def\_var(ncid, "station\_name", NC\_STRING, 1, &station\_dimid, &string\_varid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    if ((retval = nc\_def\_var(ncid, "station\_name", NC\_STRING, 1, &station\_dimid, &string\_varid)))
 
-`    printf("Defined NC\_STRING variable for %d station names\\n", NSTATIONS);`
+        ERR(retval);
 
-`    `
+    printf("Defined NC\_STRING variable for %d station names\\n", NSTATIONS);
 
-`    if ((retval = nc\_def\_var(ncid, "observations", compound\_typeid, 1, &obs\_dimid, &compound\_varid)))`
+    
 
-`        ERR(retval);`
+    if ((retval = nc\_def\_var(ncid, "observations", compound\_typeid, 1, &obs\_dimid, &compound\_varid)))
 
-`    if ((retval = nc\_def\_var(ncid, "obs\_per\_day", vlen\_typeid, 1, &day\_dimid, &vlen\_varid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    if ((retval = nc\_def\_var(ncid, "obs\_per\_day", vlen\_typeid, 1, &day\_dimid, &vlen\_varid)))
 
-`    if ((retval = nc\_def\_var(ncid, "cloud\_cover", enum\_typeid, 1, &obs\_dimid, &enum\_varid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    if ((retval = nc\_def\_var(ncid, "cloud\_cover", enum\_typeid, 1, &obs\_dimid, &enum\_varid)))
 
-`    if ((retval = nc\_def\_var(ncid, "calibration", opaque\_typeid, 0, NULL, &opaque\_varid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    if ((retval = nc\_def\_var(ncid, "calibration", opaque\_typeid, 0, NULL, &opaque\_varid)))
 
-`    `
+        ERR(retval);
 
-`    if ((retval = nc\_enddef(ncid)))`
+    
 
-`        ERR(retval);`
+    if ((retval = nc\_enddef(ncid)))
 
-`    `
+        ERR(retval);
 
-`    /\* ========== WRITE DATA ========== \*/`
+    
 
-`    printf("\\n=== Phase 3: Write data ===\\n");`
+    /\* ========== WRITE DATA ========== \*/
 
-`    `
+    printf("\\n=== Phase 3: Write data ===\\n");
 
-`    /\* Write compound data \*/`
+    
 
-`    WeatherObs obs\_data\[NOBS\];`
+    /\* Write compound data \*/
 
-`    for (int i = 0; i \< NOBS; i++) \{`
+    WeatherObs obs\_data\[NOBS\];
 
-`        obs\_data\[i\].time = 1000.0 + i \* 3600.0;`
+    for (int i = 0; i \< NOBS; i++) \{
 
-`        obs\_data\[i\].temperature = 20.0 + i \* 2.0;`
+        obs\_data\[i\].time = 1000.0 + i \* 3600.0;
 
-`        obs\_data\[i\].pressure = 1013.0 + i \* 0.5;`
+        obs\_data\[i\].temperature = 20.0 + i \* 2.0;
 
-`        obs\_data\[i\].humidity = 60.0 - i \* 5.0;`
+        obs\_data\[i\].pressure = 1013.0 + i \* 0.5;
 
-`    \}`
+        obs\_data\[i\].humidity = 60.0 - i \* 5.0;
 
-`    if ((retval = nc\_put\_var(ncid, compound\_varid, obs\_data)))`
+    \}
 
-`        ERR(retval);`
+    if ((retval = nc\_put\_var(ncid, compound\_varid, obs\_data)))
 
-`    printf("Wrote %d compound observations\\n", NOBS);`
+        ERR(retval);
 
-`    `
+    printf("Wrote %d compound observations\\n", NOBS);
 
-`    /\* Write vlen data \*/`
+    
 
-`    nc\_vlen\_t vlen\_data\[NDAYS\];`
+    /\* Write vlen data \*/
 
-`    int day1\_obs\[\] = \{10, 15, 20\};`
+    nc\_vlen\_t vlen\_data\[NDAYS\];
 
-`    int day2\_obs\[\] = \{12, 18, 22, 25\};`
+    int day1\_obs\[\] = \{10, 15, 20\};
 
-`    int day3\_obs\[\] = \{8, 14\};`
+    int day2\_obs\[\] = \{12, 18, 22, 25\};
 
-`    `
+    int day3\_obs\[\] = \{8, 14\};
 
-`    vlen\_data\[0\].len = 3;`
+    
 
-`    vlen\_data\[0\].p = day1\_obs;`
+    vlen\_data\[0\].len = 3;
 
-`    vlen\_data\[1\].len = 4;`
+    vlen\_data\[0\].p = day1\_obs;
 
-`    vlen\_data\[1\].p = day2\_obs;`
+    vlen\_data\[1\].len = 4;
 
-`    vlen\_data\[2\].len = 2;`
+    vlen\_data\[1\].p = day2\_obs;
 
-`    vlen\_data\[2\].p = day3\_obs;`
+    vlen\_data\[2\].len = 2;
 
-`    `
+    vlen\_data\[2\].p = day3\_obs;
 
-`    if ((retval = nc\_put\_var(ncid, vlen\_varid, vlen\_data)))`
+    
 
-`        ERR(retval);`
+    if ((retval = nc\_put\_var(ncid, vlen\_varid, vlen\_data)))
 
-`    printf("Wrote vlen data: day1=%zu obs, day2=%zu obs, day3=%zu obs\\n",`
+        ERR(retval);
 
-`           vlen\_data\[0\].len, vlen\_data\[1\].len, vlen\_data\[2\].len);`
+    printf("Wrote vlen data: day1=%zu obs, day2=%zu obs, day3=%zu obs\\n",
 
-`    `
+           vlen\_data\[0\].len, vlen\_data\[1\].len, vlen\_data\[2\].len);
 
-`    /\* Write enum data \*/`
+    
 
-`    CloudCover cloud\_data\[NOBS\] = \{CLEAR, PARTLY\_CLOUDY, CLOUDY, PARTLY\_CLOUDY, OVERCAST\};`
+    /\* Write enum data \*/
 
-`    if ((retval = nc\_put\_var(ncid, enum\_varid, cloud\_data)))`
+    CloudCover cloud\_data\[NOBS\] = \{CLEAR, PARTLY\_CLOUDY, CLOUDY, PARTLY\_CLOUDY, OVERCAST\};
 
-`        ERR(retval);`
+    if ((retval = nc\_put\_var(ncid, enum\_varid, cloud\_data)))
 
-`    printf("Wrote %d cloud cover values\\n", NOBS);`
+        ERR(retval);
 
-`    `
+    printf("Wrote %d cloud cover values\\n", NOBS);
 
-`    /\* Write string data \*/`
+    
 
-`    const char \*station\_names\[NSTATIONS\] = \{`
+    /\* Write string data \*/
 
-`        "Boulder, CO",`
+    const char \*station\_names\[NSTATIONS\] = \{
 
-`        "Cape Canaveral, FL",`
+        "Boulder, CO",
 
-`        "Wallops Island, VA",`
+        "Cape Canaveral, FL",
 
-`        "White Sands, NM"`
+        "Wallops Island, VA",
 
-`    \};`
+        "White Sands, NM"
 
-`    if ((retval = nc\_put\_var\_string(ncid, string\_varid, station\_names)))`
+    \};
 
-`        ERR(retval);`
+    if ((retval = nc\_put\_var\_string(ncid, string\_varid, station\_names)))
 
-`    printf("Wrote %d station name strings\\n", NSTATIONS);`
+        ERR(retval);
 
-`    `
+    printf("Wrote %d station name strings\\n", NSTATIONS);
 
-`    /\* Write opaque data \*/`
+    
 
-`    unsigned char calib\_data\[CALIB\_SIZE\];`
+    /\* Write opaque data \*/
 
-`    for (int i = 0; i \< CALIB\_SIZE; i++) \{`
+    unsigned char calib\_data\[CALIB\_SIZE\];
 
-`        calib\_data\[i\] = (unsigned char)(i \* 17);`
+    for (int i = 0; i \< CALIB\_SIZE; i++) \{
 
-`    \}`
+        calib\_data\[i\] = (unsigned char)(i \* 17);
 
-`    if ((retval = nc\_put\_var(ncid, opaque\_varid, calib\_data)))`
+    \}
 
-`        ERR(retval);`
+    if ((retval = nc\_put\_var(ncid, opaque\_varid, calib\_data)))
 
-`    printf("Wrote %d bytes of opaque calibration data\\n", CALIB\_SIZE);`
+        ERR(retval);
 
-`    `
+    printf("Wrote %d bytes of opaque calibration data\\n", CALIB\_SIZE);
 
-`    if ((retval = nc\_close(ncid)))`
+    
 
-`        ERR(retval);`
+    if ((retval = nc\_close(ncid)))
 
-`    `
+        ERR(retval);
 
-`    /\* ========== READ AND VALIDATE ========== \*/`
+    
 
-`    printf("\\n=== Phase 4: Read and validate data ===\\n");`
+    /\* ========== READ AND VALIDATE ========== \*/
 
-`    `
+    printf("\\n=== Phase 4: Read and validate data ===\\n");
 
-`    if ((retval = nc\_open(FILE\_NAME, NC\_NOWRITE, &ncid)))`
+    
 
-`        ERR(retval);`
+    if ((retval = nc\_open(FILE\_NAME, NC\_NOWRITE, &ncid)))
 
-`    `
+        ERR(retval);
 
-`    /\* Verify compound type \*/`
+    
 
-`    printf("\\n--- Validating Compound Type ---\\n");`
+    /\* Verify compound type \*/
 
-`    if ((retval = nc\_inq\_varid(ncid, "observations", &compound\_varid)))`
+    printf("\\n--- Validating Compound Type ---\\n");
 
-`        ERR(retval);`
+    if ((retval = nc\_inq\_varid(ncid, "observations", &compound\_varid)))
 
-`    `
+        ERR(retval);
 
-`    WeatherObs obs\_read\[NOBS\];`
+    
 
-`    if ((retval = nc\_get\_var(ncid, compound\_varid, obs\_read)))`
+    WeatherObs obs\_read\[NOBS\];
 
-`        ERR(retval);`
+    if ((retval = nc\_get\_var(ncid, compound\_varid, obs\_read)))
 
-`    `
+        ERR(retval);
 
-`    int errors = 0;`
+    
 
-`    for (int i = 0; i \< NOBS; i++) \{`
+    int errors = 0;
 
-`        if (fabs(obs\_read\[i\].time - obs\_data\[i\].time) \> 0.001 ||`
+    for (int i = 0; i \< NOBS; i++) \{
 
-`            fabs(obs\_read\[i\].temperature - obs\_data\[i\].temperature) \> 0.001 ||`
+        if (fabs(obs\_read\[i\].time - obs\_data\[i\].time) \> 0.001 ||
 
-`            fabs(obs\_read\[i\].pressure - obs\_data\[i\].pressure) \> 0.001 ||`
+            fabs(obs\_read\[i\].temperature - obs\_data\[i\].temperature) \> 0.001 ||
 
-`            fabs(obs\_read\[i\].humidity - obs\_data\[i\].humidity) \> 0.001) \{`
+            fabs(obs\_read\[i\].pressure - obs\_data\[i\].pressure) \> 0.001 ||
 
-`            printf("Error: compound data mismatch at index %d\\n", i);`
+            fabs(obs\_read\[i\].humidity - obs\_data\[i\].humidity) \> 0.001) \{
 
-`            errors++;`
+            printf("Error: compound data mismatch at index %d\\n", i);
 
-`        \}`
+            errors++;
 
-`    \}`
+        \}
 
-`    if (errors == 0) \{`
+    \}
 
-`        printf("Verified: all %d compound observations correct\\n", NOBS);`
+    if (errors == 0) \{
 
-`    \}`
+        printf("Verified: all %d compound observations correct\\n", NOBS);
 
-`    `
+    \}
 
-`    /\* Verify vlen type \*/`
+    
 
-`    printf("\\n--- Validating Variable-Length Type ---\\n");`
+    /\* Verify vlen type \*/
 
-`    if ((retval = nc\_inq\_varid(ncid, "obs\_per\_day", &vlen\_varid)))`
+    printf("\\n--- Validating Variable-Length Type ---\\n");
 
-`        ERR(retval);`
+    if ((retval = nc\_inq\_varid(ncid, "obs\_per\_day", &vlen\_varid)))
 
-`    `
+        ERR(retval);
 
-`    nc\_vlen\_t vlen\_read\[NDAYS\];`
+    
 
-`    if ((retval = nc\_get\_var(ncid, vlen\_varid, vlen\_read)))`
+    nc\_vlen\_t vlen\_read\[NDAYS\];
 
-`        ERR(retval);`
+    if ((retval = nc\_get\_var(ncid, vlen\_varid, vlen\_read)))
 
-`    `
+        ERR(retval);
 
-`    for (int d = 0; d \< NDAYS; d++) \{`
+    
 
-`        if (vlen\_read\[d\].len != vlen\_data\[d\].len) \{`
+    for (int d = 0; d \< NDAYS; d++) \{
 
-`            printf("Error: vlen length mismatch for day %d\\n", d);`
+        if (vlen\_read\[d\].len != vlen\_data\[d\].len) \{
 
-`            errors++;`
+            printf("Error: vlen length mismatch for day %d\\n", d);
 
-`        \} else \{`
+            errors++;
 
-`            int \*vals = (int \*)vlen\_read\[d\].p;`
+        \} else \{
 
-`            int \*expected = (int \*)vlen\_data\[d\].p;`
+            int \*vals = (int \*)vlen\_read\[d\].p;
 
-`            for (size\_t i = 0; i \< vlen\_read\[d\].len; i++) \{`
+            int \*expected = (int \*)vlen\_data\[d\].p;
 
-`                if (vals\[i\] != expected\[i\]) \{`
+            for (size\_t i = 0; i \< vlen\_read\[d\].len; i++) \{
 
-`                    printf("Error: vlen data mismatch day %d, obs %zu\\n", d, i);`
+                if (vals\[i\] != expected\[i\]) \{
 
-`                    errors++;`
+                    printf("Error: vlen data mismatch day %d, obs %zu\\n", d, i);
 
-`                \}`
+                    errors++;
 
-`            \}`
+                \}
 
-`        \}`
+            \}
 
-`    \}`
+        \}
 
-`    if (errors == 0) \{`
+    \}
 
-`        printf("Verified: all vlen data correct (lengths: %zu, %zu, %zu)\\n",`
+    if (errors == 0) \{
 
-`               vlen\_read\[0\].len, vlen\_read\[1\].len, vlen\_read\[2\].len);`
+        printf("Verified: all vlen data correct (lengths: %zu, %zu, %zu)\\n",
 
-`    \}`
+               vlen\_read\[0\].len, vlen\_read\[1\].len, vlen\_read\[2\].len);
 
-`    `
+    \}
 
-`    /\* Free vlen memory \*/`
+    
 
-`    if ((retval = nc\_free\_vlen(vlen\_read)))`
+    /\* Free vlen memory \*/
 
-`        ERR(retval);`
+    if ((retval = nc\_free\_vlen(vlen\_read)))
 
-`    `
+        ERR(retval);
 
-`    /\* Verify enum type \*/`
+    
 
-`    printf("\\n--- Validating Enumeration Type ---\\n");`
+    /\* Verify enum type \*/
 
-`    if ((retval = nc\_inq\_varid(ncid, "cloud\_cover", &enum\_varid)))`
+    printf("\\n--- Validating Enumeration Type ---\\n");
 
-`        ERR(retval);`
+    if ((retval = nc\_inq\_varid(ncid, "cloud\_cover", &enum\_varid)))
 
-`    `
+        ERR(retval);
 
-`    CloudCover cloud\_read\[NOBS\];`
+    
 
-`    if ((retval = nc\_get\_var(ncid, enum\_varid, cloud\_read)))`
+    CloudCover cloud\_read\[NOBS\];
 
-`        ERR(retval);`
+    if ((retval = nc\_get\_var(ncid, enum\_varid, cloud\_read)))
 
-`    `
+        ERR(retval);
 
-`    for (int i = 0; i \< NOBS; i++) \{`
+    
 
-`        if (cloud\_read\[i\] != cloud\_data\[i\]) \{`
+    for (int i = 0; i \< NOBS; i++) \{
 
-`            printf("Error: enum data mismatch at index %d\\n", i);`
+        if (cloud\_read\[i\] != cloud\_data\[i\]) \{
 
-`            errors++;`
+            printf("Error: enum data mismatch at index %d\\n", i);
 
-`        \}`
+            errors++;
 
-`    \}`
+        \}
 
-`    if (errors == 0) \{`
+    \}
 
-`        printf("Verified: all %d cloud cover values correct\\n", NOBS);`
+    if (errors == 0) \{
 
-`    \}`
+        printf("Verified: all %d cloud cover values correct\\n", NOBS);
 
-`    `
+    \}
 
-`    /\* Verify string type \*/`
+    
 
-`    printf("\\n--- Validating String Type ---\\n");`
+    /\* Verify string type \*/
 
-`    if ((retval = nc\_inq\_varid(ncid, "station\_name", &string\_varid)))`
+    printf("\\n--- Validating String Type ---\\n");
 
-`        ERR(retval);`
+    if ((retval = nc\_inq\_varid(ncid, "station\_name", &string\_varid)))
 
-`    `
+        ERR(retval);
 
-`    char \*station\_read\[NSTATIONS\];`
+    
 
-`    if ((retval = nc\_get\_var\_string(ncid, string\_varid, station\_read)))`
+    char \*station\_read\[NSTATIONS\];
 
-`        ERR(retval);`
+    if ((retval = nc\_get\_var\_string(ncid, string\_varid, station\_read)))
 
-`    `
+        ERR(retval);
 
-`    for (int i = 0; i \< NSTATIONS; i++) \{`
+    
 
-`        if (strcmp(station\_read\[i\], station\_names\[i\]) != 0) \{`
+    for (int i = 0; i \< NSTATIONS; i++) \{
 
-`            printf("Error: string data mismatch at index %d: '%s' != '%s'\\n",`
+        if (strcmp(station\_read\[i\], station\_names\[i\]) != 0) \{
 
-`                   i, station\_read\[i\], station\_names\[i\]);`
+            printf("Error: string data mismatch at index %d: '%s' != '%s'\\n",
 
-`            errors++;`
+                   i, station\_read\[i\], station\_names\[i\]);
 
-`        \}`
+            errors++;
 
-`    \}`
+        \}
 
-`    if (errors == 0) \{`
+    \}
 
-`        printf("Verified: all %d station name strings correct\\n", NSTATIONS);`
+    if (errors == 0) \{
 
-`    \}`
+        printf("Verified: all %d station name strings correct\\n", NSTATIONS);
 
-`    `
+    \}
 
-`    /\* Free string memory \*/`
+    
 
-`    if ((retval = nc\_free\_string(NSTATIONS, station\_read)))`
+    /\* Free string memory \*/
 
-`        ERR(retval);`
+    if ((retval = nc\_free\_string(NSTATIONS, station\_read)))
 
-`    `
+        ERR(retval);
 
-`    /\* Verify opaque type \*/`
+    
 
-`    printf("\\n--- Validating Opaque Type ---\\n");`
+    /\* Verify opaque type \*/
 
-`    if ((retval = nc\_inq\_varid(ncid, "calibration", &opaque\_varid)))`
+    printf("\\n--- Validating Opaque Type ---\\n");
 
-`        ERR(retval);`
+    if ((retval = nc\_inq\_varid(ncid, "calibration", &opaque\_varid)))
 
-`    `
+        ERR(retval);
 
-`    unsigned char calib\_read\[CALIB\_SIZE\];`
+    
 
-`    if ((retval = nc\_get\_var(ncid, opaque\_varid, calib\_read)))`
+    unsigned char calib\_read\[CALIB\_SIZE\];
 
-`        ERR(retval);`
+    if ((retval = nc\_get\_var(ncid, opaque\_varid, calib\_read)))
 
-`    `
+        ERR(retval);
 
-`    for (int i = 0; i \< CALIB\_SIZE; i++) \{`
+    
 
-`        if (calib\_read\[i\] != calib\_data\[i\]) \{`
+    for (int i = 0; i \< CALIB\_SIZE; i++) \{
 
-`            printf("Error: opaque data mismatch at byte %d\\n", i);`
+        if (calib\_read\[i\] != calib\_data\[i\]) \{
 
-`            errors++;`
+            printf("Error: opaque data mismatch at byte %d\\n", i);
 
-`        \}`
+            errors++;
 
-`    \}`
+        \}
 
-`    if (errors == 0) \{`
+    \}
 
-`        printf("Verified: all %d bytes of opaque data correct\\n", CALIB\_SIZE);`
+    if (errors == 0) \{
 
-`    \}`
+        printf("Verified: all %d bytes of opaque data correct\\n", CALIB\_SIZE);
 
-`    `
+    \}
 
-`    if ((retval = nc\_close(ncid)))`
+    
 
-`        ERR(retval);`
+    if ((retval = nc\_close(ncid)))
 
-`    `
+        ERR(retval);
 
-`    if (errors \> 0) \{`
+    
 
-`        printf("\\n\*\*\* FAILED: %d validation errors\\n", errors);`
+    if (errors \> 0) \{
 
-`        return ERRCODE;`
+        printf("\\n\*\*\* FAILED: %d validation errors\\n", errors);
 
-`    \}`
+        return ERRCODE;
 
-`    `
+    \}
 
-`    printf("\\n=== Use Cases ===\\n");`
+    
 
-`    printf("- Compound types: Group related fields (like C structs)\\n");`
+    printf("\\n=== Use Cases ===\\n");
 
-`    printf("- Variable-length types: Store ragged arrays efficiently\\n");`
+    printf("- Compound types: Group related fields (like C structs)\\n");
 
-`    printf("- Enumeration types: Categorical data with named values\\n");`
+    printf("- Variable-length types: Store ragged arrays efficiently\\n");
 
-`    printf("- Opaque types: Binary metadata or proprietary formats\\n");`
+    printf("- Enumeration types: Categorical data with named values\\n");
 
-`    printf("- String types: Variable-length text data (station names, labels)\\n");`
+    printf("- Opaque types: Binary metadata or proprietary formats\\n");
 
-`    `
+    printf("- String types: Variable-length text data (station names, labels)\\n");
 
-`    printf("\\n\*\*\* SUCCESS: All user-defined types demonstrated!\\n");`
+    
 
-`    return 0;`
+    printf("\\n\*\*\* SUCCESS: All user-defined types demonstrated!\\n");
 
-`\}`
+    return 0;
+
+\}
 ```
 
 ### Groups and New Atomic Types
@@ -9642,6 +9988,8 @@ Opaque types: Binary blobs for arbitrary data (calibration data)
 This example showcases NetCDF-4's hierarchical group feature, which enables organizing datasets into logical groupings similar to directories in a filesystem. Groups provide namespace isolation for variables while allowing dimensions to be shared across the hierarchy through dimension visibility rules.
 
 The program creates a three-level group hierarchy (root → SubGroup1, root → SubGroup2 → NestedGroup), demonstrates dimension visibility across group boundaries, and showcases all five new NetCDF-4 integer types (NC\_UBYTE, NC\_USHORT, NC\_UINT, NC\_INT64, NC\_UINT64).
+
+This program can be found in the NetCDF Expansion Pack in examples/netcdf-4/groups.c.
 
 #### Learning Objectives:
 
@@ -9702,1110 +10050,1066 @@ The program creates a three-level group hierarchy (root → SubGroup1, root → 
 - Namespace management: Avoid variable name conflicts
 
 ```
-`    /\* Create the NetCDF-4 file \*/`
+\#include \<stdio.h\>
 
-`  \#include \<stdio.h\>`
+\#include \<stdlib.h\>
 
-`\#include \<stdlib.h\>`
+\#include \<string.h\>
 
-`\#include \<string.h\>`
+\#include \<netcdf.h\>
 
-`\#include \<netcdf.h\>`
 
+\#define FILE\_NAME "groups.nc"
 
-`\#define FILE\_NAME "groups.nc"`
+\#define NX 3
 
-`\#define NX 3`
+\#define NY 4
 
-`\#define NY 4`
+\#define NZ 2
 
-`\#define NZ 2`
+\#define NDIMS\_2D 2
 
-`\#define NDIMS\_2D 2`
+\#define NDIMS\_3D 3
 
-`\#define NDIMS\_3D 3`
+\#define ERRCODE 2
 
-`\#define ERRCODE 2`
+\#define ERR(e) \{printf("Error: %s\\n", nc\_strerror(e)); exit(ERRCODE);\}
 
-`\#define ERR(e) \{printf("Error: %s\\n", nc\_strerror(e)); exit(ERRCODE);\}`
 
+int main()
 
-`int main()`
+\{
 
-`\{`
+    int ncid, grp1\_id, grp2\_id, nested\_id;
 
-`    int ncid, grp1\_id, grp2\_id, nested\_id;`
+    int x\_dimid, y\_dimid, z\_dimid;
 
-`    int x\_dimid, y\_dimid, z\_dimid;`
+    int dimids\_2d\[NDIMS\_2D\], dimids\_3d\[NDIMS\_3D\];
 
-`    int dimids\_2d\[NDIMS\_2D\], dimids\_3d\[NDIMS\_3D\];`
+    int ubyte\_varid, ushort\_varid, uint\_varid, int64\_varid, uint64\_varid;
 
-`    int ubyte\_varid, ushort\_varid, uint\_varid, int64\_varid, uint64\_varid;`
+    int retval;
 
-`    int retval;`
+    
 
-`    `
+    /\* Data arrays for all five new integer types \*/
 
-`    /\* Data arrays for all five new integer types \*/`
+    unsigned char ubyte\_data\[NY\]\[NX\];
 
-`    unsigned char ubyte\_data\[NY\]\[NX\];`
+    unsigned short ushort\_data\[NY\]\[NX\];
 
-`    unsigned short ushort\_data\[NY\]\[NX\];`
+    unsigned int uint\_data\[NY\]\[NX\];
 
-`    unsigned int uint\_data\[NY\]\[NX\];`
+    long long int64\_data\[NY\]\[NX\];
 
-`    long long int64\_data\[NY\]\[NX\];`
+    unsigned long long uint64\_data\[NY\]\[NX\]\[NZ\];
 
-`    unsigned long long uint64\_data\[NY\]\[NX\]\[NZ\];`
+    
 
-`    `
+    printf("NetCDF-4 Groups Example\\n");
 
-`    printf("NetCDF-4 Groups Example\\n");`
+    printf("=======================\\n\\n");
 
-`    printf("=======================\\n\\n");`
+    
 
-`    `
+    /\* ========== WRITE PHASE ========== \*/
 
-`    /\* ========== WRITE PHASE ========== \*/`
+    printf("=== Phase 1: Create file with group hierarchy ===\\n");
 
-`    printf("=== Phase 1: Create file with group hierarchy ===\\n");`
+    
 
-`    `
+    /\* Create the NetCDF-4 file \*/
 
-`    /\* Create the NetCDF-4 file \*/`
+    printf("Creating NetCDF-4 file: %s\\n", FILE\_NAME);
 
-`    printf("Creating NetCDF-4 file: %s\\n", FILE\_NAME);`
+    if ((retval = nc\_create(FILE\_NAME, NC\_CLOBBER|NC\_NETCDF4, &ncid)))
 
-`    if ((retval = nc\_create(FILE\_NAME, NC\_CLOBBER|NC\_NETCDF4, &ncid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    
 
-`    `
+    /\* Define root dimensions (visible in all groups) \*/
 
-`    /\* Define root dimensions (visible in all groups) \*/`
+    printf("Defining root dimensions: x=%d, y=%d\\n", NX, NY);
 
-`    printf("Defining root dimensions: x=%d, y=%d\\n", NX, NY);`
+    if ((retval = nc\_def\_dim(ncid, "x", NX, &x\_dimid)))
 
-`    if ((retval = nc\_def\_dim(ncid, "x", NX, &x\_dimid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    if ((retval = nc\_def\_dim(ncid, "y", NY, &y\_dimid)))
 
-`    if ((retval = nc\_def\_dim(ncid, "y", NY, &y\_dimid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    
 
-`    `
+    /\* Create SubGroup1 \*/
 
-`    /\* Create SubGroup1 \*/`
+    printf("Creating SubGroup1\\n");
 
-`    printf("Creating SubGroup1\\n");`
+    if ((retval = nc\_def\_grp(ncid, "SubGroup1", &grp1\_id)))
 
-`    if ((retval = nc\_def\_grp(ncid, "SubGroup1", &grp1\_id)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    
 
-`    `
+    /\* Create SubGroup2 \*/
 
-`    /\* Create SubGroup2 \*/`
+    printf("Creating SubGroup2\\n");
 
-`    printf("Creating SubGroup2\\n");`
+    if ((retval = nc\_def\_grp(ncid, "SubGroup2", &grp2\_id)))
 
-`    if ((retval = nc\_def\_grp(ncid, "SubGroup2", &grp2\_id)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    
 
-`    `
+    /\* Create NestedGroup under SubGroup2 \*/
 
-`    /\* Create NestedGroup under SubGroup2 \*/`
+    printf("Creating NestedGroup under SubGroup2\\n");
 
-`    printf("Creating NestedGroup under SubGroup2\\n");`
+    if ((retval = nc\_def\_grp(grp2\_id, "NestedGroup", &nested\_id)))
 
-`    if ((retval = nc\_def\_grp(grp2\_id, "NestedGroup", &nested\_id)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    
 
-`    `
+    /\* Define local dimension z in NestedGroup \*/
 
-`    /\* Define local dimension z in NestedGroup \*/`
+    printf("Defining local dimension z=%d in NestedGroup\\n", NZ);
 
-`    printf("Defining local dimension z=%d in NestedGroup\\n", NZ);`
+    if ((retval = nc\_def\_dim(nested\_id, "z", NZ, &z\_dimid)))
 
-`    if ((retval = nc\_def\_dim(nested\_id, "z", NZ, &z\_dimid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    
 
-`    `
+    /\* Define variables in each group using all 5 new integer types \*/
 
-`    /\* Define variables in each group using all 5 new integer types \*/`
+    printf("\\nDefining variables with new integer types:\\n");
 
-`    printf("\\nDefining variables with new integer types:\\n");`
+    
 
-`    `
+    /\* Root group: NC\_UBYTE variable (2D: x, y) \*/
 
-`    /\* Root group: NC\_UBYTE variable (2D: x, y) \*/`
+    printf("  Root: ubyte\_var (NC\_UBYTE, 2D: x, y)\\n");
 
-`    printf("  Root: ubyte\_var (NC\_UBYTE, 2D: x, y)\\n");`
+    dimids\_2d\[0\] = y\_dimid;
 
-`    dimids\_2d\[0\] = y\_dimid;`
+    dimids\_2d\[1\] = x\_dimid;
 
-`    dimids\_2d\[1\] = x\_dimid;`
+    if ((retval = nc\_def\_var(ncid, "ubyte\_var", NC\_UBYTE, NDIMS\_2D, dimids\_2d, &ubyte\_varid)))
 
-`    if ((retval = nc\_def\_var(ncid, "ubyte\_var", NC\_UBYTE, NDIMS\_2D, dimids\_2d, &ubyte\_varid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    
 
-`    `
+    /\* SubGroup1: NC\_USHORT variable (2D: x, y) \*/
 
-`    /\* SubGroup1: NC\_USHORT variable (2D: x, y) \*/`
+    printf("  SubGroup1: ushort\_var (NC\_USHORT, 2D: x, y)\\n");
 
-`    printf("  SubGroup1: ushort\_var (NC\_USHORT, 2D: x, y)\\n");`
+    if ((retval = nc\_def\_var(grp1\_id, "ushort\_var", NC\_USHORT, NDIMS\_2D, dimids\_2d, &ushort\_varid)))
 
-`    if ((retval = nc\_def\_var(grp1\_id, "ushort\_var", NC\_USHORT, NDIMS\_2D, dimids\_2d, &ushort\_varid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    
 
-`    `
+    /\* SubGroup2: NC\_UINT variable (2D: x, y) \*/
 
-`    /\* SubGroup2: NC\_UINT variable (2D: x, y) \*/`
+    printf("  SubGroup2: uint\_var (NC\_UINT, 2D: x, y)\\n");
 
-`    printf("  SubGroup2: uint\_var (NC\_UINT, 2D: x, y)\\n");`
+    if ((retval = nc\_def\_var(grp2\_id, "uint\_var", NC\_UINT, NDIMS\_2D, dimids\_2d, &uint\_varid)))
 
-`    if ((retval = nc\_def\_var(grp2\_id, "uint\_var", NC\_UINT, NDIMS\_2D, dimids\_2d, &uint\_varid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    
 
-`    `
+    /\* NestedGroup: NC\_INT64 variable (2D: x, y) \*/
 
-`    /\* NestedGroup: NC\_INT64 variable (2D: x, y) \*/`
+    printf("  NestedGroup: int64\_var (NC\_INT64, 2D: x, y)\\n");
 
-`    printf("  NestedGroup: int64\_var (NC\_INT64, 2D: x, y)\\n");`
+    if ((retval = nc\_def\_var(nested\_id, "int64\_var", NC\_INT64, NDIMS\_2D, dimids\_2d, &int64\_varid)))
 
-`    if ((retval = nc\_def\_var(nested\_id, "int64\_var", NC\_INT64, NDIMS\_2D, dimids\_2d, &int64\_varid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    
 
-`    `
+    /\* NestedGroup: NC\_UINT64 variable (3D: x, y, z) \*/
 
-`    /\* NestedGroup: NC\_UINT64 variable (3D: x, y, z) \*/`
+    printf("  NestedGroup: uint64\_var (NC\_UINT64, 3D: x, y, z)\\n");
 
-`    printf("  NestedGroup: uint64\_var (NC\_UINT64, 3D: x, y, z)\\n");`
+    dimids\_3d\[0\] = y\_dimid;
 
-`    dimids\_3d\[0\] = y\_dimid;`
+    dimids\_3d\[1\] = x\_dimid;
 
-`    dimids\_3d\[1\] = x\_dimid;`
+    dimids\_3d\[2\] = z\_dimid;
 
-`    dimids\_3d\[2\] = z\_dimid;`
+    if ((retval = nc\_def\_var(nested\_id, "uint64\_var", NC\_UINT64, NDIMS\_3D, dimids\_3d, &uint64\_varid)))
 
-`    if ((retval = nc\_def\_var(nested\_id, "uint64\_var", NC\_UINT64, NDIMS\_3D, dimids\_3d, &uint64\_varid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    
 
-`    `
+    /\* End define mode \*/
 
-`    /\* End define mode \*/`
+    if ((retval = nc\_enddef(ncid)))
 
-`    if ((retval = nc\_enddef(ncid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    
 
-`    `
+    /\* Initialize data with sequential values starting from 1 \*/
 
-`    /\* Initialize data with sequential values starting from 1 \*/`
+    printf("\\nInitializing data with sequential values (1, 2, 3, ...):\\n");
 
-`    printf("\\nInitializing data with sequential values (1, 2, 3, ...):\\n");`
+    int value = 1;
 
-`    int value = 1;`
+    
 
-`    `
+    /\* NC\_UBYTE data (3x4 = 12 values) \*/
 
-`    /\* NC\_UBYTE data (3x4 = 12 values) \*/`
+    for (int i = 0; i \< NY; i++)
 
-`    for (int i = 0; i \< NY; i++)`
+        for (int j = 0; j \< NX; j++)
 
-`        for (int j = 0; j \< NX; j++)`
+            ubyte\_data\[i\]\[j\] = (unsigned char)value++;
 
-`            ubyte\_data\[i\]\[j\] = (unsigned char)value++;`
+    
 
-`    `
+    /\* NC\_USHORT data (3x4 = 12 values) \*/
 
-`    /\* NC\_USHORT data (3x4 = 12 values) \*/`
+    for (int i = 0; i \< NY; i++)
 
-`    for (int i = 0; i \< NY; i++)`
+        for (int j = 0; j \< NX; j++)
 
-`        for (int j = 0; j \< NX; j++)`
+            ushort\_data\[i\]\[j\] = (unsigned short)value++;
 
-`            ushort\_data\[i\]\[j\] = (unsigned short)value++;`
+    
 
-`    `
+    /\* NC\_UINT data (3x4 = 12 values) \*/
 
-`    /\* NC\_UINT data (3x4 = 12 values) \*/`
+    for (int i = 0; i \< NY; i++)
 
-`    for (int i = 0; i \< NY; i++)`
+        for (int j = 0; j \< NX; j++)
 
-`        for (int j = 0; j \< NX; j++)`
+            uint\_data\[i\]\[j\] = (unsigned int)value++;
 
-`            uint\_data\[i\]\[j\] = (unsigned int)value++;`
+    
 
-`    `
+    /\* NC\_INT64 data (3x4 = 12 values) \*/
 
-`    /\* NC\_INT64 data (3x4 = 12 values) \*/`
+    for (int i = 0; i \< NY; i++)
 
-`    for (int i = 0; i \< NY; i++)`
+        for (int j = 0; j \< NX; j++)
 
-`        for (int j = 0; j \< NX; j++)`
+            int64\_data\[i\]\[j\] = (long long)value++;
 
-`            int64\_data\[i\]\[j\] = (long long)value++;`
+    
 
-`    `
+    /\* NC\_UINT64 data (3x4x2 = 24 values) \*/
 
-`    /\* NC\_UINT64 data (3x4x2 = 24 values) \*/`
+    for (int i = 0; i \< NY; i++)
 
-`    for (int i = 0; i \< NY; i++)`
+        for (int j = 0; j \< NX; j++)
 
-`        for (int j = 0; j \< NX; j++)`
+            for (int k = 0; k \< NZ; k++)
 
-`            for (int k = 0; k \< NZ; k++)`
+                uint64\_data\[i\]\[j\]\[k\] = (unsigned long long)value++;
 
-`                uint64\_data\[i\]\[j\]\[k\] = (unsigned long long)value++;`
+    
 
-`    `
+    /\* Write data to all variables \*/
 
-`    /\* Write data to all variables \*/`
+    printf("Writing data to all variables...\\n");
 
-`    printf("Writing data to all variables...\\n");`
+    if ((retval = nc\_put\_var\_uchar(ncid, ubyte\_varid, &ubyte\_data\[0\]\[0\])))
 
-`    if ((retval = nc\_put\_var\_uchar(ncid, ubyte\_varid, &ubyte\_data\[0\]\[0\])))`
+        ERR(retval);
 
-`        ERR(retval);`
+    if ((retval = nc\_put\_var\_ushort(grp1\_id, ushort\_varid, &ushort\_data\[0\]\[0\])))
 
-`    if ((retval = nc\_put\_var\_ushort(grp1\_id, ushort\_varid, &ushort\_data\[0\]\[0\])))`
+        ERR(retval);
 
-`        ERR(retval);`
+    if ((retval = nc\_put\_var\_uint(grp2\_id, uint\_varid, &uint\_data\[0\]\[0\])))
 
-`    if ((retval = nc\_put\_var\_uint(grp2\_id, uint\_varid, &uint\_data\[0\]\[0\])))`
+        ERR(retval);
 
-`        ERR(retval);`
+    if ((retval = nc\_put\_var\_longlong(nested\_id, int64\_varid, &int64\_data\[0\]\[0\])))
 
-`    if ((retval = nc\_put\_var\_longlong(nested\_id, int64\_varid, &int64\_data\[0\]\[0\])))`
+        ERR(retval);
 
-`        ERR(retval);`
+    if ((retval = nc\_put\_var\_ulonglong(nested\_id, uint64\_varid, &uint64\_data\[0\]\[0\]\[0\])))
 
-`    if ((retval = nc\_put\_var\_ulonglong(nested\_id, uint64\_varid, &uint64\_data\[0\]\[0\]\[0\])))`
+        ERR(retval);
 
-`        ERR(retval);`
+    
 
-`    `
+    /\* Close the file \*/
 
-`    /\* Close the file \*/`
+    if ((retval = nc\_close(ncid)))
 
-`    if ((retval = nc\_close(ncid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    
 
-`    `
+    printf("\*\*\* SUCCESS writing file!\\n");
 
-`    printf("\*\*\* SUCCESS writing file!\\n");`
+    
 
-`    `
+    /\* ========== READ AND VALIDATE PHASE ========== \*/
 
-`    /\* ========== READ AND VALIDATE PHASE ========== \*/`
+    printf("\\n=== Phase 2: Read and validate file structure ===\\n");
 
-`    printf("\\n=== Phase 2: Read and validate file structure ===\\n");`
+    
 
-`    `
+    /\* Open the file for reading \*/
 
-`    /\* Open the file for reading \*/`
+    printf("Reopening file for validation...\\n");
 
-`    printf("Reopening file for validation...\\n");`
+    if ((retval = nc\_open(FILE\_NAME, NC\_NOWRITE, &ncid)))
 
-`    if ((retval = nc\_open(FILE\_NAME, NC\_NOWRITE, &ncid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    
 
-`    `
+    /\* Query and validate number of groups in root \*/
 
-`    /\* Query and validate number of groups in root \*/`
+    int ngrps;
 
-`    int ngrps;`
+    int grpids\[NC\_MAX\_VARS\];
 
-`    int grpids\[NC\_MAX\_VARS\];`
+    if ((retval = nc\_inq\_grps(ncid, &ngrps, grpids)))
 
-`    if ((retval = nc\_inq\_grps(ncid, &ngrps, grpids)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    
 
-`    `
+    if (ngrps != 2) \{
 
-`    if (ngrps != 2) \{`
+        printf("Error: Expected 2 groups in root, found %d\\n", ngrps);
 
-`        printf("Error: Expected 2 groups in root, found %d\\n", ngrps);`
+        exit(ERRCODE);
 
-`        exit(ERRCODE);`
+    \}
 
-`    \}`
+    printf("Verified: Root has %d child groups\\n", ngrps);
 
-`    printf("Verified: Root has %d child groups\\n", ngrps);`
+    
 
-`    `
+    /\* Navigate to groups by name \*/
 
-`    /\* Navigate to groups by name \*/`
+    printf("\\nNavigating to groups by name:\\n");
 
-`    printf("\\nNavigating to groups by name:\\n");`
+    if ((retval = nc\_inq\_grp\_ncid(ncid, "SubGroup1", &grp1\_id)))
 
-`    if ((retval = nc\_inq\_grp\_ncid(ncid, "SubGroup1", &grp1\_id)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    printf("  Found SubGroup1 (ncid=%d)\\n", grp1\_id);
 
-`    printf("  Found SubGroup1 (ncid=%d)\\n", grp1\_id);`
+    
 
-`    `
+    if ((retval = nc\_inq\_grp\_ncid(ncid, "SubGroup2", &grp2\_id)))
 
-`    if ((retval = nc\_inq\_grp\_ncid(ncid, "SubGroup2", &grp2\_id)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    printf("  Found SubGroup2 (ncid=%d)\\n", grp2\_id);
 
-`    printf("  Found SubGroup2 (ncid=%d)\\n", grp2\_id);`
+    
 
-`    `
+    if ((retval = nc\_inq\_grp\_ncid(grp2\_id, "NestedGroup", &nested\_id)))
 
-`    if ((retval = nc\_inq\_grp\_ncid(grp2\_id, "NestedGroup", &nested\_id)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    printf("  Found NestedGroup (ncid=%d)\\n", nested\_id);
 
-`    printf("  Found NestedGroup (ncid=%d)\\n", nested\_id);`
+    
 
-`    `
+    /\* Validate group names \*/
 
-`    /\* Validate group names \*/`
+    char grpname\[NC\_MAX\_NAME + 1\];
 
-`    char grpname\[NC\_MAX\_NAME + 1\];`
+    size\_t grpname\_len;
 
-`    size\_t grpname\_len;`
+    
 
-`    `
+    if ((retval = nc\_inq\_grpname(grp1\_id, grpname)))
 
-`    if ((retval = nc\_inq\_grpname(grp1\_id, grpname)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    if (strcmp(grpname, "SubGroup1") != 0) \{
 
-`    if (strcmp(grpname, "SubGroup1") != 0) \{`
+        printf("Error: Expected group name 'SubGroup1', found '%s'\\n", grpname);
 
-`        printf("Error: Expected group name 'SubGroup1', found '%s'\\n", grpname);`
+        exit(ERRCODE);
 
-`        exit(ERRCODE);`
+    \}
 
-`    \}`
+    
 
-`    `
+    if ((retval = nc\_inq\_grpname\_len(grp2\_id, &grpname\_len)))
 
-`    if ((retval = nc\_inq\_grpname\_len(grp2\_id, &grpname\_len)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    if ((retval = nc\_inq\_grpname(grp2\_id, grpname)))
 
-`    if ((retval = nc\_inq\_grpname(grp2\_id, grpname)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    if (strcmp(grpname, "SubGroup2") != 0) \{
 
-`    if (strcmp(grpname, "SubGroup2") != 0) \{`
+        printf("Error: Expected group name 'SubGroup2', found '%s'\\n", grpname);
 
-`        printf("Error: Expected group name 'SubGroup2', found '%s'\\n", grpname);`
+        exit(ERRCODE);
 
-`        exit(ERRCODE);`
+    \}
 
-`    \}`
+    
 
-`    `
+    if ((retval = nc\_inq\_grpname(nested\_id, grpname)))
 
-`    if ((retval = nc\_inq\_grpname(nested\_id, grpname)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    if (strcmp(grpname, "NestedGroup") != 0) \{
 
-`    if (strcmp(grpname, "NestedGroup") != 0) \{`
+        printf("Error: Expected group name 'NestedGroup', found '%s'\\n", grpname);
 
-`        printf("Error: Expected group name 'NestedGroup', found '%s'\\n", grpname);`
+        exit(ERRCODE);
 
-`        exit(ERRCODE);`
+    \}
 
-`    \}`
+    printf("Verified: All group names correct\\n");
 
-`    printf("Verified: All group names correct\\n");`
+    
 
-`    `
+    /\* Test dimension visibility across group boundaries \*/
 
-`    /\* Test dimension visibility across group boundaries \*/`
+    printf("\\n=== Phase 3: Test dimension visibility ===\\n");
 
-`    printf("\\n=== Phase 3: Test dimension visibility ===\\n");`
+    printf("Testing that root dimensions (x, y) are visible in all groups:\\n");
 
-`    printf("Testing that root dimensions (x, y) are visible in all groups:\\n");`
+    
 
-`    `
+    int test\_dimid;
 
-`    int test\_dimid;`
+    
 
-`    `
+    /\* Test x dimension visibility in SubGroup1 \*/
 
-`    /\* Test x dimension visibility in SubGroup1 \*/`
+    if ((retval = nc\_inq\_dimid(grp1\_id, "x", &test\_dimid)))
 
-`    if ((retval = nc\_inq\_dimid(grp1\_id, "x", &test\_dimid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    printf("  ✓ SubGroup1 can see dimension 'x' from root\\n");
 
-`    printf("  ✓ SubGroup1 can see dimension 'x' from root\\n");`
+    
 
-`    `
+    /\* Test y dimension visibility in SubGroup1 \*/
 
-`    /\* Test y dimension visibility in SubGroup1 \*/`
+    if ((retval = nc\_inq\_dimid(grp1\_id, "y", &test\_dimid)))
 
-`    if ((retval = nc\_inq\_dimid(grp1\_id, "y", &test\_dimid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    printf("  ✓ SubGroup1 can see dimension 'y' from root\\n");
 
-`    printf("  ✓ SubGroup1 can see dimension 'y' from root\\n");`
+    
 
-`    `
+    /\* Test x dimension visibility in SubGroup2 \*/
 
-`    /\* Test x dimension visibility in SubGroup2 \*/`
+    if ((retval = nc\_inq\_dimid(grp2\_id, "x", &test\_dimid)))
 
-`    if ((retval = nc\_inq\_dimid(grp2\_id, "x", &test\_dimid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    printf("  ✓ SubGroup2 can see dimension 'x' from root\\n");
 
-`    printf("  ✓ SubGroup2 can see dimension 'x' from root\\n");`
+    
 
-`    `
+    /\* Test y dimension visibility in SubGroup2 \*/
 
-`    /\* Test y dimension visibility in SubGroup2 \*/`
+    if ((retval = nc\_inq\_dimid(grp2\_id, "y", &test\_dimid)))
 
-`    if ((retval = nc\_inq\_dimid(grp2\_id, "y", &test\_dimid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    printf("  ✓ SubGroup2 can see dimension 'y' from root\\n");
 
-`    printf("  ✓ SubGroup2 can see dimension 'y' from root\\n");`
+    
 
-`    `
+    /\* Test x dimension visibility in NestedGroup \*/
 
-`    /\* Test x dimension visibility in NestedGroup \*/`
+    if ((retval = nc\_inq\_dimid(nested\_id, "x", &test\_dimid)))
 
-`    if ((retval = nc\_inq\_dimid(nested\_id, "x", &test\_dimid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    printf("  ✓ NestedGroup can see dimension 'x' from root\\n");
 
-`    printf("  ✓ NestedGroup can see dimension 'x' from root\\n");`
+    
 
-`    `
+    /\* Test y dimension visibility in NestedGroup \*/
 
-`    /\* Test y dimension visibility in NestedGroup \*/`
+    if ((retval = nc\_inq\_dimid(nested\_id, "y", &test\_dimid)))
 
-`    if ((retval = nc\_inq\_dimid(nested\_id, "y", &test\_dimid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    printf("  ✓ NestedGroup can see dimension 'y' from root\\n");
 
-`    printf("  ✓ NestedGroup can see dimension 'y' from root\\n");`
+    
 
-`    `
+    /\* Test local dimension z in NestedGroup \*/
 
-`    /\* Test local dimension z in NestedGroup \*/`
+    if ((retval = nc\_inq\_dimid(nested\_id, "z", &test\_dimid)))
 
-`    if ((retval = nc\_inq\_dimid(nested\_id, "z", &test\_dimid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    printf("  ✓ NestedGroup can see its local dimension 'z'\\n");
 
-`    printf("  ✓ NestedGroup can see its local dimension 'z'\\n");`
+    
 
-`    `
+    printf("Verified: Dimension visibility follows parent chain rules\\n");
 
-`    printf("Verified: Dimension visibility follows parent chain rules\\n");`
+    
 
-`    `
+    /\* Validate dimension sizes \*/
 
-`    /\* Validate dimension sizes \*/`
+    printf("\\nValidating dimension sizes:\\n");
 
-`    printf("\\nValidating dimension sizes:\\n");`
+    size\_t len\_x, len\_y, len\_z;
 
-`    size\_t len\_x, len\_y, len\_z;`
 
-`    `
+    if ((retval = nc\_inq\_dimid(ncid, "x", &x\_dimid)))
 
-`    if ((retval = nc\_inq\_dimid(ncid, "x", &x\_dimid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    if ((retval = nc\_inq\_dimlen(ncid, x\_dimid, &len\_x)))
 
-`    if ((retval = nc\_inq\_dimlen(ncid, x\_dimid, &len\_x)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    if ((retval = nc\_inq\_dimid(ncid, "y", &y\_dimid)))
 
-`    if (len\_x != NX) \{`
+        ERR(retval);
 
-`        printf("Error: Expected x dimension = %d, found %zu\\n", NX, len\_x);`
+    if ((retval = nc\_inq\_dimlen(ncid, y\_dimid, &len\_y)))
 
-`        exit(ERRCODE);`
+        ERR(retval);
 
-`    \}`
+    if ((retval = nc\_inq\_dimid(nested\_id, "z", &z\_dimid)))
 
-`    `
+        ERR(retval);
 
-`    if ((retval = nc\_inq\_dimid(ncid, "y", &y\_dimid)))`
+    if ((retval = nc\_inq\_dimlen(nested\_id, z\_dimid, &len\_z)))
 
-`        ERR(retval);`
+        ERR(retval);
 
-`    if ((retval = nc\_inq\_dimlen(ncid, y\_dimid, &len\_y)))`
 
-`        ERR(retval);`
+    if (len\_x != NX || len\_y != NY || len\_z != NZ) \{
 
-`    if (len\_y != NY) \{`
+        printf("Error: Expected x=%d/y=%d/z=%d, found x=%zu/y=%zu/z=%zu\\n",
 
-`        printf("Error: Expected y dimension = %d, found %zu\\n", NY, len\_y);`
+               NX, NY, NZ, len\_x, len\_y, len\_z);
 
-`        exit(ERRCODE);`
+        exit(ERRCODE);
 
-`    \}`
+    \}
 
-`    `
 
-`    if ((retval = nc\_inq\_dimid(nested\_id, "z", &z\_dimid)))`
+    printf("  x = %zu, y = %zu, z = %zu\\n", len\_x, len\_y, len\_z);
 
-`        ERR(retval);`
+    printf("Verified: All dimension sizes correct\\n");
 
-`    if ((retval = nc\_inq\_dimlen(nested\_id, z\_dimid, &len\_z)))`
+    
 
-`        ERR(retval);`
+    /\* Query and validate all variable metadata \*/
 
-`    if (len\_z != NZ) \{`
+    printf("\\n=== Phase 4: Validate variable metadata ===\\n");
 
-`        printf("Error: Expected z dimension = %d, found %zu\\n", NZ, len\_z);`
 
-`        exit(ERRCODE);`
+    char varname\[NC\_MAX\_NAME + 1\];
 
-`    \}`
+    nc\_type vartype;
 
-`    `
+    int varndims;
 
-`    printf("  x = %zu, y = %zu, z = %zu\\n", len\_x, len\_y, len\_z);`
+    int errors = 0;
 
-`    printf("Verified: All dimension sizes correct\\n");`
 
-`    `
+    /\* Validate ubyte\_var in root \*/
 
-`    /\* Query and validate all variable metadata \*/`
+    if ((retval = nc\_inq\_varid(ncid, "ubyte\_var", &ubyte\_varid)))
 
-`    printf("\\n=== Phase 4: Validate variable metadata ===\\n");`
+        ERR(retval);
 
-`    `
+    if ((retval = nc\_inq\_var(ncid, ubyte\_varid, varname, &vartype, &varndims, NULL, NULL)))
 
-`    char varname\[NC\_MAX\_NAME + 1\];`
+        ERR(retval);
 
-`    nc\_type vartype;`
+    if (vartype != NC\_UBYTE || varndims != NDIMS\_2D) errors++;
 
-`    int varndims;`
+    else printf("  ✓ Root: ubyte\_var (NC\_UBYTE, %dD)\\n", varndims);
 
-`    `
 
-`    /\* Validate ubyte\_var in root \*/`
+    /\* Validate ushort\_var in SubGroup1 \*/
 
-`    if ((retval = nc\_inq\_varid(ncid, "ubyte\_var", &ubyte\_varid)))`
+    if ((retval = nc\_inq\_varid(grp1\_id, "ushort\_var", &ushort\_varid)))
 
-`        ERR(retval);`
+        ERR(retval);
 
-`    if ((retval = nc\_inq\_var(ncid, ubyte\_varid, varname, &vartype, &varndims, NULL, NULL)))`
+    if ((retval = nc\_inq\_var(grp1\_id, ushort\_varid, varname, &vartype, &varndims, NULL, NULL)))
 
-`        ERR(retval);`
+        ERR(retval);
 
-`    if (vartype != NC\_UBYTE || varndims != NDIMS\_2D) \{`
+    if (vartype != NC\_USHORT || varndims != NDIMS\_2D) errors++;
 
-`        printf("Error: ubyte\_var has wrong type or dimensions\\n");`
+    else printf("  ✓ SubGroup1: ushort\_var (NC\_USHORT, %dD)\\n", varndims);
 
-`        exit(ERRCODE);`
 
-`    \}`
+    /\* Validate uint\_var in SubGroup2 \*/
 
-`    printf("  ✓ Root: ubyte\_var (NC\_UBYTE, %dD)\\n", varndims);`
+    if ((retval = nc\_inq\_varid(grp2\_id, "uint\_var", &uint\_varid)))
 
-`    `
+        ERR(retval);
 
-`    /\* Validate ushort\_var in SubGroup1 \*/`
+    if ((retval = nc\_inq\_var(grp2\_id, uint\_varid, varname, &vartype, &varndims, NULL, NULL)))
 
-`    if ((retval = nc\_inq\_varid(grp1\_id, "ushort\_var", &ushort\_varid)))`
+        ERR(retval);
 
-`        ERR(retval);`
+    if (vartype != NC\_UINT || varndims != NDIMS\_2D) errors++;
 
-`    if ((retval = nc\_inq\_var(grp1\_id, ushort\_varid, varname, &vartype, &varndims, NULL, NULL)))`
+    else printf("  ✓ SubGroup2: uint\_var (NC\_UINT, %dD)\\n", varndims);
 
-`        ERR(retval);`
 
-`    if (vartype != NC\_USHORT || varndims != NDIMS\_2D) \{`
+    /\* Validate int64\_var in NestedGroup \*/
 
-`        printf("Error: ushort\_var has wrong type or dimensions\\n");`
+    if ((retval = nc\_inq\_varid(nested\_id, "int64\_var", &int64\_varid)))
 
-`        exit(ERRCODE);`
+        ERR(retval);
 
-`    \}`
+    if ((retval = nc\_inq\_var(nested\_id, int64\_varid, varname, &vartype, &varndims, NULL, NULL)))
 
-`    printf("  ✓ SubGroup1: ushort\_var (NC\_USHORT, %dD)\\n", varndims);`
+        ERR(retval);
 
-`    `
+    if (vartype != NC\_INT64 || varndims != NDIMS\_2D) errors++;
 
-`    /\* Validate uint\_var in SubGroup2 \*/`
+    else printf("  ✓ NestedGroup: int64\_var (NC\_INT64, %dD)\\n", varndims);
 
-`    if ((retval = nc\_inq\_varid(grp2\_id, "uint\_var", &uint\_varid)))`
 
-`        ERR(retval);`
+    /\* Validate uint64\_var in NestedGroup \*/
 
-`    if ((retval = nc\_inq\_var(grp2\_id, uint\_varid, varname, &vartype, &varndims, NULL, NULL)))`
+    if ((retval = nc\_inq\_varid(nested\_id, "uint64\_var", &uint64\_varid)))
 
-`        ERR(retval);`
+        ERR(retval);
 
-`    if (vartype != NC\_UINT || varndims != NDIMS\_2D) \{`
+    if ((retval = nc\_inq\_var(nested\_id, uint64\_varid, varname, &vartype, &varndims, NULL, NULL)))
 
-`        printf("Error: uint\_var has wrong type or dimensions\\n");`
+        ERR(retval);
 
-`        exit(ERRCODE);`
+    if (vartype != NC\_UINT64 || varndims != NDIMS\_3D) errors++;
 
-`    \}`
+    else printf("  ✓ NestedGroup: uint64\_var (NC\_UINT64, %dD)\\n", varndims);
 
-`    printf("  ✓ SubGroup2: uint\_var (NC\_UINT, %dD)\\n", varndims);`
 
-`    `
+    if (errors \> 0) \{
 
-`    /\* Validate int64\_var in NestedGroup \*/`
+        printf("Error: %d variables have wrong type or dimensions\\n", errors);
 
-`    if ((retval = nc\_inq\_varid(nested\_id, "int64\_var", &int64\_varid)))`
+        exit(ERRCODE);
 
-`        ERR(retval);`
+    \}
 
-`    if ((retval = nc\_inq\_var(nested\_id, int64\_varid, varname, &vartype, &varndims, NULL, NULL)))`
+    printf("Verified: All variable metadata correct\\n");
 
-`        ERR(retval);`
+    
 
-`    if (vartype != NC\_INT64 || varndims != NDIMS\_2D) \{`
+    /\* Read and validate all data \*/
 
-`        printf("Error: int64\_var has wrong type or dimensions\\n");`
+    printf("\\n=== Phase 5: Read and validate data values ===\\n");
 
-`        exit(ERRCODE);`
+    
 
-`    \}`
+    unsigned char ubyte\_in\[NY\]\[NX\];
 
-`    printf("  ✓ NestedGroup: int64\_var (NC\_INT64, %dD)\\n", varndims);`
+    unsigned short ushort\_in\[NY\]\[NX\];
 
-`    `
+    unsigned int uint\_in\[NY\]\[NX\];
 
-`    /\* Validate uint64\_var in NestedGroup \*/`
+    long long int64\_in\[NY\]\[NX\];
 
-`    if ((retval = nc\_inq\_varid(nested\_id, "uint64\_var", &uint64\_varid)))`
+    unsigned long long uint64\_in\[NY\]\[NX\]\[NZ\];
 
-`        ERR(retval);`
+    
 
-`    if ((retval = nc\_inq\_var(nested\_id, uint64\_varid, varname, &vartype, &varndims, NULL, NULL)))`
+    if ((retval = nc\_get\_var\_uchar(ncid, ubyte\_varid, &ubyte\_in\[0\]\[0\])))
 
-`        ERR(retval);`
+        ERR(retval);
 
-`    if (vartype != NC\_UINT64 || varndims != NDIMS\_3D) \{`
+    if ((retval = nc\_get\_var\_ushort(grp1\_id, ushort\_varid, &ushort\_in\[0\]\[0\])))
 
-`        printf("Error: uint64\_var has wrong type or dimensions\\n");`
+        ERR(retval);
 
-`        exit(ERRCODE);`
+    if ((retval = nc\_get\_var\_uint(grp2\_id, uint\_varid, &uint\_in\[0\]\[0\])))
 
-`    \}`
+        ERR(retval);
 
-`    printf("  ✓ NestedGroup: uint64\_var (NC\_UINT64, %dD)\\n", varndims);`
+    if ((retval = nc\_get\_var\_longlong(nested\_id, int64\_varid, &int64\_in\[0\]\[0\])))
 
-`    `
+        ERR(retval);
 
-`    printf("Verified: All variable metadata correct\\n");`
+    if ((retval = nc\_get\_var\_ulonglong(nested\_id, uint64\_varid, &uint64\_in\[0\]\[0\]\[0\])))
 
-`    `
+        ERR(retval);
 
-`    /\* Read and validate all data \*/`
+    
 
-`    printf("\\n=== Phase 5: Read and validate data values ===\\n");`
+    /\* Validate data correctness \*/
 
-`    `
+    errors = 0;
 
-`    unsigned char ubyte\_in\[NY\]\[NX\];`
+    value = 1;
 
-`    unsigned short ushort\_in\[NY\]\[NX\];`
+    
 
-`    unsigned int uint\_in\[NY\]\[NX\];`
+    /\* Validate NC\_UBYTE data \*/
 
-`    long long int64\_in\[NY\]\[NX\];`
+    for (int i = 0; i \< NY; i++) \{
 
-`    unsigned long long uint64\_in\[NY\]\[NX\]\[NZ\];`
+        for (int j = 0; j \< NX; j++) \{
 
-`    `
+            if (ubyte\_in\[i\]\[j\] != (unsigned char)value) \{
 
-`    if ((retval = nc\_get\_var\_uchar(ncid, ubyte\_varid, &ubyte\_in\[0\]\[0\])))`
+                printf("Error: ubyte\_var\[%d\]\[%d\] = %u, expected %d\\n", 
 
-`        ERR(retval);`
+                       i, j, ubyte\_in\[i\]\[j\], value);
 
-`    if ((retval = nc\_get\_var\_ushort(grp1\_id, ushort\_varid, &ushort\_in\[0\]\[0\])))`
+                errors++;
 
-`        ERR(retval);`
+            \}
 
-`    if ((retval = nc\_get\_var\_uint(grp2\_id, uint\_varid, &uint\_in\[0\]\[0\])))`
+            value++;
 
-`        ERR(retval);`
+        \}
 
-`    if ((retval = nc\_get\_var\_longlong(nested\_id, int64\_varid, &int64\_in\[0\]\[0\])))`
+    \}
 
-`        ERR(retval);`
+    
 
-`    if ((retval = nc\_get\_var\_ulonglong(nested\_id, uint64\_varid, &uint64\_in\[0\]\[0\]\[0\])))`
+    /\* Validate NC\_USHORT data \*/
 
-`        ERR(retval);`
+    for (int i = 0; i \< NY; i++) \{
 
-`    `
+        for (int j = 0; j \< NX; j++) \{
 
-`    /\* Validate data correctness \*/`
+            if (ushort\_in\[i\]\[j\] != (unsigned short)value) \{
 
-`    int errors = 0;`
+                printf("Error: ushort\_var\[%d\]\[%d\] = %u, expected %d\\n", 
 
-`    value = 1;`
+                       i, j, ushort\_in\[i\]\[j\], value);
 
-`    `
+                errors++;
 
-`    /\* Validate NC\_UBYTE data \*/`
+            \}
 
-`    for (int i = 0; i \< NY; i++) \{`
+            value++;
 
-`        for (int j = 0; j \< NX; j++) \{`
+        \}
 
-`            if (ubyte\_in\[i\]\[j\] != (unsigned char)value) \{`
+    \}
 
-`                printf("Error: ubyte\_var\[%d\]\[%d\] = %u, expected %d\\n", `
+    
 
-`                       i, j, ubyte\_in\[i\]\[j\], value);`
+    /\* Validate NC\_UINT data \*/
 
-`                errors++;`
+    for (int i = 0; i \< NY; i++) \{
 
-`            \}`
+        for (int j = 0; j \< NX; j++) \{
 
-`            value++;`
+            if (uint\_in\[i\]\[j\] != (unsigned int)value) \{
 
-`        \}`
+                printf("Error: uint\_var\[%d\]\[%d\] = %u, expected %d\\n", 
 
-`    \}`
+                       i, j, uint\_in\[i\]\[j\], value);
 
-`    `
+                errors++;
 
-`    /\* Validate NC\_USHORT data \*/`
+            \}
 
-`    for (int i = 0; i \< NY; i++) \{`
+            value++;
 
-`        for (int j = 0; j \< NX; j++) \{`
+        \}
 
-`            if (ushort\_in\[i\]\[j\] != (unsigned short)value) \{`
+    \}
 
-`                printf("Error: ushort\_var\[%d\]\[%d\] = %u, expected %d\\n", `
+    
 
-`                       i, j, ushort\_in\[i\]\[j\], value);`
+    /\* Validate NC\_INT64 data \*/
 
-`                errors++;`
+    for (int i = 0; i \< NY; i++) \{
 
-`            \}`
+        for (int j = 0; j \< NX; j++) \{
 
-`            value++;`
+            if (int64\_in\[i\]\[j\] != (long long)value) \{
 
-`        \}`
+                printf("Error: int64\_var\[%d\]\[%d\] = %lld, expected %d\\n", 
 
-`    \}`
+                       i, j, int64\_in\[i\]\[j\], value);
 
-`    `
+                errors++;
 
-`    /\* Validate NC\_UINT data \*/`
+            \}
 
-`    for (int i = 0; i \< NY; i++) \{`
+            value++;
 
-`        for (int j = 0; j \< NX; j++) \{`
+        \}
 
-`            if (uint\_in\[i\]\[j\] != (unsigned int)value) \{`
+    \}
 
-`                printf("Error: uint\_var\[%d\]\[%d\] = %u, expected %d\\n", `
+    
 
-`                       i, j, uint\_in\[i\]\[j\], value);`
+    /\* Validate NC\_UINT64 data \*/
 
-`                errors++;`
+    for (int i = 0; i \< NY; i++) \{
 
-`            \}`
+        for (int j = 0; j \< NX; j++) \{
 
-`            value++;`
+            for (int k = 0; k \< NZ; k++) \{
 
-`        \}`
+                if (uint64\_in\[i\]\[j\]\[k\] != (unsigned long long)value) \{
 
-`    \}`
+                    printf("Error: uint64\_var\[%d\]\[%d\]\[%d\] = %llu, expected %d\\n", 
 
-`    `
+                           i, j, k, uint64\_in\[i\]\[j\]\[k\], value);
 
-`    /\* Validate NC\_INT64 data \*/`
+                    errors++;
 
-`    for (int i = 0; i \< NY; i++) \{`
+                \}
 
-`        for (int j = 0; j \< NX; j++) \{`
+                value++;
 
-`            if (int64\_in\[i\]\[j\] != (long long)value) \{`
+            \}
 
-`                printf("Error: int64\_var\[%d\]\[%d\] = %lld, expected %d\\n", `
+        \}
 
-`                       i, j, int64\_in\[i\]\[j\], value);`
+    \}
 
-`                errors++;`
+    
 
-`            \}`
+    if (errors \> 0) \{
 
-`            value++;`
+        printf("\*\*\* FAILED: %d data validation errors\\n", errors);
 
-`        \}`
+        exit(ERRCODE);
 
-`    \}`
+    \}
 
-`    `
+    
 
-`    /\* Validate NC\_UINT64 data \*/`
+    int total\_values = NX \* NY \* 4 + NX \* NY \* NZ;  /\* 4 2D arrays + 1 3D array \*/
 
-`    for (int i = 0; i \< NY; i++) \{`
+    printf("Verified: All %d data values correct (sequential 1 to %d)\\n", 
 
-`        for (int j = 0; j \< NX; j++) \{`
+           total\_values, total\_values);
 
-`            for (int k = 0; k \< NZ; k++) \{`
+    
 
-`                if (uint64\_in\[i\]\[j\]\[k\] != (unsigned long long)value) \{`
+    /\* Close the file \*/
 
-`                    printf("Error: uint64\_var\[%d\]\[%d\]\[%d\] = %llu, expected %d\\n", `
+    if ((retval = nc\_close(ncid)))
 
-`                           i, j, k, uint64\_in\[i\]\[j\]\[k\], value);`
+        ERR(retval);
 
-`                    errors++;`
+    
 
-`                \}`
+    /\* Summary \*/
 
-`                value++;`
+    printf("\\n=== Summary ===\\n");
 
-`            \}`
+    printf("Group hierarchy:\\n");
 
-`        \}`
+    printf("  Root\\n");
 
-`    \}`
+    printf("  ├── SubGroup1\\n");
 
-`    `
+    printf("  └── SubGroup2\\n");
 
-`    if (errors \> 0) \{`
+    printf("      └── NestedGroup\\n");
 
-`        printf("\*\*\* FAILED: %d data validation errors\\n", errors);`
+    printf("\\nDimensions:\\n");
 
-`        exit(ERRCODE);`
+    printf("  Root: x=%d, y=%d (visible in all groups)\\n", NX, NY);
 
-`    \}`
+    printf("  NestedGroup: z=%d (local only)\\n", NZ);
 
-`    `
+    printf("\\nVariables (all 5 new integer types):\\n");
 
-`    int total\_values = NX \* NY \* 4 + NX \* NY \* NZ;  /\* 4 2D arrays + 1 3D array \*/`
+    printf("  Root: ubyte\_var (NC\_UBYTE)\\n");
 
-`    printf("Verified: All %d data values correct (sequential 1 to %d)\\n", `
+    printf("  SubGroup1: ushort\_var (NC\_USHORT)\\n");
 
-`           total\_values, total\_values);`
+    printf("  SubGroup2: uint\_var (NC\_UINT)\\n");
 
-`    `
+    printf("  NestedGroup: int64\_var (NC\_INT64), uint64\_var (NC\_UINT64)\\n");
 
-`    /\* Close the file \*/`
+    printf("\\nKey Concepts Demonstrated:\\n");
 
-`    if ((retval = nc\_close(ncid)))`
+    printf("  ✓ Hierarchical group structures (3 levels)\\n");
 
-`        ERR(retval);`
+    printf("  ✓ Nested groups (NestedGroup under SubGroup2)\\n");
 
-`    `
+    printf("  ✓ Dimension visibility across group boundaries\\n");
 
-`    /\* Summary \*/`
+    printf("  ✓ All 5 new NetCDF-4 integer types\\n");
 
-`    printf("\\n=== Summary ===\\n");`
+    printf("  ✓ Variable scoping to defining group\\n");
 
-`    printf("Group hierarchy:\\n");`
+    
 
-`    printf("  Root\\n");`
+    printf("\\n\*\*\* SUCCESS: All validation checks passed!\\n");
 
-`    printf("  ├── SubGroup1\\n");`
+    printf("Use 'ncdump groups.nc' to view the file structure.\\n");
 
-`    printf("  └── SubGroup2\\n");`
+    
 
-`    printf("      └── NestedGroup\\n");`
+    return 0;
 
-`    printf("\\nDimensions:\\n");`
-
-`    printf("  Root: x=%d, y=%d (visible in all groups)\\n", NX, NY);`
-
-`    printf("  NestedGroup: z=%d (local only)\\n", NZ);`
-
-`    printf("\\nVariables (all 5 new integer types):\\n");`
-
-`    printf("  Root: ubyte\_var (NC\_UBYTE)\\n");`
-
-`    printf("  SubGroup1: ushort\_var (NC\_USHORT)\\n");`
-
-`    printf("  SubGroup2: uint\_var (NC\_UINT)\\n");`
-
-`    printf("  NestedGroup: int64\_var (NC\_INT64), uint64\_var (NC\_UINT64)\\n");`
-
-`    printf("\\nKey Concepts Demonstrated:\\n");`
-
-`    printf("  ✓ Hierarchical group structures (3 levels)\\n");`
-
-`    printf("  ✓ Nested groups (NestedGroup under SubGroup2)\\n");`
-
-`    printf("  ✓ Dimension visibility across group boundaries\\n");`
-
-`    printf("  ✓ All 5 new NetCDF-4 integer types\\n");`
-
-`    printf("  ✓ Variable scoping to defining group\\n");`
-
-`    `
-
-`    printf("\\n\*\*\* SUCCESS: All validation checks passed!\\n");`
-
-`    printf("Use 'ncdump groups.nc' to view the file structure.\\n");`
-
-`    `
-
-`    return 0;`
-
-`\}`
+\}
 ```
 
 This results in the following CDL file:
 
 ```
-`netcdf groups \{`
+netcdf groups \{
 
-`dimensions:`
+dimensions:
 
-`	x = 3 ;`
+	x = 3 ;
 
-`	y = 4 ;`
+	y = 4 ;
 
-`variables:`
+variables:
 
-`	ubyte ubyte\_var(y, x) ;`
+	ubyte ubyte\_var(y, x) ;
 
-`data:`
+data:
 
 
-` ubyte\_var =`
+ ubyte\_var =
 
-`  1, 2, 3,`
+  1, 2, 3,
 
-`  4, 5, 6,`
+  4, 5, 6,
 
-`  7, 8, 9,`
+  7, 8, 9,
 
-`  10, 11, 12 ;`
+  10, 11, 12 ;
 
 
-`group: SubGroup1 \{`
+group: SubGroup1 \{
 
-`  variables:`
+  variables:
 
-`  	ushort ushort\_var(y, x) ;`
+  	ushort ushort\_var(y, x) ;
 
-`  data:`
+  data:
 
 
-`   ushort\_var =`
+   ushort\_var =
 
-`  13, 14, 15,`
+  13, 14, 15,
 
-`  16, 17, 18,`
+  16, 17, 18,
 
-`  19, 20, 21,`
+  19, 20, 21,
 
-`  22, 23, 24 ;`
+  22, 23, 24 ;
 
-`  \} // group SubGroup1`
+  \} // group SubGroup1
 
 
-`group: SubGroup2 \{`
+group: SubGroup2 \{
 
-`  variables:`
+  variables:
 
-`  	uint uint\_var(y, x) ;`
+  	uint uint\_var(y, x) ;
 
-`  data:`
+  data:
 
 
-`   uint\_var =`
+   uint\_var =
 
-`  25, 26, 27,`
+  25, 26, 27,
 
-`  28, 29, 30,`
+  28, 29, 30,
 
-`  31, 32, 33,`
+  31, 32, 33,
 
-`  34, 35, 36 ;`
+  34, 35, 36 ;
 
 
-`  group: NestedGroup \{`
+  group: NestedGroup \{
 
-`    dimensions:`
+    dimensions:
 
-`    	z = 2 ;`
+    	z = 2 ;
 
-`    variables:`
+    variables:
 
-`    	int64 int64\_var(y, x) ;`
+    	int64 int64\_var(y, x) ;
 
-`    	uint64 uint64\_var(y, x, z) ;`
+    	uint64 uint64\_var(y, x, z) ;
 
-`    data:`
+    data:
 
 
-`     int64\_var =`
+     int64\_var =
 
-`  37, 38, 39,`
+  37, 38, 39,
 
-`  40, 41, 42,`
+  40, 41, 42,
 
-`  43, 44, 45,`
+  43, 44, 45,
 
-`  46, 47, 48 ;`
+  46, 47, 48 ;
 
 
-`     uint64\_var =`
+     uint64\_var =
 
-`  49, 50,`
+  49, 50,
 
-`  51, 52,`
+  51, 52,
 
-`  53, 54,`
+  53, 54,
 
-`  55, 56,`
+  55, 56,
 
-`  57, 58,`
+  57, 58,
 
-`  59, 60,`
+  59, 60,
 
-`  61, 62,`
+  61, 62,
 
-`  63, 64,`
+  63, 64,
 
-`  65, 66,`
+  65, 66,
 
-`  67, 68,`
+  67, 68,
 
-`  69, 70,`
+  69, 70,
 
-`  71, 72 ;`
+  71, 72 ;
 
-`    \} // group NestedGroup`
+    \} // group NestedGroup
 
-`  \} // group SubGroup2`
+  \} // group SubGroup2
 
-`\}`
+\}
 ```
 
 # NetCDF Fortran Examples
 
+The examples in this chapter are from the NetCDF Expansion Pack. The examples can be built and run as part of that package.
+
 ## Fortran Classic Model Examples
 
-The examples in the rest of this chapter are from the NetCDF Expansion Pack. The examples can be built and run as part of that package.
+The Fortran classic examples work with the classic file formats, as well as NetCDF-4/HDF5 files.
 
 ### Simple Example with Classic Format
 
 This is the Fortran equivalent of simple\_2D.c, demonstrating the fundamental workflow for working with NetCDF files using the Fortran 90 NetCDF API. The program creates a 2D integer array, writes it to a NetCDF file with a global attribute ("title") and a variable attribute ("units"), then reopens the file to verify metadata, attributes, and data correctness using nf90\_inquire(), nf90\_inquire\_dimension(), and nf90\_inquire\_variable().
+
+This example can be found in the NetCDF Expansion Pack in examples/f\_classic/f\_simple\_2D.f90.
 
 #### Learning Objectives
 
@@ -10847,8 +11151,6 @@ This is the Fortran equivalent of simple\_2D.c, demonstrating the fundamental wo
 
 **Error Handling**: Fortran subroutine call vs C macro
 
-
-
 ```
 program f\_simple\_2D
 
@@ -10863,6 +11165,8 @@ program f\_simple\_2D
    integer, parameter :: NDIMS = 2
 
    integer, parameter :: NX = 6, NY = 12
+
+   integer, parameter :: FILL\_VALUE = -9999
 
    
 
@@ -10888,7 +11192,7 @@ program f\_simple\_2D
 
    integer :: len\_x, len\_y
 
-   character(len=NF90\_MAX\_NAME) :: dim\_name
+   character(len=NF90\_MAX\_NAME) :: dim\_name\_x, dim\_name\_y
 
    character(len=NF90\_MAX\_NAME) :: var\_name\_in
 
@@ -10898,11 +11202,13 @@ program f\_simple\_2D
 
    character(len=100) :: title\_in, units\_in
 
-   integer :: att\_len
-
    integer :: errors
 
    integer :: expected
+
+   integer :: no\_fill, fill\_value\_in
+
+   integer :: start\_idx(NDIMS), count\_idx(NDIMS)
 
    
 
@@ -10976,6 +11282,1833 @@ program f\_simple\_2D
 
    
 
+   ! Set fill value: nf90\_def\_var\_fill() registers the sentinel value returned for
+
+   ! unwritten or missing elements. NF90\_FILL (0) enables fill mode for this variable.
+
+   retval = nf90\_def\_var\_fill(ncid, varid, 0, FILL\_VALUE)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   ! End define mode
+
+   retval = nf90\_enddef(ncid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   ! Write only the first NY-1 columns (partial write), leaving the last column unwritten.
+
+   ! In Fortran column-major layout: dimension 1=x, dimension 2=y; leaving the last
+
+   ! y-index (column) unwritten means those elements return FILL\_VALUE when read back.
+
+   start\_idx = (/ 1, 1 /)
+
+   count\_idx = (/ NX, NY - 1 /)
+
+   retval = nf90\_put\_var(ncid, varid, data\_out(:, 1:NY-1), start=start\_idx, count=count\_idx)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   ! Close the file
+
+   retval = nf90\_close(ncid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   print \*, "\*\*\* SUCCESS writing file (first ", NY - 1, " of ", NY, " columns written)!"
+
+   
+
+   ! ========== READ PHASE ==========
+
+   print \*, ""
+
+   print \*, "Reopening file for validation..."
+
+   
+
+   ! Open the file for reading
+
+   retval = nf90\_open(FILE\_NAME, NF90\_NOWRITE, ncid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   ! Verify metadata: check number of dimensions and variables
+
+   retval = nf90\_inquire(ncid, ndims\_in, nvars\_in, ngatts\_in, unlimdimid\_in)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   if (ndims\_in /= NDIMS) then
+
+      print \*, "Error: Expected ", NDIMS, " dimensions, found ", ndims\_in
+
+      stop 2
+
+   end if
+
+   print \*, "Verified: ", ndims\_in, " dimensions"
+
+   
+
+   if (nvars\_in /= 1 .or. ngatts\_in /= 1 .or. unlimdimid\_in /= -1) then
+
+      print \*, "Error: file metadata incorrect (vars=", nvars\_in, ", atts=", ngatts\_in, ", unlim=", unlimdimid\_in, ")"
+
+      stop 2
+
+   end if
+
+   print \*, "Verified: file metadata correct (", ndims\_in, " dims, 1 var, 1 att, no unlimited)"
+
+   
+
+   ! Verify dimensions using nf90\_inquire\_dimension()
+
+   retval = nf90\_inquire\_dimension(ncid, x\_dimid, name=dim\_name\_x, len=len\_x)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_inquire\_dimension(ncid, y\_dimid, name=dim\_name\_y, len=len\_y)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+
+   if (trim(dim\_name\_x) /= "x" .or. len\_x /= NX .or. &
+
+       trim(dim\_name\_y) /= "y" .or. len\_y /= NY) then
+
+      print \*, "Error: dimension names or sizes incorrect"
+
+      stop 2
+
+   end if
+
+   print \*, "Verified: dimensions correct (x=", len\_x, ", y=", len\_y, ")"
+
+   
+
+   ! Verify variable using nf90\_inquire\_variable()
+
+   retval = nf90\_inquire\_variable(ncid, varid, name=var\_name\_in, xtype=var\_type, &
+
+                                  ndims=var\_ndims, dimids=var\_dimids)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+
+   if (trim(var\_name\_in) /= "data" .or. var\_type /= NF90\_INT .or. &
+
+       var\_ndims /= NDIMS .or. var\_dimids(1) /= x\_dimid .or. var\_dimids(2) /= y\_dimid) then
+
+      print \*, "Error: variable metadata incorrect"
+
+      stop 2
+
+   end if
+
+   print \*, "Verified: variable metadata correct ('", trim(var\_name\_in), "', NF90\_INT, ", var\_ndims, " dims)"
+
+   
+
+   ! Verify global attributes, variable attributes, and fill value
+
+   retval = nf90\_get\_att(ncid, NF90\_GLOBAL, "title", title\_in)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_get\_att(ncid, varid, "units", units\_in)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_inq\_var\_fill(ncid, varid, no\_fill, fill\_value\_in)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+
+   if (trim(title\_in) /= "Simple 2D Example" .or. &
+
+       trim(units\_in) /= "m/s" .or. &
+
+       fill\_value\_in /= FILL\_VALUE) then
+
+      print \*, "Error: attributes or fill value incorrect"
+
+      stop 2
+
+   end if
+
+   print \*, "Verified: all attributes and fill value correct"
+
+   
+
+   ! Read the data back
+
+   retval = nf90\_get\_var(ncid, varid, data\_in)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   ! Verify written columns (1 .. NY-1) contain expected sequential values
+
+   errors = 0
+
+   do j = 1, NY - 1
+
+      do i = 1, NX
+
+         expected = (j-1) \* NX + (i-1)
+
+         if (data\_in(i, j) /= expected) then
+
+            print \*, "Error: data(", i, ",", j, ") = ", data\_in(i, j), &
+
+                     ", expected ", expected
+
+            errors = errors + 1
+
+         end if
+
+      end do
+
+   end do
+
+   
+
+   ! Verify unwritten last column contains fill value
+
+   do i = 1, NX
+
+      if (data\_in(i, NY) /= FILL\_VALUE) then
+
+         print \*, "Error: unwritten data(", i, ",", NY, ") = ", data\_in(i, NY), &
+
+                  ", expected fill value ", FILL\_VALUE
+
+         errors = errors + 1
+
+      end if
+
+   end do
+
+   
+
+   if (errors \> 0) then
+
+      print \*, "\*\*\* FAILED: ", errors, " data validation errors"
+
+      stop 2
+
+   end if
+
+   
+
+   print \*, "Verified: ", NX \* (NY - 1), " written values correct (0, 1, 2, ..., ", &
+
+            NX \* (NY - 1) - 1, ")"
+
+   print \*, "Verified: unwritten last column (", NX, " elements) = fill value ", FILL\_VALUE
+
+   
+
+   ! Close the file
+
+   retval = nf90\_close(ncid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   print \*, ""
+
+   print \*, "\*\*\* SUCCESS: All validation checks passed!"
+
+   
+
+contains
+
+   subroutine handle\_err(status)
+
+      integer, intent(in) :: status
+
+      print \*, "Error: ", trim(nf90\_strerror(status))
+
+      stop 2
+
+   end subroutine handle\_err
+
+   
+
+end program f\_simple\_2D
+```
+
+This yields the following metadata:
+
+```
+netcdf f\_simple\_2D \{
+
+dimensions:
+
+	x = 6 ;
+
+	y = 12 ;
+
+variables:
+
+	int data(y, x) ;
+
+		data :units = "m/s" ;
+
+
+// global attributes:
+
+		:title = "Simple 2D Example" ;
+
+data:
+
+
+ data =
+
+  0, 1, 2, 3, 4, 5,
+
+  6, 7, 8, 9, 10, 11,
+
+  12, 13, 14, 15, 16, 17,
+
+  18, 19, 20, 21, 22, 23,
+
+  24, 25, 26, 27, 28, 29,
+
+  30, 31, 32, 33, 34, 35,
+
+  36, 37, 38, 39, 40, 41,
+
+  42, 43, 44, 45, 46, 47,
+
+  48, 49, 50, 51, 52, 53,
+
+  54, 55, 56, 57, 58, 59,
+
+  60, 61, 62, 63, 64, 65,
+
+  66, 67, 68, 69, 70, 71 ;
+
+\}
+```
+
+### Coordinate Variables
+
+This is the Fortran equivalent of coord\_vars.c, demonstrating coordinate variables and CF (Climate and Forecast) convention metadata using the Fortran 90 NetCDF API. The program creates a 2D temperature field with latitude and longitude coordinate variables following CF conventions.
+
+This example is in the NetCDF Expansion Pack in examples/f\_classic/f\_coord\_vars.f90.
+
+#### Learning Objectives
+
+- Understand coordinate variables in Fortran NetCDF API
+
+- Learn CF convention attributes (nf90\_put\_att)
+
+- Master attribute definition and retrieval in Fortran
+
+- Work with geospatial data in Fortran
+
+- Verify equivalence with C version (coord\_vars.c)
+
+#### Key Fortran Concepts
+
+- Character Attributes: Use nf90\_put\_att with character strings
+
+- Attribute Length: Fortran handles string length automatically
+
+- Array Ordering: Temperature(NLON, NLAT) vs C temperature\[NLAT\]\[NLON\]
+
+```
+program f\_coord\_vars
+
+   use netcdf
+
+   implicit none
+
+   
+
+   character(len=\*), parameter :: FILE\_NAME = "f\_coord\_vars.nc"
+
+   integer, parameter :: NLAT = 4, NLON = 5
+
+   
+
+   integer :: ncid, lat\_varid, lon\_varid, temp\_varid
+
+   integer :: lat\_dimid, lon\_dimid
+
+   integer :: dimids(2)
+
+   integer :: retval
+
+   
+
+   real :: lat(NLAT) = (/-45.0, -15.0, 15.0, 45.0/)
+
+   real :: lon(NLON) = (/-120.0, -60.0, 0.0, 60.0, 120.0/)
+
+   real :: temperature(NLON, NLAT)
+
+   
+
+   real :: lat\_in(NLAT)
+
+   real :: lon\_in(NLON)
+
+   real :: temperature\_in(NLON, NLAT)
+
+   
+
+   integer :: i, j
+
+   integer :: ndims\_in, nvars\_in
+
+   integer :: errors
+
+   character(len=256) :: lat\_units, lat\_stdname, lat\_axis
+
+   character(len=256) :: lon\_units, lon\_stdname, lon\_axis
+
+   character(len=256) :: temp\_units, temp\_stdname, temp\_longname
+
+   real :: fill\_value, fill\_value\_in
+
+   
+
+   ! ========== WRITE PHASE ==========
+
+   print \*, "Creating NetCDF file: ", FILE\_NAME
+
+   
+
+   ! Initialize temperature data (synthetic: varies with lat and lon)
+
+   do i = 1, NLAT
+
+      do j = 1, NLON
+
+         temperature(j, i) = 273.15 + (i-1) \* 5.0 + (j-1) \* 2.0
+
+      end do
+
+   end do
+
+   
+
+   ! Create the NetCDF file
+
+   retval = nf90\_create(FILE\_NAME, NF90\_CLOBBER, ncid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   ! Define dimensions
+
+   retval = nf90\_def\_dim(ncid, "lat", NLAT, lat\_dimid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_def\_dim(ncid, "lon", NLON, lon\_dimid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   ! Define coordinate variables (same name as dimension)
+
+   retval = nf90\_def\_var(ncid, "lat", NF90\_FLOAT, lat\_dimid, lat\_varid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_def\_var(ncid, "lon", NF90\_FLOAT, lon\_dimid, lon\_varid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   ! Add CF convention attributes to latitude
+
+   retval = nf90\_put\_att(ncid, lat\_varid, "units", "degrees\_north")
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_put\_att(ncid, lat\_varid, "standard\_name", "latitude")
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_put\_att(ncid, lat\_varid, "long\_name", "Latitude")
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_put\_att(ncid, lat\_varid, "axis", "Y")
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   ! Add CF convention attributes to longitude
+
+   retval = nf90\_put\_att(ncid, lon\_varid, "units", "degrees\_east")
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_put\_att(ncid, lon\_varid, "standard\_name", "longitude")
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_put\_att(ncid, lon\_varid, "long\_name", "Longitude")
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_put\_att(ncid, lon\_varid, "axis", "X")
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   ! Define temperature variable (Fortran order: lon, lat)
+
+   dimids(1) = lon\_dimid
+
+   dimids(2) = lat\_dimid
+
+   retval = nf90\_def\_var(ncid, "temperature", NF90\_FLOAT, dimids, temp\_varid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   ! Add CF convention attributes to temperature
+
+   retval = nf90\_put\_att(ncid, temp\_varid, "units", "K")
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_put\_att(ncid, temp\_varid, "standard\_name", "air\_temperature")
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_put\_att(ncid, temp\_varid, "long\_name", "Air Temperature")
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   fill\_value = -999.0
+
+   retval = nf90\_put\_att(ncid, temp\_varid, "\_FillValue", fill\_value)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   ! End define mode
+
+   retval = nf90\_enddef(ncid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   ! Write coordinate variables
+
+   retval = nf90\_put\_var(ncid, lat\_varid, lat)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_put\_var(ncid, lon\_varid, lon)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   ! Write temperature data
+
+   retval = nf90\_put\_var(ncid, temp\_varid, temperature)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   ! Close the file
+
+   retval = nf90\_close(ncid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   print \*, "\*\*\* SUCCESS writing file!"
+
+   
+
+   ! ========== READ PHASE ==========
+
+   print \*, ""
+
+   print \*, "Reopening file for validation..."
+
+   
+
+   ! Open the file for reading
+
+   retval = nf90\_open(FILE\_NAME, NF90\_NOWRITE, ncid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   ! Verify metadata
+
+   retval = nf90\_inquire(ncid, ndims\_in, nvars\_in)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   if (ndims\_in /= 2 .or. nvars\_in /= 3) then
+
+      print \*, "Error: Expected 2 dims/3 vars, found ", ndims\_in, "/", nvars\_in
+
+      stop 2
+
+   end if
+
+   print \*, "Verified: ", ndims\_in, " dimensions, ", nvars\_in, " variables"
+
+   
+
+   ! Verify latitude coordinate attributes
+
+   retval = nf90\_get\_att(ncid, lat\_varid, "units", lat\_units)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_get\_att(ncid, lat\_varid, "standard\_name", lat\_stdname)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_get\_att(ncid, lat\_varid, "axis", lat\_axis)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+
+   if (trim(lat\_units) /= "degrees\_north" .or. &
+
+       trim(lat\_stdname) /= "latitude" .or. &
+
+       trim(lat\_axis) /= "Y") then
+
+      print \*, "Error: latitude coordinate attributes incorrect"
+
+      stop 2
+
+   end if
+
+   print \*, "Verified: all latitude coordinate attributes correct"
+
+   
+
+   ! Verify longitude coordinate attributes
+
+   retval = nf90\_get\_att(ncid, lon\_varid, "units", lon\_units)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_get\_att(ncid, lon\_varid, "standard\_name", lon\_stdname)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_get\_att(ncid, lon\_varid, "axis", lon\_axis)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+
+   if (trim(lon\_units) /= "degrees\_east" .or. &
+
+       trim(lon\_stdname) /= "longitude" .or. &
+
+       trim(lon\_axis) /= "X") then
+
+      print \*, "Error: longitude coordinate attributes incorrect"
+
+      stop 2
+
+   end if
+
+   print \*, "Verified: all longitude coordinate attributes correct"
+
+   
+
+   ! Verify temperature variable attributes
+
+   retval = nf90\_get\_att(ncid, temp\_varid, "units", temp\_units)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_get\_att(ncid, temp\_varid, "standard\_name", temp\_stdname)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_get\_att(ncid, temp\_varid, "long\_name", temp\_longname)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_get\_att(ncid, temp\_varid, "\_FillValue", fill\_value\_in)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+
+   if (trim(temp\_units) /= "K" .or. &
+
+       trim(temp\_stdname) /= "air\_temperature" .or. &
+
+       trim(temp\_longname) /= "Air Temperature" .or. &
+
+       fill\_value\_in /= fill\_value) then
+
+      print \*, "Error: temperature variable attributes incorrect"
+
+      stop 2
+
+   end if
+
+   print \*, "Verified: all temperature variable attributes correct"
+
+   
+
+   ! Read coordinate variables
+
+   retval = nf90\_get\_var(ncid, lat\_varid, lat\_in)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_get\_var(ncid, lon\_varid, lon\_in)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   ! Verify coordinate data
+
+   errors = 0
+
+   do i = 1, NLAT
+
+      if (lat\_in(i) /= lat(i)) then
+
+         print \*, "Error: lat(", i, ") = ", lat\_in(i), ", expected ", lat(i)
+
+         errors = errors + 1
+
+      end if
+
+   end do
+
+   
+
+   do j = 1, NLON
+
+      if (lon\_in(j) /= lon(j)) then
+
+         print \*, "Error: lon(", j, ") = ", lon\_in(j), ", expected ", lon(j)
+
+         errors = errors + 1
+
+      end if
+
+   end do
+
+   
+
+   if (errors == 0) then
+
+      print \*, "Verified: coordinate arrays correct"
+
+      print \*, "  lat: \[", lat(1), ", ", lat(2), ", ", lat(3), ", ", lat(4), "\]"
+
+      print \*, "  lon: \[", lon(1), ", ", lon(2), ", ", lon(3), ", ", lon(4), ", ", lon(5), "\]"
+
+   end if
+
+   
+
+   ! Read temperature data
+
+   retval = nf90\_get\_var(ncid, temp\_varid, temperature\_in)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   ! Verify temperature data
+
+   do i = 1, NLAT
+
+      do j = 1, NLON
+
+         if (temperature\_in(j, i) /= temperature(j, i)) then
+
+            print \*, "Error: temperature(", j, ",", i, ") = ", temperature\_in(j, i), &
+
+                     ", expected ", temperature(j, i)
+
+            errors = errors + 1
+
+         end if
+
+      end do
+
+   end do
+
+   
+
+   if (errors \> 0) then
+
+      print \*, "\*\*\* FAILED: ", errors, " data validation errors"
+
+      stop 2
+
+   end if
+
+   
+
+   print \*, "Verified: all temperature data correct (", NLAT \* NLON, " values)"
+
+   
+
+   ! Close the file
+
+   retval = nf90\_close(ncid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   print \*, ""
+
+   print \*, "\*\*\* SUCCESS: All validation checks passed!"
+
+   
+
+contains
+
+   subroutine handle\_err(status)
+
+      integer, intent(in) :: status
+
+      print \*, "Error: ", trim(nf90\_strerror(status))
+
+      stop 2
+
+   end subroutine handle\_err
+
+   
+
+end program f\_coord\_vars
+```
+
+This program produces a file with this ncdump output:
+
+```
+netcdf f\_coord\_vars \{
+
+dimensions:
+
+	lat = 4 ;
+
+	lon = 5 ;
+
+variables:
+
+	float lat(lat) ;
+
+		lat:units = "degrees\_north" ;
+
+		lat:standard\_name = "latitude" ;
+
+		lat:long\_name = "Latitude" ;
+
+		lat:axis = "Y" ;
+
+	float lon(lon) ;
+
+		lon:units = "degrees\_east" ;
+
+		lon:standard\_name = "longitude" ;
+
+		lon:long\_name = "Longitude" ;
+
+		lon:axis = "X" ;
+
+	float temperature(lat, lon) ;
+
+		temperature:units = "K" ;
+
+		temperature:standard\_name = "air\_temperature" ;
+
+		temperature:long\_name = "Air Temperature" ;
+
+		temperature:\_FillValue = -999.f ;
+
+data:
+
+
+ lat = -45, -15, 15, 45 ;
+
+
+ lon = -120, -60, 0, 60, 120 ;
+
+
+ temperature =
+
+  273.15, 275.15, 277.15, 279.15, 281.15,
+
+  278.15, 280.15, 282.15, 284.15, 286.15,
+
+  283.15, 285.15, 287.15, 289.15, 291.15,
+
+  288.15, 290.15, 292.15, 294.15, 296.15 ;
+
+\}
+```
+
+## Fortran Enhanced Model Examples
+
+These example in Fortan all make use of the enhanced data model, or other features of the HDF5 library.
+
+### Different NetCDF Binary Files
+
+This is the Fortran equivalent of format\_variants.c, demonstrating all five NetCDF binary format variants using the Fortran 90 NetCDF API. The program creates identical data structures in each format and compares their characteristics.
+
+This is examples/f\_netcdf-4/f\_format\_variants.f90 from the NetCDF Expansion Pack.
+
+#### Learning Objectives
+
+- Understand format flags in Fortran (NF90\_CLASSIC\_MODEL, NF90\_64BIT\_OFFSET, NF90\_64BIT\_DATA, NF90\_NETCDF4, IOR(NF90\_NETCDF4, NF90\_CLASSIC\_MODEL))
+
+- Learn format detection with nf90\_inq\_format()
+
+- Compare file sizes and format characteristics
+
+- Make informed format choices in Fortran applications
+
+#### Fortran Format Constants
+
+- **NF90\_CLASSIC\_MODEL** CDF-1 format (2GB limits)
+
+- **NF90\_64BIT\_OFFSET** CDF-2 format (4GB variable limit)
+
+- **NF90\_64BIT\_DATA** CDF-5 format (unlimited sizes)
+
+- **NF90\_NETCDF4** NetCDF-4/HDF5 format (groups, compression, user types)
+
+- **IOR(NF90\_NETCDF4, NF90\_CLASSIC\_MODEL) **HDF5 storage, classic data model
+
+```
+program f\_format\_variants
+
+   use netcdf
+
+   implicit none
+
+   
+
+   integer, parameter :: NTIME = 10, NLAT = 20, NLON = 30
+
+   integer, parameter :: ERRCODE = 2
+
+   integer :: ncid, retval
+
+   
+
+   print \*, "NetCDF Format Variants Comparison"
+
+   print \*, ""
+
+   print \*, "This program creates five files with identical data structures"
+
+   print \*, "in all five NetCDF binary formats to demonstrate their differences."
+
+   print \*, ""
+
+   print \*, "Data structure:"
+
+   print \*, "  Dimensions: time=", NTIME, ", lat=", NLAT, ", lon=", NLON
+
+   print \*, "  Variables: temperature(time,lat,lon), pressure(time,lat,lon)"
+
+   print \*, "  Data type: NF90\_FLOAT (4 bytes per value)"
+
+   print \*, "  Total data: ", NTIME \* NLAT \* NLON, " values per variable"
+
+   print \*, ""
+
+   
+
+   ! Create files in each format.
+
+   !
+
+   ! The nf90\_create() calls below show the key difference between formats:
+
+   ! only the format flag changes. Each file gets identical metadata and
+
+   ! data via populate\_file().
+
+   print \*, "=== Creating Format Files ==="
+
+   print \*, ""
+
+   
+
+   ! CDF-1: Original classic format (2GB file/variable limit).
+
+   ! No format flag needed - NF90\_CLOBBER alone creates a classic CDF-1 file.
+
+   print \*, "Creating classic (CDF-1) format file: f\_format\_classic.nc"
+
+   retval = nf90\_create("f\_format\_classic.nc", NF90\_CLOBBER, ncid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   call populate\_file(ncid)
+
+   retval = nf90\_close(ncid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+
+   ! CDF-2: 64-bit offset format (4GB variable limit)
+
+   print \*, "Creating NF90\_64BIT\_OFFSET format file: f\_format\_64bit\_offset.nc"
+
+   retval = nf90\_create("f\_format\_64bit\_offset.nc", NF90\_64BIT\_OFFSET, ncid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   call populate\_file(ncid)
+
+   retval = nf90\_close(ncid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+
+   ! CDF-5: 64-bit data format (unlimited variable sizes)
+
+   print \*, "Creating NF90\_64BIT\_DATA format file: f\_format\_64bit\_data.nc"
+
+   retval = nf90\_create("f\_format\_64bit\_data.nc", NF90\_64BIT\_DATA, ncid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   call populate\_file(ncid)
+
+   retval = nf90\_close(ncid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+
+   ! NetCDF-4: HDF5-based format (groups, compression, user-defined types)
+
+   print \*, "Creating NF90\_NETCDF4 format file: f\_format\_netcdf4.nc"
+
+   retval = nf90\_create("f\_format\_netcdf4.nc", NF90\_NETCDF4, ncid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   call populate\_file(ncid)
+
+   retval = nf90\_close(ncid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+
+   ! NetCDF-4 Classic Model: HDF5 storage with classic data model restrictions
+
+   print \*, "Creating NF90\_NETCDF4+NF90\_CLASSIC\_MODEL format file: f\_format\_netcdf4\_classic.nc"
+
+   retval = nf90\_create("f\_format\_netcdf4\_classic.nc", &
+
+                        IOR(NF90\_NETCDF4, NF90\_CLASSIC\_MODEL), ncid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   call populate\_file(ncid)
+
+   retval = nf90\_close(ncid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   ! Verify files
+
+   print \*, ""
+
+   print \*, "=== Verifying Format Files ==="
+
+   
+
+   call verify\_format\_file("f\_format\_classic.nc", NF90\_FORMAT\_CLASSIC, &
+
+                          "NF90\_FORMAT\_CLASSIC")
+
+   call verify\_format\_file("f\_format\_64bit\_offset.nc", NF90\_FORMAT\_64BIT\_OFFSET, &
+
+                          "NF90\_FORMAT\_64BIT\_OFFSET")
+
+   call verify\_format\_file("f\_format\_64bit\_data.nc", NF90\_FORMAT\_64BIT\_DATA, &
+
+                          "NF90\_FORMAT\_64BIT\_DATA")
+
+   call verify\_format\_file("f\_format\_netcdf4.nc", NF90\_FORMAT\_NETCDF4, &
+
+                          "NF90\_FORMAT\_NETCDF4")
+
+   call verify\_format\_file("f\_format\_netcdf4\_classic.nc", &
+
+                          NF90\_FORMAT\_NETCDF4\_CLASSIC, &
+
+                          "NF90\_FORMAT\_NETCDF4\_CLASSIC")
+
+   
+
+   ! Summary
+
+   print \*, ""
+
+   print \*, "=== Format Comparison Summary ==="
+
+   print \*, ""
+
+   print \*, "Format Characteristics:"
+
+   print \*, ""
+
+   print \*, "Classic CDF-1 (default, no format flag):"
+
+   print \*, "  File size limit: 2GB"
+
+   print \*, "  Variable size limit: 2GB"
+
+   print \*, "  Storage backend: CDF binary"
+
+   print \*, "  Compatibility: NetCDF 3.0+, all tools"
+
+   print \*, "  Use when: Maximum compatibility needed, files \< 2GB"
+
+   print \*, ""
+
+   print \*, "NF90\_64BIT\_OFFSET (CDF-2):"
+
+   print \*, "  File size limit: effectively unlimited"
+
+   print \*, "  Variable size limit: 4GB per variable"
+
+   print \*, "  Storage backend: CDF binary"
+
+   print \*, "  Compatibility: NetCDF 3.6.0+"
+
+   print \*, "  Use when: Large files needed, variables \< 4GB each"
+
+   print \*, ""
+
+   print \*, "NF90\_64BIT\_DATA (CDF-5):"
+
+   print \*, "  File size limit: effectively unlimited"
+
+   print \*, "  Variable size limit: effectively unlimited"
+
+   print \*, "  Storage backend: CDF binary"
+
+   print \*, "  Compatibility: NetCDF 4.4.0+ or PnetCDF"
+
+   print \*, "  Use when: Very large variables needed (\> 4GB)"
+
+   print \*, ""
+
+   print \*, "NF90\_NETCDF4 (HDF5):"
+
+   print \*, "  File size limit: effectively unlimited"
+
+   print \*, "  Variable size limit: effectively unlimited"
+
+   print \*, "  Storage backend: HDF5"
+
+   print \*, "  Compatibility: NetCDF 4.0+"
+
+   print \*, "  Features: groups, compression, chunking, user-defined types"
+
+   print \*, "  Use when: Advanced features needed (compression, groups, etc.)"
+
+   print \*, ""
+
+   print \*, "IOR(NF90\_NETCDF4, NF90\_CLASSIC\_MODEL) (HDF5 Classic Model):"
+
+   print \*, "  File size limit: effectively unlimited"
+
+   print \*, "  Variable size limit: effectively unlimited"
+
+   print \*, "  Storage backend: HDF5"
+
+   print \*, "  Compatibility: NetCDF 4.0+"
+
+   print \*, "  Features: compression, chunking (no groups, no user-defined types)"
+
+   print \*, "  Use when: HDF5 storage benefits needed with classic data model"
+
+   print \*, ""
+
+   print \*, "Key Observations:"
+
+   print \*, "  - All five formats store identical data correctly"
+
+   print \*, "  - Classic formats (CDF-1/2/5) have smaller overhead for small files"
+
+   print \*, "  - NetCDF-4 formats (HDF5) have larger overhead but support compression"
+
+   print \*, "  - NC4 classic model is a useful middle ground: HDF5 storage, simple model"
+
+   print \*, "  - Use nf90\_inq\_format() to detect format type when reading files"
+
+   print \*, ""
+
+   print \*, "\*\*\* SUCCESS: All format tests passed! \*\*\*"
+
+   
+
+contains
+
+
+   ! Define dimensions, variables, attributes, and write data to an open file.
+
+   ! The nf90\_create() call is done in the main program so the format flag
+
+   ! is clearly visible.
+
+   subroutine populate\_file(ncid)
+
+      integer, intent(in) :: ncid
+
+      
+
+      integer :: time\_dimid, lat\_dimid, lon\_dimid
+
+      integer :: temp\_varid, pressure\_varid
+
+      integer :: dimids(3)
+
+      integer :: retval
+
+      
+
+      real :: temperature(NLON, NLAT, NTIME)
+
+      real :: pressure(NLON, NLAT, NTIME)
+
+      integer :: t, i, j
+
+      
+
+      ! Initialize data
+
+      do t = 1, NTIME
+
+         do i = 1, NLAT
+
+            do j = 1, NLON
+
+               temperature(j, i, t) = 273.15 + (t-1) \* 1.0 + (i-1) \* 0.5 + (j-1) \* 0.2
+
+               pressure(j, i, t) = 1013.25 + (t-1) \* 0.1 + (i-1) \* 0.05 + (j-1) \* 0.02
+
+            end do
+
+         end do
+
+      end do
+
+      
+
+      ! Define dimensions
+
+      retval = nf90\_def\_dim(ncid, "time", NTIME, time\_dimid)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      retval = nf90\_def\_dim(ncid, "lat", NLAT, lat\_dimid)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      retval = nf90\_def\_dim(ncid, "lon", NLON, lon\_dimid)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      
+
+      ! Define variables (Fortran order: lon, lat, time)
+
+      dimids(1) = lon\_dimid
+
+      dimids(2) = lat\_dimid
+
+      dimids(3) = time\_dimid
+
+      
+
+      retval = nf90\_def\_var(ncid, "temperature", NF90\_FLOAT, dimids, temp\_varid)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      retval = nf90\_def\_var(ncid, "pressure", NF90\_FLOAT, dimids, pressure\_varid)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      
+
+      ! Add attributes
+
+      retval = nf90\_put\_att(ncid, temp\_varid, "units", "K")
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      retval = nf90\_put\_att(ncid, pressure\_varid, "units", "hPa")
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      
+
+      ! End define mode
+
+      retval = nf90\_enddef(ncid)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      
+
+      ! Write data
+
+      retval = nf90\_put\_var(ncid, temp\_varid, temperature)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      retval = nf90\_put\_var(ncid, pressure\_varid, pressure)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   end subroutine populate\_file
+
+
+   subroutine verify\_format\_file(filename, expected\_format, expected\_format\_name)
+
+      character(len=\*), intent(in) :: filename, expected\_format\_name
+
+      integer, intent(in) :: expected\_format
+
+      
+
+      integer :: ncid, retval
+
+      integer :: format\_in
+
+      integer :: ndims, nvars
+
+      real :: temperature(NLON, NLAT, NTIME)
+
+      real :: pressure(NLON, NLAT, NTIME)
+
+      integer :: temp\_varid, pressure\_varid
+
+      character(len=50) :: detected\_format
+
+      integer :: errors
+
+      real :: expected\_temp, expected\_pressure
+
+      
+
+      print \*, ""
+
+      print \*, "Verifying file: ", trim(filename)
+
+      print \*, "  Expected format: ", trim(expected\_format\_name)
+
+      
+
+      ! Open file
+
+      retval = nf90\_open(filename, NF90\_NOWRITE, ncid)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      
+
+      ! Check format
+
+      retval = nf90\_inq\_format(ncid, format\_in)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      
+
+      ! Determine format name
+
+      if (format\_in == NF90\_FORMAT\_CLASSIC) then
+
+         detected\_format = "NF90\_FORMAT\_CLASSIC (CDF-1)"
+
+      else if (format\_in == NF90\_FORMAT\_64BIT\_OFFSET) then
+
+         detected\_format = "NF90\_FORMAT\_64BIT\_OFFSET (CDF-2)"
+
+      else if (format\_in == NF90\_FORMAT\_64BIT\_DATA) then
+
+         detected\_format = "NF90\_FORMAT\_64BIT\_DATA (CDF-5)"
+
+      else if (format\_in == NF90\_FORMAT\_NETCDF4) then
+
+         detected\_format = "NF90\_FORMAT\_NETCDF4 (HDF5)"
+
+      else if (format\_in == NF90\_FORMAT\_NETCDF4\_CLASSIC) then
+
+         detected\_format = "NF90\_FORMAT\_NETCDF4\_CLASSIC (HDF5/CM)"
+
+      else
+
+         detected\_format = "UNKNOWN"
+
+      end if
+
+      
+
+      print \*, "  Format detected: ", trim(detected\_format)
+
+      
+
+      ! Verify expected format
+
+      if (format\_in /= expected\_format) then
+
+         print \*, "Error: Expected format ", trim(expected\_format\_name), &
+
+                  " (", expected\_format, "), got ", trim(detected\_format), &
+
+                  " (", format\_in, ")"
+
+         stop ERRCODE
+
+      end if
+
+      
+
+      ! Verify metadata
+
+      retval = nf90\_inquire(ncid, ndims, nvars)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      
+
+      if (ndims /= 3 .or. nvars /= 2) then
+
+         print \*, "Error: Expected 3 dimensions and 2 variables, found ", &
+
+                  ndims, " dims, ", nvars, " vars"
+
+         stop ERRCODE
+
+      end if
+
+      print \*, "  Metadata: ", ndims, " dimensions, ", nvars, " variables"
+
+      
+
+      ! Get variable IDs
+
+      retval = nf90\_inq\_varid(ncid, "temperature", temp\_varid)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      retval = nf90\_inq\_varid(ncid, "pressure", pressure\_varid)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      
+
+      ! Read data
+
+      retval = nf90\_get\_var(ncid, temp\_varid, temperature)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      retval = nf90\_get\_var(ncid, pressure\_varid, pressure)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      
+
+      ! Verify a few data values
+
+      errors = 0
+
+      expected\_temp = 273.15
+
+      expected\_pressure = 1013.25
+
+      
+
+      if (temperature(1, 1, 1) /= expected\_temp) then
+
+         print \*, "Error: temperature(1,1,1) = ", temperature(1, 1, 1), &
+
+                  ", expected ", expected\_temp
+
+         errors = errors + 1
+
+      end if
+
+      
+
+      if (pressure(1, 1, 1) /= expected\_pressure) then
+
+         print \*, "Error: pressure(1,1,1) = ", pressure(1, 1, 1), &
+
+                  ", expected ", expected\_pressure
+
+         errors = errors + 1
+
+      end if
+
+      
+
+      if (errors == 0) then
+
+         print \*, "  Data validation: ", NTIME \* NLAT \* NLON \* 2, " values verified"
+
+      else
+
+         print \*, "\*\*\* FAILED: ", errors, " data validation errors"
+
+         stop ERRCODE
+
+      end if
+
+      
+
+      ! Close file
+
+      retval = nf90\_close(ncid)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   end subroutine verify\_format\_file
+
+
+   subroutine handle\_err(status)
+
+      integer, intent(in) :: status
+
+      print \*, "Error: ", trim(nf90\_strerror(status))
+
+      stop ERRCODE
+
+   end subroutine handle\_err
+
+   
+
+end program f\_format\_variants
+```
+
+When we do an ncdump of the resulting files, with the -h (header) and -s (secret) options, we can see the underlying binary format in the artificial \_Format attribute:
+
+```
+ncdump -hs f\_format\_classic.nc 
+
+netcdf f\_format\_classic \{
+
+dimensions:
+
+	time = 10 ;
+
+	lat = 20 ;
+
+	lon = 30 ;
+
+variables:
+
+	float temperature(time, lat, lon) ;
+
+		temperature:units = "K" ;
+
+	float pressure(time, lat, lon) ;
+
+		pressure:units = "hPa" ;
+
+
+// global attributes:
+
+		:\_Format = "classic" ;
+
+\}
+
+ncdump -hs f\_format\_64bit\_offset.nc 
+
+netcdf f\_format\_64bit\_offset \{
+
+dimensions:
+
+	time = 10 ;
+
+	lat = 20 ;
+
+	lon = 30 ;
+
+variables:
+
+	float temperature(time, lat, lon) ;
+
+		temperature:units = "K" ;
+
+	float pressure(time, lat, lon) ;
+
+		pressure:units = "hPa" ;
+
+
+// global attributes:
+
+		:\_Format = "64-bit offset" ;
+
+\}
+
+ncdump -hs f\_format\_netcdf4.nc 
+
+netcdf f\_format\_netcdf4 \{
+
+dimensions:
+
+	time = 10 ;
+
+	lat = 20 ;
+
+	lon = 30 ;
+
+variables:
+
+	float temperature(time, lat, lon) ;
+
+		temperature:units = "K" ;
+
+		temperature:\_Storage = "contiguous" ;
+
+		temperature:\_Endianness = "little" ;
+
+	float pressure(time, lat, lon) ;
+
+		pressure:units = "hPa" ;
+
+		pressure:\_Storage = "contiguous" ;
+
+		pressure:\_Endianness = "little" ;
+
+
+// global attributes:
+
+		:\_NCProperties = "version=2,netcdf=4.10.0-development,hdf5=1.14.6" ;
+
+		:\_SuperblockVersion = 2 ;
+
+		:\_IsNetcdf4 = 1 ;
+
+		:\_Format = "netCDF-4" ;
+
+\}
+
+ncdump -hs f\_format\_netcdf4\_classic.nc 
+
+netcdf f\_format\_netcdf4\_classic \{
+
+dimensions:
+
+	time = 10 ;
+
+	lat = 20 ;
+
+	lon = 30 ;
+
+variables:
+
+	float temperature(time, lat, lon) ;
+
+		temperature:units = "K" ;
+
+		temperature:\_Storage = "contiguous" ;
+
+		temperature:\_Endianness = "little" ;
+
+	float pressure(time, lat, lon) ;
+
+		pressure:units = "hPa" ;
+
+		pressure:\_Storage = "contiguous" ;
+
+		pressure:\_Endianness = "little" ;
+
+
+// global attributes:
+
+		:\_NCProperties = "version=2,netcdf=4.10.0-development,hdf5=1.14.6" ;
+
+		:\_SuperblockVersion = 2 ;
+
+		:\_IsNetcdf4 = 1 ;
+
+		:\_Format = "netCDF-4 classic model" ;
+
+\}
+```
+
+### Simple File with NetCDF/HDF5 Format
+
+This example is the Fortran equivalent of simple\_nc4.c, demonstrating NetCDF-4 format using the Fortran 90 NetCDF API. It creates a simple 2D array with NF90\_NETCDF4 flag.
+
+This is from the NetCDF Expansion Pack, examples/f\_netcdf-4/f\_simple\_nc4.f90.
+
+#### Learning Objectives:
+
+- Understand NF90\_NETCDF4 flag in Fortran
+
+- Learn format detection with nf90\_inq\_format()
+
+- Prepare for NetCDF-4 features (compression, chunking, groups)
+
+
+#### Fortran NetCDF-4 Constants:
+
+- NF90\_NETCDF4 Create NetCDF-4/HDF5 format file
+
+- NF90\_FORMAT\_NETCDF4 Format detection constant
+
+```
+program f\_simple\_nc4
+
+   use netcdf
+
+   implicit none
+
+   
+
+   character(len=\*), parameter :: FILE\_NAME = "f\_simple\_nc4.nc"
+
+   integer, parameter :: NDIMS = 2
+
+   integer, parameter :: NX = 6, NY = 12
+
+   
+
+   integer :: ncid, varid
+
+   integer :: x\_dimid, y\_dimid
+
+   integer :: dimids(NDIMS)
+
+   integer :: retval
+
+   
+
+   integer :: data\_out(NX, NY)
+
+   integer :: data\_in(NX, NY)
+
+   
+
+   integer :: i, j
+
+   integer :: ndims\_in, nvars\_in
+
+   integer :: len\_x, len\_y
+
+   integer :: var\_type
+
+   integer :: errors
+
+   integer :: expected
+
+   integer :: format
+
+   
+
+   ! ========== WRITE PHASE ==========
+
+   print \*, "Creating NetCDF-4 file: ", FILE\_NAME
+
+   
+
+   ! Initialize data with sequential integers (0, 1, 2, 3, ...)
+
+   do j = 1, NY
+
+      do i = 1, NX
+
+         data\_out(i, j) = (j-1) \* NX + (i-1)
+
+      end do
+
+   end do
+
+   
+
+   ! Create the NetCDF-4 file with NF90\_NETCDF4 flag
+
+   retval = nf90\_create(FILE\_NAME, NF90\_CLOBBER + NF90\_NETCDF4, ncid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   ! Define dimensions
+
+   retval = nf90\_def\_dim(ncid, "x", NX, x\_dimid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_def\_dim(ncid, "y", NY, y\_dimid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   ! Define the variable (dimension order: x, y for Fortran column-major)
+
+   dimids(1) = x\_dimid
+
+   dimids(2) = y\_dimid
+
+   retval = nf90\_def\_var(ncid, "data", NF90\_INT, dimids, varid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
    ! End define mode
 
    retval = nf90\_enddef(ncid)
@@ -11020,205 +13153,89 @@ program f\_simple\_2D
 
    
 
+   ! Verify format is NetCDF-4
+
+   retval = nf90\_inq\_format(ncid, format)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   
+
+   if (format /= NF90\_FORMAT\_NETCDF4) then
+
+      print \*, "Error: Expected NF90\_FORMAT\_NETCDF4 (", NF90\_FORMAT\_NETCDF4, &
+
+               "), found ", format
+
+      stop 2
+
+   end if
+
+   print \*, "Verified: Format is NF90\_FORMAT\_NETCDF4"
+
+   
+
    ! Verify metadata: check number of dimensions and variables
 
-   retval = nf90\_inquire(ncid, ndims\_in, nvars\_in, ngatts\_in, unlimdimid\_in)
+   retval = nf90\_inquire(ncid, ndims\_in, nvars\_in)
 
    if (retval /= nf90\_noerr) call handle\_err(retval)
 
    
 
-   if (ndims\_in /= NDIMS) then
+   if (ndims\_in /= NDIMS .or. nvars\_in /= 1) then
 
-      print \*, "Error: Expected ", NDIMS, " dimensions, found ", ndims\_in
-
-      stop 2
-
-   end if
-
-   print \*, "Verified: ", ndims\_in, " dimensions"
-
-   
-
-   if (nvars\_in /= 1) then
-
-      print \*, "Error: Expected 1 variable, found ", nvars\_in
+      print \*, "Error: Expected ", NDIMS, " dims/1 var, found ", ndims\_in, "/", nvars\_in
 
       stop 2
 
    end if
 
-   print \*, "Verified: ", nvars\_in, " variable"
+   print \*, "Verified: ", ndims\_in, " dimensions, ", nvars\_in, " variable"
 
    
 
-   if (ngatts\_in /= 1) then
+   ! Verify dimension sizes
 
-      print \*, "Error: Expected 1 global attribute, found ", ngatts\_in
+   retval = nf90\_inquire\_dimension(ncid, x\_dimid, len=len\_x)
 
-      stop 2
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-   end if
-
-   print \*, "Verified: ", ngatts\_in, " global attribute"
-
-   
-
-   if (unlimdimid\_in /= -1) then
-
-      print \*, "Error: Expected no unlimited dimension, found dimid ", unlimdimid\_in
-
-      stop 2
-
-   end if
-
-   print \*, "Verified: no unlimited dimension"
-
-   
-
-   ! Verify dimensions using nf90\_inquire\_dimension()
-
-   retval = nf90\_inquire\_dimension(ncid, x\_dimid, name=dim\_name, len=len\_x)
+   retval = nf90\_inquire\_dimension(ncid, y\_dimid, len=len\_y)
 
    if (retval /= nf90\_noerr) call handle\_err(retval)
 
    
 
-   if (trim(dim\_name) /= "x") then
+   if (len\_x /= NX .or. len\_y /= NY) then
 
-      print \*, "Error: Expected dimension name 'x', found '", trim(dim\_name), "'"
-
-      stop 2
-
-   end if
-
-   if (len\_x /= NX) then
-
-      print \*, "Error: Expected x dimension = ", NX, ", found ", len\_x
+      print \*, "Error: Expected x=", NX, "/y=", NY, ", found x=", len\_x, "/y=", len\_y
 
       stop 2
 
    end if
 
-   print \*, "Verified: dimension '", trim(dim\_name), "' = ", len\_x
+   print \*, "Verified: x=", len\_x, ", y=", len\_y
 
    
 
-   retval = nf90\_inquire\_dimension(ncid, y\_dimid, name=dim\_name, len=len\_y)
+   ! Verify variable type
+
+   retval = nf90\_inquire\_variable(ncid, varid, xtype=var\_type)
 
    if (retval /= nf90\_noerr) call handle\_err(retval)
 
    
-
-   if (trim(dim\_name) /= "y") then
-
-      print \*, "Error: Expected dimension name 'y', found '", trim(dim\_name), "'"
-
-      stop 2
-
-   end if
-
-   if (len\_y /= NY) then
-
-      print \*, "Error: Expected y dimension = ", NY, ", found ", len\_y
-
-      stop 2
-
-   end if
-
-   print \*, "Verified: dimension '", trim(dim\_name), "' = ", len\_y
-
-   
-
-   ! Verify variable using nf90\_inquire\_variable()
-
-   retval = nf90\_inquire\_variable(ncid, varid, name=var\_name\_in, xtype=var\_type, &
-
-                                  ndims=var\_ndims, dimids=var\_dimids)
-
-   if (retval /= nf90\_noerr) call handle\_err(retval)
-
-   
-
-   if (trim(var\_name\_in) /= "data") then
-
-      print \*, "Error: Expected variable name 'data', found '", trim(var\_name\_in), "'"
-
-      stop 2
-
-   end if
 
    if (var\_type /= NF90\_INT) then
 
-      print \*, "Error: Expected variable type NF90\_INT, found ", var\_type
+      print \*, "Error: Expected NF90\_INT, found ", var\_type
 
       stop 2
 
    end if
 
-   if (var\_ndims /= NDIMS) then
-
-      print \*, "Error: Expected ", NDIMS, " dimensions, found ", var\_ndims
-
-      stop 2
-
-   end if
-
-   if (var\_dimids(1) /= x\_dimid .or. var\_dimids(2) /= y\_dimid) then
-
-      print \*, "Error: Unexpected dimension IDs for variable"
-
-      stop 2
-
-   end if
-
-   print \*, "Verified: variable '", trim(var\_name\_in), "' type NF90\_INT, ", var\_ndims, " dims"
-
-   
-
-   ! Verify global attribute
-
-   retval = nf90\_inquire\_attribute(ncid, NF90\_GLOBAL, "title", len=att\_len)
-
-   if (retval /= nf90\_noerr) call handle\_err(retval)
-
-   retval = nf90\_get\_att(ncid, NF90\_GLOBAL, "title", title\_in)
-
-   if (retval /= nf90\_noerr) call handle\_err(retval)
-
-   if (title\_in(1:att\_len) /= "Simple 2D Example") then
-
-      print \*, "Error: Expected title 'Simple 2D Example', found '", &
-
-               title\_in(1:att\_len), "'"
-
-      stop 2
-
-   end if
-
-   print \*, "Verified: global attribute 'title' = '", title\_in(1:att\_len), "'"
-
-   
-
-   ! Verify variable attribute
-
-   retval = nf90\_inquire\_attribute(ncid, varid, "units", len=att\_len)
-
-   if (retval /= nf90\_noerr) call handle\_err(retval)
-
-   retval = nf90\_get\_att(ncid, varid, "units", units\_in)
-
-   if (retval /= nf90\_noerr) call handle\_err(retval)
-
-   if (units\_in(1:att\_len) /= "m/s") then
-
-      print \*, "Error: Expected units 'm/s', found '", units\_in(1:att\_len), "'"
-
-      stop 2
-
-   end if
-
-   print \*, "Verified: variable attribute 'units' = '", units\_in(1:att\_len), "'"
+   print \*, "Verified: variable type NF90\_INT"
 
    
 
@@ -11284,6 +13301,8 @@ program f\_simple\_2D
 
    print \*, "\*\*\* SUCCESS: All validation checks passed!"
 
+   print \*, "NetCDF-4 format uses HDF5 as storage backend."
+
    
 
 contains
@@ -11300,1542 +13319,49 @@ contains
 
    
 
-end program f\_simple\_2D
-```
-
-This yields the following metadata:
-
-```
-`netcdf f\_simple\_2D \{`
-
-`dimensions:`
-
-`	x = 6 ;`
-
-`	y = 12 ;`
-
-`variables:`
-
-`	int data(y, x) ;`
-
-`		data :units = "m/s" ;`
-
-
-`// global attributes:`
-
-`		:title = "Simple 2D Example" ;`
-
-`data:`
-
-
-` data =`
-
-`  0, 1, 2, 3, 4, 5,`
-
-`  6, 7, 8, 9, 10, 11,`
-
-`  12, 13, 14, 15, 16, 17,`
-
-`  18, 19, 20, 21, 22, 23,`
-
-`  24, 25, 26, 27, 28, 29,`
-
-`  30, 31, 32, 33, 34, 35,`
-
-`  36, 37, 38, 39, 40, 41,`
-
-`  42, 43, 44, 45, 46, 47,`
-
-`  48, 49, 50, 51, 52, 53,`
-
-`  54, 55, 56, 57, 58, 59,`
-
-`  60, 61, 62, 63, 64, 65,`
-
-`  66, 67, 68, 69, 70, 71 ;`
-
-`\}`
-```
-
-### Coordinate Variables
-
-This is the Fortran equivalent of coord\_vars.c, demonstrating coordinate variables and CF (Climate and Forecast) convention metadata using the Fortran 90 NetCDF API. The program creates a 2D temperature field with latitude and longitude coordinate variables following CF conventions.
-
-#### Learning Objectives
-
-- Understand coordinate variables in Fortran NetCDF API
-
-- Learn CF convention attributes (nf90\_put\_att)
-
-- Master attribute definition and retrieval in Fortran
-
-- Work with geospatial data in Fortran
-
-- Verify equivalence with C version (coord\_vars.c)
-
-#### Key Fortran Concepts
-
-- Character Attributes: Use nf90\_put\_att with character strings
-
-- Attribute Length: Fortran handles string length automatically
-
-- Array Ordering: Temperature(NLON, NLAT) vs C temperature\[NLAT\]\[NLON\]
-
-```
-`program f\_coord\_vars`
-
-`   use netcdf`
-
-`   implicit none`
-
-`   `
-
-`   character(len=\*), parameter :: FILE\_NAME = "f\_coord\_vars.nc"`
-
-`   integer, parameter :: NLAT = 4, NLON = 5`
-
-`   `
-
-`   integer :: ncid, lat\_varid, lon\_varid, temp\_varid`
-
-`   integer :: lat\_dimid, lon\_dimid`
-
-`   integer :: dimids(2)`
-
-`   integer :: retval`
-
-`   `
-
-`   real :: lat(NLAT) = (/-45.0, -15.0, 15.0, 45.0/)`
-
-`   real :: lon(NLON) = (/-120.0, -60.0, 0.0, 60.0, 120.0/)`
-
-`   real :: temperature(NLON, NLAT)`
-
-`   `
-
-`   real :: lat\_in(NLAT)`
-
-`   real :: lon\_in(NLON)`
-
-`   real :: temperature\_in(NLON, NLAT)`
-
-`   `
-
-`   integer :: i, j`
-
-`   integer :: ndims\_in, nvars\_in`
-
-`   integer :: errors`
-
-`   character(len=256) :: att\_text`
-
-`   integer :: att\_len`
-
-`   real :: fill\_value, fill\_value\_in`
-
-`   `
-
-`   ! ========== WRITE PHASE ==========`
-
-`   print \*, "Creating NetCDF file: ", FILE\_NAME`
-
-`   `
-
-`   ! Initialize temperature data (synthetic: varies with lat and lon)`
-
-`   do i = 1, NLAT`
-
-`      do j = 1, NLON`
-
-`         temperature(j, i) = 273.15 + (i-1) \* 5.0 + (j-1) \* 2.0`
-
-`      end do`
-
-`   end do`
-
-`   `
-
-`   ! Create the NetCDF file`
-
-`   retval = nf90\_create(FILE\_NAME, NF90\_CLOBBER, ncid)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   `
-
-`   ! Define dimensions`
-
-`   retval = nf90\_def\_dim(ncid, "lat", NLAT, lat\_dimid)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   retval = nf90\_def\_dim(ncid, "lon", NLON, lon\_dimid)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   `
-
-`   ! Define coordinate variables (same name as dimension)`
-
-`   retval = nf90\_def\_var(ncid, "lat", NF90\_FLOAT, lat\_dimid, lat\_varid)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   retval = nf90\_def\_var(ncid, "lon", NF90\_FLOAT, lon\_dimid, lon\_varid)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   `
-
-`   ! Add CF convention attributes to latitude`
-
-`   retval = nf90\_put\_att(ncid, lat\_varid, "units", "degrees\_north")`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   retval = nf90\_put\_att(ncid, lat\_varid, "standard\_name", "latitude")`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   retval = nf90\_put\_att(ncid, lat\_varid, "long\_name", "Latitude")`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   retval = nf90\_put\_att(ncid, lat\_varid, "axis", "Y")`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   `
-
-`   ! Add CF convention attributes to longitude`
-
-`   retval = nf90\_put\_att(ncid, lon\_varid, "units", "degrees\_east")`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   retval = nf90\_put\_att(ncid, lon\_varid, "standard\_name", "longitude")`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   retval = nf90\_put\_att(ncid, lon\_varid, "long\_name", "Longitude")`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   retval = nf90\_put\_att(ncid, lon\_varid, "axis", "X")`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   `
-
-`   ! Define temperature variable (Fortran order: lon, lat)`
-
-`   dimids(1) = lon\_dimid`
-
-`   dimids(2) = lat\_dimid`
-
-`   retval = nf90\_def\_var(ncid, "temperature", NF90\_FLOAT, dimids, temp\_varid)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   `
-
-`   ! Add CF convention attributes to temperature`
-
-`   retval = nf90\_put\_att(ncid, temp\_varid, "units", "K")`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   retval = nf90\_put\_att(ncid, temp\_varid, "standard\_name", "air\_temperature")`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   retval = nf90\_put\_att(ncid, temp\_varid, "long\_name", "Air Temperature")`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   `
-
-`   fill\_value = -999.0`
-
-`   retval = nf90\_put\_att(ncid, temp\_varid, "\_FillValue", fill\_value)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   `
-
-`   ! End define mode`
-
-`   retval = nf90\_enddef(ncid)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   `
-
-`   ! Write coordinate variables`
-
-`   retval = nf90\_put\_var(ncid, lat\_varid, lat)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   retval = nf90\_put\_var(ncid, lon\_varid, lon)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   `
-
-`   ! Write temperature data`
-
-`   retval = nf90\_put\_var(ncid, temp\_varid, temperature)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   `
-
-`   ! Close the file`
-
-`   retval = nf90\_close(ncid)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   `
-
-`   print \*, "\*\*\* SUCCESS writing file!"`
-
-`   `
-
-`   ! ========== READ PHASE ==========`
-
-`   print \*, ""`
-
-`   print \*, "Reopening file for validation..."`
-
-`   `
-
-`   ! Open the file for reading`
-
-`   retval = nf90\_open(FILE\_NAME, NF90\_NOWRITE, ncid)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   `
-
-`   ! Verify metadata`
-
-`   retval = nf90\_inquire(ncid, ndims\_in, nvars\_in)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   `
-
-`   if (ndims\_in /= 2) then`
-
-`      print \*, "Error: Expected 2 dimensions, found ", ndims\_in`
-
-`      stop 2`
-
-`   end if`
-
-`   print \*, "Verified: ", ndims\_in, " dimensions"`
-
-`   `
-
-`   if (nvars\_in /= 3) then`
-
-`      print \*, "Error: Expected 3 variables, found ", nvars\_in`
-
-`      stop 2`
-
-`   end if`
-
-`   print \*, "Verified: ", nvars\_in, " variables (lat, lon, temperature)"`
-
-`   `
-
-`   ! Verify latitude attributes`
-
-`   retval = nf90\_inquire\_attribute(ncid, lat\_varid, "units", len=att\_len)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   retval = nf90\_get\_att(ncid, lat\_varid, "units", att\_text)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   if (trim(att\_text) /= "degrees\_north") then`
-
-`      print \*, "Error: lat units = '", trim(att\_text), "', expected 'degrees\_north'"`
-
-`      stop 2`
-
-`   end if`
-
-`   print \*, "Verified: lat units = '", trim(att\_text), "'"`
-
-`   `
-
-`   retval = nf90\_get\_att(ncid, lat\_varid, "standard\_name", att\_text)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   if (trim(att\_text) /= "latitude") then`
-
-`      print \*, "Error: lat standard\_name = '", trim(att\_text), "', expected 'latitude'"`
-
-`      stop 2`
-
-`   end if`
-
-`   print \*, "Verified: lat standard\_name = '", trim(att\_text), "'"`
-
-`   `
-
-`   retval = nf90\_get\_att(ncid, lat\_varid, "axis", att\_text)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   if (trim(att\_text) /= "Y") then`
-
-`      print \*, "Error: lat axis = '", trim(att\_text), "', expected 'Y'"`
-
-`      stop 2`
-
-`   end if`
-
-`   print \*, "Verified: lat axis = '", trim(att\_text), "'"`
-
-`   `
-
-`   ! Verify longitude attributes`
-
-`   retval = nf90\_get\_att(ncid, lon\_varid, "units", att\_text)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   if (trim(att\_text) /= "degrees\_east") then`
-
-`      print \*, "Error: lon units = '", trim(att\_text), "', expected 'degrees\_east'"`
-
-`      stop 2`
-
-`   end if`
-
-`   print \*, "Verified: lon units = '", trim(att\_text), "'"`
-
-`   `
-
-`   retval = nf90\_get\_att(ncid, lon\_varid, "standard\_name", att\_text)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   if (trim(att\_text) /= "longitude") then`
-
-`      print \*, "Error: lon standard\_name = '", trim(att\_text), "', expected 'longitude'"`
-
-`      stop 2`
-
-`   end if`
-
-`   print \*, "Verified: lon standard\_name = '", trim(att\_text), "'"`
-
-`   `
-
-`   ! Verify temperature attributes`
-
-`   retval = nf90\_get\_att(ncid, temp\_varid, "units", att\_text)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   if (trim(att\_text) /= "K") then`
-
-`      print \*, "Error: temperature units = '", trim(att\_text), "', expected 'K'"`
-
-`      stop 2`
-
-`   end if`
-
-`   print \*, "Verified: temperature units = '", trim(att\_text), "'"`
-
-`   `
-
-`   retval = nf90\_get\_att(ncid, temp\_varid, "\_FillValue", fill\_value\_in)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   if (fill\_value\_in /= fill\_value) then`
-
-`      print \*, "Error: temperature \_FillValue = ", fill\_value\_in, ", expected ", fill\_value`
-
-`      stop 2`
-
-`   end if`
-
-`   print \*, "Verified: temperature \_FillValue = ", fill\_value\_in`
-
-`   `
-
-`   ! Read coordinate variables`
-
-`   retval = nf90\_get\_var(ncid, lat\_varid, lat\_in)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   retval = nf90\_get\_var(ncid, lon\_varid, lon\_in)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   `
-
-`   ! Verify coordinate data`
-
-`   errors = 0`
-
-`   do i = 1, NLAT`
-
-`      if (lat\_in(i) /= lat(i)) then`
-
-`         print \*, "Error: lat(", i, ") = ", lat\_in(i), ", expected ", lat(i)`
-
-`         errors = errors + 1`
-
-`      end if`
-
-`   end do`
-
-`   `
-
-`   do j = 1, NLON`
-
-`      if (lon\_in(j) /= lon(j)) then`
-
-`         print \*, "Error: lon(", j, ") = ", lon\_in(j), ", expected ", lon(j)`
-
-`         errors = errors + 1`
-
-`      end if`
-
-`   end do`
-
-`   `
-
-`   if (errors == 0) then`
-
-`      print \*, "Verified: coordinate arrays correct"`
-
-`      print \*, "  lat: \[", lat(1), ", ", lat(2), ", ", lat(3), ", ", lat(4), "\]"`
-
-`      print \*, "  lon: \[", lon(1), ", ", lon(2), ", ", lon(3), ", ", lon(4), ", ", lon(5), "\]"`
-
-`   end if`
-
-`   `
-
-`   ! Read temperature data`
-
-`   retval = nf90\_get\_var(ncid, temp\_varid, temperature\_in)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   `
-
-`   ! Verify temperature data`
-
-`   do i = 1, NLAT`
-
-`      do j = 1, NLON`
-
-`         if (temperature\_in(j, i) /= temperature(j, i)) then`
-
-`            print \*, "Error: temperature(", j, ",", i, ") = ", temperature\_in(j, i), &`
-
-`                     ", expected ", temperature(j, i)`
-
-`            errors = errors + 1`
-
-`         end if`
-
-`      end do`
-
-`   end do`
-
-`   `
-
-`   if (errors \> 0) then`
-
-`      print \*, "\*\*\* FAILED: ", errors, " data validation errors"`
-
-`      stop 2`
-
-`   end if`
-
-`   `
-
-`   print \*, "Verified: all temperature data correct (", NLAT \* NLON, " values)"`
-
-`   `
-
-`   ! Close the file`
-
-`   retval = nf90\_close(ncid)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   `
-
-`   print \*, ""`
-
-`   print \*, "\*\*\* SUCCESS: All validation checks passed!"`
-
-`   `
-
-`contains`
-
-`   subroutine handle\_err(status)`
-
-`      integer, intent(in) :: status`
-
-`      print \*, "Error: ", trim(nf90\_strerror(status))`
-
-`      stop 2`
-
-`   end subroutine handle\_err`
-
-`   `
-
-`end program f\_coord\_vars`
-```
-
-This program produces a file with this ncdump output:
-
-```
-`netcdf f\_coord\_vars \{`
-
-`dimensions:`
-
-`	lat = 4 ;`
-
-`	lon = 5 ;`
-
-`variables:`
-
-`	float lat(lat) ;`
-
-`		lat:units = "degrees\_north" ;`
-
-`		lat:standard\_name = "latitude" ;`
-
-`		lat:long\_name = "Latitude" ;`
-
-`		lat:axis = "Y" ;`
-
-`	float lon(lon) ;`
-
-`		lon:units = "degrees\_east" ;`
-
-`		lon:standard\_name = "longitude" ;`
-
-`		lon:long\_name = "Longitude" ;`
-
-`		lon:axis = "X" ;`
-
-`	float temperature(lat, lon) ;`
-
-`		temperature:units = "K" ;`
-
-`		temperature:standard\_name = "air\_temperature" ;`
-
-`		temperature:long\_name = "Air Temperature" ;`
-
-`		temperature:\_FillValue = -999.f ;`
-
-`data:`
-
-
-` lat = -45, -15, 15, 45 ;`
-
-
-` lon = -120, -60, 0, 60, 120 ;`
-
-
-` temperature =`
-
-`  273.15, 275.15, 277.15, 279.15, 281.15,`
-
-`  278.15, 280.15, 282.15, 284.15, 286.15,`
-
-`  283.15, 285.15, 287.15, 289.15, 291.15,`
-
-`  288.15, 290.15, 292.15, 294.15, 296.15 ;`
-
-`\}`
-```
-
-## Fortran Enhanced Model Examples
-
-These example in Fortan all make use of the enhanced data model, or other features of the HDF5 library.
-
-### Different NetCDF Binary Files
-
-This example is f\_format\_variants.f90 from the examples section of the NetCDF Expansion Pack project.
-
-This is the Fortran equivalent of format\_variants.c, demonstrating all five NetCDF binary format variants using the Fortran 90 NetCDF API. The program creates identical data structures in each format and compares their characteristics.
-
-#### Learning Objectives
-
-- Understand format flags in Fortran (NF90\_CLASSIC\_MODEL, NF90\_64BIT\_OFFSET, NF90\_64BIT\_DATA, NF90\_NETCDF4, IOR(NF90\_NETCDF4, NF90\_CLASSIC\_MODEL))
-
-- Learn format detection with nf90\_inq\_format()
-
-- Compare file sizes and format characteristics
-
-- Make informed format choices in Fortran applications
-
-#### Fortran Format Constants
-
-- **NF90\_CLASSIC\_MODEL** CDF-1 format (2GB limits)
-
-- **NF90\_64BIT\_OFFSET** CDF-2 format (4GB variable limit)
-
-- **NF90\_64BIT\_DATA** CDF-5 format (unlimited sizes)
-
-- **NF90\_NETCDF4** NetCDF-4/HDF5 format (groups, compression, user types)
-
-- **IOR(NF90\_NETCDF4, NF90\_CLASSIC\_MODEL) **HDF5 storage, classic data model
-
-```
-`program f\_format\_variants`
-
-`   use netcdf`
-
-`   implicit none`
-
-`   `
-
-`   integer, parameter :: NTIME = 10, NLAT = 20, NLON = 30`
-
-`   integer, parameter :: ERRCODE = 2`
-
-`   `
-
-`   print \*, "NetCDF Format Variants Comparison"`
-
-`   print \*, ""`
-
-`   print \*, "This program creates five files with identical data structures"`
-
-`   print \*, "in all five NetCDF binary formats to demonstrate their differences."`
-
-`   print \*, ""`
-
-`   print \*, "Data structure:"`
-
-`   print \*, "  Dimensions: time=", NTIME, ", lat=", NLAT, ", lon=", NLON`
-
-`   print \*, "  Variables: temperature(time,lat,lon), pressure(time,lat,lon)"`
-
-`   print \*, "  Data type: NF90\_FLOAT (4 bytes per value)"`
-
-`   print \*, "  Total data: ", NTIME \* NLAT \* NLON, " values per variable"`
-
-`   print \*, ""`
-
-`   `
-
-`   ! Create files in each format`
-
-`   print \*, "=== Creating Format Files ==="`
-
-`   print \*, ""`
-
-`   `
-
-`   call create\_format\_file("f\_format\_classic.nc", NF90\_CLASSIC\_MODEL, &`
-
-`                          "NF90\_CLASSIC\_MODEL")`
-
-`   call create\_format\_file("f\_format\_64bit\_offset.nc", NF90\_64BIT\_OFFSET, &`
-
-`                          "NF90\_64BIT\_OFFSET")`
-
-`   call create\_format\_file("f\_format\_64bit\_data.nc", NF90\_64BIT\_DATA, &`
-
-`                          "NF90\_64BIT\_DATA")`
-
-`   call create\_format\_file("f\_format\_netcdf4.nc", NF90\_NETCDF4, &`
-
-`                          "NF90\_NETCDF4")`
-
-`   call create\_format\_file("f\_format\_netcdf4\_classic.nc", &`
-
-`                          IOR(NF90\_NETCDF4, NF90\_CLASSIC\_MODEL), &`
-
-`                          "NF90\_NETCDF4+NF90\_CLASSIC\_MODEL")`
-
-`   `
-
-`   ! Verify files`
-
-`   print \*, ""`
-
-`   print \*, "=== Verifying Format Files ==="`
-
-`   `
-
-`   call verify\_format\_file("f\_format\_classic.nc", NF90\_FORMAT\_CLASSIC, &`
-
-`                          "NF90\_FORMAT\_CLASSIC")`
-
-`   call verify\_format\_file("f\_format\_64bit\_offset.nc", NF90\_FORMAT\_64BIT\_OFFSET, &`
-
-`                          "NF90\_FORMAT\_64BIT\_OFFSET")`
-
-`   call verify\_format\_file("f\_format\_64bit\_data.nc", NF90\_FORMAT\_64BIT\_DATA, &`
-
-`                          "NF90\_FORMAT\_64BIT\_DATA")`
-
-`   call verify\_format\_file("f\_format\_netcdf4.nc", NF90\_FORMAT\_NETCDF4, &`
-
-`                          "NF90\_FORMAT\_NETCDF4")`
-
-`   call verify\_format\_file("f\_format\_netcdf4\_classic.nc", &`
-
-`                          NF90\_FORMAT\_NETCDF4\_CLASSIC, &`
-
-`                          "NF90\_FORMAT\_NETCDF4\_CLASSIC")`
-
-`   `
-
-`   ! Summary`
-
-`   print \*, ""`
-
-`   print \*, "=== Format Comparison Summary ==="`
-
-`   print \*, ""`
-
-`   print \*, "Format Characteristics:"`
-
-`   print \*, ""`
-
-`   print \*, "NF90\_CLASSIC\_MODEL (CDF-1):"`
-
-`   print \*, "  File size limit: 2GB"`
-
-`   print \*, "  Variable size limit: 2GB"`
-
-`   print \*, "  Storage backend: CDF binary"`
-
-`   print \*, "  Compatibility: NetCDF 3.0+, all tools"`
-
-`   print \*, "  Use when: Maximum compatibility needed, files \< 2GB"`
-
-`   print \*, ""`
-
-`   print \*, "NF90\_64BIT\_OFFSET (CDF-2):"`
-
-`   print \*, "  File size limit: effectively unlimited"`
-
-`   print \*, "  Variable size limit: 4GB per variable"`
-
-`   print \*, "  Storage backend: CDF binary"`
-
-`   print \*, "  Compatibility: NetCDF 3.6.0+"`
-
-`   print \*, "  Use when: Large files needed, variables \< 4GB each"`
-
-`   print \*, ""`
-
-`   print \*, "NF90\_64BIT\_DATA (CDF-5):"`
-
-`   print \*, "  File size limit: effectively unlimited"`
-
-`   print \*, "  Variable size limit: effectively unlimited"`
-
-`   print \*, "  Storage backend: CDF binary"`
-
-`   print \*, "  Compatibility: NetCDF 4.4.0+ or PnetCDF"`
-
-`   print \*, "  Use when: Very large variables needed (\> 4GB)"`
-
-`   print \*, ""`
-
-`   print \*, "NF90\_NETCDF4 (HDF5):"`
-
-`   print \*, "  File size limit: effectively unlimited"`
-
-`   print \*, "  Variable size limit: effectively unlimited"`
-
-`   print \*, "  Storage backend: HDF5"`
-
-`   print \*, "  Compatibility: NetCDF 4.0+"`
-
-`   print \*, "  Features: groups, compression, chunking, user-defined types"`
-
-`   print \*, "  Use when: Advanced features needed (compression, groups, etc.)"`
-
-`   print \*, ""`
-
-`   print \*, "IOR(NF90\_NETCDF4, NF90\_CLASSIC\_MODEL) (HDF5 Classic Model):"`
-
-`   print \*, "  File size limit: effectively unlimited"`
-
-`   print \*, "  Variable size limit: effectively unlimited"`
-
-`   print \*, "  Storage backend: HDF5"`
-
-`   print \*, "  Compatibility: NetCDF 4.0+"`
-
-`   print \*, "  Features: compression, chunking (no groups, no user-defined types)"`
-
-`   print \*, "  Use when: HDF5 storage benefits needed with classic data model"`
-
-`   print \*, ""`
-
-`   print \*, "Key Observations:"`
-
-`   print \*, "  - All five formats store identical data correctly"`
-
-`   print \*, "  - Classic formats (CDF-1/2/5) have smaller overhead for small files"`
-
-`   print \*, "  - NetCDF-4 formats (HDF5) have larger overhead but support compression"`
-
-`   print \*, "  - NC4 classic model is a useful middle ground: HDF5 storage, simple model"`
-
-`   print \*, "  - Use nf90\_inq\_format() to detect format type when reading files"`
-
-`   print \*, ""`
-
-`   print \*, "\*\*\* SUCCESS: All format tests passed! \*\*\*"`
-
-`   `
-
-`contains`
-
-
-`   subroutine create\_format\_file(filename, format\_flag, format\_name)`
-
-`      character(len=\*), intent(in) :: filename, format\_name`
-
-`      integer, intent(in) :: format\_flag`
-
-`      `
-
-`      integer :: ncid, time\_dimid, lat\_dimid, lon\_dimid`
-
-`      integer :: temp\_varid, pressure\_varid`
-
-`      integer :: dimids(3)`
-
-`      integer :: retval`
-
-`      `
-
-`      real :: temperature(NLON, NLAT, NTIME)`
-
-`      real :: pressure(NLON, NLAT, NTIME)`
-
-`      integer :: t, i, j`
-
-`      `
-
-`      print \*, "Creating ", trim(format\_name), " format file: ", trim(filename)`
-
-`      `
-
-`      ! Initialize data`
-
-`      do t = 1, NTIME`
-
-`         do i = 1, NLAT`
-
-`            do j = 1, NLON`
-
-`               temperature(j, i, t) = 273.15 + (t-1) \* 1.0 + (i-1) \* 0.5 + (j-1) \* 0.2`
-
-`               pressure(j, i, t) = 1013.25 + (t-1) \* 0.1 + (i-1) \* 0.05 + (j-1) \* 0.02`
-
-`            end do`
-
-`         end do`
-
-`      end do`
-
-`      `
-
-`      ! Create file`
-
-`      retval = nf90\_create(filename, format\_flag, ncid)`
-
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`      `
-
-`      ! Define dimensions`
-
-`      retval = nf90\_def\_dim(ncid, "time", NTIME, time\_dimid)`
-
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`      retval = nf90\_def\_dim(ncid, "lat", NLAT, lat\_dimid)`
-
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`      retval = nf90\_def\_dim(ncid, "lon", NLON, lon\_dimid)`
-
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`      `
-
-`      ! Define variables (Fortran order: lon, lat, time)`
-
-`      dimids(1) = lon\_dimid`
-
-`      dimids(2) = lat\_dimid`
-
-`      dimids(3) = time\_dimid`
-
-`      `
-
-`      retval = nf90\_def\_var(ncid, "temperature", NF90\_FLOAT, dimids, temp\_varid)`
-
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`      retval = nf90\_def\_var(ncid, "pressure", NF90\_FLOAT, dimids, pressure\_varid)`
-
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`      `
-
-`      ! Add attributes`
-
-`      retval = nf90\_put\_att(ncid, temp\_varid, "units", "K")`
-
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`      retval = nf90\_put\_att(ncid, pressure\_varid, "units", "hPa")`
-
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`      `
-
-`      ! End define mode`
-
-`      retval = nf90\_enddef(ncid)`
-
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`      `
-
-`      ! Write data`
-
-`      retval = nf90\_put\_var(ncid, temp\_varid, temperature)`
-
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`      retval = nf90\_put\_var(ncid, pressure\_varid, pressure)`
-
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`      `
-
-`      ! Close file`
-
-`      retval = nf90\_close(ncid)`
-
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`      `
-
-`      print \*, "  File created successfully"`
-
-`   end subroutine create\_format\_file`
-
-
-`   subroutine verify\_format\_file(filename, expected\_format, expected\_format\_name)`
-
-`      character(len=\*), intent(in) :: filename, expected\_format\_name`
-
-`      integer, intent(in) :: expected\_format`
-
-`      `
-
-`      integer :: ncid, retval`
-
-`      integer :: format\_in`
-
-`      integer :: ndims, nvars`
-
-`      real :: temperature(NLON, NLAT, NTIME)`
-
-`      real :: pressure(NLON, NLAT, NTIME)`
-
-`      integer :: temp\_varid, pressure\_varid`
-
-`      character(len=50) :: detected\_format`
-
-`      integer :: errors`
-
-`      real :: expected\_temp, expected\_pressure`
-
-`      `
-
-`      print \*, ""`
-
-`      print \*, "Verifying file: ", trim(filename)`
-
-`      print \*, "  Expected format: ", trim(expected\_format\_name)`
-
-`      `
-
-`      ! Open file`
-
-`      retval = nf90\_open(filename, NF90\_NOWRITE, ncid)`
-
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`      `
-
-`      ! Check format`
-
-`      retval = nf90\_inq\_format(ncid, format\_in)`
-
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`      `
-
-`      ! Determine format name`
-
-`      if (format\_in == NF90\_FORMAT\_CLASSIC) then`
-
-`         detected\_format = "NF90\_FORMAT\_CLASSIC (CDF-1)"`
-
-`      else if (format\_in == NF90\_FORMAT\_64BIT\_OFFSET) then`
-
-`         detected\_format = "NF90\_FORMAT\_64BIT\_OFFSET (CDF-2)"`
-
-`      else if (format\_in == NF90\_FORMAT\_64BIT\_DATA) then`
-
-`         detected\_format = "NF90\_FORMAT\_64BIT\_DATA (CDF-5)"`
-
-`      else if (format\_in == NF90\_FORMAT\_NETCDF4) then`
-
-`         detected\_format = "NF90\_FORMAT\_NETCDF4 (HDF5)"`
-
-`      else if (format\_in == NF90\_FORMAT\_NETCDF4\_CLASSIC) then`
-
-`         detected\_format = "NF90\_FORMAT\_NETCDF4\_CLASSIC (HDF5/CM)"`
-
-`      else`
-
-`         detected\_format = "UNKNOWN"`
-
-`      end if`
-
-`      `
-
-`      print \*, "  Format detected: ", trim(detected\_format)`
-
-`      `
-
-`      ! Verify expected format`
-
-`      if (format\_in /= expected\_format) then`
-
-`         print \*, "Error: Expected format ", trim(expected\_format\_name), &`
-
-`                  " (", expected\_format, "), got ", trim(detected\_format), &`
-
-`                  " (", format\_in, ")"`
-
-`         stop ERRCODE`
-
-`      end if`
-
-`      `
-
-`      ! Verify metadata`
-
-`      retval = nf90\_inquire(ncid, ndims, nvars)`
-
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`      `
-
-`      if (ndims /= 3 .or. nvars /= 2) then`
-
-`         print \*, "Error: Expected 3 dimensions and 2 variables, found ", &`
-
-`                  ndims, " dims, ", nvars, " vars"`
-
-`         stop ERRCODE`
-
-`      end if`
-
-`      print \*, "  Metadata: ", ndims, " dimensions, ", nvars, " variables"`
-
-`      `
-
-`      ! Get variable IDs`
-
-`      retval = nf90\_inq\_varid(ncid, "temperature", temp\_varid)`
-
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`      retval = nf90\_inq\_varid(ncid, "pressure", pressure\_varid)`
-
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`      `
-
-`      ! Read data`
-
-`      retval = nf90\_get\_var(ncid, temp\_varid, temperature)`
-
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`      retval = nf90\_get\_var(ncid, pressure\_varid, pressure)`
-
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`      `
-
-`      ! Verify a few data values`
-
-`      errors = 0`
-
-`      expected\_temp = 273.15`
-
-`      expected\_pressure = 1013.25`
-
-`      `
-
-`      if (temperature(1, 1, 1) /= expected\_temp) then`
-
-`         print \*, "Error: temperature(1,1,1) = ", temperature(1, 1, 1), &`
-
-`                  ", expected ", expected\_temp`
-
-`         errors = errors + 1`
-
-`      end if`
-
-`      `
-
-`      if (pressure(1, 1, 1) /= expected\_pressure) then`
-
-`         print \*, "Error: pressure(1,1,1) = ", pressure(1, 1, 1), &`
-
-`                  ", expected ", expected\_pressure`
-
-`         errors = errors + 1`
-
-`      end if`
-
-`      `
-
-`      if (errors == 0) then`
-
-`         print \*, "  Data validation: ", NTIME \* NLAT \* NLON \* 2, " values verified"`
-
-`      else`
-
-`         print \*, "\*\*\* FAILED: ", errors, " data validation errors"`
-
-`         stop ERRCODE`
-
-`      end if`
-
-`      `
-
-`      ! Close file`
-
-`      retval = nf90\_close(ncid)`
-
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   end subroutine verify\_format\_file`
-
-
-`   subroutine handle\_err(status)`
-
-`      integer, intent(in) :: status`
-
-`      print \*, "Error: ", trim(nf90\_strerror(status))`
-
-`      stop ERRCODE`
-
-`   end subroutine handle\_err`
-
-`   `
-
-`end program f\_format\_variants`
-```
-
-When we do an ncdump of the resulting files, with the -h (header) and -s (secret) options, we can see the underlying binary format in the artificial \_Format attribute:
-
-```
-`ncdump -hs f\_format\_classic.nc `
-
-`netcdf f\_format\_classic \{`
-
-`dimensions:`
-
-`	time = 10 ;`
-
-`	lat = 20 ;`
-
-`	lon = 30 ;`
-
-`variables:`
-
-`	float temperature(time, lat, lon) ;`
-
-`		temperature:units = "K" ;`
-
-`	float pressure(time, lat, lon) ;`
-
-`		pressure:units = "hPa" ;`
-
-
-`// global attributes:`
-
-`		:\_Format = "classic" ;`
-
-`\}`
-
-`ncdump -hs f\_format\_64bit\_offset.nc `
-
-`netcdf f\_format\_64bit\_offset \{`
-
-`dimensions:`
-
-`	time = 10 ;`
-
-`	lat = 20 ;`
-
-`	lon = 30 ;`
-
-`variables:`
-
-`	float temperature(time, lat, lon) ;`
-
-`		temperature:units = "K" ;`
-
-`	float pressure(time, lat, lon) ;`
-
-`		pressure:units = "hPa" ;`
-
-
-`// global attributes:`
-
-`		:\_Format = "64-bit offset" ;`
-
-`\}`
-
-`ncdump -hs f\_format\_netcdf4.nc `
-
-`netcdf f\_format\_netcdf4 \{`
-
-`dimensions:`
-
-`	time = 10 ;`
-
-`	lat = 20 ;`
-
-`	lon = 30 ;`
-
-`variables:`
-
-`	float temperature(time, lat, lon) ;`
-
-`		temperature:units = "K" ;`
-
-`		temperature:\_Storage = "contiguous" ;`
-
-`		temperature:\_Endianness = "little" ;`
-
-`	float pressure(time, lat, lon) ;`
-
-`		pressure:units = "hPa" ;`
-
-`		pressure:\_Storage = "contiguous" ;`
-
-`		pressure:\_Endianness = "little" ;`
-
-
-`// global attributes:`
-
-`		:\_NCProperties = "version=2,netcdf=4.10.0-development,hdf5=1.14.6" ;`
-
-`		:\_SuperblockVersion = 2 ;`
-
-`		:\_IsNetcdf4 = 1 ;`
-
-`		:\_Format = "netCDF-4" ;`
-
-`\}`
-
-`ncdump -hs f\_format\_netcdf4\_classic.nc `
-
-`netcdf f\_format\_netcdf4\_classic \{`
-
-`dimensions:`
-
-`	time = 10 ;`
-
-`	lat = 20 ;`
-
-`	lon = 30 ;`
-
-`variables:`
-
-`	float temperature(time, lat, lon) ;`
-
-`		temperature:units = "K" ;`
-
-`		temperature:\_Storage = "contiguous" ;`
-
-`		temperature:\_Endianness = "little" ;`
-
-`	float pressure(time, lat, lon) ;`
-
-`		pressure:units = "hPa" ;`
-
-`		pressure:\_Storage = "contiguous" ;`
-
-`		pressure:\_Endianness = "little" ;`
-
-
-`// global attributes:`
-
-`		:\_NCProperties = "version=2,netcdf=4.10.0-development,hdf5=1.14.6" ;`
-
-`		:\_SuperblockVersion = 2 ;`
-
-`		:\_IsNetcdf4 = 1 ;`
-
-`		:\_Format = "netCDF-4 classic model" ;`
-
-`\}`
-```
-
-### Simple File with NetCDF/HDF5 Format
-
-This example is the Fortran equivalent of simple\_nc4.c, demonstrating NetCDF-4 format using the Fortran 90 NetCDF API. It creates a simple 2D array with NF90\_NETCDF4 flag.
-
-#### Learning Objectives:
-
-- Understand NF90\_NETCDF4 flag in Fortran
-
-- Learn format detection with nf90\_inq\_format()
-
-- Prepare for NetCDF-4 features (compression, chunking, groups)
-
-
-#### Fortran NetCDF-4 Constants:
-
-- NF90\_NETCDF4 Create NetCDF-4/HDF5 format file
-
-- NF90\_FORMAT\_NETCDF4 Format detection constant
-
-```
-`   ! Create the NetCDF-4 file with NF90\_NETCDF4 flag`
-
-`   retval = nf90\_create(FILE\_NAME, NF90\_CLOBBER + NF90\_NETCDF4, ncid)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   `
-
-`   ! Define dimensions`
-
-`   retval = nf90\_def\_dim(ncid, "x", NX, x\_dimid)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   retval = nf90\_def\_dim(ncid, "y", NY, y\_dimid)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   `
-
-`   ! Define the variable (dimension order: x, y for Fortran column-major)`
-
-`   dimids(1) = x\_dimid`
-
-`   dimids(2) = y\_dimid`
-
-`   retval = nf90\_def\_var(ncid, "data", NF90\_INT, dimids, varid)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   `
-
-`   ! End define mode`
-
-`   retval = nf90\_enddef(ncid)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   `
-
-`   ! Write the data to the file`
-
-`   retval = nf90\_put\_var(ncid, varid, data\_out)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   `
-
-`   ! Close the file`
-
-`   retval = nf90\_close(ncid)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   `
-
-`   print \*, "\*\*\* SUCCESS writing file!"`
+end program f\_simple\_nc4
 ```
 
 This results in the following metadata in the output file:
 
 ```
-`ncdump -hs f\_simple\_nc4.nc `
+ncdump -hs f\_simple\_nc4.nc 
 
-`netcdf f\_simple\_nc4 \{`
+netcdf f\_simple\_nc4 \{
 
-`dimensions:`
+dimensions:
 
-`	x = 6 ;`
+	x = 6 ;
 
-`	y = 12 ;`
+	y = 12 ;
 
-`variables:`
+variables:
 
-`	int data(y, x) ;`
+	int data(y, x) ;
 
-`		data:\_Storage = "contiguous" ;`
+		data:\_Storage = "contiguous" ;
 
-`		data:\_Endianness = "little" ;`
+		data:\_Endianness = "little" ;
 
 
-`// global attributes:`
+// global attributes:
 
-`		:\_NCProperties = "version=2,netcdf=4.9.3,hdf5=1.14.6" ;`
+		:\_NCProperties = "version=2,netcdf=4.9.3,hdf5=1.14.6" ;
 
-`		:\_SuperblockVersion = 2 ;`
+		:\_SuperblockVersion = 2 ;
 
-`		:\_IsNetcdf4 = 1 ;`
+		:\_IsNetcdf4 = 1 ;
 
-`		:\_Format = "netCDF-4" ;`
+		:\_Format = "netCDF-4" ;
 
-`\}`
+\}
 ```
 
 ### Compression
 
 This example is the Fortran equivalent of compression.c, exploring NetCDF-4 compression using the Fortran 90 NetCDF API. It tests various compression configurations and measures performance.
+
+This is from the NetCDF Expansion Pack, examples/f\_netcdf-4/f\_compression.f90.
 
 #### Learning Objectives:
 
@@ -12855,114 +13381,643 @@ This example is the Fortran equivalent of compression.c, exploring NetCDF-4 comp
 
 - deflate\_level: 1-9 (higher=better compression, slower)
 
+```
+program f\_compression
+
+   use netcdf
+
+   use iso\_fortran\_env, only: int64
+
+   implicit none
+
+   
+
+   integer, parameter :: NTIME = 50
+
+   integer, parameter :: NLAT = 90
+
+   integer, parameter :: NLON = 180
+
+   integer, parameter :: NDIMS = 3
+
+   integer, parameter :: NUM\_TESTS = 6
+
+   real, parameter :: FILL\_VALUE = -9999.0
+
+   
+
+   real, allocatable :: data(:,:,:)
+
+   real(8) :: write\_times(NUM\_TESTS), read\_times(NUM\_TESTS)
+
+   integer(int64) :: file\_sizes(NUM\_TESTS)
+
+   real(8) :: compression\_ratios(NUM\_TESTS)
+
+   character(len=64) :: test\_names(NUM\_TESTS)
+
+   character(len=128) :: filenames(NUM\_TESTS)
+
+   integer :: shuffle\_flags(NUM\_TESTS), deflate\_flags(NUM\_TESTS), deflate\_levels(NUM\_TESTS)
+
+   integer :: i, t, lat, lon
+
+   real :: base\_temp, seasonal, spatial
+
+   real, parameter :: PI = 3.14159265359
+
+   
+
+   print \*, "Compression Filter Demonstration"
+
+   print \*, "================================="
+
+   print \*, "Dataset dimensions: \[time=", NTIME, ", lat=", NLAT, ", lon=", NLON, "\]"
+
+   print \*, "Total data points: ", NTIME \* NLAT \* NLON
+
+   print \*, "Total data size: ", (NTIME \* NLAT \* NLON \* 4) / 1048576.0, " MB"
+
+   
+
+   ! Allocate and generate realistic temperature data
+
+   allocate(data(NLON, NLAT, NTIME))
+
+   
+
+   do t = 1, NTIME
+
+      do lat = 1, NLAT
+
+         do lon = 1, NLON
+
+            base\_temp = 15.0 - (lat - NLAT/2) \* 0.5
+
+            seasonal = 10.0 \* sin(2.0 \* PI \* t / NTIME)
+
+            spatial = 5.0 \* sin(2.0 \* PI \* lon / NLON) \* cos(2.0 \* PI \* lat / NLAT)
+
+            data(lon, lat, t) = base\_temp + seasonal + spatial
+
+         end do
+
+      end do
+
+   end do
+
+   
+
+   ! Define compression tests
+
+   test\_names(1) = "Uncompressed (baseline)"
+
+   filenames(1) = "f\_compress\_none.nc"
+
+   shuffle\_flags(1) = 0
+
+   deflate\_flags(1) = 0
+
+   deflate\_levels(1) = 0
+
+   
+
+   test\_names(2) = "Shuffle only"
+
+   filenames(2) = "f\_compress\_shuffle.nc"
+
+   shuffle\_flags(2) = 1
+
+   deflate\_flags(2) = 0
+
+   deflate\_levels(2) = 0
+
+   
+
+   test\_names(3) = "Deflate level 1 (preferred)"
+
+   filenames(3) = "f\_compress\_deflate1.nc"
+
+   shuffle\_flags(3) = 0
+
+   deflate\_flags(3) = 1
+
+   deflate\_levels(3) = 1
+
+   
+
+   test\_names(4) = "Deflate level 5"
+
+   filenames(4) = "f\_compress\_deflate5.nc"
+
+   shuffle\_flags(4) = 0
+
+   deflate\_flags(4) = 1
+
+   deflate\_levels(4) = 5
+
+   
+
+   test\_names(5) = "Deflate level 9"
+
+   filenames(5) = "f\_compress\_deflate9.nc"
+
+   shuffle\_flags(5) = 0
+
+   deflate\_flags(5) = 1
+
+   deflate\_levels(5) = 9
+
+   
+
+   test\_names(6) = "Shuffle + Deflate 1 (recommended)"
+
+   filenames(6) = "f\_compress\_shuffle\_deflate1.nc"
+
+   shuffle\_flags(6) = 1
+
+   deflate\_flags(6) = 1
+
+   deflate\_levels(6) = 1
+
+   
+
+   ! Run all tests
+
+   do i = 1, NUM\_TESTS
+
+      call create\_compressed\_file(trim(test\_names(i)), trim(filenames(i)), &
+
+                                  shuffle\_flags(i), deflate\_flags(i), deflate\_levels(i), &
+
+                                  data, write\_times(i), file\_sizes(i))
+
+      call read\_compressed\_file(trim(filenames(i)), shuffle\_flags(i), deflate\_flags(i), &
+
+                               deflate\_levels(i), data, read\_times(i))
+
+   end do
+
+   
+
+   ! Calculate compression ratios
+
+   do i = 1, NUM\_TESTS
+
+      compression\_ratios(i) = real(file\_sizes(1), 8) / real(file\_sizes(i), 8)
+
+   end do
+
+   
+
+   ! Print summary table
+
+   print \*, ""
+
+   print \*, "=== Performance Summary ==="
+
+   print '(A35, A12, A12, A12, A10)', "Strategy", "Write (s)", "Read (s)", "Size (MB)", "Ratio"
+
+   print '(A35, A12, A12, A12, A10)', "--------", "---------", "--------", "---------", "-----"
+
+   
+
+   do i = 1, NUM\_TESTS
+
+      print '(A35, F12.3, F12.3, F12.2, F9.2, A1)', &
+
+         trim(test\_names(i)), write\_times(i), read\_times(i), &
+
+         file\_sizes(i) / 1048576.0, compression\_ratios(i), "x"
+
+   end do
+
+   
+
+   ! Print recommendations
+
+   print \*, ""
+
+   print \*, "=== Recommendations ==="
+
+   print \*, "- Uncompressed: Fastest I/O but largest files"
+
+   print \*, "- Shuffle only: Reorganizes bytes for better compression (use with deflate)"
+
+   print \*, "- Deflate level 1: PREFERRED for almost all real-world data"
+
+   print \*, "- Deflate level 5: Marginally better ratio, significantly slower"
+
+   print \*, "- Deflate level 9: Maximum compression, much slower, rarely worth it"
+
+   print \*, "- Shuffle + Deflate 1: RECOMMENDED default for scientific data"
+
+   print \*, "- Level 1 gives nearly the same compression as higher levels"
+
+   print \*, "- Higher levels cost much more CPU time for diminishing returns"
+
+   print \*, "- Read performance generally similar across compression levels"
+
+   print \*, "- Compression effectiveness depends on data patterns"
+
+   
+
+   deallocate(data)
+
+   print \*, ""
+
+   print \*, "\*\*\* SUCCESS: All compression strategies tested!"
+
+   
+
+contains
+
+
+   subroutine create\_compressed\_file(test\_name, filename, shuffle, deflate, deflate\_level, &
+
+                                     data, write\_time, file\_size)
+
+      character(len=\*), intent(in) :: test\_name, filename
+
+      integer, intent(in) :: shuffle, deflate, deflate\_level
+
+      real, intent(in) :: data(:,:,:)
+
+      real(8), intent(out) :: write\_time
+
+      integer(int64), intent(out) :: file\_size
+
       
 
-```
-`      retval = nf90\_create(filename, NF90\_CLOBBER + NF90\_NETCDF4, ncid)`
+      integer :: ncid, varid
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      integer :: time\_dimid, lat\_dimid, lon\_dimid
 
-`      `
+      integer :: dimids(NDIMS)
 
-`      retval = nf90\_def\_dim(ncid, "time", NTIME, time\_dimid)`
+      integer :: retval
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      integer(int64) :: start\_count, end\_count, count\_rate
 
-`      retval = nf90\_def\_dim(ncid, "lat", NLAT, lat\_dimid)`
+      logical :: file\_exists
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      integer :: start\_idx(NDIMS), count\_idx(NDIMS)
 
-`      retval = nf90\_def\_dim(ncid, "lon", NLON, lon\_dimid)`
+      real(8) :: start\_time, end\_time
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      
 
-`      `
+      print \*, ""
 
-`      dimids(1) = lon\_dimid`
+      print \*, "=== ", trim(test\_name), " ==="
 
-`      dimids(2) = lat\_dimid`
+      
 
-`      dimids(3) = time\_dimid`
+      call system\_clock(start\_count, count\_rate)
 
-`      retval = nf90\_def\_var(ncid, "temperature", NF90\_FLOAT, dimids, varid)`
+      
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      retval = nf90\_create(filename, NF90\_CLOBBER + NF90\_NETCDF4, ncid)
 
-`      `
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      if (deflate == 1 .or. shuffle == 1) then`
+      
 
-`         retval = nf90\_def\_var\_deflate(ncid, varid, shuffle, deflate, deflate\_level)`
+      retval = nf90\_def\_dim(ncid, "time", NTIME, time\_dimid)
 
-`         if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      end if`
+      retval = nf90\_def\_dim(ncid, "lat", NLAT, lat\_dimid)
 
-`      `
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      retval = nf90\_enddef(ncid)`
+      retval = nf90\_def\_dim(ncid, "lon", NLON, lon\_dimid)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      `
+      
 
-`      retval = nf90\_put\_var(ncid, varid, data)`
+      dimids(1) = lon\_dimid
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      dimids(2) = lat\_dimid
 
-`      `
+      dimids(3) = time\_dimid
 
-`      retval = nf90\_close(ncid)`
+      retval = nf90\_def\_var(ncid, "temperature", NF90\_FLOAT, dimids, varid)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      
+
+      if (deflate == 1 .or. shuffle == 1) then
+
+         retval = nf90\_def\_var\_deflate(ncid, varid, shuffle, deflate, deflate\_level)
+
+         if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      end if
+
+      
+
+      ! Set fill value: nf90\_def\_var\_fill() registers the sentinel returned for unwritten
+
+      ! elements. In chunked/compressed variables, unwritten chunks are stored entirely as
+
+      ! fill values; in classic format it is stored as a \_FillValue attribute.
+
+      retval = nf90\_def\_var\_fill(ncid, varid, 0, FILL\_VALUE)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      
+
+      retval = nf90\_enddef(ncid)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      
+
+      ! Write all time steps except the last one (partial write).
+
+      ! The unwritten last time step will return FILL\_VALUE when read back,
+
+      ! demonstrating fill value behavior with chunked/compressed storage.
+
+      ! Fortran dim order: (lon, lat, time); omit last time index.
+
+      start\_idx = (/ 1, 1, 1 /)
+
+      count\_idx = (/ NLON, NLAT, NTIME - 1 /)
+
+      retval = nf90\_put\_var(ncid, varid, data(:,:,1:NTIME-1), start=start\_idx, count=count\_idx)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      
+
+      retval = nf90\_close(ncid)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      
+
+      call system\_clock(end\_count)
+
+      write\_time = real(end\_count - start\_count, 8) / real(count\_rate, 8)
+
+      
+
+      inquire(file=filename, exist=file\_exists, size=file\_size)
+
+      if (file\_exists) then
+
+         print \*, "File size: ", file\_size, " bytes (", file\_size / 1048576.0, " MB)"
+
+      end if
+
+      
+
+      print \*, "Write time: ", write\_time, " seconds"
+
+      
+
+      if (shuffle == 1) print \*, "Shuffle: enabled"
+
+      if (deflate == 1) print \*, "Deflate: level ", deflate\_level
+
+      
+
+   end subroutine create\_compressed\_file
+
+   
+
+   subroutine read\_compressed\_file(filename, expected\_shuffle, expected\_deflate, &
+
+                                   expected\_level, original\_data, read\_time)
+
+      character(len=\*), intent(in) :: filename
+
+      integer, intent(in) :: expected\_shuffle, expected\_deflate, expected\_level
+
+      real, intent(in) :: original\_data(:,:,:)
+
+      real(8), intent(out) :: read\_time
+
+      
+
+      integer :: ncid, varid
+
+      integer :: retval
+
+      integer(int64) :: start\_count, end\_count, count\_rate
+
+      real(8) :: start\_time, end\_time
+
+      real, allocatable :: data(:,:,:)
+
+      integer :: shuffle, deflate, deflate\_level
+
+      integer :: errors, i
+
+      integer :: no\_fill
+
+      real :: fill\_value\_in
+
+      
+
+      allocate(data(NLON, NLAT, NTIME))
+
+      
+
+      call system\_clock(start\_count, count\_rate)
+
+      
+
+      retval = nf90\_open(filename, NF90\_NOWRITE, ncid)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      
+
+      retval = nf90\_inq\_varid(ncid, "temperature", varid)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      
+
+      retval = nf90\_inq\_var\_deflate(ncid, varid, shuffle, deflate, deflate\_level)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      
+
+      if (shuffle /= expected\_shuffle .or. deflate /= expected\_deflate .or. &
+
+          (deflate == 1 .and. deflate\_level /= expected\_level)) then
+
+         print \*, "Error: Compression settings mismatch"
+
+         stop 2
+
+      end if
+
+      
+
+      ! Verify fill value using nf90\_inq\_var\_fill()
+
+      retval = nf90\_inq\_var\_fill(ncid, varid, no\_fill, fill\_value\_in)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      if (abs(fill\_value\_in - FILL\_VALUE) \> 1.0e-6) then
+
+         print \*, "Error: fill value = ", fill\_value\_in, ", expected ", FILL\_VALUE
+
+         stop 2
+
+      end if
+
+      
+
+      retval = nf90\_get\_var(ncid, varid, data)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      
+
+      retval = nf90\_close(ncid)
+
+      if (retval /= nf90\_noerr) call handle\_err(retval)
+
+      
+
+      call system\_clock(end\_count)
+
+      read\_time = real(end\_count - start\_count, 8) / real(count\_rate, 8)
+
+      
+
+      ! Validate written data (first NTIME-1 time steps, check first 100 lon points)
+
+      errors = 0
+
+      do i = 1, min(100, NLON)
+
+         if (abs(data(i,1,1) - original\_data(i,1,1)) \> 0.001) then
+
+            errors = errors + 1
+
+         end if
+
+      end do
+
+      
+
+      ! Verify unwritten last time step returns fill value
+
+      do i = 1, min(10, NLON)
+
+         if (data(i, 1, NTIME) /= FILL\_VALUE) then
+
+            print \*, "Error: unwritten data(", i, ",1,", NTIME, ") = ", data(i,1,NTIME), &
+
+                     ", expected fill value ", FILL\_VALUE
+
+            errors = errors + 1
+
+         end if
+
+      end do
+
+      
+
+      if (errors \> 0) then
+
+         print \*, "\*\*\* FAILED: ", errors, " validation errors"
+
+         stop 2
+
+      end if
+
+      
+
+      print \*, "Read time: ", read\_time, " seconds"
+
+      print \*, "Data validated (written steps 1-", NTIME-1, " correct, last step = fill value ", FILL\_VALUE, ")"
+
+      
+
+      deallocate(data)
+
+      
+
+   end subroutine read\_compressed\_file
+
+   
+
+   subroutine handle\_err(status)
+
+      integer, intent(in) :: status
+
+      print \*, "Error: ", trim(nf90\_strerror(status))
+
+      stop 2
+
+   end subroutine handle\_err
+
+   
+
+end program f\_compression
 ```
 
 This results in the following metadata:
 
 ```
-`ncdump -hs f\_compress\_shuffle\_deflate5.nc`
+ncdump -hs f\_compress\_shuffle\_deflate5.nc
 
-`netcdf f\_compress\_shuffle\_deflate5 \{`
+netcdf f\_compress\_shuffle\_deflate5 \{
 
-`dimensions:`
+dimensions:
 
-`	time = 50 ;`
+	time = 50 ;
 
-`	lat = 90 ;`
+	lat = 90 ;
 
-`	lon = 180 ;`
+	lon = 180 ;
 
-`variables:`
+variables:
 
-`	float temperature(time, lat, lon) ;`
+	float temperature(time, lat, lon) ;
 
-`		temperature:\_Storage = "chunked" ;`
+		temperature:\_Storage = "chunked" ;
 
-`		temperature:\_ChunkSizes = 50, 90, 180 ;`
+		temperature:\_ChunkSizes = 50, 90, 180 ;
 
-`		temperature:\_Shuffle = "true" ;`
+		temperature:\_Shuffle = "true" ;
 
-`		temperature:\_DeflateLevel = 5 ;`
+		temperature:\_DeflateLevel = 5 ;
 
-`		temperature:\_Endianness = "little" ;`
+		temperature:\_Endianness = "little" ;
 
 
-`// global attributes:`
+// global attributes:
 
-`		:\_NCProperties = "version=2,netcdf=4.9.3,hdf5=1.14.6" ;`
+		:\_NCProperties = "version=2,netcdf=4.9.3,hdf5=1.14.6" ;
 
-`		:\_SuperblockVersion = 2 ;`
+		:\_SuperblockVersion = 2 ;
 
-`		:\_IsNetcdf4 = 1 ;`
+		:\_IsNetcdf4 = 1 ;
 
-`		:\_Format = "netCDF-4" ;`
+		:\_Format = "netCDF-4" ;
 
-`\}`
+\}
 ```
 
 ### User-Defined Types
 
 This example is the Fortran equivalent of user\_types.c, demonstrating NetCDF-4 user-defined types using the Fortran 90 NetCDF API. Note: Fortran support for compound types is limited compared to C, so this focuses on enum, vlen, and opaque types.
+
+This is from the NetCDF Expansion Pack, examples/f\_netcdf-4/f\_user\_types.f90.
 
 #### Learning Objectives:
 
@@ -12980,108 +14035,462 @@ This example is the Fortran equivalent of user\_types.c, demonstrating NetCDF-4 
 
 - Enum, vlen, and opaque types fully supported
 
-- Type definitions similar to C API
-
-  
+- Type definitions similar to C API  
 
 ```
-`  retval = nf90\_create(FILE\_NAME, NF90\_CLOBBER + NF90\_NETCDF4, ncid)`
+program f\_user\_types
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   use netcdf
 
-`   `
-
-`   call define\_and\_test\_opaque(ncid)`
-
-`   `
-
-`   retval = nf90\_close(ncid)`
-
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
-
-`   `
-
-`   print \*, ""`
-
-`   print \*, "=== Use Cases ==="`
-
-`   print \*, "- Opaque types: Binary metadata or proprietary formats"`
-
-`   print \*, "- For compound, vlen, and enum types: See user\_types.c (C API)"`
-
-`   print \*, "- Newer netcdf-fortran versions may have better support"`
-
-`   `
-
-`   print \*, ""`
-
-`   print \*, "\*\*\* SUCCESS: User-defined types demonstrated!"`
-
-`   `
-
-`contains`
+   implicit none
 
 
-`   subroutine define\_and\_test\_opaque(ncid)`
+   character(len=\*), parameter :: FILE\_NAME = "f\_user\_types.nc"
 
-`      integer, intent(in) :: ncid`
+   integer, parameter :: NOBS = 5
 
-`      integer :: opaque\_typeid`
+   integer, parameter :: CALIB\_SIZE = 16
 
-`      integer :: retval`
 
-`      `
+   ! Enum member values
 
-`      print \*, ""`
+   integer, parameter :: CLEAR = 0
 
-`      print \*, "--- Opaque Type (binary calibration data) ---"`
+   integer, parameter :: PARTLY\_CLOUDY = 1
 
-`      `
+   integer, parameter :: CLOUDY = 2
 
-`      retval = nf90\_def\_opaque(ncid, CALIB\_SIZE, "calibration\_t", opaque\_typeid)`
+   integer, parameter :: OVERCAST = 3
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
 
-`      print \*, "Defined opaque type with ", CALIB\_SIZE, "-byte size"`
+   integer :: ncid, retval
 
-`      print \*, "Note: Full opaque type I/O requires C API or newer Fortran bindings"`
+   integer :: enum\_typeid, opaque\_typeid
 
-`      print \*, "(Type definition successful, but data I/O not demonstrated)"`
+   integer :: obs\_dimid, dimids(1)
 
-`      `
+   integer :: enum\_varid, opaque\_varid
 
-`      retval = nf90\_enddef(ncid)`
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+   ! Data arrays
 
-`      `
+   integer :: cloud\_out(NOBS), cloud\_in(NOBS)
 
-`   end subroutine define\_and\_test\_opaque`
+   character(len=CALIB\_SIZE) :: calib\_out, calib\_in
+
+
+   ! Variables for type inquiry on reopen
+
+   integer :: ntypes, num\_members, base\_type\_in, base\_size\_in
+
+   integer :: type\_size\_in, nfields\_in, class\_in
+
+   integer :: member\_value
+
+   character(len=NF90\_MAX\_NAME) :: type\_name\_in, member\_name\_in
+
+   integer :: typeids(2)
+
+
+   ! F77 API functions needed for user-defined type variables.
+
+   ! Declared external to bypass any module wrappers that validate xtype.
+
+   ! nf\_put\_var/nf\_get\_var are generic untyped I/O that pass raw bytes.
+
+   integer, external :: nf\_def\_var
+
+   integer, external :: nf\_put\_var, nf\_get\_var
+
+   integer, external :: nf\_put\_var1, nf\_get\_var1
+
+
+   integer :: i, errors, index(1)
+
+
+   ! ========== INITIALIZE DATA ==========
+
+   cloud\_out = (/ CLEAR, PARTLY\_CLOUDY, CLOUDY, PARTLY\_CLOUDY, OVERCAST /)
+
+
+   do i = 1, CALIB\_SIZE
+
+      calib\_out(i:i) = char((i - 1) \* 17)
+
+   end do
+
+
+   print \*, "NetCDF-4 User-Defined Types (Fortran)"
+
+   print \*, "======================================"
+
+
+   ! ========== WRITE PHASE ==========
+
+   print \*, ""
+
+   print \*, "=== Phase 1: Create file and define types ==="
+
+
+   retval = nf90\_create(FILE\_NAME, NF90\_CLOBBER + NF90\_NETCDF4, ncid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+
+   ! Define enum type: cloud\_cover\_t based on NF90\_INT
+
+   retval = nf90\_def\_enum(ncid, NF90\_INT, "cloud\_cover\_t", enum\_typeid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_insert\_enum(ncid, enum\_typeid, "CLEAR", CLEAR)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_insert\_enum(ncid, enum\_typeid, "PARTLY\_CLOUDY", PARTLY\_CLOUDY)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_insert\_enum(ncid, enum\_typeid, "CLOUDY", CLOUDY)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf90\_insert\_enum(ncid, enum\_typeid, "OVERCAST", OVERCAST)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   print \*, "Defined enum type cloud\_cover\_t with 4 members"
+
+
+   ! Define opaque type: calibration\_t with CALIB\_SIZE bytes
+
+   retval = nf90\_def\_opaque(ncid, CALIB\_SIZE, "calibration\_t", opaque\_typeid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   print \*, "Defined opaque type calibration\_t (", CALIB\_SIZE, " bytes)"
+
+
+   ! Define dimension
+
+   retval = nf90\_def\_dim(ncid, "obs", NOBS, obs\_dimid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+
+   ! Define variables using nf\_def\_var (F77 API) because nf90\_def\_var
+
+   ! rejects user-defined type IDs.
+
+   dimids(1) = obs\_dimid
+
+   retval = nf\_def\_var(ncid, "cloud\_cover", enum\_typeid, 1, dimids, enum\_varid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf\_def\_var(ncid, "calibration", opaque\_typeid, 0, dimids, opaque\_varid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+
+   retval = nf90\_enddef(ncid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+
+   ! Write enum data using nf\_put\_var (generic untyped I/O)
+
+   retval = nf\_put\_var(ncid, enum\_varid, cloud\_out)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   print \*, "Wrote ", NOBS, " cloud cover values"
+
+
+   ! Write opaque data using nf\_put\_var1 (generic untyped I/O)
+
+   index(1) = 1
+
+   retval = nf\_put\_var1(ncid, opaque\_varid, index, calib\_out)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   print \*, "Wrote ", CALIB\_SIZE, " bytes of calibration data"
+
+
+   retval = nf90\_close(ncid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   print \*, "\*\*\* SUCCESS writing file!"
+
+
+   ! ========== READ AND VALIDATE PHASE ==========
+
+   print \*, ""
+
+   print \*, "=== Phase 2: Reopen and validate ==="
+
+
+   retval = nf90\_open(FILE\_NAME, NF90\_NOWRITE, ncid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+
+   ! Check that we have two user-defined types
+
+   retval = nf90\_inq\_typeids(ncid, ntypes, typeids)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   if (ntypes /= 2) then
+
+      print \*, "Error: expected 2 user types, found ", ntypes
+
+      stop 2
+
+   end if
+
+   print \*, "Verified: ", ntypes, " user-defined types"
+
+
+   ! Validate enum type via nf90\_inq\_user\_type
+
+   retval = nf90\_inq\_user\_type(ncid, typeids(1), type\_name\_in, type\_size\_in, &
+
+        base\_type\_in, nfields\_in, class\_in)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   if (trim(type\_name\_in) /= "cloud\_cover\_t") then
+
+      print \*, "Error: expected type name cloud\_cover\_t, found ", trim(type\_name\_in)
+
+      stop 2
+
+   end if
+
+   if (class\_in /= NF90\_ENUM) then
+
+      print \*, "Error: expected NF90\_ENUM class"
+
+      stop 2
+
+   end if
+
+   print \*, "Verified: cloud\_cover\_t is enum type"
+
+
+   ! Validate enum details via nf90\_inq\_enum
+
+   retval = nf90\_inq\_enum(ncid, typeids(1), type\_name\_in, base\_type\_in, &
+
+        base\_size\_in, num\_members)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   if (base\_type\_in /= NF90\_INT .or. num\_members /= 4) then
+
+      print \*, "Error: enum base type or member count wrong"
+
+      stop 2
+
+   end if
+
+   print \*, "Verified: base type NF90\_INT, ", num\_members, " members"
+
+
+   ! Check each enum member
+
+   retval = nf90\_inq\_enum\_member(ncid, typeids(1), 1, member\_name\_in, member\_value)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   if (trim(member\_name\_in) /= "CLEAR" .or. member\_value /= 0) stop 2
+
+
+   retval = nf90\_inq\_enum\_member(ncid, typeids(1), 2, member\_name\_in, member\_value)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   if (trim(member\_name\_in) /= "PARTLY\_CLOUDY" .or. member\_value /= 1) stop 2
+
+
+   retval = nf90\_inq\_enum\_member(ncid, typeids(1), 3, member\_name\_in, member\_value)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   if (trim(member\_name\_in) /= "CLOUDY" .or. member\_value /= 2) stop 2
+
+
+   retval = nf90\_inq\_enum\_member(ncid, typeids(1), 4, member\_name\_in, member\_value)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   if (trim(member\_name\_in) /= "OVERCAST" .or. member\_value /= 3) stop 2
+
+   print \*, "Verified: all 4 enum members correct"
+
+
+   ! Validate opaque type
+
+   retval = nf90\_inq\_user\_type(ncid, typeids(2), type\_name\_in, type\_size\_in, &
+
+        base\_type\_in, nfields\_in, class\_in)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   if (trim(type\_name\_in) /= "calibration\_t") then
+
+      print \*, "Error: expected type name calibration\_t, found ", trim(type\_name\_in)
+
+      stop 2
+
+   end if
+
+   if (class\_in /= NF90\_OPAQUE) then
+
+      print \*, "Error: expected NF90\_OPAQUE class"
+
+      stop 2
+
+   end if
+
+   if (type\_size\_in /= CALIB\_SIZE) then
+
+      print \*, "Error: expected opaque size ", CALIB\_SIZE, ", found ", type\_size\_in
+
+      stop 2
+
+   end if
+
+   print \*, "Verified: calibration\_t is opaque type (", type\_size\_in, " bytes)"
+
+
+   ! Read and validate enum data
+
+   retval = nf90\_inq\_varid(ncid, "cloud\_cover", enum\_varid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   retval = nf\_get\_var(ncid, enum\_varid, cloud\_in)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+
+   errors = 0
+
+   do i = 1, NOBS
+
+      if (cloud\_in(i) /= cloud\_out(i)) then
+
+         print \*, "Error: cloud\_cover(", i, ") = ", cloud\_in(i), ", expected ", cloud\_out(i)
+
+         errors = errors + 1
+
+      end if
+
+   end do
+
+   if (errors \> 0) then
+
+      print \*, "\*\*\* FAILED: ", errors, " enum data errors"
+
+      stop 2
+
+   end if
+
+   print \*, "Verified: all ", NOBS, " cloud cover values correct"
+
+
+   ! Read and validate opaque data
+
+   retval = nf90\_inq\_varid(ncid, "calibration", opaque\_varid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+   index(1) = 1
+
+   retval = nf\_get\_var1(ncid, opaque\_varid, index, calib\_in)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+
+   errors = 0
+
+   do i = 1, CALIB\_SIZE
+
+      if (calib\_in(i:i) /= calib\_out(i:i)) then
+
+         print \*, "Error: calibration byte ", i, " mismatch"
+
+         errors = errors + 1
+
+      end if
+
+   end do
+
+   if (errors \> 0) then
+
+      print \*, "\*\*\* FAILED: ", errors, " opaque data errors"
+
+      stop 2
+
+   end if
+
+   print \*, "Verified: all ", CALIB\_SIZE, " calibration bytes correct"
+
+
+   retval = nf90\_close(ncid)
+
+   if (retval /= nf90\_noerr) call handle\_err(retval)
+
+
+   print \*, ""
+
+   print \*, "\*\*\* SUCCESS: Enum and opaque types demonstrated!"
+
+
+contains
+
+
+   subroutine handle\_err(status)
+
+      integer, intent(in) :: status
+
+      print \*, "Error: ", trim(nf90\_strerror(status))
+
+      stop 2
+
+   end subroutine handle\_err
+
+
+end program f\_user\_types
 ```
 
 This yields the following metadata in the output file:
 
 ```
-`ncdump -hs f\_user\_types.nc `
+ncdump -hs f\_user\_types.nc 
 
-`netcdf f\_user\_types \{`
+netcdf f\_user\_types \{
 
-`types:`
+types:
 
-`  opaque(16) calibration\_t ;`
+  opaque(16) calibration\_t ;
 
 
-`// global attributes:`
+// global attributes:
 
-`		:\_NCProperties = "version=2,netcdf=4.9.3,hdf5=1.14.6" ;`
+		:\_NCProperties = "version=2,netcdf=4.9.3,hdf5=1.14.6" ;
 
-`		:\_SuperblockVersion = 2 ;`
+		:\_SuperblockVersion = 2 ;
 
-`		:\_IsNetcdf4 = 0 ;`
+		:\_IsNetcdf4 = 0 ;
 
-`		:\_Format = "netCDF-4" ;`
+		:\_Format = "netCDF-4" ;
 
-`\}`
+\}
 ```
 
 ### Groups and New Atomic Types
@@ -13089,6 +14498,8 @@ This yields the following metadata in the output file:
 Fortran equivalent of groups.c, demonstrating NetCDF-4's hierarchical group feature using the Fortran 90 NetCDF API. Groups enable organizing datasets into logical groupings similar to directories in a filesystem, providing namespace isolation for variables while allowing dimensions to be shared across the hierarchy through dimension visibility rules.
 
 The program creates a three-level group hierarchy (root → SubGroup1, root → SubGroup2 → NestedGroup), demonstrates dimension visibility across group boundaries, and showcases all five new NetCDF-4 integer types (NF90\_UBYTE, NF90\_USHORT, NF90\_UINT, NF90\_INT64, NF90\_UINT64).
+
+This is from the NetCDF Expansion Pack, example/f\_netcdf-4/f\_groups.f90.
 
 #### Learning Objectives:
 
@@ -13149,1224 +14560,1224 @@ The program creates a three-level group hierarchy (root → SubGroup1, root → 
 Namespace management: Avoid variable name conflicts
 
 ```
-`program f\_groups`
+program f\_groups
 
-`   use netcdf`
+   use netcdf
 
-`   implicit none`
+   implicit none
 
-`   `
+   
 
-`   character(len=\*), parameter :: FILE\_NAME = "f\_groups.nc"`
+   character(len=\*), parameter :: FILE\_NAME = "f\_groups.nc"
 
-`   integer, parameter :: NX = 3`
+   integer, parameter :: NX = 3
 
-`   integer, parameter :: NY = 4`
+   integer, parameter :: NY = 4
 
-`   integer, parameter :: NZ = 2`
+   integer, parameter :: NZ = 2
 
-`   integer, parameter :: NDIMS\_2D = 2`
+   integer, parameter :: NDIMS\_2D = 2
 
-`   integer, parameter :: NDIMS\_3D = 3`
+   integer, parameter :: NDIMS\_3D = 3
 
-`   integer, parameter :: ERRCODE = 2`
+   integer, parameter :: ERRCODE = 2
 
-`   `
+   
 
-`   integer :: ncid, grp1\_id, grp2\_id, nested\_id`
+   integer :: ncid, grp1\_id, grp2\_id, nested\_id
 
-`   integer :: x\_dimid, y\_dimid, z\_dimid`
+   integer :: x\_dimid, y\_dimid, z\_dimid
 
-`   integer :: dimids\_2d(NDIMS\_2D), dimids\_3d(NDIMS\_3D)`
+   integer :: dimids\_2d(NDIMS\_2D), dimids\_3d(NDIMS\_3D)
 
-`   integer :: ubyte\_varid, ushort\_varid, uint\_varid, int64\_varid, uint64\_varid`
+   integer :: ubyte\_varid, ushort\_varid, uint\_varid, int64\_varid, uint64\_varid
 
-`   integer :: retval`
+   integer :: retval
 
-`   `
+   
 
-`   ! Data arrays for all five new integer types`
+   ! Data arrays for all five new integer types
 
-`   ! Note: Fortran uses column-major ordering (dimensions reversed from C)`
+   ! Note: Fortran uses column-major ordering (dimensions reversed from C)
 
-`   integer(kind=1), dimension(NX, NY) :: ubyte\_data`
+   integer(kind=1), dimension(NX, NY) :: ubyte\_data
 
-`   integer(kind=2), dimension(NX, NY) :: ushort\_data`
+   integer(kind=2), dimension(NX, NY) :: ushort\_data
 
-`   integer(kind=4), dimension(NX, NY) :: uint\_data`
+   integer(kind=4), dimension(NX, NY) :: uint\_data
 
-`   integer(kind=8), dimension(NX, NY) :: int64\_data`
+   integer(kind=8), dimension(NX, NY) :: int64\_data
 
-`   integer(kind=8), dimension(NX, NY, NZ) :: uint64\_data`
+   integer(kind=8), dimension(NX, NY, NZ) :: uint64\_data
 
-`   `
+   
 
-`   integer :: i, j, k, value`
+   integer :: i, j, k, value
 
-`   `
+   
 
-`   print \*, "NetCDF-4 Groups Example (Fortran)"`
+   print \*, "NetCDF-4 Groups Example (Fortran)"
 
-`   print \*, "=================================="`
+   print \*, "=================================="
 
-`   print \*, ""`
+   print \*, ""
 
-`   `
+   
 
-`   ! ========== WRITE PHASE ==========`
+   ! ========== WRITE PHASE ==========
 
-`   print \*, "=== Phase 1: Create file with group hierarchy ==="`
+   print \*, "=== Phase 1: Create file with group hierarchy ==="
 
-`   `
+   
 
-`   ! Create the NetCDF-4 file`
+   ! Create the NetCDF-4 file
 
-`   print \*, "Creating NetCDF-4 file: ", FILE\_NAME`
+   print \*, "Creating NetCDF-4 file: ", FILE\_NAME
 
-`   retval = nf90\_create(FILE\_NAME, NF90\_CLOBBER + NF90\_NETCDF4, ncid)`
+   retval = nf90\_create(FILE\_NAME, NF90\_CLOBBER + NF90\_NETCDF4, ncid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   `
+   
 
-`   ! Define root dimensions (visible in all groups)`
+   ! Define root dimensions (visible in all groups)
 
-`   print \*, "Defining root dimensions: x=", NX, ", y=", NY`
+   print \*, "Defining root dimensions: x=", NX, ", y=", NY
 
-`   retval = nf90\_def\_dim(ncid, "x", NX, x\_dimid)`
+   retval = nf90\_def\_dim(ncid, "x", NX, x\_dimid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   retval = nf90\_def\_dim(ncid, "y", NY, y\_dimid)`
+   retval = nf90\_def\_dim(ncid, "y", NY, y\_dimid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   `
+   
 
-`   ! Create SubGroup1`
+   ! Create SubGroup1
 
-`   print \*, "Creating SubGroup1"`
+   print \*, "Creating SubGroup1"
 
-`   retval = nf90\_def\_grp(ncid, "SubGroup1", grp1\_id)`
+   retval = nf90\_def\_grp(ncid, "SubGroup1", grp1\_id)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   `
+   
 
-`   ! Create SubGroup2`
+   ! Create SubGroup2
 
-`   print \*, "Creating SubGroup2"`
+   print \*, "Creating SubGroup2"
 
-`   retval = nf90\_def\_grp(ncid, "SubGroup2", grp2\_id)`
+   retval = nf90\_def\_grp(ncid, "SubGroup2", grp2\_id)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   `
+   
 
-`   ! Create NestedGroup under SubGroup2`
+   ! Create NestedGroup under SubGroup2
 
-`   print \*, "Creating NestedGroup under SubGroup2"`
+   print \*, "Creating NestedGroup under SubGroup2"
 
-`   retval = nf90\_def\_grp(grp2\_id, "NestedGroup", nested\_id)`
+   retval = nf90\_def\_grp(grp2\_id, "NestedGroup", nested\_id)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   `
+   
 
-`   ! Define local dimension z in NestedGroup`
+   ! Define local dimension z in NestedGroup
 
-`   print \*, "Defining local dimension z=", NZ, " in NestedGroup"`
+   print \*, "Defining local dimension z=", NZ, " in NestedGroup"
 
-`   retval = nf90\_def\_dim(nested\_id, "z", NZ, z\_dimid)`
+   retval = nf90\_def\_dim(nested\_id, "z", NZ, z\_dimid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   `
+   
 
-`   ! Define variables in each group using all 5 new integer types`
+   ! Define variables in each group using all 5 new integer types
 
-`   print \*, ""`
+   print \*, ""
 
-`   print \*, "Defining variables with new integer types:"`
+   print \*, "Defining variables with new integer types:"
 
-`   `
+   
 
-`   ! Root group: NF90\_UBYTE variable (2D: x, y)`
+   ! Root group: NF90\_UBYTE variable (2D: x, y)
 
-`   ! Note: Fortran dimension order is reversed from C`
+   ! Note: Fortran dimension order is reversed from C
 
-`   print \*, "  Root: ubyte\_var (NF90\_UBYTE, 2D: x, y)"`
+   print \*, "  Root: ubyte\_var (NF90\_UBYTE, 2D: x, y)"
 
-`   dimids\_2d(1) = x\_dimid`
+   dimids\_2d(1) = x\_dimid
 
-`   dimids\_2d(2) = y\_dimid`
+   dimids\_2d(2) = y\_dimid
 
-`   retval = nf90\_def\_var(ncid, "ubyte\_var", NF90\_UBYTE, dimids\_2d, ubyte\_varid)`
+   retval = nf90\_def\_var(ncid, "ubyte\_var", NF90\_UBYTE, dimids\_2d, ubyte\_varid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   `
+   
 
-`   ! SubGroup1: NF90\_USHORT variable (2D: x, y)`
+   ! SubGroup1: NF90\_USHORT variable (2D: x, y)
 
-`   print \*, "  SubGroup1: ushort\_var (NF90\_USHORT, 2D: x, y)"`
+   print \*, "  SubGroup1: ushort\_var (NF90\_USHORT, 2D: x, y)"
 
-`   retval = nf90\_def\_var(grp1\_id, "ushort\_var", NF90\_USHORT, dimids\_2d, ushort\_varid)`
+   retval = nf90\_def\_var(grp1\_id, "ushort\_var", NF90\_USHORT, dimids\_2d, ushort\_varid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   `
+   
 
-`   ! SubGroup2: NF90\_UINT variable (2D: x, y)`
+   ! SubGroup2: NF90\_UINT variable (2D: x, y)
 
-`   print \*, "  SubGroup2: uint\_var (NF90\_UINT, 2D: x, y)"`
+   print \*, "  SubGroup2: uint\_var (NF90\_UINT, 2D: x, y)"
 
-`   retval = nf90\_def\_var(grp2\_id, "uint\_var", NF90\_UINT, dimids\_2d, uint\_varid)`
+   retval = nf90\_def\_var(grp2\_id, "uint\_var", NF90\_UINT, dimids\_2d, uint\_varid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   `
+   
 
-`   ! NestedGroup: NF90\_INT64 variable (2D: x, y)`
+   ! NestedGroup: NF90\_INT64 variable (2D: x, y)
 
-`   print \*, "  NestedGroup: int64\_var (NF90\_INT64, 2D: x, y)"`
+   print \*, "  NestedGroup: int64\_var (NF90\_INT64, 2D: x, y)"
 
-`   retval = nf90\_def\_var(nested\_id, "int64\_var", NF90\_INT64, dimids\_2d, int64\_varid)`
+   retval = nf90\_def\_var(nested\_id, "int64\_var", NF90\_INT64, dimids\_2d, int64\_varid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   `
+   
 
-`   ! NestedGroup: NF90\_UINT64 variable (3D: x, y, z)`
+   ! NestedGroup: NF90\_UINT64 variable (3D: x, y, z)
 
-`   print \*, "  NestedGroup: uint64\_var (NF90\_UINT64, 3D: x, y, z)"`
+   print \*, "  NestedGroup: uint64\_var (NF90\_UINT64, 3D: x, y, z)"
 
-`   dimids\_3d(1) = x\_dimid`
+   dimids\_3d(1) = x\_dimid
 
-`   dimids\_3d(2) = y\_dimid`
+   dimids\_3d(2) = y\_dimid
 
-`   dimids\_3d(3) = z\_dimid`
+   dimids\_3d(3) = z\_dimid
 
-`   retval = nf90\_def\_var(nested\_id, "uint64\_var", NF90\_UINT64, dimids\_3d, uint64\_varid)`
+   retval = nf90\_def\_var(nested\_id, "uint64\_var", NF90\_UINT64, dimids\_3d, uint64\_varid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   `
+   
 
-`   ! End define mode`
+   ! End define mode
 
-`   retval = nf90\_enddef(ncid)`
+   retval = nf90\_enddef(ncid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   `
+   
 
-`   ! Initialize data with sequential values starting from 1`
+   ! Initialize data with sequential values starting from 1
 
-`   print \*, ""`
+   print \*, ""
 
-`   print \*, "Initializing data with sequential values (1, 2, 3, ...):"`
+   print \*, "Initializing data with sequential values (1, 2, 3, ...):"
 
-`   value = 1`
+   value = 1
 
-`   `
+   
 
-`   ! NF90\_UBYTE data (3x4 = 12 values)`
+   ! NF90\_UBYTE data (3x4 = 12 values)
 
-`   do j = 1, NY`
+   do j = 1, NY
 
-`      do i = 1, NX`
+      do i = 1, NX
 
-`         ubyte\_data(i, j) = int(value, kind=1)`
+         ubyte\_data(i, j) = int(value, kind=1)
 
-`         value = value + 1`
+         value = value + 1
 
-`      end do`
+      end do
 
-`   end do`
+   end do
 
-`   `
+   
 
-`   ! NF90\_USHORT data (3x4 = 12 values)`
+   ! NF90\_USHORT data (3x4 = 12 values)
 
-`   do j = 1, NY`
+   do j = 1, NY
 
-`      do i = 1, NX`
+      do i = 1, NX
 
-`         ushort\_data(i, j) = int(value, kind=2)`
+         ushort\_data(i, j) = int(value, kind=2)
 
-`         value = value + 1`
+         value = value + 1
 
-`      end do`
+      end do
 
-`   end do`
+   end do
 
-`   `
+   
 
-`   ! NF90\_UINT data (3x4 = 12 values)`
+   ! NF90\_UINT data (3x4 = 12 values)
 
-`   do j = 1, NY`
+   do j = 1, NY
 
-`      do i = 1, NX`
+      do i = 1, NX
 
-`         uint\_data(i, j) = int(value, kind=4)`
+         uint\_data(i, j) = int(value, kind=4)
 
-`         value = value + 1`
+         value = value + 1
 
-`      end do`
+      end do
 
-`   end do`
+   end do
 
-`   `
+   
 
-`   ! NF90\_INT64 data (3x4 = 12 values)`
+   ! NF90\_INT64 data (3x4 = 12 values)
 
-`   do j = 1, NY`
+   do j = 1, NY
 
-`      do i = 1, NX`
+      do i = 1, NX
 
-`         int64\_data(i, j) = int(value, kind=8)`
+         int64\_data(i, j) = int(value, kind=8)
 
-`         value = value + 1`
+         value = value + 1
 
-`      end do`
+      end do
 
-`   end do`
+   end do
 
-`   `
+   
 
-`   ! NF90\_UINT64 data (3x4x2 = 24 values)`
+   ! NF90\_UINT64 data (3x4x2 = 24 values)
 
-`   do k = 1, NZ`
+   do k = 1, NZ
 
-`      do j = 1, NY`
+      do j = 1, NY
 
-`         do i = 1, NX`
+         do i = 1, NX
 
-`            uint64\_data(i, j, k) = int(value, kind=8)`
+            uint64\_data(i, j, k) = int(value, kind=8)
 
-`            value = value + 1`
+            value = value + 1
 
-`         end do`
+         end do
 
-`      end do`
+      end do
 
-`   end do`
+   end do
 
-`   `
+   
 
-`   ! Write data to all variables`
+   ! Write data to all variables
 
-`   print \*, "Writing data to all variables..."`
+   print \*, "Writing data to all variables..."
 
-`   retval = nf90\_put\_var(ncid, ubyte\_varid, ubyte\_data)`
+   retval = nf90\_put\_var(ncid, ubyte\_varid, ubyte\_data)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   retval = nf90\_put\_var(grp1\_id, ushort\_varid, ushort\_data)`
+   retval = nf90\_put\_var(grp1\_id, ushort\_varid, ushort\_data)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   retval = nf90\_put\_var(grp2\_id, uint\_varid, uint\_data)`
+   retval = nf90\_put\_var(grp2\_id, uint\_varid, uint\_data)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   retval = nf90\_put\_var(nested\_id, int64\_varid, int64\_data)`
+   retval = nf90\_put\_var(nested\_id, int64\_varid, int64\_data)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   retval = nf90\_put\_var(nested\_id, uint64\_varid, uint64\_data)`
+   retval = nf90\_put\_var(nested\_id, uint64\_varid, uint64\_data)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   `
+   
 
-`   ! Close the file`
+   ! Close the file
 
-`   retval = nf90\_close(ncid)`
+   retval = nf90\_close(ncid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   `
+   
 
-`   print \*, "\*\*\* SUCCESS writing file!"`
+   print \*, "\*\*\* SUCCESS writing file!"
 
-`   `
+   
 
-`   ! ========== READ AND VALIDATE PHASE ==========`
+   ! ========== READ AND VALIDATE PHASE ==========
 
-`   print \*, ""`
+   print \*, ""
 
-`   print \*, "=== Phase 2: Read and validate file structure ==="`
+   print \*, "=== Phase 2: Read and validate file structure ==="
 
-`   `
+   
 
-`   ! Open the file for reading`
+   ! Open the file for reading
 
-`   print \*, "Reopening file for validation..."`
+   print \*, "Reopening file for validation..."
 
-`   retval = nf90\_open(FILE\_NAME, NF90\_NOWRITE, ncid)`
+   retval = nf90\_open(FILE\_NAME, NF90\_NOWRITE, ncid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   `
+   
 
-`   ! Query and validate number of groups in root`
+   ! Query and validate number of groups in root
 
-`   call validate\_groups(ncid, grp1\_id, grp2\_id, nested\_id)`
+   call validate\_groups(ncid, grp1\_id, grp2\_id, nested\_id)
 
-`   `
+   
 
-`   ! Test dimension visibility across group boundaries`
+   ! Test dimension visibility across group boundaries
 
-`   call test\_dimension\_visibility(grp1\_id, grp2\_id, nested\_id)`
+   call test\_dimension\_visibility(grp1\_id, grp2\_id, nested\_id)
 
-`   `
+   
 
-`   ! Validate dimension sizes`
+   ! Validate dimension sizes
 
-`   call validate\_dimensions(ncid, nested\_id)`
+   call validate\_dimensions(ncid, nested\_id)
 
-`   `
+   
 
-`   ! Query and validate all variable metadata`
+   ! Query and validate all variable metadata
 
-`   call validate\_variables(ncid, grp1\_id, grp2\_id, nested\_id, &`
+   call validate\_variables(ncid, grp1\_id, grp2\_id, nested\_id, &
 
-`                           ubyte\_varid, ushort\_varid, uint\_varid, int64\_varid, uint64\_varid)`
+                           ubyte\_varid, ushort\_varid, uint\_varid, int64\_varid, uint64\_varid)
 
-`   `
+   
 
-`   ! Read and validate all data`
+   ! Read and validate all data
 
-`   call validate\_data(ncid, grp1\_id, grp2\_id, nested\_id, &`
+   call validate\_data(ncid, grp1\_id, grp2\_id, nested\_id, &
 
-`                      ubyte\_varid, ushort\_varid, uint\_varid, int64\_varid, uint64\_varid)`
+                      ubyte\_varid, ushort\_varid, uint\_varid, int64\_varid, uint64\_varid)
 
-`   `
+   
 
-`   ! Close the file`
+   ! Close the file
 
-`   retval = nf90\_close(ncid)`
+   retval = nf90\_close(ncid)
 
-`   if (retval /= nf90\_noerr) call handle\_err(retval)`
+   if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`   `
+   
 
-`   ! Summary`
+   ! Summary
 
-`   print \*, ""`
+   print \*, ""
 
-`   print \*, "=== Summary ==="`
+   print \*, "=== Summary ==="
 
-`   print \*, "Group hierarchy:"`
+   print \*, "Group hierarchy:"
 
-`   print \*, "  Root"`
+   print \*, "  Root"
 
-`   print \*, "  ├── SubGroup1"`
+   print \*, "  ├── SubGroup1"
 
-`   print \*, "  └── SubGroup2"`
+   print \*, "  └── SubGroup2"
 
-`   print \*, "      └── NestedGroup"`
+   print \*, "      └── NestedGroup"
 
-`   print \*, ""`
+   print \*, ""
 
-`   print \*, "Dimensions:"`
+   print \*, "Dimensions:"
 
-`   print \*, "  Root: x=", NX, ", y=", NY, " (visible in all groups)"`
+   print \*, "  Root: x=", NX, ", y=", NY, " (visible in all groups)"
 
-`   print \*, "  NestedGroup: z=", NZ, " (local only)"`
+   print \*, "  NestedGroup: z=", NZ, " (local only)"
 
-`   print \*, ""`
+   print \*, ""
 
-`   print \*, "Variables (all 5 new integer types):"`
+   print \*, "Variables (all 5 new integer types):"
 
-`   print \*, "  Root: ubyte\_var (NF90\_UBYTE)"`
+   print \*, "  Root: ubyte\_var (NF90\_UBYTE)"
 
-`   print \*, "  SubGroup1: ushort\_var (NF90\_USHORT)"`
+   print \*, "  SubGroup1: ushort\_var (NF90\_USHORT)"
 
-`   print \*, "  SubGroup2: uint\_var (NF90\_UINT)"`
+   print \*, "  SubGroup2: uint\_var (NF90\_UINT)"
 
-`   print \*, "  NestedGroup: int64\_var (NF90\_INT64), uint64\_var (NF90\_UINT64)"`
+   print \*, "  NestedGroup: int64\_var (NF90\_INT64), uint64\_var (NF90\_UINT64)"
 
-`   print \*, ""`
+   print \*, ""
 
-`   print \*, "Key Concepts Demonstrated:"`
+   print \*, "Key Concepts Demonstrated:"
 
-`   print \*, "  ✓ Hierarchical group structures (3 levels)"`
+   print \*, "  ✓ Hierarchical group structures (3 levels)"
 
-`   print \*, "  ✓ Nested groups (NestedGroup under SubGroup2)"`
+   print \*, "  ✓ Nested groups (NestedGroup under SubGroup2)"
 
-`   print \*, "  ✓ Dimension visibility across group boundaries"`
+   print \*, "  ✓ Dimension visibility across group boundaries"
 
-`   print \*, "  ✓ All 5 new NetCDF-4 integer types"`
+   print \*, "  ✓ All 5 new NetCDF-4 integer types"
 
-`   print \*, "  ✓ Variable scoping to defining group"`
+   print \*, "  ✓ Variable scoping to defining group"
 
-`   print \*, ""`
+   print \*, ""
 
-`   print \*, "\*\*\* SUCCESS: All validation checks passed!"`
+   print \*, "\*\*\* SUCCESS: All validation checks passed!"
 
-`   print \*, "Use 'ncdump f\_groups.nc' to view the file structure."`
+   print \*, "Use 'ncdump f\_groups.nc' to view the file structure."
 
-`   `
+   
 
-`contains`
+contains
 
 
-`   subroutine validate\_groups(ncid, grp1\_id, grp2\_id, nested\_id)`
+   subroutine validate\_groups(ncid, grp1\_id, grp2\_id, nested\_id)
 
-`      integer, intent(in) :: ncid`
+      integer, intent(in) :: ncid
 
-`      integer, intent(out) :: grp1\_id, grp2\_id, nested\_id`
+      integer, intent(out) :: grp1\_id, grp2\_id, nested\_id
 
-`      integer :: ngrps, retval`
+      integer :: ngrps, retval
 
-`      integer, dimension(NF90\_MAX\_VARS) :: grpids`
+      integer, dimension(NF90\_MAX\_VARS) :: grpids
 
-`      character(len=NF90\_MAX\_NAME) :: grpname`
+      character(len=NF90\_MAX\_NAME) :: grpname
 
-`      `
+      
 
-`      ! Query number of groups in root`
+      ! Query number of groups in root
 
-`      retval = nf90\_inq\_grps(ncid, ngrps, grpids)`
+      retval = nf90\_inq\_grps(ncid, ngrps, grpids)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      `
+      
 
-`      if (ngrps /= 2) then`
+      if (ngrps /= 2) then
 
-`         print \*, "Error: Expected 2 groups in root, found ", ngrps`
+         print \*, "Error: Expected 2 groups in root, found ", ngrps
 
-`         stop ERRCODE`
+         stop ERRCODE
 
-`      end if`
+      end if
 
-`      print \*, "Verified: Root has ", ngrps, " child groups"`
+      print \*, "Verified: Root has ", ngrps, " child groups"
 
-`      `
+      
 
-`      ! Navigate to groups by name`
+      ! Navigate to groups by name
 
-`      print \*, ""`
+      print \*, ""
 
-`      print \*, "Navigating to groups by name:"`
+      print \*, "Navigating to groups by name:"
 
-`      retval = nf90\_inq\_grp\_ncid(ncid, "SubGroup1", grp1\_id)`
+      retval = nf90\_inq\_grp\_ncid(ncid, "SubGroup1", grp1\_id)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      print \*, "  Found SubGroup1 (ncid=", grp1\_id, ")"`
+      print \*, "  Found SubGroup1 (ncid=", grp1\_id, ")"
 
-`      `
+      
 
-`      retval = nf90\_inq\_grp\_ncid(ncid, "SubGroup2", grp2\_id)`
+      retval = nf90\_inq\_grp\_ncid(ncid, "SubGroup2", grp2\_id)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      print \*, "  Found SubGroup2 (ncid=", grp2\_id, ")"`
+      print \*, "  Found SubGroup2 (ncid=", grp2\_id, ")"
 
-`      `
+      
 
-`      retval = nf90\_inq\_grp\_ncid(grp2\_id, "NestedGroup", nested\_id)`
+      retval = nf90\_inq\_grp\_ncid(grp2\_id, "NestedGroup", nested\_id)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      print \*, "  Found NestedGroup (ncid=", nested\_id, ")"`
+      print \*, "  Found NestedGroup (ncid=", nested\_id, ")"
 
-`      `
+      
 
-`      ! Validate group names`
+      ! Validate group names
 
-`      retval = nf90\_inq\_grpname(grp1\_id, grpname)`
+      retval = nf90\_inq\_grpname(grp1\_id, grpname)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      if (trim(grpname) /= "SubGroup1") then`
+      if (trim(grpname) /= "SubGroup1") then
 
-`         print \*, "Error: Expected group name 'SubGroup1', found '", trim(grpname), "'"`
+         print \*, "Error: Expected group name 'SubGroup1', found '", trim(grpname), "'"
 
-`         stop ERRCODE`
+         stop ERRCODE
 
-`      end if`
+      end if
 
-`      `
+      
 
-`      retval = nf90\_inq\_grpname(grp2\_id, grpname)`
+      retval = nf90\_inq\_grpname(grp2\_id, grpname)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      if (trim(grpname) /= "SubGroup2") then`
+      if (trim(grpname) /= "SubGroup2") then
 
-`         print \*, "Error: Expected group name 'SubGroup2', found '", trim(grpname), "'"`
+         print \*, "Error: Expected group name 'SubGroup2', found '", trim(grpname), "'"
 
-`         stop ERRCODE`
+         stop ERRCODE
 
-`      end if`
+      end if
 
-`      `
+      
 
-`      retval = nf90\_inq\_grpname(nested\_id, grpname)`
+      retval = nf90\_inq\_grpname(nested\_id, grpname)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      if (trim(grpname) /= "NestedGroup") then`
+      if (trim(grpname) /= "NestedGroup") then
 
-`         print \*, "Error: Expected group name 'NestedGroup', found '", trim(grpname), "'"`
+         print \*, "Error: Expected group name 'NestedGroup', found '", trim(grpname), "'"
 
-`         stop ERRCODE`
+         stop ERRCODE
 
-`      end if`
+      end if
 
-`      print \*, "Verified: All group names correct"`
+      print \*, "Verified: All group names correct"
 
-`   end subroutine validate\_groups`
+   end subroutine validate\_groups
 
-`   `
+   
 
-`   subroutine test\_dimension\_visibility(grp1\_id, grp2\_id, nested\_id)`
+   subroutine test\_dimension\_visibility(grp1\_id, grp2\_id, nested\_id)
 
-`      integer, intent(in) :: grp1\_id, grp2\_id, nested\_id`
+      integer, intent(in) :: grp1\_id, grp2\_id, nested\_id
 
-`      integer :: test\_dimid, retval`
+      integer :: test\_dimid, retval
 
-`      `
+      
 
-`      print \*, ""`
+      print \*, ""
 
-`      print \*, "=== Phase 3: Test dimension visibility ==="`
+      print \*, "=== Phase 3: Test dimension visibility ==="
 
-`      print \*, "Testing that root dimensions (x, y) are visible in all groups:"`
+      print \*, "Testing that root dimensions (x, y) are visible in all groups:"
 
-`      `
+      
 
-`      ! Test x dimension visibility in SubGroup1`
+      ! Test x dimension visibility in SubGroup1
 
-`      retval = nf90\_inq\_dimid(grp1\_id, "x", test\_dimid)`
+      retval = nf90\_inq\_dimid(grp1\_id, "x", test\_dimid)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      print \*, "  ✓ SubGroup1 can see dimension 'x' from root"`
+      print \*, "  ✓ SubGroup1 can see dimension 'x' from root"
 
-`      `
+      
 
-`      ! Test y dimension visibility in SubGroup1`
+      ! Test y dimension visibility in SubGroup1
 
-`      retval = nf90\_inq\_dimid(grp1\_id, "y", test\_dimid)`
+      retval = nf90\_inq\_dimid(grp1\_id, "y", test\_dimid)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      print \*, "  ✓ SubGroup1 can see dimension 'y' from root"`
+      print \*, "  ✓ SubGroup1 can see dimension 'y' from root"
 
-`      `
+      
 
-`      ! Test x dimension visibility in SubGroup2`
+      ! Test x dimension visibility in SubGroup2
 
-`      retval = nf90\_inq\_dimid(grp2\_id, "x", test\_dimid)`
+      retval = nf90\_inq\_dimid(grp2\_id, "x", test\_dimid)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      print \*, "  ✓ SubGroup2 can see dimension 'x' from root"`
+      print \*, "  ✓ SubGroup2 can see dimension 'x' from root"
 
-`      `
+      
 
-`      ! Test y dimension visibility in SubGroup2`
+      ! Test y dimension visibility in SubGroup2
 
-`      retval = nf90\_inq\_dimid(grp2\_id, "y", test\_dimid)`
+      retval = nf90\_inq\_dimid(grp2\_id, "y", test\_dimid)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      print \*, "  ✓ SubGroup2 can see dimension 'y' from root"`
+      print \*, "  ✓ SubGroup2 can see dimension 'y' from root"
 
-`      `
+      
 
-`      ! Test x dimension visibility in NestedGroup`
+      ! Test x dimension visibility in NestedGroup
 
-`      retval = nf90\_inq\_dimid(nested\_id, "x", test\_dimid)`
+      retval = nf90\_inq\_dimid(nested\_id, "x", test\_dimid)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      print \*, "  ✓ NestedGroup can see dimension 'x' from root"`
+      print \*, "  ✓ NestedGroup can see dimension 'x' from root"
 
-`      `
+      
 
-`      ! Test y dimension visibility in NestedGroup`
+      ! Test y dimension visibility in NestedGroup
 
-`      retval = nf90\_inq\_dimid(nested\_id, "y", test\_dimid)`
+      retval = nf90\_inq\_dimid(nested\_id, "y", test\_dimid)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      print \*, "  ✓ NestedGroup can see dimension 'y' from root"`
+      print \*, "  ✓ NestedGroup can see dimension 'y' from root"
 
-`      `
+      
 
-`      ! Test local dimension z in NestedGroup`
+      ! Test local dimension z in NestedGroup
 
-`      retval = nf90\_inq\_dimid(nested\_id, "z", test\_dimid)`
+      retval = nf90\_inq\_dimid(nested\_id, "z", test\_dimid)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      print \*, "  ✓ NestedGroup can see its local dimension 'z'"`
+      print \*, "  ✓ NestedGroup can see its local dimension 'z'"
 
-`      `
+      
 
-`      print \*, "Verified: Dimension visibility follows parent chain rules"`
+      print \*, "Verified: Dimension visibility follows parent chain rules"
 
-`   end subroutine test\_dimension\_visibility`
+   end subroutine test\_dimension\_visibility
 
-`   `
+   
 
-`   subroutine validate\_dimensions(ncid, nested\_id)`
+   subroutine validate\_dimensions(ncid, nested\_id)
 
-`      integer, intent(in) :: ncid, nested\_id`
+      integer, intent(in) :: ncid, nested\_id
 
-`      integer :: x\_dimid, y\_dimid, z\_dimid, retval`
+      integer :: x\_dimid, y\_dimid, z\_dimid, retval
 
-`      integer :: len\_x, len\_y, len\_z`
+      integer :: len\_x, len\_y, len\_z
 
-`      `
+      
 
-`      print \*, ""`
+      print \*, ""
 
-`      print \*, "Validating dimension sizes:"`
+      print \*, "Validating dimension sizes:"
 
-`      `
+      
 
-`      retval = nf90\_inq\_dimid(ncid, "x", x\_dimid)`
+      retval = nf90\_inq\_dimid(ncid, "x", x\_dimid)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      retval = nf90\_inquire\_dimension(ncid, x\_dimid, len=len\_x)`
+      retval = nf90\_inquire\_dimension(ncid, x\_dimid, len=len\_x)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      if (len\_x /= NX) then`
+      if (len\_x /= NX) then
 
-`         print \*, "Error: Expected x dimension = ", NX, ", found ", len\_x`
+         print \*, "Error: Expected x dimension = ", NX, ", found ", len\_x
 
-`         stop ERRCODE`
+         stop ERRCODE
 
-`      end if`
+      end if
 
-`      `
+      
 
-`      retval = nf90\_inq\_dimid(ncid, "y", y\_dimid)`
+      retval = nf90\_inq\_dimid(ncid, "y", y\_dimid)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      retval = nf90\_inquire\_dimension(ncid, y\_dimid, len=len\_y)`
+      retval = nf90\_inquire\_dimension(ncid, y\_dimid, len=len\_y)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      if (len\_y /= NY) then`
+      if (len\_y /= NY) then
 
-`         print \*, "Error: Expected y dimension = ", NY, ", found ", len\_y`
+         print \*, "Error: Expected y dimension = ", NY, ", found ", len\_y
 
-`         stop ERRCODE`
+         stop ERRCODE
 
-`      end if`
+      end if
 
-`      `
+      
 
-`      retval = nf90\_inq\_dimid(nested\_id, "z", z\_dimid)`
+      retval = nf90\_inq\_dimid(nested\_id, "z", z\_dimid)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      retval = nf90\_inquire\_dimension(nested\_id, z\_dimid, len=len\_z)`
+      retval = nf90\_inquire\_dimension(nested\_id, z\_dimid, len=len\_z)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      if (len\_z /= NZ) then`
+      if (len\_z /= NZ) then
 
-`         print \*, "Error: Expected z dimension = ", NZ, ", found ", len\_z`
+         print \*, "Error: Expected z dimension = ", NZ, ", found ", len\_z
 
-`         stop ERRCODE`
+         stop ERRCODE
 
-`      end if`
+      end if
 
-`      `
+      
 
-`      print \*, "  x = ", len\_x, ", y = ", len\_y, ", z = ", len\_z`
+      print \*, "  x = ", len\_x, ", y = ", len\_y, ", z = ", len\_z
 
-`      print \*, "Verified: All dimension sizes correct"`
+      print \*, "Verified: All dimension sizes correct"
 
-`   end subroutine validate\_dimensions`
+   end subroutine validate\_dimensions
 
-`   `
+   
 
-`   subroutine validate\_variables(ncid, grp1\_id, grp2\_id, nested\_id, &`
+   subroutine validate\_variables(ncid, grp1\_id, grp2\_id, nested\_id, &
 
-`                                 ubyte\_varid, ushort\_varid, uint\_varid, int64\_varid, uint64\_varid)`
+                                 ubyte\_varid, ushort\_varid, uint\_varid, int64\_varid, uint64\_varid)
 
-`      integer, intent(in) :: ncid, grp1\_id, grp2\_id, nested\_id`
+      integer, intent(in) :: ncid, grp1\_id, grp2\_id, nested\_id
 
-`      integer, intent(out) :: ubyte\_varid, ushort\_varid, uint\_varid, int64\_varid, uint64\_varid`
+      integer, intent(out) :: ubyte\_varid, ushort\_varid, uint\_varid, int64\_varid, uint64\_varid
 
-`      integer :: retval, vartype, varndims`
+      integer :: retval, vartype, varndims
 
-`      `
+      
 
-`      print \*, ""`
+      print \*, ""
 
-`      print \*, "=== Phase 4: Validate variable metadata ==="`
+      print \*, "=== Phase 4: Validate variable metadata ==="
 
-`      `
+      
 
-`      ! Validate ubyte\_var in root`
+      ! Validate ubyte\_var in root
 
-`      retval = nf90\_inq\_varid(ncid, "ubyte\_var", ubyte\_varid)`
+      retval = nf90\_inq\_varid(ncid, "ubyte\_var", ubyte\_varid)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      retval = nf90\_inquire\_variable(ncid, ubyte\_varid, xtype=vartype, ndims=varndims)`
+      retval = nf90\_inquire\_variable(ncid, ubyte\_varid, xtype=vartype, ndims=varndims)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      if (vartype /= NF90\_UBYTE .or. varndims /= NDIMS\_2D) then`
+      if (vartype /= NF90\_UBYTE .or. varndims /= NDIMS\_2D) then
 
-`         print \*, "Error: ubyte\_var has wrong type or dimensions"`
+         print \*, "Error: ubyte\_var has wrong type or dimensions"
 
-`         stop ERRCODE`
+         stop ERRCODE
 
-`      end if`
+      end if
 
-`      print \*, "  ✓ Root: ubyte\_var (NF90\_UBYTE, ", varndims, "D)"`
+      print \*, "  ✓ Root: ubyte\_var (NF90\_UBYTE, ", varndims, "D)"
 
-`      `
+      
 
-`      ! Validate ushort\_var in SubGroup1`
+      ! Validate ushort\_var in SubGroup1
 
-`      retval = nf90\_inq\_varid(grp1\_id, "ushort\_var", ushort\_varid)`
+      retval = nf90\_inq\_varid(grp1\_id, "ushort\_var", ushort\_varid)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      retval = nf90\_inquire\_variable(grp1\_id, ushort\_varid, xtype=vartype, ndims=varndims)`
+      retval = nf90\_inquire\_variable(grp1\_id, ushort\_varid, xtype=vartype, ndims=varndims)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      if (vartype /= NF90\_USHORT .or. varndims /= NDIMS\_2D) then`
+      if (vartype /= NF90\_USHORT .or. varndims /= NDIMS\_2D) then
 
-`         print \*, "Error: ushort\_var has wrong type or dimensions"`
+         print \*, "Error: ushort\_var has wrong type or dimensions"
 
-`         stop ERRCODE`
+         stop ERRCODE
 
-`      end if`
+      end if
 
-`      print \*, "  ✓ SubGroup1: ushort\_var (NF90\_USHORT, ", varndims, "D)"`
+      print \*, "  ✓ SubGroup1: ushort\_var (NF90\_USHORT, ", varndims, "D)"
 
-`      `
+      
 
-`      ! Validate uint\_var in SubGroup2`
+      ! Validate uint\_var in SubGroup2
 
-`      retval = nf90\_inq\_varid(grp2\_id, "uint\_var", uint\_varid)`
+      retval = nf90\_inq\_varid(grp2\_id, "uint\_var", uint\_varid)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      retval = nf90\_inquire\_variable(grp2\_id, uint\_varid, xtype=vartype, ndims=varndims)`
+      retval = nf90\_inquire\_variable(grp2\_id, uint\_varid, xtype=vartype, ndims=varndims)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      if (vartype /= NF90\_UINT .or. varndims /= NDIMS\_2D) then`
+      if (vartype /= NF90\_UINT .or. varndims /= NDIMS\_2D) then
 
-`         print \*, "Error: uint\_var has wrong type or dimensions"`
+         print \*, "Error: uint\_var has wrong type or dimensions"
 
-`         stop ERRCODE`
+         stop ERRCODE
 
-`      end if`
+      end if
 
-`      print \*, "  ✓ SubGroup2: uint\_var (NF90\_UINT, ", varndims, "D)"`
+      print \*, "  ✓ SubGroup2: uint\_var (NF90\_UINT, ", varndims, "D)"
 
-`      `
+      
 
-`      ! Validate int64\_var in NestedGroup`
+      ! Validate int64\_var in NestedGroup
 
-`      retval = nf90\_inq\_varid(nested\_id, "int64\_var", int64\_varid)`
+      retval = nf90\_inq\_varid(nested\_id, "int64\_var", int64\_varid)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      retval = nf90\_inquire\_variable(nested\_id, int64\_varid, xtype=vartype, ndims=varndims)`
+      retval = nf90\_inquire\_variable(nested\_id, int64\_varid, xtype=vartype, ndims=varndims)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      if (vartype /= NF90\_INT64 .or. varndims /= NDIMS\_2D) then`
+      if (vartype /= NF90\_INT64 .or. varndims /= NDIMS\_2D) then
 
-`         print \*, "Error: int64\_var has wrong type or dimensions"`
+         print \*, "Error: int64\_var has wrong type or dimensions"
 
-`         stop ERRCODE`
+         stop ERRCODE
 
-`      end if`
+      end if
 
-`      print \*, "  ✓ NestedGroup: int64\_var (NF90\_INT64, ", varndims, "D)"`
+      print \*, "  ✓ NestedGroup: int64\_var (NF90\_INT64, ", varndims, "D)"
 
-`      `
+      
 
-`      ! Validate uint64\_var in NestedGroup`
+      ! Validate uint64\_var in NestedGroup
 
-`      retval = nf90\_inq\_varid(nested\_id, "uint64\_var", uint64\_varid)`
+      retval = nf90\_inq\_varid(nested\_id, "uint64\_var", uint64\_varid)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      retval = nf90\_inquire\_variable(nested\_id, uint64\_varid, xtype=vartype, ndims=varndims)`
+      retval = nf90\_inquire\_variable(nested\_id, uint64\_varid, xtype=vartype, ndims=varndims)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      if (vartype /= NF90\_UINT64 .or. varndims /= NDIMS\_3D) then`
+      if (vartype /= NF90\_UINT64 .or. varndims /= NDIMS\_3D) then
 
-`         print \*, "Error: uint64\_var has wrong type or dimensions"`
+         print \*, "Error: uint64\_var has wrong type or dimensions"
 
-`         stop ERRCODE`
+         stop ERRCODE
 
-`      end if`
+      end if
 
-`      print \*, "  ✓ NestedGroup: uint64\_var (NF90\_UINT64, ", varndims, "D)"`
+      print \*, "  ✓ NestedGroup: uint64\_var (NF90\_UINT64, ", varndims, "D)"
 
-`      `
+      
 
-`      print \*, "Verified: All variable metadata correct"`
+      print \*, "Verified: All variable metadata correct"
 
-`   end subroutine validate\_variables`
+   end subroutine validate\_variables
 
-`   `
+   
 
-`   subroutine validate\_data(ncid, grp1\_id, grp2\_id, nested\_id, &`
+   subroutine validate\_data(ncid, grp1\_id, grp2\_id, nested\_id, &
 
-`                           ubyte\_varid, ushort\_varid, uint\_varid, int64\_varid, uint64\_varid)`
+                           ubyte\_varid, ushort\_varid, uint\_varid, int64\_varid, uint64\_varid)
 
-`      integer, intent(in) :: ncid, grp1\_id, grp2\_id, nested\_id`
+      integer, intent(in) :: ncid, grp1\_id, grp2\_id, nested\_id
 
-`      integer, intent(in) :: ubyte\_varid, ushort\_varid, uint\_varid, int64\_varid, uint64\_varid`
+      integer, intent(in) :: ubyte\_varid, ushort\_varid, uint\_varid, int64\_varid, uint64\_varid
 
-`      integer :: retval, i, j, k, value, errors, total\_values`
+      integer :: retval, i, j, k, value, errors, total\_values
 
-`      `
+      
 
-`      integer(kind=1), dimension(NX, NY) :: ubyte\_in`
+      integer(kind=1), dimension(NX, NY) :: ubyte\_in
 
-`      integer(kind=2), dimension(NX, NY) :: ushort\_in`
+      integer(kind=2), dimension(NX, NY) :: ushort\_in
 
-`      integer(kind=4), dimension(NX, NY) :: uint\_in`
+      integer(kind=4), dimension(NX, NY) :: uint\_in
 
-`      integer(kind=8), dimension(NX, NY) :: int64\_in`
+      integer(kind=8), dimension(NX, NY) :: int64\_in
 
-`      integer(kind=8), dimension(NX, NY, NZ) :: uint64\_in`
+      integer(kind=8), dimension(NX, NY, NZ) :: uint64\_in
 
-`      `
+      
 
-`      print \*, ""`
+      print \*, ""
 
-`      print \*, "=== Phase 5: Read and validate data values ==="`
+      print \*, "=== Phase 5: Read and validate data values ==="
 
-`      `
+      
 
-`      retval = nf90\_get\_var(ncid, ubyte\_varid, ubyte\_in)`
+      retval = nf90\_get\_var(ncid, ubyte\_varid, ubyte\_in)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      retval = nf90\_get\_var(grp1\_id, ushort\_varid, ushort\_in)`
+      retval = nf90\_get\_var(grp1\_id, ushort\_varid, ushort\_in)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      retval = nf90\_get\_var(grp2\_id, uint\_varid, uint\_in)`
+      retval = nf90\_get\_var(grp2\_id, uint\_varid, uint\_in)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      retval = nf90\_get\_var(nested\_id, int64\_varid, int64\_in)`
+      retval = nf90\_get\_var(nested\_id, int64\_varid, int64\_in)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      retval = nf90\_get\_var(nested\_id, uint64\_varid, uint64\_in)`
+      retval = nf90\_get\_var(nested\_id, uint64\_varid, uint64\_in)
 
-`      if (retval /= nf90\_noerr) call handle\_err(retval)`
+      if (retval /= nf90\_noerr) call handle\_err(retval)
 
-`      `
+      
 
-`      ! Validate data correctness`
+      ! Validate data correctness
 
-`      errors = 0`
+      errors = 0
 
-`      value = 1`
+      value = 1
 
-`      `
+      
 
-`      ! Validate NF90\_UBYTE data`
+      ! Validate NF90\_UBYTE data
 
-`      do j = 1, NY`
+      do j = 1, NY
 
-`         do i = 1, NX`
+         do i = 1, NX
 
-`            if (ubyte\_in(i, j) /= int(value, kind=1)) then`
+            if (ubyte\_in(i, j) /= int(value, kind=1)) then
 
-`               print \*, "Error: ubyte\_var(", i, ",", j, ") = ", ubyte\_in(i, j), &`
+               print \*, "Error: ubyte\_var(", i, ",", j, ") = ", ubyte\_in(i, j), &
 
-`                        ", expected ", value`
+                        ", expected ", value
 
-`               errors = errors + 1`
+               errors = errors + 1
 
-`            end if`
+            end if
 
-`            value = value + 1`
+            value = value + 1
 
-`         end do`
+         end do
 
-`      end do`
+      end do
 
-`      `
+      
 
-`      ! Validate NF90\_USHORT data`
+      ! Validate NF90\_USHORT data
 
-`      do j = 1, NY`
+      do j = 1, NY
 
-`         do i = 1, NX`
+         do i = 1, NX
 
-`            if (ushort\_in(i, j) /= int(value, kind=2)) then`
+            if (ushort\_in(i, j) /= int(value, kind=2)) then
 
-`               print \*, "Error: ushort\_var(", i, ",", j, ") = ", ushort\_in(i, j), &`
+               print \*, "Error: ushort\_var(", i, ",", j, ") = ", ushort\_in(i, j), &
 
-`                        ", expected ", value`
+                        ", expected ", value
 
-`               errors = errors + 1`
+               errors = errors + 1
 
-`            end if`
+            end if
 
-`            value = value + 1`
+            value = value + 1
 
-`         end do`
+         end do
 
-`      end do`
+      end do
 
-`      `
+      
 
-`      ! Validate NF90\_UINT data`
+      ! Validate NF90\_UINT data
 
-`      do j = 1, NY`
+      do j = 1, NY
 
-`         do i = 1, NX`
+         do i = 1, NX
 
-`            if (uint\_in(i, j) /= int(value, kind=4)) then`
+            if (uint\_in(i, j) /= int(value, kind=4)) then
 
-`               print \*, "Error: uint\_var(", i, ",", j, ") = ", uint\_in(i, j), &`
+               print \*, "Error: uint\_var(", i, ",", j, ") = ", uint\_in(i, j), &
 
-`                        ", expected ", value`
+                        ", expected ", value
 
-`               errors = errors + 1`
+               errors = errors + 1
 
-`            end if`
+            end if
 
-`            value = value + 1`
+            value = value + 1
 
-`         end do`
+         end do
 
-`      end do`
+      end do
 
-`      `
+      
 
-`      ! Validate NF90\_INT64 data`
+      ! Validate NF90\_INT64 data
 
-`      do j = 1, NY`
+      do j = 1, NY
 
-`         do i = 1, NX`
+         do i = 1, NX
 
-`            if (int64\_in(i, j) /= int(value, kind=8)) then`
+            if (int64\_in(i, j) /= int(value, kind=8)) then
 
-`               print \*, "Error: int64\_var(", i, ",", j, ") = ", int64\_in(i, j), &`
+               print \*, "Error: int64\_var(", i, ",", j, ") = ", int64\_in(i, j), &
 
-`                        ", expected ", value`
+                        ", expected ", value
 
-`               errors = errors + 1`
+               errors = errors + 1
 
-`            end if`
+            end if
 
-`            value = value + 1`
+            value = value + 1
 
-`         end do`
+         end do
 
-`      end do`
+      end do
 
-`      `
+      
 
-`      ! Validate NF90\_UINT64 data`
+      ! Validate NF90\_UINT64 data
 
-`      do k = 1, NZ`
+      do k = 1, NZ
 
-`         do j = 1, NY`
+         do j = 1, NY
 
-`            do i = 1, NX`
+            do i = 1, NX
 
-`               if (uint64\_in(i, j, k) /= int(value, kind=8)) then`
+               if (uint64\_in(i, j, k) /= int(value, kind=8)) then
 
-`                  print \*, "Error: uint64\_var(", i, ",", j, ",", k, ") = ", uint64\_in(i, j, k), &`
+                  print \*, "Error: uint64\_var(", i, ",", j, ",", k, ") = ", uint64\_in(i, j, k), &
 
-`                           ", expected ", value`
+                           ", expected ", value
 
-`                  errors = errors + 1`
+                  errors = errors + 1
 
-`               end if`
+               end if
 
-`               value = value + 1`
+               value = value + 1
 
-`            end do`
+            end do
 
-`         end do`
+         end do
 
-`      end do`
+      end do
 
-`      `
+      
 
-`      if (errors \> 0) then`
+      if (errors \> 0) then
 
-`         print \*, "\*\*\* FAILED: ", errors, " data validation errors"`
+         print \*, "\*\*\* FAILED: ", errors, " data validation errors"
 
-`         stop ERRCODE`
+         stop ERRCODE
 
-`      end if`
+      end if
 
-`      `
+      
 
-`      total\_values = NX \* NY \* 4 + NX \* NY \* NZ`
+      total\_values = NX \* NY \* 4 + NX \* NY \* NZ
 
-`      print \*, "Verified: All ", total\_values, " data values correct (sequential 1 to ", total\_values, ")"`
+      print \*, "Verified: All ", total\_values, " data values correct (sequential 1 to ", total\_values, ")"
 
-`   end subroutine validate\_data`
+   end subroutine validate\_data
 
-`   `
+   
 
-`   subroutine handle\_err(status)`
+   subroutine handle\_err(status)
 
-`      integer, intent(in) :: status`
+      integer, intent(in) :: status
 
-`      print \*, "Error: ", trim(nf90\_strerror(status))`
+      print \*, "Error: ", trim(nf90\_strerror(status))
 
-`      stop ERRCODE`
+      stop ERRCODE
 
-`   end subroutine handle\_err`
+   end subroutine handle\_err
 
-`   `
+   
 
-`end program f\_groups`
+end program f\_groups
 ```
 
 This yields a file with this ncdump output:
 
 ```
-`netcdf f\_groups \{`
+netcdf f\_groups \{
 
-`dimensions:`
+dimensions:
 
-`	x = 3 ;`
+	x = 3 ;
 
-`	y = 4 ;`
+	y = 4 ;
 
-`variables:`
+variables:
 
-`	ubyte ubyte\_var(y, x) ;`
+	ubyte ubyte\_var(y, x) ;
 
-`data:`
-
-
-` ubyte\_var =`
-
-`  1, 2, 3,`
-
-`  4, 5, 6,`
-
-`  7, 8, 9,`
-
-`  10, 11, 12 ;`
+data:
 
 
-`group: SubGroup1 \{`
+ ubyte\_var =
 
-`  variables:`
+  1, 2, 3,
 
-`  	ushort ushort\_var(y, x) ;`
+  4, 5, 6,
 
-`  data:`
+  7, 8, 9,
 
-
-`   ushort\_var =`
-
-`  13, 14, 15,`
-
-`  16, 17, 18,`
-
-`  19, 20, 21,`
-
-`  22, 23, 24 ;`
-
-`  \} // group SubGroup1`
+  10, 11, 12 ;
 
 
-`group: SubGroup2 \{`
+group: SubGroup1 \{
 
-`  variables:`
+  variables:
 
-`  	uint uint\_var(y, x) ;`
+  	ushort ushort\_var(y, x) ;
 
-`  data:`
-
-
-`   uint\_var =`
-
-`  25, 26, 27,`
-
-`  28, 29, 30,`
-
-`  31, 32, 33,`
-
-`  34, 35, 36 ;`
+  data:
 
 
-`  group: NestedGroup \{`
+   ushort\_var =
 
-`    dimensions:`
+  13, 14, 15,
 
-`    	z = 2 ;`
+  16, 17, 18,
 
-`    variables:`
+  19, 20, 21,
 
-`    	int64 int64\_var(y, x) ;`
+  22, 23, 24 ;
 
-`    	uint64 uint64\_var(z, y, x) ;`
-
-`    data:`
+  \} // group SubGroup1
 
 
-`     int64\_var =`
+group: SubGroup2 \{
 
-`  37, 38, 39,`
+  variables:
 
-`  40, 41, 42,`
+  	uint uint\_var(y, x) ;
 
-`  43, 44, 45,`
-
-`  46, 47, 48 ;`
+  data:
 
 
-`     uint64\_var =`
+   uint\_var =
 
-`  49, 50, 51,`
+  25, 26, 27,
 
-`  52, 53, 54,`
+  28, 29, 30,
 
-`  55, 56, 57,`
+  31, 32, 33,
 
-`  58, 59, 60,`
+  34, 35, 36 ;
 
-`  61, 62, 63,`
 
-`  64, 65, 66,`
+  group: NestedGroup \{
 
-`  67, 68, 69,`
+    dimensions:
 
-`  70, 71, 72 ;`
+    	z = 2 ;
 
-`    \} // group NestedGroup`
+    variables:
 
-`  \} // group SubGroup2`
+    	int64 int64\_var(y, x) ;
 
-`\}`
+    	uint64 uint64\_var(z, y, x) ;
+
+    data:
+
+
+     int64\_var =
+
+  37, 38, 39,
+
+  40, 41, 42,
+
+  43, 44, 45,
+
+  46, 47, 48 ;
+
+
+     uint64\_var =
+
+  49, 50, 51,
+
+  52, 53, 54,
+
+  55, 56, 57,
+
+  58, 59, 60,
+
+  61, 62, 63,
+
+  64, 65, 66,
+
+  67, 68, 69,
+
+  70, 71, 72 ;
+
+    \} // group NestedGroup
+
+  \} // group SubGroup2
+
+\}
 ```
 
 ## Most Important Fortran API Functions
@@ -16159,7 +17570,6 @@ NetCDF-Java uses Fortran 90 array section syntax with zero-based indexing:
 | dods:// or OPeNDAP URL | OPeNDAP protocol |
 | cdms3:// | AWS S3 access |
 
-
 ## Programming with NetCDF in Java – Key Takeaways
 
 - **Pure Java**: Complete re-implementation, not a wrapper around C library.
@@ -16182,21 +17592,424 @@ NetCDF-Java uses Fortran 90 array section syntax with zero-based indexing:
 
 ## Learning Objectives
 
-- Apply CF conventions
+- Understand the role of conventions in data interoperability.
 
-- Design effective metadata schemas
+- Understand and apply COARDS, CF and ACDD conventions
 
-- Validate attribute usage
-
-## Storing Earth Science Data
+## Conventions for Storing Earth Science Data
 
 Using dimensions, variables, and attributes, netCDF can store array data in a generalized manner. This is helpful for interoperability. Data consumers will be able to open and understand the file, if attributes are used to fully describe the data.
 
-## The Climate and Forecast (CF) Conventions for Earth Science Data
+But the availability of attributes does not fully solve the problems of Earth science metadata. Different programmers and institutions developed their own way to store data; conventions quickly evolved to bring greater generality to the use of netCDF.
 
-The level of interoperability inherent in netCDF proved insufficient for the needs of climate scientists. In order to compare model output in a rigorous way, an exact specification of each variable must be shared by all users.
+### NUG Conventions
+
+The NetCDF Users Guide (NUG) conventions were developed at Unidata by Russ Rew, Glenn Davis, and others. They cover metadata like fill values, units, ranges, and names conventions. They lay out rules for coordinate variables and dimensions.
+
+The NUG conventions are still relevant and have been adopted widely by netCDF user software. They are also part of COARDS and the CF conventions.
+
+### COARDS (Cooperative Ocean/Atmosphere Research Data Service)
+
+The COARDS conventions were developed and sponsored in 1995 by the Cooperative Ocean/Atmosphere Research Data Service (COARDS). This service was a joint NOAA and university consortium created to distribute and share global atmospheric and oceanographic research data.
+
+COARDS specifies addition rules for dimensions and coordinate variables, and specifies how to handle time.
+
+CF is backward compatible with COARDS, so CF-compliant files are also COARDS-compliant.
+
+### The Climate and Forecast (CF) Conventions for Earth Science Data
+
+The level of interoperability inherent in netCDF with NUG/COARDS conventions proved insufficient for the needs of climate scientists. In order to compare model output in a rigorous way, an exact specification of each variable must be shared by all users.
 
 This resulted in the "standard names list", a list of named quantities with exact definitions. Data producers using the names from the standard names list could achieve a much higher level of interoperability, particularly for model comparisons.
+
+Additional developments in Earth system modeling requires more advanced grids and better representation of instrument data types. Space-based instruments provide addition geolocation and coordinate system challenges. CF addresses these and many other complexities of Earth science data.
+
+The CF conventions are still being actively developed and supported. Through the patient and long-term effort of a handful of researchers, the extremely complex metadata of the Earth sciences has been tamed. CF complaint files are very complete and interoperable.
+
+### ACDD (Attribute Convention for Data Discovery)
+
+ACDD  stands for Attribute Convention for Dataset Discovery. It is a standardized set of global metadata attributes for NetCDF files. Originally developed in 2005 by Ethan Davis, John Caron, and Ben Dominico at Unidata, it is now maintained and governed by the ESIP (Earth Science Information Partners).
+
+ACDD extends CF with attributes for data discovery and cataloging. The goal is to make geospatial datasets machine-readable, allowing automated digital libraries, search engines, and data discovery tools (such as THREDDS catalogs) to easily parse and map the data.
+
+ACDD specifies three tiers of global metadata:
+
+- highly recommended attributes – title, summary, keywords
+
+- recommended attributes – institution, creator info, id, history, date info
+
+- suggested attributes – Conventions, project, license, geospatial boundaries
+
+#### Example of ACDD Attributes
+
+The following code demonstrates adding ACDD attributes to an open netCDF file.
+
+```
+/\* ACDD global attributes \*/
+
+nc\_put\_att\_text(ncid, NC\_GLOBAL, "title", 28, "Global Temperature Analysis");
+
+nc\_put\_att\_text(ncid, NC\_GLOBAL, "summary", 65, 
+
+                "Monthly mean temperature analysis on a global 1-degree grid");
+
+nc\_put\_att\_text(ncid, NC\_GLOBAL, "keywords", 38,
+
+                "temperature, climate, global, monthly");
+
+nc\_put\_att\_text(ncid, NC\_GLOBAL, "creator\_name", 8, "John Doe");
+
+nc\_put\_att\_text(ncid, NC\_GLOBAL, "creator\_email", 17, "jdoe@example.org");
+
+nc\_put\_att\_text(ncid, NC\_GLOBAL, "date\_created", 10, "2026-01-20");
+
+nc\_put\_att\_text(ncid, NC\_GLOBAL, "geospatial\_lat\_min", 6, "-90.0");
+
+nc\_put\_att\_text(ncid, NC\_GLOBAL, "geospatial\_lat\_max", 5, "90.0");
+
+nc\_put\_att\_text(ncid, NC\_GLOBAL, "time\_coverage\_start", 10, "2020-01-01");
+
+nc\_put\_att\_text(ncid, NC\_GLOBAL, "time\_coverage\_end", 10, "2025-12-31");
+```
+
+## Missing Values and Fill Values
+
+Handling missing or undefined data is critical for scientific datasets.
+
+### The \_FillValue Attribute
+
+The behavior of fill values in netCDF is surprisingly complicated, and bugs and oversights in the implementation have left loopholes which lead to bugs.
+
+#### Fill Values in Classic Files
+
+In classic netCDF files, the size and shape of the variable is specified before any data are written. The netCDF library leaves space in the output file for this data, until the user writes it. What happens if we read the data before it is written? To prevent confusion, netCDF specifies a “fill value” for each data type.
+
+In classic netCDF files, variable data are pre-written with the fill value. This results in an extra write for each variable (first the variable is completely filled with the fill value, then the user rewrites the variable with real data). 
+
+This holds true even for record variables, which are appended to the end of the file instead of being pre-written when the file is created. When record-variables are appended to the file, they are first filled with the fill value, and then made available to the user for re-writing.
+
+The end result is that if the user write some data, but not all of it, then the fill value is used for all the data which was not written. When reading the data, the user can use the fill value to identify which values represent real data, and which represent unwritten elements of the array.
+
+#### No-Fill Mode in Classic Files
+
+The extra write of data introduces a delay. Writing the data twice is slower than just writing it once.
+
+To avoid this fill mode performance penalty, the user is allowed to turn on “no-fill” mode for the variable. In no-fill mode, the variable data will not be pre-filled. This is slightly faster, but readers can no longer tell which data values were written, and which were not. Since unwritten values will contain whatever random values were written on the disk in the blocks allocated for the data file.
+
+#### Fill Values in NetCDF-4/HDF5 Files
+
+HDF5 is quite different from the netCDF classic formats. It does not contain a header section, with all the metadata, followed by a data section, as a netCDF classic file does. Instead, the metadata is spread throughout the file.
+
+Furthermore, HDF5 files do not reserve space for unwritten data. If you create a HDF5 file with a very large dataset, and only write half the data, the file will not contain space for the unwritten data. It will just contain the data which was written. HDF5 internally stores the information about what part of the variable has been written.
+
+NetCDF needs to be API compatible between classic and netCDF-4/HDF5 files, so netCDF-4 emulates the fill mode semantics of netCDF classic. When variables are created in a netCDF-4/HDF5 file, no space is allocated for the data on disk, and no pre-write of fill value takes place. Instead, the netCDF library provides the fill value as required.
+
+#### No-Fill Mode in NetCDF-4/HDF5 Files
+
+Since there is no fill-mode pre-write for netCDF-4/HDF5 files, there is also no benefit in turning on no-fill mode. Turing it on and off works for netCDF-4/HDF5 files, but achieves nothing. It is supported so that code can easily be converted between netCDF-4/HDF5 and classic formats.
+
+### Specifying a Fill Value
+
+NetCDF provides a default fill value for each data type. But sometimes users want to specify their own fill values for a variable.
+
+The \_FillValue convention was developed early and is part of the NUG conventions. It allows the file creator to specify what value should be used for fill.
+
+The \_FillValue attribute specifies the value used to pre-fill variables and to represent missing data:
+
+```
+float fill\_value = -999.0f;
+
+nc\_def\_var(ncid, "temperature", NC\_FLOAT, 3, dimids, &temp\_varid);
+
+nc\_put\_att\_float(ncid, temp\_varid, "\_FillValue", NC\_FLOAT, 1, &fill\_value);
+```
+
+**Important**: The \_FillValue must be the same type as the variable. It should be set during define mode, before any data are written.
+
+### The missing\_value Attribute
+
+Some older datasets use missing\_value instead of or in addition to \_FillValue:
+
+```
+float missing = -999.0f;
+
+nc\_put\_att\_float(ncid, temp\_varid, "missing\_value", NC\_FLOAT, 1, &missing);
+```
+
+### Valid Range
+
+Use valid\_min, valid\_max, or valid\_range to specify the range of valid values:
+
+```
+/\* Using separate min and max \*/
+
+float valid\_min = -50.0f;
+
+float valid\_max = 50.0f;
+
+nc\_put\_att\_float(ncid, temp\_varid, "valid\_min", NC\_FLOAT, 1, &valid\_min);
+
+nc\_put\_att\_float(ncid, temp\_varid, "valid\_max", NC\_FLOAT, 1, &valid\_max);
+
+/\* Or using valid\_range array \*/
+
+float valid\_range\[2\] = \{-50.0f, 50.0f\};
+
+nc\_put\_att\_float(ncid, temp\_varid, "valid\_range", NC\_FLOAT, 2, valid\_range);
+```
+
+Values outside this range should be considered invalid, even if they are not equal to the fill value.
+
+### Fill Value Implementation Mistakes
+
+As my dear old dad used to say, “sometimes even the great Homer nods.” We all make mistakes.
+
+The fill value implementation contains several mistakes which we (netCDF developers) are at a loss to fix, without breaking existing code.
+
+One problem is that the library did not check the type of the \_FillValue attribute. (This changed in netcdf-c-4.5.0, in 2017, which includes stricter checks. And this broke a bunch of NOAA code.) What happens when a file has a floating point variable, with an integer fill value?
+
+Another mistake is that the \_FillValue attribute can be specified after the variable is created. In this case, one fill value was used when creating the variable, and another is specified in the metadata. 
+
+In fact, the \_FillValue attribute may be overwritten at any time. Hilarious confusion may result.
+
+## Units
+
+Units are fundamental to physics and must always be included with any data. For example, temperature may be expressed in degrees Celsius, Fahrenheit, or Kelvin. Temperature data is not much use without knowing its units. Always include units attributes in netCDF data files, even if the unit seems obvious to you.
+
+The importance of units was recognized early: in 1991 Steve Emmerson at Unidata developed the udunits package. The udunits package provides a standardized way of specifying units. It also allows developers to parse unit strings and convert between units. Udunits has become the standard for science unit specification, and is part of the CF conventions.
+
+The table below shows some examples of unit strings understood by udunits.
+
+
+| ~~***Physical Quantity** | ~~***Unit String** | ~~***Description / Typical Use Case** |
+| :-: | :-: | :-: |
+| ~~***Atmospheric Pressure** | ~~***`hPa`** | ~~***Hectopascal (weather maps and forecasting)** |
+| ~~***Standard Pressure** | ~~***`Pa`** | ~~***Pascal (SI base unit for pressure)** |
+| ~~***Deep Marine/Geological Pressure** | ~~***`bar`** | ~~***Bar (oceanography and mantle dynamics)** |
+| ~~***Absolute Temperature** | ~~***`K`** | ~~***Kelvin (climate modeling and thermodynamics)** |
+| ~~***Surface Temperature** | ~~***`degC`** | ~~***Degrees Celsius (meteorological observations)** |
+| ~~***Wind & Ocean Currents** | ~~***`m s-1`** | ~~***Meters per second (velocity vectors)** |
+
+## Coordinate Variables and Coordinate Systems
+
+Coordinate variables are a fundamental concept in netCDF. A coordinate variable is a one-dimensional (usually) variable with the same name as its dimension. It provides the values along that dimension.
+
+### Defining Coordinate Variables
+
+For a dimension named "lat", the coordinate variable "lat" contains the latitude values:
+
+```
+/\* Define dimension \*/
+
+nc\_def\_dim(ncid, "lat", 180, &lat\_dimid);
+
+/\* Define coordinate variable with same name \*/
+
+nc\_def\_var(ncid, "lat", NC\_FLOAT, 1, &lat\_dimid, &lat\_varid);
+
+/\* Add coordinate attributes \*/
+
+nc\_put\_att\_text(ncid, lat\_varid, "units", 13, "degrees\_north");
+
+nc\_put\_att\_text(ncid, lat\_varid, "long\_name", 8, "latitude");
+```
+
+### Auxiliary Coordinate Variables
+
+Sometimes coordinates cannot be expressed as one-dimensional arrays. For example, a curvilinear grid might have latitude and longitude that vary in two dimensions. In this case, use the coordinates attribute to specify auxiliary coordinate variables:
+
+```
+/\* 2D lat/lon arrays for curvilinear grid \*/
+
+int dimids\[2\] = \{y\_dimid, x\_dimid\};
+
+nc\_def\_var(ncid, "lat", NC\_FLOAT, 2, dimids, &lat\_varid);
+
+nc\_def\_var(ncid, "lon", NC\_FLOAT, 2, dimids, &lon\_varid);
+
+/\* Data variable references auxiliary coordinates \*/
+
+nc\_def\_var(ncid, "temperature", NC\_FLOAT, 2, dimids, &temp\_varid);
+
+nc\_put\_att\_text(ncid, temp\_varid, "coordinates", 7, "lat lon");
+```
+
+### Vertical Coordinates
+
+Vertical coordinates require special attention. The CF Conventions define several standard vertical coordinate systems:
+
+**Pressure levels**: Use units of "Pa" or "hPa"
+
+```
+nc\_put\_att\_text(ncid, pressure\_varid, "units", 3, "hPa");
+
+nc\_put\_att\_text(ncid, pressure\_varid, "positive", 4, "down");
+
+nc\_put\_att\_text(ncid, pressure\_varid, "standard\_name", 19, "air\_pressure");
+```
+
+**Height above surface**: Use units of "m"
+
+```
+nc\_put\_att\_text(ncid, height\_varid, "units", 1, "m");
+
+nc\_put\_att\_text(ncid, height\_varid, "positive", 2, "up");
+
+nc\_put\_att\_text(ncid, height\_varid, "standard\_name", 6, "height");
+```
+
+**Sigma coordinates**: Dimensionless vertical coordinates
+
+```
+nc\_put\_att\_text(ncid, sigma\_varid, "standard\_name", 38, "atmosphere\_sigma\_coordinate");
+
+nc\_put\_att\_text(ncid, sigma\_varid, "formula\_terms", 18, "sigma: sigma ps: ps ptop: ptop");
+```
+
+## Time Encoding and Calendars
+
+Time is one of the most important coordinates in scientific data, and proper encoding is essential for interoperability.
+
+### Time Units
+
+Time should be encoded as numeric values with a units attribute that specifies the reference time:
+
+```
+nc\_put\_att\_text(ncid, time\_varid, "units", 29, 
+
+                "days since 1900-01-01 00:00:00");
+```
+
+Common time units:
+
+```
+`"seconds since YYYY-MM-DD HH:MM:SS"`
+
+`"hours since YYYY-MM-DD HH:MM:SS"`
+
+`"days since YYYY-MM-DD"`
+```
+
+### Calendar Systems
+
+The calendar attribute specifies which calendar system to use:
+
+```
+nc\_put\_att\_text(ncid, time\_varid, "calendar", 9, "gregorian");
+```
+
+CF-compliant calendar values:
+
+- "gregorian" or "standard": Mixed Gregorian/Julian calendar
+
+- "proleptic\_gregorian": Gregorian calendar extended backwards
+
+- "noleap" or "365\_day": All years have 365 days
+
+- "all\_leap" or "366\_day": All years have 366 days
+
+- "360\_day": All months have 30 days
+
+- "julian": Julian calendar
+
+### Example: Complete Time Coordinate
+
+```
+/\* Define time dimension and variable \*/
+
+nc\_def\_dim(ncid, "time", NC\_UNLIMITED, &time\_dimid);
+
+nc\_def\_var(ncid, "time", NC\_DOUBLE, 1, &time\_dimid, &time\_varid);
+
+/\* Add time attributes \*/
+
+nc\_put\_att\_text(ncid, time\_varid, "units", 29, "days since 1900-01-01 00:00:00");
+
+nc\_put\_att\_text(ncid, time\_varid, "calendar", 9, "gregorian");
+
+nc\_put\_att\_text(ncid, time\_varid, "long\_name", 4, "time");
+
+nc\_put\_att\_text(ncid, time\_varid, "standard\_name", 4, "time");
+
+nc\_put\_att\_text(ncid, time\_varid, "axis", 1, "T");
+```
+
+## CF Conventions for Detailed Earth Science Metadata
+
+The Climate and Forecast (CF) Conventions provide a comprehensive framework for describing climate and forecast data. Following these conventions ensures maximum interoperability. The conventions add to the NUG, COARDS, and ACDD to allow much more complete description of the data.
+
+### Standard Names
+
+The CF standard names table provides precise definitions for thousands of physical quantities. Using standard names eliminates ambiguity about what a variable represents.
+
+Examples of CF standard names:
+
+- "air\_temperature": Air temperature
+
+- "sea\_surface\_temperature": Temperature of the sea surface
+
+- "eastward\_wind": Eastward component of wind velocity
+
+- "precipitation\_flux": Precipitation rate
+
+- "relative\_humidity": Relative humidity
+
+The complete standard names table is available at: http://cfconventions.org/standard-names.html
+
+```
+nc\_put\_att\_text(ncid, temp\_varid, "standard\_name", 15, "air\_temperature");
+
+nc\_put\_att\_text(ncid, wind\_u\_varid, "standard\_name", 13, "eastward\_wind");
+
+nc\_put\_att\_text(ncid, precip\_varid, "standard\_name", 18, "precipitation\_flux");
+```
+
+### Units Conventions
+
+CF requires units to be compatible with UDUNITS, a units library developed by Unidata. Common unit strings include:
+
+**Temperature**: "K", "degree\_C", "degree\_F"  
+**Pressure**: "Pa", "hPa", "mbar"  
+**Length**: "m", "km", "cm"  
+**Time**: "s", "hours", "days"  
+**Speed**: "m s-1", "km h-1"  
+**Precipitation**: "kg m-2 s-1", "mm day-1"
+
+For dimensionless quantities, use "1" as the units.
+
+### Cell Methods
+
+The cell\_methods attribute describes how data values represent the grid cell:
+
+```
+/\* Temperature is a point value \*/
+
+nc\_put\_att\_text(ncid, temp\_varid, "cell\_methods", 10, "time: point");
+
+/\* Precipitation is a time mean \*/
+
+nc\_put\_att\_text(ncid, precip\_varid, "cell\_methods", 10, "time: mean");
+
+/\* Maximum temperature over time \*/
+
+nc\_put\_att\_text(ncid, tmax\_varid, "cell\_methods", 13, "time: maximum");
+
+
+Common cell methods: "point", "mean", "sum", "maximum", "minimum", "standard\_deviation", "variance"
+
+### Axis Attributes
+
+The axis attribute identifies coordinate variables as spatial or temporal axes:
+
+```
+nc\_put\_att\_text(ncid, lon\_varid, "axis", 1, "X");
+
+nc\_put\_att\_text(ncid, lat\_varid, "axis", 1, "Y");
+
+nc\_put\_att\_text(ncid, height\_varid, "axis", 1, "Z");
+
+nc\_put\_att\_text(ncid, time\_varid, "axis", 1, "T");
+```
 
 ## Essential Attributes for Self-Describing Data
 
@@ -16214,7 +18027,11 @@ At minimum, every netCDF file should include certain attributes to make the data
 
 **valid\_min and valid\_max**: The minimum and maximum valid values for the variable. Values outside this range should be considered invalid.
 
-**scale\_factor and add\_offset**: Used for packed data. The unpacked value is calculated as: unpacked\_value = packed\_value \* scale\_factor + add\_offset
+**scale\_factor and add\_offset**: Used for packed data. The unpacked value is calculated as:
+
+```
+ unpacked\_value = packed\_value \* scale\_factor + add\_offset
+```
 
 ### Global Attributes
 
@@ -16230,7 +18047,7 @@ At minimum, every netCDF file should include certain attributes to make the data
 
 **Conventions**: The conventions followed by the dataset (e.g., "CF-1.8").
 
-## Adding Attributes in C
+## Adding CF Attributes in C
 
 Here is a complete example showing how to create a CF-compliant netCDF file with proper attributes in C:
 
@@ -16444,7 +18261,7 @@ int main() \{
 \}
 ```
 
-## Adding Attributes in Fortran
+## Adding CF Attributes in Fortran
 
 The same file can be created using the Fortran 90 API:
 
@@ -16576,321 +18393,6 @@ contains
 end program create\_cf\_file
 ```
 
-## Coordinate Variables and Coordinate Systems
-
-Coordinate variables are a fundamental concept in netCDF. A coordinate variable is a one-dimensional variable with the same name as its dimension. It provides the values along that dimension.
-
-### Defining Coordinate Variables
-
-For a dimension named "lat", the coordinate variable "lat" contains the latitude values:
-
-```
-/\* Define dimension \*/
-
-nc\_def\_dim(ncid, "lat", 180, &lat\_dimid);
-
-/\* Define coordinate variable with same name \*/
-
-nc\_def\_var(ncid, "lat", NC\_FLOAT, 1, &lat\_dimid, &lat\_varid);
-
-/\* Add coordinate attributes \*/
-
-nc\_put\_att\_text(ncid, lat\_varid, "units", 13, "degrees\_north");
-
-nc\_put\_att\_text(ncid, lat\_varid, "long\_name", 8, "latitude");
-```
-
-### Auxiliary Coordinate Variables
-
-Sometimes coordinates cannot be expressed as one-dimensional arrays. For example, a curvilinear grid might have latitude and longitude that vary in two dimensions. In this case, use the coordinates attribute to specify auxiliary coordinate variables:
-
-```
-/\* 2D lat/lon arrays for curvilinear grid \*/
-
-int dimids\[2\] = \{y\_dimid, x\_dimid\};
-
-nc\_def\_var(ncid, "lat", NC\_FLOAT, 2, dimids, &lat\_varid);
-
-nc\_def\_var(ncid, "lon", NC\_FLOAT, 2, dimids, &lon\_varid);
-
-/\* Data variable references auxiliary coordinates \*/
-
-nc\_def\_var(ncid, "temperature", NC\_FLOAT, 2, dimids, &temp\_varid);
-
-nc\_put\_att\_text(ncid, temp\_varid, "coordinates", 7, "lat lon");
-```
-
-### Vertical Coordinates
-
-Vertical coordinates require special attention. The CF Conventions define several standard vertical coordinate systems:
-
-**Pressure levels**: Use units of "Pa" or "hPa"
-
-```
-nc\_put\_att\_text(ncid, pressure\_varid, "units", 3, "hPa");
-
-nc\_put\_att\_text(ncid, pressure\_varid, "positive", 4, "down");
-
-nc\_put\_att\_text(ncid, pressure\_varid, "standard\_name", 19, "air\_pressure");
-```
-
-
-**Height above surface**: Use units of "m"
-
-```
-nc\_put\_att\_text(ncid, height\_varid, "units", 1, "m");
-
-nc\_put\_att\_text(ncid, height\_varid, "positive", 2, "up");
-
-nc\_put\_att\_text(ncid, height\_varid, "standard\_name", 6, "height");
-```
-
-
-**Sigma coordinates**: Dimensionless vertical coordinates
-
-```
-nc\_put\_att\_text(ncid, sigma\_varid, "standard\_name", 38, "atmosphere\_sigma\_coordinate");
-
-nc\_put\_att\_text(ncid, sigma\_varid, "formula\_terms", 18, "sigma: sigma ps: ps ptop: ptop");
-```
-
-## Time Encoding and Calendars
-
-Time is one of the most important coordinates in scientific data, and proper encoding is essential for interoperability.
-
-### Time Units
-
-Time should be encoded as numeric values with a units attribute that specifies the reference time:
-
-```
-nc\_put\_att\_text(ncid, time\_varid, "units", 29, 
-
-                "days since 1900-01-01 00:00:00");
-```
-
-
-Common time units:
-
-"seconds since YYYY-MM-DD HH:MM:SS"
-
-"hours since YYYY-MM-DD HH:MM:SS"
-
-"days since YYYY-MM-DD"
-
-### Calendar Systems
-
-The calendar attribute specifies which calendar system to use:
-
-```
-nc\_put\_att\_text(ncid, time\_varid, "calendar", 9, "gregorian");
-```
-
-
-CF-compliant calendar values:
-
-"gregorian" or "standard": Mixed Gregorian/Julian calendar
-
-"proleptic\_gregorian": Gregorian calendar extended backwards
-
-"noleap" or "365\_day": All years have 365 days
-
-"all\_leap" or "366\_day": All years have 366 days
-
-"360\_day": All months have 30 days
-
-"julian": Julian calendar
-
-### Example: Complete Time Coordinate
-
-```
-/\* Define time dimension and variable \*/
-
-nc\_def\_dim(ncid, "time", NC\_UNLIMITED, &time\_dimid);
-
-nc\_def\_var(ncid, "time", NC\_DOUBLE, 1, &time\_dimid, &time\_varid);
-
-/\* Add time attributes \*/
-
-nc\_put\_att\_text(ncid, time\_varid, "units", 29, "days since 1900-01-01 00:00:00");
-
-nc\_put\_att\_text(ncid, time\_varid, "calendar", 9, "gregorian");
-
-nc\_put\_att\_text(ncid, time\_varid, "long\_name", 4, "time");
-
-nc\_put\_att\_text(ncid, time\_varid, "standard\_name", 4, "time");
-
-nc\_put\_att\_text(ncid, time\_varid, "axis", 1, "T");
-```
-
-## Missing Values and Fill Values
-
-Handling missing or undefined data is critical for scientific datasets.
-
-### The \_FillValue Attribute
-
-The \_FillValue attribute specifies the value used to pre-fill variables and to represent missing data:
-
-```
-float fill\_value = -999.0f;
-
-nc\_def\_var(ncid, "temperature", NC\_FLOAT, 3, dimids, &temp\_varid);
-
-nc\_put\_att\_float(ncid, temp\_varid, "\_FillValue", NC\_FLOAT, 1, &fill\_value);
-```
-
-
-**Important**: The \_FillValue must be the same type as the variable. It should be set during define mode, before any data are written.
-
-### The missing\_value Attribute
-
-Some older datasets use missing\_value instead of or in addition to \_FillValue:
-
-```
-float missing = -999.0f;
-
-nc\_put\_att\_float(ncid, temp\_varid, "missing\_value", NC\_FLOAT, 1, &missing);
-```
-
-### Valid Range
-
-Use valid\_min, valid\_max, or valid\_range to specify the range of valid values:
-
-```
-/\* Using separate min and max \*/
-
-float valid\_min = -50.0f;
-
-float valid\_max = 50.0f;
-
-nc\_put\_att\_float(ncid, temp\_varid, "valid\_min", NC\_FLOAT, 1, &valid\_min);
-
-nc\_put\_att\_float(ncid, temp\_varid, "valid\_max", NC\_FLOAT, 1, &valid\_max);
-
-/\* Or using valid\_range array \*/
-
-float valid\_range\[2\] = \{-50.0f, 50.0f\};
-
-nc\_put\_att\_float(ncid, temp\_varid, "valid\_range", NC\_FLOAT, 2, valid\_range);
-```
-
-
-Values outside this range should be considered invalid, even if they are not equal to the fill value.
-
-## CF Conventions in Detail
-
-The Climate and Forecast (CF) Conventions provide a comprehensive framework for describing climate and forecast data. Following these conventions ensures maximum interoperability.
-
-### Standard Names
-
-The CF standard names table provides precise definitions for thousands of physical quantities. Using standard names eliminates ambiguity about what a variable represents.
-
-Examples of CF standard names:
-
-"air\_temperature": Air temperature
-
-"sea\_surface\_temperature": Temperature of the sea surface
-
-"eastward\_wind": Eastward component of wind velocity
-
-"precipitation\_flux": Precipitation rate
-
-"relative\_humidity": Relative humidity
-
-The complete standard names table is available at: http://cfconventions.org/standard-names.html
-
-```
-nc\_put\_att\_text(ncid, temp\_varid, "standard\_name", 15, "air\_temperature");
-
-nc\_put\_att\_text(ncid, wind\_u\_varid, "standard\_name", 13, "eastward\_wind");
-
-nc\_put\_att\_text(ncid, precip\_varid, "standard\_name", 18, "precipitation\_flux");
-```
-
-### Units Conventions
-
-CF requires units to be compatible with UDUNITS, a units library developed by Unidata. Common unit strings include:
-
-**Temperature**: "K", "degree\_C", "degree\_F"  
-**Pressure**: "Pa", "hPa", "mbar"  
-**Length**: "m", "km", "cm"  
-**Time**: "s", "hours", "days"  
-**Speed**: "m s-1", "km h-1"  
-**Precipitation**: "kg m-2 s-1", "mm day-1"
-
-For dimensionless quantities, use "1" as the units.
-
-### Cell Methods
-
-The cell\_methods attribute describes how data values represent the grid cell:
-
-```
-/\* Temperature is a point value \*/
-
-nc\_put\_att\_text(ncid, temp\_varid, "cell\_methods", 10, "time: point");
-
-/\* Precipitation is a time mean \*/
-
-nc\_put\_att\_text(ncid, precip\_varid, "cell\_methods", 10, "time: mean");
-
-/\* Maximum temperature over time \*/
-
-nc\_put\_att\_text(ncid, tmax\_varid, "cell\_methods", 13, "time: maximum");
-
-
-Common cell methods: "point", "mean", "sum", "maximum", "minimum", "standard\_deviation", "variance"
-
-### Axis Attributes
-
-The axis attribute identifies coordinate variables as spatial or temporal axes:
-
-```
-nc\_put\_att\_text(ncid, lon\_varid, "axis", 1, "X");
-
-nc\_put\_att\_text(ncid, lat\_varid, "axis", 1, "Y");
-
-nc\_put\_att\_text(ncid, height\_varid, "axis", 1, "Z");
-
-nc\_put\_att\_text(ncid, time\_varid, "axis", 1, "T");
-```
-
-## Other Common Conventions
-
-### ACDD (Attribute Convention for Data Discovery)
-
-ACDD extends CF with attributes for data discovery and cataloging:
-
-```
-/\* ACDD global attributes \*/
-
-nc\_put\_att\_text(ncid, NC\_GLOBAL, "title", 28, "Global Temperature Analysis");
-
-nc\_put\_att\_text(ncid, NC\_GLOBAL, "summary", 65, 
-
-                "Monthly mean temperature analysis on a global 1-degree grid");
-
-nc\_put\_att\_text(ncid, NC\_GLOBAL, "keywords", 38,
-
-                "temperature, climate, global, monthly");
-
-nc\_put\_att\_text(ncid, NC\_GLOBAL, "creator\_name", 8, "John Doe");
-
-nc\_put\_att\_text(ncid, NC\_GLOBAL, "creator\_email", 17, "jdoe@example.org");
-
-nc\_put\_att\_text(ncid, NC\_GLOBAL, "date\_created", 10, "2026-01-20");
-
-nc\_put\_att\_text(ncid, NC\_GLOBAL, "geospatial\_lat\_min", 6, "-90.0");
-
-nc\_put\_att\_text(ncid, NC\_GLOBAL, "geospatial\_lat\_max", 5, "90.0");
-
-nc\_put\_att\_text(ncid, NC\_GLOBAL, "time\_coverage\_start", 10, "2020-01-01");
-
-nc\_put\_att\_text(ncid, NC\_GLOBAL, "time\_coverage\_end", 10, "2025-12-31");
-```
-
-### COARDS (Cooperative Ocean/Atmosphere Research Data Service)
-
-COARDS is an older convention that preceded CF. CF is backward compatible with COARDS, so CF-compliant files are also COARDS-compliant.
-
 ## Best Practices for Attributes and Conventions
 
 - **Always specify units**: Every numeric variable should have a units attribute.
@@ -16927,7 +18429,6 @@ pip install cfchecker
 cfchecks temperature\_data.nc
 ```
 
-
 The checker will report any violations of CF Conventions and suggest corrections.
 
 ## Summary
@@ -16953,6 +18454,8 @@ Attributes and conventions transform netCDF from a generic array storage format 
 
 - Apply compression effectively
 
+- Understand caching with netCDF-4/HDF5 files
+
 - Diagnose I/O bottlenecks
 
 ## Getting the Best from NetCDF
@@ -16965,9 +18468,45 @@ Optimizing the performance of netCDF-4/HDF5 files requires understanding several
 
 ## Define Mode
 
-Since HDF5 does not store all metadata at the beginning of the file, there is no performance penalty for re-entering define mode and adding new variables or other metadata. HDF5 appends objects, which may define metadata, to the end of the HDF5 file as it is written. When opening the file, HDF5 reads metadata as needed to locate objects and datasets; the fact that metadata is not centralized at the beginning of the file means there is no classic-format-style rewrite penalty when leaving define mode.
+Define mode can be ignored with netCDF-4/HDF5 files.
 
-Since entering and leaving define mode causes no penalty, the library will automatically enter define mode when needed, and end define mode when data are written, for netCDF-4/HDF5 files (unless NC\_CLASSIC\_MODEL is used).
+Since HDF5 does not store all metadata at the beginning of the file, there is no performance penalty for re-entering define mode and adding new variables or other metadata. HDF5 appends objects, which may define metadata, to the end of the HDF5 file as it is written. The fact that metadata is not centralized at the beginning of the file means there is no classic-format-style rewrite penalty when leaving define mode.
+
+Since entering and leaving define mode causes no penalty, the library will automatically enter define mode when needed, and end define mode when data are written, for netCDF-4/HDF5 files (unless NC\_CLASSIC\_MODEL is used in C, or NF90\_CLASSIC\_MODEL in Fortran).
+
+## Chunk Caching
+
+NetCDF-4 files use HDF5 as the underlying storage format, and HDF5 maintains an in-memory chunk cache for each open dataset. When data is read or written in chunked storage mode, HDF5 moves whole chunks in and out of this cache rather than accessing raw storage directly. Understanding how netCDF-C manages this cache is important for achieving good I/O performance.
+
+### The File-Level Cache
+
+Before a file is opened or created, a global set of default cache parameters is held in the NCglobalstate structure, defined in include/ncglobal.h. These three parameters — size, nelems, and preemption — form the ChunkCache sub-structure that governs the default behaviour for every file the library opens during the lifetime of the process.
+
+The size parameter is the total number of bytes the cache may occupy. The default is 64 MB, though this can be changed at configure time with the --with-chunk-cache-size option. The nelems parameter controls how many chunk slots the cache hash table holds. It defaults to 1000 slots (compile-time symbol DEFAULT\_CHUNKS\_IN\_CACHE) and should be set to a prime number at least ten times larger than the maximum number of chunks expected in the cache at once. The preemption value is a floating-point number between 0 and 1 that governs how HDF5 penalises chunks that have already been fully read or written when choosing which chunks to evict. A value of 0 treats all chunks equally and the cache behaves as a strict least-recently-used eviction scheme. A value of 1 means fully-used chunks are always evicted first, which is appropriate when data are read or written exactly once.
+
+The public API function nc\_set\_chunk\_cache(), implemented in libsrc4/nc4cache.c, simply writes these three values into the global state. Because it only updates the global default, it must be called before any file is opened or created. Once a file handle exists, the global settings no longer affect it; the file's HDF5 File Access Property List was already configured.
+
+When nc\_open() or nc\_create() is called, the HDF5 backend in libhdf5/hdf5open.c and libhdf5/hdf5create.c reads the current global chunk cache values and passes them directly to the HDF5 function H5Pset\_cache() on the File Access Property List before the file is opened. This sets the file-wide raw data chunk cache that HDF5 uses by default for every dataset in that file, unless a dataset-specific override is in effect. For parallel I/O builds the file-level cache is not set because parallel access patterns make a shared per-process cache unsuitable.
+
+### The Per-Variable Cache
+
+Each variable can also be given its own chunk cache that overrides the file-wide cache. The NC\_VAR\_INFO\_T structure carries its own ChunkCache sub-structure with the same three fields. When a new variable is created in libsrc4/nc4internal.c by nc4\_var\_list\_add2(), its per-variable cache fields are initialised by copying the current global state, so the variable begins life with whatever the process-level defaults were at the time the file was opened.
+
+The public function nc\_set\_var\_chunk\_cache(), defined as a dispatch-layer entry point in libdispatch/dvar.c, routes the call through the format dispatch table. For HDF5 files, the implementation is NC4\_HDF5\_set\_var\_chunk\_cache() in libhdf5/hdf5var.c. It validates that preemption is in range, then writes the three new values into the NC\_VAR\_INFO\_T chunkcache fields. It then calls nc4\_reopen\_dataset(), also in hdf5var.c, to make the change take effect immediately.
+
+nc4\_reopen\_dataset() creates a fresh HDF5 Dataset Access Property List, calls H5Pset\_chunk\_cache() on it with the updated values, closes the currently open HDF5 dataset identifier with H5Dclose(), and immediately reopens the same dataset with H5Dopen2() passing the new property list. This close-and-reopen cycle is the mechanism by which an already-open variable acquires a different cache configuration mid-session. Changes made this way persist only for the duration of the open file; once the file is closed and re-opened the variable returns to its default values.
+
+When a variable is first created or first opened, the library may also adjust the cache automatically. The function nc4\_adjust\_var\_cache() in libhdf5/nc4hdf.c is called at that point for chunked variables. It computes how many bytes a single chunk occupies, then checks whether the current cache size is still at the default value CHUNK\_CACHE\_SIZE. If it is, the function decides on a minimum cache large enough to hold DEFAULT\_CHUNKS\_IN\_CACHE chunks (1000 by default). If the computed minimum exceeds the current cache size, it raises the cache and calls nc4\_reopen\_dataset() to apply the enlarged cache. This automatic adjustment only fires when the user has not explicitly changed the variable's cache, ensuring that user-supplied values are always respected. The DEFAULT\_CHUNKS\_IN\_CACHE and DEFAULT\_CHUNK\_CACHE\_SIZE constants are set at configure time and compiled into config.h.
+
+When a new chunked dataset is created in nc4hdf.c, the per-variable cache is applied to the HDF5 Dataset Access Property List via H5Pset\_chunk\_cache() during the H5Dcreate2() call, but only when the cache size is non-zero. The same property list mechanism is used both at creation time and during the reopen triggered by nc4\_adjust\_var\_cache() or nc\_set\_var\_chunk\_cache().
+
+### Fortran Wrappers
+
+Because Fortran cannot portably pass size\_t or float values in the same way as C, integer variants of all four functions exist: nc\_set\_chunk\_cache\_ints(), nc\_get\_chunk\_cache\_ints(), nc\_set\_var\_chunk\_cache\_ints(), and nc\_get\_var\_chunk\_cache\_ints(). These functions express the cache size in megabytes rather than bytes and represent the preemption value as an integer between 0 and 100 rather than a float between 0 and 1. They delegate to the same underlying C implementations after performing the unit conversions.
+
+If the library was built without HDF5 support, stub versions of the variable-level functions are provided in libsrc4/nc4cache.c that return immediately without error, since chunk caching is not meaningful outside the HDF5 storage model.
+
+HDF5 provides file and variable caching. Understanding the caching can improve the performance of your applications.
 
 ## Chunk Sizes
 
@@ -17000,15 +18539,15 @@ Choosing the right chunk size is critical for performance. If chunks are too sma
 
 **General Guidelines**:
 
-Size chunks to be between 100 KB and 1 MB for optimal performance
+- Size chunks to be between 100 KB and 1 MB for optimal performance
 
-Match chunk size to expected access patterns
+- Match chunk size to expected access patterns
 
-For time slice access: make the time dimension small (perhaps 1), and spatial dimensions larger
+- For time slice access: make the time dimension small (perhaps 1), and spatial dimensions larger
 
-For vertical profiles: make the vertical dimension large and horizontal dimensions small
+- For vertical profiles: make the vertical dimension large and horizontal dimensions small
 
-Consider the interaction between chunk size and compression effectiveness: larger chunks generally compress better but may reduce I/O efficiency for partial reads
+- Consider the interaction between chunk size and compression effectiveness: larger chunks generally compress better but may reduce I/O efficiency for partial reads
 
 ### The Chunk Cache
 
@@ -17018,7 +18557,7 @@ The chunk cache is another important performance consideration. HDF5 maintains a
 
 Compression is one of the most important features for managing large scientific datasets. The deflate filter uses the zlib library to perform lossless compression on the data stored in a variable. The data are automatically compressed as they are written, and automatically uncompressed when read.
 
-The zlib compression algorithm, also known as deflate, uses the same compression method as gzip. It provides lossless compression with nine levels of compression, from 1 (fastest) to 9 (best compression). Level 1 provides modest compression with minimal CPU overhead, while level 9 provides maximum compression but requires significantly more processing time. For most applications, levels 4-6 provide a good balance between compression ratio and speed.
+The zlib compression algorithm, also known as deflate, uses the same compression method as gzip. It provides lossless compression with nine levels of compression, from 1 (fastest) to 9 (best compression). Level 1 provides modest compression with minimal CPU overhead, while level 9 is supposed to provide maximum compression but requires significantly more processing time. However, in repeated testing with scientific data, I have found the numbers greater than 1 are slower, but don’t actually compress better. For most scientific data applications, level 1 is the best choice.
 
 To enable zlib compression on a variable, use the nc\_def\_var\_deflate() function:
 
@@ -17028,7 +18567,6 @@ int deflate = 1;     /\* Turn on compression \*/
 int deflate\_level = 5;  /\* Compression level \*/  
 nc\_def\_var\_deflate(ncid, varid, shuffle, deflate, deflate\_level);
 ```
-
 
 Compression requires chunked storage. The chunk size interacts with compression effectiveness. Larger chunks generally compress better but may reduce I/O efficiency for partial reads.
 
@@ -17046,13 +18584,11 @@ This shuffles the byte order of adjacent integers. For example, if you are stori
 0000 000A 0000 000B 0000 000C 0000 000D
 ```
 
-
 If the shuffle filter is used, they will be stored like this instead:
 
 ```
 0000 0000 0000 0000 0000 0000 0A0B 0C0D
 ```
-
 
 The point is that this produces long strings of zeros in many cases. In the unshuffled storage, the longest run of zeros is 7, but in the shuffled data, it is 25. This makes deflation (compression based on the zlib library) more effective.
 
@@ -17068,7 +18604,6 @@ The shuffled result looks like this:
 ```
 41414141 21314151 99999999 9a9a9a9a
 ```
-
 
 By putting the same numbers next to each other we create long runs with the same number, which compress much better.
 
@@ -17125,23 +18660,29 @@ Parallel I/O allows multiple processes to read and write the same netCDF file si
 
 NetCDF supports parallel I/O through two primary mechanisms: parallel HDF5 for netCDF-4/HDF5 files, and PnetCDF for CDF-5 and classic format files. Both approaches use MPI (Message Passing Interface) to coordinate access among multiple processes.
 
-## Why Parallel I/O Matters
+## What is Parallel I/O?
 
 In traditional serial I/O, only one process can write to a file at a time. For parallel applications, this creates a bottleneck: either all processes must send their data to a single process for writing (requiring expensive communication and memory), or each process must write to separate files (creating thousands of small files that are difficult to manage and analyze).
 
-Parallel I/O solves this problem by allowing all processes to write directly to a single shared file. The parallel I/O library coordinates access to ensure data integrity while maximizing I/O bandwidth. This approach provides:
+Parallel I/O addresses this problem by allowing all processes to write directly to a single shared file. The parallel I/O library coordinates access to ensure data integrity while maximizing I/O bandwidth. However, the number of I/O channels to the parallel disks still limits the number of processors which can write at one time.
 
-- **Better performance**: Multiple processes can write simultaneously, utilizing parallel file systems
+For smaller applications (hundreds of processors), writing parallel I/O code will provide performance improvement. However, modern atmospheric models run on hundreds of thousands of processors. Using bare parallel I/O does not scale to this large number of processors. For these cases, the data do have to be gathered on a smaller set of processors, and those processors can use parallel I/O to write data to disk.
 
-- **Simpler code**: No need to gather data to a single process or manage multiple files
+Fortunately the PIO library exists to help manage this challenge. PIO can work with either HDF5 or pnetcdf, and provides scalable I/O on very large numbers of processors.
 
-- **Easier analysis**: Output is a single file that can be opened with standard tools
+### Parallel Support in Classic vs. NetCDF-4/HDF5 Files
 
-- **Scalability**: Performance scales with the number of processes and I/O nodes
+Parallel I/O will work with either classic or netcdf-4/HDF5 files. The same netcdf-c API calls are used. In order to work with classic format files, the netcdf-c library must be built with pnetcdf. In order to use parallel I/O with netCDF-4/HDF5 files, the HDF5 library must be provided at configure time, and it must be a build of HDF5 which was built with parallel I/O enabled.
+
+In practice, many users of classic formats with parallel I/O use the pnetcdf API directly, which provides additional optimization capabilities. For the netcdf-c library, HDF5 is the most commonly used parallel I/O.
 
 ## Building NetCDF with Parallel I/O Support
 
 To use parallel I/O, the netCDF library must be built with parallel support enabled.
+
+## Parallel I/O with NetCDF-4/HDF5
+
+NetCDF-4/HDF5 files support parallel I/O through the parallel HDF5 library. This approach works with netCDF-4/HDF5 format files and supports all enhanced model features including compression, groups, and user-defined types.
 
 ### For NetCDF-4/HDF5 Parallel I/O
 
@@ -17177,6 +18718,10 @@ make check
 make install
 ```
 
+The netcdf-c configure will detect that HDF5 was built with parallel support, and will turn on netcdf-c parallel support. Note that parallel tests will not be run, unless –enable-parallel-tests is provided.
+
+Parallel tests are run on up to 16 processors. The tests are attempted to be run with mpiexec, this may be overridden with the –with-mpiexec=NEW\_COMMAND option to configure.
+
 ### For PnetCDF (CDF-5) Parallel I/O
 
 Build PnetCDF separately, then build netCDF with PnetCDF support:
@@ -17204,10 +18749,6 @@ make
 
 make install
 ```
-
-## Parallel I/O with NetCDF-4/HDF5
-
-NetCDF-4/HDF5 files support parallel I/O through the parallel HDF5 library. This approach works with netCDF-4/HDF5 format files and supports all enhanced model features including compression, groups, and user-defined types.
 
 ### Creating a Parallel NetCDF-4 File
 
@@ -17283,11 +18824,13 @@ nc\_open\_par("parallel\_output.nc", NC\_NOWRITE | NC\_MPIIO,
 
 ### Collective vs. Independent I/O
 
-Parallel I/O operations can be either collective or independent:
+Parallel I/O operations can be either collective or independent. In both cases all processes in the MPI Communicator must participate; the difference between them is what happens when processes arrive at the I/O operation at different times.
 
-**Collective I/O**: All processes in the communicator must participate in the operation. This allows the library to optimize I/O by combining requests from multiple processes.
+**Collective I/O**: All processes wait until all processes are ready, and then the operation takes place. All processes collectively do the I/O. This is often most efficient.
 
-**Independent I/O**: Each process operates independently. This is more flexible but may be less efficient.
+**Independent I/O**: Each process operates independently. The I/O operation takes place, and the process continues. 
+
+The default for netCDF-4 is independent access, but this was due to a misunderstanding on my part, when I wrote the code. In fact, collective is almost always a better choice, because it allows the data to be aggregated into fewer, larger I/O operations, which make better use of hardware buffers.
 
 Set the access mode with nc\_var\_par\_access():
 
@@ -17300,6 +18843,25 @@ nc\_var\_par\_access(ncid, varid, NC\_COLLECTIVE);
 
 nc\_var\_par\_access(ncid, varid, NC\_INDEPENDENT);
 ```
+
+### Parallel I/O Data Decomposition
+
+When working with parallel I/O and multiple processors, there is generally a large data array which is distributed among many processors. Each processor gets a portion of the larger array, and each processor works on its own piece of the problem. When all the processors are done, the results are written to disk.
+
+In many cases, there are overlaps between the data different processors need to access. Each processor needs to access a slightly larger array than it is responsible for computing, so that it can know the boundary conditions. This halo of additional values is usually necessary in reading, but not in writing (that is, the halo is read for read operations, but ignored for write operations.)
+
+### Parallel I/O Programming Challenges
+
+Writing parallel I/O code is the 3D-chess of programming; it is complex and very easy to make mistakes.
+
+In general, unless the code is to be very specific to one machine, it is written in a general way, so that the program will start, learn how many processors are available in this run, and then decompose the data. The size of the data may not evenly divide into the number if available processors, leaving one processor with smaller data. 
+
+Some processors have better I/O than others, and this varies from machine to machine. For example, a machine might have one processor out of 32 which has access to an I/O channel. Using that specific processor for I/O is much faster than using a different one.
+
+Finally, even with parallel I/O, if thousands of processors are being used, the data must be gathered on a subset of processors before being written to disk. 
+
+The decomposition of the data to the processors, including halos, edge and corner cases, and handling uneven decompositions, special I/O processors, and buffering is complex code. Fortunately, this is exactly what the PIO library handles. But before understanding PIO, we need to understand how netCDF parallel I/O works.
+
 
 ### Writing Data in Parallel
 
@@ -17469,7 +19031,6 @@ int main(int argc, char \*\*argv) \{
 \}
 ```
 
-
 Compile with:
 
 ```
@@ -17480,7 +19041,7 @@ mpirun -np 4 ./parallel\_write
 
 ## Parallel I/O with PnetCDF (CDF-5)
 
-PnetCDF provides parallel I/O for CDF-5 and classic format files. It is particularly well-suited for applications that don't need the enhanced model features of netCDF-4/HDF5.
+PnetCDF provides parallel I/O for CDF-5 and classic format files. Using pnetcdf (either through the netCDF API, or directly with the pnetcdf API), can be faster, but classic format files have no compression, which is a major limitation.
 
 ### Using PnetCDF Through NetCDF
 
@@ -17493,7 +19054,6 @@ nc\_create\_par("pnetcdf\_output.nc", NC\_64BIT\_DATA | NC\_MPIIO,
 
               MPI\_COMM\_WORLD, MPI\_INFO\_NULL, &ncid);
 ```
-
 
 The API is identical to netCDF-4/HDF5 parallel I/O, but the file format is CDF-5.
 
@@ -17587,7 +19147,6 @@ count\[1\] = lat\_dim;
 count\[2\] = lon\_dim;
 ```
 
-
 **Best for**: Time series data, model output where each timestep is independent.
 
 ### 2D Decomposition (Spatial)
@@ -17617,7 +19176,6 @@ count\[1\] = my\_count\_lat;
 
 count\[2\] = lon\_dim;
 ```
-
 
 **Best for**: Spatial analysis, when all time steps are processed together.
 
@@ -17651,7 +19209,6 @@ count\[1\] = lat\_per\_row;
 count\[2\] = lon\_per\_col;
 ```
 
-
 **Best for**: Very large process counts (1000+), 3D atmospheric or ocean models.
 
 ## Performance Optimization for Parallel I/O
@@ -17668,7 +19225,6 @@ size\_t chunks\[3\] = \{1, 180, 360\};
 nc\_def\_var\_chunking(ncid, varid, NC\_CHUNKED, chunks);
 ```
 
-
 This ensures each process writes complete chunks, maximizing performance. For foundational principles of chunk sizing and cache optimization, refer to **Chapter 10: NetCDF-4/HDF5 Performance Fundamentals**.
 
 ### Use Collective I/O
@@ -17678,7 +19234,6 @@ Collective I/O allows the library to optimize access patterns:
 ```
 nc\_var\_par\_access(ncid, varid, NC\_COLLECTIVE);
 ```
-
 
 All processes must call the I/O function, even if some have no data to write.
 
@@ -17946,23 +19501,47 @@ if (mpi\_rank == 0) \{
 \}
 ```
 
+## PIO – An Advanced Parallel I/O Library
+
+The difficulty of performing I/O on thousands of processors is that processors scale a lot faster than I/O. It might be possible to run processing on a hundred thousand processors at once, but doing I/O from a hundred thousand processors at once is not possible.
+
+To help address these challenges, Jim Edwards, John Dennis, and Mariana Vertenstein at NCAR created the PIO library. PIO was originally developed to help the CESM (Community Earth System Model).
+
+The Parallel I/O (PIO) library is an open-source C library, with Fortran wrappers, which provides scalable I/O for large numbers of processors on supercomputers.
+
+PIO uses the netcdf-c and pnetcdf libraries to provide parallel I/O, so it can handle parallel I/O on classic format or netCDF-4/HDF5 files.
+
+PIO allows developers to assign a specific subset of processors to handle I/O. The code makes netCDF-like API calls to read or write data, and PIO uses MPI to move data around so that the subset of I/O processors do the I/O.
+
+### Intracomm Mode for One Model
+
+The simplest way of using PIO is in Intracomm Mode. In this mode, the user is going to run their code (for example an atmospheric model), on a very large number of processors.
+
+Using PIO the user specifies a small list of processors to use for I/O. The number of processors is determined by the memory each has, and the amount of data that will be written in each time-step. It’s advisable to have enough processors to hold the fill output of one time-step.
+
+The user also specifies the decomposition of the global data array to each processor. This includes handling of edges, corners, and halos.
+
+When the user calls PIO code to write the data, PIO will use MPI calls to gather all the data to the I/O processors; from there it will be written to disk using parallel I/O.
+
+For example, the user might be running on 20,000 processors, and might specify 256 of them as I/O processors. PIO will handle all the book-keeping and moving data around to support this. With Intracomm mode, those 256 processors will both run the model and handle all I/O. In other words, the I/O processors are not dedicated to I/O, they are processors with an added I/O burden.
+
+### Asynchronous Mode for Model Systems
+
+A more complex PIO operational mode is Async Mode. In Async Mode, multiple applications may be running, and all writing to disk. With PIO, a subset of processors is used for I/O, and I/O is a shared service that each model can use.
+
+In Async Mode, the I/O processors are dedicated to I/O. They do not run model code, they only do I/O.
+
+The idea of Async Mode is that the user is running an Earth system model, with an atmospheric model, an ocean model, a space weather mode, and a land surface model, all running on different numbers of processors. When any of the models needs to do I/O, they call netCDF-like I/O functions, and PIO moves the data to the dedicated I/O processors, which buffer and write the data.
+
+### Getting PIO
+
+To learn more about PIO, check out the PIO GitHub site.
+
 ## Summary
 
-- Parallel I/O is essential for HPC applications working with large datasets. Key points:
+Parallel I/O is essential for HPC applications working with large datasets on HPC systems.
 
-- Use nc\_create\_par() and nc\_open\_par() for parallel file access
-
-- Choose between netCDF-4/HDF5 (with compression, groups) or PnetCDF (simpler, classic model)
-
-- Use collective I/O for best performance
-
-- Align chunking with domain decomposition
-
-- All processes must participate in metadata operations
-
-- Tune MPI-IO hints for your parallel file system
-
-- Benchmark to find optimal configuration
+Writing efficient I/O code for HPC applications is extremely challenging and time consuming. The number of off-by-one bugs that arise is astounding. Avoid the pain by using the PIO library from NCAR.
 
 For performance optimization techniques, see **Chapter 10: NetCDF-4/HDF5 Performance Fundamentals**. For benchmarking methods, see **Chapter 15: Performance Testing and Benchmarking**.
 
@@ -17975,6 +19554,8 @@ For performance optimization techniques, see **Chapter 10: NetCDF-4/HDF5 Perform
 - **Domain decomposition**: match chunks to process layout.
 
 - **PnetCDF** enables parallel classic/CDF-5; parallel HDF5 for netCDF-4.
+
+- **PIO** library from NCAR for advanced I/O on HPC systems.
 
 
 # Advanced Compression Techniques
@@ -17991,13 +19572,17 @@ For performance optimization techniques, see **Chapter 10: NetCDF-4/HDF5 Perform
 
 NetCDF has evolved its compression capabilities over time, adding new algorithms and techniques to improve both compression ratios and performance. This chapter covers advanced compression features beyond the basic deflate and shuffle filters discussed in **Chapter 10: NetCDF-4/HDF5 Performance Fundamentals**, including modern compression algorithms and lossy compression techniques.
 
-## NetCDF-4.9.0 - zstd and quantization
+## Quantization and Zstandard Compression
 
 Starting with netCDF-4.9.0, support was added for the Zstandard (zstd) compression algorithm and for quantization.
+
+### Zstandard Lossless Compression
 
 Zstandard is a modern compression algorithm developed by Facebook (now Meta). It offers compression ratios similar to zlib but with significantly faster compression and decompression speeds. Zstandard supports compression levels from 1 to 22, with higher levels providing better compression at the cost of slower compression speed.
 
 To use Zstandard compression, the HDF5 library must be built with the Zstandard plugin, and the plugin must be available at runtime. Once configured, Zstandard can provide substantial performance improvements over zlib, especially for decompression.
+
+### Quantization
 
 Quantization is a lossy compression technique that reduces the precision of floating-point data. By rounding values to a specified number of significant digits, quantization can dramatically improve compression ratios. This is particularly effective for data where the full precision of floating-point representation is not scientifically meaningful.
 
@@ -18019,9 +19604,9 @@ The LZ4 compression algorithm is designed for extremely fast compression and dec
 
 Other algorithms available through NEP include:
 
-Bzip2: Provides higher compression ratios than zlib but with slower compression speeds.
+- Bzip2: Provides higher compression ratios than zlib but with slower compression speeds.
 
-LZ4: Faster compression
+- Read-only access to GRIB2, CDF, and GeoTIFF files, through the NetCDF APIs.
 
 ## Choosing a Compression Algorithm
 
@@ -18133,7 +19718,7 @@ To create a user-defined format, the programmer must implement the NC\_Dispatch 
 
 The NC\_UDF0 and NC\_UDF1 flags are reserved for user-defined formats. When creating a file with one of these flags, the netCDF library will use the corresponding user-defined dispatch table instead of one of the built-in format implementations.
 
-User-defined formats must be registered with the netCDF library before they can be used. This is done by calling NC\_Dispatch\_register() with a pointer to the custom dispatch table. Once registered, the format can be used just like any built-in format.
+User-defined formats must be registered with the netCDF library before they can be used. This is done by calling nc\_def\_user\_format() with a pointer to the custom dispatch table. Once registered, the format can be used just like any built-in format.
 
 ## The V2 API
 
@@ -18147,7 +19732,7 @@ New code should always use the netCDF-3 or later API (the nc\_\* functions in C,
 
 - **Dispatch table** routes API calls to format drivers.
 
-- **Add new format** via NC\_Dispatch\_register().
+- **Add new format** via nc\_def\_user\_format().
 
 - **V2 API** kept only for legacy; avoid in new code.
 
@@ -18201,7 +19786,6 @@ An OPeNDAP dataset is identified by a URL. The simplest form is just the HTTP ad
 http://test.opendap.org/dap/data/nc/sst.mnmean.nc.gz
 ```
 
-
 This URL points to a netCDF file on the OPeNDAP test server. Even though the file is compressed (.gz), the OPeNDAP server can read it and serve the data.
 
 ### URL Service Endpoints
@@ -18218,7 +19802,6 @@ OPeNDAP servers provide multiple "views" of the same dataset by appending differ
 
 .info - Combined DDS and DAS in human-readable HTML format
 
-
 **Data Endpoints**:
 
 .dods - Binary data in DAP2 format
@@ -18229,13 +19812,11 @@ OPeNDAP servers provide multiple "views" of the same dataset by appending differ
 
 .html - Web form interface for building queries
 
-
 For example, to see the structure of a dataset, you can visit:
 
 ```
 http://test.opendap.org/dap/data/nc/sst.mnmean.nc.gz.dds
 ```
-
 
 This returns a text description of all variables and their dimensions, which helps you understand the dataset before writing code to access it.
 
@@ -18247,13 +19828,11 @@ The real power of OPeNDAP comes from constraint expressions, which allow you to 
 http://server.org/data.nc?variable\[start:stop\]
 ```
 
-
 For example, to retrieve only the first 10 time steps of sea surface temperature:
 
 ```
-http://test.opendap.org/dap/data/nc/sst.mnmean.nc.gz?sst\[0:9\]\[0:88\]\[0:179\]
+`http://test.opendap.org/dap/data/nc/sst.mnmean.nc.gz?sst\[0:9\]\[0:88\]\[0:179\]`
 ```
-
 
 The numbers in brackets specify array indices. OPeNDAP uses 0-based indexing, just like C. The syntax \[start:stop\] retrieves elements from index start through index stop, inclusive.
 
@@ -18262,7 +19841,6 @@ You can also use stride to sample every nth element:
 ```
 ?sst\[0:2:100\]\[0:89\]\[0:179\]
 ```
-
 
 This retrieves every other time step (stride of 2) from index 0 to 100.
 
@@ -18310,7 +19888,7 @@ int main() \{
     return 0;
 
 \}
-
+```
 
 This program opens a remote dataset, reads a 10x10 spatial subset from the first time step, and closes the connection. The netCDF library automatically handles all the HTTP communication with the OPeNDAP server.
 
@@ -18323,7 +19901,6 @@ char \*url = "http://test.opendap.org/dap/data/nc/sst.mnmean.nc.gz?sst\[0:9\]\[2
 
 nc\_open(url, NC\_NOWRITE, &ncid);
 ```
-
 
 When you open a URL with a constraint expression, the netCDF library sees only the subset specified in the constraint. The dimensions of variables will reflect the subset size, not the original dataset size. This can be useful for working with very large datasets where you only need a small portion.
 
@@ -18381,7 +19958,6 @@ program read\_opendap
 end program read\_opendap
 ```
 
-
 Remember that Fortran uses 1-based indexing in the API, but OPeNDAP constraint expressions in URLs use 0-based indexing.
 
 ## Exploring Remote Datasets
@@ -18434,7 +20010,7 @@ This returns an HTML page with all the information you need to understand the da
 
 ## Performance Considerations
 
-OPeNDAP access involves network communication, which is much slower than reading local files. Here are some strategies for efficient OPeNDAP usage:
+OPeNDAP access involves network communication, which is much slower than reading local files. Here are some strategies for efficient OPeNDAP usage.
 
 ### Request Only What You Need
 
@@ -18664,15 +20240,17 @@ For scientific applications that need to access distributed data sources, OPeNDA
 
 ## Learning Objectives
 
-- Design performance tests
+- Turn on netcdf-c benchmarking tests
 
-- Automate benchmarking
+- Use the bm\_file benchmark on your data files
 
 - Visualize/interpret results
 
 ## Testing Performance
 
 The performance topics covered in **Chapter 10: NetCDF-4/HDF5 Performance Fundamentals** and **Chapter 12: Advanced Compression Techniques** provide the tools for optimizing netCDF-4/HDF5 files. However, determining the optimal settings for a particular application requires testing with representative data. This chapter covers practical techniques for measuring performance, comparing different configurations, and making informed optimization decisions.
+
+The netcdf-c library comes with a set of built-in benchmarks, as well as a general-purpose benchmarking program, bm\_file.
 
 ## Why Benchmark?
 
@@ -18688,7 +20266,6 @@ Performance characteristics of netCDF files depend heavily on:
 
 - **Compression settings**: Algorithm choice and compression level
 
-
 The only way to determine optimal settings for your specific use case is to test with representative data and realistic access patterns.
 
 ## Basic Timing Techniques
@@ -18700,7 +20277,6 @@ The simplest way to measure performance is with the Unix time command:
 ```
 time ./write\_netcdf\_file output.nc
 ```
-
 
 This reports three times:
 
@@ -18773,7 +20349,6 @@ elapsed\_time = real(count\_end - count\_start) / real(count\_rate)
 print \*, "Write time:", elapsed\_time, "seconds"
 ```
 
-
 For Fortran 95 and later, cpu\_time is also available:
 
 ```
@@ -18806,7 +20381,6 @@ ls -lh classic\_format.nc netcdf4\_compressed.nc
 du -b uncompressed.nc compressed.nc | awk 'NR==1\{u=$1\} NR==2\{c=$1; print "Ratio:", u/c\}'
 ```
 
-
 In your benchmark code, report both file size and throughput:
 
 ```
@@ -18829,9 +20403,163 @@ printf("Compression ratio: %.2f:1\\n",
        uncompressed\_size\_mb / file\_size\_mb);
 ```
 
+## The Built-in Benchmarks
+
+The netcdf-c library has a set of built-in benchmarks which will run as part of the test suite. These tests are turned off by default. To turn them on, use the –enable-benchmarks option to configure, or the equivalent NETCDF\_ENABLE\_BENCHMARKS option in the Cmake build. Once these options are enabled, the benchmarks will be run as part of the netCDF tests. The benchmarking programs are in the nc\_perf subdirectory, so running make check (for autotools), or make test (for Cmake) will run the benchmarks.
+
+### Benchmarking NetCDF Files with bm\_file
+
+The bm\_file program copies a netCDF file from one format to another while measuring read and write performance for both metadata and data. During the copy it applies whatever chunking, compression, endianness, and parallel I/O settings the user specifies. By running bm\_file repeatedly with different settings, a data producer can identify the storage parameters that best serve a given user community for a particular data file.
+
+The program reads every variable in the input file one slice at a time along the slowest-varying dimension, writes that slice to the output file with the requested storage parameters, and then optionally rereads the output file to confirm correctness and measure the reread rate. Timing is captured at microsecond resolution using gettimeofday (or MPI wall-clock time for parallel runs), and the results are printed as a single comma-separated line suitable for import into a spreadsheet.
+
+bm\_file works only on classic-model netCDF files. The input may be in any of the classic formats (classic, 64-bit offset, CDF-5, or netCDF-4/classic), but files that use netCDF-4 extended features such as groups or user-defined types are not supported.
+
+### Command Line Options
+
+The bm\_file program is operated from the command line, or, more frequently, a shell script.
+
+The somewhat complex command is:
+
+```
+bm\_file -v \[-s N\]|\[-t V:S:S:S -u V:C:C:C -r V:I:I:I\] \\
+
+        -o file\_out -f N -h \\
+
+        -c V:Z:S:C:C:C\[,V:Z:S:C:C:C,...\] \\
+
+        -d -m -p -i -e 1|2 -l -y -q N file
+```
+
+The trailing positional argument is the input netCDF file. All other arguments are optional switches described below.
+
+| ~~***Option** | ~~***Result** |
+| :-: | :-: |
+| ~~***-v ** | ~~***turns on verbose output that prints the time taken for each individual read and write step. This is most useful when running in batch mode on a cluster where there is no other way to observe progress.** |
+| ~~***-o ** | ~~***file sets the name of the output file. If this option is omitted, bm\_file still performs a timed read of the input but does not write any output.** |
+| ~~***-f ** | ~~***N selects the output format. The argument is an integer: 1 for classic, 2 for 64-bit offset, 3 for netCDF-4, and 4 for netCDF-4 classic model. If the format supports chunking and compression (formats 3 and 4) those settings can be supplied through the -c option.** |
+| ~~***-h ** | ~~***prints a column header line before the data line. Use this on the first call in a script and omit it for subsequent calls so that the header appears only once above all the data rows.** |
+| ~~***-c V:Z:S:C:C:C\[,...\]** | ~~***specifies deflate compression level, shuffle, and chunk sizes for one or more variables. The fields, separated by colons, are: variable index V, deflate level Z (0 means no compression, 1-9 are zlib levels, -1 leaves the variable contiguous), shuffle flag S (0 or 1), and then one chunk size per dimension. Multiple variable specifications are separated by commas. For example, 0:-1:0:1024:256:256 means variable 0, no compression, no shuffle, chunks of 1024 by 256 by 256.** |
+| ~~***-t V:S:S:S\[,…\]** ~~***-u V:C:C:C\[,…\]** ~~***-r V:I:I:I\[,...\]** | ~~***together specify explicit start, count, and increment arrays for reading and writing. V is the variable index and the remaining colon-separated values are the per-dimension start positions, counts, and increments respectively. These three options must be used together and cannot be combined with the -s option or with parallel I/O.** |
+| ~~***-d ** | ~~***enables a doublecheck pass. After writing the output file, bm\_file copies it to a second temporary file and rereads it, reporting the reread time alongside the original read and write times. The reread also verifies that the output file contains the same metadata as the input.** |
+| ~~***-m ** | ~~***enables a full value-by-value comparison during the doublecheck pass. This is much slower than -d alone for large files and should be reserved for validation rather than benchmarking.** |
+| ~~***-p ** | ~~***activates parallel I/O using MPI. The program must have been built with parallel support for this to work.** |
+| ~~***-i ** | ~~***selects MPI-IO as the parallel I/O transport instead of the default parallel HDF5 path. This option is only meaningful in parallel builds.** |
+| ~~***-s N ** | ~~***sets the denominator for the fraction of the slowest-varying dimension read in each step. The default is 10, meaning each step reads one-tenth of the records at a time. For files with a small number of records along the unlimited dimension a larger value may be needed. This option cannot be combined with -t/-u/-r.** |
+| ~~***-e 1|2 ** | ~~***sets the endianness of all variables in the output file. 1 requests little-endian storage and 2 requests big-endian storage. Omitting this option leaves the library to choose the native byte order.** |
+| ~~***-l ** | ~~***converts any unlimited (record) dimension in the input file to a fixed-length dimension in the output file.** |
+| ~~***-y ** | ~~***applies Zstandard compression instead of zlib deflate when a compression level is specified through -c.** |
+| ~~***-q N ** | ~~***quantizes floating-point data to N significant decimal digits using the GranularBR algorithm before writing. This can substantially reduce file size with minimal loss of precision for geophysical data.** |
+
+
+### Output
+
+Each run appends one line of comma-separated values to standard output. 
+
+A header line produced by -h names each column:
+
+```
+input format, output\_format, input size, output size, meta read time, meta write time,
+
+data read time, data write time, enddianness, metadata reread time, data reread time,
+
+read rate, write rate, reread rate, deflate, shuffle, chunksize\[0\], chunksize\[1\],
+
+chunksize\[2\], chunksize\[3\], zstandard, nsd
+```
+
+### Running in a Script
+
+A single run tells you the performance for one combination of settings. To find the best settings for a particular file you need to sweep across a range of chunk shapes, compression levels, and possibly formats. The standard approach is a shell script that calls bm\_file in a loop, printing the header once and then adding one data row per parameter combination. The resulting table can be pasted directly into a spreadsheet for graphing.
+
+The following example from run\_bm\_elena.sh benchmarks a 3D integer file across six chunk-shape choices, all writing to netCDF-4 format with no compression and with a doublecheck of the output:
+
+```
+\#!/bin/sh
+
+echo "\*\*\* Testing the benchmarking program bm\_file for simple float file, no compression..."
+
+./bm\_file -h -d -f 3 -o tst\_elena\_out.nc -c 0:-1:0:1024:16:256  tst\_elena\_int\_3D.nc
+
+./bm\_file    -d -f 3 -o tst\_elena\_out.nc -c 0:-1:0:1024:256:256 tst\_elena\_int\_3D.nc
+
+./bm\_file    -d -f 3 -o tst\_elena\_out.nc -c 0:-1:0:512:64:256   tst\_elena\_int\_3D.nc
+
+./bm\_file    -d -f 3 -o tst\_elena\_out.nc -c 0:-1:0:512:256:256  tst\_elena\_int\_3D.nc
+
+./bm\_file    -d -f 3 -o tst\_elena\_out.nc -c 0:-1:0:256:64:256   tst\_elena\_int\_3D.nc
+
+./bm\_file    -d -f 3 -o tst\_elena\_out.nc -c 0:-1:0:256:256:256  tst\_elena\_int\_3D.nc
+
+echo '\*\*\* SUCCESS!!!'
+```
+
+The -h flag appears only on the first call so the header is printed once. Subsequent calls omit it, producing a table where each row corresponds to one chunk shape.
+
+The output from a loop like this looks like the following:
+
+```
+\*\*\* Running benchmarking program bm\_file for simple shorts test files, 1D to 6D...
+
+input format, output\_format, input size, output size, meta read time, meta write time, data read time, data write time, enddianness, metadata reread time, data reread time, read rate, write rate, reread rate, deflate, shuffle, chunksize\[0\], chunksize\[1\], chunksize\[2\], chunksize\[3\]
+
+1, 4, 200092, 207283, 1613, 1054, 409, 312, 0, 1208, 1551, 488.998, 641.026, 128.949, 0, 0, 100000, 0, 0, 0
+
+1, 4, 199824, 208093, 1545, 1293, 397, 284, 0, 1382, 1563, 503.053, 703.211, 127.775, 0, 0, 316, 316, 0, 0
+
+1, 4, 194804, 204260, 1562, 1611, 390, 10704, 0, 1627, 2578, 499.159, 18.1868, 75.5128, 0, 0, 46, 46, 46, 0
+
+1, 4, 167196, 177744, 1531, 1888, 330, 265, 0, 12888, 1301, 506.188, 630.347, 128.395, 0, 0, 17, 17, 17, 17
+
+1, 4, 200172, 211821, 1509, 2065, 422, 308, 0, 1979, 1550, 473.934, 649.351, 129.032, 0, 0, 10, 10, 10, 10
+
+1, 4, 93504, 106272, 1496, 2467, 191, 214, 0, 32208, 809, 488.544, 436.037, 115.342, 0, 0, 6, 6, 6, 6
+
+\*\*\* SUCCESS!!!
+```
+
+The read rate, write rate, and reread rate columns in MB/s are the most directly useful for comparing parameter choices. A chunk shape that gives high read rates but mediocre write rates is appropriate when data is written once and read many times, which is the common case for scientific archives.
+
+
+### Controlling the Read Pattern
+
+By default bm\_file reads each variable one step at a time along the slowest-varying dimension, where each step covers 1/slow\_count of the total records. The -s N option adjusts slow\_count, so -s 1 reads the entire variable in a single step while larger values break it into more, smaller reads.
+
+When the expected access pattern for a variable is known in advance, the -t, -u, and -r options give full control over the start index, element count, and step increment for each dimension of each variable. This is useful for simulating the specific hyperslab reads that a downstream application is likely to perform. The following example from run\_bm\_test2.sh reads a single element at a time, stepping by one across variable 0:
+
+```
+./bm\_file -h -f 3 -o tst\_simple\_3.nc -c 0:-1:0:10 \\
+
+          -t 0:0 -u 0:1 -r 0:1 tst\_simple.nc
+```
+
+### Compression and Quantization
+
+Deflate compression is selected by giving a compression level of 1 through 9 in the -c argument. Level 1 is fastest with the least compression; level 9 is slowest with the most. Shuffle byte reordering, enabled by setting the shuffle field in -c to 1, almost always improves compression ratios for numerical data and adds negligible overhead, so it is worth testing alongside any deflate level.
+
+Zstandard compression, enabled by -y, can achieve better compression ratios than zlib at similar or faster speeds for many scientific datasets. When -y is given the compression level in the -c argument is passed to the Zstandard library instead of zlib.
+
+The -q N option applies lossy quantization before compression. It rounds each floating-point value to N significant decimal digits, which dramatically increases the compressibility of the data because the trailing bits that carry no real information become zero. For many geophysical variables, 3 to 5 significant digits is sufficient to preserve all scientifically meaningful precision. Quantization is most effective when combined with deflate or Zstandard compression.
+
+### Parallel I/O
+
+When netCDF has been built with parallel HDF5 support, bm\_file can perform parallel reads and writes using MPI. Run it under mpirun or mpiexec with the -p option to enable parallel I/O. Each MPI process handles a contiguous block of the slowest-varying dimension, and timing is collected with MPI\_Wtime and reduced across all ranks with MPI\_Reduce so that the output reflects the maximum time seen by any rank. The -i option switches the parallel transport from the default parallel HDF5 path to MPI-IO.
+
+Note that the -t/-u/-r start/count/increment options are not available in parallel mode.
+
+### Interpreting Results
+
+After importing the CSV output into a spreadsheet, plot read rate and write rate against the chunk sizes or compression levels you tested. Look for the parameter combination that maximizes the rate relevant to your use case. If data consumers read the file in sequential record order, a chunk shape that aligns with that order and fits comfortably in the HDF5 chunk cache will typically give the best read performance. If consumers read spatial subsets that cross many records, a chunk shape with smaller extent along the record dimension and larger extent along the spatial dimensions may be preferable.
+
+The metadata read and write times report how long it takes to open the file and read or write the header. For files with many variables or attributes this can be a significant fraction of total access time, and choosing a more compact format or reducing unnecessary metadata can help.
+
+The doublecheck reread rate reflects cold-cache performance on a file that was just written, which is a reasonable lower bound on what users will experience. When the reread rate is much lower than the initial read rate, the chunk cache is likely being thrashed and a larger or differently shaped chunk may help.
+
 ## Benchmarking Chunking Strategies
 
-Chunk size has the largest impact on netCDF-4/HDF5 performance. Test multiple configurations:
+Sometimes it is desirable to write local benchmarking programs, instead of using bm\_file.
+
+Whrn doing so, chunk size has the largest impact on netCDF-4/HDF5 performance. Test multiple configurations:
 
 ### Example: Time Series Data
 
@@ -18897,7 +20625,7 @@ for (int i = 0; i \< 5; i++) \{
 
 ## Benchmarking Compression Settings
 
-Test different compression algorithms and levels:
+When benchmarking compression, test different compression algorithms and levels:
 
 ```
 struct compression\_config \{
@@ -19114,153 +20842,153 @@ for (int i = 0; i \< 4; i++) \{
 A systematic benchmark suite helps compare configurations:
 
 ```
-`/\* benchmark.c - NetCDF performance benchmark suite \*/`
+/\* benchmark.c - NetCDF performance benchmark suite \*/
 
-`\#include \<netcdf.h\>`
+\#include \<netcdf.h\>
 
-`\#include \<stdio.h\>`
+\#include \<stdio.h\>
 
-`\#include \<sys/time.h\>`
+\#include \<sys/time.h\>
 
-`\#include \<sys/stat.h\>`
+\#include \<sys/stat.h\>
 
-`typedef struct \{`
+typedef struct \{
 
-`    char \*name;`
+    char \*name;
 
-`    size\_t chunks\[3\];`
+    size\_t chunks\[3\];
 
-`    int shuffle;`
+    int shuffle;
 
-`    int deflate\_level;`
+    int deflate\_level;
 
-`\} test\_config;`
+\} test\_config;
 
-`void run\_benchmark(test\_config \*config, `
+void run\_benchmark(test\_config \*config, 
 
-`                   size\_t dims\[3\], `
+                   size\_t dims\[3\], 
 
-`                   float \*data) \{`
+                   float \*data) \{
 
-`   int ncid, varid, dimids\[3\];`
+   int ncid, varid, dimids\[3\];
 
-`    double start, write\_time, read\_time;`
+    double start, write\_time, read\_time;
 
-`   struct stat st;`
+   struct stat st;
 
-`    /\* Create file \*/`
+    /\* Create file \*/
 
-`    nc\_create(config-\>name, NC\_NETCDF4, &ncid);`
+    nc\_create(config-\>name, NC\_NETCDF4, &ncid);
 
-`    nc\_def\_dim(ncid, "time", dims\[0\], &dimids\[0\]);`
+    nc\_def\_dim(ncid, "time", dims\[0\], &dimids\[0\]);
 
-`    nc\_def\_dim(ncid, "lat", dims\[1\], &dimids\[1\]);`
+    nc\_def\_dim(ncid, "lat", dims\[1\], &dimids\[1\]);
 
-`    nc\_def\_dim(ncid, "lon", dims\[2\], &dimids\[2\]);`
+    nc\_def\_dim(ncid, "lon", dims\[2\], &dimids\[2\]);
 
-`    nc\_def\_var(ncid, "data", NC\_FLOAT, 3, dimids, &varid);`
+    nc\_def\_var(ncid, "data", NC\_FLOAT, 3, dimids, &varid);
 
-`    /\* Set chunking and compression \*/`
+    /\* Set chunking and compression \*/
 
-`    nc\_def\_var\_chunking(ncid, varid, NC\_CHUNKED, config-\>chunks);`
+    nc\_def\_var\_chunking(ncid, varid, NC\_CHUNKED, config-\>chunks);
 
-`    if (config-\>deflate\_level \> 0) \{`
+    if (config-\>deflate\_level \> 0) \{
 
-`        nc\_def\_var\_deflate(ncid, varid, config-\>shuffle, `
+        nc\_def\_var\_deflate(ncid, varid, config-\>shuffle, 
 
-`                          1, config-\>deflate\_level);`
+                          1, config-\>deflate\_level);
 
-`    \}`
+    \}
 
-`    nc\_enddef(ncid);`
+    nc\_enddef(ncid);
 
-`    /\* Benchmark write \*/`
+    /\* Benchmark write \*/
 
-`    start = get\_time();`
+    start = get\_time();
 
-`    nc\_put\_var\_float(ncid, varid, data);`
+    nc\_put\_var\_float(ncid, varid, data);
 
-`    write\_time = get\_time() - start;`
+    write\_time = get\_time() - start;
 
-`    nc\_close(ncid);`
+    nc\_close(ncid);
 
-`    /\* Get file size \*/`
+    /\* Get file size \*/
 
-`    stat(config-\>name, &st);`
+    stat(config-\>name, &st);
 
-`    double file\_mb = st.st\_size / (1024.0 \* 1024.0);`
+    double file\_mb = st.st\_size / (1024.0 \* 1024.0);
 
-`    /\* Benchmark read \*/`
+    /\* Benchmark read \*/
 
-`    nc\_open(config-\>name, NC\_NOWRITE, &ncid);`
+    nc\_open(config-\>name, NC\_NOWRITE, &ncid);
 
-`    nc\_inq\_varid(ncid, "data", &varid);`
+    nc\_inq\_varid(ncid, "data", &varid);
 
-`    start = get\_time();`
+    start = get\_time();
 
-`    nc\_get\_var\_float(ncid, varid, data);`
+    nc\_get\_var\_float(ncid, varid, data);
 
-`    read\_time = get\_time() - start;`
+    read\_time = get\_time() - start;
 
-`    nc\_close(ncid);`
+    nc\_close(ncid);
 
-`    /\* Report results \*/`
+    /\* Report results \*/
 
-`    printf("%-30s: ", config-\>name);`
+    printf("%-30s: ", config-\>name);
 
-`    printf("size=%6.2f MB, ", file\_mb);`
+    printf("size=%6.2f MB, ", file\_mb);
 
-`    printf("write=%5.2fs, ", write\_time);`
+    printf("write=%5.2fs, ", write\_time);
 
-`    printf("read=%5.2fs\\n", read\_time);`
+    printf("read=%5.2fs\\n", read\_time);
 
-`\}`
+\}
 
-`int main() \{`
+int main() \{
 
-`    size\_t dims\[3\] = \{100, 180, 360\};  /\* time, lat, lon \*/`
+    size\_t dims\[3\] = \{100, 180, 360\};  /\* time, lat, lon \*/
 
-`    size\_t data\_size = dims\[0\] \* dims\[1\] \* dims\[2\];`
+    size\_t data\_size = dims\[0\] \* dims\[1\] \* dims\[2\];
 
-`    float \*data = malloc(data\_size \* sizeof(float));`
+    float \*data = malloc(data\_size \* sizeof(float));
 
-`    /\* Initialize with representative data \*/`
+    /\* Initialize with representative data \*/
 
-`    for (size\_t i = 0; i \< data\_size; i++) \{`
+    for (size\_t i = 0; i \< data\_size; i++) \{
 
-`        data\[i\] = 273.15 + 20.0 \* sin(i \* 0.001);`
+        data\[i\] = 273.15 + 20.0 \* sin(i \* 0.001);
 
-`    \}`
+    \}
 
-`    test\_config configs\[\] = \{`
+    test\_config configs\[\] = \{
 
-`        \{"classic.nc", \{0,0,0\}, 0, 0\},`
+        \{"classic.nc", \{0,0,0\}, 0, 0\},
 
-`        \{"nc4\_1x180x360.nc", \{1,180,360\}, 0, 0\},`
+        \{"nc4\_1x180x360.nc", \{1,180,360\}, 0, 0\},
 
-`        \{"nc4\_10x180x360.nc", \{10,180,360\}, 0, 0\},`
+        \{"nc4\_10x180x360.nc", \{10,180,360\}, 0, 0\},
 
-`        \{"nc4\_compressed\_5.nc", \{1,180,360\}, 1, 5\},`
+        \{"nc4\_compressed\_5.nc", \{1,180,360\}, 1, 5\},
 
-`        \{"nc4\_compressed\_9.nc", \{1,180,360\}, 1, 9\},`
+        \{"nc4\_compressed\_9.nc", \{1,180,360\}, 1, 9\},
 
-`    \};`
+    \};
 
-`    printf("NetCDF Performance Benchmark\\n");`
+    printf("NetCDF Performance Benchmark\\n");
 
-`    printf("Data size: %zu x %zu x %zu\\n\\n", dims\[0\], dims\[1\], dims\[2\]);`
+    printf("Data size: %zu x %zu x %zu\\n\\n", dims\[0\], dims\[1\], dims\[2\]);
 
-`    for (int i = 0; i \< 5; i++) \{`
+    for (int i = 0; i \< 5; i++) \{
 
-`        run\_benchmark(&configs\[i\], dims, data);`
+        run\_benchmark(&configs\[i\], dims, data);
 
-`    \}`
+    \}
 
-`    free(data);`
+    free(data);
 
-`    return 0;`
+    return 0;
 
-`\}`
+\}
 ```
 
 ## Interpreting Benchmark Results
@@ -19337,25 +21065,25 @@ These results show that shuffle + deflate level 5 provides excellent compression
 For systematic testing, create scripts that run benchmarks and collect results:
 
 ```
-`\#!/bin/bash`
+\#!/bin/bash
 
-`\# benchmark\_suite.sh`
+\# benchmark\_suite.sh
 
-`echo "NetCDF Benchmark Suite"`
+echo "NetCDF Benchmark Suite"
 
-`echo "======================"`
+echo "======================"
 
-`for chunk in "1,180,360" "10,180,360" "100,180,360"; do`
+for chunk in "1,180,360" "10,180,360" "100,180,360"; do
 
-`    for level in 0 1 5 9; do`
+    for level in 0 1 5 9; do
 
-`        echo "Testing chunks=$chunk, deflate=$level"`
+        echo "Testing chunks=$chunk, deflate=$level"
 
-`        ./benchmark --chunks=$chunk --deflate=$level`
+        ./benchmark --chunks=$chunk --deflate=$level
 
-`    done`
+    done
 
-`done`
+done
 ```
 
 This systematic approach helps identify optimal configurations for your specific use case.
@@ -19398,11 +21126,11 @@ Version 2.0 (1991) improved portability across platforms. Version 2.3 (1993) add
 
 ### NetCDF-3 Era
 
-Version 3.0 (1997) standardized the Classic data model, defining dimensions, variables, and attributes. Glenn Davis created NetCDF-Java 1.0 in 1998, a pure Java implementation for web-based and cross-platform use. John Caron released NetCDF-Java 2.0 in 2001 with high-performance arrays, simplified interfaces, and OPeNDAP remote access. This evolved into the Common Data Model (CDM) and became central to Unidata's THREDDS Data Server.
+Glenn Davis continued to shape netCDF with version 3.0 (1997) standardized the Classic data model, defining dimensions, variables, and attributes. Glenn Davis created NetCDF-Java 1.0 in 1998, a pure Java implementation for web-based and cross-platform use. John Caron released NetCDF-Java 2.0 in 2001 with high-performance arrays, simplified interfaces, and OPeNDAP remote access. This evolved into the Common Data Model (CDM) and became central to Unidata's THREDDS Data Server.
 
 In 2003, Northwestern University and Argonne National Laboratory released PnetCDF 1.0, led by Jianwei Li, Wei-Keng Liao, Alok Choudhary, Robert Ross, and Rajeev Thakur. Built on MPI-IO, it delivered high-performance parallel I/O for CDF-1 and CDF-2 formats on HPC systems.
 
-OPeNDAP grew out of the DODS (Distributed Oceanographic Data System) project, which began in 1995 under the leadership of James Gallagher. Dennis Heimbigner integrated DAP2 client support into netcdf-c 3.6.0 (2004), making remote data access transparent to any program using the netCDF API. DAP2 was approved as a NASA Earth Science Data Systems standard in 2005. Heimbigner added DAP4 client support in netcdf-c 4.4.1 (2016), extending remote access to the enhanced data model. Dennis also built the ncZarr cloud storage backend that began taking shape around 2020-2021.
+OPeNDAP grew out of the DODS (Distributed Oceanographic Data System) project, which began in 1995 under the leadership of James Gallagher. Dennis Heimbigner integrated DAP2 client support into netcdf-c 3.6.0 (2004), making remote data access transparent to any program using the netCDF API. DAP2 was approved as a NASA Earth Science Data Systems standard in 2005. 
 
 ### NetCDF-4 Era
 
@@ -19414,9 +21142,13 @@ In 2012, I split netcdf-fortran from netcdf-c, allowing independent evolution. T
 
 Version 4.4.0 (2016) introduced CDF-5 format by Wei-Keng Liao, using 64-bit integers for dimensions and variables, supporting datasets over 2 billion elements and adding unsigned types. Version 4.6.2 (2018) added file open optimizations, including lazy attribute reading and fast global attribute access, dramatically reducing open times for metadata-heavy files.
 
+Heimbigner added DAP4 client support in netcdf-c 4.4.1 (2016), extending remote access to the enhanced data model. 
+
 ### Modern Times
 
-Around 2020-2021, Zarr integration began, adding cloud-native storage support for S3 and Google Cloud Storage. In 2021, Charlie Zender and I developed the Community Codec Repository (CCR), an NSF-supported proof-of-concept demonstrating quantization and advanced compression, including Zender's Bit Grooming algorithm.
+Around 2020-2021, Zarr integration began, adding cloud-native storage support for S3 and Google Cloud Storage, work done by Dennis Heimbigner and Ward Fisher.
+
+In 2021, Charlie Zender and I developed the Community Codec Repository (CCR), an NSF-supported proof-of-concept demonstrating quantization and advanced compression, including Zender's Bit Grooming algorithm.
 
 Version 4.9.0 (2022) introduced Zstandard compression and quantization functions by myself, Charlie Zender, enabling better compression ratios and controlled lossy compression. Version 4.9.3 (2024) improved ncZarr support, added plugin search path API control, and enhanced performance.
 
@@ -19431,8 +21163,10 @@ In 2025 I released version 1.0 of the NetCDF Expansion Pack (NEP), adding LZ4 an
 | ~~***1989** | ~~***netcdf-c-1.0** | ~~***First public release** | ~~***Established self-describing, portable scientific data format** | ~~***Glenn Davis, Russ Rew** |
 | ~~***~1990** | ~~***-** | ~~***Test infrastructure** | ~~***nctest test suite for C interface validation** | ~~***Glenn Davis, Russ Rew** |
 | ~~***1991** | ~~***netcdf-c-2.0** | ~~***C interface improvements** | ~~***Changed dimension lengths from int to long for better portability (MS-DOS, etc.)** | ~~***Glenn Davis, Russ Rew** |
+| ~~***1991** | ~~***udunits-1.0** | ~~***Standardized units metadata** | ~~***Allows physical units to be specified in a rigorous and standard way.** | ~~***Steve Emmerson** |
 | ~~***~1993** | ~~***-** | ~~***Fortran test code** | ~~***Test suite for Fortran77 interface validation** | ~~***Glenn Davis, Russ Rew, Cathy Cormack** |
 | ~~***1993** | ~~***netcdf-c-2.3** | ~~***Fortran interface and optimizations** | ~~***Added Fortran77 interface, strides, mapped array sections, configure-based build** | ~~***Glenn Davis, Russ Rew, Steve Emmerson** |
+| ~~***1995** | ~~***-** | ~~***COARDS conventions** | ~~***Convention for coordinate grids and time in netCDF files.** | ~~***Steve Hankin** |
 | ~~***~1996** | ~~***-** | ~~***Exhaustive test suite** | ~~***nc\_test comprehensive validation for NetCDF-3 interface** | ~~***Glenn Davis, Russ Rew, Harvey Davies** |
 | ~~***1996** | ~~***netcdf-c-2.4** | ~~***Format specification and performance** | ~~***Formal file format specification, supercomputer optimizations, C++ interface support** | ~~***Glenn Davis, Russ Rew** |
 | ~~***1997** | ~~***netcdf-c-3.0** | ~~***Classic data model standardized** | ~~***Defined fundamental concepts of dimensions, variables, and attributes** | ~~***Glenn Davis, Russ Rew** |
@@ -19441,13 +21175,16 @@ In 2025 I released version 1.0 of the NetCDF Expansion Pack (NEP), adding LZ4 an
 | ~~***2003** | ~~***PnetCDF-1.0** | ~~***Parallel NetCDF library** | ~~***MPI-based parallel I/O for CDF-1 and CDF-2 formats on HPC systems** | ~~***Jianwei Li, Wei-Keng Liao, Alok Choudhary, Rob Ross, Rajeev Thakur** |
 | ~~***2004** | ~~***netcdf-c-3.6.0** | ~~***OPeNDAP/DAP2 client support** | ~~***Enabled remote data access over HTTP, network-transparent data access** | ~~***Dennis Heimbigner** |
 | ~~***2005** | ~~***-** | ~~***DAP2 standard approved** | ~~***Data Access Protocol 2 approved as NASA Earth Science Data Systems standard** | ~~***James Gallagher, OPeNDAP** |
+| ~~***2005** | ~~***ACDD-1.0** | ~~***ACDD conventions developed** | ~~***Conventions for data discovery.** | ~~***Ethan Davis, John Caron, Ben Dominico** |
 | ~~***2008** | ~~***netcdf-c-4.0** | ~~***NetCDF-4/HDF5 enhanced model** | ~~***Added hierarchical groups, user-defined types, multiple unlimited dimensions, improved compression** | ~~***Edward Hartnett, Dennis Heimbigner** |
+| ~~***2009** | ~~***udunits-2.0** | ~~***Rewrite** | ~~***Unicode support, more features** | ~~***Steve Emmerson** |
 | ~~***2010** | ~~***netcdf-c-4.1** | ~~***HDF4 read-only support** | ~~***Added capability to read HDF4 SD (Scientific Data) files through NetCDF API** | ~~***Edward Hartnett** |
-| ~~***2010** | ~~***PIO-1.0** | ~~***ParallelIO library** | ~~***High-level parallel I/O library for structured grid applications, async I/O** | ~~***Jim Edwards** |
+| ~~***2010** | ~~***PIO-1.0** | ~~***ParallelIO library** | ~~***High-level parallel I/O library for structured grid applications, async I/O** | ~~***Jim Edwards, John Dennis, Mariana Vertenstein** |
 | ~~***2010** | ~~***netcdf-Java-4.2** | ~~***NetCDF-Java/CDM stable release** | ~~***Common Data Model, multi-format support, NcML, ToolsUI, read-write netCDF-3** | ~~***John Caron, Ethan Davis** |
 | ~~***2012** | ~~***netcdf-c-4.2** | ~~***NetCDF-Fortran separated** | ~~***Fortran library split into independent distribution with separate versioning** | ~~***Edward Hartnett, Russ Rew** |
 | ~~***2013** | ~~***netcdf-c-4.3.0** | ~~***CMake build system** | ~~***CMake support for cross-platform builds, Windows/Visual Studio support** | ~~***Ward Fisher** |
 | ~~***2014** | ~~***-** | ~~***DAP4 released** | ~~***Data Access Protocol 4 with enhanced data model support** | ~~***James Gallagher, OPeNDAP, Unidata** |
+| ~~***2014** | ~~***ACDD-1.1** | ~~***ACDD adopted by ESIP** | ~~***Attribute Conventions for Data Discovery adopted by ESIP** | ~~***Ethan Davis, John Caron, Ben Dominico** |
 | ~~***2016** | ~~***netcdf-c-4.4.0** | ~~***CDF-5 format support** | ~~***64-bit data format for large dimensions/variables (\>2B elements), unsigned types** | ~~***Wei-Keng Liao** |
 | ~~***2016** | ~~***netcdf-c-4.4.1** | ~~***DAP4 client support** | ~~***DAP4 protocol support for enhanced data model over networks** | ~~***Dennis Heimbigner** |
 | ~~***2017** | ~~***PIO-2.0** | ~~***ParallelIO major rewrite** | ~~***Added C API, improved performance, restructured architecture** | ~~***Jim Edwards, Edward Hartnett** |
@@ -19462,12 +21199,11 @@ In 2025 I released version 1.0 of the NetCDF Expansion Pack (NEP), adding LZ4 an
 | ~~***2025** | ~~***netcdf-fortran-4.6.2** | ~~***NetCDF-Fortran stable release** | ~~***Bug fixes, improved CMake support, stack overflow fixes, compatibility with NetCDF-C 4.9.3** | ~~***Ward Fisher** |
 | ~~***2025** | ~~***NEP 1.0** | ~~***NetCDF Expansion Pack** | ~~***LZ4 and BZIP2 compression, CDF and GeoTIFF file readers via NetCDF API** | ~~***Edward Hartnett** |
 
-
 ## The Present
 
 NetCDF is a mature, stable technology in active use across the global scientific community. The core C library, netcdf-c, is maintained by Ward Fisher at Unidata/UCAR. It supports five binary output formats (classic, 64-bit offset, CDF-5, NetCDF-4/HDF5, and ncZarr), runs on every major operating system, and builds with both Autotools and CMake. The current release is version 4.9.3.
 
-The Fortran interface, netcdf-fortran, is maintained separately and currently at version 4.6.2. Splitting the Fortran and C libraries in 2012 allowed each to evolve on its own release schedule, and the same separation applies to the C++ bindings. This modular structure means a bug fix or new feature in one language binding does not force a release of the others.
+The Fortran interface, netcdf-fortran, is maintained separately and currently at version 4.6.2. 
 
 NetCDF-Java, now at version 5.x, is maintained by Sean Arms and Hailey Johnson at Unidata. It provides the Common Data Model (CDM), which reads not only netCDF but also HDF5, GRIB, BUFR, and other formats through a unified API. NetCDF-Java powers the THREDDS Data Server (TDS), which serves netCDF data over OPeNDAP and other protocols to thousands of users worldwide.
 
@@ -19479,15 +21215,15 @@ OPeNDAP continues to provide remote data access. The DAP2 and DAP4 protocols all
 
 NCO (NetCDF Operators), developed by Charlie Zender at UC Irvine, provides command-line tools for subsetting, concatenation, arithmetic, and attribute editing. NCO is widely used in production data pipelines and eliminates the need to write custom programs for many routine operations.
 
-The CF (Climate and Forecast) Conventions define how to store geophysical data in netCDF files. CF specifies standard names for variables, coordinate reference systems, cell methods, and other metadata. Nearly all major data centers require CF compliance, and CF continues to evolve with new conventions for unstructured grids, satellite swath data, and other data types. CF compliance is what makes netCDF files interoperable across tools and institutions.
+The CF (Climate and Forecast) Conventions define how to store geophysical data in netCDF files. CF specifies standard names for variables, coordinate reference systems, cell methods, and other metadata. Nearly all major data centers require CF compliance, and CF continues to evolve with new conventions for unstructured grids, satellite swath data, and other data types. CF compliance is what makes netCDF files interoperable across tools and institutions. Ethan Davis at Unidata leads this work for UCAR.
 
 For compression, netcdf-c now supports both zlib deflate and Zstandard (zstd) compression, along with quantization functions for controlled lossy compression. The HDF5 filter plugin mechanism allows additional compressors to be loaded at runtime without recompiling the library. The Community Codec Repository (CCR), developed by Charlie Zender and myself, demonstrated this approach with Bit Grooming and other algorithms.
 
-The NetCDF Expansion Pack (NEP), which I released in 2025, extends netcdf-c without adding to its codebase. NEP 1.0 provides LZ4 and BZIP2 compression filters, a read-only layer for NASA CDF (Common Data Format) files, and a read-only layer for GeoTIFF files. All access goes through the standard netCDF API.
+The NetCDF Expansion Pack (NEP), which I released in 2025, extends netcdf-c without adding to its codebase. NEP 1.0 provides LZ4 and BZIP2 compression filters, a read-only layer for NASA CDF (Common Data Format) files, and a read-only layer for GeoTIFF files, and a read-only layer for GRIB2 files. All access goes through the standard netCDF API.
 
-Testing remains central to the project. The netcdf-c test suite runs thousands of tests across all supported formats and features. Continuous integration builds and tests every commit on multiple platforms. The Fortran, Java, and PnetCDF libraries each maintain their own test suites as well.
+Testing remains central to the NetCDF project. The netcdf-c test suite runs thousands of tests across all supported formats and features. Continuous integration builds and tests every commit on multiple platforms. The Fortran, Java, and PnetCDF libraries each maintain their own test suites as well.
 
-NetCDF today is not a single library but an ecosystem: a C library, Fortran and C++ bindings, a Java implementation, parallel I/O libraries, remote access protocols, command-line operators, an extension pack, and a metadata convention. These components are developed by different teams at different institutions, but they all read and write the same file formats and follow the same data models. That interoperability is the defining feature of netCDF in its current state.
+NetCDF today is not a single library but an ecosystem: a C library, Fortran and C++ bindings, a Java implementation, parallel I/O libraries, remote access protocols, command-line operators, an extension pack, and a metadata convention. These components are developed by different teams at different institutions, but they all read and write the same file formats and follow the same data models. That interoperability is the defining feature of netCDF.
 
 ## The Future
 
@@ -19495,7 +21231,7 @@ NetCDF today is not a single library but an ecosystem: a C library, Fortran and 
 
 Cloud storage is replacing local disk for many scientific workflows. Data that once lived on a RAID array down the hall now sits in an S3 bucket on the other side of the country. This changes the performance equation. Local disk access is fast and cheap per operation. Cloud object storage is slow per request but scales without limit.
 
-ncZarr addresses this by storing netCDF data in Zarr format, which is designed for cloud object stores. Each chunk becomes a separate object, so a client can fetch exactly the data it needs with a single HTTP range request instead of downloading an entire file. This matters when a file is 50 GB and you need one time slice.
+NcZarr addresses this by storing netCDF data in Zarr format, which is designed for cloud object stores. Each chunk becomes a separate object, so a client can fetch exactly the data it needs with a single HTTP range request instead of downloading an entire file. This matters when a file is 50 GB and you need one time slice.
 
 Cloud-native access is still maturing. Chunk indexing, authentication, caching strategies, and cross-region latency all present ongoing challenges. As more scientific data moves to the cloud, netCDF will need to keep pace with the storage systems that host it.
 
@@ -19505,11 +21241,11 @@ The zlib deflate compression that shipped with netCDF-4 in 2008 was a major step
 
 The HDF5 filter plugin mechanism makes it possible to add new compressors without modifying or recompiling the netCDF library. A compression algorithm can be distributed as a shared library, dropped into a plugin directory, and used immediately. This architecture means netCDF does not need to pick winners among compression algorithms. Users can choose the compressor that fits their data and their performance requirements.
 
-The NetCDF Expansion Pack already provides LZ4 and BZIP2 through this mechanism. More algorithms will follow as the community identifies what works best for different data types: smooth atmospheric fields, noisy radar returns, sparse ocean observations, integer satellite counts.
+The NetCDF Expansion Pack already provides LZ4 and BZIP2 through this mechanism. More algorithms will follow as the community identifies what works best for different data types.
 
 ### The NetCDF Expansion Pack
 
-The netcdf-c library must remain stable and conservative. Millions of files depend on it. But scientists need new features, and they need them faster than a core library can safely deliver.
+The netcdf-c library must remain stable and conservative. Millions of files depend on it. But scientists need new features, and sometimes they need them faster than a core library can safely deliver.
 
 The NetCDF Expansion Pack (NEP) solves this by providing new capabilities as a separate, optional library that links against netcdf-c. NEP 1.0 includes LZ4 and BZIP2 compression filters, a read-only layer for NASA CDF (Common Data Format) files used in heliophysics missions, and a read-only layer for GeoTIFF satellite imagery. All access goes through the standard netCDF API, so existing tools like ncdump work on these files without modification.
 
@@ -19554,47 +21290,72 @@ The future of netCDF lies with those scientists and their data needs.
 - Backward compatibility: Every major addition, from NetCDF-4 to ncZarr to NEP, maintains the ability to read older files and use existing APIs.
 
 
+Bibliography
+
+Gallagher, James, Russ Rew, R. McQueary, D. Heimbigner, and Edward Hartnett. “Merging the Data Models of NetCDF and DAP: Design Choices and Benefits.” *AGU Fall Meeting Abstracts*, January 1, 2008.
+
+Hartnett, Edward, Charles Zender, Ward Fisher, et al. “Quantization and Next-Generation Zlib Compression for Fully Backward-Compatible, Faster, and More Effective Data Compression in NetCDF Files.” Paper presented at AGU, New Orleans, LA. December 13, 2021.
+
+Hartnett, Edward, and Charlie Zender. “Adding Quantization to the NetCDF C and Fortran Libraries to Enable Lossy Compression.” Paper presented at EGU. May 24, 2022.
+
+Hassell, David, Jonathan Gregory, Jon Blower, Bryan N. Lawrence, and Karl E. Taylor. “A Data Model of the Climate and Forecast Metadata Conventions (CF-1.6) with a Software Implementation (Cf-Python v2.1).” *Geoscientific Model Development* 10, no. 12 (2017): 4619–46. https://doi.org/10.5194/gmd-10-4619-2017.
+
+“NetCDF: Documentation.” Accessed May 30, 2026. https://docs.unidata.ucar.edu/netcdf-c/current/.
+
+“(PDF) THE PARALLELIO (PIO) C/FORTRAN LIBRARIES FOR SCALABLE HPC PERFORMANCE.” Paper presented at AMS. *ResearchGate*, January 2021. https://www.researchgate.net/publication/348169990\_THE\_PARALLELIO\_PIO\_CFORTRAN\_LIBRARIES\_FOR\_SCALABLE\_HPC\_PERFORMANCE.
+
+“PIO: Parallel I/O Libraries (PIO).” Accessed May 30, 2026. https://ncar.github.io/ParallelIO/.
+
+“PnetCDF.” Accessed May 30, 2026. https://parallel-netcdf.github.io/.
+
+“The HDF5® Library & File Format.” *The HDF Group - Ensuring Long-Term Access and Usability of HDF Data and Supporting Users of HDF Technologies*, n.d. Accessed May 30, 2026. https://www.hdfgroup.org/solutions/hdf5/.
+
+“UDUNITS | NSF Unidata.” Accessed May 30, 2026. https://www.unidata.ucar.edu/software/udunits.
+
+Zarr. “Zarr.” Accessed May 30, 2026. https://zarr.dev/.
+
+
 Alphabetical Index
 
 Architecture	
 
-dispatch table	, 239-241, 244
+dispatch table	, 251, 252, 253, 256
 
-user-defined format	, 240, 241
+user-defined format	, 252, 253
 
-V2 API	, 241
+V2 API	, 253
 
 Attributes	
 
-missing\_value	, 212
+missing\_value	, 216
 
-valid\_range	207, 212, 214
+valid\_range	216, 223, 225
 
-\_FillValue	, 43, 45, 88, 90, 91, 96, 97, 106-108, 110, 112, 152-155, 188, 205, 207, 208, 211, 212, 214
+\_FillValue	, 43, 45, 86, 88, 89, 94, 95, 104, 106, 108, 110, 149, 151, 152, 166, 196, 215, 216, 217, 221, 223, 224, 225
 
 Book structure	
 
-learning objectives	1, -, -16, 33, 75, 87, 101, 106, 112, 119, 125, 133, 145, 150, 156, 162, 163, 165, 166, 183, 205, 217, 223, 235, 239, 243, 253, 263
+learning objectives	1, , , , , , , , , , , , 33, 69, 85, 99, 104, 110, 118, 124, 131, 143, 148, 153, 160, 163, 169, 174, 191, 213, 227, 233, 247, 251, 255, 265, 275
 
 Build systems	
 
-Autotools	, 13, 18, 19, 22-24, 32, 269
+Autotools	, 13, 17, 19, 22, 23, 24, 32, 280
 
-CMake	, 13, 17, 18, 21-24, 32, 264, 267, 269, 272
+CMake	, 13, 17, 21, 22, 23, 24, 32, 276, 279, 280, 283
 
 Conda	, 13, 15, 18, 32
 
-Cygwin	, 17, 18
+Cygwin	, 17
 
-Gradle	, , 13, 15, 25, 26, 195, 196, 203
+Gradle	, , 13, 15, 25, 26, 203, 204, 211
 
-Maven	, , 13, 15, 25, 26, 30-32, 195, 203
+Maven	, , 13, 15, 25, 26, 30, 31, 32, 203, 211
 
 MSYS2	, 15, 17, 22, 32
 
-package manager	, 13, 15-19, 23, 25, 27, 32, 100
+package manager	, 13, 15, 16, 17, 18, 19, 23, 25, 27, 32, 98
 
-shared library	30, 31, 271
+shared library	30, 31, 282
 
 Spack	, 13, 15, 18, 19, 32
 
@@ -19604,331 +21365,331 @@ WSL	, 15, 18
 
 C API functions	
 
-nc\_close	6, 7, 28, 36, 48, 103, 105, 108, 111, 114, 116, 122, 123, 130, 132, 136, 141, 197, 208, 225, 227, 246, 248, 258, 259
+nc\_close	6, 8, 28, 36, 48, 101, 103, 106, 109, 114, 115, 121, 122, 129, 131, 135, 140, 205, 223, 235, 238, 257, 260, 270, 271
 
-nc\_create	5, 28, 30, 36, 37, 48, 51, 52, 61, 78, 79, 81-83, 92, 102, 107, 114, 121, 127, 134, 197, 206, 224-227, 230, 232, 233, 239-241, 259
+nc\_create	6, 28, 30, 36, 37, 48, 51, 52, 61, 72, 73, 75, 76, 79, 80, 90, 100, 105, 111, 114, 115, 120, 126, 133, 205, 222, 235, 237, 238, 241, 245, 251, 252, 253, 270
 
-nc\_create\_par	28, 30, 79, 224-227, 230, 232, 233
+nc\_create\_par	28, 30, 73, 235, 237, 238, 241, 245
 
-nc\_def\_compound	54, 125-127
+nc\_def\_compound	54, 124, 125, 126
 
-nc\_def\_dim	5, 38, 40, 41, 48, 52, 65, 92, 102, 107, 114, 121, 122, 128, 129, 134, 135, 206, 209, 211, 225, 226, 259
+nc\_def\_dim	6, 38, 40, 41, 48, 52, 63, 90, 100, 105, 112, 120, 127, 133, 218, 219, 222, 235, 237, 270
 
-nc\_def\_enum	58, 125, 126, 128
+nc\_def\_enum	58, 124, 125, 127
 
-nc\_def\_grp	52, 134
+nc\_def\_grp	52, 133
 
-nc\_def\_opaque	59, 126-128
+nc\_def\_opaque	59, 124, 125, 127
 
-nc\_def\_var	5, 40, 41, 44, 45, 48, 52-56, 59, 65, 81, 83, 92, 102, 107, 108, 114, 120, 122, 129, 135, 206, 207, 209-211, 218-221, 225, 226, 229-231, 235, 239, 255, 256, 259
+nc\_def\_var	6, 40, 41, 44, 45, 48, 52, 53, 54, 55, 56, 59, 63, 75, 80, 90, 101, 105, 106, 112, 118, 120, 127, 128, 134, 216, 218, 219, 222, 228, 229, 230, 231, 235, 237, 240, 241, 247, 248, 251, 267, 268, 270
 
-nc\_def\_var\_fill	44, 45, 48, 220
+nc\_def\_var\_fill	44, 45, 48, 101, 120, 230
 
-nc\_def\_var\_quantize	235
+nc\_def\_var\_quantize	247, 248
 
-nc\_def\_var\_shuffle	120
+nc\_def\_var\_shuffle	118
 
-nc\_def\_vlen	56, 125, 126, 128
+nc\_def\_vlen	56, 124, 125, 127
 
-nc\_enddef	6, 37, 38, 44, 45, 48, 103, 108, 114, 122, 129, 135, 208, 218, 221, 225, 226, 259
+nc\_enddef	6, 37, 38, 44, 48, 101, 106, 112, 120, 128, 134, 223, 228, 231, 235, 237, 270
 
-nc\_free\_string	58, 61, 68, 69, 72, 132
+nc\_free\_string	58, 61, 64, 65, 66, 130
 
-nc\_free\_vlen	57, 67, 68, 72, 131
+nc\_free\_vlen	57, 64, 66, 130
 
-nc\_get\_att	6, 7, 43, 60, 61, 105, 106, 109, 110, 197
+nc\_get\_att	7, 42, 43, 60, 61, 102, 104, 107, 108, 205
 
-nc\_get\_chunk\_cache	258
+nc\_get\_chunk\_cache	270
 
-nc\_get\_var	7, 46-48, 62, 63, 65-72, 105, 110, 111, 116, 123, 130-132, 140, 197, 248, 259
+nc\_get\_var	7, 46, 47, 48, 62, 63, 64, 65, 66, 102, 108, 109, 113, 122, 129, 130, 131, 138, 205, 259, 271
 
-nc\_get\_vara	47, 48, 239, 245, 246, 248, 251, 257
+nc\_get\_vara	47, 48, 251, 257, 258, 259, 260, 262, 269
 
-nc\_inq	6, 7, 28, 32, 36, 38, 43, 45, 47, 48, 61, 64, 75, 76, 101, 103-105, 109, 110, 112, 115, 116, 118, 123, 130-133, 136-139, 197, 245, 248, 259
+nc\_inq	6, 7, 28, 32, 36, 38, 43, 45, 47, 48, 61, 62, 63, 69, 70, 99, 101, 102, 106, 107, 108, 110, 112, 113, 116, 121, 122, 129, 130, 132, 135, 136, 137, 138, 205, 257, 260, 271
 
-nc\_inq\_dim	38, 48, 101, 104
+nc\_inq\_dim	38, 48, 99, 101, 102
 
-nc\_inq\_dimid	137, 138
+nc\_inq\_dimid	136, 137
 
-nc\_inq\_dimlen	6, 138
+nc\_inq\_dimlen	7, 137
 
-nc\_inq\_format	75, 76, 112, 115, 118
+nc\_inq\_format	69, 70, 110, 112, 116
 
-nc\_inq\_format\_extended	112
+nc\_inq\_format\_extended	110
 
-nc\_inq\_grp\_ncid	64, 133, 136, 137
+nc\_inq\_grp\_ncid	62, 132, 135
 
-nc\_inq\_grpname	137
+nc\_inq\_grpname	136
 
-nc\_inq\_grps	136
+nc\_inq\_grps	135
 
 nc\_inq\_libvers	28, 32
 
-nc\_inq\_var	45, 48, 101, 104, 123, 139
+nc\_inq\_var	45, 47, 99, 102, 121, 122, 137, 138
 
-nc\_inq\_var\_fill	45
+nc\_inq\_var\_fill	45, 102, 122
 
-nc\_inq\_varid	47, 64, 116, 123, 130-132, 139, 197, 245, 248, 259
+nc\_inq\_varid	47, 63, 113, 121, 129, 130, 137, 138, 205, 257, 260, 271
 
-nc\_insert\_compound	55, 66, 126, 128
+nc\_insert\_compound	55, 63, 125, 126
 
-nc\_insert\_enum	59, 126, 128
+nc\_insert\_enum	59, 125, 127
 
-nc\_open	6, 36, 37, 48, 52, 76, 79, 82, 83, 85, 103, 109, 115, 123, 130, 136, 197, 225, 227, 232, 233, 245, 246, 248, 251, 252, 258, 259
+nc\_open	6, 36, 37, 48, 52, 70, 73, 79, 80, 82, 101, 106, 112, 121, 129, 135, 205, 235, 238, 245, 257, 260, 262, 263, 269, 271
 
-nc\_open\_par	79, 225, 227, 232, 233
+nc\_open\_par	73, 235, 238, 245
 
-nc\_put\_att	5, 42, 43, 45, 48, 60, 103, 106, 108, 114, 207-214, 226
+nc\_put\_att	6, 42, 43, 45, 48, 60, 101, 104, 105, 106, 112, 214, 216, 218, 219, 220, 221, 222, 223, 237
 
-nc\_put\_att\_text	5, 42, 43, 103, 108, 114, 207-214, 226
+nc\_put\_att\_text	6, 42, 43, 101, 105, 106, 112, 214, 218, 219, 220, 221, 222, 223, 237
 
-nc\_put\_var	6, 40, 41, 46, 48, 55, 56, 59, 60, 62, 63, 65-72, 92, 103, 108, 114, 122, 129, 130, 136, 197, 259
+nc\_put\_var	6, 40, 41, 46, 48, 55, 56, 59, 60, 62, 63, 64, 65, 66, 90, 106, 112, 128, 129, 135, 205, 270
 
-nc\_put\_vara	46-48, 65, 226, 227, 230, 232, 239, 241, 254
+nc\_put\_vara	46, 47, 48, 63, 101, 121, 237, 238, 241, 243, 251, 253, 266
 
 nc\_redef	37, 38
 
-nc\_set\_chunk\_cache	218, 221, 258
+nc\_set\_chunk\_cache	228, 231, 269
 
 nc\_set\_log\_level	21
 
-nc\_strerror	5, 101, 102, 107, 113, 120, 127, 134, 206
+nc\_strerror	5, 99, 100, 105, 111, 119, 126, 132, 222
 
-nc\_type	54, 56, 58, 59, 104, 127, 128, 138
+nc\_type	54, 56, 58, 59, 102, 126, 127, 137
 
-nc\_var\_par\_access	225-227, 230, 231, 233
+nc\_var\_par\_access	236, 237, 238, 241, 242, 245
 
-nc\_vlen\_t	56, 57, 67, 68, 129, 130
+nc\_vlen\_t	56, 57, 64, 128, 129
 
 CF Conventions	
 
-axis	, 39, 106-112, 151, 153, 155, 193, 201, 211, 213
+axis	, 39, 104, 105, 106, 107, 108, 109, 148, 149, 150, 151, 152, 201, 209, 219, 221
 
-cell methods	, 213, 270
+cell methods	, 220, 281
 
-coordinate system	11, 27, 193, 198, 199, 201, 209, 210, 214
+coordinate system	12, , 27, 201, 206, 207, 209, 214, 217, 218, 225
 
-standard name	1, , 107, 205, 212, 214, 270
+standard name	1, , 104, 213, 220, 221, 225, 281
 
 Command-line utilities	
 
-CDL	, 45, 87, 90-93, 96-98, 100, 111, 142
+CDL	, 45, 85, 88, 89, 90, 91, 94, 95, 96, 98, 109, 140
 
-h5dump	80, 82
+h5dump	74, 76
 
-nc-config	, 13, 17, 18, 27-32, 250
+nc-config	, 13, 17, 18, 27, 28, 29, 30, 31, 32, 261
 
-nccopy	, 75, 84, 86, 87, 93-96, 98, 100, 237, 262
+nccopy	, 12, 69, 81, 83, 85, 91, 92, 93, 94, 96, 98, 249, 274
 
-ncdump	1, 7, 8, 10, , , 45, 75, 76, 82, 87-93, 95-98, 100, 118, 119, 125, 142, 155, 161-165, 171, 176, 215, 247, 272
+ncdump	1, 8, , 11, 12, , 45, 69, 70, 76, 85, 86, 87, 88, 89, 90, 91, 93, 94, 95, 96, 98, 116, 117, 124, 140, 152, 159, 163, 169, 173, 179, 184, 226, 259, 282
 
-ncgen	1, , 11, 87, 90-92, 96-98, 100
+ncgen	1, , 12, 85, 88, 89, 90, 94, 95, 96, 98
 
-nf-config	, 13, 17, 18, 27-30
+nf-config	, 13, 17, 18, 27, 28, 29, 30
 
 Compression	
 
-deflate	4, , 81, 83, 84, 94, 119-124, 163, 164, 179, 219, 221, 235, 236, 256, 258, 259, 261, 262, 270, 271
+deflate	5, , 75, 80, 81, 92, 118, 119, 120, 121, 123, 163, 164, 165, 166, 167, 168, 187, 229, 231, 247, 248, 268, 270, 273, 281, 282
 
-filter	, 81, 84, 87, 94, 120, 123, 178, 219, 220, 236, 237, 257, 260, 270-273
+filter	, 75, 81, 85, 92, 118, 122, 164, 186, 229, 230, 248, 249, 268, 272, 281, 282, 284
 
-lz4	, 83, 236
+lz4	, 80, 248
 
-quantization	, 235, 236, 264, 268, 270, 271, 273
+quantization	, 247, 248, 249, 276, 279, 281, 282, 283, 284, 285
 
-shuffle filter	81, 235
+shuffle filter	75, 247
 
-zstd	, 83, 235, 236, 268, 270
+zstd	80, 247, 249, 279, 281
 
 Conventions	
 
-ACDD	, 213-215
+ACDD	2, , 213, 214, 219, 225, 278, 279
 
-CF Conventions	3, , 40, 41, 45, 101, 106, 150, 188, 199, 205, 210, 212, 214, 215, 273
+CF Conventions	3, 4, , 40, 41, 45, 99, 104, 148, 196, 207, 213, 214, 217, 218, 219, 225, 284
 
-COARDS	, 214
+COARDS	, 213, 219, 277
 
-conventions	1, 3, , , 12, 33, 40, 41, 45, 49, 83, 88, 96, 97, 101, 106, 150, 184, 188, 199, 203, 205-208, 210, 212-215, 241, 270, 273
+conventions	1, 2, 3, 4, , 11, , , 33, 40, 41, 45, 49, 80, 86, 94, 95, 99, 104, 148, 192, 196, 207, 211, 213, 214, 216, 217, 218, 219, 220, 221, 222, 224, 225, 253, 277, 278, 279, 281, 284, 285
 
 Core concepts	
 
-attribute	5-12, 35, 37, 41-43, 45, 46, 54, 55, 60, 61, 80, 86, 87, 89, 91, 92, 98, 100, 101, 103-106, 118, 145-150, 153, 161, 179, 181, 183, 186-188, 191, 194, 197, 199-201, 205, 209-215, 244, 264, 268, 270
+attribute	2, 6, 7, 9, 10, , , , 35, 37, 41, 42, 43, 45, 46, 54, 55, 60, 61, 74, 76, 77, 78, 79, 83, 85, 87, 89, 90, 96, 97, 98, 99, 100, 101, 104, 116, 143, 145, 148, 159, 166, 186, 187, 189, 191, 194, 195, 196, 199, 202, 205, 207, 208, 209, 214, 215, 216, 217, 218, 219, 220, 221, 225, 226, 256, 276, 279, 281
 
-attributes	1-7, 9-12, 33, 35-37, 40-43, 50-52, 58, 60, 61, 74, 80, 83, 87-92, 95-99, 101-103, 106-110, 114, 118, 119, 125, 145, 150-153, 158, 161-164, 166, 183, 186-188, 192, 198, 200, 201, 205-209, 211, 213-215, 220, 226, 241, 244, 247, 249, 263, 266
+attributes	1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, , , 33, 35, 36, 37, 40, 41, 42, 43, 50, 51, 52, 58, 60, 61, 68, 74, 79, 80, 85, 86, 87, 88, 89, 90, 93, 94, 95, 96, 97, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 111, 112, 117, 118, 124, 143, 146, 147, 148, 149, 150, 151, 156, 159, 160, 163, 169, 173, 191, 194, 195, 196, 200, 206, 208, 209, 213, 214, 217, 218, 219, 221, 222, 223, 224, 225, 230, 237, 253, 256, 259, 260, 261, 275, 277
 
-coordinate variable	, , , 33, 40, 41, 43, 74, 80, 88, 89, 95, 97, 100, 101, 106-108, 110, 150-152, 154, 206-209, 213, 214
+coordinate variable	, , , 33, 40, 41, 43, 68, 74, 86, 87, 93, 95, 98, 99, 104, 105, 106, 108, 148, 149, 150, 151, 213, 217, 218, 221, 222, 223, 224, 225
 
-data mode	1, 2, 4, , 7, 11, 25, 26, 33-35, 37, 38, 46, 48, 50, 57, 72, 74, 75, 77-79, 82, 84, 85, 93, 102, 112, 113, 118, 125, 155-157, 178, 181, 183, 249, 263-265, 267-270, 272
+data mode	1, 2, , , , , , 11, 25, 26, 33, 34, 35, 37, 38, 45, 48, 50, 57, 66, 68, 69, 71, 72, 73, 76, 81, 82, 91, 100, 110, 115, 116, 124, 153, 154, 155, 185, 188, 191, 219, 255, 261, 275, 276, 277, 278, 279, 280, 281, 283, 285
 
-define mode	6, 9, , 37, 38, 44, 46, 48, 54, 102, 103, 108, 114, 122, 135, 147, 152, 159, 163, 169, 177, 178, 181, 208, 209, 211, 217, 218, 221, 225
+define mode	6, 9, , 37, 38, 44, 45, 48, 54, 100, 101, 106, 112, 120, 134, 145, 150, 156, 161, 176, 185, 189, 216, 223, 224, 227, 228, 231, 235
 
-dimension	2, 6, 8, , , 21, 37-41, 46-49, 51, 52, 57, 58, 65, 69, 72-74, 80, 81, 85, 86, 88, 90, 94, 95, 99, 101-104, 106, 107, 132, 133, 135, 137, 138, 141, 145-148, 151, 162, 166-168, 170-174, 178, 181, 183, 186-189, 191, 194, 199-202, 209, 211, 217, 218, 239, 256, 265
+dimension	2, , 7, 9, 10, , , 21, 37, 38, 39, 40, 41, 46, 47, 48, 49, 51, 52, 57, 58, 63, 65, 66, 67, 68, 74, 75, 77, 78, 82, 83, 86, 88, 92, 93, 97, 99, 100, 102, 104, 105, 131, 132, 133, 136, 137, 140, 143, 144, 145, 146, 149, 161, 162, 171, 174, 175, 176, 178, 179, 180, 181, 182, 186, 189, 191, 194, 195, 196, 197, 199, 202, 207, 208, 209, 210, 217, 218, 219, 227, 228, 251, 267, 277
 
-fill mode	, 44, 45, 178, 220, 221
+fill mode	, 43, 44, 101, 145, 185, 215, 216, 230
 
-fill value	, , 12, 44, 45, 48, 57, 89-91, 181, 211, 212, 220, 221
+fill value	, , , 43, 44, 45, 47, 48, 57, 87, 88, 89, 101, 102, 103, 120, 121, 122, 145, 146, 147, 166, 167, 168, 189, 213, 214, 215, 216, 217, 230
 
-group	, , 19, 42, 50-53, 61-64, 74, 79, 80, 84, 91, 132-135, 137, 141-143, 166-168, 170-172, 176, 177, 179, 195, 199, 201, 219
+group	, , 19, 42, 50, 51, 52, 53, 61, 62, 63, 68, 74, 76, 81, 89, 131, 132, 133, 135, 136, 140, 141, 174, 175, 176, 178, 179, 180, 184, 185, 187, 203, 207, 209, 229, 285
 
-groups	2, -10, 19, 31, 33, 48-50, 52, 61, 62, 64, 73-75, 77-86, 91-93, 101, 112, 118, 132-134, 136, 137, 141, 142, 156, 157, 162, 166-168, 170-172, 176, 194, 195, 201, 224, 233, 249, 264, 266, 272
+groups	2, , , , , , 19, 31, 33, 48, 49, 50, 52, 61, 62, 63, 67, 68, 69, 71, 72, 73, 74, 75, 76, 80, 81, 82, 83, 89, 90, 91, 99, 110, 115, 116, 131, 132, 133, 135, 136, 140, 153, 154, 155, 160, 174, 175, 178, 179, 180, 184, 202, 203, 209, 234, 261, 276, 278, 283
 
-metadata	1-7, 9-, , 27, 33, 36, 38, 40, 42, 43, 48, 55, 57, 61, 79, 80, 82, 83, 87, 92, 93, 98-103, 106, 109, 115, 125, 126, 132, 138, 140, 145, 147, 149, 150, 152, 160, 163-165, 170, 173, 174, 186-188, 193, 194, 198, 203, 205, 214, 215, 217, 230, 233, 241, 243, 244, 247, 251, 260, 264, 270, 273
+metadata	1, 2, 4, , 6, 8, 9, , 12, , , 27, 33, 36, 38, 40, 42, 43, 48, 55, 57, 61, 73, 74, 79, 80, 85, 90, 96, 97, 98, 99, 100, 101, 102, 104, 106, 113, 114, 120, 124, 125, 131, 137, 138, 143, 145, 146, 147, 148, 150, 154, 158, 162, 163, 169, 173, 178, 181, 182, 194, 195, 196, 201, 202, 206, 211, 213, 214, 215, 217, 219, 225, 226, 227, 241, 253, 256, 259, 263, 272, 276, 277, 281, 284, 285
 
-record variable	85
+record variable	82, 215
 
-self-describing	1, 2, 4, , 40, 188, 205, 215, 263, 265, 272
+self-describing	2, 4, 12, , 40, 196, 221, 225, 275, 277, 283
 
 subgroup	52, 53
 
-unlimited dimension	, 33, 39, 48, 51, 52, 65, 73-75, 77, 78, 81-85, 89, 93, 264, 266, 272
+unlimited dimension	, 33, 38, 39, 48, 51, 52, 63, 67, 68, 69, 71, 72, 76, 80, 81, 82, 87, 91, 276, 278, 283
 
-variable	1, 5, 7-11, 20, 31, 33, 35-40, 42-60, 62-72, 74, 77-82, 84, 85, 88-91, 94, 97-99, 101-106, 108, 112, 115-118, 122, 123, 125, 126, 128-130, 132, 133, 135, 138, 140, 142, 145-149, 151, 156, 157, 160, 162, 165-168, 170, 171, 173, 174, 178, 179, 181, 183, 184, 186-192, 194, 195, 197-200, 205-212, 214, 215, 218-221, 225, 226, 228, 230, 239, 241, 245, 246, 248, 250, 251, 255, 258
+variable	1, , 5, 6, 7, 9, 10, , , , 20, 31, 33, 35, 36, 37, 38, 39, 40, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 62, 63, 64, 65, 66, 68, 71, 72, 73, 74, 75, 77, 78, 79, 81, 82, 86, 87, 88, 89, 92, 95, 96, 97, 99, 100, 101, 102, 104, 106, 108, 110, 113, 114, 115, 116, 120, 121, 124, 125, 127, 129, 131, 132, 133, 134, 137, 138, 140, 143, 144, 145, 146, 149, 151, 153, 154, 155, 158, 161, 162, 169, 174, 175, 176, 178, 179, 181, 182, 186, 187, 188, 189, 191, 192, 194, 195, 196, 197, 198, 199, 200, 202, 203, 205, 206, 207, 208, 213, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 228, 229, 230, 231, 236, 237, 239, 241, 251, 253, 257, 258, 259, 262, 263, 267, 270
 
 Data models	
 
-Classic model	, , 9, 33, 34, 38, 39, 48, 49, 51, 52, 61, 65, 72-74, 76, 77, 79, 81, 82, 84, 92, 93, 101, 113, 118, 119, 145, 157, 158, 162, 233
+Classic model	, , 33, 34, 38, 39, 48, 49, 51, 52, 61, 63, 66, 68, 70, 71, 73, 76, 81, 90, 91, 99, 111, 115, 116, 117, 143, 154, 155, 156, 160
 
-data model	1, 2, 4, , 7, 11, 25, 26, 33-35, 48, 50, 57, 72, 74, 75, 77-79, 82, 84, 85, 93, 112, 113, 118, 125, 155-157, 181, 183, 249, 263-265, 267-270, 272
+data model	1, 2, , , , , , 11, 25, 26, 33, 34, 35, 48, 50, 57, 66, 68, 69, 71, 72, 73, 76, 81, 82, 91, 110, 115, 116, 124, 153, 154, 155, 188, 191, 219, 255, 261, 275, 276, 277, 278, 279, 280, 281, 283, 285
 
-enhanced model	-9, 13, 33, 39, 42, 48, 49, 51, 61, 72-74, 78, 81, 83-86, 112, 155, 224, 227, 266, 272
+enhanced model	, , 13, 33, 39, 42, 48, 49, 51, 61, 66, 67, 68, 72, 76, 80, 81, 82, 83, 110, 153, 234, 278, 283
 
 Data types	
 
-byte	1, 2, 35, 39, 40, 43, 44, 46, 55, 56, 66, 78, 89-91, 120, 126-128, 132, 165, 180, 190, 202, 219
+byte	1, 2, 35, 39, 40, 43, 44, 46, 55, 56, 63, 64, 72, 87, 88, 89, 118, 125, 127, 131, 173, 188, 198, 210, 229
 
-char	6, 7, 28, 35, 38, 39, 43, 44, 46, 53, 57, 58, 60, 61, 68-71, 73, 104, 105, 109, 113-115, 120, 121, 130-132, 134, 135, 137, 138, 140, 180, 202, 207, 224, 226, 245, 246, 251, 256, 258
+char	7, 28, 35, 38, 39, 42, 43, 44, 46, 53, 57, 58, 60, 61, 64, 65, 67, 101, 102, 107, 108, 111, 112, 113, 119, 120, 128, 129, 130, 131, 133, 134, 135, 137, 138, 170, 188, 210, 222, 235, 237, 257, 262, 268, 270
 
-double	29, 30, 32, 35, 39, 41, 43, 44, 46, 54, 55, 88, 90, 91, 96, 97, 121, 124, 127, 128, 180, 184, 188-190, 200, 202, 206, 208, 211, 232, 254, 255, 257, 259
+double	29, 30, 32, 35, 39, 41, 43, 44, 46, 54, 55, 86, 88, 89, 94, 95, 119, 123, 126, 188, 192, 196, 197, 198, 208, 210, 219, 222, 224, 243, 266, 267, 269, 270, 271
 
-float	4, 35, 39, 41, 43-47, 52, 54, 55, 65, 88, 90, 91, 96, 97, 107, 108, 110-116, 118, 119, 121-125, 127, 128, 151, 152, 155, 156, 158, 161, 162, 164, 180, 184, 186, 188-192, 194, 197, 198, 200, 202, 206-212, 225-228, 230-232, 236, 245, 248, 251, 254, 257-259, 261
+float	4, 35, 39, 41, 43, 44, 45, 46, 47, 52, 54, 55, 63, 86, 88, 89, 94, 95, 105, 106, 108, 109, 111, 112, 113, 114, 117, 119, 120, 121, 122, 123, 124, 126, 149, 152, 154, 156, 159, 160, 166, 169, 188, 192, 194, 196, 197, 198, 199, 200, 202, 205, 206, 208, 210, 216, 218, 222, 223, 224, 235, 237, 238, 239, 241, 242, 243, 249, 257, 259, 260, 262, 266, 269, 270, 271, 272
 
-int	5-8, 11, 27, 28, 35, 36, 39, 40, 43-48, 53, 55, 56, 58-60, 66-69, 71, 76, 90, 91, 102-107, 109-111, 113-116, 120-132, 134-137, 139-141, 146, 148, 149, 163, 169, 175, 176, 180, 186, 187, 189-193, 197, 200-202, 206, 209, 219, 224-230, 235, 239, 245, 248, 254-259, 265
+int	5, 6, 7, 8, 9, 11, 27, 28, 35, 36, 39, 40, 43, 44, 45, 46, 47, 48, 53, 55, 56, 58, 59, 60, 63, 64, 65, 70, 88, 89, 100, 101, 102, 103, 105, 106, 108, 109, 111, 112, 113, 114, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 133, 134, 135, 136, 137, 138, 139, 140, 144, 146, 147, 161, 162, 163, 170, 172, 177, 183, 184, 188, 194, 195, 197, 198, 199, 200, 201, 205, 208, 209, 210, 218, 222, 229, 235, 237, 239, 240, 241, 248, 251, 257, 260, 266, 267, 268, 269, 270, 271, 277
 
-int64	53, 54, 60, 62, 63, 79, 90, 91, 132-136, 139-142, 166-171, 173-175, 177, 180
+int64	53, 54, 60, 62, 73, 88, 89, 131, 132, 133, 134, 135, 138, 139, 140, 141, 164, 166, 167, 174, 175, 176, 177, 178, 181, 182, 183, 185, 188
 
 schar	43, 46
 
-short	35, 39, 43, 44, 46, 53, 54, 60, 90, 91, 126, 134, 135, 140, 180, 190, 202
+short	35, 39, 43, 44, 46, 53, 54, 60, 88, 89, 125, 133, 134, 138, 139, 188, 198, 210
 
-ubyte	53, 60, 62, 63, 91, 132-136, 139-142, 166-171, 173-176, 180, 202
+ubyte	53, 60, 62, 89, 131, 132, 133, 134, 135, 137, 138, 139, 140, 174, 175, 176, 177, 178, 181, 182, 183, 184, 188, 210
 
-uchar	62, 63, 136, 140
+uchar	62, 135, 138
 
-uint	53, 60, 62, 63, 91, 132-136, 139-142, 166-171, 173-175, 177, 180, 202
+uint	53, 60, 62, 89, 131, 132, 133, 134, 135, 137, 138, 139, 140, 141, 174, 175, 176, 177, 178, 181, 182, 183, 184, 185, 188, 210
 
-uint64	53, 60, 62, 63, 79, 91, 132-136, 139-143, 166-171, 173-177, 180
+uint64	53, 60, 62, 73, 89, 131, 132, 133, 134, 135, 138, 139, 140, 141, 174, 175, 176, 177, 178, 181, 182, 183, 184, 185, 188
 
-ulonglong	60, 62, 63, 136, 140
+ulonglong	60, 62, 135, 138
 
-unsigned integer	48, 49, 53, 54, 74
+unsigned integer	48, 49, 53, 54, 68
 
-ushort	52-54, 60, 62, 63, 91, 132-136, 139-142, 166-171, 173-176, 180, 202
+ushort	52, 53, 54, 60, 62, 89, 131, 132, 133, 134, 135, 137, 138, 139, 140, 174, 175, 176, 177, 178, 181, 182, 183, 184, 188, 210
 
-dimensions	**5, 7, 10, 21, 36, 39, 51, 52, 78, 83, 99, 132, 133, 142, 162-164, 166, 167, 176, 177, 186-189, 198, 200, 201, 205, 206, 208, 209, 217, 218, 220, 225, 226, 228, 229, 231, 241, 245-247, 251, 255, 266, 267**
+dimensions	**5, 8, 11, 21, 36, 39, 51, 52, 72, 80, 97, 131, 132, 140, 141, 163, 169, 174, 175, 184, 185, 194, 195, 196, 197, 206, 208, 209, 213, 218, 222, 224, 227, 228, 230, 235, 237, 239, 240, 242, 253, 256, 258, 259, 263, 267, 277, 278, 279**
 
-Dimensions	**36, 38, 51, 77, 133, 166, 167, 186, 187, 200, 201**
+Dimensions	**36, 38, 51, 72, 132, 174, 194, 195, 208, 209**
 
 Earth science	
 
-climate	1-, , , , 26, 49, 73, 97, 99, 106, 150, 205-208, 212, 214, 251, 270, 273
+climate	1, 2, 3, 4, , , 12, , , 26, 48, 67, 95, 97, 104, 148, 213, 214, 217, 219, 221, 222, 224, 262, 280, 281, 284, 285
 
-oceanography	1, 3, , 273
+oceanography	1, 4, , 217, 284
 
-scientific data	1, 4, 33, 49, 74, 82, 85, 94, 100, 106, 119, 124, 125, 183, 210, 211, 217, 219, 243, 250, 263, 265, 267, 271-273
+scientific data	1, 2, , 5, , 33, 48, 68, 79, 81, 92, 98, 104, 118, 123, 124, 166, 191, 214, 218, 227, 229, 255, 262, 275, 277, 278, 282, 283, 284
 
-weather	2, , , 26, 39, 49, 51, 54, 73, 125-127, 251, 272
+weather	3, , , 26, 39, 49, 51, 54, 67, 124, 125, 126, 217, 244, 262, 283
 
 File formats	
 
-CDF-1	24, 76, 78, 112, 113, 115, 117, 118, 156, 157, 159, 263, 266, 270
+CDF-1	24, 70, 72, 73, 110, 111, 113, 114, 115, 116, 153, 154, 155, 156, 157, 275, 278, 280
 
-CDF-2	24, 76, 112, 113, 115, 117, 156, 157, 159, 181, 263, 266, 270
+CDF-2	24, 70, 110, 111, 113, 114, 116, 153, 154, 155, 157, 188, 275, 278, 280
 
-CDF-5	, , 13, 24, 53, 75-79, 84-86, 92, 93, 96, 112, 113, 115, 117, 156, 157, 159, 181, 223, 224, 227, 233, 239, 240, 264, 267, 269, 270, 272
+CDF-5	, , , 24, 53, 69, 70, 71, 72, 73, 80, 81, 82, 90, 91, 110, 111, 113, 115, 116, 153, 154, 155, 157, 188, 233, 234, 238, 245, 251, 252, 276, 279, 280, 283
 
-Classic format	2, , , 11, 13, 14, 20, 21, 23, 24, 37, 38, 48, 51, 53, 75, 77-79, 82-86, 92-95, 99, 112, 113, 118, 145, 157, 218, 223, 227, 240, 261
+Classic format	2, , , , 12, 13, 14, 20, 21, 23, 24, 37, 38, 48, 51, 53, 69, 71, 72, 73, 76, 80, 81, 82, 83, 90, 91, 92, 94, 97, 110, 111, 114, 116, 143, 154, 156, 166, 215, 216, 228, 233, 234, 238, 244, 252, 272
 
-HDF4	, 13, 14, 20, 79, 84, 85, 239, 264, 267, 272
+HDF4	, , 13, 14, 20, 74, 81, 251, 276, 278, 283
 
-HDF5	2, , , , 9, 11-15, 17-24, 26-33, 37, 38, 48, 49, 51, 53, 54, 56, 57, 59, 60, 62, 65, 72, 74-88, 92-96, 98, 99, 102, 112, 113, 115, 117, 118, 133, 155-159, 162, 166, 181, 183, 185, 186, 193, 195, 203, 217, 218, 220, 221, 223, 224, 227, 229, 233, 235, 236, 239-241, 243, 253, 255, 262, 264, 266, 269-272
+HDF5	2, 3, , , , , 11, 13, 14, 15, 17, 18, 19, 20, 21, 22, 23, 24, 26, 27, 28, 29, 30, 31, 32, 33, 37, 38, 48, 49, 51, 53, 54, 56, 57, 59, 60, 61, 63, 66, 68, 69, 70, 71, 72, 73, 74, 75, 76, 79, 80, 81, 82, 83, 85, 86, 90, 91, 92, 93, 94, 96, 97, 100, 110, 111, 113, 115, 116, 132, 143, 153, 154, 155, 156, 157, 160, 163, 174, 188, 191, 193, 194, 201, 203, 211, 215, 216, 227, 228, 230, 231, 233, 234, 238, 240, 244, 245, 247, 248, 251, 252, 253, 255, 265, 267, 274, 276, 278, 280, 281, 282, 283, 285
 
-ncZarr	, 13, 14, 75-77, 82, 83, 85, 264, 268, 269, 271, 273
+ncZarr	, 13, 14, 69, 70, 71, 79, 80, 82, 276, 279, 280, 282, 283, 284
 
-NetCDF	1-41, 43-62, 65, 66, 70, 72, 74-102, 105-107, 111-113, 116-120, 125, 127, 132-134, 142, 145, 146, 149-151, 155-158, 161-168, 171, 176, 177, 179-181, 183-186, 188, 189, 191, 193-199, 201-203, 205, 206, 208, 209, 214, 215, 217, 219-221, 223, 224, 226, 227, 229, 231-233, 235, 236, 239-241, 243-247, 249, 250, 252, 253, 255, 258-261, 263-273
+NetCDF	1, 2, 3, , , , , 8, 9, , 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 103, 104, 105, 109, 110, 111, 114, 115, 116, 117, 118, 119, 124, 125, 126, 131, 132, 133, 140, 143, 144, 147, 148, 149, 152, 153, 154, 155, 156, 159, 160, 161, 163, 164, 169, 170, 173, 174, 175, 179, 184, 185, 187, 188, 189, 191, 192, 193, 194, 196, 197, 199, 201, 202, 203, 204, 205, 206, 207, 209, 210, 211, 213, 214, 215, 216, 217, 221, 222, 223, 225, 227, 229, 230, 231, 233, 234, 235, 236, 237, 238, 240, 242, 243, 244, 245, 247, 248, 249, 251, 252, 253, 255, 256, 257, 258, 259, 261, 263, 265, 267, 270, 271, 273, 275, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285
 
-NetCDF-3	, 58, 72, 195, 197, 263, 265
+NetCDF-3	, , , 58, 66, 203, 205, 275, 277
 
-NetCDF-4	2-, -, , 19, 26, 27, 31, 37, 50, 54, 57, 58, 60-62, 72, 75-79, 81-85, 88, 90-95, 98, 99, 101, 102, 112, 118, 119, 125, 132-134, 142, 156, 158, 162-164, 166-168, 171, 179-181, 193-195, 197, 199, 201, 217, 219, 221, 224, 229, 233, 235, 236, 253, 264, 266, 269, 272, 273
+NetCDF-4	2, 3, , , , , 12, , , 19, 26, 27, 31, 38, 50, 54, 57, 58, 60, 61, 62, 66, 69, 70, 71, 72, 73, 75, 76, 80, 81, 82, 86, 88, 89, 90, 91, 92, 93, 94, 96, 97, 99, 100, 110, 115, 116, 118, 124, 131, 132, 133, 140, 143, 153, 154, 156, 160, 161, 163, 169, 170, 174, 175, 179, 187, 188, 189, 201, 202, 203, 205, 207, 209, 215, 216, 227, 229, 231, 233, 234, 235, 240, 245, 247, 248, 265, 276, 278, 280, 283, 284
 
-PnetCDF	, , 13, 15, 22-24, 27, 75, 77-79, 85, 117, 157, 223, 224, 227, 228, 233, 263, 264, 266, 269, 270, 272, 273
+PnetCDF	, 13, , , 22, 23, 24, 27, 69, 71, 72, 73, 82, 116, 155, 233, 234, 235, 238, 239, 245, 275, 276, 278, 280, 281, 283, 285
 
-Zarr	, 75, 78, 82-84, 239, 240, 264, 268, 271
+Zarr	, 69, 72, 79, 80, 81, 251, 252, 276, 279, 282, 285
 
 Fortran API functions	
 
-nf90\_close	9, 10, 37, 147, 149, 152, 154, 159, 160, 163-165, 170, 197, 198, 209, 232, 246
+nf90\_close	9, 10, 37, 145, 147, 150, 152, 154, 158, 161, 163, 167, 168, 171, 173, 178, 205, 206, 224, 243, 258
 
-nf90\_create	8, 36, 62, 78, 79, 81, 82, 146, 151, 158, 162, 164, 165, 168, 197, 208, 231
+nf90\_create	9, 36, 61, 73, 76, 144, 149, 154, 156, 161, 166, 170, 175, 205, 224, 242
 
-nf90\_create\_par	231
+nf90\_create\_par	242
 
-nf90\_def\_dim	8, 38, 41, 52, 146, 151, 158, 162, 164, 168, 208, 231
+nf90\_def\_dim	9, 38, 41, 52, 144, 149, 156, 161, 166, 171, 175, 176, 224, 242
 
-nf90\_def\_enum	59, 165
+nf90\_def\_enum	59, 169, 170
 
-nf90\_def\_grp	53, 168
+nf90\_def\_grp	53, 176
 
-nf90\_def\_opaque	60, 165
+nf90\_def\_opaque	60, 171
 
-nf90\_def\_var	8, 40, 41, 44, 52, 54, 70, 146, 151, 152, 158, 163, 164, 168, 169, 208, 231
+nf90\_def\_var	9, 40, 41, 44, 52, 54, 65, 144, 145, 149, 156, 161, 163, 166, 171, 176, 224, 242
 
-nf90\_def\_var\_fill	44
+nf90\_def\_var\_fill	44, 145, 166
 
-nf90\_enddef	9, 37, 147, 152, 159, 163-165, 169, 209, 231
+nf90\_enddef	9, 37, 145, 150, 157, 161, 167, 171, 176, 224, 242
 
-nf90\_get\_att	9, 10, 43, 60, 148, 149, 153, 197
+nf90\_get\_att	10, 43, 60, 146, 150, 151, 205
 
-nf90\_get\_var	10, 46, 47, 56, 58, 64, 72, 149, 154, 160, 175, 197, 198, 246
+nf90\_get\_var	10, 46, 47, 56, 58, 62, 66, 146, 151, 152, 158, 162, 168, 182, 183, 205, 206, 258
 
-nf90\_inq\_dimid	172, 173
+nf90\_inq\_dimid	180, 181
 
-nf90\_inq\_format	156, 158, 159, 162
+nf90\_inq\_format	153, 156, 157, 160, 161
 
-nf90\_inq\_grp\_ncid	64, 166, 171
+nf90\_inq\_grp\_ncid	63, 174, 179
 
-nf90\_inq\_grpname	171, 172
+nf90\_inq\_grpname	179
 
-nf90\_inq\_grps	171
+nf90\_inq\_grps	179
 
 nf90\_inq\_libvers	28, 32
 
-nf90\_inq\_var\_fill	45
+nf90\_inq\_var\_fill	45, 146, 168
 
-nf90\_inq\_varid	47, 48, 160, 173, 174, 182, 197, 198, 246
+nf90\_inq\_varid	47, 158, 167, 172, 173, 181, 182, 189, 205, 206, 258
 
-nf90\_inquire	9, 36, 38, 43, 48, 61, 76, 145, 147-149, 152, 153, 160, 173, 174
+nf90\_inquire	9, 10, 36, 38, 43, 47, 61, 70, 143, 145, 146, 150, 158, 162, 181, 182
 
-nf90\_inquire\_variable	48, 145, 148, 173, 174
+nf90\_inquire\_variable	47, 143, 146, 162, 181, 182
 
-nf90\_insert\_enum	59
+nf90\_insert\_enum	59, 170
 
-nf90\_noerr	10, 36-38, 40-42, 44-48, 52-54, 59, 60, 62, 64, 70-72, 76, 79, 81, 82, 145-149, 151-154, 158-160, 162-165, 168-175, 209, 232
+nf90\_noerr	11, 36, 37, 38, 40, 41, 42, 44, 45, 46, 47, 52, 53, 54, 59, 60, 61, 63, 65, 66, 70, 73, 76, 143, 144, 145, 146, 147, 149, 150, 151, 152, 154, 156, 157, 158, 161, 162, 163, 166, 167, 168, 170, 171, 172, 173, 175, 176, 177, 178, 179, 180, 181, 182, 183, 224, 243
 
-nf90\_open	9, 36, 76, 147, 152, 159, 170, 197, 246
+nf90\_open	9, 36, 70, 145, 150, 157, 161, 167, 171, 178, 205, 258
 
-nf90\_put\_att	8, 42, 43, 45, 60, 147, 150-152, 158, 208, 209
+nf90\_put\_att	9, 42, 43, 45, 60, 145, 148, 149, 156, 224
 
-nf90\_put\_var	9, 40, 41, 46, 47, 56, 58, 64, 72, 147, 152, 159, 163, 164, 169, 170, 197, 232, 254
+nf90\_put\_var	9, 40, 41, 46, 47, 56, 58, 62, 66, 145, 150, 157, 161, 167, 177, 205, 243, 266
 
 nf90\_redef	37
 
-nf90\_strerror	10, 145, 149, 155, 161, 176, 209, 232
+nf90\_strerror	11, 143, 147, 152, 158, 163, 168, 173, 184, 224, 243
 
-nf90\_var\_par\_access	232
+nf90\_var\_par\_access	242
 
 HDF5	
 
-dimension scale	80, 86, 217
+dimension scale	, 74, 83, 227
 
 Installation	
 
@@ -19936,159 +21697,159 @@ smoke test	, 27, 28, 32
 
 Java API	
 
-Array	, 11, 126, 145, 150, 183, 184, 186, 189-194, 197-200, 202, 250
+Array	, , 125, 143, 148, 191, 192, 194, 197, 198, 199, 200, 201, 202, 205, 206, 207, 208, 210, 262
 
-CDM	183, 195, 263, 267-269
+CDM	191, 203, 275, 278, 280
 
-JNI	, 26, 30-32, 186, 197, 203
+JNI	, 26, 30, 31, 32, 194, 205, 211
 
-NcML	, 194, 198, 203, 264, 267
+NcML	, 202, 206, 211, 276, 278
 
-NetcdfDataset	, 11, 193, 198, 199, 201
+NetcdfDataset	, 201, 206, 207, 209
 
-NetcdfFile	183-187, 193-195, 198-200, 203
+NetcdfFile	191, 192, 193, 194, 195, 201, 202, 203, 206, 207, 208, 211
 
-SLF4J	25, 31, 184, 196
+SLF4J	25, 31, 192, 204
 
 Languages	
 
-Fortran	1, 3-6, 8-19, 21, 22, 24, 25, 27-30, 32, 33, 36-48, 51-62, 64, 66, 68-72, 74-76, 78, 79, 81, 82, 84, 87, 92, 99, 100, 145, 146, 150, 151, 155, 156, 158, 162-168, 177, 180, 181, 183, 184, 188, 189, 192, 197, 202, 208, 231, 241, 246, 247, 254, 264, 265, 267, 269, 270, 272
+Fortran	1, 3, 4, , , 8, 9, , 11, 12, 13, , 15, 16, 17, 18, 19, 21, 22, 24, 25, 27, 28, 29, 30, 32, 33, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 68, 69, 70, 73, 75, 76, 81, 85, 90, 97, 98, 143, 144, 145, 148, 149, 153, 156, 160, 161, 163, 167, 169, 170, 174, 175, 176, 185, 188, 189, 191, 192, 196, 197, 200, 205, 210, 223, 227, 242, 244, 247, 253, 258, 266, 276, 277, 278, 280, 281, 283, 285
 
-NetCDF-Java	1, 4, , , 13, 15, 25, 26, 31, 32, 183, 184, 186, 189, 193, 195, 199, 202, 263, 264, 266-269, 272, 273
+NetCDF-Java	1, 4, , , 13, 15, 25, 26, 31, 32, 191, 192, 194, 197, 201, 203, 207, 210, 275, 276, 277, 278, 280, 283
 
 Libraries	
 
-netcdf-c	7, 13, 14, 17, 18, 20-22, 26, 51, 80, 264-271, 273
+netcdf-c	8, 13, 14, 17, 18, 20, 21, 22, 26, 51, 74, 75, 217, 233, 234, 244, 276, 277, 278, 279, 280, 281, 282, 283, 285
 
-netcdf-fortran	16-19, 21, 22, 29, 56-58, 165, 264, 269, 273
+netcdf-fortran	16, 17, 18, 21, 22, 29, 56, 57, 58, 276, 280, 283
 
 Mode flags	
 
-NC\_CLOBBER	5, 28, 36, 52, 61, 78, 79, 81, 82, 102, 107, 114, 121, 127, 134
+NC\_CLOBBER	6, 28, 36, 52, 61, 72, 73, 75, 76, 100, 105, 114, 115, 120, 126, 133
 
-NC\_NETCDF4	28, 37, 52, 61, 62, 81-83, 102, 107, 112, 113, 116-118, 121, 127, 133, 134, 206, 217, 225, 226, 230, 240, 259
+NC\_NETCDF4	28, 38, 52, 61, 75, 76, 80, 110, 115, 116, 120, 126, 132, 133, 222, 227, 235, 237, 241, 252, 270
 
-NC\_NOWRITE	6, 36, 76, 83, 103, 109, 115, 123, 130, 136, 197, 225, 245, 246, 248, 251, 252, 258, 259
+NC\_NOWRITE	6, 36, 70, 80, 101, 106, 112, 121, 129, 135, 205, 235, 257, 260, 262, 263, 269, 271
 
 NcML	
 
-aggregation	, 194, 203, 264, 269, 270
+aggregation	, 202, 211, 276, 280
 
 OPeNDAP	
 
-client/server	, 243
+client/server	, 255
 
-constraint expression	, 245-248, 250, 251
+constraint expression	, , 257, 258, 259, 262, 263
 
-DAP2	, 20, 26, 244, 249, 252, 264, 266, 270, 272
+DAP2	, 20, 26, 256, 260, 261, 263, 276, 278, 281, 283
 
-DAP4	, 26, 244, 249, 252, 264, 267, 270
+DAP4	, 26, 256, 260, 261, 263, 276, 279, 281
 
-DDS	244
+DDS	256
 
-federated	, 251
+federated	, 262
 
-OPeNDAP	2, 3, 11, , 15, 20, 22, 26, 27, 183, 185, 195, 198, 202, 243-252, 263, 264, 266, 267, 269, 270, 272, 273
+OPeNDAP	2, 3, 12, , , 20, 22, 26, 27, 191, 193, 203, 206, 210, 255, 256, 257, 258, 259, 260, 261, 262, 263, 275, 276, 278, 279, 280, 281, 283
 
-remote data	2, 3, 11, 13-15, 26, 199, 243, 245-247, 252, 264, 266, 270
+remote data	2, 3, 12, 13, , , 26, 207, 255, 257, 258, 259, 263, 276, 278, 281
 
 Operating systems	
 
-POSIX	17, 262
+POSIX	17, 274
 
-Unix	, 15-18, 20, 22, 253
+Unix	, 15, 16, 17, 20, 22, 265
 
-Windows	, 6, 13, 15, 17, 18, 22, 26, 32, 264, 267
+Windows	, , 13, 15, 17, 18, 22, 26, 32, 276, 279
 
 Organizations	
 
-CMIP	3, , 11
+CMIP	3, , 12
 
-ECMWF	3, , 11
+ECMWF	3, , 12
 
 EOSDIS	2, 
 
-ESA	, 11
+ESA	, 3, 12
 
 Eumetsat	
 
-NASA	2, 4, 5, 11, 85, 219, 251, 264, 266, 270, 271
+NASA	2, 3, , 5, , 12, 81, 229, 262, 276, 278, 281, 282
 
-NCAR	3, , 269, 270, 273
+NCAR	4, , 243, 245, 280, 283
 
-NOAA	2, , , 11
+NOAA	2, 3, 4, , 12, 213, 217
 
-UCAR	263, 269
+UCAR	4, 275, 280, 281
 
-Unidata	3, 25, 30-32, 196, 198, 213, 263, 267, 269, 273
+Unidata	4, 25, 30, 31, 32, 204, 206, 213, 214, 217, 220, 275, 279, 280, 281, 283, 285
 
 Parallel I/O	
 
-collective I/O	, 225, 227, 230, 233
+collective I/O	, 236, 238, 241
 
-domain decomposition	, 226, 228, 229, 231, 233
+domain decomposition	, 237, 239, 240, 242, 245
 
-HPC	4, , 11, 15, 18, 32, 223, 232, 236, 263, 266, 270, 272
+HPC	5, , 11, 15, 18, 32, 233, 244, 245, 248, 275, 278, 280, 283, 285
 
-independent I/O	, 225, 231
+independent I/O	, , 235, 236, 242
 
-MPI	, 13-15, 18-24, 28, 29, 32, 77, 79, 181, 223-228, 230-233, 262, 263, 266, 270
+MPI	, 13, 14, 15, 18, 19, 20, 21, 22, 23, 24, 28, 29, 32, 71, 73, 188, 233, 235, 237, 238, 239, 241, 242, 243, 244, 274, 275, 278, 280
 
-MPI-IO	, 230, 233, 263, 270
+MPI-IO	, 241, 275, 280
 
-parallel I/O	2, , , , 11-16, 20-24, 27, 28, 32, 73, 75, 77-79, 85, 180, 181, 223-225, 227, 229, 231-233, 263, 266, 267, 269, 270, 272
+parallel I/O	2, 3, , 11, 12, 13, 14, 15, , 20, 21, 22, 23, 24, 27, 28, 32, 67, 69, 71, 72, 73, 82, 187, 189, 233, 234, 235, 236, 238, 240, 242, 243, 244, 245, 275, 278, 280, 281, 283, 285
 
-supercomputer	79, 263, 265
+supercomputer	74, 275, 277
 
 Performance	
 
-benchmarking	3, 11, , , 16, 20, 217, 232, 233, 253, 255, 256, 260, 262
+benchmarking	4, 12, , , , 20, 227, 243, 245, 265, 267, 268, 272, 274
 
-chunking	2, , 11-, , 73, 74, 81, 83, 88, 89, 93-96, 98-100, 118, 157, 162, 179, 193, 217, 218, 221, 229, 233, 255, 259
+chunking	3, , 11, 12, , , , 67, 68, 75, 80, 86, 87, 91, 92, 93, 94, 96, 97, 98, 116, 155, 160, 187, 201, 227, 228, 231, 240, 267, 270
 
 Chunking	
 
-chunk cache	, , 218, 221, 256, 258
+chunk cache	, , 228, 231, 267, 269
 
-chunk size	, , 81, 83, 86, 94, 217-219, 229, 253, 255, 256, 260, 262
+chunk size	, , 75, 80, 82, 92, 227, 228, 229, 240, 265, 267, 271, 272, 274
 
-compression	2-, , 9, 11-16, 19, 31, 49, 56, 57, 73-75, 77-81, 83-86, 88, 89, 93-96, 98-101, 112, 118-125, 156-158, 162, 163, 178, 179, 217-221, 224, 233, 235, 236, 239, 249, 253, 255-257, 259-262, 264, 266, 268-273
+compression	2, 3, 5, , 11, 12, 13, , , , , , 19, 31, 49, 56, 57, 67, 68, 69, 71, 72, 73, 74, 75, 76, 80, 81, 82, 86, 87, 91, 92, 93, 94, 96, 97, 98, 99, 110, 115, 116, 118, 119, 120, 121, 122, 123, 124, 153, 154, 155, 156, 160, 163, 164, 165, 166, 168, 169, 186, 187, 227, 228, 229, 230, 231, 234, 238, 247, 248, 249, 251, 260, 265, 266, 267, 268, 270, 271, 272, 273, 274, 276, 278, 279, 280, 281, 282, 283, 284, 285
 
-endianness	, 88, 119, 125, 161-164, 221
+endianness	, 86, 117, 118, 124, 159, 160, 163, 169, 231
 
 Endianness	
 
-little-endian	221
+little-endian	231
 
 Time encoding	
 
-calendar	, 96, 97, 207, 209, 211, 214
+calendar	, 94, 95, 219, 223, 224, 225
 
-time coordinate	, 41, 211, 214
+time coordinate	, 41, 219, 225
 
-time units	, 210
+time units	, 219
 
 Tools	
 
-ToolsUI	, , 27, 198, 264, 267
+ToolsUI	, , 27, 206, 276, 278
 
 User-defined types	
 
-compound type	49, 54-56, 65, 66, 68, 73, 125-128, 130, 132, 164, 165, 179
+compound type	49, 54, 55, 56, 63, 64, 67, 124, 125, 126, 127, 129, 131, 169, 187
 
-enum type	50, 56, 58, 59, 70, 125-128, 131, 165
+enum type	50, 56, 58, 59, 65, 124, 125, 126, 127, 130, 169, 170, 171, 172
 
-opaque type	59, 60, 125-128, 132, 164, 165, 179
+opaque type	59, 60, 124, 125, 127, 130, 131, 169, 171, 172, 173, 187
 
-string type	53, 57, 58, 126, 129, 131, 132
+string type	53, 57, 58, 125, 127, 130, 131
 
-user-defined type	, 9, 31, 33, 48, 50, 54, 56, 61, 70, 74, 75, 77-81, 83-86, 92, 93, 101, 118, 125-127, 132, 157, 164, 165, 179, 224, 264, 266, 272
+user-defined type	, , 31, 33, 48, 50, 54, 56, 61, 65, 68, 69, 71, 72, 73, 74, 75, 80, 81, 82, 83, 90, 91, 99, 115, 116, 124, 125, 126, 131, 154, 155, 169, 170, 171, 187, 234, 276, 278, 283
 
-VLEN	, 33, 56, 57, 67, 68, 72, 74, 179, 241
+VLEN	33, 56, 57, 64, 66, 68, 77, 187, 253
 
-vlen type	56-58, 68, 128, 130, 165, 241
+vlen type	56, 57, 58, 64, 127, 129, 169, 253
 
-variables	**5, 7, 11, 20, 38, 51, 52, 54, 83, 85, 99, 132, 142, 163, 164, 166, 176-178, 181, 186, 187, 189, 192-194, 198, 200, 201, 205-209, 211, 213, 214, 217, 220, 224, 225, 231, 241, 243-248, 260, 266, 267**
+variables	**5, 8, 11, 20, 38, 51, 52, 54, 80, 82, 97, 131, 140, 141, 163, 169, 174, 184, 185, 189, 194, 195, 197, 200, 201, 202, 206, 208, 209, 213, 216, 217, 218, 221, 222, 223, 224, 225, 227, 230, 234, 235, 242, 253, 255, 256, 258, 259, 260, 272, 277, 279**
 
-Variables	**36, 39, 40, 133, 166, 187, 189, 194, 200, 201, 209, 248**
+Variables	**36, 39, 40, 132, 174, 195, 197, 202, 208, 209, 217, 218, 260**
 

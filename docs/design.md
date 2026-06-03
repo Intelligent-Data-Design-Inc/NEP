@@ -668,6 +668,59 @@ spack install nep~docs~fortran
 spack install cdf
 ```
 
+## Parallel I/O Support (v1.9.0)
+
+### Overview
+
+NEP v1.9.0 adds parallel I/O support for high-performance computing environments using MPI and parallel NetCDF-4/HDF5 features. This enables applications to perform collective I/O operations across multiple processes for improved performance on large datasets.
+
+### Architecture
+
+Parallel I/O in NEP follows the standard NetCDF-4 parallel pattern:
+
+```
+[Application Layer - MPI Ranks 0..N]
+       │
+[NetCDF-4 Parallel API]
+       │
+[Parallel NetCDF-4/HDF5]
+       │
+[MPI I/O Layer]
+       │
+[Parallel File System]
+```
+
+### Build Configuration
+
+**CMake:**
+- `ENABLE_PARALLEL_TESTS=ON/OFF` - Enable parallel I/O test programs (default: OFF)
+- `MPIEXEC_EXECUTABLE=PATH` - Specify path to mpiexec/mpirun
+
+**Autotools:**
+- `--enable-parallel-tests` - Enable parallel I/O test programs
+- `--with-mpiexec=PATH` - Specify path to mpiexec/mpirun
+
+### Dependencies
+- MPI implementation (OpenMPI or MPICH)
+- NetCDF-C built with parallel support (`NC_HAS_PARALLEL4`)
+- NetCDF-Fortran (for Fortran parallel tests)
+- HDF5 with parallel support (for underlying parallel I/O)
+
+### Example Programs
+
+Parallel I/O examples in `examples/parallelIO/` demonstrate:
+- **Collective I/O**: `nc_create_par()`, `nc_var_par_access(NC_COLLECTIVE)`
+- **Data Decomposition**: 2D grid partitioning across MPI ranks
+- **Verification**: Parallel read-back and data integrity checks
+- **Error Handling**: Proper MPI and NetCDF error propagation
+
+### Testing
+
+Parallel tests run via `mpiexec -n 4` in CI:
+- Matrix: CMake/Autotools × OpenMPI/MPICH
+- ncdump verification of output files
+- Automated data integrity validation
+
 ## Example Programs (v3.5.1)
 
 ### Overview
@@ -801,9 +854,9 @@ Examples demonstrate:
 ### Future Extensions
 
 Planned example categories:
-- **Parallel I/O**: MPI-based parallel NetCDF operations
 - **Performance**: Optimization techniques and benchmarking
 - **Advanced Features**: Groups, user-defined types, compression filters
+- **New Formats**: Additional scientific data format support
 
 ## Release Information
 

@@ -143,7 +143,7 @@ program f_compression
    do i = 1, NUM_TESTS
       print '(A35, F12.3, F12.3, F12.2, F9.2, A1)', &
          trim(test_names(i)), write_times(i), read_times(i), &
-         file_sizes(i) / 1048576.0, compression_ratios(i), "x"
+         real(file_sizes(i), 8) / 1048576.0_8, compression_ratios(i), "x"
    end do
    
    ! Print recommendations
@@ -181,8 +181,7 @@ contains
       integer(int64) :: start_count, end_count, count_rate
       logical :: file_exists
       integer :: start_idx(NDIMS), count_idx(NDIMS)
-      real(8) :: start_time, end_time
-      
+
       print *, ""
       print *, "=== ", trim(test_name), " ==="
       
@@ -235,7 +234,7 @@ contains
       
       inquire(file=filename, exist=file_exists, size=file_size)
       if (file_exists) then
-         print *, "File size: ", file_size, " bytes (", file_size / 1048576.0, " MB)"
+         print *, "File size: ", file_size, " bytes (", real(file_size, 8) / 1048576.0_8, " MB)"
       end if
       
       print *, "Write time: ", write_time, " seconds"
@@ -255,7 +254,6 @@ contains
       integer :: ncid, varid
       integer :: retval
       integer(int64) :: start_count, end_count, count_rate
-      real(8) :: start_time, end_time
       real, allocatable :: data(:,:,:)
       integer :: shuffle, deflate, deflate_level
       integer :: errors, i
