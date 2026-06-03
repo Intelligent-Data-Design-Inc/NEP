@@ -35,9 +35,9 @@
 !! @code
 !!   col 0-7    col 8-15
 !!  +----------+----------+
-!!  | rank 0   | rank 2   |  rows 0-7
+!!  | rank 0   | rank 1   |  rows 0-7
 !!  +----------+----------+
-!!  | rank 1   | rank 3   |  rows 8-15
+!!  | rank 2   | rank 3   |  rows 8-15
 !!  +----------+----------+
 !! @endcode
 !!
@@ -100,7 +100,7 @@ program f_square16_par
   ! Fill 8x8 array with rank number
   do i = 1, QUAD_SIZE
     do j = 1, QUAD_SIZE
-      data(j, i) = rank
+      data(i, j) = rank
     end do
   end do
 
@@ -128,10 +128,10 @@ program f_square16_par
   if (err2 /= NF90_NOERR) call handle_err(err2, rank)
 
   ! Calculate start position (Fortran is 1-based)
-  ! rank 0: (1, 1)   rank 1: (1, 9)
-  ! rank 2: (9, 1)   rank 3: (9, 9)
-  arr_start(1) = (rank / 2) * QUAD_SIZE + 1  ! row offset
-  arr_start(2) = mod(rank, 2) * QUAD_SIZE + 1  ! column offset
+  ! rank 0: (1, 1)   rank 1: (9, 1)
+  ! rank 2: (1, 9)   rank 3: (9, 9)
+  arr_start(2) = (rank / 2) * QUAD_SIZE + 1  ! row offset (dim 2 in output)
+  arr_start(1) = mod(rank, 2) * QUAD_SIZE + 1  ! column offset (dim 1 in output)
   count(1) = QUAD_SIZE
   count(2) = QUAD_SIZE
 
@@ -159,9 +159,9 @@ program f_square16_par
   ! Verify data
   do i = 1, QUAD_SIZE
     do j = 1, QUAD_SIZE
-      if (read_data(j, i) /= rank) then
-        print *, 'Rank', rank, ': Data mismatch at ', arr_start(1)+i-1, ',', arr_start(2)+j-1, &
-                 ': expected', rank, 'got', read_data(j, i)
+      if (read_data(i, j) /= rank) then
+        print *, 'Rank', rank, ': Data mismatch at ', arr_start(2)+i-1, ',', arr_start(1)+j-1, &
+                 ': expected', rank, 'got', read_data(i, j)
         call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
       end if
     end do

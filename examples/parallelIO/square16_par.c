@@ -131,8 +131,8 @@ int main(int argc, char **argv)
     NC_CHK(nc_var_par_access(ncid, varid, NC_COLLECTIVE));
 
     /* Calculate start position based on rank:
-     * rank 0: (0, 0)   rank 1: (8, 0)
-     * rank 2: (0, 8)   rank 3: (8, 8) */
+     * rank 0: (0, 0)   rank 1: (0, 8)
+     * rank 2: (8, 0)   rank 3: (8, 8) */
     start[0] = (rank / 2) * QUAD_SIZE;  /* row offset */
     start[1] = (rank % 2) * QUAD_SIZE;  /* column offset */
     count[0] = QUAD_SIZE;
