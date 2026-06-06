@@ -4,6 +4,7 @@
 # C examples are always built when BUILD_EXAMPLES=ON
 add_subdirectory(classic)
 add_subdirectory(netcdf-4)
+add_subdirectory(performance)
 
 # Fortran examples only built when Fortran is enabled and NetCDF-Fortran is found
 if(ENABLE_FORTRAN)

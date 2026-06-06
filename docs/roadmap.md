@@ -1,5 +1,33 @@
 # NEP Development Roadmap
 
+### V1.10.0 More Performance Examples
+
+#### Sprint 1: Add example: cache_tuning.c — Chunk Cache Configuration
+**Detailed Plan**: See `docs/plan/v1.10.0-sprint1-cache-tuning.md`
+
+**Purpose**: Demonstrate nc_set_chunk_cache() and nc_set_var_chunk_cache() with measurable performance differences.
+
+**What it shows**:
+
+- Default cache vs enlarged cache for repeated chunk access
+- File-level vs variable-level cache settings
+- Cache thrashing detection (access pattern that exceeds cache)
+- Dataset: 3D temperature, 500×180×360, chunked 10×45×90 (~600KB/chunk), access pattern reads same slabs repeatedly
+
+**Key API**: nc_set_chunk_cache(), nc_set_var_chunk_cache(), nc_inq_var_chunk_cache()
+
+**Tasks**:
+
+- Create `examples/performance/cache_tuning.c` example program
+- Create 3D temperature dataset with specified dimensions and chunking
+- Implement cache comparison tests showing performance improvement with enlarged cache
+- Demonstrate file-level cache configuration via nc_set_chunk_cache()
+- Demonstrate variable-level cache configuration via nc_set_var_chunk_cache()
+- Add cache thrashing detection scenario when access pattern exceeds cache size
+- Integrate into CMake and Autotools build systems
+- Generate CDL expected output for validation
+- Add comprehensive Doxygen documentation
+
 ### V1.9.0 Parallel I/O Builds and Examples
 
 #### Sprint 1: Add mpicc Build to CI
