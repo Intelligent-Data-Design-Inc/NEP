@@ -48,8 +48,12 @@ Located in `f_netcdf-4/`:
 - **f_groups.f90** - Hierarchical groups, nested groups, and dimension visibility in Fortran
 - **f_dump_nc4_metadata.f90** - Read any NetCDF-4 file and print all metadata including user-defined types and groups (Fortran)
 
+### Parallel I/O Examples (C and Fortran)
+Located in `parallelIO/`:
+- **square16_par.c** - Parallel NetCDF-4 I/O with MPI using collective operations and 2×2 domain decomposition
+- **f_square16_par.f90** - Fortran equivalent demonstrating `nf90_create_par()` and collective hyperslab I/O
+
 ### Future Examples
-- `parallelIO/` - Reserved for parallel I/O examples
 - `performance/` - Reserved for performance optimization examples
 
 ## Building Examples
@@ -84,6 +88,33 @@ Fortran examples require:
 - `ENABLE_FORTRAN=ON` (CMake) or `--enable-fortran` (Autotools)
 
 If Fortran support is disabled or NetCDF-Fortran is unavailable, Fortran examples are automatically skipped.
+
+## Parallel I/O Examples
+
+Parallel I/O examples require:
+- MPI implementation (OpenMPI, MPICH, or Intel MPI)
+- NetCDF-C library built with parallel support (`--enable-parallel-netcdf4`)
+- NetCDF-Fortran library built with parallel support (for Fortran examples)
+- `ENABLE_PARALLEL_TESTS=ON` (CMake) or `--enable-parallel-tests` (Autotools)
+
+**CMake:**
+```bash
+cmake -B build -DENABLE_PARALLEL_TESTS=ON -DMPIEXEC_EXECUTABLE=/usr/bin/mpirun
+cmake --build build
+```
+
+**Autotools:**
+```bash
+./configure --enable-parallel-tests --with-mpiexec=/usr/bin/mpirun
+make
+```
+
+Parallel examples run with 4 MPI processes:
+```bash
+mpirun -n 4 ./square16_par
+```
+
+If parallel support is not configured, parallel I/O examples are automatically skipped.
 
 ## Running Examples
 
@@ -185,6 +216,9 @@ Or view the online documentation at: https://intelligent-data-design-inc.github.
 13. Inspect with `dump_classic_metadata.c` / `f_dump_classic_metadata.f90` - Metadata inquiry for classic files
 14. Inspect with `dump_nc4_metadata.c` / `f_dump_nc4_metadata.f90` - Metadata inquiry for NetCDF-4 files
 
+**For High-Performance Computing Users:**
+15. Scale with `square16_par.c` / `f_square16_par.f90` - Parallel I/O with MPI (requires parallel-enabled NetCDF)
+
 ### C vs Fortran
 
 Each C example has a Fortran equivalent that produces identical output. Key differences:
@@ -211,3 +245,4 @@ Each C example has a Fortran equivalent that produces identical output. Key diff
 - NetCDF-Fortran library (required for Fortran examples)
 - C99 compiler
 - Fortran 90+ compiler (for Fortran examples)
+- MPI implementation (OpenMPI, MPICH, or Intel MPI - required for parallel I/O examples)

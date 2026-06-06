@@ -1,0 +1,95 @@
+_1Chapter 10 NetCDF-4/HDF5 Performance Fundamentals
+Learning Objectives
+    • Configure chunking strategies
+    • Apply compression effectively
+    • Understand caching with netCDF-4/HDF5 files
+    • Diagnose I/O bottlenecks
+Getting the Best from NetCDF
+When a file is created with the NC_NETCDF4 mode flag, the netCDF library uses the HDF5 library to access the file. These files are called netCDF-4/HDF5 files.
+NetCDF-4/HDF5 files are fully-functional and correct HDF5 files. NetCDF variables are written as HDF5 datasets; dimensions are stored as HDF5 dimension scales.
+Optimizing the performance of netCDF-4/HDF5 files requires understanding several key concepts: chunking, compression, and storage parameters. These features work together to provide efficient storage and access to scientific data. For advanced compression techniques beyond the basics covered in this chapter, see Chapter 12: Advanced Compression Techniques. For practical benchmarking methods, see Chapter 15: Performance Testing and Benchmarking.
+Define Mode
+Define mode can be ignored with netCDF-4/HDF5 files.
+Since HDF5 does not store all metadata at the beginning of the file, there is no performance penalty for re-entering define mode and adding new variables or other metadata. HDF5 appends objects, which may define metadata, to the end of the HDF5 file as it is written. The fact that metadata is not centralized at the beginning of the file means there is no classic-format-style rewrite penalty when leaving define mode.
+Since entering and leaving define mode causes no penalty, the library will automatically enter define mode when needed, and end define mode when data are written, for netCDF-4/HDF5 files (unless NC_CLASSIC_MODEL is used in C, or NF90_CLASSIC_MODEL in Fortran).
+Chunk Caching
+NetCDF-4 files use HDF5 as the underlying storage format, and HDF5 maintains an in-memory chunk cache for each open dataset. When data is read or written in chunked storage mode, HDF5 moves whole chunks in and out of this cache rather than accessing raw storage directly. Understanding how netCDF-C manages this cache is important for achieving good I/O performance.
+The File-Level Cache
+Before a file is opened or created, a global set of default cache parameters is held in the NCglobalstate structure, defined in include/ncglobal.h. These three parameters — size, nelems, and preemption — form the ChunkCache sub-structure that governs the default behaviour for every file the library opens during the lifetime of the process.
+The size parameter is the total number of bytes the cache may occupy. The default is 64 MB, though this can be changed at configure time with the --with-chunk-cache-size option. The nelems parameter controls how many chunk slots the cache hash table holds. It defaults to 1000 slots (compile-time symbol DEFAULT_CHUNKS_IN_CACHE) and should be set to a prime number at least ten times larger than the maximum number of chunks expected in the cache at once. The preemption value is a floating-point number between 0 and 1 that governs how HDF5 penalises chunks that have already been fully read or written when choosing which chunks to evict. A value of 0 treats all chunks equally and the cache behaves as a strict least-recently-used eviction scheme. A value of 1 means fully-used chunks are always evicted first, which is appropriate when data are read or written exactly once.
+The public API function nc_set_chunk_cache(), implemented in libsrc4/nc4cache.c, simply writes these three values into the global state. Because it only updates the global default, it must be called before any file is opened or created. Once a file handle exists, the global settings no longer affect it; the file's HDF5 File Access Property List was already configured.
+When nc_open() or nc_create() is called, the HDF5 backend in libhdf5/hdf5open.c and libhdf5/hdf5create.c reads the current global chunk cache values and passes them directly to the HDF5 function H5Pset_cache() on the File Access Property List before the file is opened. This sets the file-wide raw data chunk cache that HDF5 uses by default for every dataset in that file, unless a dataset-specific override is in effect. For parallel I/O builds the file-level cache is not set because parallel access patterns make a shared per-process cache unsuitable.
+The Per-Variable Cache
+Each variable can also be given its own chunk cache that overrides the file-wide cache. The NC_VAR_INFO_T structure carries its own ChunkCache sub-structure with the same three fields. When a new variable is created in libsrc4/nc4internal.c by nc4_var_list_add2(), its per-variable cache fields are initialised by copying the current global state, so the variable begins life with whatever the process-level defaults were at the time the file was opened.
+The public function nc_set_var_chunk_cache(), defined as a dispatch-layer entry point in libdispatch/dvar.c, routes the call through the format dispatch table. For HDF5 files, the implementation is NC4_HDF5_set_var_chunk_cache() in libhdf5/hdf5var.c. It validates that preemption is in range, then writes the three new values into the NC_VAR_INFO_T chunkcache fields. It then calls nc4_reopen_dataset(), also in hdf5var.c, to make the change take effect immediately.
+nc4_reopen_dataset() creates a fresh HDF5 Dataset Access Property List, calls H5Pset_chunk_cache() on it with the updated values, closes the currently open HDF5 dataset identifier with H5Dclose(), and immediately reopens the same dataset with H5Dopen2() passing the new property list. This close-and-reopen cycle is the mechanism by which an already-open variable acquires a different cache configuration mid-session. Changes made this way persist only for the duration of the open file; once the file is closed and re-opened the variable returns to its default values.
+When a variable is first created or first opened, the library may also adjust the cache automatically. The function nc4_adjust_var_cache() in libhdf5/nc4hdf.c is called at that point for chunked variables. It computes how many bytes a single chunk occupies, then checks whether the current cache size is still at the default value CHUNK_CACHE_SIZE. If it is, the function decides on a minimum cache large enough to hold DEFAULT_CHUNKS_IN_CACHE chunks (1000 by default). If the computed minimum exceeds the current cache size, it raises the cache and calls nc4_reopen_dataset() to apply the enlarged cache. This automatic adjustment only fires when the user has not explicitly changed the variable's cache, ensuring that user-supplied values are always respected. The DEFAULT_CHUNKS_IN_CACHE and DEFAULT_CHUNK_CACHE_SIZE constants are set at configure time and compiled into config.h.
+When a new chunked dataset is created in nc4hdf.c, the per-variable cache is applied to the HDF5 Dataset Access Property List via H5Pset_chunk_cache() during the H5Dcreate2() call, but only when the cache size is non-zero. The same property list mechanism is used both at creation time and during the reopen triggered by nc4_adjust_var_cache() or nc_set_var_chunk_cache().
+Fortran Wrappers
+Because Fortran cannot portably pass size_t or float values in the same way as C, integer variants of all four functions exist: nc_set_chunk_cache_ints(), nc_get_chunk_cache_ints(), nc_set_var_chunk_cache_ints(), and nc_get_var_chunk_cache_ints(). These functions express the cache size in megabytes rather than bytes and represent the preemption value as an integer between 0 and 100 rather than a float between 0 and 1. They delegate to the same underlying C implementations after performing the unit conversions.
+If the library was built without HDF5 support, stub versions of the variable-level functions are provided in libsrc4/nc4cache.c that return immediately without error, since chunk caching is not meaningful outside the HDF5 storage model.
+HDF5 provides file and variable caching. Understanding the caching can improve the performance of your applications.
+Chunk Sizes
+The most important setting for netCDF-4/HDF5 file performance are the chunk sizes.
+In HDF5 files, datasets may be chunked or contiguous. Chunked datasets are not stored contiguously in the file, as in the classic netCDF formats. Instead, the data are divided into fixed-size chunks that are scattered throughout the file. HDF5 maintains an index that allows it to locate each chunk.
+Why Chunking Matters
+Chunked data provides several critical performance advantages:
+Efficient Partial I/O: When reading a subset of a large array, only the chunks that contain the requested data need to be read from disk. This can dramatically reduce I/O time when working with large datasets.
+Compression Support: HDF5 can only compress chunked datasets. Each chunk is compressed independently, which allows for efficient random access to compressed data.
+Flexible Growth: Chunking allows datasets to grow along any dimension. In the classic formats, only the unlimited dimension can grow, and it must be the slowest-varying dimension. With chunking, any dimension can be unlimited, and new chunks are simply added to the file as needed.
+Setting Chunk Sizes
+The chunk sizes for a variable are set with the nc_def_var_chunking() call. This function must be called after the variable is defined, but before nc_enddef() is called (or before the first data are written, if the file is not using explicit define mode).
+size_t chunksizes[3] = {1, 100, 100};
+nc_def_var_chunking(ncid, varid, NC_CHUNKED, chunksizes);
+Choosing Optimal Chunk Sizes
+Choosing the right chunk size is critical for performance. If chunks are too small, the overhead of managing many chunks will slow down I/O. If chunks are too large, partial reads will be inefficient because entire large chunks must be read even when only a small portion is needed.
+General Guidelines:
+    • Size chunks to be between 100 KB and 1 MB for optimal performance
+    • Match chunk size to expected access patterns
+    • For time slice access: make the time dimension small (perhaps 1), and spatial dimensions larger
+    • For vertical profiles: make the vertical dimension large and horizontal dimensions small
+    • Consider the interaction between chunk size and compression effectiveness: larger chunks generally compress better but may reduce I/O efficiency for partial reads
+The Chunk Cache
+The chunk cache is another important performance consideration. HDF5 maintains a cache of recently-accessed chunks in memory. The size of this cache can be controlled with the nc_set_chunk_cache() function. A larger cache can improve performance for applications that repeatedly access the same chunks, but it also uses more memory.
+Compression with Deflate
+Compression is one of the most important features for managing large scientific datasets. The deflate filter uses the zlib library to perform lossless compression on the data stored in a variable. The data are automatically compressed as they are written, and automatically uncompressed when read.
+The zlib compression algorithm, also known as deflate, uses the same compression method as gzip. It provides lossless compression with nine levels of compression, from 1 (fastest) to 9 (best compression). Level 1 provides modest compression with minimal CPU overhead, while level 9 is supposed to provide maximum compression but requires significantly more processing time. However, in repeated testing with scientific data, I have found the numbers greater than 1 are slower, but don’t actually compress better. For most scientific data applications, level 1 is the best choice.
+To enable zlib compression on a variable, use the nc_def_var_deflate() function:
+int shuffle = 1;     /* Use shuffle filter */
+int deflate = 1;     /* Turn on compression */
+int deflate_level = 5;  /* Compression level */
+nc_def_var_deflate(ncid, varid, shuffle, deflate, deflate_level);
+Compression requires chunked storage. The chunk size interacts with compression effectiveness. Larger chunks generally compress better but may reduce I/O efficiency for partial reads.
+The szip compression algorithm was developed by NASA and offers different compression characteristics than zlib. However, szip has licensing restrictions that limit its use in some contexts. For this reason, zlib is more commonly used in netCDF applications.
+Shuffle Filter
+NetCDF-4 allows users to turn on the shuffle filter for a variable.
+The shuffle filter rearranges the bytes in a chunk to make compression more effective. It works by separating the bytes of multi-byte values. For example, if a chunk contains four 4-byte integers, the shuffle filter will group all the first bytes together, then all the second bytes, then all the third bytes, and finally all the fourth bytes.
+This shuffles the byte order of adjacent integers. For example, if you are storing four integers, 10, 11, 12, and 13, they will look like this in hex:
+0000 000A 0000 000B 0000 000C 0000 000D
+If the shuffle filter is used, they will be stored like this instead:
+0000 0000 0000 0000 0000 0000 0A0B 0C0D
+The point is that this produces long strings of zeros in many cases. In the unshuffled storage, the longest run of zeros is 7, but in the shuffled data, it is 25. This makes deflation (compression based on the zlib library) more effective.
+This also works for slowly-varying floating point data. In IEEE floating point, 10.1, 11.1, 12.1, and 13.1 look like this:
+4121999a 4131999a 4141999a 4151999a
+
+The shuffled result looks like this:
+41414141 21314151 99999999 9a9a9a9a
+By putting the same numbers next to each other we create long runs with the same number, which compress much better.
+The shuffle filter should be used with integer data and slowly-varying floating-point data, but not with random or already-compressed data. The best approach is to test with some sample data and see if the shuffle filter improves compression.
+Fill Values
+The use of fill values gets more complex with netCDF-4/HDF5 files.
+In HDF5, the fill value and fill mode of a dataset must be specified when the dataset is created. This means that when the user sets a fill value for a variable in a netCDF-4/HDF5 file, that variable must be destroyed and recreated in order to set its fill value in the HDF5 file.
+Another difference is that netCDF classic applied the fill mode to all variables in the file. In HDF5, fill mode may be set for each dataset.
+In netCDF-4 code this is handled by giving each new dataset the file fill mode setting as its default. The function nc_def_var_fill() was added with netCDF-4 to allow control of the fill mode on a per-variable basis for netCDF-4/HDF5 files through the netCDF API.
+Another aspect of fill values in HDF5 files concerns when the data are written. In netCDF classic, when a file is created, space for all variables, dimensions, and attributes are mapped out in the file. As a result, even if no data have been written, a classic file will take the same disk space.
+In HDF5 this is not the case. Unwritten data are not allocated in the file. Creating a file with large variables, and then closing it without writing data, will result in a very small file size. Only when data are added, does HDF5 allocate disk storage for them.
+Finally, in HDF5, turning off fill mode does not actually save any time. Instead of writing the netCDF fill value to the file, HDF5 writes its own fill value (zero). Time is saved in HDF5 because HDF5 does not write fill data except to fill in missing data in a chunk. If no part of a chunk is written by the user, then the chunk is not written to disk. Attempts to read data in that chunk will return fill value, but that is generated in the library. The fill values are not written to disk in this case. Fill values are only written for a chunk when the user writes any values in that chunk. Once any value in the chunk is written to the file, the HDF5 library generates the entire chunk, using the fill value for any values that have not been specified by the user.
+Because of this setting, fill mode for netCDF-4/HDF5 files is not recommended and is supported only for backwards compatibility. For performance reasons it is only useful to turn off fill mode for the classic netCDF formats.
+Endianness
+HDF5 allows data to be stored in either big or little endian form. It also offers a "native" endianness, which uses the endianness of the machine on which the data are written. Since most or all machines are little-endian, there seems to be little reason to ever use anything for endianness other than the default, which is native endianness, which is the endianness of the machine  that is writing the data.
+In case there is a desire to control endianness, the netCDF C API offers the nc_def_var_endianness() function. It must be called after a variable is defined, but before nc_enddef() is called.
+NetCDF-4/HDF5 Performance Fundamentals – Key Takeaways
+    • Chunking drives both I/O speed and compression.
+    • Deflate + shuffle typical defaults (level 4–6).
+    • Chunk cache tunable via nc_set_chunk_cache().
+    • Entering define mode is cheap in HDF5 (unlike classic).
