@@ -28,6 +28,105 @@
 - Generate CDL expected output for validation
 - Add comprehensive Doxygen documentation
 
+#### Sprint 2: Add example: chunking.c — Chunk Shape Performance
+**Detailed Plan**: See `docs/plan/v1.10.0-sprint2-chunking.md`
+
+**Purpose**: Demonstrate how chunk shape selection affects I/O performance across two contrasting access patterns, with CSV output suitable for plotting.
+
+**What it shows**:
+
+- Time-optimized chunks (1×180×360) vs column-optimized chunks (500×1×1)
+- Time-slab access (one horizontal field at a time) vs column-profile access (full time series at one grid point)
+- Dramatic 10-100x performance difference between well-matched and mismatched chunk/access combinations
+- Dataset: Same 3D temperature 500×180×360 as sprint 1, ensuring consistent comparison
+- Output: CSV with columns `chunk_shape,access_pattern,elapsed_s,MB_per_s`
+
+**Key API**: nc_def_var_chunking(), nc_inq_var_chunking(), nc_get_vara_float()
+
+**Tasks**:
+
+- Create `examples/performance/chunking.c` example program
+- Wire `ENABLE_BENCHMARKS` option into root `CMakeLists.txt` and `configure.ac` (top-level declaration)
+- Gate both performance examples (`cache_tuning` and `chunking`) under `ENABLE_BENCHMARKS` in build systems
+- Program does not run in regular CI (ENABLE_BENCHMARKS defaults OFF)
+- Update `docs/prd.md` with performance examples subsection
+
+#### Sprint 3: Add example: deflate.c — Deflate Compression Performance
+**Detailed Plan**: See `docs/plan/v1.10.0-sprint3-deflate.md`
+
+**Purpose**: Demonstrate how zlib deflate levels (0–9) and the shuffle filter interact to affect compression ratio and I/O throughput on a realistic scientific dataset.
+
+**What it shows**:
+
+- Deflate levels 0–9 with and without the shuffle filter (20 combinations total)
+- Compression ratio vs. level for both shuffle settings
+- Write time and read time per combination
+- Dataset: Same 500×180×360 NC_FLOAT temperature as sprints 1 and 2
+- Output: CSV with columns `deflate_level,shuffle,compressed_bytes,ratio,write_s,read_s`
+
+**Key API**: `nc_def_var_deflate()`, `nc_inq_var_deflate()`, `nc_put_var_float()`, `nc_get_var_float()`
+
+**Tasks**:
+
+- Create `examples/performance/deflate.c` with `NC_CHK` error handling and Doxygen file header
+- Iterate all 20 combinations (levels 0–9 × shuffle {0,1}); print one CSV row per combination
+- Use `stat()` to obtain compressed file size on disk
+- Create `examples/performance/plot_deflate.py`; reads `deflate_results.csv`, writes `deflate_performance.jpg`
+- Update `examples/performance/CMakeLists.txt`: add `deflate` executable gated on `ENABLE_BENCHMARKS`
+- Update `examples/performance/Makefile.am`: add `deflate` inside `if ENABLE_BENCHMARKS` block
+- Update `docs/prd.md` with `deflate.c` description in Performance Examples subsection
+
+#### Sprint 4: Add example: fill_values.c — Fill Value Performance
+**Detailed Plan**: See `docs/plan/v1.10.0-sprint4-fill-values.md`
+
+**Purpose**: Demonstrate fill value handling performance across classic (netCDF-3) and netCDF-4/HDF5 formats, showing fill mode ON vs OFF overhead.
+
+**What it shows**:
+
+- Classic NC_FILL vs NC_NOFILL write/read performance
+- NetCDF-4 NC_FILL vs NC_NOFILL write/read performance
+- File size comparison between fill modes
+- Effect of fill value checking on read performance
+- Dataset: Same 500×180×360 NC_FLOAT temperature as sprints 1–3
+- Output: CSV with columns `format,fill_mode,write_s,read_s,file_bytes`
+
+**Key API**: `nc_set_fill()`, `nc_inq_fill()`, `nc_def_var_fill()`, `_FillValue` attribute
+
+**Tasks**:
+
+- Create `examples/performance/fill_values.c` example program
+- Test 4 combinations: classic (fill on/off) × netCDF-4 (fill on/off)
+- Implement CSV output with timing and file size measurements
+- Use `NC_CHK` error handling macro following NEP patterns
+- Integrate into CMake and Autotools build systems under `ENABLE_BENCHMARKS`
+- Create `examples/performance/plot_fill_values.py` for visualization
+- Update `docs/prd.md` with `fill_values.c` description
+
+#### Sprint 5: Add example: endianness.c — Endianness Performance
+**Detailed Plan**: See `docs/plan/v1.10.0-sprint5-endianness.md`
+
+**Purpose**: Demonstrate byte order (endianness) handling performance across native, little-endian, and big-endian settings in NetCDF-4/HDF5 files.
+
+**What it shows**:
+
+- Native vs little-endian vs big-endian write/read performance
+- Platform-native byte order vs explicit byte order conversion overhead
+- Effect of endianness on cross-platform data sharing
+- Dataset: Same 500×180×360 NC_FLOAT temperature as sprints 1–4
+- Output: CSV with columns `endian_mode,write_s,read_s,file_bytes`
+
+**Key API**: `nc_def_var_endian()`, `nc_inq_var_endian()`, `NC_ENDIAN_NATIVE`, `NC_ENDIAN_LITTLE`, `NC_ENDIAN_BIG`
+
+**Tasks**:
+
+- Create `examples/performance/endianness.c` example program
+- Test 3 combinations: NC_ENDIAN_NATIVE, NC_ENDIAN_LITTLE, NC_ENDIAN_BIG
+- Implement CSV output with timing and file size measurements
+- Use `if ((ret = nc_whatever())) ERR(ret)` error handling pattern
+- Integrate into CMake and Autotools build systems under `ENABLE_BENCHMARKS`
+- Create `examples/performance/plot_endianness.py` for visualization
+- Update `docs/prd.md` with `endianness.c` description
+
 ### V1.9.0 Parallel I/O Builds and Examples
 
 #### Sprint 1: Add mpicc Build to CI

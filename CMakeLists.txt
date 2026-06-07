@@ -101,6 +101,9 @@ option(ENABLE_GRIB2 "Enable GRIB2 support; mutually exclusive with ENABLE_CDF" O
 # Parallel I/O test support (v1.9.0) - default OFF; enable with -DENABLE_PARALLEL_TESTS=ON
 option(ENABLE_PARALLEL_TESTS "Enable parallel I/O test programs" OFF)
 
+# Performance benchmark support (v1.10.0) - default OFF; slow programs not for regular CI
+option(ENABLE_BENCHMARKS "Enable performance benchmark programs (slow, not for regular CI)" OFF)
+
 if(NOT DOCS_ONLY)
     # CDF library detection (v1.3.0)
     if(ENABLE_CDF)
@@ -182,6 +185,8 @@ if(NOT DOCS_ONLY)
         message(STATUS "mpiexec: ${MPIEXEC_EXECUTABLE}")
     endif()
 endif()
+
+message(STATUS "Performance benchmarks: ${ENABLE_BENCHMARKS}")
 
 # It's really easy to pick up the wrong HDF5 library if you set the path
 # wrong. Turn this on for added confirmation that you got it right.

@@ -1,0 +1,11 @@
+netcdf cache_test {
+dimensions:
+	time = 500 ;
+	lat = 180 ;
+	lon = 360 ;
+variables:
+	float temperature(time, lat, lon) ;
+		temperature:_ChunkSizes = 10, 45, 90 ;
+		temperature:_Storage = "chunked" ;
+		temperature:_Endianness = "little" ;
+}

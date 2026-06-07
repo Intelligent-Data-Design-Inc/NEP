@@ -286,12 +286,24 @@ Located in `examples/f_netcdf-4/`:
 - `f_multi_unlimited.f90` - Multiple unlimited dimensions in Fortran
 - `f_user_types.f90` - User-defined types in Fortran
 
+#### Performance Examples (C)
+Located in `examples/performance/`:
+- `cache_tuning.c` - Chunk cache configuration: default vs enlarged cache, file-level vs variable-level settings, cache thrashing detection
+- `chunking.c` - Chunk shape selection: time-optimized vs column-optimized chunks across time-slab and column-profile access patterns; outputs CSV (`chunk_shape,access_pattern,elapsed_s,MB_per_s`) suitable for plotting
+- `deflate.c` - Deflate compression: zlib levels 0–9 with and without the shuffle filter across all 20 combinations; outputs CSV (`deflate_level,shuffle,compressed_bytes,ratio,write_s,read_s`) with compressed file size, compression ratio, write time, and read time
+- `fill_values.c` - Fill value handling performance: demonstrates fill mode NC_FILL vs NC_NOFILL across classic and NetCDF-4 formats; outputs CSV (`format,fill_mode,write_s,read_s,file_bytes`) with write time, read time, and file size
+- `endianness.c` - Endianness handling performance: demonstrates byte order (NC_ENDIAN_NATIVE, NC_ENDIAN_LITTLE, NC_ENDIAN_BIG) effects on write/read performance in NetCDF-4/HDF5 files; outputs CSV (`endian_mode,write_s,read_s,file_bytes`) with write time, read time, and file size
+
+**Note**: Performance examples are excluded from regular CI. They are built and run only when `ENABLE_BENCHMARKS=ON` (CMake) or `--enable-benchmarks` (Autotools) is specified. All four examples operate on a 500×180×360 (time×lat×lon) NC_FLOAT temperature dataset matching a meteorological grid.
+
 ### 8.4 Build Configuration
 **CMake:**
 - `BUILD_EXAMPLES=ON/OFF` - Enable/disable example programs (default: ON)
+- `ENABLE_BENCHMARKS=ON/OFF` - Enable/disable performance benchmark programs (default: OFF)
 
 **Autotools:**
 - `--enable-examples/--disable-examples` - Example programs (default: enabled)
+- `--enable-benchmarks` - Enable performance benchmark programs (default: disabled)
 
 ### 8.5 Dependencies
 - NetCDF-C library (required for C examples)
