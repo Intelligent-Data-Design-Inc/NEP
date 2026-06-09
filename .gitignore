@@ -225,6 +225,10 @@ valgrind*.log
 # Test output files
 *.nc
 examples/**/*.nc
+
+# Generated plot images
+*.jpg
+*.jpeg
 test_netcdf_crs
 
 # Machine-specific local build scripts

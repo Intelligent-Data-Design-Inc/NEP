@@ -127,6 +127,59 @@
 - Create `examples/performance/plot_endianness.py` for visualization
 - Update `docs/prd.md` with `endianness.c` description
 
+#### Sprint 6: Add example: zstandard.c — Zstandard Compression Performance
+**Detailed Plan**: See `docs/plan/v1.10.0-sprint6-zstandard.md`
+
+**Purpose**: Demonstrate how Zstandard compression levels (-7 to 22) and the shuffle filter interact to affect compression ratio and I/O throughput on a realistic scientific dataset.
+
+**What it shows**:
+
+- Similar to deflate.c developed in sprint 3
+- Representative zstd levels {-7, -3, -1, 0, 1, 3, 6, 9, 12, 15, 19, 22} with and without the shuffle filter (24 combinations total)
+- Compression ratio vs. level for both shuffle settings
+- Write time and read time per combination
+- Dataset: Same 500×180×360 NC_FLOAT temperature as sprints 1–5, chunk shape 10×45×90
+- Output: CSV with columns `zstd_level,shuffle,compressed_bytes,ratio,write_s,read_s`
+
+**Key API**: `nc_def_var_zstandard()`, `nc_inq_var_zstandard()`, `nc_def_var_deflate()` (shuffle only)
+
+**Tasks**:
+
+- Create `examples/performance/zstandard.c` example program
+- Enable shuffle via `nc_def_var_deflate(shuffle=1, deflate=0, level=0)` before `nc_def_var_zstandard()`
+- Iterate representative level subset × shuffle {0,1}; print one CSV row per combination
+- Use `stat()` to obtain compressed file size on disk
+- Create `examples/performance/plot_zstandard.py`; reads `zstandard_results.csv`, writes `zstandard_performance.jpg`
+- Update `examples/performance/CMakeLists.txt`: add `zstandard` executable gated on `ENABLE_BENCHMARKS`
+- Update `examples/performance/Makefile.am`: add `zstandard` inside `if ENABLE_BENCHMARKS` block
+- Update `docs/prd.md` with `zstandard.c` description in Performance Examples subsection
+
+#### Sprint 7: Add example: szip.c — SZIP Compression Performance
+**Detailed Plan**: See `docs/plan/v1.10.0-sprint7-szip.md`
+
+**Purpose**: Demonstrate how SZIP `options_mask` (NN vs EC coding method) and `pixels_per_block` affect compression ratio and I/O throughput on a realistic scientific dataset.
+
+**What it shows**:
+
+- Similar to zstandard.c developed in sprint 6
+- `NC_SZIP_NN` coding method only (NC_SZIP_EC does not support NC_FLOAT)
+- `pixels_per_block` values {2, 6, 10, 18, 30} (even divisors of CHUNK_X=90), 5 combinations
+- Compression ratio, write time, and read time per combination
+- Dataset: Same 500×180×360 NC_FLOAT temperature as sprints 1–6, chunk shape 10×45×90
+- Output: CSV with columns `pixels_per_block,compressed_bytes,ratio,write_s,read_s`
+
+**Key API**: `nc_def_var_szip()`, `nc_inq_var_szip()`, `NC_SZIP_NN`
+
+**Tasks**:
+
+- Create `examples/performance/szip.c` example program
+- Iterate 5 `pixels_per_block` values with NC_SZIP_NN; print one CSV row per value
+- Use `stat()` to obtain compressed file size on disk
+- Create `examples/performance/plot_szip.py`; reads `szip_results.csv`, writes `szip_performance.jpg`
+- Update `examples/performance/CMakeLists.txt`: add `szip` executable gated on `ENABLE_BENCHMARKS`
+- Update `examples/performance/Makefile.am`: add `szip` inside `if ENABLE_BENCHMARKS` block (link `-lsz`)
+- Update `docs/prd.md` with `szip.c` description in Performance Examples subsection
+
 ### V1.9.0 Parallel I/O Builds and Examples
 
 #### Sprint 1: Add mpicc Build to CI

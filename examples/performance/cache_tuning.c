@@ -576,7 +576,7 @@ int main(int argc, char **argv)
 
     /* =========================================================================
      * CLEANUP
-     * Free allocated memory, close the file, and remove the test file.
+     * Free allocated memory and close the file.
      * ========================================================================= */
 
     /* Release the chunk-sized read buffer */
@@ -585,9 +585,6 @@ int main(int argc, char **argv)
     /* Close the NetCDF file, flushing any remaining data */
     if ((retval = nc_close(ncid)))
         ERR(retval);
-
-    /* Remove the temporary test file to leave the filesystem clean */
-    remove("cache_test.nc");
 
     printf("All cache tuning tests complete.\n");
     printf("\nKey takeaways:\n");

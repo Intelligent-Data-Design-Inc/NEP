@@ -294,6 +294,25 @@ if(NOT DOCS_ONLY)
         add_subdirectory (test_parallel)
     endif()
 
+    # Derive HDF5 and NetCDF library directories for test runtime environment.
+    # This ensures all CTest tests find shared libraries without needing
+    # LD_LIBRARY_PATH to be set in the shell.
+    set(_nep_test_lib_dirs "")
+    foreach(_lib ${HDF5_LIBRARIES})
+        if(IS_ABSOLUTE "${_lib}")
+            get_filename_component(_d "${_lib}" DIRECTORY)
+            list(APPEND _nep_test_lib_dirs "${_d}")
+        endif()
+    endforeach()
+    if(NETCDF_LIBRARY_DIRS)
+        list(APPEND _nep_test_lib_dirs ${NETCDF_LIBRARY_DIRS})
+    elseif(DEFINED NETCDF_PREFIX)
+        list(APPEND _nep_test_lib_dirs "${NETCDF_PREFIX}/lib")
+    endif()
+    list(REMOVE_DUPLICATES _nep_test_lib_dirs)
+    string(REPLACE ";" ":" _nep_test_ld_path "${_nep_test_lib_dirs}")
+    file(WRITE "${CMAKE_BINARY_DIR}/CTestCustom.cmake" "")
+
     # Make tests depend on plugins being built
     # Add test directory last so tst_cdf_udf runs after tst_cdf_basic
     add_subdirectory (test)
@@ -365,6 +384,12 @@ if(NOT DOCS_ONLY)
         NAMESPACE NEP::
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/NEP"
     )
+
+    # Write CTestCustom.cmake so CTest sets LD_LIBRARY_PATH for every test
+    # without requiring the user to export it in the shell first.
+    # CTEST_ENVIRONMENT entries are prepended to each test's environment.
+    file(APPEND "${CMAKE_BINARY_DIR}/CTestCustom.cmake"
+        "list(APPEND CTEST_ENVIRONMENT \"LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}\")\n")
 endif()
 
 

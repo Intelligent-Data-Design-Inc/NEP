@@ -484,7 +484,41 @@ Parallel I/O builds are tested in a separate CI workflow (`ci-parallel.yml`) wit
 
 ---
 
-## 14. Release History
+## 14. Performance Examples (v1.10.0)
+
+Performance benchmark programs gated by `ENABLE_BENCHMARKS` (CMake) or
+`--enable-benchmarks` (Autotools). Not run in regular CI. Dataset for all
+examples: 500×180×360 NC_FLOAT temperature (~129 MB uncompressed), chunk
+shape 10×45×90.
+
+- `cache_tuning.c` — HDF5 chunk cache configuration: demonstrates
+  `nc_set_chunk_cache()` and `nc_set_var_chunk_cache()` with measurable
+  performance differences; outputs CSV (`cache_config,access_pattern,elapsed_s,MB_per_s`)
+- `chunking.c` — Chunk shape performance: demonstrates how chunk shape selection
+  affects I/O performance across time-slab and column-profile access patterns;
+  outputs CSV (`chunk_shape,access_pattern,elapsed_s,MB_per_s`)
+- `deflate.c` — Deflate compression performance: zlib levels 0–9 with and without
+  the shuffle filter (20 combinations); outputs CSV
+  (`deflate_level,shuffle,compressed_bytes,ratio,write_s,read_s`)
+- `fill_values.c` — Fill value performance: demonstrates fill mode ON vs OFF
+  overhead across classic and NetCDF-4 formats (4 combinations); outputs CSV
+  (`format,fill_mode,write_s,read_s,file_bytes`)
+- `endianness.c` — Endianness handling performance: demonstrates byte order
+  (`NC_ENDIAN_NATIVE`, `NC_ENDIAN_LITTLE`, `NC_ENDIAN_BIG`) effects on write/read
+  performance in NetCDF-4/HDF5 files; outputs CSV
+  (`endian_mode,write_s,read_s,file_bytes`)
+- `zstandard.c` — Zstandard compression performance: demonstrates zstd levels
+  (-7 to 22, representative subset of 12) with and without the shuffle filter
+  (24 combinations); outputs CSV
+  (`zstd_level,shuffle,compressed_bytes,ratio,write_s,read_s`)
+- `szip.c` — SZIP compression performance: demonstrates NC_SZIP_NN and
+  NC_SZIP_EC coding methods across pixels_per_block {2, 4, 8, 16, 32} (10
+  combinations); outputs CSV
+  (`coding,pixels_per_block,compressed_bytes,ratio,write_s,read_s`)
+
+---
+
+## 15. Release History
 
 - **v0.1.3** (Nov 2025): Architecture shift from HDF5 VOL to NetCDF UDF, Doxygen documentation
 - **v1.0.0**: LZ4 and BZIP2 compression filters

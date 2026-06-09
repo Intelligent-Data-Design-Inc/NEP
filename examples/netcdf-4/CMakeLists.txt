@@ -29,6 +29,12 @@ separate_arguments(NC_LIBS_LIST UNIX_COMMAND "${NC_LIBS}")
 
 # Get HDF5 library directory from HDF5_INCLUDE_DIR (parent scope)
 get_filename_component(HDF5_LIB_DIR "${HDF5_INCLUDE_DIR}/../lib" ABSOLUTE)
+execute_process(
+    COMMAND ${NC_CONFIG} --libdir
+    OUTPUT_VARIABLE NC_LIBDIR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+set(_nep_ld_env "LD_LIBRARY_PATH=${HDF5_LIB_DIR}:${NC_LIBDIR}:$ENV{LD_LIBRARY_PATH}")
 
 # List of NetCDF-4 example programs
 set(NETCDF4_EXAMPLES
@@ -53,6 +59,7 @@ foreach(example ${NETCDF4_EXAMPLES})
     # Add as test
     if(BUILD_TESTING)
         add_test(NAME ${example} COMMAND ${example})
+        set_tests_properties(${example} PROPERTIES ENVIRONMENT "${_nep_ld_env}")
     endif()
 endforeach()
 
@@ -73,42 +80,43 @@ if(BUILD_TESTING)
     add_test(NAME user_types_validate 
              COMMAND bash validate_cdl.sh user_types user_types.nc 
                      ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/user_types_expected.cdl)
-    set_tests_properties(user_types_validate PROPERTIES DEPENDS user_types)
+    set_tests_properties(user_types_validate PROPERTIES DEPENDS user_types ENVIRONMENT "${_nep_ld_env}")
 
     add_test(NAME groups_validate 
              COMMAND bash validate_cdl.sh groups groups.nc 
                      ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/groups_expected.cdl)
-    set_tests_properties(groups_validate PROPERTIES DEPENDS groups)
+    set_tests_properties(groups_validate PROPERTIES DEPENDS groups ENVIRONMENT "${_nep_ld_env}")
 
     # Multi-file examples: format_variants
     add_test(NAME format_variants_validate_classic
              COMMAND bash validate_cdl.sh format_variants format_classic.nc
                      ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/format_variants_classic_expected.cdl)
-    set_tests_properties(format_variants_validate_classic PROPERTIES DEPENDS format_variants)
+    set_tests_properties(format_variants_validate_classic PROPERTIES DEPENDS format_variants ENVIRONMENT "${_nep_ld_env}")
 
     add_test(NAME format_variants_validate_64bit_offset
              COMMAND bash validate_cdl.sh format_variants format_64bit_offset.nc
                      ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/format_variants_64bit_offset_expected.cdl)
-    set_tests_properties(format_variants_validate_64bit_offset PROPERTIES DEPENDS format_variants)
+    set_tests_properties(format_variants_validate_64bit_offset PROPERTIES DEPENDS format_variants ENVIRONMENT "${_nep_ld_env}")
 
     add_test(NAME format_variants_validate_64bit_data
              COMMAND bash validate_cdl.sh format_variants format_64bit_data.nc
                      ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/format_variants_64bit_data_expected.cdl)
-    set_tests_properties(format_variants_validate_64bit_data PROPERTIES DEPENDS format_variants)
+    set_tests_properties(format_variants_validate_64bit_data PROPERTIES DEPENDS format_variants ENVIRONMENT "${_nep_ld_env}")
 
     add_test(NAME format_variants_validate_netcdf4
              COMMAND bash validate_cdl.sh format_variants format_netcdf4.nc
                      ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/format_variants_netcdf4_expected.cdl)
-    set_tests_properties(format_variants_validate_netcdf4 PROPERTIES DEPENDS format_variants)
+    set_tests_properties(format_variants_validate_netcdf4 PROPERTIES DEPENDS format_variants ENVIRONMENT "${_nep_ld_env}")
 
     add_test(NAME format_variants_validate_netcdf4_classic
              COMMAND bash validate_cdl.sh format_variants format_netcdf4_classic.nc
                      ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/format_variants_netcdf4_classic_expected.cdl)
-    set_tests_properties(format_variants_validate_netcdf4_classic PROPERTIES DEPENDS format_variants)
+    set_tests_properties(format_variants_validate_netcdf4_classic PROPERTIES DEPENDS format_variants ENVIRONMENT "${_nep_ld_env}")
 
     # dump_nc4_metadata test: run user_types first to produce user_types.nc,
     # then compare dump_nc4_metadata output against expected text.
     # ASAN_OPTIONS=detect_leaks=0 because user_types triggers known HDF5 vlen leak.
     add_test(NAME dump_nc4_metadata_validate
              COMMAND bash -c "ASAN_OPTIONS=detect_leaks=0 ./user_types && ./dump_nc4_metadata user_types.nc > dump_nc4_metadata_output.txt && diff -u ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/dump_nc4_metadata_user_types_expected.txt dump_nc4_metadata_output.txt && rm -f dump_nc4_metadata_output.txt")
+    set_tests_properties(dump_nc4_metadata_validate PROPERTIES ENVIRONMENT "${_nep_ld_env}")
 endif()

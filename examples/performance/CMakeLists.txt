@@ -30,31 +30,52 @@ separate_arguments(NC_LIBS_LIST UNIX_COMMAND "${NC_LIBS}")
 # Get HDF5 library directory from HDF5_INCLUDE_DIR (parent scope)
 get_filename_component(HDF5_LIB_DIR "${HDF5_INCLUDE_DIR}/../lib" ABSOLUTE)
 
-# Build both performance examples unconditionally (fast to compile)
+# Get NetCDF library directory for rpath
+execute_process(
+    COMMAND ${NC_CONFIG} --libdir
+    OUTPUT_VARIABLE NC_LIBDIR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Helper to apply common settings to every performance target
+macro(perf_target _name)
+    target_compile_options(${_name} PRIVATE ${NC_CFLAGS_LIST})
+    target_link_directories(${_name} PRIVATE ${HDF5_LIB_DIR})
+    set_target_properties(${_name} PROPERTIES
+        BUILD_RPATH "${HDF5_LIB_DIR};${NC_LIBDIR}"
+        SKIP_BUILD_RPATH OFF
+        BUILD_WITH_INSTALL_RPATH ON
+        INSTALL_RPATH "${HDF5_LIB_DIR};${NC_LIBDIR}")
+endmacro()
+
+# Build performance examples unconditionally (fast to compile)
 add_executable(cache_tuning cache_tuning.c)
-target_compile_options(cache_tuning PRIVATE ${NC_CFLAGS_LIST})
-target_link_directories(cache_tuning PRIVATE ${HDF5_LIB_DIR})
+perf_target(cache_tuning)
 target_link_libraries(cache_tuning PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl m)
 
 add_executable(chunking chunking.c)
-target_compile_options(chunking PRIVATE ${NC_CFLAGS_LIST})
-target_link_directories(chunking PRIVATE ${HDF5_LIB_DIR})
+perf_target(chunking)
 target_link_libraries(chunking PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl m)
 
 add_executable(deflate deflate.c)
-target_compile_options(deflate PRIVATE ${NC_CFLAGS_LIST})
-target_link_directories(deflate PRIVATE ${HDF5_LIB_DIR})
+perf_target(deflate)
 target_link_libraries(deflate PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl m)
 
 add_executable(fill_values fill_values.c)
-target_compile_options(fill_values PRIVATE ${NC_CFLAGS_LIST})
-target_link_directories(fill_values PRIVATE ${HDF5_LIB_DIR})
+perf_target(fill_values)
 target_link_libraries(fill_values PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl m)
 
 add_executable(endianness endianness.c)
-target_compile_options(endianness PRIVATE ${NC_CFLAGS_LIST})
-target_link_directories(endianness PRIVATE ${HDF5_LIB_DIR})
+perf_target(endianness)
 target_link_libraries(endianness PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl m)
+
+add_executable(zstandard zstandard.c)
+perf_target(zstandard)
+target_link_libraries(zstandard PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl m)
+
+add_executable(szip szip.c)
+perf_target(szip)
+target_link_libraries(szip PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl sz m)
 
 # Performance examples run as tests only when ENABLE_BENCHMARKS=ON (slow; not for regular CI)
 if(ENABLE_BENCHMARKS)
@@ -63,22 +84,19 @@ if(ENABLE_BENCHMARKS)
     target_compile_definitions(deflate PRIVATE ENABLE_BENCHMARKS=1)
     target_compile_definitions(fill_values PRIVATE ENABLE_BENCHMARKS=1)
     target_compile_definitions(endianness PRIVATE ENABLE_BENCHMARKS=1)
+    target_compile_definitions(zstandard PRIVATE ENABLE_BENCHMARKS=1)
+    target_compile_definitions(szip PRIVATE ENABLE_BENCHMARKS=1)
     if(BUILD_TESTING)
-        add_test(NAME cache_tuning
-                 COMMAND cache_tuning
-                 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-        add_test(NAME chunking
-                 COMMAND chunking
-                 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-        add_test(NAME deflate
-                 COMMAND deflate
-                 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-        add_test(NAME fill_values
-                 COMMAND fill_values
-                 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-        add_test(NAME endianness
-                 COMMAND endianness
-                 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+        set(_bench_tests cache_tuning chunking deflate fill_values
+                         endianness zstandard szip)
+        foreach(_t ${_bench_tests})
+            add_test(NAME ${_t}
+                     COMMAND ${_t}
+                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+            set_tests_properties(${_t} PROPERTIES
+                ENVIRONMENT "LD_LIBRARY_PATH=${HDF5_LIB_DIR}:${NC_LIBDIR}:$ENV{LD_LIBRARY_PATH}")
+        endforeach()
+        set_tests_properties(cache_tuning PROPERTIES RUN_SERIAL TRUE)
     endif()
 endif()
 
@@ -90,7 +108,9 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../validate_cdl.sh.in
 # CDL validation for cache_tuning (only when benchmarks enabled)
 if(ENABLE_BENCHMARKS AND BUILD_TESTING)
     add_test(NAME cache_tuning_validate
-             COMMAND bash validate_cdl.sh cache_tuning cache_test.nc
-                     ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/cache_tuning_expected.cdl)
-    set_tests_properties(cache_tuning_validate PROPERTIES DEPENDS cache_tuning)
+             COMMAND bash -c "cp /dev/null /dev/null; TMPFILE=cache_validate_$$.nc; ./cache_tuning && mv cache_test.nc \$TMPFILE && bash validate_cdl.sh cache_tuning \$TMPFILE ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/cache_tuning_expected.cdl; STATUS=$?; rm -f \$TMPFILE; exit \$STATUS"
+             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    set_tests_properties(cache_tuning_validate PROPERTIES
+        ENVIRONMENT "LD_LIBRARY_PATH=${HDF5_LIB_DIR}:${NC_LIBDIR}:$ENV{LD_LIBRARY_PATH}"
+        RUN_SERIAL TRUE)
 endif()

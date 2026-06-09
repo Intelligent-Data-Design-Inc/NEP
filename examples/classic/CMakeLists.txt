@@ -29,6 +29,12 @@ separate_arguments(NC_LIBS_LIST UNIX_COMMAND "${NC_LIBS}")
 
 # Get HDF5 library directory from HDF5_INCLUDE_DIR (parent scope)
 get_filename_component(HDF5_LIB_DIR "${HDF5_INCLUDE_DIR}/../lib" ABSOLUTE)
+execute_process(
+    COMMAND ${NC_CONFIG} --libdir
+    OUTPUT_VARIABLE NC_LIBDIR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+set(_nep_ld_env "LD_LIBRARY_PATH=${HDF5_LIB_DIR}:${NC_LIBDIR}:$ENV{LD_LIBRARY_PATH}")
 
 # List of classic example programs
 set(CLASSIC_EXAMPLES
@@ -58,6 +64,7 @@ foreach(example ${CLASSIC_EXAMPLES})
     # Add as test (run example only)
     if(BUILD_TESTING)
         add_test(NAME ${example}_run COMMAND ${example})
+        set_tests_properties(${example}_run PROPERTIES ENVIRONMENT "${_nep_ld_env}")
     endif()
 endforeach()
 
@@ -73,15 +80,16 @@ if(BUILD_TESTING)
     add_test(NAME quickstart_validate 
              COMMAND bash validate_cdl.sh quickstart quickstart.nc 
                      ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/quickstart_expected.cdl)
-    set_tests_properties(quickstart_validate PROPERTIES DEPENDS quickstart_run)
+    set_tests_properties(quickstart_validate PROPERTIES DEPENDS quickstart_run ENVIRONMENT "${_nep_ld_env}")
 
     add_test(NAME coord_validate 
              COMMAND bash validate_cdl.sh coord coord.nc 
                      ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/coord_expected.cdl)
-    set_tests_properties(coord_validate PROPERTIES DEPENDS coord_run)
+    set_tests_properties(coord_validate PROPERTIES DEPENDS coord_run ENVIRONMENT "${_nep_ld_env}")
 
     # dump_classic_metadata test: run coord_vars first to produce coord_vars.nc,
     # then compare dump_classic_metadata output against expected text
     add_test(NAME dump_classic_metadata_validate
              COMMAND bash -c "./coord_vars && ./dump_classic_metadata coord_vars.nc > dump_classic_metadata_output.txt && diff -u ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/dump_classic_metadata_coord_vars_expected.txt dump_classic_metadata_output.txt && rm -f dump_classic_metadata_output.txt")
+    set_tests_properties(dump_classic_metadata_validate PROPERTIES ENVIRONMENT "${_nep_ld_env}")
 endif()
