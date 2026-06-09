@@ -8,7 +8,7 @@ AM_TESTS_ENVIRONMENT = LD_LIBRARY_PATH="@MY_LD_LIBRARY_PATH@:$$LD_LIBRARY_PATH"
 
 # Performance examples run as tests only when --enable-benchmarks is set (slow; not for regular CI)
 if ENABLE_BENCHMARKS
-check_PROGRAMS = cache_tuning chunking deflate fill_values endianness zstandard szip
+check_PROGRAMS = cache_tuning chunking deflate fill_values endianness zstandard szip lz4
 
 cache_tuning_SOURCES = cache_tuning.c
 cache_tuning_CPPFLAGS = -DENABLE_BENCHMARKS=1
@@ -38,7 +38,11 @@ szip_SOURCES = szip.c
 szip_CPPFLAGS = -DENABLE_BENCHMARKS=1
 szip_LDADD = -lnetcdf -lhdf5_hl -lhdf5 -lsz -lm
 
-TESTS = cache_tuning chunking deflate fill_values endianness zstandard szip
+lz4_SOURCES = lz4.c
+lz4_CPPFLAGS = -DENABLE_BENCHMARKS=1
+lz4_LDADD = -lnetcdf -lhdf5_hl -lhdf5 -lm
+
+TESTS = cache_tuning chunking deflate fill_values endianness zstandard szip lz4
 endif
 
 # Include test scripts in distribution

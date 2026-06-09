@@ -180,6 +180,33 @@
 - Update `examples/performance/Makefile.am`: add `szip` inside `if ENABLE_BENCHMARKS` block (link `-lsz`)
 - Update `docs/prd.md` with `szip.c` description in Performance Examples subsection
 
+#### Sprint 8: Add example: lz4.c — LZ4 Compression Performance
+**Detailed Plan**: See `docs/plan/v1.10.0-sprint8-lz4.md`
+
+**Purpose**: Demonstrate how LZ4 compression levels (1–9) and the shuffle filter interact to affect compression ratio and I/O throughput on a realistic scientific dataset.
+
+**What it shows**:
+
+- Similar to zstandard.c and szip developed in sprints 6 and 7
+- LZ4 levels 1–9 with and without the shuffle filter (18 combinations total)
+- Compression ratio vs. level for both shuffle settings
+- Write time and read time per combination
+- Dataset: Same 500×180×360 NC_FLOAT temperature as sprints 1–7, chunk shape 10×45×90
+- Output: CSV with columns `lz4_level,shuffle,compressed_bytes,ratio,write_s,read_s`
+
+**Key API**: `nc_def_var_lz4()`, `nc_inq_var_lz4()`
+
+**Tasks**:
+
+- Create `examples/performance/lz4.c` example program
+- Enable shuffle via `nc_def_var_deflate(shuffle=1, deflate=0, level=0)` before `nc_def_var_lz4()`
+- Iterate LZ4 levels 1–9 × shuffle {0,1}; print one CSV row per combination
+- Use `stat()` to obtain compressed file size on disk
+- Create `examples/performance/plot_lz4.py`; reads `lz4_results.csv`, writes `lz4_performance.jpg`
+- Update `examples/performance/CMakeLists.txt`: add `lz4` executable gated on `ENABLE_BENCHMARKS`
+- Update `examples/performance/Makefile.am`: add `lz4` inside `if ENABLE_BENCHMARKS` block
+- Update `docs/prd.md` with `lz4.c` description in Performance Examples subsection
+
 ### V1.9.0 Parallel I/O Builds and Examples
 
 #### Sprint 1: Add mpicc Build to CI

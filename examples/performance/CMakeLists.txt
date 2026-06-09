@@ -77,6 +77,10 @@ add_executable(szip szip.c)
 perf_target(szip)
 target_link_libraries(szip PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl sz m)
 
+add_executable(lz4 lz4.c)
+perf_target(lz4)
+target_link_libraries(lz4 PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl m)
+
 # Performance examples run as tests only when ENABLE_BENCHMARKS=ON (slow; not for regular CI)
 if(ENABLE_BENCHMARKS)
     target_compile_definitions(cache_tuning PRIVATE ENABLE_BENCHMARKS=1)
@@ -86,9 +90,10 @@ if(ENABLE_BENCHMARKS)
     target_compile_definitions(endianness PRIVATE ENABLE_BENCHMARKS=1)
     target_compile_definitions(zstandard PRIVATE ENABLE_BENCHMARKS=1)
     target_compile_definitions(szip PRIVATE ENABLE_BENCHMARKS=1)
+    target_compile_definitions(lz4 PRIVATE ENABLE_BENCHMARKS=1)
     if(BUILD_TESTING)
         set(_bench_tests cache_tuning chunking deflate fill_values
-                         endianness zstandard szip)
+                         endianness zstandard szip lz4)
         foreach(_t ${_bench_tests})
             add_test(NAME ${_t}
                      COMMAND ${_t}

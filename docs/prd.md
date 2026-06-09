@@ -515,6 +515,9 @@ shape 10×45×90.
   NC_SZIP_EC coding methods across pixels_per_block {2, 4, 8, 16, 32} (10
   combinations); outputs CSV
   (`coding,pixels_per_block,compressed_bytes,ratio,write_s,read_s`)
+- `lz4.c` — LZ4 compression performance: demonstrates LZ4 levels 1–9 with
+  and without the shuffle filter (18 combinations); outputs CSV
+  (`lz4_level,shuffle,compressed_bytes,ratio,write_s,read_s`)
 
 ---
 
