@@ -79,7 +79,8 @@ program f_quickstart
   integer :: data_in(XDIM, YDIM)
   
   integer :: i, j
-  
+  logical :: ok
+
   ! ========== WRITE PHASE ==========
   print *, "Creating NetCDF file: ", FILE_NAME
   
@@ -144,7 +145,6 @@ program f_quickstart
   call check(retval, "reading data")
 
   ! Verify data correctness
-  logical :: ok
   ok = .true.
   do j = 1, YDIM
     do i = 1, XDIM
