@@ -184,8 +184,8 @@ int main(int argc, char **argv)
     float *data;
 #ifdef ENABLE_BENCHMARKS
     double t_start, t_end;
-#endif
     int iter;                    /* Loop counter for repeated reads */
+#endif
     size_t slab_size;            /* Size of one chunk in elements */
     size_t default_cache_size;   /* Default cache size in bytes */
     size_t default_nelems;       /* Default number of cache elements */
