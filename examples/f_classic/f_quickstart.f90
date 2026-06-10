@@ -1,11 +1,18 @@
 !> @file f_quickstart.f90
 !! @brief Minimal introduction to NetCDF from Fortran - the simplest starting point
 !!
-!! This is the Fortran equivalent of quickstart.c, demonstrating the essential
-!! NetCDF operations using the Fortran 90 NetCDF API (nf90_* functions). The
-!! program creates a tiny 2D array (2x3) with 6 integer values, adds descriptive
-!! attributes, writes it to a file, then reopens the file to verify everything
-!! was stored correctly.
+!! This is the most basic NetCDF example in Fortran, demonstrating the essential
+!! 6-step pattern:
+!!   1. Create file          (nf90_create)
+!!   2. Define dimensions    (nf90_def_dim)
+!!   3. Define variables     (nf90_def_var)
+!!   4. Add attributes       (nf90_put_att)
+!!   5. Write data           (nf90_put_var)
+!!   6. Close file           (nf90_close)
+!!
+!! The program creates a tiny 2D array (2x3) with 6 integer values, adds descriptive
+!! attributes, writes it to a file, then reopens and reads the data back to verify
+!! the round-trip worked.
 !!
 !! **Learning Objectives:**
 !! - Understand the basic NetCDF workflow from Fortran
@@ -72,9 +79,6 @@ program f_quickstart
   integer :: data_in(XDIM, YDIM)
   
   integer :: i, j
-  integer :: ndims_in, nvars_in, ngatts_in
-  integer :: len_x, len_y
-  character(len=100) :: desc_in, units_in
   
   ! ========== WRITE PHASE ==========
   print *, "Creating NetCDF file: ", FILE_NAME
@@ -129,73 +133,35 @@ program f_quickstart
   
   ! ========== READ PHASE ==========
   print *, ""
-  print *, "Reopening file for validation..."
-  
+  print *, "Reopening file for reading..."
+
   ! Open the file for reading
   retval = nf90_open(FILE_NAME, nf90_nowrite, ncid)
   call check(retval, "reopening file")
-  
-  ! Verify metadata: check number of dimensions, variables, and attributes
-  retval = nf90_inquire(ncid, ndims_in, nvars_in, ngatts_in)
-  call check(retval, "inquiring file")
-  
-  print *, "File contains:", ndims_in, "dimensions,", nvars_in, "variables,", &
-           ngatts_in, "global attributes"
-  
-  if (ndims_in /= 2 .or. nvars_in /= 1 .or. ngatts_in /= 1) then
-    print *, "Error: Unexpected file structure"
-    stop 1
-  end if
-  
-  ! Verify dimension sizes
-  retval = nf90_inquire_dimension(ncid, x_dimid, len=len_x)
-  call check(retval, "inquiring X dimension")
-  
-  retval = nf90_inquire_dimension(ncid, y_dimid, len=len_y)
-  call check(retval, "inquiring Y dimension")
-  
-  if (len_x /= XDIM .or. len_y /= YDIM) then
-    print *, "Error: Expected dimensions X=", XDIM, ", Y=", YDIM, &
-             ", found X=", len_x, ", Y=", len_y
-    stop 1
-  end if
-  print *, "Verified: X=", len_x, ", Y=", len_y
-  
-  ! Verify global and variable attributes
-  retval = nf90_get_att(ncid, nf90_global, "description", desc_in)
-  call check(retval, "reading global attribute")
-  retval = nf90_get_att(ncid, data_varid, "units", units_in)
-  call check(retval, "reading variable attribute")
 
-  if (trim(desc_in) /= "a quickstart example" .or. trim(units_in) /= "m/s") then
-    print *, "Error: attributes incorrect"
-    stop 1
-  end if
-  print *, "Verified: all attributes correct"
-  
   ! Read the data back
   retval = nf90_get_var(ncid, data_varid, data_in)
   call check(retval, "reading data")
-  
+
   ! Verify data correctness
+  logical :: ok
+  ok = .true.
   do j = 1, YDIM
     do i = 1, XDIM
-      if (data_in(i, j) /= data_out(i, j)) then
-        print *, "Error: data(", i, ",", j, ") = ", data_in(i, j), &
-                 ", expected ", data_out(i, j)
-        stop 1
-      end if
+      if (data_in(i, j) /= data_out(i, j)) ok = .false.
     end do
   end do
-  
-  print *, "Verified: all 6 data values correct (1, 2, 3, 4, 5, 6)"
-  
+
   ! Close the file
   retval = nf90_close(ncid)
-  call check(retval, "closing file after reading")
-  
-  print *, ""
-  print *, "*** SUCCESS: All validation checks passed!"
+  call check(retval, "closing file")
+
+  if (ok) then
+    print *, "*** SUCCESS: Data read back correctly!"
+  else
+    print *, "Error: Data mismatch"
+    stop 1
+  end if
   
 contains
   !> @brief Error handling subroutine

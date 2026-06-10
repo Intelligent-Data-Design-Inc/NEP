@@ -1,14 +1,23 @@
 # CMakeLists.txt for performance examples
 # Edward Hartnett, Intelligent Data Design, Inc.
 
-# Find nc-config from the NetCDF library directories
+# Find nc-config from the NetCDF library directories or prefix
+if(NETCDF_LIBRARY_DIRS)
+    set(_nc_config_hints ${NETCDF_LIBRARY_DIRS}/../bin)
+elseif(NETCDF_PREFIX)
+    set(_nc_config_hints ${NETCDF_PREFIX}/bin)
+else()
+    # Allow search in system PATH
+    set(_nc_config_hints "")
+endif()
+
 find_program(NC_CONFIG nc-config
-    HINTS ${NETCDF_LIBRARY_DIRS}/../bin
-    PATHS ${NETCDF_LIBRARY_DIRS}/../bin
+    HINTS ${_nc_config_hints}
+    PATHS ${_nc_config_hints}
 )
 
 if(NOT NC_CONFIG)
-    message(FATAL_ERROR "nc-config not found. Cannot build examples.")
+    message(FATAL_ERROR "nc-config not found. Cannot build examples. Set NETCDF_PREFIX or ensure nc-config is in PATH.")
 endif()
 
 # Get NetCDF compile and link flags using nc-config (includes all dependencies)
