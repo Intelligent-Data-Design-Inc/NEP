@@ -129,7 +129,6 @@ run_one(float *data, int level, int shuffle)
     struct stat st;
     long long compressed_bytes;
     double ratio;
-    int hasfilter_out, level_out;
 
     /* --- Write pass ---------------------------------------------------- */
     t_write_start = get_time();
@@ -154,7 +153,6 @@ run_one(float *data, int level, int shuffle)
 
     /* Verify lz4 settings took effect before writing. */
     {
-        unsigned int filterid;
         size_t nparams = 1;
         unsigned int params[1];
         size_t nfilters;
