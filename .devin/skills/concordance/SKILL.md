@@ -1,6 +1,6 @@
 ---
 name: concordance
-description: Create a LibreOffice Writer concordance file (CSV/semicolon-delimited) for use with the AutoMark feature to automatically generate a book index. Use when given text, a chapter, or a list of terms that need to be indexed.
+description: Create a LibreOffice Writer concordance file (.sdi, semicolon-delimited) for use with the AutoMark feature to automatically generate a book index. Use when given text, a chapter, or a list of terms that need to be indexed.
 metadata:
   author: cascade
   version: "1.0"
@@ -85,7 +85,7 @@ Output as plain text, one entry per line, no header row, semicolons as delimiter
 Search term;Alternative entry;1st key;2nd key;Case sensitive;Word only
 ```
 
-Save with `.txt` or `.sdi` extension in UTF-8 or ANSI encoding.
+Save with `.sdi` extension in UTF-8 or ANSI encoding.
 
 ## Complete Example
 

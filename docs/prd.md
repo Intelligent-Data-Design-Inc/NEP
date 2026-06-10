@@ -518,6 +518,18 @@ shape 10×45×90.
 - `lz4.c` — LZ4 compression performance: demonstrates LZ4 levels 1–9 with
   and without the shuffle filter (18 combinations); outputs CSV
   (`lz4_level,shuffle,compressed_bytes,ratio,write_s,read_s`)
+- `bzip2.c` — BZIP2 compression performance: demonstrates BZIP2 levels 1–9 with
+  and without the shuffle filter (18 combinations); outputs CSV
+  (`bzip2_level,shuffle,compressed_bytes,ratio,write_s,read_s`)
+- `lossless.c` — Lossless compression comparison: compares the best-performing
+  settings of all available filters (DEFLATE, Zstandard, SZIP, LZ4, BZIP2) with
+  shuffle enabled; outputs CSV
+  (`filter,level_or_pixels,compressed_bytes,ratio,write_s,read_s`)
+- `quantize.c` — Quantization + compression performance: demonstrates all three
+  quantization algorithms (BitGroom, GranularBitRound, BitRound) at each NSD/NSB
+  level paired with all five lossless filters at their optimal settings; includes
+  baseline lossless rows and max absolute error per combination; outputs CSV
+  (`quantize_alg,nsd_or_nsb,filter,compressed_bytes,ratio,write_s,read_s,max_abs_err`)
 
 ---
 

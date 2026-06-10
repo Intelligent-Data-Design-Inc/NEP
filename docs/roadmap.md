@@ -207,6 +207,109 @@
 - Update `examples/performance/Makefile.am`: add `lz4` inside `if ENABLE_BENCHMARKS` block
 - Update `docs/prd.md` with `lz4.c` description in Performance Examples subsection
 
+#### Sprint 9: Add example: bzip2.c — BZIP2 Compression Performance
+**Detailed Plan**: See `docs/plan/v1.10.0-sprint9-bzip2.md`
+
+**Purpose**: Demonstrate how BZIP2 compression levels (1–9) and the shuffle filter interact to affect compression ratio and I/O throughput on a realistic scientific dataset.
+
+**What it shows**:
+
+- Similar to zstandard.c, szip, and lz4 developed in sprints 6, 7, and 8
+- BZIP2 levels 1–9 with and without the shuffle filter (18 combinations total)
+- Compression ratio vs. level for both shuffle settings
+- Write time and read time per combination
+- BZIP2 provides higher compression ratios than LZ4 but with significantly slower write speeds
+- Dataset: Same 500×180×360 NC_FLOAT temperature as sprints 1–8, chunk shape 10×45×90
+- Output: CSV with columns `bzip2_level,shuffle,compressed_bytes,ratio,write_s,read_s`
+
+**Key API**: `nc_def_var_bzip2()`, `nc_inq_var_bzip2()`
+
+**Tasks**:
+
+- Create `examples/performance/bzip2.c` example program
+- Enable shuffle via `nc_def_var_deflate(shuffle=1, deflate=0, level=0)` before `nc_def_var_bzip2()`
+- Iterate BZIP2 levels 1–9 × shuffle {0,1}; print one CSV row per combination
+- Use `stat()` to obtain compressed file size on disk
+- Create `examples/performance/plot_bzip2.py`; reads `bzip2_results.csv`, writes `bzip2_performance.jpg`
+- Update `examples/performance/CMakeLists.txt`: add `bzip2` executable gated on `ENABLE_BENCHMARKS`
+- Update `examples/performance/Makefile.am`: add `bzip2` inside `if ENABLE_BENCHMARKS` block
+- Update `docs/prd.md` with `bzip2.c` description in Performance Examples subsection
+
+#### Sprint 10: Add example: lossless.c — Lossless Compression Comparison
+**Detailed Plan**: See `docs/plan/v1.10.0-sprint10-lossless.md`
+
+**Purpose**: Compare the best-performing settings of all available lossless compression filters (DEFLATE, Zstandard, SZIP, LZ4, BZIP2) to provide a unified recommendation for scientific floating-point data.
+
+**What it shows**:
+
+- Head-to-head comparison of optimal settings for each compression filter
+- Each filter tested at its best level (as determined in sprints 3, 6, 7, 8, 9)
+- All tests run with shuffle enabled (determined to be always beneficial for floats)
+- Compression ratio, write time, and read time per filter
+- Ranking of filters by compression ratio and by speed
+- Dataset: Same 500×180×360 NC_FLOAT temperature as sprints 1–9, chunk shape 10×45×90
+- Output: CSV with columns `filter,level_or_pixels,compressed_bytes,ratio,write_s,read_s`
+
+**Best settings to compare**:
+- DEFLATE (gzip): level 1 (good ratio, fast)
+- Zstandard: level 1 (optimal ratio vs speed tradeoff)
+- SZIP: NC_SZIP_NN with pixels_per_block=2 (best for NC_FLOAT)
+- LZ4: level 1 (best ratio with shuffle)
+- BZIP2: level 1 (optimal for this data type)
+
+**Key API**: `nc_def_var_deflate()`, `nc_def_var_zstandard()`, `nc_def_var_szip()`, `nc_def_var_lz4()`, `nc_def_var_bzip2()`
+
+**Tasks**:
+
+- Create `examples/performance/lossless.c` example program
+- Enable shuffle via `nc_def_var_deflate(shuffle=1, deflate=0, level=0)` for all tests
+- Iterate each filter at its optimal setting; print one CSV row per filter
+- Use `stat()` to obtain compressed file size on disk
+- Create `examples/performance/plot_lossless.py`; reads `lossless_results.csv`, writes `lossless_performance.jpg`
+- Update `examples/performance/CMakeLists.txt`: add `lossless` executable gated on `ENABLE_BENCHMARKS`
+- Update `examples/performance/Makefile.am`: add `lossless` inside `if ENABLE_BENCHMARKS` block
+- Update `docs/prd.md` with `lossless.c` description in Performance Examples subsection
+
+#### Sprint 11: Add example: quantize.c — Quantization + Compression Performance
+**Detailed Plan**: See `docs/plan/v1.10.0-sprint11-quantize.md`
+
+**Purpose**: Demonstrate how lossy quantization pre-filters (BitGroom, GranularBitRound, BitRound) interact with each available lossless compression filter to affect compression ratio, I/O throughput, and precision loss on a realistic scientific dataset.
+
+**What it shows**:
+
+- Similar to bzip2.c and lossless.c developed in sprints 9 and 10
+- Three quantization algorithms: BitGroom, GranularBitRound, and BitRound
+- NSD values 1–7 for BitGroom and GranularBitRound; NSB values 3, 6, 9, 13, 16, 19, 23 for BitRound (equivalent decimal precision)
+- Each quantize algorithm × NSD/NSB combination paired with all five lossless filters at their optimal settings from sprint 10 (shuffle enabled for all)
+- Baseline rows: each lossless filter at optimal settings without quantization (same as lossless.c output)
+- Compression ratio, write time, read time, and max absolute error per combination
+- Dataset: Same 500×180×360 NC_FLOAT temperature as sprints 1–10, chunk shape 10×45×90
+- Output: CSV with columns `quantize_alg,nsd_or_nsb,filter,compressed_bytes,ratio,write_s,read_s,max_abs_err`
+
+**Lossless filters and settings** (from sprint 10):
+- DEFLATE: level 1, shuffle enabled
+- Zstandard: level 1, shuffle enabled
+- SZIP: NC_SZIP_NN, pixels_per_block=2, shuffle enabled
+- LZ4: level 1, shuffle enabled
+- BZIP2: level 1, shuffle enabled
+
+**Key API**: `nc_def_var_quantize()`, `nc_inq_var_quantize()`, `NC_QUANTIZE_BITGROOM`, `NC_QUANTIZE_GRANULARBR`, `NC_QUANTIZE_BITROUND`
+
+**Tasks**:
+
+- Create `examples/performance/quantize.c` example program
+- Enable shuffle via `nc_def_var_deflate(shuffle=1, deflate=0, level=0)` for all tests
+- Apply each lossless filter at its optimal setting (as in lossless.c) for every quantized combination
+- Call `nc_def_var_quantize()` after the lossless filter is configured for quantized runs
+- Emit baseline rows (no quantization) for each filter first, then quantized rows
+- Compute max absolute error by reading back data and comparing to original array
+- Iterate all quantize algorithm × NSD/NSB × filter combinations; print one CSV row per combination
+- Use `stat()` to obtain compressed file size on disk
+- Create `examples/performance/plot_quantize.py`; reads `quantize_results.csv`, writes `quantize_performance.jpg`
+- Update `examples/performance/CMakeLists.txt`: add `quantize` executable gated on `ENABLE_BENCHMARKS`
+- Update `examples/performance/Makefile.am`: add `quantize` inside `if ENABLE_BENCHMARKS` block
+- Update `docs/prd.md` with `quantize.c` description in Performance Examples subsection
+
 ### V1.9.0 Parallel I/O Builds and Examples
 
 #### Sprint 1: Add mpicc Build to CI

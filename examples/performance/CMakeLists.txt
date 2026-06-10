@@ -27,6 +27,10 @@ execute_process(
 separate_arguments(NC_CFLAGS_LIST UNIX_COMMAND "${NC_CFLAGS}")
 separate_arguments(NC_LIBS_LIST UNIX_COMMAND "${NC_LIBS}")
 
+# Add NEP include directories for examples that use NEP functions (e.g., lossless.c)
+include_directories(${CMAKE_BINARY_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/include)
+
 # Get HDF5 library directory from HDF5_INCLUDE_DIR (parent scope)
 get_filename_component(HDF5_LIB_DIR "${HDF5_INCLUDE_DIR}/../lib" ABSOLUTE)
 
@@ -81,6 +85,18 @@ add_executable(lz4 lz4.c)
 perf_target(lz4)
 target_link_libraries(lz4 PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl m)
 
+add_executable(bzip2 bzip2.c)
+perf_target(bzip2)
+target_link_libraries(bzip2 PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl m)
+
+add_executable(lossless lossless.c)
+perf_target(lossless)
+target_link_libraries(lossless PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl sz nep m)
+
+add_executable(quantize quantize.c)
+perf_target(quantize)
+target_link_libraries(quantize PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl sz nep m)
+
 # Performance examples run as tests only when ENABLE_BENCHMARKS=ON (slow; not for regular CI)
 if(ENABLE_BENCHMARKS)
     target_compile_definitions(cache_tuning PRIVATE ENABLE_BENCHMARKS=1)
@@ -91,9 +107,12 @@ if(ENABLE_BENCHMARKS)
     target_compile_definitions(zstandard PRIVATE ENABLE_BENCHMARKS=1)
     target_compile_definitions(szip PRIVATE ENABLE_BENCHMARKS=1)
     target_compile_definitions(lz4 PRIVATE ENABLE_BENCHMARKS=1)
+    target_compile_definitions(bzip2 PRIVATE ENABLE_BENCHMARKS=1)
+    target_compile_definitions(lossless PRIVATE ENABLE_BENCHMARKS=1)
+    target_compile_definitions(quantize PRIVATE ENABLE_BENCHMARKS=1)
     if(BUILD_TESTING)
         set(_bench_tests cache_tuning chunking deflate fill_values
-                         endianness zstandard szip lz4)
+                         endianness zstandard szip lz4 bzip2 lossless quantize)
         foreach(_t ${_bench_tests})
             add_test(NAME ${_t}
                      COMMAND ${_t}

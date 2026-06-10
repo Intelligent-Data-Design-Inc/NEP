@@ -50,16 +50,37 @@ Working directory: `/home/ed/NEP`
 
 ```bash
 cmake -S . -B build \
-  -DCMAKE_PREFIX_PATH="/usr/local/netcdf-c-4.10.0;/usr/local/hdf5-2.1.0;/usr/local/cdf-3.9.1;/usr/local/NCEPLIBS-g2c-2.3.0;/usr/local/jasper-3.0.3" \
+  -DCMAKE_PREFIX_PATH="/usr/local/hdf5-2.1.0;/usr/local/netcdf-c-4.10.0;/usr/local/cdf-3.9.1;/usr/local/NCEPLIBS-g2c-2.3.0;/usr/local/jasper-3.0.3" \
+  -DHDF5_ROOT=/usr/local/hdf5-2.1.0 \
   -DCMAKE_BUILD_TYPE=Debug \
   -DENABLE_GEOTIFF=ON \
   -DENABLE_CDF=ON \
+  -DENABLE_GRIB2=OFF \
   -DENABLE_FORTRAN=OFF \
   -DCMAKE_EXE_LINKER_FLAGS="-Wl,-rpath,/usr/local/hdf5-2.1.0/lib -Wl,-rpath,/usr/local/netcdf-c-4.10.0/lib"
 make -j$(nproc) -C build && ctest --test-dir build
 ```
 
+**IMPORTANT**: `-DHDF5_ROOT=/usr/local/hdf5-2.1.0` is required. Without it, CMake
+finds the system HDF5 1.14.6 instead, which conflicts with NetCDF-C 4.10.0 (built
+against HDF5 2.1.0) and causes `NetCDF: HDF error` at runtime.
+
+**IMPORTANT**: `ENABLE_CDF` and `ENABLE_GRIB2` are mutually exclusive (both use
+UDF slot 2). Always set `-DENABLE_GRIB2=OFF` when `-DENABLE_CDF=ON`.
+
+**IMPORTANT**: If CMakeCache.txt has stale HDF5 entries, delete it before reconfiguring:
+```bash
+rm -f build/CMakeCache.txt
+```
+
 Add `-DENABLE_BENCHMARKS=ON -DBUILD_EXAMPLES=ON` to also build and run the performance examples.
+
+**Running performance benchmarks** (after building with ENABLE_BENCHMARKS=ON):
+```bash
+LD_LIBRARY_PATH=/home/ed/NEP/build/src:/usr/local/hdf5-2.1.0/lib:/usr/local/netcdf-c-4.10.0/lib:/usr/local/jasper-3.0.3/lib:$LD_LIBRARY_PATH \
+HDF5_PLUGIN_PATH=/usr/local/hdf5/lib/plugin \
+./build/examples/performance/<example>
+```
 
 **Runtime environment for tests** (if rpath not embedded):
 ```bash
