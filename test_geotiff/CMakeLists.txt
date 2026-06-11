@@ -11,6 +11,21 @@ if(HAVE_GEOTIFF)
     file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../test/data/ABBA_2022_C61_HNL.tif
          DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
     
+    # Derive runtime library path from HDF5 and NetCDF libraries
+    set(_nep_geotiff_lib_dirs "")
+    foreach(_lib ${HDF5_LIBRARIES})
+        if(IS_ABSOLUTE "${_lib}")
+            get_filename_component(_d "${_lib}" DIRECTORY)
+            list(APPEND _nep_geotiff_lib_dirs "${_d}")
+        endif()
+    endforeach()
+    if(NETCDF_LIBRARY_DIRS)
+        list(APPEND _nep_geotiff_lib_dirs ${NETCDF_LIBRARY_DIRS})
+    endif()
+    list(REMOVE_DUPLICATES _nep_geotiff_lib_dirs)
+    string(REPLACE ";" ":" _nep_geotiff_ld_path "${_nep_geotiff_lib_dirs}")
+    set(_nep_ld_env "LD_LIBRARY_PATH=${_nep_geotiff_ld_path}:$ENV{LD_LIBRARY_PATH}")
+
     # Include directories
     include_directories(${CMAKE_BINARY_DIR}/include)
     include_directories(${CMAKE_SOURCE_DIR}/include)
@@ -28,8 +43,9 @@ if(HAVE_GEOTIFF)
         ${GEOTIFF_LIBRARY} 
         ${TIFF_LIBRARY})
     add_test(NAME tst_geotiff_handle COMMAND tst_geotiff_handle)
-    set_tests_properties(tst_geotiff_handle PROPERTIES 
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    set_tests_properties(tst_geotiff_handle PROPERTIES
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        ENVIRONMENT "${_nep_ld_env}")
 
     # Test for GeoTIFF Phase 2: metadata extraction
     add_executable(tst_geotiff_metadata tst_geotiff_metadata.c)
@@ -40,8 +56,9 @@ if(HAVE_GEOTIFF)
         ${GEOTIFF_LIBRARY} 
         ${TIFF_LIBRARY})
     add_test(NAME tst_geotiff_metadata COMMAND tst_geotiff_metadata)
-    set_tests_properties(tst_geotiff_metadata PROPERTIES 
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    set_tests_properties(tst_geotiff_metadata PROPERTIES
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        ENVIRONMENT "${_nep_ld_env}")
 
     # Test for GeoTIFF Phase 3.5a: error handling
     add_executable(tst_geotiff_errors tst_geotiff_errors.c)
@@ -52,8 +69,9 @@ if(HAVE_GEOTIFF)
         ${GEOTIFF_LIBRARY} 
         ${TIFF_LIBRARY})
     add_test(NAME tst_geotiff_errors COMMAND tst_geotiff_errors)
-    set_tests_properties(tst_geotiff_errors PROPERTIES 
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    set_tests_properties(tst_geotiff_errors PROPERTIES
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        ENVIRONMENT "${_nep_ld_env}")
 
     # Test for GeoTIFF Phase 3.5a: edge cases
     add_executable(tst_geotiff_edge_cases tst_geotiff_edge_cases.c)
@@ -64,8 +82,9 @@ if(HAVE_GEOTIFF)
         ${GEOTIFF_LIBRARY} 
         ${TIFF_LIBRARY})
     add_test(NAME tst_geotiff_edge_cases COMMAND tst_geotiff_edge_cases)
-    set_tests_properties(tst_geotiff_edge_cases PROPERTIES 
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    set_tests_properties(tst_geotiff_edge_cases PROPERTIES
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        ENVIRONMENT "${_nep_ld_env}")
 
     # Test for simple GeoTIFF value comparison (issue #84)
     add_executable(tst_simple_geotiff tst_simple_geotiff.c)
@@ -76,8 +95,9 @@ if(HAVE_GEOTIFF)
         ${GEOTIFF_LIBRARY} 
         ${TIFF_LIBRARY})
     add_test(NAME tst_simple_geotiff COMMAND tst_simple_geotiff)
-    set_tests_properties(tst_simple_geotiff PROPERTIES 
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    set_tests_properties(tst_simple_geotiff PROPERTIES
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        ENVIRONMENT "${_nep_ld_env}")
 
     # Test for CRS metadata extraction (issue #92)
     add_executable(test_netcdf_crs test_netcdf_crs.c)
@@ -88,8 +108,9 @@ if(HAVE_GEOTIFF)
         ${GEOTIFF_LIBRARY} 
         ${TIFF_LIBRARY})
     add_test(NAME test_netcdf_crs COMMAND test_netcdf_crs)
-    set_tests_properties(test_netcdf_crs PROPERTIES 
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    set_tests_properties(test_netcdf_crs PROPERTIES
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        ENVIRONMENT "${_nep_ld_env}")
 
     # Benchmark for GeoTIFF Phase 3.5a: performance validation
     add_executable(bench_geotiff_performance bench_geotiff_performance.c)
@@ -113,8 +134,9 @@ if(HAVE_GEOTIFF)
     target_compile_definitions(tst_geotiff_self_load PRIVATE
         NEP_GEOTIFF_LIB_PATH="$<TARGET_FILE:ncgeotiff>")
     add_test(NAME tst_geotiff_self_load COMMAND tst_geotiff_self_load)
-    set_tests_properties(tst_geotiff_self_load PROPERTIES 
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    set_tests_properties(tst_geotiff_self_load PROPERTIES
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        ENVIRONMENT "${_nep_ld_env}")
 
     # Test for .ncrc autoloading via NETCDF_RC (issue #134)
     add_executable(tst_geotiff_ncrc_autoload tst_geotiff_ncrc_autoload.c)
@@ -128,7 +150,8 @@ if(HAVE_GEOTIFF)
         NEP_GEOTIFF_LIB_PATH="$<TARGET_FILE:ncgeotiff>")
     add_test(NAME tst_geotiff_ncrc_autoload COMMAND tst_geotiff_ncrc_autoload)
     set_tests_properties(tst_geotiff_ncrc_autoload PROPERTIES
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        ENVIRONMENT "${_nep_ld_env}")
 
     message(STATUS "GeoTIFF tests enabled")
 endif()

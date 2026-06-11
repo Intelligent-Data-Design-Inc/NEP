@@ -1,0 +1,4 @@
+endian_mode,write_s,read_s,file_bytes
+native,0.066,0.031,129608192
+little,0.066,0.033,129608192
+big,0.098,0.070,129608192

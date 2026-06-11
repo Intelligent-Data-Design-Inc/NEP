@@ -1,5 +1,315 @@
 # NEP Development Roadmap
 
+### V1.10.0 More Performance Examples
+
+#### Sprint 1: Add example: cache_tuning.c — Chunk Cache Configuration
+**Detailed Plan**: See `docs/plan/v1.10.0-sprint1-cache-tuning.md`
+
+**Purpose**: Demonstrate nc_set_chunk_cache() and nc_set_var_chunk_cache() with measurable performance differences.
+
+**What it shows**:
+
+- Default cache vs enlarged cache for repeated chunk access
+- File-level vs variable-level cache settings
+- Cache thrashing detection (access pattern that exceeds cache)
+- Dataset: 3D temperature, 500×180×360, chunked 10×45×90 (~600KB/chunk), access pattern reads same slabs repeatedly
+
+**Key API**: nc_set_chunk_cache(), nc_set_var_chunk_cache(), nc_inq_var_chunk_cache()
+
+**Tasks**:
+
+- Create `examples/performance/cache_tuning.c` example program
+- Create 3D temperature dataset with specified dimensions and chunking
+- Implement cache comparison tests showing performance improvement with enlarged cache
+- Demonstrate file-level cache configuration via nc_set_chunk_cache()
+- Demonstrate variable-level cache configuration via nc_set_var_chunk_cache()
+- Add cache thrashing detection scenario when access pattern exceeds cache size
+- Integrate into CMake and Autotools build systems
+- Generate CDL expected output for validation
+- Add comprehensive Doxygen documentation
+
+#### Sprint 2: Add example: chunking.c — Chunk Shape Performance
+**Detailed Plan**: See `docs/plan/v1.10.0-sprint2-chunking.md`
+
+**Purpose**: Demonstrate how chunk shape selection affects I/O performance across two contrasting access patterns, with CSV output suitable for plotting.
+
+**What it shows**:
+
+- Time-optimized chunks (1×180×360) vs column-optimized chunks (500×1×1)
+- Time-slab access (one horizontal field at a time) vs column-profile access (full time series at one grid point)
+- Dramatic 10-100x performance difference between well-matched and mismatched chunk/access combinations
+- Dataset: Same 3D temperature 500×180×360 as sprint 1, ensuring consistent comparison
+- Output: CSV with columns `chunk_shape,access_pattern,elapsed_s,MB_per_s`
+
+**Key API**: nc_def_var_chunking(), nc_inq_var_chunking(), nc_get_vara_float()
+
+**Tasks**:
+
+- Create `examples/performance/chunking.c` example program
+- Wire `ENABLE_BENCHMARKS` option into root `CMakeLists.txt` and `configure.ac` (top-level declaration)
+- Gate both performance examples (`cache_tuning` and `chunking`) under `ENABLE_BENCHMARKS` in build systems
+- Program does not run in regular CI (ENABLE_BENCHMARKS defaults OFF)
+- Update `docs/prd.md` with performance examples subsection
+
+#### Sprint 3: Add example: deflate.c — Deflate Compression Performance
+**Detailed Plan**: See `docs/plan/v1.10.0-sprint3-deflate.md`
+
+**Purpose**: Demonstrate how zlib deflate levels (0–9) and the shuffle filter interact to affect compression ratio and I/O throughput on a realistic scientific dataset.
+
+**What it shows**:
+
+- Deflate levels 0–9 with and without the shuffle filter (20 combinations total)
+- Compression ratio vs. level for both shuffle settings
+- Write time and read time per combination
+- Dataset: Same 500×180×360 NC_FLOAT temperature as sprints 1 and 2
+- Output: CSV with columns `deflate_level,shuffle,compressed_bytes,ratio,write_s,read_s`
+
+**Key API**: `nc_def_var_deflate()`, `nc_inq_var_deflate()`, `nc_put_var_float()`, `nc_get_var_float()`
+
+**Tasks**:
+
+- Create `examples/performance/deflate.c` with `NC_CHK` error handling and Doxygen file header
+- Iterate all 20 combinations (levels 0–9 × shuffle {0,1}); print one CSV row per combination
+- Use `stat()` to obtain compressed file size on disk
+- Create `examples/performance/plot_deflate.py`; reads `deflate_results.csv`, writes `deflate_performance.jpg`
+- Update `examples/performance/CMakeLists.txt`: add `deflate` executable gated on `ENABLE_BENCHMARKS`
+- Update `examples/performance/Makefile.am`: add `deflate` inside `if ENABLE_BENCHMARKS` block
+- Update `docs/prd.md` with `deflate.c` description in Performance Examples subsection
+
+#### Sprint 4: Add example: fill_values.c — Fill Value Performance
+**Detailed Plan**: See `docs/plan/v1.10.0-sprint4-fill-values.md`
+
+**Purpose**: Demonstrate fill value handling performance across classic (netCDF-3) and netCDF-4/HDF5 formats, showing fill mode ON vs OFF overhead.
+
+**What it shows**:
+
+- Classic NC_FILL vs NC_NOFILL write/read performance
+- NetCDF-4 NC_FILL vs NC_NOFILL write/read performance
+- File size comparison between fill modes
+- Effect of fill value checking on read performance
+- Dataset: Same 500×180×360 NC_FLOAT temperature as sprints 1–3
+- Output: CSV with columns `format,fill_mode,write_s,read_s,file_bytes`
+
+**Key API**: `nc_set_fill()`, `nc_inq_fill()`, `nc_def_var_fill()`, `_FillValue` attribute
+
+**Tasks**:
+
+- Create `examples/performance/fill_values.c` example program
+- Test 4 combinations: classic (fill on/off) × netCDF-4 (fill on/off)
+- Implement CSV output with timing and file size measurements
+- Use `NC_CHK` error handling macro following NEP patterns
+- Integrate into CMake and Autotools build systems under `ENABLE_BENCHMARKS`
+- Create `examples/performance/plot_fill_values.py` for visualization
+- Update `docs/prd.md` with `fill_values.c` description
+
+#### Sprint 5: Add example: endianness.c — Endianness Performance
+**Detailed Plan**: See `docs/plan/v1.10.0-sprint5-endianness.md`
+
+**Purpose**: Demonstrate byte order (endianness) handling performance across native, little-endian, and big-endian settings in NetCDF-4/HDF5 files.
+
+**What it shows**:
+
+- Native vs little-endian vs big-endian write/read performance
+- Platform-native byte order vs explicit byte order conversion overhead
+- Effect of endianness on cross-platform data sharing
+- Dataset: Same 500×180×360 NC_FLOAT temperature as sprints 1–4
+- Output: CSV with columns `endian_mode,write_s,read_s,file_bytes`
+
+**Key API**: `nc_def_var_endian()`, `nc_inq_var_endian()`, `NC_ENDIAN_NATIVE`, `NC_ENDIAN_LITTLE`, `NC_ENDIAN_BIG`
+
+**Tasks**:
+
+- Create `examples/performance/endianness.c` example program
+- Test 3 combinations: NC_ENDIAN_NATIVE, NC_ENDIAN_LITTLE, NC_ENDIAN_BIG
+- Implement CSV output with timing and file size measurements
+- Use `if ((ret = nc_whatever())) ERR(ret)` error handling pattern
+- Integrate into CMake and Autotools build systems under `ENABLE_BENCHMARKS`
+- Create `examples/performance/plot_endianness.py` for visualization
+- Update `docs/prd.md` with `endianness.c` description
+
+#### Sprint 6: Add example: zstandard.c — Zstandard Compression Performance
+**Detailed Plan**: See `docs/plan/v1.10.0-sprint6-zstandard.md`
+
+**Purpose**: Demonstrate how Zstandard compression levels (-7 to 22) and the shuffle filter interact to affect compression ratio and I/O throughput on a realistic scientific dataset.
+
+**What it shows**:
+
+- Similar to deflate.c developed in sprint 3
+- Representative zstd levels {-7, -3, -1, 0, 1, 3, 6, 9, 12, 15, 19, 22} with and without the shuffle filter (24 combinations total)
+- Compression ratio vs. level for both shuffle settings
+- Write time and read time per combination
+- Dataset: Same 500×180×360 NC_FLOAT temperature as sprints 1–5, chunk shape 10×45×90
+- Output: CSV with columns `zstd_level,shuffle,compressed_bytes,ratio,write_s,read_s`
+
+**Key API**: `nc_def_var_zstandard()`, `nc_inq_var_zstandard()`, `nc_def_var_deflate()` (shuffle only)
+
+**Tasks**:
+
+- Create `examples/performance/zstandard.c` example program
+- Enable shuffle via `nc_def_var_deflate(shuffle=1, deflate=0, level=0)` before `nc_def_var_zstandard()`
+- Iterate representative level subset × shuffle {0,1}; print one CSV row per combination
+- Use `stat()` to obtain compressed file size on disk
+- Create `examples/performance/plot_zstandard.py`; reads `zstandard_results.csv`, writes `zstandard_performance.jpg`
+- Update `examples/performance/CMakeLists.txt`: add `zstandard` executable gated on `ENABLE_BENCHMARKS`
+- Update `examples/performance/Makefile.am`: add `zstandard` inside `if ENABLE_BENCHMARKS` block
+- Update `docs/prd.md` with `zstandard.c` description in Performance Examples subsection
+
+#### Sprint 7: Add example: szip.c — SZIP Compression Performance
+**Detailed Plan**: See `docs/plan/v1.10.0-sprint7-szip.md`
+
+**Purpose**: Demonstrate how SZIP `options_mask` (NN vs EC coding method) and `pixels_per_block` affect compression ratio and I/O throughput on a realistic scientific dataset.
+
+**What it shows**:
+
+- Similar to zstandard.c developed in sprint 6
+- `NC_SZIP_NN` coding method only (NC_SZIP_EC does not support NC_FLOAT)
+- `pixels_per_block` values {2, 6, 10, 18, 30} (even divisors of CHUNK_X=90), 5 combinations
+- Compression ratio, write time, and read time per combination
+- Dataset: Same 500×180×360 NC_FLOAT temperature as sprints 1–6, chunk shape 10×45×90
+- Output: CSV with columns `pixels_per_block,compressed_bytes,ratio,write_s,read_s`
+
+**Key API**: `nc_def_var_szip()`, `nc_inq_var_szip()`, `NC_SZIP_NN`
+
+**Tasks**:
+
+- Create `examples/performance/szip.c` example program
+- Iterate 5 `pixels_per_block` values with NC_SZIP_NN; print one CSV row per value
+- Use `stat()` to obtain compressed file size on disk
+- Create `examples/performance/plot_szip.py`; reads `szip_results.csv`, writes `szip_performance.jpg`
+- Update `examples/performance/CMakeLists.txt`: add `szip` executable gated on `ENABLE_BENCHMARKS`
+- Update `examples/performance/Makefile.am`: add `szip` inside `if ENABLE_BENCHMARKS` block (link `-lsz`)
+- Update `docs/prd.md` with `szip.c` description in Performance Examples subsection
+
+#### Sprint 8: Add example: lz4.c — LZ4 Compression Performance
+**Detailed Plan**: See `docs/plan/v1.10.0-sprint8-lz4.md`
+
+**Purpose**: Demonstrate how LZ4 compression levels (1–9) and the shuffle filter interact to affect compression ratio and I/O throughput on a realistic scientific dataset.
+
+**What it shows**:
+
+- Similar to zstandard.c and szip developed in sprints 6 and 7
+- LZ4 levels 1–9 with and without the shuffle filter (18 combinations total)
+- Compression ratio vs. level for both shuffle settings
+- Write time and read time per combination
+- Dataset: Same 500×180×360 NC_FLOAT temperature as sprints 1–7, chunk shape 10×45×90
+- Output: CSV with columns `lz4_level,shuffle,compressed_bytes,ratio,write_s,read_s`
+
+**Key API**: `nc_def_var_lz4()`, `nc_inq_var_lz4()`
+
+**Tasks**:
+
+- Create `examples/performance/lz4.c` example program
+- Enable shuffle via `nc_def_var_deflate(shuffle=1, deflate=0, level=0)` before `nc_def_var_lz4()`
+- Iterate LZ4 levels 1–9 × shuffle {0,1}; print one CSV row per combination
+- Use `stat()` to obtain compressed file size on disk
+- Create `examples/performance/plot_lz4.py`; reads `lz4_results.csv`, writes `lz4_performance.jpg`
+- Update `examples/performance/CMakeLists.txt`: add `lz4` executable gated on `ENABLE_BENCHMARKS`
+- Update `examples/performance/Makefile.am`: add `lz4` inside `if ENABLE_BENCHMARKS` block
+- Update `docs/prd.md` with `lz4.c` description in Performance Examples subsection
+
+#### Sprint 9: Add example: bzip2.c — BZIP2 Compression Performance
+**Detailed Plan**: See `docs/plan/v1.10.0-sprint9-bzip2.md`
+
+**Purpose**: Demonstrate how BZIP2 compression levels (1–9) and the shuffle filter interact to affect compression ratio and I/O throughput on a realistic scientific dataset.
+
+**What it shows**:
+
+- Similar to zstandard.c, szip, and lz4 developed in sprints 6, 7, and 8
+- BZIP2 levels 1–9 with and without the shuffle filter (18 combinations total)
+- Compression ratio vs. level for both shuffle settings
+- Write time and read time per combination
+- BZIP2 provides higher compression ratios than LZ4 but with significantly slower write speeds
+- Dataset: Same 500×180×360 NC_FLOAT temperature as sprints 1–8, chunk shape 10×45×90
+- Output: CSV with columns `bzip2_level,shuffle,compressed_bytes,ratio,write_s,read_s`
+
+**Key API**: `nc_def_var_bzip2()`, `nc_inq_var_bzip2()`
+
+**Tasks**:
+
+- Create `examples/performance/bzip2.c` example program
+- Enable shuffle via `nc_def_var_deflate(shuffle=1, deflate=0, level=0)` before `nc_def_var_bzip2()`
+- Iterate BZIP2 levels 1–9 × shuffle {0,1}; print one CSV row per combination
+- Use `stat()` to obtain compressed file size on disk
+- Create `examples/performance/plot_bzip2.py`; reads `bzip2_results.csv`, writes `bzip2_performance.jpg`
+- Update `examples/performance/CMakeLists.txt`: add `bzip2` executable gated on `ENABLE_BENCHMARKS`
+- Update `examples/performance/Makefile.am`: add `bzip2` inside `if ENABLE_BENCHMARKS` block
+- Update `docs/prd.md` with `bzip2.c` description in Performance Examples subsection
+
+#### Sprint 10: Add example: lossless.c — Lossless Compression Comparison
+**Detailed Plan**: See `docs/plan/v1.10.0-sprint10-lossless.md`
+
+**Purpose**: Compare the best-performing settings of all available lossless compression filters (DEFLATE, Zstandard, SZIP, LZ4, BZIP2) to provide a unified recommendation for scientific floating-point data.
+
+**What it shows**:
+
+- Head-to-head comparison of optimal settings for each compression filter
+- Each filter tested at its best level (as determined in sprints 3, 6, 7, 8, 9)
+- All tests run with shuffle enabled (determined to be always beneficial for floats)
+- Compression ratio, write time, and read time per filter
+- Ranking of filters by compression ratio and by speed
+- Dataset: Same 500×180×360 NC_FLOAT temperature as sprints 1–9, chunk shape 10×45×90
+- Output: CSV with columns `filter,level_or_pixels,compressed_bytes,ratio,write_s,read_s`
+
+**Best settings to compare**:
+- DEFLATE (gzip): level 1 (good ratio, fast)
+- Zstandard: level 1 (optimal ratio vs speed tradeoff)
+- SZIP: NC_SZIP_NN with pixels_per_block=2 (best for NC_FLOAT)
+- LZ4: level 1 (best ratio with shuffle)
+- BZIP2: level 1 (optimal for this data type)
+
+**Key API**: `nc_def_var_deflate()`, `nc_def_var_zstandard()`, `nc_def_var_szip()`, `nc_def_var_lz4()`, `nc_def_var_bzip2()`
+
+**Tasks**:
+
+- Create `examples/performance/lossless.c` example program
+- Enable shuffle via `nc_def_var_deflate(shuffle=1, deflate=0, level=0)` for all tests
+- Iterate each filter at its optimal setting; print one CSV row per filter
+- Use `stat()` to obtain compressed file size on disk
+- Create `examples/performance/plot_lossless.py`; reads `lossless_results.csv`, writes `lossless_performance.jpg`
+- Update `examples/performance/CMakeLists.txt`: add `lossless` executable gated on `ENABLE_BENCHMARKS`
+- Update `examples/performance/Makefile.am`: add `lossless` inside `if ENABLE_BENCHMARKS` block
+- Update `docs/prd.md` with `lossless.c` description in Performance Examples subsection
+
+#### Sprint 11: Add example: quantize.c — Quantization + Compression Performance
+**Detailed Plan**: See `docs/plan/v1.10.0-sprint11-quantize.md`
+
+**Purpose**: Demonstrate how lossy quantization pre-filters (BitGroom, GranularBitRound, BitRound) interact with each available lossless compression filter to affect compression ratio, I/O throughput, and precision loss on a realistic scientific dataset.
+
+**What it shows**:
+
+- Similar to bzip2.c and lossless.c developed in sprints 9 and 10
+- Three quantization algorithms: BitGroom, GranularBitRound, and BitRound
+- NSD values 1–7 for BitGroom and GranularBitRound; NSB values 3, 6, 9, 13, 16, 19, 23 for BitRound (equivalent decimal precision)
+- Each quantize algorithm × NSD/NSB combination paired with all five lossless filters at their optimal settings from sprint 10 (shuffle enabled for all)
+- Baseline rows: each lossless filter at optimal settings without quantization (same as lossless.c output)
+- Compression ratio, write time, read time, and max absolute error per combination
+- Dataset: Same 500×180×360 NC_FLOAT temperature as sprints 1–10, chunk shape 10×45×90
+- Output: CSV with columns `quantize_alg,nsd_or_nsb,filter,compressed_bytes,ratio,write_s,read_s,max_abs_err`
+
+**Lossless filters and settings** (from sprint 10):
+- DEFLATE: level 1, shuffle enabled
+- Zstandard: level 1, shuffle enabled
+- SZIP: NC_SZIP_NN, pixels_per_block=2, shuffle enabled
+- LZ4: level 1, shuffle enabled
+- BZIP2: level 1, shuffle enabled
+
+**Key API**: `nc_def_var_quantize()`, `nc_inq_var_quantize()`, `NC_QUANTIZE_BITGROOM`, `NC_QUANTIZE_GRANULARBR`, `NC_QUANTIZE_BITROUND`
+
+**Tasks**:
+
+- Create `examples/performance/quantize.c` example program
+- Enable shuffle via `nc_def_var_deflate(shuffle=1, deflate=0, level=0)` for all tests
+- Apply each lossless filter at its optimal setting (as in lossless.c) for every quantized combination
+- Call `nc_def_var_quantize()` after the lossless filter is configured for quantized runs
+- Emit baseline rows (no quantization) for each filter first, then quantized rows
+- Compute max absolute error by reading back data and comparing to original array
+- Iterate all quantize algorithm × NSD/NSB × filter combinations; print one CSV row per combination
+- Use `stat()` to obtain compressed file size on disk
+- Create `examples/performance/plot_quantize.py`; reads `quantize_results.csv`, writes `quantize_performance.jpg`
+- Update `examples/performance/CMakeLists.txt`: add `quantize` executable gated on `ENABLE_BENCHMARKS`
+- Update `examples/performance/Makefile.am`: add `quantize` inside `if ENABLE_BENCHMARKS` block
+- Update `docs/prd.md` with `quantize.c` description in Performance Examples subsection
+
 ### V1.9.0 Parallel I/O Builds and Examples
 
 #### Sprint 1: Add mpicc Build to CI

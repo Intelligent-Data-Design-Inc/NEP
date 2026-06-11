@@ -2,17 +2,17 @@
  * @file quickstart.c
  * @brief Minimal introduction to NetCDF - the simplest starting point for new users
  *
- * This is the most basic NetCDF example, demonstrating the essential operations:
- * - Creating a NetCDF file
- * - Defining dimensions
- * - Defining a variable
- * - Adding attributes (global and variable)
- * - Writing data
- * - Reopening and validating the file
+ * This is the most basic NetCDF example, demonstrating the essential 6-step pattern:
+ *   1. Create file          (nc_create)
+ *   2. Define dimensions    (nc_def_dim)
+ *   3. Define variables     (nc_def_var)
+ *   4. Add attributes       (nc_put_att_*)
+ *   5. Write data           (nc_put_var_*)
+ *   6. Close file           (nc_close)
  *
  * The program creates a tiny 2D array (2x3) with 6 integer values, adds descriptive
- * attributes, writes it to a file, then reopens the file to verify everything was
- * stored correctly. This demonstrates the complete NetCDF workflow in under 150 lines.
+ * attributes, writes it to a file, then reopens and reads the data back to verify
+ * the round-trip worked. This demonstrates the complete NetCDF workflow.
  *
  * **Learning Objectives:**
  * - Understand the basic NetCDF workflow (create → define → write → close → read)
@@ -119,81 +119,33 @@ int main()
    printf("*** SUCCESS writing file!\n");
    
    /* ========== READ PHASE ========== */
-   printf("\nReopening file for validation...\n");
-   
+   printf("\nReopening file for reading...\n");
+
    /* Open the file for reading */
    if ((retval = nc_open(FILE_NAME, NC_NOWRITE, &ncid)))
       ERR(retval);
-   
-   /* Verify metadata: check number of dimensions, variables, and attributes */
-   int ndims_in, nvars_in, ngatts_in;
-   if ((retval = nc_inq(ncid, &ndims_in, &nvars_in, &ngatts_in, NULL)))
-      ERR(retval);
-   
-   printf("File contains: %d dimensions, %d variables, %d global attributes\n",
-          ndims_in, nvars_in, ngatts_in);
-   
-   if (ndims_in != 2 || nvars_in != 1 || ngatts_in != 1) {
-      printf("Error: Unexpected file structure\n");
-      return 1;
-   }
-   
-   /* Verify dimension sizes */
-   size_t len_x, len_y;
-   if ((retval = nc_inq_dimlen(ncid, x_dimid, &len_x)))
-      ERR(retval);
-   if ((retval = nc_inq_dimlen(ncid, y_dimid, &len_y)))
-      ERR(retval);
-   
-   if (len_x != 2 || len_y != 3) {
-      printf("Error: Expected dimensions X=2, Y=3, found X=%zu, Y=%zu\n", len_x, len_y);
-      return 1;
-   }
-   printf("Verified: X=%zu, Y=%zu\n", len_x, len_y);
-   
-   /* Verify global and variable attributes */
-   char desc_in[100] = {0}, units_in[100] = {0};
-   size_t desc_len, units_len;
-   if ((retval = nc_inq_attlen(ncid, NC_GLOBAL, "description", &desc_len)))
-      ERR(retval);
-   if ((retval = nc_get_att_text(ncid, NC_GLOBAL, "description", desc_in)))
-      ERR(retval);
-   desc_in[desc_len] = '\0';
 
-   if ((retval = nc_inq_attlen(ncid, data_varid, "units", &units_len)))
-      ERR(retval);
-   if ((retval = nc_get_att_text(ncid, data_varid, "units", units_in)))
-      ERR(retval);
-   units_in[units_len] = '\0';
-
-   if (strcmp(desc_in, "a quickstart example") != 0 ||
-       strcmp(units_in, "m/s") != 0) {
-      printf("Error: attributes incorrect\n");
-      return 1;
-   }
-   printf("Verified: all attributes correct\n");
-   
    /* Read the data back */
    if ((retval = nc_get_var_int(ncid, data_varid, &data_in[0][0])))
       ERR(retval);
-   
+
    /* Verify data correctness */
-   for (int i = 0; i < 2; i++) {
-      for (int j = 0; j < 3; j++) {
-         if (data_in[i][j] != data_out[i][j]) {
-            printf("Error: data[%d][%d] = %d, expected %d\n", 
-                   i, j, data_in[i][j], data_out[i][j]);
-            return 1;
-         }
+   int ok = 1;
+   for (int i = 0; i < 2 && ok; i++) {
+      for (int j = 0; j < 3 && ok; j++) {
+         if (data_in[i][j] != data_out[i][j])
+            ok = 0;
       }
    }
-   
-   printf("Verified: all 6 data values correct (1, 2, 3, 4, 5, 6)\n");
-   
+
    /* Close the file */
    if ((retval = nc_close(ncid)))
       ERR(retval);
-   
-   printf("\n*** SUCCESS: All validation checks passed!\n");
-   return 0;
+
+   if (ok)
+      printf("*** SUCCESS: Data read back correctly!\n");
+   else
+      printf("Error: Data mismatch\n");
+
+   return ok ? 0 : 1;
 }

@@ -109,6 +109,8 @@ if(NOT _nep_hdf5_lib_dirs AND DEFINED HDF5_ROOT)
     list(APPEND _nep_hdf5_lib_dirs "${HDF5_ROOT}/lib" "${HDF5_ROOT}/lib64")
 endif()
 list(REMOVE_DUPLICATES _nep_hdf5_lib_dirs)
+list(APPEND _nep_hdf5_lib_dirs "${NETCDF_PREFIX}/lib")
+list(REMOVE_DUPLICATES _nep_hdf5_lib_dirs)
 string(REPLACE ";" ":" MY_LD_LIBRARY_PATH "${_nep_hdf5_lib_dirs}")
 
 if(BUILD_LZ4)
@@ -133,6 +135,8 @@ file(CHMOD ${CMAKE_CURRENT_BINARY_DIR}/run_tests.sh
 add_test(NAME run_tests 
          COMMAND ${CMAKE_CURRENT_BINARY_DIR}/run_tests.sh
          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+set_tests_properties(run_tests PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${MY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}")
 
 # Make test script depend on hdf5_plugins being built
 set(_test_exe_deps tst_perf)

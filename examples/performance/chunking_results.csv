@@ -1,0 +1,5 @@
+chunk_shape,access_pattern,elapsed_s,MB_per_s
+time_optimized,time_slab,0.002,407.6
+time_optimized,column_profile,0.361,2.7
+column_optimized,time_slab,1.169,0.8
+column_optimized,column_profile,0.028,34.7

@@ -253,6 +253,15 @@ AC_ARG_ENABLE([parallel-tests],
 test "x$enable_parallel_tests" = xyes || enable_parallel_tests=no
 AC_MSG_RESULT([$enable_parallel_tests])
 
+# Performance benchmark support (v1.10.0) - default OFF; slow programs not for regular CI
+AC_MSG_CHECKING([whether performance benchmarks should be enabled])
+AC_ARG_ENABLE([benchmarks],
+              [AS_HELP_STRING([--enable-benchmarks],
+                              [Enable performance benchmark programs (slow, not for regular CI) (default: disabled)])])
+test "x$enable_benchmarks" = xyes || enable_benchmarks=no
+AC_MSG_RESULT([$enable_benchmarks])
+AM_CONDITIONAL([ENABLE_BENCHMARKS], [test "x$enable_benchmarks" = xyes])
+
 AC_ARG_WITH([mpiexec],
             [AS_HELP_STRING([--with-mpiexec=PATH],
                             [Specify path to mpiexec/mpirun for parallel tests])],
@@ -599,6 +608,7 @@ AC_CONFIG_FILES([Makefile
                  examples/f_classic/Makefile
                  examples/f_netcdf-4/Makefile
                  examples/parallelIO/Makefile
+                 examples/performance/Makefile
                  docs/Doxyfile])
 
 AC_OUTPUT

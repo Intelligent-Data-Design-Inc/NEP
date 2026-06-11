@@ -286,12 +286,24 @@ Located in `examples/f_netcdf-4/`:
 - `f_multi_unlimited.f90` - Multiple unlimited dimensions in Fortran
 - `f_user_types.f90` - User-defined types in Fortran
 
+#### Performance Examples (C)
+Located in `examples/performance/`:
+- `cache_tuning.c` - Chunk cache configuration: default vs enlarged cache, file-level vs variable-level settings, cache thrashing detection
+- `chunking.c` - Chunk shape selection: time-optimized vs column-optimized chunks across time-slab and column-profile access patterns; outputs CSV (`chunk_shape,access_pattern,elapsed_s,MB_per_s`) suitable for plotting
+- `deflate.c` - Deflate compression: zlib levels 0–9 with and without the shuffle filter across all 20 combinations; outputs CSV (`deflate_level,shuffle,compressed_bytes,ratio,write_s,read_s`) with compressed file size, compression ratio, write time, and read time
+- `fill_values.c` - Fill value handling performance: demonstrates fill mode NC_FILL vs NC_NOFILL across classic and NetCDF-4 formats; outputs CSV (`format,fill_mode,write_s,read_s,file_bytes`) with write time, read time, and file size
+- `endianness.c` - Endianness handling performance: demonstrates byte order (NC_ENDIAN_NATIVE, NC_ENDIAN_LITTLE, NC_ENDIAN_BIG) effects on write/read performance in NetCDF-4/HDF5 files; outputs CSV (`endian_mode,write_s,read_s,file_bytes`) with write time, read time, and file size
+
+**Note**: Performance examples are excluded from regular CI. They are built and run only when `ENABLE_BENCHMARKS=ON` (CMake) or `--enable-benchmarks` (Autotools) is specified. All four examples operate on a 500×180×360 (time×lat×lon) NC_FLOAT temperature dataset matching a meteorological grid.
+
 ### 8.4 Build Configuration
 **CMake:**
 - `BUILD_EXAMPLES=ON/OFF` - Enable/disable example programs (default: ON)
+- `ENABLE_BENCHMARKS=ON/OFF` - Enable/disable performance benchmark programs (default: OFF)
 
 **Autotools:**
 - `--enable-examples/--disable-examples` - Example programs (default: enabled)
+- `--enable-benchmarks` - Enable performance benchmark programs (default: disabled)
 
 ### 8.5 Dependencies
 - NetCDF-C library (required for C examples)
@@ -472,7 +484,56 @@ Parallel I/O builds are tested in a separate CI workflow (`ci-parallel.yml`) wit
 
 ---
 
-## 14. Release History
+## 14. Performance Examples (v1.10.0)
+
+Performance benchmark programs gated by `ENABLE_BENCHMARKS` (CMake) or
+`--enable-benchmarks` (Autotools). Not run in regular CI. Dataset for all
+examples: 500×180×360 NC_FLOAT temperature (~129 MB uncompressed), chunk
+shape 10×45×90.
+
+- `cache_tuning.c` — HDF5 chunk cache configuration: demonstrates
+  `nc_set_chunk_cache()` and `nc_set_var_chunk_cache()` with measurable
+  performance differences; outputs CSV (`cache_config,access_pattern,elapsed_s,MB_per_s`)
+- `chunking.c` — Chunk shape performance: demonstrates how chunk shape selection
+  affects I/O performance across time-slab and column-profile access patterns;
+  outputs CSV (`chunk_shape,access_pattern,elapsed_s,MB_per_s`)
+- `deflate.c` — Deflate compression performance: zlib levels 0–9 with and without
+  the shuffle filter (20 combinations); outputs CSV
+  (`deflate_level,shuffle,compressed_bytes,ratio,write_s,read_s`)
+- `fill_values.c` — Fill value performance: demonstrates fill mode ON vs OFF
+  overhead across classic and NetCDF-4 formats (4 combinations); outputs CSV
+  (`format,fill_mode,write_s,read_s,file_bytes`)
+- `endianness.c` — Endianness handling performance: demonstrates byte order
+  (`NC_ENDIAN_NATIVE`, `NC_ENDIAN_LITTLE`, `NC_ENDIAN_BIG`) effects on write/read
+  performance in NetCDF-4/HDF5 files; outputs CSV
+  (`endian_mode,write_s,read_s,file_bytes`)
+- `zstandard.c` — Zstandard compression performance: demonstrates zstd levels
+  (-7 to 22, representative subset of 12) with and without the shuffle filter
+  (24 combinations); outputs CSV
+  (`zstd_level,shuffle,compressed_bytes,ratio,write_s,read_s`)
+- `szip.c` — SZIP compression performance: demonstrates NC_SZIP_NN and
+  NC_SZIP_EC coding methods across pixels_per_block {2, 4, 8, 16, 32} (10
+  combinations); outputs CSV
+  (`coding,pixels_per_block,compressed_bytes,ratio,write_s,read_s`)
+- `lz4.c` — LZ4 compression performance: demonstrates LZ4 levels 1–9 with
+  and without the shuffle filter (18 combinations); outputs CSV
+  (`lz4_level,shuffle,compressed_bytes,ratio,write_s,read_s`)
+- `bzip2.c` — BZIP2 compression performance: demonstrates BZIP2 levels 1–9 with
+  and without the shuffle filter (18 combinations); outputs CSV
+  (`bzip2_level,shuffle,compressed_bytes,ratio,write_s,read_s`)
+- `lossless.c` — Lossless compression comparison: compares the best-performing
+  settings of all available filters (DEFLATE, Zstandard, SZIP, LZ4, BZIP2) with
+  shuffle enabled; outputs CSV
+  (`filter,level_or_pixels,compressed_bytes,ratio,write_s,read_s`)
+- `quantize.c` — Quantization + compression performance: demonstrates all three
+  quantization algorithms (BitGroom, GranularBitRound, BitRound) at each NSD/NSB
+  level paired with all five lossless filters at their optimal settings; includes
+  baseline lossless rows and max absolute error per combination; outputs CSV
+  (`quantize_alg,nsd_or_nsb,filter,compressed_bytes,ratio,write_s,read_s,max_abs_err`)
+
+---
+
+## 15. Release History
 
 - **v0.1.3** (Nov 2025): Architecture shift from HDF5 VOL to NetCDF UDF, Doxygen documentation
 - **v1.0.0**: LZ4 and BZIP2 compression filters
