@@ -61,8 +61,10 @@ endif
 EXTRA_DIST =
 
 # Ensure built binaries are executable before test scripts run them
+if ENABLE_BENCHMARKS
 check-local:
 	chmod +x $(check_PROGRAMS)
+endif
 
 # Clean up NetCDF files created by examples
 CLEANFILES = *.nc
