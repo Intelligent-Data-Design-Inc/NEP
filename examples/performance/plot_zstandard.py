@@ -55,7 +55,7 @@ read_shuffle      = series(1, "read_s")
 # ---------------------------------------------------------------------------
 # Plot: 3 subplots stacked vertically
 # ---------------------------------------------------------------------------
-fig, axes = plt.subplots(3, 1, figsize=(9, 12), sharex=True)
+fig, axes = plt.subplots(3, 1, figsize=(7, 6.1), sharex=True)
 
 line_styles = {
     "no_shuffle": {"linestyle": "-",  "marker": "o", "color": "black",  "label": "shuffle=off"},
@@ -71,7 +71,7 @@ ax.set_ylabel("Compression ratio\n(uncompressed / compressed)", fontsize=10)
 ax.set_title("NetCDF-4 Zstandard Compression: Ratio and Throughput vs. Level",
              fontsize=12)
 ax.legend(fontsize=9, frameon=True, edgecolor="black")
-ax.yaxis.grid(True, linestyle="--", color="gray", alpha=0.5)
+ax.yaxis.grid(True, linestyle="--", color="black", alpha=0.3)
 ax.set_axisbelow(True)
 
 # --- Subplot 2: Write time ---
@@ -80,7 +80,7 @@ ax.plot(levels, write_no_shuffle, **line_styles["no_shuffle"])
 ax.plot(levels, write_shuffle,    **line_styles["shuffle"])
 ax.set_ylabel("Write time (s)", fontsize=10)
 ax.legend(fontsize=9, frameon=True, edgecolor="black")
-ax.yaxis.grid(True, linestyle="--", color="gray", alpha=0.5)
+ax.yaxis.grid(True, linestyle="--", color="black", alpha=0.3)
 ax.set_axisbelow(True)
 
 # --- Subplot 3: Read time ---
@@ -90,7 +90,7 @@ ax.plot(levels, read_shuffle,    **line_styles["shuffle"])
 ax.set_ylabel("Read time (s)", fontsize=10)
 ax.set_xlabel("Zstandard level", fontsize=10)
 ax.legend(fontsize=9, frameon=True, edgecolor="black")
-ax.yaxis.grid(True, linestyle="--", color="gray", alpha=0.5)
+ax.yaxis.grid(True, linestyle="--", color="black", alpha=0.3)
 ax.set_axisbelow(True)
 
 # Match read time y-axis to write time y-axis scale
@@ -99,21 +99,6 @@ axes[2].set_ylim(axes[1].get_ylim())
 # Common x-axis ticks
 axes[2].set_xticks(levels)
 
-caption = "\n".join([
-    "Dataset: 500\u00d7180\u00d7360 NC_FLOAT temperature (~129 MB uncompressed).",
-    "Chunk shape: 10\u00d745\u00d790. Each point = one nc_put_var_float / nc_get_var_float call.",
-    "",
-    "shuffle=off: zstd compresses raw float bytes.",
-    "shuffle=on:  bytes are reordered by byte significance before compression,",
-    "             increasing ratio at little cost (almost always beneficial for floats).",
-    "             Shuffle enabled via nc_def_var_deflate(shuffle=1, deflate=0, level=0).",
-    "",
-    "Negative levels (-7 to -1): ultra-fast, minimal ratio. Level 1: fast default.",
-    "Levels 3\u201322: increasing ratio at rising CPU cost. Higher ratio is better.",
-])
-fig.text(0.5, 0.01, caption, ha="center", va="bottom", fontsize=8, color="#333333",
-         multialignment="left", transform=fig.transFigure, fontfamily="monospace")
-
-plt.tight_layout(rect=[0, 0.15, 1, 1])
+plt.tight_layout()
 plt.savefig(OUTPUT, dpi=150, format="jpeg")
 print(f"Saved {OUTPUT}")

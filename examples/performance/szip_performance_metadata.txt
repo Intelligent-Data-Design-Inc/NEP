@@ -1,0 +1,5 @@
+title: NetCDF-4 SZIP Compression (NC_SZIP_NN): Ratio and Throughput vs. pixels_per_block
+
+caption: Results from the szip.c example program in the NetCDF Expansion Pack. Dataset is a 500x180x360 NC_FLOAT temperature array (~129 MB), stored with 10x45x90 chunks, using NC_SZIP_NN nearest-neighbor coding. Top chart: compression ratio across pixels_per_block values {2, 6, 10, 18, 30}. Middle and bottom charts: write and read time. Larger pixels_per_block values give the encoder more context. Higher ratio is better; lower times are better.
+
+alt_text: Three vertically stacked line charts sharing a common x-axis of pixels_per_block values (2, 6, 10, 18, 30). Each chart has one solid line with filled circles. Top chart: y-axis is compression ratio, showing how ratio varies with block size. Middle chart: y-axis is write time in seconds. Bottom chart: y-axis is read time in seconds, using the same scale as the write time chart.

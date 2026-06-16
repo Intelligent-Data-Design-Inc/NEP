@@ -1,0 +1,5 @@
+title: NetCDF-4 Quantization + Compression: GranularBitRound
+
+caption: Results from the quantize.c example program in the NetCDF Expansion Pack. Dataset is a 500x180x360 NC_FLOAT temperature array (~129 MB), stored with 10x45x90 chunks. GranularBitRound quantization at NSD 1–6 combined with five lossless filters (shuffle=on). Top chart: compression ratio vs. NSD; dotted reference lines show lossless-only ratio. Middle chart: write time. Bottom chart: maximum absolute error in Kelvin. Higher ratio and lower error and time are better.
+
+alt_text: Three vertically stacked line charts with x-axis of NSD (decimal significant digits) 1 through 6. Five lines per chart represent deflate, zstandard, szip, lz4, and bzip2 filters, distinguished by line style and marker. Top chart: compression ratio decreasing as NSD increases, with dotted horizontal reference lines for lossless-only ratios. Middle chart: write time in seconds. Bottom chart: maximum absolute error in Kelvin, decreasing sharply with NSD.

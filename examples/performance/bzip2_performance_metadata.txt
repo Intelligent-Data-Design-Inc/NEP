@@ -1,0 +1,5 @@
+title: NetCDF-4 BZIP2 Compression: Ratio and Throughput vs. Level
+
+caption: Results from the bzip2.c example program in the NetCDF Expansion Pack. Dataset is a 500x180x360 NC_FLOAT temperature array (~129 MB), stored with 10x45x90 chunks. Top chart: compression ratio across BZIP2 levels 1–9. Middle and bottom charts: write and read time. shuffle=on reorders float bytes before compression, improving ratio. Level 1 uses 100k block size (fastest); level 9 uses 900k (best ratio). BZIP2 achieves higher compression than LZ4 but with slower write speeds.
+
+alt_text: Three vertically stacked line charts sharing a common x-axis of BZIP2 compression levels 1 through 9. Each chart has two lines: a solid line with filled circles for shuffle=off and a dashed line with open squares for shuffle=on. Top chart: y-axis is compression ratio, rising with level and higher for shuffle=on. Middle chart: y-axis is write time in seconds, increasing with level. Bottom chart: y-axis is read time in seconds.

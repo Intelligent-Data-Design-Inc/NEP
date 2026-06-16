@@ -1,0 +1,5 @@
+title: Lossless Compression Comparison: Ratio and Throughput Across Filters
+
+caption: Results from the lossless.c example program in the NetCDF Expansion Pack. Dataset is a 500x180x360 NC_FLOAT temperature array (~129 MB), stored with 10x45x90 chunks, all with shuffle enabled. Settings: DEFLATE level 1, Zstandard level 1, SZIP NN p=2, LZ4 level 1, BZIP2 level 1. Bars sorted by compression ratio. BZIP2 achieves the highest ratio (~44x) but slowest I/O; LZ4 offers the best speed with good ratio (~27x).
+
+alt_text: Three vertically stacked bar charts with the same set of compression filter labels on the x-axis, sorted by compression ratio descending. Top chart: y-axis is compression ratio with value labels on each bar. Middle chart: y-axis is write time in seconds with hatched bars. Bottom chart: y-axis is read time in seconds with cross-hatched bars. All bars are white with black outlines.

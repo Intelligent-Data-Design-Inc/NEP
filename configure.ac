@@ -262,6 +262,15 @@ test "x$enable_benchmarks" = xyes || enable_benchmarks=no
 AC_MSG_RESULT([$enable_benchmarks])
 AM_CONDITIONAL([ENABLE_BENCHMARKS], [test "x$enable_benchmarks" = xyes])
 
+# OPeNDAP examples support (v1.10.0) - default OFF; requires network access
+AC_MSG_CHECKING([whether OPeNDAP examples should be enabled])
+AC_ARG_ENABLE([opendap-examples],
+              [AS_HELP_STRING([--enable-opendap-examples],
+                              [Enable OPeNDAP remote data access examples (requires network) (default: disabled)])])
+test "x$enable_opendap_examples" = xyes || enable_opendap_examples=no
+AC_MSG_RESULT([$enable_opendap_examples])
+AM_CONDITIONAL([ENABLE_OPENDAP_EXAMPLES], [test "x$enable_opendap_examples" = xyes])
+
 AC_ARG_WITH([mpiexec],
             [AS_HELP_STRING([--with-mpiexec=PATH],
                             [Specify path to mpiexec/mpirun for parallel tests])],

@@ -104,6 +104,9 @@ option(ENABLE_PARALLEL_TESTS "Enable parallel I/O test programs" OFF)
 # Performance benchmark support (v1.10.0) - default OFF; slow programs not for regular CI
 option(ENABLE_BENCHMARKS "Enable performance benchmark programs (slow, not for regular CI)" OFF)
 
+# OPeNDAP examples (v1.10.0) - default OFF; requires network access
+option(ENABLE_OPENDAP_EXAMPLES "Enable OPeNDAP remote data access examples (requires network)" OFF)
+
 if(NOT DOCS_ONLY)
     # CDF library detection (v1.3.0)
     if(ENABLE_CDF)
@@ -187,6 +190,7 @@ if(NOT DOCS_ONLY)
 endif()
 
 message(STATUS "Performance benchmarks: ${ENABLE_BENCHMARKS}")
+message(STATUS "OPeNDAP examples: ${ENABLE_OPENDAP_EXAMPLES}")
 
 # It's really easy to pick up the wrong HDF5 library if you set the path
 # wrong. Turn this on for added confirmation that you got it right.

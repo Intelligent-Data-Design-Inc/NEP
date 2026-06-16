@@ -114,6 +114,7 @@ vol_plugin
 *.swo
 
 /docs/html/
+docs/background/NetCDF_Developers_Handbook.md
 *.trs 
 *.log 
 *.bak

@@ -20,3 +20,8 @@ endif()
 if(ENABLE_PARALLEL_TESTS AND HAVE_PARALLEL_TESTS)
     add_subdirectory(parallelIO)
 endif()
+
+# OPeNDAP examples only built when ENABLE_OPENDAP_EXAMPLES is ON (v1.10.0)
+if(ENABLE_OPENDAP_EXAMPLES)
+    add_subdirectory(opendap)
+endif()

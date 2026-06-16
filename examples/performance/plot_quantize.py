@@ -101,24 +101,24 @@ def get_baseline(flt, key):
             return r[key]
     return None
 
-# ---------------------------------------------------------------------------
-# Figure 1: Three-algorithm comparison
-#   3 columns (one per algorithm) × 3 rows (ratio, write_s, max_abs_err)
-# ---------------------------------------------------------------------------
-fig1, axes1 = plt.subplots(3, 3, figsize=(15, 12), sharey="row")
-fig1.suptitle(
-    "NetCDF-4 Quantization + Compression: Ratio, Write Time, and Max Error vs. NSD",
-    fontsize=13)
-
 METRICS = [
     ("ratio",       "Compression ratio\n(uncompressed / compressed)"),
     ("write_s",     "Write time (s)"),
     ("max_abs_err", "Max absolute error (K)"),
 ]
 
-for col, alg in enumerate(ALGS):
+# ---------------------------------------------------------------------------
+# One figure per algorithm, 3 stacked subplots (ratio, write time, max error)
+# ---------------------------------------------------------------------------
+output_files = []
+for alg in ALGS:
+    fig, axes = plt.subplots(3, 1, figsize=(7, 6.1), sharex=True)
+    fig.suptitle(
+        f"NetCDF-4 Quantization + Compression: {ALG_TITLES[alg]}",
+        fontsize=12)
+
     for row_idx, (metric, ylabel) in enumerate(METRICS):
-        ax = axes1[row_idx][col]
+        ax = axes[row_idx]
 
         for flt in FILTERS:
             x, y = get_series(alg, flt, metric)
@@ -133,45 +133,33 @@ for col, alg in enumerate(ALGS):
             for flt in FILTERS:
                 base = get_baseline(flt, "ratio")
                 if base is not None:
-                    ax.axhline(base, linestyle=":", color="gray", alpha=0.6,
+                    ax.axhline(base, linestyle=":", color="black", alpha=0.3,
                                linewidth=0.8)
 
-        if row_idx == 0:
-            ax.set_title(ALG_TITLES[alg], fontsize=11)
-        if col == 0:
-            ax.set_ylabel(ylabel, fontsize=9)
-        if row_idx == len(METRICS) - 1:
-            if alg == "bitround":
-                ax.set_xlabel("NSD equivalent  (NSB remapped to NSD 1–7)", fontsize=9)
-            else:
-                ax.set_xlabel("NSD  (decimal significant digits)", fontsize=9)
-            ax.set_xticks(NSD_VALS)
-
-        ax.yaxis.grid(True, linestyle="--", color="gray", alpha=0.4)
+        ax.set_ylabel(ylabel, fontsize=9)
+        ax.yaxis.grid(True, linestyle="--", color="black", alpha=0.3)
         ax.set_axisbelow(True)
 
         if metric == "max_abs_err":
             ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.4f"))
 
-# Legend placed above the caption: anchored at y=0.13 in figure coords
-handles, labels = axes1[0][0].get_legend_handles_labels()
-fig1.legend(handles, labels, loc="lower center", bbox_to_anchor=(0.5, 0.13),
-            ncol=5, fontsize=9, frameon=True, edgecolor="black",
-            title="Lossless filter (all at optimal sprint-10 settings, shuffle=on)",
-            title_fontsize=9)
+    # x-axis label and ticks on bottom subplot
+    if alg == "bitround":
+        axes[2].set_xlabel("NSD equivalent  (NSB remapped to NSD 1–7)", fontsize=9)
+    else:
+        axes[2].set_xlabel("NSD  (decimal significant digits)", fontsize=9)
+    axes[2].set_xticks(NSD_VALS)
 
-caption1 = (
-    "Dataset: 500\u00d7180\u00d7360 NC_FLOAT temperature (~129 MB uncompressed). "
-    "Chunk shape: 10\u00d745\u00d790.\n"
-    "Dashed grey horizontal lines = lossless-only (no quantization) compression ratio.\n"
-    "BitRound x-axis remapped to NSD equivalents: "
-    + ", ".join(f"NSB {nsb}=NSD {nsd}" for nsb, nsd in
-                sorted(NSB_TO_NSD.items(), key=lambda t: t[1]))
-)
-fig1.text(0.5, 0.01, caption1, ha="center", va="bottom", fontsize=7.5,
-          color="#333333", multialignment="center", transform=fig1.transFigure,
-          fontfamily="monospace")
+    # Legend inside top subplot
+    handles, labels = axes[0].get_legend_handles_labels()
+    axes[0].legend(handles, labels, ncol=3, fontsize=8, frameon=True,
+                   edgecolor="black", loc="upper right")
 
-plt.tight_layout(rect=[0, 0.18, 1, 0.97])
-plt.savefig(OUTPUT, dpi=150, format="jpeg")
-print(f"Saved {OUTPUT}")
+    plt.tight_layout()
+    outfile = f"quantize_{alg}_performance.jpg"
+    plt.savefig(outfile, dpi=150, format="jpeg")
+    plt.close(fig)
+    output_files.append(outfile)
+    print(f"Saved {outfile}")
+
+print("Done:", output_files)
