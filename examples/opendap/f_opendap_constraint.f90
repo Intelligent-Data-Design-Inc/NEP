@@ -50,50 +50,30 @@ program f_opendap_constraint
   integer :: time_size, lat_size, lon_size
   integer :: total_elements
 
-  print *, "Fortran OPeNDAP Constraint Expression Example"
-  print *, "=============================================="
-  print *
-  print *, "Base URL: ", trim(base_url)
-  
-  ! Build URL with constraint expression (first 3 time steps)
+  ! Build constrained URL
   url = trim(base_url) // "?sst[0:2][0:88][0:179]"
-  print *, "Constraint: sst[0:2][0:88][0:179]"
-  print *, "Full URL: ", trim(url)
+  print *, "Fortran OPeNDAP Constraint: ", trim(url)
   print *
-  
-  print *, "Opening dataset with constraint expression..."
+
+  ! Open constrained dataset
   status = nf90_open(url, NF90_NOWRITE, ncid)
   if (status /= NF90_NOERR) then
-     print *, "Error opening dataset: ", trim(nf90_strerror(status))
+     print *, "Error: ", trim(nf90_strerror(status))
      stop 1
   end if
-  print *, "Dataset opened successfully."
-  print *
-  
-  ! Get variable information
+
+  ! Get variable and constrained dimension info
   status = nf90_inq_varid(ncid, "sst", varid)
-  if (status /= NF90_NOERR) then
-     print *, "Error finding variable 'sst': ", trim(nf90_strerror(status))
-     stop 1
-  end if
-  
+  if (status /= NF90_NOERR) stop 1
   status = nf90_inquire_variable(ncid, varid, ndims=var_ndims, dimids=var_dimids)
-  if (status /= NF90_NOERR) then
-     print *, "Error inquiring variable: ", trim(nf90_strerror(status))
-     stop 1
-  end if
-  
-  print *, "Variable 'sst' has ", var_ndims, " dimensions:"
-  
-  ! Query the constrained dimensions
-  time_size = 0
-  lat_size = 0
-  lon_size = 0
-  
+  if (status /= NF90_NOERR) stop 1
+
+  ! Print constrained dimensions (subset sizes)
+  write(*, '(A)', advance='no') "Constrained dimensions: "
   do i = 1, var_ndims
      status = nf90_inquire_dimension(ncid, var_dimids(i), dim_name, dimlen)
      if (status == NF90_NOERR) then
-        print *, "  Dimension ", i, ": ", trim(dim_name), " = ", dimlen
+        write(*, '(A,I0,A)', advance='no') trim(dim_name)//"=", dimlen, " "
         if (i == 1) time_size = dimlen
         if (i == 2) lat_size = dimlen
         if (i == 3) lon_size = dimlen
@@ -101,80 +81,43 @@ program f_opendap_constraint
   end do
   print *
   
-  print *, "Note: The dimension sizes reflect the CONSTRAINED subset,"
-  print *, "not the original full dataset."
-  print *
-  
-  ! Read all the constrained data
+  ! Read and display sample of constrained data
   if (time_size > 0 .and. lat_size > 0 .and. lon_size > 0) then
      total_elements = time_size * lat_size * lon_size
-     print *, "Reading ", total_elements, " total elements..."
-     
+     print *, "Reading ", total_elements, " elements..."
+
      allocate(data(time_size, lat_size, lon_size), stat=status)
-     if (status /= 0) then
-        print *, "Memory allocation failed"
-        stop 1
-     end if
-     
+     if (status /= 0) stop 1
+
      status = nf90_get_var(ncid, varid, data)
-     if (status /= NF90_NOERR) then
-        print *, "Error reading variable: ", trim(nf90_strerror(status))
-        deallocate(data)
-        stop 1
-     end if
-     
-     ! Print sample of first time step
-     print *, "Sample data from first time step [1:5,1:5]:"
+     if (status /= NF90_NOERR) stop 1
+
+     print *, "Sample [1:5,1:5] of first time step:"
      do j = 1, min(5, lat_size)
-        write(*, '(A,I2,A)', advance='no') "  Lat ", j, ": "
+        write(*, '(2X)', advance='no')
         do k = 1, min(5, lon_size)
            write(*, '(F7.2)', advance='no') data(1, j, k)
         end do
         print *
      end do
-     
      deallocate(data)
   end if
   
-  ! Demonstrate another constraint with stride
+  ! Demonstrate stride constraint
   print *
-  print *, "----------------------------------------"
-  print *
-  
-  ! Build URL with stride constraint (every 2nd time step)
   url = trim(base_url) // "?sst[0:2:12][0:88][0:179]"
-  print *, "New constraint with stride (every 2nd time step):"
-  print *, "URL: ", trim(url)
-  print *
-  
+  print *, "Stride constraint: ", trim(url)
   status = nf90_close(ncid)
-  if (status /= NF90_NOERR) then
-     print *, "Error closing dataset: ", trim(nf90_strerror(status))
-  end if
-  
   status = nf90_open(url, NF90_NOWRITE, ncid)
-  if (status /= NF90_NOERR) then
-     print *, "Error opening dataset: ", trim(nf90_strerror(status))
-     stop 1
-  end if
-  
+  if (status /= NF90_NOERR) stop 1
+
   status = nf90_inq_varid(ncid, "sst", varid)
   status = nf90_inquire_variable(ncid, varid, dimids=var_dimids)
   status = nf90_inquire_dimension(ncid, var_dimids(1), len=dimlen)
-  
-  print *, "Time dimension after stride constraint: ", dimlen
-  print *, "(Should be smaller than 3 from previous constraint)"
-  
+  print *, "Time dimension with stride: ", dimlen, " (was 3 without stride)"
+
   status = nf90_close(ncid)
-  if (status /= NF90_NOERR) then
-     print *, "Error closing dataset: ", trim(nf90_strerror(status))
-     stop 1
-  end if
-  
-  print *
-  print *, "Example completed successfully."
-  print *
-  print *, "Note: OPeNDAP constraint expressions use 0-based indexing,"
-  print *, "but the NetCDF-Fortran API uses 1-based indexing for data access."
+  if (status /= NF90_NOERR) stop 1
+  print *, "Done."
 
 end program f_opendap_constraint

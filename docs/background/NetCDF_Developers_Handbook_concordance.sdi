@@ -1,0 +1,222 @@
+ACDD;ACDD;Conventions;;1;1
+AEC;AEC;Compression;;1;1
+aggregation;aggregation;Java API;;0;1
+Array;Array;Java API;;1;1
+attribute;attribute;Data model;;0;1
+Autotools;Autotools;Build tools;;0;1
+axis;axis;Conventions;;0;1
+benchmarking;benchmarking;Performance;;0;1
+big-endian;big-endian;Performance;;0;1
+BitGroom;BitGroom;Compression;;1;1
+BitRound;BitRound;Compression;;1;1
+BZIP2;BZIP2;Compression;;1;1
+BUFR;BUFR;File formats;;1;1
+bm_file;bm_file;Tools;;1;1
+C smoke test;C smoke test;Installation;;0;1
+calendar;calendar;Time encoding;;0;1
+CDF-1;CDF-1;File formats;;1;1
+CDF-2;CDF-2;File formats;;1;1
+CDF-5;CDF-5;File formats;;1;1
+CDL;CDL;Tools;;1;1
+CDM;CDM;Java API;;1;1
+cell methods;cell methods;Conventions;;0;1
+CF Conventions;CF Conventions;Conventions;;0;1
+chunk cache;chunk cache;Performance;;0;1
+chunk size;chunk size;Performance;;0;1
+chunking;chunking;Data model;;0;1
+Classic format;Classic format;File formats;;0;1
+Classic model;Classic model;Data models;;0;1
+client/server;client/server;OPeNDAP;;0;1
+climate;climate;Earth science;;0;1
+CMIP;CMIP;Organizations;;1;1
+COARDS;COARDS;Conventions;;1;1
+collective I/O;collective I/O;Parallel I/O;;0;1
+command-line utilities;command-line utilities;Tools;;0;1
+Common Data Language;Common Data Language;Tools;;0;1
+compound type;compound type;Data types;;0;1
+compression;compression;Data model;;0;1
+compression ratio;compression ratio;Performance;;0;1
+Conda;Conda;Build tools;;1;1
+constraint expression;constraint expression;OPeNDAP;;0;1
+contiguous;contiguous;Data model;;0;1
+coordinate system;coordinate system;Conventions;;0;1
+coordinate variable;coordinate variable;Data model;;0;1
+Cygwin;Cygwin;Build tools;;1;1
+DAP2;DAP2;OPeNDAP;;1;1
+DAP4;DAP4;OPeNDAP;;1;1
+data model;data model;Data models;;0;1
+data mode;data mode;Data model;;0;1
+define mode;define mode;Data model;;0;1
+deflate;deflate;Compression;;0;1
+dimension;dimension;Data model;;0;1
+dispatch table;dispatch table;Architecture;;0;1
+domain decomposition;domain decomposition;Parallel I/O;;0;1
+ECMWF;ECMWF;Organizations;;1;1
+Enhanced model;Enhanced model;Data models;;0;1
+enum type;enum type;Data types;;0;1
+Error Codes;Error Codes;Core concepts;;0;1
+ESA;ESA;Organizations;;1;1
+EOSDIS;EOSDIS;Organizations;;1;1
+endianness;endianness;Performance;;0;1
+EUMETSAT;EUMETSAT;Organizations;;1;1
+extensibility;extensibility;Architecture;;0;1
+FITS;FITS;File formats;;1;1
+Fortran;Fortran;Languages;;1;1
+Fortran smoke test;Fortran smoke test;Installation;;0;1
+format detection;format detection;Architecture;;0;1
+federated;federated;OPeNDAP;;0;1
+fill mode;fill mode;Data model;;0;1
+fill value;fill value;Data model;;0;1
+filter;filter;Compression;;0;1
+GeoTIFF;GeoTIFF;File formats;;1;1
+global attribute;global attribute;Data model;;0;1
+Gradle;Gradle;Build tools;;1;1
+GranularBitRound;GranularBitRound;Compression;;1;1
+GRIB;GRIB;File formats;;1;1
+GRIB2;GRIB2;File formats;;1;1
+group;group;Data model;;0;1
+h5dump;h5dump;Tools;;1;1
+HDF4;HDF4;File formats;;0;1
+HDF4 SD;HDF4 SD;File formats;;0;1
+HDF5;HDF5;File formats;;0;1
+HDF-EOS;HDF-EOS;File formats;;0;1
+HPC;HPC;Concepts;;1;1
+hyperslab;hyperslab;Core concepts;;0;1
+independent I/O;independent I/O;Parallel I/O;;0;1
+int64;int64;Data types;;0;1
+Java;Java;Languages;;1;1
+JNI;JNI;Java API;;1;1
+little-endian;little-endian;Performance;;0;1
+LZ4;LZ4;Compression;;1;1
+Maven;Maven;Build tools;;1;1
+metadata;metadata;Core concepts;;0;1
+MERRA-2;MERRA-2;Organizations;;1;1
+MODIS;MODIS;Organizations;;1;1
+MPI;MPI;Parallel I/O;;1;1
+MPI-IO;MPI-IO;Parallel I/O;;1;1
+MSYS2;MSYS2;Build tools;;1;1
+NASA;NASA;Organizations;;1;1
+nc-config;nc-config;Tools;;1;1
+nc_close;nc_close();API functions;;1;1
+nc_create;nc_create();API functions;;1;1
+nc_create_par;nc_create_par();API functions;;1;1
+nc_def_dim;nc_def_dim();API functions;;1;1
+nc_def_var;nc_def_var();API functions;;1;1
+nc_def_var_chunking;nc_def_var_chunking();API functions;;1;1
+nc_def_var_deflate;nc_def_var_deflate();API functions;;1;1
+nc_enddef;nc_enddef();API functions;;1;1
+nc_get_att;nc_get_att();API functions;;1;1
+nc_get_var;nc_get_var();API functions;;1;1
+nc_inq;nc_inq();API functions;;1;1
+nc_inq_att;nc_inq_att();API functions;;1;1
+nc_inq_dim;nc_inq_dim();API functions;;1;1
+nc_inq_var;nc_inq_var();API functions;;1;1
+nc_open;nc_open();API functions;;1;1
+nc_open_par;nc_open_par();API functions;;1;1
+nc_put_att;nc_put_att();API functions;;1;1
+nc_put_var;nc_put_var();API functions;;1;1
+nc_redef;nc_redef();API functions;;1;1
+nc_strerror;nc_strerror();API functions;;1;1
+nc_var_par_access;nc_var_par_access();API functions;;1;1
+nccopy;nccopy;Tools;;1;1
+ncdump;ncdump;Tools;;1;1
+ncgen;ncgen;Tools;;1;1
+ncZarr;ncZarr;File formats;;0;1
+NCO;NetCDF Command Operators;Tools;;1;1
+NcML;NcML;Java API;;1;1
+NCAR;NCAR;Organizations;;1;1
+NC_BYTE;NC_BYTE;Data types;;1;1
+NC_CHAR;NC_CHAR;Data types;;1;1
+NC_CLOBBER;NC_CLOBBER;Mode flags;;1;1
+NC_DOUBLE;NC_DOUBLE;Data types;;1;1
+NC_FILL;NC_FILL;Constants;;1;1
+NC_FLOAT;NC_FLOAT;Data types;;1;1
+NC_GLOBAL;NC_GLOBAL;Constants;;1;1
+NC_INT;NC_INT;Data types;;1;1
+NC_INT64;NC_INT64;Data types;;1;1
+NC_NETCDF4;NC_NETCDF4;Mode flags;;1;1
+NC_NOWRITE;NC_NOWRITE;Mode flags;;1;1
+NC_SHORT;NC_SHORT;Data types;;1;1
+NC_STRING;NC_STRING;Data types;;1;1
+NC_UBYTE;NC_UBYTE;Data types;;1;1
+NC_UINT;NC_UINT;Data types;;1;1
+NC_UINT64;NC_UINT64;Data types;;1;1
+NC_UNLIMITED;NC_UNLIMITED;Constants;;1;1
+NC_USHORT;NC_USHORT;Data types;;1;1
+NEP;NetCDF Expansion Pack;Libraries;;1;1
+NetCDF;NetCDF;File formats;;0;1
+NetCDF Command Operators;NetCDF Command Operators;Tools;;0;1
+NetCDF Expansion Pack;NetCDF Expansion Pack;Libraries;;0;1
+NetCDF User's Guide;NetCDF User's Guide;Conventions;;0;1
+NetCDF-3;NetCDF-3;File formats;;0;1
+NetCDF-4;NetCDF-4;File formats;;0;1
+NetCDF-Java;NetCDF-Java;Libraries;;0;1
+NetcdfDataset;NetcdfDataset;Java API;;1;1
+NetcdfFile;NetcdfFile;Java API;;1;1
+NetcdfFiles;NetcdfFiles;Java API;;1;1
+nf-config;nf-config;Tools;;1;1
+nf90_close;nf90_close();API functions;;1;1
+nf90_create;nf90_create();API functions;;1;1
+nf90_def_dim;nf90_def_dim();API functions;;1;1
+nf90_def_var;nf90_def_var();API functions;;1;1
+nf90_enddef;nf90_enddef();API functions;;1;1
+nf90_get_att;nf90_get_att();API functions;;1;1
+nf90_get_var;nf90_get_var();API functions;;1;1
+nf90_inq_varid;nf90_inq_varid();API functions;;1;1
+nf90_inquire;nf90_inquire();API functions;;1;1
+nf90_open;nf90_open();API functions;;1;1
+nf90_put_att;nf90_put_att();API functions;;1;1
+nf90_put_var;nf90_put_var();API functions;;1;1
+NOAA;NOAA;Organizations;;1;1
+NUG;NUG;Conventions;;1;1
+oceanography;oceanography;Earth science;;0;1
+opaque type;opaque type;Data types;;0;1
+OPeNDAP;OPeNDAP;OPeNDAP;;1;1
+parallel I/O;parallel I/O;Parallel I/O;;0;1
+Parallel I/O smoke test;Parallel I/O smoke test;Installation;;0;1
+PIO;PIO;Parallel I/O;;1;1
+PnetCDF;PnetCDF;Parallel I/O;;1;1
+posix;POSIX;Operating systems;;1;1
+plugin;plugin;Architecture;;0;1
+quantization;quantization;Compression;;0;1
+Range;Range;Java API;;1;1
+record variable;record variable;Core concepts;;0;1
+remote data;remote data;OPeNDAP;;0;1
+scientific data;scientific data;Earth science;;0;1
+self-describing;self-describing;Core concepts;;0;1
+Section;Section;Java API;;1;1
+shuffle;shuffle;Compression;;0;1
+shuffle filter;shuffle filter;Compression;;0;1
+SLF4J;SLF4J;Java API;;1;1
+szip;szip;Compression;;1;1
+Spack;Spack;Build tools;;1;1
+standard name;standard name;Conventions;;0;1
+string type;string type;Data types;;0;1
+subset;subset;OPeNDAP;;0;1
+time coordinate;time coordinate;Time encoding;;0;1
+time units;time units;Time encoding;;0;1
+ToolsUI;ToolsUI;Tools;;1;1
+UCAR;UCAR;Organizations;;1;1
+uint64;uint64;Data types;;0;1
+Unidata;Unidata;Organizations;;1;1
+Unix;Unix;Operating systems;;0;1
+unlimited dimension;unlimited dimension;Data model;;0;1
+unsigned integer;unsigned integer;Data types;;0;1
+URL endpoint;URL endpoint;OPeNDAP;;0;1
+user-defined format;user-defined format;Architecture;;0;1
+user-defined type;user-defined type;Data types;;0;1
+V2 API;V2 API;Architecture;;1;1
+variable;variable;Data model;;0;1
+variable attribute;variable attribute;Data model;;0;1
+vcpkg;vcpkg;Build tools;;1;1
+VIIRS;VIIRS;Organizations;;1;1
+vlen type;vlen type;Data types;;0;1
+VLEN;VLEN;Data types;;1;1
+weather;weather;Earth science;;0;1
+Windows;Windows;Operating systems;;0;1
+Windows Subsystem for Linux;Windows Subsystem for Linux;Build tools;;0;1
+WMO;WMO;Organizations;;1;1
+WSL;WSL;Build tools;;1;1
+Zarr;Zarr;File formats;;1;1
+zstd;zstd;Compression;;1;1
+Zstandard;Zstandard;Compression;;0;1

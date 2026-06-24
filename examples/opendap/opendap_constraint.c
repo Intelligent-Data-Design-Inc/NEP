@@ -41,17 +41,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Error handling macro */
-#define NC_CHK(ret) do { \
-    if ((ret) != NC_NOERR) { \
-        fprintf(stderr, "Error: %s at line %d\n", nc_strerror(ret), __LINE__); \
+/* Error handling macro like coord.c */
+#define ERR(e) do { \
+    if (e) { \
+        fprintf(stderr, "Error: %s at line %d\n", nc_strerror(e), __LINE__); \
         return 1; \
     } \
 } while (0)
 
 int main(void)
 {
-    int ncid, varid;
+    int ncid, varid, retval;
     int var_ndims;
     int var_dimids[NC_MAX_VAR_DIMS];
     size_t dimlen;
@@ -64,83 +64,81 @@ int main(void)
     char url[512];
     snprintf(url, sizeof(url), "%s?sst[0:2][0:88][0:179]", base_url);
     
-    printf("OPeNDAP Constraint Expression Example\n");
-    printf("=====================================\n\n");
-    printf("Base URL: %s\n", base_url);
-    printf("Constraint: sst[0:2][0:88][0:179]\n");
-    printf("Full URL: %s\n\n", url);
-    
-    printf("Opening dataset with constraint expression...\n");
-    NC_CHK(nc_open(url, NC_NOWRITE, &ncid));
-    printf("Dataset opened successfully.\n\n");
-    
-    /* Get variable information */
-    NC_CHK(nc_inq_varid(ncid, "sst", &varid));
-    NC_CHK(nc_inq_varndims(ncid, varid, &var_ndims));
-    printf("Variable 'sst' has %d dimensions:\n", var_ndims);
-    
-    /* Query the constrained dimensions */
-    NC_CHK(nc_inq_vardimid(ncid, varid, var_dimids));
+    printf("OPeNDAP Constraint Example: %s\n\n", url);
+
+    /* Open constrained dataset */
+    if ((retval = nc_open(url, NC_NOWRITE, &ncid)))
+        ERR(retval);
+
+    /* Get variable and constrained dimension info */
+    if ((retval = nc_inq_varid(ncid, "sst", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_varndims(ncid, varid, &var_ndims)))
+        ERR(retval);
+    if ((retval = nc_inq_vardimid(ncid, varid, var_dimids)))
+        ERR(retval);
+
+    /* Print constrained dimensions (these are the SUBSET sizes) */
+    printf("Constrained dimensions (subset sizes): ");
     for (int i = 0; i < var_ndims; i++) {
-        NC_CHK(nc_inq_dim(ncid, var_dimids[i], dim_name, &dimlen));
-        printf("  Dimension %d: %s = %zu\n", i, dim_name, dimlen);
+        if ((retval = nc_inq_dim(ncid, var_dimids[i], dim_name, &dimlen)))
+            ERR(retval);
+        printf("%s=%zu ", dim_name, dimlen);
     }
-    printf("\n");
+    printf("\n\n");
     
-    printf("Note: The dimension sizes reflect the CONSTRAINTED subset,\n");
-    printf("not the original full dataset.\n\n");
-    
-    /* Read all the constrained data */
+    /* Read and display sample of constrained data */
     {
-        /* Get total size */
         size_t total_elements = 1;
         for (int i = 0; i < var_ndims; i++) {
-            NC_CHK(nc_inq_dimlen(ncid, var_dimids[i], &dimlen));
+            if ((retval = nc_inq_dimlen(ncid, var_dimids[i], &dimlen)))
+                ERR(retval);
             total_elements *= dimlen;
         }
-        printf("Reading %zu total elements...\n", total_elements);
-        
-        /* Allocate and read */
+        printf("Reading %zu elements...\n", total_elements);
+
         float *data = malloc(total_elements * sizeof(float));
         if (!data) {
             fprintf(stderr, "Memory allocation failed\n");
             return 1;
         }
-        
-        NC_CHK(nc_get_var_float(ncid, varid, data));
-        
-        /* Print sample of first time step */
-        printf("\nSample data from first time step [0:4][0:4]:\n");
-        NC_CHK(nc_inq_dimlen(ncid, var_dimids[1], &dimlen)); /* lat dimension size */
-        size_t lat_size = dimlen;
-        
-        for (int i = 0; i < 5 && i < (int)lat_size; i++) {
-            printf("  Lat %d: ", i);
-            for (int j = 0; j < 5; j++) {
-                printf("%.2f ", data[i * lat_size + j]);
-            }
+
+        if ((retval = nc_get_var_float(ncid, varid, data)))
+            ERR(retval);
+
+        /* Get lat dimension size for 2D indexing */
+        if ((retval = nc_inq_dimlen(ncid, var_dimids[1], &dimlen)))
+            ERR(retval);
+
+        printf("Sample [0:4][0:4] of first time step:\n");
+        for (int i = 0; i < 5 && i < (int)dimlen; i++) {
+            printf("  ");
+            for (int j = 0; j < 5; j++)
+                printf("%.2f ", data[i * dimlen + j]);
             printf("\n");
         }
-        
         free(data);
     }
     
-    /* Demonstrate another constraint with stride */
-    printf("\n----------------------------------------\n\n");
+    /* Demonstrate stride constraint */
+    printf("\nStride constraint: %s\n", url);
+    if ((retval = nc_close(ncid)))
+        ERR(retval);
     snprintf(url, sizeof(url), "%s?sst[0:2:12][0:88][0:179]", base_url);
-    printf("New constraint with stride (every 2nd time step):\n");
-    printf("URL: %s\n\n", url);
-    
-    NC_CHK(nc_close(ncid));
-    NC_CHK(nc_open(url, NC_NOWRITE, &ncid));
-    
-    NC_CHK(nc_inq_varid(ncid, "sst", &varid));
-    NC_CHK(nc_inq_vardimid(ncid, varid, var_dimids));
-    NC_CHK(nc_inq_dimlen(ncid, var_dimids[0], &dimlen));
-    printf("Time dimension after stride constraint: %zu (was 3 without stride)\n", dimlen);
-    
-    NC_CHK(nc_close(ncid));
-    printf("\nExample completed successfully.\n");
+    if ((retval = nc_open(url, NC_NOWRITE, &ncid)))
+        ERR(retval);
+
+    if ((retval = nc_inq_varid(ncid, "sst", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_vardimid(ncid, varid, var_dimids)))
+        ERR(retval);
+    if ((retval = nc_inq_dimlen(ncid, var_dimids[0], &dimlen)))
+        ERR(retval);
+    printf("Time dimension with stride: %zu (was 3 without stride)\n", dimlen);
+
+    if ((retval = nc_close(ncid)))
+        ERR(retval);
+    printf("\nDone.\n");
     
     return 0;
 }

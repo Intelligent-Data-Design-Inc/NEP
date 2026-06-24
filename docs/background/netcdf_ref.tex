@@ -1,0 +1,165 @@
+\documentclass[8pt,letterpaper]{article}
+\usepackage[margin=0.36in,top=0.32in,bottom=0.32in]{geometry}
+\usepackage{multicol}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+
+\setlist[itemize]{noitemsep,topsep=0pt,partopsep=0pt,parsep=0pt,left=0.6em,label={\tiny\textbullet}}
+\setlength{\parskip}{0pt}
+\setlength{\columnsep}{7pt}
+\setlength{\multicolsep}{2pt}
+\pagestyle{empty}
+
+\newcommand{\ch}[2]{%
+  \vspace{2pt}%
+  \noindent{\footnotesize\bfseries #1}\vspace{0.5pt}\hrule height 0.3pt\vspace{0.5pt}%
+  \begin{itemize}\scriptsize #2\end{itemize}%
+}
+
+\begin{document}
+
+\begin{center}
+{\small\bfseries The NetCDF Developer's Handbook \textemdash{} Chapter Reference}\\[0.5pt]
+{\scriptsize Edward Hartnett \quad|\quad 16 Chapters \quad|\quad 2026 Edition}
+\end{center}
+\vspace{1pt}\hrule\vspace{2pt}
+
+\begin{multicols}{4}
+
+\ch{Ch.\,1 \textemdash{} Introduction}{
+  \item Self-describing \& portable: metadata travels with the file.
+  \item NC4 adds chunking, compression, parallel I/O for TB-scale data.
+  \item NASA, NOAA, ECMWF, CMIP all standardized on netCDF; hundreds of PB.
+  \item Workflow: create \textrightarrow{} define dims/vars \textrightarrow{} write \textrightarrow{} close.
+}
+
+\ch{Ch.\,2 \textemdash{} Obtaining NetCDF}{
+  \item One install method; mixing pkg-mgr + source causes mismatches.
+  \item Linux: apt/dnf; macOS: Homebrew; HPC: Conda or Spack.
+  \item Build order: zlib \textrightarrow{} HDF5 \textrightarrow{} netcdf-c \textrightarrow{} netcdf-fortran.
+  \item Parallel: build HDF5 with \texttt{--enable-parallel} via \texttt{mpicc}.
+  \item Java reads are pure Java; NC4 writes require JNI (\texttt{cdm-core}).
+  \item Verify: \texttt{nc-config --all} + smoke test linking \texttt{-lnetcdf}.
+}
+
+\ch{Ch.\,3 \textemdash{} Data Models}{
+  \item Classic: dims+vars+attrs, one unlimited dim; maximum portability.
+  \item Enhanced (NC4): groups, multiple unlimited dims, user-defined types.
+  \item Coordinate variable: 1-D var with same name as its dimension.
+  \item User types: compound, VLEN, enum, opaque; Fortran support varies.
+  \item Use classic for compatibility; enhanced for complex/hierarchical data.
+}
+
+\ch{Ch.\,4 \textemdash{} Binary Formats}{
+  \item Five formats: Classic, 64-bit Offset, CDF-5, NC4/HDF5, ncZarr.
+  \item Format is transparent on read; only matters at file creation.
+  \item NC4/HDF5: recommended default---compression, groups, parallel I/O.
+  \item CDF-5: classic model, no size limits; best for PnetCDF parallel I/O.
+  \item ncZarr: cloud object storage (S3/GCS/Azure); chunk-per-object layout.
+  \item \texttt{nccopy -k} converts formats; enhanced\textrightarrow{}classic fails if groups exist.
+}
+
+\ch{Ch.\,5 \textemdash{} Command-Line Utilities}{
+  \item \texttt{ncdump -h}: structure; \texttt{-hs}: adds chunk/compression info.
+  \item \texttt{ncgen}: CDL text \textrightarrow{} binary; \texttt{-lc}/\texttt{-lf} generates C/Fortran code.
+  \item ncdump\textrightarrow{}edit\textrightarrow{}ncgen round-trip for metadata fixes.
+  \item \texttt{nccopy -d1 -s}: compress; \texttt{-c}: rechunk for access pattern.
+  \item NCO: \texttt{ncrcat} (concat), \texttt{ncks} (subset), \texttt{ncap2} (math).
+}
+
+\ch{Ch.\,6 \textemdash{} C Examples}{
+  \item Error idiom: \texttt{if ((ret=nc\_xxx(...))) ERR(ret);}
+  \item Progression: simple\_2D \textrightarrow{} coord \textrightarrow{} compression \textrightarrow{} types \textrightarrow{} groups \textrightarrow{} parallel.
+  \item Parallel I/O: \texttt{nc\_create\_par()} with MPI communicator.
+  \item CF attributes (\texttt{units}, \texttt{standard\_name}) added in coord example.
+}
+
+\ch{Ch.\,7 \textemdash{} Fortran Examples}{
+  \item F77: \texttt{nf\_*}; F90: \texttt{nf90\_*} with optional keyword args (preferred).
+  \item Array dim order reversed vs.\ C (column-major Fortran).
+  \item Compile: \texttt{gfortran prog.f90 -lnetcdff -lnetcdf}
+  \item Same progression as C; compound/VLEN support limited in Fortran.
+}
+
+\ch{Ch.\,8 \textemdash{} Java (NetCDF-Java)}{
+  \item Pure Java re-implementation (CDM); not a C wrapper.
+  \item Reads NC-3/4, HDF5, GRIB; NC4 writes require JNI.
+  \item Add \texttt{edu.ucar:cdm-core} or \texttt{netcdfAll} via Maven/Gradle.
+  \item NcML: XML metadata modification and multi-file aggregation.
+  \item Not thread-safe: one \texttt{NetcdfFile} per thread.
+}
+
+\ch{Ch.\,9 \textemdash{} Attributes \& Conventions}{
+  \item CF: \texttt{standard\_name}, \texttt{units} (UDUNITS), \texttt{coordinates}, \texttt{cell\_methods}.
+  \item ACDD: discovery metadata (\texttt{title}, \texttt{institution}, \texttt{history}).
+  \item \texttt{\_FillValue} must match variable type; set before writing data.
+  \item Time: \texttt{"days since 1970-01-01"} + \texttt{calendar} attribute.
+  \item Validate compliance with cf-checker or IOOS Compliance Checker.
+}
+
+\ch{Ch.\,10 \textemdash{} Performance Fundamentals}{
+  \item Chunk shape drives both I/O speed and compression effectiveness.
+  \item Match chunks to dominant access pattern (time-slice vs.\ point).
+  \item Cache: tune with \texttt{nc\_set\_chunk\_cache(size, nslots, preemption)}.
+  \item Shuffle + Zstandard level~1 is best typical combination.
+  \item No-fill mode avoids unnecessary pre-fill write overhead.
+}
+
+\ch{Ch.\,11 \textemdash{} Parallel I/O}{
+  \item \texttt{nc\_create\_par}/\texttt{nc\_open\_par} with MPI communicator.
+  \item Collective I/O (\texttt{NC\_COLLECTIVE}) is usually faster than independent.
+  \item Align chunk shape with MPI domain decomposition layout.
+  \item PnetCDF: parallel classic/CDF-5 without HDF5.
+  \item PIO library (NCAR): async I/O for coupled model systems on HPC.
+}
+
+\ch{Ch.\,12 \textemdash{} Compression}{
+  \item Always apply shuffle filter before any lossless compressor.
+  \item Zstandard ($\geq$\,NC\,4.9): best ratio+speed; use level~1.
+  \item LZ4 (NEP): fastest decode; good for interactive access.
+  \item BZIP2: highest ratio, slowest; rarely justified.
+  \item Quantization (BitGroom/GranularBitRound): lossy pre-compression.
+  \item HDF5 filter plugins: runtime loadable via \texttt{nc\_def\_var\_filter()}.
+}
+
+\ch{Ch.\,13 \textemdash{} Architecture \& Extensibility}{
+  \item Dispatch table routes \texttt{nc\_*} calls to format-specific drivers.
+  \item Add custom format via \texttt{nc\_def\_user\_format()}.
+  \item NEP: LZ4/BZIP2 compression, CDF, GeoTIFF format readers.
+  \item Avoid V2 API (\texttt{ncvgt} etc.) in new code.
+}
+
+\ch{Ch.\,14 \textemdash{} OPeNDAP Remote Access}{
+  \item \texttt{nc\_open(URL, NC\_NOWRITE, \&id)}---transparent remote read.
+  \item Constraint expressions subset server-side (saves bandwidth).
+  \item DAP2 and DAP4 both handled automatically by netCDF-C.
+  \item Auth: use \texttt{.dodsrc}/\texttt{.netrc}; explore with \texttt{ncdump -h URL}.
+  \item Batch multiple vars into one request; request only needed slices.
+}
+
+\ch{Ch.\,15 \textemdash{} Performance Benchmarking}{
+  \item \texttt{bm\_file}: built-in benchmark; varies chunk, compression, pattern.
+  \item Time I/O: \texttt{clock\_gettime()} (C) or \texttt{cpu\_time()} (Fortran).
+  \item \texttt{h5stat}/\texttt{ncdump -hs}: inspect actual chunk layout.
+  \item Shell loop + \texttt{nccopy}: sweep chunk-size/compression combos.
+  \item Compare write speed, read speed, and file size per configuration.
+}
+
+\ch{Ch.\,16 \textemdash{} Past, Present \& Future}{
+  \item 1989 Classic; 2008 NC4/HDF5; 2020+ ncZarr, Zstandard, NEP.
+  \item Current: netcdf-c\,4.10, netcdf-fortran\,4.6.3, Java\,5.x, NCO, NEP.
+  \item Maintained by Unidata, Northwestern, NCAR, UC Irvine, OPeNDAP.
+  \item Every release maintains backward compatibility with prior formats.
+  \item Future: cloud-native I/O, richer compression, community-driven growth.
+}
+
+\end{multicols}
+
+\vspace{1pt}\hrule\vspace{1pt}
+{\tiny\centering Copyright \textcopyright\ 2026 Edward Hartnett \quad|\quad
+\textit{The NetCDF Developer's Handbook} \quad|\quad
+Reference compiled from chapter Key Takeaways\par}
+
+\end{document}

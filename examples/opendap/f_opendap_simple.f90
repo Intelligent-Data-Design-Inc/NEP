@@ -47,75 +47,54 @@ program f_opendap_simple
   integer :: start(3), count(3)
   integer :: i, j
 
-  print *, "Fortran OPeNDAP Simple Example"
-  print *, "=============================="
+  print *, "Fortran OPeNDAP Simple: ", trim(url)
   print *
-  print *, "Opening remote dataset:"
-  print *, "  " // trim(url)
-  print *
-  
-  ! Open the remote dataset
+
+  ! Open and get metadata
   status = nf90_open(url, NF90_NOWRITE, ncid)
   if (status /= NF90_NOERR) then
-     print *, "Error opening dataset: ", trim(nf90_strerror(status))
+     print *, "Error: ", trim(nf90_strerror(status))
      stop 1
   end if
-  print *, "Dataset opened successfully."
-  print *
-  
-  ! Query dataset metadata
+
   status = nf90_inquire(ncid, ndims, nvars, natts, unlimdimid)
-  if (status /= NF90_NOERR) then
-     print *, "Error inquiring dataset: ", trim(nf90_strerror(status))
-     stop 1
-  end if
-  
-  print *, "Dataset contains:"
-  print *, "  Dimensions: ", ndims
-  print *, "  Variables: ", nvars
-  print *, "  Global attributes: ", natts
-  print *, "  Unlimited dimension ID: ", unlimdimid
-  print *
-  
-  ! Query dimension information
-  print *, "Dimensions:"
+  if (status /= NF90_NOERR) stop 1
+  print *, "Dataset: ", ndims, " dims, ", nvars, " vars, ", natts, " atts, unlimdim=", unlimdimid
+
+  ! Print dimensions compactly
+  write(*, '(A)', advance='no') "Dimensions: "
   do i = 1, ndims
      status = nf90_inquire_dimension(ncid, i, dim_name, dimlen)
      if (status == NF90_NOERR) then
-        print *, "  [", i, "] ", trim(dim_name), " = ", dimlen
+        write(*, '(A,I0,A,I0,A)', advance='no') trim(dim_name)//"=", dimlen, " "
      end if
   end do
   print *
   
-  ! Get variable ID for 'sst'
+  ! Get variable 'sst' info and read subset
   status = nf90_inq_varid(ncid, "sst", varid)
   if (status == NF90_NOERR) then
-     print *, "Found variable 'sst' (ID: ", varid, ")"
-     
-     ! Query variable information
      status = nf90_inquire_variable(ncid, varid, var_name, xtype, var_ndims, var_dimids, var_natts)
      if (status == NF90_NOERR) then
-        print *, "  Type: ", xtype
-        print *, "  Number of dimensions: ", var_ndims
-        print *, "  Number of attributes: ", var_natts
-        print *, "  Dimension IDs: ", var_dimids(1:var_ndims)
+        write(*, '(A,A,A,I0,A,I0,A,I0,A)', advance='no') "Variable '"//trim(var_name)//"': type=", xtype, ", ndims=", var_ndims, ", natts=", var_natts, ", shape=["
+        do i = 1, var_ndims
+           status = nf90_inquire_dimension(ncid, var_dimids(i), len=dimlen)
+           write(*, '(I0,A)', advance='no') dimlen, merge(",","]", i<var_ndims)
+        end do
+        print *
      end if
-     
-     ! Read a small subset using Fortran 1-based indexing
-     ! Note: NetCDF-Fortran uses 1-based start indices automatically
-     start = (/ 1, 1, 1 /)  ! First time step, first lat, first lon
-     count = (/ 1, 5, 5 /)  ! 1 time step, 5x5 spatial
-     
-     print *
-     print *, "Reading subset [1:1][1:5][1:5] (Fortran 1-based):"
-     
+
+     ! Read 5x5 subset (Fortran 1-based indexing)
+     start = (/ 1, 1, 1 /)
+     count = (/ 1, 5, 5 /)
+     print *, "Reading subset [1:1][1:5][1:5]:"
+
      status = nf90_get_var(ncid, varid, data, start=start, count=count)
      if (status /= NF90_NOERR) then
-        print *, "Error reading variable: ", trim(nf90_strerror(status))
+        print *, "Error: ", trim(nf90_strerror(status))
      else
-        print *, "  Sample values:"
         do i = 1, 5
-           write(*, '(A,I2,A)', advance='no') "    Row ", i, ": "
+           write(*, '(2X)', advance='no')
            do j = 1, 5
               write(*, '(F7.2)', advance='no') data(i, j)
            end do
@@ -123,20 +102,12 @@ program f_opendap_simple
         end do
      end if
   else
-     print *, "Variable 'sst' not found in dataset."
+     print *, "Variable 'sst' not found."
   end if
   
-  ! Close the dataset
+  ! Close
   status = nf90_close(ncid)
-  if (status /= NF90_NOERR) then
-     print *, "Error closing dataset: ", trim(nf90_strerror(status))
-     stop 1
-  end if
-  
-  print *
-  print *, "Dataset closed successfully."
-  print *
-  print *, "Note: Fortran uses 1-based indexing for the API,"
-  print *, "      but OPeNDAP constraint expressions use 0-based indexing."
+  if (status /= NF90_NOERR) stop 1
+  print *, "Done."
 
 end program f_opendap_simple
