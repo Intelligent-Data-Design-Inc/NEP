@@ -305,7 +305,15 @@ Located in `examples/nczarr/`:
 **Fortran examples** (Sprint 2):
 - `f_nczarr_simple.f90` - Fortran equivalent of `nczarr_simple.c`; produces the same 4×5 `temperature(y, x)` dataset at `file://f_simple_nczarr.zarr#mode=nczarr`; demonstrates Fortran column-major dimension ordering with NcZarr
 
-**Note**: NcZarr examples are only built when NetCDF-C reports NcZarr support (`NC_HAS_NCZARR` in `netcdf_meta.h`) and examples are enabled. The Fortran example additionally requires `--enable-fortran` (Autotools) or `ENABLE_FORTRAN=ON` (CMake). Each example writes to a distinct Zarr directory store to allow safe parallel test execution.
+**C examples** (Sprint 3):
+- `nczarr_chunking.c` - Explicit chunk shape selection (2×5) for NcZarr; demonstrates `nc_def_var_chunking()` and `nc_inq_var_chunking()` with metadata verification
+- `nczarr_compression.c` - Deflate level 4 + shuffle compression on a chunked NcZarr variable; demonstrates the recommended workflow of setting chunk shape before applying `nc_def_var_deflate()`
+
+**Fortran examples** (Sprint 3):
+- `f_nczarr_chunking.f90` - Fortran equivalent of `nczarr_chunking.c`; demonstrates `nf90_def_var_chunking()` with Fortran column-major dimension ordering
+- `f_nczarr_compression.f90` - Fortran equivalent of `nczarr_compression.c`; demonstrates `nf90_def_var_deflate()` with explicit chunking
+
+**Note**: NcZarr examples are only built when NetCDF-C reports NcZarr support (`NC_HAS_NCZARR` in `netcdf_meta.h`) and examples are enabled. The Fortran examples additionally require `--enable-fortran` (Autotools) or `ENABLE_FORTRAN=ON` (CMake). Each example writes to a distinct Zarr directory store to allow safe parallel test execution.
 
 ### 8.4 Build Configuration
 **CMake:**

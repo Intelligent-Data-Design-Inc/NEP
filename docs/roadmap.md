@@ -50,6 +50,27 @@
 - Generate `examples/expected_output/f_nczarr_simple_expected.cdl` from live `ncdump` output
 - Update `docs/prd.md` NcZarr section to cover Fortran example
 
+#### Sprint 3: NcZarr Chunking and Compression Examples
+**Detailed Plan**: See `docs/plan/v1.11.0-sprint3-nczarr-advanced.md`
+
+**Purpose**: Add four NcZarr examples demonstrating explicit chunk shape selection and deflate+shuffle compression, in both C and Fortran.
+
+**What it shows**:
+- Explicit chunk shape (2×5) on the 4×5 temperature grid via `nc_def_var_chunking()` / `nf90_def_var_chunking()`
+- Deflate level 4 + shuffle via `nc_def_var_deflate()` / `nf90_def_var_deflate()`
+- Recommended workflow: set chunk shape before applying compression
+- Metadata verification after reopen (`nc_inq_var_chunking()`, `nc_inq_var_deflate()`)
+- Same 4×5 `temperature(y, x)` dataset as sprints 1–2
+
+**Key API**: `nc_def_var_chunking()`, `nc_def_var_deflate()`, `nc_inq_var_chunking()`, `nc_inq_var_deflate()`
+
+**Tasks**:
+- Create `examples/nczarr/nczarr_chunking.c` and `examples/nczarr/nczarr_compression.c`
+- Create `examples/nczarr/f_nczarr_chunking.f90` and `examples/nczarr/f_nczarr_compression.f90`
+- Update `examples/nczarr/CMakeLists.txt` — add four new executables and tests
+- Update `examples/nczarr/Makefile.am` — add four new programs; Fortran gated on `ENABLE_FORTRAN`
+- Update `clean-local` for six Zarr directories
+- Update `docs/prd.md` NcZarr section with Sprint 3 examples
 
 ### V1.10.0 More Performance Examples
 

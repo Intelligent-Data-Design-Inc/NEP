@@ -77,6 +77,46 @@ if(BUILD_TESTING)
                              "LD_LIBRARY_PATH=path_list_prepend:${NC_LIBDIR};LD_LIBRARY_PATH=path_list_prepend:${HDF5_LIB_DIR}")
 endif()
 
+# Chunking example (v1.11.0 sprint 3)
+add_executable(nczarr_chunking nczarr_chunking.c)
+target_compile_options(nczarr_chunking PRIVATE ${NC_CFLAGS_LIST})
+target_link_directories(nczarr_chunking PRIVATE ${HDF5_LIB_DIR})
+target_link_libraries(nczarr_chunking PRIVATE ${NC_LIBS_LIST})
+set_target_properties(nczarr_chunking PROPERTIES
+    BUILD_RPATH "${HDF5_LIB_DIR};${NC_LIBDIR}"
+    SKIP_BUILD_RPATH OFF
+    BUILD_WITH_INSTALL_RPATH ON
+    INSTALL_RPATH "${HDF5_LIB_DIR};${NC_LIBDIR}")
+
+if(BUILD_TESTING)
+    add_test(NAME nczarr_chunking
+             COMMAND nczarr_chunking
+             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    set_tests_properties(nczarr_chunking PROPERTIES
+        ENVIRONMENT_MODIFICATION
+            "LD_LIBRARY_PATH=path_list_prepend:${NC_LIBDIR};LD_LIBRARY_PATH=path_list_prepend:${HDF5_LIB_DIR}")
+endif()
+
+# Compression example (v1.11.0 sprint 3)
+add_executable(nczarr_compression nczarr_compression.c)
+target_compile_options(nczarr_compression PRIVATE ${NC_CFLAGS_LIST})
+target_link_directories(nczarr_compression PRIVATE ${HDF5_LIB_DIR})
+target_link_libraries(nczarr_compression PRIVATE ${NC_LIBS_LIST})
+set_target_properties(nczarr_compression PROPERTIES
+    BUILD_RPATH "${HDF5_LIB_DIR};${NC_LIBDIR}"
+    SKIP_BUILD_RPATH OFF
+    BUILD_WITH_INSTALL_RPATH ON
+    INSTALL_RPATH "${HDF5_LIB_DIR};${NC_LIBDIR}")
+
+if(BUILD_TESTING)
+    add_test(NAME nczarr_compression
+             COMMAND nczarr_compression
+             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    set_tests_properties(nczarr_compression PROPERTIES
+        ENVIRONMENT_MODIFICATION
+            "LD_LIBRARY_PATH=path_list_prepend:${NC_LIBDIR};LD_LIBRARY_PATH=path_list_prepend:${HDF5_LIB_DIR}")
+endif()
+
 # Fortran NcZarr example — only built when Fortran is enabled and NetCDF-Fortran is found (v1.11.0 sprint 2)
 if(ENABLE_FORTRAN AND NetCDF_Fortran_FOUND)
     find_program(NF_CONFIG nf-config
@@ -135,6 +175,46 @@ if(ENABLE_FORTRAN AND NetCDF_Fortran_FOUND)
                                  DEPENDS f_nczarr_simple
                                  ENVIRONMENT_MODIFICATION
                                      "LD_LIBRARY_PATH=path_list_prepend:${NF_LIBDIR};LD_LIBRARY_PATH=path_list_prepend:${NC_LIBDIR};LD_LIBRARY_PATH=path_list_prepend:${HDF5_LIB_DIR}")
+        endif()
+
+        # Fortran chunking example (v1.11.0 sprint 3)
+        add_executable(f_nczarr_chunking f_nczarr_chunking.f90)
+        target_compile_options(f_nczarr_chunking PRIVATE ${NF_FFLAGS_LIST})
+        target_link_directories(f_nczarr_chunking PRIVATE ${HDF5_LIB_DIR} ${NF_LIBDIR})
+        target_link_libraries(f_nczarr_chunking PRIVATE ${NF_LIBS_F_LIST} ${NETCDF_LIBRARIES} hdf5 hdf5_hl)
+        set_target_properties(f_nczarr_chunking PROPERTIES
+            BUILD_RPATH "${HDF5_LIB_DIR};${NC_LIBDIR};${NF_LIBDIR}"
+            SKIP_BUILD_RPATH OFF
+            BUILD_WITH_INSTALL_RPATH ON
+            INSTALL_RPATH "${HDF5_LIB_DIR};${NC_LIBDIR};${NF_LIBDIR}")
+
+        if(BUILD_TESTING)
+            add_test(NAME f_nczarr_chunking
+                     COMMAND f_nczarr_chunking
+                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+            set_tests_properties(f_nczarr_chunking PROPERTIES
+                ENVIRONMENT_MODIFICATION
+                    "LD_LIBRARY_PATH=path_list_prepend:${NF_LIBDIR};LD_LIBRARY_PATH=path_list_prepend:${NC_LIBDIR};LD_LIBRARY_PATH=path_list_prepend:${HDF5_LIB_DIR}")
+        endif()
+
+        # Fortran compression example (v1.11.0 sprint 3)
+        add_executable(f_nczarr_compression f_nczarr_compression.f90)
+        target_compile_options(f_nczarr_compression PRIVATE ${NF_FFLAGS_LIST})
+        target_link_directories(f_nczarr_compression PRIVATE ${HDF5_LIB_DIR} ${NF_LIBDIR})
+        target_link_libraries(f_nczarr_compression PRIVATE ${NF_LIBS_F_LIST} ${NETCDF_LIBRARIES} hdf5 hdf5_hl)
+        set_target_properties(f_nczarr_compression PROPERTIES
+            BUILD_RPATH "${HDF5_LIB_DIR};${NC_LIBDIR};${NF_LIBDIR}"
+            SKIP_BUILD_RPATH OFF
+            BUILD_WITH_INSTALL_RPATH ON
+            INSTALL_RPATH "${HDF5_LIB_DIR};${NC_LIBDIR};${NF_LIBDIR}")
+
+        if(BUILD_TESTING)
+            add_test(NAME f_nczarr_compression
+                     COMMAND f_nczarr_compression
+                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+            set_tests_properties(f_nczarr_compression PROPERTIES
+                ENVIRONMENT_MODIFICATION
+                    "LD_LIBRARY_PATH=path_list_prepend:${NF_LIBDIR};LD_LIBRARY_PATH=path_list_prepend:${NC_LIBDIR};LD_LIBRARY_PATH=path_list_prepend:${HDF5_LIB_DIR}")
         endif()
     endif()
 endif()
