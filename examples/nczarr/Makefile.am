@@ -16,10 +16,22 @@ TESTS = nczarr_simple test_nczarr_simple.sh
 
 EXTRA_DIST = test_nczarr_simple.sh.in
 
+# Fortran NcZarr example — only built when Fortran is enabled (v1.11.0 sprint 2)
+if ENABLE_FORTRAN
+AM_FCFLAGS = $(CPPFLAGS)
+
+check_PROGRAMS += f_nczarr_simple
+f_nczarr_simple_SOURCES = f_nczarr_simple.f90
+f_nczarr_simple_LDADD = -lnetcdff
+
+TESTS += test_f_nczarr_simple.sh
+EXTRA_DIST += test_f_nczarr_simple.sh.in
+endif
+
 # Ensure built binaries are executable before test scripts run them
 check-local:
 	chmod +x $(check_PROGRAMS)
 
-# NcZarr produces a directory tree, not a single file
+# NcZarr produces directory trees, not single files
 clean-local:
-	rm -rf simple_nczarr.zarr
+	rm -rf simple_nczarr.zarr f_simple_nczarr.zarr
