@@ -448,18 +448,18 @@ and the [NetCDF UDF documentation](https://docs.unidata.ucar.edu/netcdf/NUG/user
 
 ## Example Programs
 
-NEP v3.5.1 includes comprehensive example programs in C and Fortran to help you learn NetCDF API usage. These examples demonstrate both read and write operations, covering basic to advanced features.
+NEP includes comprehensive example programs in C and Fortran to help you learn NetCDF API usage. These examples demonstrate both read and write operations, covering basic to advanced features.
 
 ### What's Included
 
-**Classic NetCDF Examples:**
+**Classic NetCDF Examples** (`examples/classic/`, `examples/f_classic/`):
 - Quickstart introduction to NetCDF
 - Basic 2D arrays and coordinate variables
 - Format variants (classic, 64-bit offset, CDF-5)
 - Size limits and unlimited dimensions
 - 4-dimensional variables
 
-**NetCDF-4 Examples:**
+**NetCDF-4 Examples** (`examples/netcdf-4/`, `examples/f_netcdf-4/`):
 - NetCDF-4 file creation
 - Compression filters (deflate, shuffle)
 - Chunking strategies and performance
@@ -467,10 +467,27 @@ NEP v3.5.1 includes comprehensive example programs in C and Fortran to help you 
 - User-defined compound and enum types
 - Hierarchical groups and dimension visibility
 
+**NcZarr Examples** (`examples/nczarr/`):
+- Local NcZarr create/read/write with `file://...#mode=nczarr` URLs
+- Explicit chunk shape selection with `nc_def_var_chunking()`
+- Deflate + shuffle compression with `nc_def_var_deflate()`
+- All examples in both C and Fortran
+
+**Performance Examples** (`examples/performance/`):
+- Chunk cache tuning with `nc_set_chunk_cache()`
+- Chunking strategy comparison (row-optimized, column-optimized, balanced)
+- Compression level benchmarking across deflate levels
+- Balanced chunking with compression
+- Built only with `-DENABLE_BENCHMARKS=ON` (CMake) or `--enable-benchmarks` (Autotools)
+
+**Parallel I/O Examples** (`examples/parallelIO/`):
+- MPI-based parallel NetCDF-4 write and read
+- Built only when parallel tests are enabled
+
 **Dual Language Support:**
-- All examples provided in both C and Fortran
+- Classic, NetCDF-4, and NcZarr examples provided in both C and Fortran
 - Equivalent functionality across languages
-- Demonstrates language-specific API usage
+- Demonstrates language-specific API usage (column-major vs row-major ordering)
 
 ### Running Examples
 
