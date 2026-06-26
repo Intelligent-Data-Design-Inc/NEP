@@ -43,8 +43,6 @@ execute_process(
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-set(_nep_ld_env "LD_LIBRARY_PATH=${HDF5_LIB_DIR}:${NC_LIBDIR}:$ENV{LD_LIBRARY_PATH}")
-
 add_executable(nczarr_simple nczarr_simple.c)
 target_compile_options(nczarr_simple PRIVATE ${NC_CFLAGS_LIST})
 target_link_directories(nczarr_simple PRIVATE ${HDF5_LIB_DIR})
@@ -59,7 +57,9 @@ if(BUILD_TESTING)
     add_test(NAME nczarr_simple
              COMMAND nczarr_simple
              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-    set_tests_properties(nczarr_simple PROPERTIES ENVIRONMENT "${_nep_ld_env}")
+    set_tests_properties(nczarr_simple PROPERTIES
+        ENVIRONMENT_MODIFICATION
+            "LD_LIBRARY_PATH=path_list_prepend:${NC_LIBDIR};LD_LIBRARY_PATH=path_list_prepend:${HDF5_LIB_DIR}")
 endif()
 
 # Configure validation script with ncdump path from top-level CMakeLists.txt
@@ -73,7 +73,8 @@ if(BUILD_TESTING)
              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     set_tests_properties(nczarr_simple_validate PROPERTIES
                          DEPENDS nczarr_simple
-                         ENVIRONMENT "${_nep_ld_env}")
+                         ENVIRONMENT_MODIFICATION
+                             "LD_LIBRARY_PATH=path_list_prepend:${NC_LIBDIR};LD_LIBRARY_PATH=path_list_prepend:${HDF5_LIB_DIR}")
 endif()
 
 # Fortran NcZarr example — only built when Fortran is enabled and NetCDF-Fortran is found (v1.11.0 sprint 2)
@@ -99,28 +100,41 @@ if(ENABLE_FORTRAN AND NetCDF_Fortran_FOUND)
         separate_arguments(NF_FFLAGS_LIST UNIX_COMMAND "${NF_FFLAGS}")
         separate_arguments(NF_LIBS_F_LIST UNIX_COMMAND "${NF_LIBS_F}")
 
+        # Extract the NetCDF-Fortran lib dir from --flibs since --libdir is not
+        # supported by all nf-config versions.
+        set(NF_LIBDIR "")
+        foreach(_flag IN LISTS NF_LIBS_F_LIST)
+            if(_flag MATCHES "^-L(.+)")
+                set(NF_LIBDIR "${CMAKE_MATCH_1}")
+                break()
+            endif()
+        endforeach()
+
         add_executable(f_nczarr_simple f_nczarr_simple.f90)
         target_compile_options(f_nczarr_simple PRIVATE ${NF_FFLAGS_LIST})
-        target_link_directories(f_nczarr_simple PRIVATE ${HDF5_LIB_DIR})
+        target_link_directories(f_nczarr_simple PRIVATE ${HDF5_LIB_DIR} ${NF_LIBDIR})
         target_link_libraries(f_nczarr_simple PRIVATE ${NF_LIBS_F_LIST} ${NETCDF_LIBRARIES} hdf5 hdf5_hl)
         set_target_properties(f_nczarr_simple PROPERTIES
-            BUILD_RPATH "${HDF5_LIB_DIR};${NC_LIBDIR}"
+            BUILD_RPATH "${HDF5_LIB_DIR};${NC_LIBDIR};${NF_LIBDIR}"
             SKIP_BUILD_RPATH OFF
             BUILD_WITH_INSTALL_RPATH ON
-            INSTALL_RPATH "${HDF5_LIB_DIR};${NC_LIBDIR}")
+            INSTALL_RPATH "${HDF5_LIB_DIR};${NC_LIBDIR};${NF_LIBDIR}")
 
         if(BUILD_TESTING)
             add_test(NAME f_nczarr_simple
                      COMMAND f_nczarr_simple
                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-            set_tests_properties(f_nczarr_simple PROPERTIES ENVIRONMENT "${_nep_ld_env}")
+            set_tests_properties(f_nczarr_simple PROPERTIES
+                ENVIRONMENT_MODIFICATION
+                    "LD_LIBRARY_PATH=path_list_prepend:${NF_LIBDIR};LD_LIBRARY_PATH=path_list_prepend:${NC_LIBDIR};LD_LIBRARY_PATH=path_list_prepend:${HDF5_LIB_DIR}")
 
             add_test(NAME f_nczarr_simple_validate
                      COMMAND bash -c "./f_nczarr_simple && bash validate_cdl.sh f_nczarr_simple 'file://f_simple_nczarr.zarr#mode=nczarr' ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/f_nczarr_simple_expected.cdl"
                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
             set_tests_properties(f_nczarr_simple_validate PROPERTIES
                                  DEPENDS f_nczarr_simple
-                                 ENVIRONMENT "${_nep_ld_env}")
+                                 ENVIRONMENT_MODIFICATION
+                                     "LD_LIBRARY_PATH=path_list_prepend:${NF_LIBDIR};LD_LIBRARY_PATH=path_list_prepend:${NC_LIBDIR};LD_LIBRARY_PATH=path_list_prepend:${HDF5_LIB_DIR}")
         endif()
     endif()
 endif()
