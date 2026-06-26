@@ -1,5 +1,6 @@
 # CMakeLists.txt for NcZarr examples
 # Edward Hartnett, Intelligent Data Design, Inc.
+# 2026-06-26
 
 # Find nc-config from the NetCDF library directories or prefix
 if(NETCDF_LIBRARY_DIRS)

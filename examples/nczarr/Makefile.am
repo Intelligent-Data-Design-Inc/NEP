@@ -1,5 +1,6 @@
 # Makefile.am for NcZarr examples
 # Edward Hartnett, Intelligent Data Design, Inc.
+# 2026-06-26
 
 AUTOMAKE_OPTIONS = parallel-tests
 
