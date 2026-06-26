@@ -11,6 +11,10 @@
 /* Define if parallel I/O tests are enabled */
 #cmakedefine HAVE_PARALLEL_TESTS
 
+/* NcZarr support in NetCDF-C (v1.11.0) */
+/* Define if NetCDF-C has NcZarr support */
+#cmakedefine HAVE_NCZARR
+
 /* CDF library detection (v1.3.0) - library detection only, no UDF yet */
 /* Define if CDF library is found */
 #cmakedefine HAVE_CDF

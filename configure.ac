@@ -490,6 +490,16 @@ if test "x$have_zstd" = xno; then
    AC_MSG_ERROR([netcdf-c must be built with zstd and have version > 4.9.0.])
 fi
 
+# Check for NcZarr support in NetCDF-C (v1.11.0)
+AC_MSG_CHECKING([whether NetCDF-C has NcZarr support])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([#include "netcdf_meta.h"],
+[[#if !NC_HAS_NCZARR
+# error
+#endif]
+])], [have_nczarr=yes], [have_nczarr=no])
+AC_MSG_RESULT([$have_nczarr])
+AM_CONDITIONAL([HAVE_NCZARR], [test "x$have_nczarr" = xyes])
+
 # Check for parallel NetCDF-C if parallel tests enabled (v1.9.0)
 if test "x$enable_parallel_tests" = xyes; then
     AC_MSG_CHECKING([whether NetCDF-C has parallel support])
@@ -600,6 +610,7 @@ AC_CONFIG_FILES([ftest/run_tests.sh], [chmod ugo+x ftest/run_tests.sh])
 AC_CONFIG_FILES([test_h5/run_tests.sh], [chmod ugo+x test_h5/run_tests.sh])
 AC_CONFIG_FILES([examples/validate_cdl.sh], [chmod ugo+x examples/validate_cdl.sh])
 AC_CONFIG_FILES([examples/parallelIO/run_par_examples.sh], [chmod ugo+x examples/parallelIO/run_par_examples.sh])
+AC_CONFIG_FILES([examples/nczarr/test_nczarr_simple.sh], [chmod ugo+x examples/nczarr/test_nczarr_simple.sh])
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
@@ -614,6 +625,7 @@ AC_CONFIG_FILES([Makefile
                  examples/Makefile
                  examples/classic/Makefile
                  examples/netcdf-4/Makefile
+                 examples/nczarr/Makefile
                  examples/f_classic/Makefile
                  examples/f_netcdf-4/Makefile
                  examples/parallelIO/Makefile

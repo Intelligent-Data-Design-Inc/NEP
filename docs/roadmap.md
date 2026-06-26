@@ -1,5 +1,31 @@
 # NEP Development Roadmap
 
+### V1.11.0 NcZarr Examples
+
+#### Sprint 1: Add `examples/nczarr/nczarr_simple.c` — Local NcZarr Create/Read/Write
+**Detailed Plan**: See `docs/plan/v1.11.0-sprint1-nczarr.md`
+
+**Purpose**: Demonstrate how to create, write, and read a local NcZarr dataset using the NetCDF-C API.
+
+**What it shows**:
+- Creating a local NcZarr store with `file://simple_nczarr.zarr#mode=nczarr`
+- Defining dimensions and a 2D `NC_FLOAT` variable
+- Writing and reading attributes and data
+- Reopening the dataset and validating metadata and values
+
+**Key API**: `nc_create()`, `nc_open()`, `nc_def_dim()`, `nc_def_var()`, `nc_put_att_text()`, `nc_put_var_float()`, `nc_get_var_float()`
+
+**Build Gating**: Built only when NetCDF-C reports NcZarr support (`NC_HAS_NCZARR` in `netcdf_meta.h`) and examples are enabled.
+
+**Tasks**:
+- Create `examples/nczarr/nczarr_simple.c` following NEP example style
+- Detect NcZarr support in CMake (`HAVE_NCZARR`) and Autotools (`HAVE_NCZARR` conditional)
+- Create `examples/nczarr/CMakeLists.txt` and `examples/nczarr/Makefile.am`
+- Wire `examples/nczarr/` into `examples/CMakeLists.txt` and `examples/Makefile.am`
+- Add `examples/nczarr/Makefile` to `configure.ac` `AC_CONFIG_FILES`
+- Generate expected CDL output and validation (or rely on internal validation if CDL is unstable)
+- Update `docs/prd.md` with an NcZarr Examples subsection
+
 ### V1.10.0 More Performance Examples
 
 #### Sprint 1: Add example: cache_tuning.c — Chunk Cache Configuration

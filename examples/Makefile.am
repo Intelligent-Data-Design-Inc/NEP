@@ -21,3 +21,8 @@ endif
 if ENABLE_OPENDAP_EXAMPLES
 SUBDIRS += opendap
 endif
+
+# NcZarr examples only built when NetCDF-C supports NcZarr (v1.11.0)
+if HAVE_NCZARR
+SUBDIRS += nczarr
+endif

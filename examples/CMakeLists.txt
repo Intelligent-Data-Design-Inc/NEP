@@ -25,3 +25,8 @@ endif()
 if(ENABLE_OPENDAP_EXAMPLES)
     add_subdirectory(opendap)
 endif()
+
+# NcZarr examples only built when NetCDF-C supports NcZarr (v1.11.0)
+if(HAVE_NCZARR)
+    add_subdirectory(nczarr)
+endif()

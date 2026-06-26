@@ -18,9 +18,27 @@ if [ $# -ne 3 ]; then
     exit 1
 fi
 
-if [ ! -f "$OUTPUT_FILE" ]; then
-    echo "ERROR: Output file not found: $OUTPUT_FILE"
-    exit 1
+# ncdump path determined at configure time
+NCDUMP="@NCDUMP@"
+
+# Handle NcZarr file:// URLs: keep the full URL for ncdump, but check the
+# filesystem path and use a safe name for the temporary CDL file.
+if [[ "$OUTPUT_FILE" == file://* ]]; then
+    NCDUMP_URL="$OUTPUT_FILE"
+    OUTPUT_PATH="${OUTPUT_FILE#file://}"
+    OUTPUT_PATH="${OUTPUT_PATH%%#*}"
+    if [ ! -e "$OUTPUT_PATH" ]; then
+        echo "ERROR: NcZarr output path not found: $OUTPUT_PATH"
+        exit 1
+    fi
+    CDL_FILE="${OUTPUT_PATH}.cdl"
+else
+    NCDUMP_URL="$OUTPUT_FILE"
+    CDL_FILE="${OUTPUT_FILE}.cdl"
+    if [ ! -f "$OUTPUT_FILE" ]; then
+        echo "ERROR: Output file not found: $OUTPUT_FILE"
+        exit 1
+    fi
 fi
 
 if [ ! -f "$EXPECTED_CDL" ]; then
@@ -28,29 +46,26 @@ if [ ! -f "$EXPECTED_CDL" ]; then
     exit 1
 fi
 
-# ncdump path determined at configure time
-NCDUMP="@NCDUMP@"
-
 echo "Using ncdump: $NCDUMP"
 "$NCDUMP" -h 2>&1 | head -1 || echo "ncdump version check failed"
 
 # Run ncdump on generated file
-"$NCDUMP" "$OUTPUT_FILE" > "${OUTPUT_FILE}.cdl" 2>/dev/null
+"$NCDUMP" "$NCDUMP_URL" > "$CDL_FILE" 2>/dev/null
 if [ $? -ne 0 ]; then
-    echo "ERROR: ncdump failed on $OUTPUT_FILE"
-    cat "${OUTPUT_FILE}.cdl"
+    echo "ERROR: ncdump failed on $NCDUMP_URL"
+    cat "$CDL_FILE"
     exit 1
 fi
 
 # Compare with expected CDL
-diff -u "$EXPECTED_CDL" "${OUTPUT_FILE}.cdl"
+diff -u "$EXPECTED_CDL" "$CDL_FILE"
 if [ $? -ne 0 ]; then
     echo "ERROR: Output differs from expected for $EXAMPLE_NAME"
     echo "Expected: $EXPECTED_CDL"
-    echo "Generated: ${OUTPUT_FILE}.cdl"
+    echo "Generated: $CDL_FILE"
     exit 1
 fi
 
 echo "PASS: $EXAMPLE_NAME output matches expected CDL"
-rm -f "${OUTPUT_FILE}.cdl"
+rm -f "$CDL_FILE"
 exit 0
