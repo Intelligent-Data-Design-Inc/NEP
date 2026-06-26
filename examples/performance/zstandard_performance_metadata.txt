@@ -1,0 +1,5 @@
+title: NetCDF-4 Zstandard Compression: Ratio and Throughput vs. Level
+
+caption: Results from the zstandard.c example program in the NetCDF Expansion Pack. Dataset is a 500x180x360 NC_FLOAT temperature array (~129 MB), stored with 10x45x90 chunks. Top chart: compression ratio across Zstandard levels (-7 to 22). Middle and bottom charts: write and read time. shuffle=on reorders float bytes before compression, consistently improving ratio. Negative levels trade ratio for speed; higher levels increase ratio at rising CPU cost. Higher ratio is better; lower times are better.
+
+alt_text: Three vertically stacked line charts sharing a common x-axis of Zstandard compression levels from -7 to 22. Each chart has two lines: a solid line with filled circles for shuffle=off and a dashed line with open squares for shuffle=on. Top chart: y-axis is compression ratio, rising with level and consistently higher for shuffle=on. Middle chart: y-axis is write time in seconds, increasing at higher levels. Bottom chart: y-axis is read time in seconds on the same scale as write time.

@@ -16,3 +16,8 @@ endif
 if HAVE_PARALLEL_TESTS
 SUBDIRS += parallelIO
 endif
+
+# OPeNDAP examples only built when --enable-opendap-examples is specified (v1.10.0)
+if ENABLE_OPENDAP_EXAMPLES
+SUBDIRS += opendap
+endif

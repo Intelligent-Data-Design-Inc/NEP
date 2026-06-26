@@ -310,6 +310,37 @@
 - Update `examples/performance/Makefile.am`: add `quantize` inside `if ENABLE_BENCHMARKS` block
 - Update `docs/prd.md` with `quantize.c` description in Performance Examples subsection
 
+#### Sprint 12: Add example: opendap/ — OPeNDAP Remote Data Access Examples
+**Detailed Plan**: See `docs/plan/v1.10.0-sprint12-opendap.md`
+
+**Purpose**: Demonstrate how to access remote scientific datasets via OPeNDAP using NetCDF-C and NetCDF-Fortran, including constraint expressions, service endpoints, and performance optimization.
+
+**What it shows**:
+
+- Opening remote datasets with OPeNDAP URLs using `nc_open()`
+- Using constraint expressions to subset data on the server
+- Accessing OPeNDAP service endpoints (.dds, .das, .dmr.xml, .info)
+- DAP2 vs DAP4 protocol usage
+- Performance best practices (request subsetting, minimizing requests)
+- Error handling for network timeouts and authentication
+- Working with public test servers (test.opendap.org)
+
+**Key API**: `nc_open()` with URLs, `nc_inq_varid()`, `nc_get_vara_float()`, `nc_close()`, OPeNDAP URL syntax with constraint expressions
+
+**Tasks**:
+
+- Create `examples/opendap/` directory structure
+- Create `examples/opendap/opendap_simple.c` — Basic open/read/close of remote dataset
+- Create `examples/opendap/opendap_constraint.c` — Using constraint expressions in URLs
+- Create `examples/opendap/opendap_subset.c` — Client-side subsetting with start/count
+- Create `examples/opendap/f_opendap_simple.f90` — Fortran equivalent of simple example
+- Create `examples/opendap/README.md` — Documentation on OPeNDAP examples and test servers
+- Create `examples/opendap/CMakeLists.txt` and `examples/opendap/Makefile.am`
+- Add OPeNDAP examples to root `CMakeLists.txt` and `configure.ac` (optional, off by default)
+- Add test URLs using test.opendap.org public datasets
+- Generate expected CDL output for validation
+- Update `docs/prd.md` with OPeNDAP Examples subsection
+
 ### V1.9.0 Parallel I/O Builds and Examples
 
 #### Sprint 1: Add mpicc Build to CI

@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" width="800" height="480">
+  <!-- Background -->
+  <rect width="800" height="480" fill="#ffffff"/>
+  
+  <!-- Title -->
+  <text x="400" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#000000">OPeNDAP DAP2 Architecture</text>
+  
+  <!-- Client Side Box -->
+  <rect x="30" y="60" width="220" height="380" rx="8" fill="#f5f5f5" stroke="#333333" stroke-width="2"/>
+  <text x="140" y="80" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#000000">CLIENT</text>
+  
+  <!-- User Program -->
+  <rect x="50" y="100" width="180" height="60" rx="6" fill="#ffffff" stroke="#333333" stroke-width="2"/>
+  <text x="140" y="125" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#000000">User Program</text>
+  <text x="140" y="145" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333333">nc_open(url, NC_NOWRITE)</text>
+  
+  <!-- NetCDF Library -->
+  <rect x="50" y="180" width="180" height="70" rx="6" fill="#ffffff" stroke="#333333" stroke-width="2"/>
+  <text x="140" y="205" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#000000">NetCDF-C Library</text>
+  <text x="140" y="222" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333333">DAP2 Client Module</text>
+  <text x="140" y="237" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333333">HTTP Request Builder</text>
+  
+  <!-- libcurl -->
+  <rect x="50" y="270" width="180" height="40" rx="6" fill="#e8e8e8" stroke="#333333" stroke-width="2"/>
+  <text x="140" y="290" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#000000">libcurl</text>
+  <text x="140" y="303" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333333">HTTP Transport</text>
+  
+  <!-- Client Cache -->
+  <rect x="50" y="330" width="180" height="90" rx="6" fill="#fafafa" stroke="#666666" stroke-width="1" stroke-dasharray="5,5"/>
+  <text x="140" y="350" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333333">Client Cache</text>
+  <text x="140" y="370" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333333">• DDS (structure)</text>
+  <text x="140" y="385" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333333">• DAS (attributes)</text>
+  <text x="140" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333333">• DODS (data)</text>
+  
+  <!-- Cloud (Internet) -->
+  <g fill="#e0e0e0" stroke="#666666" stroke-width="2">
+    <circle cx="310" cy="200" r="25"/>
+    <circle cx="340" cy="190" r="30"/>
+    <circle cx="370" cy="200" r="25"/>
+    <circle cx="325" cy="215" r="20"/>
+    <circle cx="355" cy="215" r="20"/>
+    <rect x="310" y="200" width="60" height="25" fill="#e0e0e0" stroke="none"/>
+  </g>
+  <text x="340" y="205" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333333">DAP2</text>
+  
+  <!-- Server Side Box -->
+  <rect x="420" y="60" width="350" height="380" rx="8" fill="#f0f0f0" stroke="#333333" stroke-width="2"/>
+  <text x="595" y="80" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#000000">OPeNDAP SERVER (Hyrax)</text>
+  
+  <!-- Hyrax Server -->
+  <rect x="440" y="100" width="310" height="70" rx="6" fill="#ffffff" stroke="#333333" stroke-width="2"/>
+  <text x="595" y="125" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#000000">Hyrax DAP2 Server</text>
+  <text x="595" y="145" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333333">Parses constraint expressions, builds DAP2 responses</text>
+  <text x="595" y="160" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333333">http://server.org/opendap/data.nc</text>
+  
+  <!-- BES -->
+  <rect x="440" y="185" width="310" height="50" rx="6" fill="#ffffff" stroke="#666666" stroke-width="1"/>
+  <text x="595" y="210" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#000000">BES (Back End Server)</text>
+  <text x="595" y="225" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333333">Command interface to data handlers</text>
+  
+  <!-- Data Handlers -->
+  <rect x="440" y="250" width="145" height="70" rx="6" fill="#ffffff" stroke="#666666" stroke-width="1"/>
+  <text x="512" y="275" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#000000">Data Handlers</text>
+  <text x="512" y="293" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333333">netCDF Handler</text>
+  <text x="512" y="308" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333333">HDF4/5 Handler</text>
+  
+  <!-- Format -->
+  <rect x="605" y="250" width="145" height="70" rx="6" fill="#ffffff" stroke="#666666" stroke-width="1"/>
+  <text x="677" y="275" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#000000">DAP2 Format</text>
+  <text x="677" y="293" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333333">DDS Structure</text>
+  <text x="677" y="308" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333333">DAS Attributes</text>
+  
+  <!-- Data Files -->
+  <rect x="440" y="335" width="310" height="90" rx="6" fill="#e8e8e8" stroke="#555555" stroke-width="2"/>
+  <text x="595" y="360" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#000000">Local Data Files</text>
+  
+  <rect x="455" y="375" width="90" height="20" rx="3" fill="#ffffff" stroke="#666666" stroke-width="1"/>
+  <text x="500" y="389" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333333">netCDF (.nc)</text>
+  
+  <rect x="555" y="375" width="90" height="20" rx="3" fill="#ffffff" stroke="#666666" stroke-width="1"/>
+  <text x="600" y="389" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333333">HDF5 (.h5)</text>
+  
+  <rect x="655" y="375" width="80" height="20" rx="3" fill="#ffffff" stroke="#666666" stroke-width="1"/>
+  <text x="695" y="389" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333333">HDF4 (SD)</text>
+  
+  <rect x="455" y="400" width="90" height="20" rx="3" fill="#ffffff" stroke="#666666" stroke-width="1"/>
+  <text x="500" y="413" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333333">GRIB</text>
+  
+  <rect x="555" y="400" width="90" height="20" rx="3" fill="#ffffff" stroke="#666666" stroke-width="1"/>
+  <text x="600" y="413" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333333">Compressed</text>
+  
+  <rect x="655" y="400" width="80" height="20" rx="3" fill="#ffffff" stroke="#666666" stroke-width="1"/>
+  <text x="695" y="413" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333333">Others</text>
+  
+  <!-- One line from client box to cloud -->
+  <line x1="250" y1="200" x2="285" y2="200" stroke="#666666" stroke-width="3"/>
+  
+  <!-- One line from cloud to server box -->
+  <line x1="395" y1="200" x2="420" y2="200" stroke="#666666" stroke-width="3"/>
+</svg>

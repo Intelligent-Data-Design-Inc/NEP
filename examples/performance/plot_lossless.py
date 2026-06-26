@@ -52,7 +52,7 @@ x_pos = range(len(filters))
 # ---------------------------------------------------------------------------
 # Plot: 3 subplots stacked vertically
 # ---------------------------------------------------------------------------
-fig, axes = plt.subplots(3, 1, figsize=(10, 12))
+fig, axes = plt.subplots(3, 1, figsize=(7, 6.1))
 
 # Bar width
 width = 0.6
@@ -64,7 +64,7 @@ ax.set_ylabel("Compression ratio\n(uncompressed / compressed)", fontsize=10)
 ax.set_title("Compression Ratio", fontsize=11, fontweight="bold")
 ax.set_xticks(x_pos)
 ax.set_xticklabels(filters, rotation=45, ha="right", fontsize=9)
-ax.yaxis.grid(True, linestyle="--", color="gray", alpha=0.5)
+ax.yaxis.grid(True, linestyle="--", color="black", alpha=0.3)
 ax.set_axisbelow(True)
 # Add value labels on bars
 for bar, ratio in zip(bars1, ratios):
@@ -82,7 +82,7 @@ ax.set_ylabel("Write time (s)", fontsize=10)
 ax.set_title("Write Performance", fontsize=11, fontweight="bold")
 ax.set_xticks(x_pos)
 ax.set_xticklabels(filters, rotation=45, ha="right", fontsize=9)
-ax.yaxis.grid(True, linestyle="--", color="gray", alpha=0.5)
+ax.yaxis.grid(True, linestyle="--", color="black", alpha=0.3)
 ax.set_axisbelow(True)
 # Add value labels on bars
 for bar, wt in zip(bars2, write_times):
@@ -100,7 +100,7 @@ ax.set_ylabel("Read time (s)", fontsize=10)
 ax.set_title("Read Performance", fontsize=11, fontweight="bold")
 ax.set_xticks(x_pos)
 ax.set_xticklabels(filters, rotation=45, ha="right", fontsize=9)
-ax.yaxis.grid(True, linestyle="--", color="gray", alpha=0.5)
+ax.yaxis.grid(True, linestyle="--", color="black", alpha=0.3)
 ax.set_axisbelow(True)
 # Add value labels on bars
 for bar, rt in zip(bars3, read_times):
@@ -111,17 +111,6 @@ for bar, rt in zip(bars3, read_times):
                 textcoords="offset points",
                 ha="center", va="bottom", fontsize=8)
 
-caption = "\n".join([
-    "Dataset: 500\u00d7180\u00d7360 NC_FLOAT temperature (~129 MB uncompressed).",
-    "Chunk shape: 10\u00d745\u00d790. All tests use shuffle filter (determined optimal for floats).",
-    "",
-    "Filter settings: DEFLATE/gzip level 1, Zstandard level 1, SZIP NN p=2, LZ4 level 1, BZIP2 level 1.",
-    "Higher compression ratio is better. Lower write/read times are better.",
-    "BZIP2 achieves highest ratio (~44x) but with slower I/O. LZ4 offers best speed with good ratio (~27x).",
-])
-fig.text(0.5, 0.01, caption, ha="center", va="bottom", fontsize=9, color="#333333",
-         multialignment="left", transform=fig.transFigure, fontfamily="monospace")
-
-plt.tight_layout(rect=[0, 0.12, 1, 1])
+plt.tight_layout()
 plt.savefig(OUTPUT, dpi=150, format="jpeg")
 print(f"Saved {OUTPUT}")

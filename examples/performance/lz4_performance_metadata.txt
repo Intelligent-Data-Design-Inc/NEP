@@ -1,0 +1,5 @@
+title: NetCDF-4 LZ4 Compression: Ratio and Throughput vs. Level
+
+caption: Results from the lz4.c example program in the NetCDF Expansion Pack. Dataset is a 500x180x360 NC_FLOAT temperature array (~129 MB), stored with 10x45x90 chunks. Top chart: compression ratio across LZ4 levels. Middle and bottom charts: write and read time. shuffle=on reorders float bytes before compression, consistently improving ratio at minimal cost. Level 1 is fastest with lowest ratio; higher levels improve ratio at increasing CPU cost. Decompression is fast at all levels.
+
+alt_text: Three vertically stacked line charts sharing a common x-axis of LZ4 compression levels. Each chart has two lines: a solid line with filled circles for shuffle=off and a dashed line with open squares for shuffle=on. Top chart: y-axis is compression ratio, with shuffle=on consistently higher. Middle chart: y-axis is write time in seconds, rising at higher levels. Bottom chart: y-axis is read time in seconds, relatively flat across all levels.

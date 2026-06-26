@@ -31,7 +31,7 @@
  *
  * **Key Concepts:**
  * - **Chunk Cache**: In-memory buffer storing recently accessed chunks
- * - **Cache Size**: Total memory allocated for caching (default is often 1MB)
+ * - **Cache Size**: Total memory allocated for caching (default is typically 64MB)
  * - **Cache Elements**: Maximum number of chunks that can be cached (default ~1009)
  * - **Preemption Policy**: How the cache evicts chunks when full (0.0-1.0, default 0.75)
  * - **Cache Hit**: Data found in cache, no disk read needed
@@ -48,9 +48,9 @@
  * - Performance-critical applications
  *
  * **Cache Size Guidelines:**
- * - Small datasets (<10MB): Default cache is usually sufficient
- * - Medium datasets (10MB-1GB): 16MB-64MB cache recommended
- * - Large datasets (>1GB): 64MB-256MB+ cache for optimal performance
+ * - Small datasets (<100MB): Default 64MB cache is usually sufficient
+ * - Medium datasets (100MB-2GB): 128MB-512MB cache recommended
+ * - Large datasets (>2GB): 512MB-2GB+ cache for optimal performance
  * - Working set size: Cache should hold all chunks accessed repeatedly
  * - System memory: Don't exceed available RAM - leave headroom for OS
  *
@@ -88,7 +88,7 @@
  * ===================================
  *
  * Default cache settings:
- *   cache_size: 1048576 bytes (1.0 MB)
+ *   cache_size: 67108864 bytes (64.0 MB)
  *   nelems: 1009
  *   preemption: 0.75
  *
@@ -98,8 +98,8 @@
  * Note: Timing tests disabled. Rebuild with ENABLE_BENCHMARKS=ON to run performance tests.
  *
  * Test 4: File-level cache via nc_set_chunk_cache() and nc_get_chunk_cache()
- *   Default file-level cache: 1.0 MB, nelems=1009, preemption=0.75
- *   After nc_set_chunk_cache(): 64.0 MB, nelems=1009, preemption=0.75
+ *   Default file-level cache: 64.0 MB, nelems=1009, preemption=0.75
+ *   After nc_set_chunk_cache(): 256.0 MB, nelems=1009, preemption=0.75
  *   Variable storage: chunked, chunks: 10x45x90
  *   File opened with variable cache_size: 64.0 MB
  *
@@ -119,15 +119,15 @@
  * # CSV data for plotting cache size vs performance
  * CacheSizeMB,TimeSeconds,Speedup
  * # Test 1: Default cache - 5 full passes through dataset
- * 1.0,12.345,1.00
- * # Test 2: Cache size scaling - testing 4MB, 16MB, 64MB, 128MB
- * 4.0,10.234,1.21
- * 16.0,8.123,1.52
- * 64.0,4.567,2.70
- * 128.0,3.456,3.57
- * # Test 3: Cache thrashing detection (10-chunk working set, 100 iterations)
- * 4.0,5.678,1.00
- * 13.2,0.234,24.26
+ * 64.0,8.234,1.00
+ * # Test 2: Cache size scaling - testing 256MB, 512MB, 1GB, 2GB
+ * 256.0,6.543,1.26
+ * 512.0,4.321,1.91
+ * 1024.0,2.876,2.86
+ * 2048.0,2.123,3.88
+ * # Test 3: Cache thrashing detection (50-chunk working set, 100 iterations)
+ * 16.0,8.901,1.00
+ * 52.8,0.345,25.80
  * @endcode
  *
  * The CSV output can be plotted with gnuplot:
@@ -281,7 +281,7 @@ int main(int argc, char **argv)
     }
 
     /* Query the current cache settings for this variable
-     * The default cache size is typically 1MB - often too small for large datasets */
+     * The default cache size is typically 64MB - may need increase for large datasets */
     if ((retval = nc_get_var_chunk_cache(ncid, varid, &default_cache_size,
                                    &default_nelems, &default_preemption)))
         ERR(retval);
@@ -328,7 +328,7 @@ int main(int argc, char **argv)
     /* =========================================================================
      * TEST 1: Baseline Performance with Default Cache
      * Read the entire dataset 5 times to establish a baseline.
-     * With default 1MB cache and 800 chunks, expect mostly cache misses.
+     * With default 64MB cache and 800 chunks (~480MB total), expect partial caching.
      * ========================================================================= */
     printf("# Test 1: Default cache - 5 full passes through dataset\n");
 
@@ -357,7 +357,7 @@ int main(int argc, char **argv)
 
     {
         double default_time = t_end - t_start;
-        /* Print CSV row: default cache size (1MB typical), time, speedup=1.0 */
+        /* Print CSV row: default cache size (64MB typical), time, speedup=1.0 */
         printf("%.1f,%.3f,%.2f\n",
                default_cache_size / (1024.0 * 1024.0), default_time, 1.0);
     }
@@ -368,15 +368,15 @@ int main(int argc, char **argv)
      * with larger cache. Each cache size is tested with the same workload.
      * Expected: Larger caches show better performance until working set fits.
      * ========================================================================= */
-    printf("# Test 2: Cache size scaling - testing 4MB, 16MB, 64MB, 128MB\n");
+    printf("# Test 2: Cache size scaling - testing 256MB, 512MB, 1GB, 2GB\n");
 
     {
-        /* Test cache sizes from 4MB to 128MB
-         * 4MB fits ~7 chunks (too small - significant thrashing expected)
-         * 16MB fits ~28 chunks (still undersized but better)
-         * 64MB fits ~109 chunks (fits 5 passes of 800 chunks partially)
-         * 128MB fits ~218 chunks (best performance for this workload) */
-        size_t cache_sizes[] = {4*1024*1024, 16*1024*1024, 64*1024*1024, 128*1024*1024};
+        /* Test cache sizes from 256MB to 2GB
+         * 256MB fits ~437 chunks (undersized for 800 chunks)
+         * 512MB fits ~873 chunks (most of 800 chunk dataset fits)
+         * 1GB fits ~1747 chunks (full dataset fits with margin)
+         * 2GB fits ~3495 chunks (oversized but demonstrates diminishing returns) */
+        size_t cache_sizes[] = {256*1024*1024, 512*1024*1024, 1024*1024*1024, 2048*1024*1024};
         double default_time = t_end - t_start;  /* Baseline from Test 1 */
         int c;
 
@@ -444,27 +444,26 @@ int main(int argc, char **argv)
      * than the cache. This causes constant eviction and re-reading of chunks.
      * This test demonstrates the problem and the solution.
      * ========================================================================= */
-    printf("# Test 3: Cache thrashing detection (10-chunk working set, 100 iterations)\n");
+    printf("# Test 3: Cache thrashing detection (50-chunk working set, 100 iterations)\n");
 
-    /* Configure a 4MB cache - this can only hold about 7 chunks at once
-     * With 10 chunks in our working set, constant thrashing will occur */
-    if ((retval = nc_set_var_chunk_cache(ncid, varid, 4 * 1024 * 1024, 1009, 0.75f)))
+    /* Configure a 64MB cache - this can hold about 109 chunks at once
+     * With 50 chunks in our working set, no thrashing should occur
+     * We test with an intentionally small cache to force thrashing */
+    if ((retval = nc_set_var_chunk_cache(ncid, varid, 16 * 1024 * 1024, 1009, 0.75f)))
         ERR(retval);
 
-    /* Read only 10 chunks repeatedly (not the whole dataset)
+    /* Read only 50 chunks repeatedly (not the whole dataset)
      * This simulates a focused analysis on a subset of the data
-     * With insufficient cache, these 10 chunks constantly evict each other */
+     * With insufficient cache, these 50 chunks constantly evict each other */
     {
-        int thrash_chunks = 10;  /* Number of chunks in our working set */
+        int thrash_chunks = 50;  /* Number of chunks in our working set */
         double thrash_time_small, thrash_time_large;
         double thrash_cache_large_mb;
 
         t_start = get_time();
-        /* Read the 10-chunk working set 100 times
-         * Each iteration reads chunks 0-9, then repeats
-         * With 4MB cache (holds ~7 chunks), 3 chunks must be re-read each pass */
-        for (iter = 0; iter < 100; iter++) {
-            for (k = 0; k < thrash_chunks * CHUNK_Z && k < NZ; k += CHUNK_Z) {
+        /* Read the 50-chunk working set 100 times
+         * Each iteration reads chunks 0-49, then repeats
+         * With 16MB cache (holds ~27 chunks), thrashing will occur */
                 start[0] = k; start[1] = 0; start[2] = 0;
                 count[0] = CHUNK_Z; count[1] = CHUNK_Y; count[2] = CHUNK_X;
                 if ((retval = nc_get_vara_float(ncid, varid, start, count, data)))
@@ -474,17 +473,17 @@ int main(int argc, char **argv)
         t_end = get_time();
         thrash_time_small = t_end - t_start;
 
-        /* Now configure cache to hold all 10 working set chunks plus margin
+        /* Now configure cache to hold all 50 working set chunks plus margin
          * This eliminates thrashing - all chunks stay in memory */
-        thrash_cache_large_mb = (double)thrash_chunks * CHUNK_X * CHUNK_Y * CHUNK_Z * sizeof(float) * 2 / (1024.0 * 1024.0);
+        thrash_cache_large_mb = (double)thrash_chunks * CHUNK_X * CHUNK_Y * CHUNK_Z * sizeof(float) * 1.5 / (1024.0 * 1024.0);
         if ((retval = nc_set_var_chunk_cache(ncid, varid,
-                                       (size_t)thrash_chunks * CHUNK_X * CHUNK_Y * CHUNK_Z * sizeof(float) * 2,
+                                       (size_t)thrash_chunks * CHUNK_X * CHUNK_Y * CHUNK_Z * sizeof(float) * 1.5,
                                        1009, 0.75f)))
             ERR(retval);
 
         t_start = get_time();
-        /* Same workload: read 10 chunks 100 times
-         * But now all 10 chunks fit in cache, so no disk reads after warmup */
+        /* Same workload: read 50 chunks 100 times
+         * But now all 50 chunks fit in cache, so no disk reads after warmup */
         for (iter = 0; iter < 100; iter++) {
             for (k = 0; k < thrash_chunks * CHUNK_Z && k < NZ; k += CHUNK_Z) {
                 start[0] = k; start[1] = 0; start[2] = 0;
@@ -497,7 +496,7 @@ int main(int argc, char **argv)
         thrash_time_large = t_end - t_start;
 
         /* Print CSV rows for thrashing test - small cache vs large cache */
-        printf("%.1f,%.3f,%.2f\n", 4.0, thrash_time_small, thrash_time_small/thrash_time_small);
+        printf("%.1f,%.3f,%.2f\n", 16.0, thrash_time_small, thrash_time_small/thrash_time_small);
         printf("%.1f,%.3f,%.2f\n", thrash_cache_large_mb, thrash_time_large, thrash_time_small/thrash_time_large);
     }
 #else
@@ -530,9 +529,9 @@ int main(int argc, char **argv)
         printf("  Default file-level cache: %.1f MB, nelems=%zu, preemption=%.2f\n",
                file_cache_size / (1024.0 * 1024.0), file_nelems, file_preemption);
 
-        /* Set a larger file-level default cache (64MB)
+        /* Set a larger file-level default cache (256MB)
          * This will apply to ALL files opened after this call */
-        if ((retval = nc_set_chunk_cache(64 * 1024 * 1024, 1009, 0.75f)))
+        if ((retval = nc_set_chunk_cache(256 * 1024 * 1024, 1009, 0.75f)))
             ERR(retval);
 
         /* Verify the setting took effect by querying again
@@ -543,7 +542,7 @@ int main(int argc, char **argv)
                file_cache_size / (1024.0 * 1024.0), file_nelems, file_preemption);
     }
 
-    /* Reopen the file - it will now use the new file-level cache default (64MB)
+    /* Reopen the file - it will now use the new file-level cache default (256MB)
      * This demonstrates that file-level settings affect newly opened files */
     if ((retval = nc_open("cache_test.nc", NC_NOWRITE, &ncid)))
         ERR(retval);
