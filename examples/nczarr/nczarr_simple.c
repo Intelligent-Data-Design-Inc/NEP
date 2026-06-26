@@ -14,7 +14,7 @@
  *
  * NcZarr is accessed through the familiar netCDF-C API. The only difference
  * at create/open time is the storage URL: a local NcZarr store is selected
- * with the file:// scheme and the #mode=nczarr fragment, which tells the
+ * with the `file://` scheme and the `#mode=nczarr` fragment, which tells the
  * netCDF-C dispatch layer to use the NcZarr implementation. Once the file
  * is open, nc_def_dim(), nc_def_var(), nc_put_att_xxx(), nc_put_var_xxx(),
  * and nc_get_var_xxx() work exactly as they do for NetCDF-4/HDF5 files.
@@ -27,7 +27,7 @@
  *
  * **Learning Objectives:**
  * - Understand NcZarr as a netCDF-4 data model mapped onto Zarr storage
- * - Use a file://...#mode=nczarr URL to create a local NcZarr dataset
+ * - Use a `file://...#mode=nczarr` URL to create a local NcZarr dataset
  * - Apply the same dimension, variable, attribute, and data I/O APIs used
  *   for NetCDF-4/HDF5 files
  * - Compare NcZarr storage (directory tree) with classic and HDF5 storage
@@ -38,8 +38,8 @@
  * - **NcZarr**: NetCDF-4 data model backed by Zarr V2 metadata and chunks
  * - **Zarr store**: A directory (or object-store prefix) containing .zarray,
  *   .zgroup, .zattrs, and per-chunk data files
- * - **URL fragment**: The #mode=nczarr suffix selects the NcZarr dispatcher
- * - **Local filesystem backend**: file:// scheme uses the local Zarr store
+ * - **URL fragment**: The `#mode=nczarr` suffix selects the NcZarr dispatcher
+ * - **Local filesystem backend**: `file://` scheme uses the local Zarr store
  * - **NetCDF-4 enhanced model**: Groups, user types, multiple unlimited dims,
  *   and chunking are supported in NcZarr; this example uses only the basic
  *   subset (dimensions, variables, attributes)
