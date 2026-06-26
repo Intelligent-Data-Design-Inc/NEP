@@ -1,0 +1,13 @@
+#!/bin/bash
+# Run nczarr_simple and validate output CDL
+# Edward Hartnett, Intelligent Data Design, Inc.
+# 2026-06-26
+
+if [[ -n "${LD_LIBRARY_PATH:-}" ]]; then
+    export LD_LIBRARY_PATH=@MY_LD_LIBRARY_PATH@:$LD_LIBRARY_PATH
+else
+    export LD_LIBRARY_PATH=@MY_LD_LIBRARY_PATH@
+fi
+
+./nczarr_simple
+bash ${srcdir}/../validate_cdl.sh nczarr_simple 'file://simple_nczarr.zarr#mode=nczarr' ${srcdir}/../expected_output/nczarr_simple_expected.cdl

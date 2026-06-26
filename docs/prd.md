@@ -296,6 +296,12 @@ Located in `examples/performance/`:
 
 **Note**: Performance examples are excluded from regular CI. They are built and run only when `ENABLE_BENCHMARKS=ON` (CMake) or `--enable-benchmarks` (Autotools) is specified. All four examples operate on a 500×180×360 (time×lat×lon) NC_FLOAT temperature dataset matching a meteorological grid.
 
+#### NcZarr Examples (C) (v1.11.0)
+Located in `examples/nczarr/`:
+- `nczarr_simple.c` - Create, write, and read a local NcZarr dataset; demonstrates `file://...#mode=nczarr` URL, dimensions, variables, attributes, and data verification
+
+**Note**: NcZarr examples are only built when NetCDF-C reports NcZarr support (`NC_HAS_NCZARR` in `netcdf_meta.h`) and examples are enabled. The example produces a local Zarr directory store rather than a single file.
+
 ### 8.4 Build Configuration
 **CMake:**
 - `BUILD_EXAMPLES=ON/OFF` - Enable/disable example programs (default: ON)

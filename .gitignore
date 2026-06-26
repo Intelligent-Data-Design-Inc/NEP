@@ -219,6 +219,10 @@ examples/f_netcdf-4/f_dump_nc4_metadata
 examples/parallelIO/square16_par
 examples/parallelIO/f_square16_par
 
+# Example binaries - NcZarr
+examples/nczarr/nczarr_simple
+examples/nczarr/simple_nczarr.zarr
+
 # Valgrind logs
 valgrind*.log
 **/valgrind*.log
