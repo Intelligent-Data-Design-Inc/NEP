@@ -296,11 +296,16 @@ Located in `examples/performance/`:
 
 **Note**: Performance examples are excluded from regular CI. They are built and run only when `ENABLE_BENCHMARKS=ON` (CMake) or `--enable-benchmarks` (Autotools) is specified. All four examples operate on a 500×180×360 (time×lat×lon) NC_FLOAT temperature dataset matching a meteorological grid.
 
-#### NcZarr Examples (C) (v1.11.0)
+#### NcZarr Examples (v1.11.0)
 Located in `examples/nczarr/`:
-- `nczarr_simple.c` - Create, write, and read a local NcZarr dataset; demonstrates `file://...#mode=nczarr` URL, dimensions, variables, attributes, and data verification
 
-**Note**: NcZarr examples are only built when NetCDF-C reports NcZarr support (`NC_HAS_NCZARR` in `netcdf_meta.h`) and examples are enabled. The example produces a local Zarr directory store rather than a single file.
+**C examples** (Sprint 1):
+- `nczarr_simple.c` - Create, write, and read a local NcZarr dataset; demonstrates `file://simple_nczarr.zarr#mode=nczarr` URL, dimensions, variables, attributes, and data verification
+
+**Fortran examples** (Sprint 2):
+- `f_nczarr_simple.f90` - Fortran equivalent of `nczarr_simple.c`; produces the same 4×5 `temperature(y, x)` dataset at `file://f_simple_nczarr.zarr#mode=nczarr`; demonstrates Fortran column-major dimension ordering with NcZarr
+
+**Note**: NcZarr examples are only built when NetCDF-C reports NcZarr support (`NC_HAS_NCZARR` in `netcdf_meta.h`) and examples are enabled. The Fortran example additionally requires `--enable-fortran` (Autotools) or `ENABLE_FORTRAN=ON` (CMake). Each example writes to a distinct Zarr directory store to allow safe parallel test execution.
 
 ### 8.4 Build Configuration
 **CMake:**

@@ -26,6 +26,31 @@
 - Generate expected CDL output and validation (or rely on internal validation if CDL is unstable)
 - Update `docs/prd.md` with an NcZarr Examples subsection
 
+#### Sprint 2: Fortran NcZarr Example
+**Detailed Plan**: See `docs/plan/v1.11.0-sprint2-nczarr-fortran.md`
+
+**Purpose**: Add `examples/nczarr/f_nczarr_simple.f90` — the Fortran equivalent of `nczarr_simple.c` — producing the same 4×5 `temperature(y, x)` dataset at `file://f_simple_nczarr.zarr#mode=nczarr`.
+
+**What it shows**:
+- `nf90_create()` / `nf90_open()` with a `file://...#mode=nczarr` URL
+- Fortran column-major dimension ordering: `dimids(1)=x, dimids(2)=y` produces `temperature(y, x)` in the file
+- Same `nf90_def_dim()`, `nf90_def_var()`, `nf90_put_att()`, `nf90_put_var()`, `nf90_get_var()` APIs used for NetCDF-4/HDF5 files
+- Distinct store name `f_simple_nczarr.zarr` avoids parallel-test collisions with the C example
+
+**Key API**: `nf90_create()`, `nf90_open()`, `nf90_def_dim()`, `nf90_def_var()`, `nf90_put_att()`, `nf90_put_var()`, `nf90_get_var()`
+
+**Build Gating**: Built only when `HAVE_NCZARR` (inherited from parent subdir) and `ENABLE_FORTRAN` are both true.
+
+**Tasks**:
+- Create `examples/nczarr/f_nczarr_simple.f90`
+- Update `examples/nczarr/CMakeLists.txt` — add `f_nczarr_simple` gated on `ENABLE_FORTRAN AND NetCDF_Fortran_FOUND`
+- Update `examples/nczarr/Makefile.am` — add `f_nczarr_simple` inside `if ENABLE_FORTRAN`; extend `clean-local` for `f_simple_nczarr.zarr`
+- Create `examples/nczarr/test_f_nczarr_simple.sh.in`
+- Add `examples/nczarr/test_f_nczarr_simple.sh` to `configure.ac` `AC_CONFIG_FILES`
+- Generate `examples/expected_output/f_nczarr_simple_expected.cdl` from live `ncdump` output
+- Update `docs/prd.md` NcZarr section to cover Fortran example
+
+
 ### V1.10.0 More Performance Examples
 
 #### Sprint 1: Add example: cache_tuning.c — Chunk Cache Configuration

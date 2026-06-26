@@ -1,0 +1,17 @@
+netcdf f_simple_nczarr {
+dimensions:
+	x = 5 ;
+	y = 4 ;
+variables:
+	float temperature(y, x) ;
+		temperature:units = "K" ;
+		temperature:long_name = "Temperature" ;
+		temperature:_FillValue = -999.f ;
+data:
+
+ temperature =
+  280, 280.5, 281, 281.5, 282,
+  282, 282.5, 283, 283.5, 284,
+  284, 284.5, 285, 285.5, 286,
+  286, 286.5, 287, 287.5, 288 ;
+}

@@ -440,6 +440,30 @@ for flag in $LDFLAGS; do
             ;;
     esac
 done
+
+# Also derive HDF5 lib dir from nc-config --cflags (e.g. -I/path/hdf5/include -> /path/hdf5/lib).
+# This ensures test scripts find HDF5 even when the user only provides -L for NetCDF-C.
+if test "x$NC_CONFIG" != "x"; then
+    _nc_cflags=`$NC_CONFIG --cflags 2>/dev/null`
+    for flag in $_nc_cflags; do
+        case $flag in
+            -I*)
+                _inc_dir=`echo $flag | sed 's/^-I//'`
+                _maybe_lib=`echo $_inc_dir | sed 's|/include$|/lib|'`
+                if test "$_maybe_lib" != "$_inc_dir" && test -d "$_maybe_lib"; then
+                    # Only append if not already present
+                    case ":$MY_LD_LIBRARY_PATH:" in
+                        *":$_maybe_lib:"*) ;;
+                        *)
+                            MY_LD_LIBRARY_PATH="$MY_LD_LIBRARY_PATH:$_maybe_lib"
+                            ;;
+                    esac
+                fi
+                ;;
+        esac
+    done
+fi
+
 AC_MSG_CHECKING([runtime library path for tests])
 AC_MSG_RESULT([$MY_LD_LIBRARY_PATH])
 AC_SUBST([MY_LD_LIBRARY_PATH])
@@ -611,6 +635,7 @@ AC_CONFIG_FILES([test_h5/run_tests.sh], [chmod ugo+x test_h5/run_tests.sh])
 AC_CONFIG_FILES([examples/validate_cdl.sh], [chmod ugo+x examples/validate_cdl.sh])
 AC_CONFIG_FILES([examples/parallelIO/run_par_examples.sh], [chmod ugo+x examples/parallelIO/run_par_examples.sh])
 AC_CONFIG_FILES([examples/nczarr/test_nczarr_simple.sh], [chmod ugo+x examples/nczarr/test_nczarr_simple.sh])
+AC_CONFIG_FILES([examples/nczarr/test_f_nczarr_simple.sh], [chmod ugo+x examples/nczarr/test_f_nczarr_simple.sh])
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile

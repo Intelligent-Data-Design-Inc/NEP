@@ -222,6 +222,10 @@ examples/parallelIO/f_square16_par
 # Example binaries - NcZarr
 examples/nczarr/nczarr_simple
 examples/nczarr/simple_nczarr.zarr
+examples/nczarr/f_nczarr_simple
+examples/nczarr/f_simple_nczarr.zarr
+examples/nczarr/test_nczarr_simple.sh
+examples/nczarr/test_f_nczarr_simple.sh
 
 # Valgrind logs
 valgrind*.log
