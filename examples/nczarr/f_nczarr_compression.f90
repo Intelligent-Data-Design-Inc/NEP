@@ -2,7 +2,7 @@
 !! @brief Demonstrate deflate+shuffle compression in a local NcZarr dataset (Fortran).
 !!
 !! Fortran equivalent of nczarr_compression.c. Creates a 4x5 temperature array
-!! with explicit chunking [2, 5] (y, x) and deflate level 4 + shuffle in a
+!! with explicit chunking [2, 5] (y, x) and deflate level 1 + shuffle in a
 !! local NcZarr store, verifies compression metadata after reopening, and
 !! validates data values.
 !!
@@ -39,7 +39,7 @@
 !! Creates the directory f_nczarr_compression.zarr containing:
 !! - 2 dimensions: y(4), x(5)
 !! - 1 variable: temperature(y, x) of type NF90_FLOAT, chunked [2, 5],
-!!   with shuffle + deflate level 4
+!!   with shuffle + deflate level 1
 !! - Attributes: units="K", long_name="Temperature", _FillValue=-999.0
 !! - A 4x5 temperature data grid stored compressed in 2 chunks
 !!
@@ -54,7 +54,7 @@ program f_nczarr_compression
    integer, parameter :: NX = 5, NY = 4
    integer, parameter :: NDIMS = 2
    integer, parameter :: CHUNK_Y = 2, CHUNK_X = 5
-   integer, parameter :: DEFLATE_LEVEL = 4
+   integer, parameter :: DEFLATE_LEVEL = 1
 
    integer :: ncid, varid, retval
    integer :: y_dimid, x_dimid
@@ -94,7 +94,7 @@ program f_nczarr_compression
    retval = nf90_def_var_chunking(ncid, varid, NF90_CHUNKED, chunksizes)
    if (retval /= nf90_noerr) call handle_err(retval)
 
-   ! Step 2: Enable shuffle + deflate level 4.
+   ! Step 2: Enable shuffle + deflate level 1.
    retval = nf90_def_var_deflate(ncid, varid, 1, 1, DEFLATE_LEVEL)
    if (retval /= nf90_noerr) call handle_err(retval)
 
