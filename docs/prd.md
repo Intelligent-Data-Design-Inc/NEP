@@ -313,6 +313,12 @@ Located in `examples/nczarr/`:
 - `f_nczarr_chunking.f90` - Fortran equivalent of `nczarr_chunking.c`; demonstrates `nf90_def_var_chunking()` with Fortran column-major dimension ordering
 - `f_nczarr_compression.f90` - Fortran equivalent of `nczarr_compression.c`; demonstrates `nf90_def_var_deflate()` with explicit chunking
 
+**C example** (Sprint 4):
+- `nczarr_enhanced.c` — Enhanced data model in NcZarr: root group with `time` (unlimited) × `x=5` dimensions, `temperature(time,x)` and `pressure(time,x)` variables; child group `obs/` with an independent `station` (unlimited) dimension and `obs_value(station)`, `obs_time(station)` variables. Demonstrates `nc_def_grp()`, per-group unlimited dimensions, and `nc_inq_grp_ncid()`. Note: NcZarr supports groups and unlimited dims from the enhanced model; user-defined types (enum, compound) require HDF5 storage.
+
+**Fortran example** (Sprint 4):
+- `f_nczarr_enhanced.f90` — Fortran equivalent of `nczarr_enhanced.c`; demonstrates `nf90_def_grp()`, `nf90_def_dim()` with `NF90_UNLIMITED` in a child group, and `nf90_inq_grp_ncid()` with full C/Fortran parity.
+
 **Note**: NcZarr examples are only built when NetCDF-C reports NcZarr support (`NC_HAS_NCZARR` in `netcdf_meta.h`) and examples are enabled. The Fortran examples additionally require `--enable-fortran` (Autotools) or `ENABLE_FORTRAN=ON` (CMake). Each example writes to a distinct Zarr directory store to allow safe parallel test execution.
 
 ### 8.4 Build Configuration

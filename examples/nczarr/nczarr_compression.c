@@ -9,7 +9,7 @@
  * mode before nc_enddef().
  *
  * The program creates the same 4x5 temperature grid with 2x5 chunks, then
- * applies the shuffle filter and deflate (zlib) compression at level 4.
+ * applies the shuffle filter and deflate (zlib) compression at level 1.
  * After writing, it reopens the dataset and verifies the compression
  * metadata via nc_inq_var_deflate(), then reads and validates all data
  * values. Decompression is fully transparent — nc_get_var_float() returns
@@ -26,7 +26,7 @@
  *   - shuffle=1: enables the shuffle filter (reorders bytes for better
  *     compression of typed data)
  *   - deflate=1: enables deflate (zlib) compression
- *   - level=0..9: compression level (0=none, 9=max; 4 is a balanced choice)
+ *   - level=0..9: compression level (0=none, 9=max; 1 is fastest compression)
  * - **Chunk + compress workflow**: Compression requires chunked storage;
  *   always set chunk shape explicitly for predictable behavior
  * - **nc_inq_var_deflate()**: Returns current shuffle, deflate, and level
@@ -52,7 +52,7 @@
  * Creates the directory nczarr_compression.zarr containing:
  * - 2 dimensions: y(4), x(5)
  * - 1 variable: temperature(y, x) of type NC_FLOAT, chunked [2, 5],
- *   with shuffle + deflate level 4
+ *   with shuffle + deflate level 1
  * - Attributes: units="K", long_name="Temperature", _FillValue=-999.f
  * - A 4x5 temperature data grid stored compressed in 2 chunks
  *
@@ -70,7 +70,7 @@
 #define NDIMS 2
 #define CHUNK_Y 2
 #define CHUNK_X 5
-#define DEFLATE_LEVEL 4
+#define DEFLATE_LEVEL 1
 
 #define ERR(e) do { \
     if (e) { \
@@ -112,7 +112,7 @@ int main(void)
     if ((retval = nc_def_var_chunking(ncid, varid, NC_CHUNKED, chunksizes)))
         ERR(retval);
 
-    /* Step 2: Enable shuffle filter and deflate compression (level 4). */
+    /* Step 2: Enable shuffle filter and deflate compression (level 1). */
     if ((retval = nc_def_var_deflate(ncid, varid, 1, 1, DEFLATE_LEVEL)))
         ERR(retval);
 

@@ -117,6 +117,26 @@ if(BUILD_TESTING)
             "LD_LIBRARY_PATH=path_list_prepend:${NC_LIBDIR};LD_LIBRARY_PATH=path_list_prepend:${HDF5_LIB_DIR}")
 endif()
 
+# Enhanced model example — C (v1.11.0 sprint 4)
+add_executable(nczarr_enhanced nczarr_enhanced.c)
+target_compile_options(nczarr_enhanced PRIVATE ${NC_CFLAGS_LIST})
+target_link_directories(nczarr_enhanced PRIVATE ${HDF5_LIB_DIR})
+target_link_libraries(nczarr_enhanced PRIVATE ${NC_LIBS_LIST})
+set_target_properties(nczarr_enhanced PROPERTIES
+    BUILD_RPATH "${HDF5_LIB_DIR};${NC_LIBDIR}"
+    SKIP_BUILD_RPATH OFF
+    BUILD_WITH_INSTALL_RPATH ON
+    INSTALL_RPATH "${HDF5_LIB_DIR};${NC_LIBDIR}")
+
+if(BUILD_TESTING)
+    add_test(NAME nczarr_enhanced
+             COMMAND nczarr_enhanced
+             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    set_tests_properties(nczarr_enhanced PROPERTIES
+        ENVIRONMENT_MODIFICATION
+            "LD_LIBRARY_PATH=path_list_prepend:${NC_LIBDIR};LD_LIBRARY_PATH=path_list_prepend:${HDF5_LIB_DIR}")
+endif()
+
 # Fortran NcZarr example — only built when Fortran is enabled and NetCDF-Fortran is found (v1.11.0 sprint 2)
 if(ENABLE_FORTRAN AND NetCDF_Fortran_FOUND)
     find_program(NF_CONFIG nf-config
@@ -213,6 +233,26 @@ if(ENABLE_FORTRAN AND NetCDF_Fortran_FOUND)
                      COMMAND f_nczarr_compression
                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
             set_tests_properties(f_nczarr_compression PROPERTIES
+                ENVIRONMENT_MODIFICATION
+                    "LD_LIBRARY_PATH=path_list_prepend:${NF_LIBDIR};LD_LIBRARY_PATH=path_list_prepend:${NC_LIBDIR};LD_LIBRARY_PATH=path_list_prepend:${HDF5_LIB_DIR}")
+        endif()
+
+        # Enhanced model example — Fortran (v1.11.0 sprint 4)
+        add_executable(f_nczarr_enhanced f_nczarr_enhanced.f90)
+        target_compile_options(f_nczarr_enhanced PRIVATE ${NF_FFLAGS_LIST})
+        target_link_directories(f_nczarr_enhanced PRIVATE ${HDF5_LIB_DIR} ${NF_LIBDIR})
+        target_link_libraries(f_nczarr_enhanced PRIVATE ${NF_LIBS_F_LIST} ${NETCDF_LIBRARIES} hdf5 hdf5_hl)
+        set_target_properties(f_nczarr_enhanced PROPERTIES
+            BUILD_RPATH "${HDF5_LIB_DIR};${NC_LIBDIR};${NF_LIBDIR}"
+            SKIP_BUILD_RPATH OFF
+            BUILD_WITH_INSTALL_RPATH ON
+            INSTALL_RPATH "${HDF5_LIB_DIR};${NC_LIBDIR};${NF_LIBDIR}")
+
+        if(BUILD_TESTING)
+            add_test(NAME f_nczarr_enhanced
+                     COMMAND f_nczarr_enhanced
+                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+            set_tests_properties(f_nczarr_enhanced PROPERTIES
                 ENVIRONMENT_MODIFICATION
                     "LD_LIBRARY_PATH=path_list_prepend:${NF_LIBDIR};LD_LIBRARY_PATH=path_list_prepend:${NC_LIBDIR};LD_LIBRARY_PATH=path_list_prepend:${HDF5_LIB_DIR}")
         endif()

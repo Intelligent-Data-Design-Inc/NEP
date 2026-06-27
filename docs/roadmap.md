@@ -72,6 +72,30 @@
 - Update `clean-local` for six Zarr directories
 - Update `docs/prd.md` NcZarr section with Sprint 3 examples
 
+#### Sprint 4: NcZarr with Enhanced Data Model
+**Detailed Plan**: See `docs/plan/v1.11.0-sprint4-nczarr-enhanced.md`
+
+**Purpose**: Add `examples/nczarr/nczarr_enhanced.c` and `examples/nczarr/f_nczarr_enhanced.f90` demonstrating the NetCDF-4 enhanced data model in a local NcZarr store.
+
+**What it shows**:
+- Root group with `time` (unlimited) and `x` (fixed=5) dimensions
+- `temperature(time,x)` and `pressure(time,x)` variables written as two time steps
+- Child group `obs/` with an independent `station` (unlimited) dimension
+- `obs_value(station)` and `obs_time(station)` variables in the child group
+- Internal validation of all metadata and data values on reopen
+- Note: NcZarr supports groups and unlimited dims; user-defined types (enum, compound) require HDF5 storage
+
+**Key API**: `nc_def_grp()`, `nc_def_dim()` with `NC_UNLIMITED` in child group, `nc_inq_grp_ncid()`
+
+**Build Gating**: Built only when `HAVE_NCZARR` and Fortran examples gated on `ENABLE_FORTRAN`.
+
+**Tasks**:
+- Create `examples/nczarr/nczarr_enhanced.c`
+- Create `examples/nczarr/f_nczarr_enhanced.f90`
+- Update `examples/nczarr/CMakeLists.txt` — add both executables and tests
+- Update `examples/nczarr/Makefile.am` — add both programs; Fortran gated on `ENABLE_FORTRAN`; extend `clean-local` for `nczarr_enhanced.zarr` and `f_nczarr_enhanced.zarr`
+- Update `docs/prd.md` NcZarr section with Sprint 4 examples
+
 ### V1.10.0 More Performance Examples
 
 #### Sprint 1: Add example: cache_tuning.c — Chunk Cache Configuration
