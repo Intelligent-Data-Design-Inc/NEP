@@ -107,8 +107,8 @@ if(NOT DOCS_ONLY)
     set(CMAKE_BUILD_RPATH "${HDF5_LIBRARY_DIRS};${NETCDF_LIBRARY_DIRS}")
 endif()
 
-# FITS reader support (v2.0.0) - default ON; disable with -DENABLE_FITS=OFF
-option(ENABLE_FITS "Enable FITS reader support via CFITSIO" ON)
+# FITS reader support (v2.0.0) - default OFF; enable with -DENABLE_FITS=ON
+option(ENABLE_FITS "Enable FITS reader support via CFITSIO" OFF)
 
 # GRIB2 library detection (v1.7.0) - default ON; disable with -DENABLE_GRIB2=OFF
 # GRIB2 and CDF share UDF slot 2 and are mutually exclusive.

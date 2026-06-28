@@ -192,12 +192,12 @@ fi
 AC_SUBST([GEOTIFF_LIBS])
 AC_SUBST([TIFF_LIBS])
 
-# FITS reader support (v2.0.0) - default ON; disable with --disable-fits
+# FITS reader support (v2.0.0) - default OFF; enable with --enable-fits
 AC_MSG_CHECKING([whether FITS reader should be enabled])
 AC_ARG_ENABLE([fits],
-              [AS_HELP_STRING([--disable-fits],
-                              [Disable FITS reader support (default: enabled)])])
-test "x$enable_fits" = xno || enable_fits=yes
+              [AS_HELP_STRING([--enable-fits],
+                              [Enable FITS reader support (default: disabled)])])
+test "x$enable_fits" = xyes || enable_fits=no
 AC_MSG_RESULT([$enable_fits])
 
 # FITS (CFITSIO) library detection (v2.0.0)
