@@ -357,7 +357,7 @@ AM_CONDITIONAL([HAVE_CDF], [test "x$HAVE_CDF" = "xyes"])
 AM_CONDITIONAL([HAVE_GEOTIFF], [test "x$HAVE_GEOTIFF" = "xyes"])
 AM_CONDITIONAL([HAVE_GRIB2], [test "x$HAVE_GRIB2" = "xyes"])
 AM_CONDITIONAL([HAVE_FITS], [test "x$HAVE_FITS" = "xyes"])
-AM_CONDITIONAL([BUILD_NCRC], [test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes" || test "x$HAVE_GRIB2" = "xyes" || test "x$HAVE_FITS" = "xyes"])
+AM_CONDITIONAL([BUILD_NCRC], [test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes" || test "x$HAVE_GRIB2" = "xyes"])
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$HAVE_DOXYGEN" = "xyes"])
 
 # Initialize Automake
