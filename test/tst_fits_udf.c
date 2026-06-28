@@ -38,7 +38,7 @@
 int
 main(void)
 {
-    int ncid, retval;
+    int ncid, root_ncid, grpid, retval;
     int ndims, nvars, ngatts, unlimdimid;
     char name[NC_MAX_NAME + 1];
     size_t len;
@@ -129,8 +129,61 @@ main(void)
     if (xtype != NC_CHAR) { fprintf(stderr, "ORIGIN: expected NC_CHAR\n"); return 1; }
     printf("PASS: att ORIGIN NC_CHAR len=%zu\n", att_len);
 
-    /* Close the file. */
-    if ((retval = nc_close(ncid)))
+    /* ---- Sprint 4b: extension HDU as child group ---- */
+    root_ncid = ncid;
+
+    /* HDU 2 (ASCII table) → group "u5780205r_cvt_c0h_tab" */
+    if ((retval = nc_inq_grp_ncid(root_ncid, "u5780205r_cvt_c0h_tab", &grpid)))
+        ERR(retval);
+    printf("PASS: nc_inq_grp_ncid 'u5780205r_cvt_c0h_tab'\n");
+
+    if ((retval = nc_inq(grpid, &ndims, &nvars, &ngatts, &unlimdimid)))
+        ERR(retval);
+    if (nvars != 49) { fprintf(stderr, "Expected 49 vars, got %d\n", nvars); return 1; }
+    if (ngatts < 10) { fprintf(stderr, "Expected >=10 group atts, got %d\n", ngatts); return 1; }
+    if (unlimdimid != -1) { fprintf(stderr, "Expected no unlimited dim in group\n"); return 1; }
+    printf("PASS: group nc_inq ndims=%d nvars=%d ngatts=%d\n", ndims, nvars, ngatts);
+
+    /* Row dimension must exist and have 4 rows */
+    if ((retval = nc_inq_dimid(grpid, "row", &unlimdimid)))
+        ERR(retval);
+    if ((retval = nc_inq_dim(grpid, unlimdimid, name, &len)))
+        ERR(retval);
+    if (len != 4) { fprintf(stderr, "Expected row dim len=4, got %zu\n", len); return 1; }
+    printf("PASS: row dim len=%zu\n", len);
+
+    /* CRVAL1: first column, NC_DOUBLE, 1D [row] */
+    if ((retval = nc_inq_var(grpid, 0, name, &xtype, &var_ndims, var_dimids, &var_natts)))
+        ERR(retval);
+    if (strcmp(name, "CRVAL1") != 0)
+    { fprintf(stderr, "Expected var[0]='CRVAL1', got '%s'\n", name); return 1; }
+    if (xtype != NC_DOUBLE)
+    { fprintf(stderr, "CRVAL1: expected NC_DOUBLE, got %d\n", xtype); return 1; }
+    if (var_ndims != 1)
+    { fprintf(stderr, "CRVAL1: expected ndims=1, got %d\n", var_ndims); return 1; }
+    printf("PASS: var 'CRVAL1' NC_DOUBLE ndims=1\n");
+
+    /* FILLCNT (col 13, typecode=41): NC_INT, 1D */
+    if ((retval = nc_inq_var(grpid, 12, name, &xtype, &var_ndims, var_dimids, &var_natts)))
+        ERR(retval);
+    if (strcmp(name, "FILLCNT") != 0)
+    { fprintf(stderr, "Expected var[12]='FILLCNT', got '%s'\n", name); return 1; }
+    if (xtype != NC_INT)
+    { fprintf(stderr, "FILLCNT: expected NC_INT, got %d\n", xtype); return 1; }
+    printf("PASS: var 'FILLCNT' NC_INT ndims=%d\n", var_ndims);
+
+    /* CTYPE1 (col 17, typecode=16): NC_CHAR, 2D [row, CTYPE1_len] */
+    if ((retval = nc_inq_var(grpid, 16, name, &xtype, &var_ndims, var_dimids, &var_natts)))
+        ERR(retval);
+    if (strcmp(name, "CTYPE1") != 0)
+    { fprintf(stderr, "Expected var[16]='CTYPE1', got '%s'\n", name); return 1; }
+    if (xtype != NC_CHAR)
+    { fprintf(stderr, "CTYPE1: expected NC_CHAR, got %d\n", xtype); return 1; }
+    if (var_ndims != 2)
+    { fprintf(stderr, "CTYPE1: expected ndims=2, got %d\n", var_ndims); return 1; }
+    printf("PASS: var 'CTYPE1' NC_CHAR ndims=2\n");
+
+    if ((retval = nc_close(root_ncid)))
         ERR(retval);
     printf("PASS: nc_close\n");
 

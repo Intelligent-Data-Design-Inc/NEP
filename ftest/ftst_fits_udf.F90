@@ -26,6 +26,7 @@ program ftst_fits_udf
   integer :: retval
   integer(c_int) :: init_status
   integer :: ndims, nvars, ngatts, unlimdimid
+  integer :: grpid, grpid2
   character(len=NF90_MAX_NAME) :: dimname
   integer :: dimlen
 
@@ -88,6 +89,43 @@ program ftst_fits_udf
      stop 1
   endif
   print *, "PASS: dim_1 len=", dimlen
+
+  ! --- Sprint 4b: extension HDU as child group ---
+  ! HDU 2 (ASCII table) -> group "u5780205r_cvt_c0h_tab"
+  retval = nf90_inq_grp_ncid(ncid, "u5780205r_cvt_c0h_tab", grpid)
+  if (retval /= nf90_noerr) then
+     print *, "Error finding child group: ", trim(nf90_strerror(retval))
+     stop 1
+  endif
+  print *, "PASS: nf90_inq_grp_ncid 'u5780205r_cvt_c0h_tab'"
+
+  retval = nf90_inquire(grpid, ndims, nvars, ngatts, unlimdimid)
+  if (retval /= nf90_noerr) then
+     print *, "Error in group nf90_inquire: ", trim(nf90_strerror(retval))
+     stop 1
+  endif
+  if (nvars /= 49) then
+     print *, "Expected 49 vars in group, got ", nvars
+     stop 1
+  endif
+  print *, "PASS: group nf90_inquire ndims=", ndims, " nvars=", nvars
+
+  ! Row dimension must exist with 4 rows
+  retval = nf90_inq_dimid(grpid, "row", grpid2)
+  if (retval /= nf90_noerr) then
+     print *, "Error finding row dim: ", trim(nf90_strerror(retval))
+     stop 1
+  endif
+  retval = nf90_inquire_dimension(grpid, grpid2, dimname, dimlen)
+  if (retval /= nf90_noerr) then
+     print *, "Error inquiring row dim: ", trim(nf90_strerror(retval))
+     stop 1
+  endif
+  if (dimlen /= 4) then
+     print *, "Expected row dim len=4, got ", dimlen
+     stop 1
+  endif
+  print *, "PASS: group row dim len=", dimlen
 
   ! Close the file.
   retval = nf90_close(ncid)
