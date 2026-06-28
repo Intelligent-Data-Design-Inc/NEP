@@ -51,12 +51,24 @@
 
 **Status**: In progress - need to implement actual CFITSIO integration in the dispatch layer.
 
-#### Sprint 4: Read the FITS Metadata
-- NEP code will read in all the FITS metadata into local variables.
-- Metadata will be used to construct netcdf data model objects.
-- The main FITS HDU will be in the root group. Additional ADUs will be child groups of the root group.
-- nc_inq* functions will now return correct results for the file. Tests are updated to confirm all file metadata is as expected for this test file.
-- By the end of this sprint, FITS metadata will have been converted to the netCDF model.
+#### Sprint 4a: Read Primary HDU Metadata
+**Detailed Plan**: See `docs/plan/v2.0.0-sprint4a-fits-primary-metadata.md`
+
+- Read all header keywords from the primary HDU and store them as global netCDF attributes on the root group.
+- For the primary HDU image (if `NAXIS > 0`): create netCDF dimensions (reversed order from FITS) and a netCDF variable in the root group.
+- Map `BITPIX` to the correct `nc_type`; map standard keywords (`BUNIT`→`units`, `BZERO`→`add_offset`, `BSCALE`→`scale_factor`, `BLANK`→`_FillValue`) to netCDF attributes.
+- `nc_inq*` functions now return correct results for the primary HDU. C test is updated to confirm primary HDU dims, variable, and attributes for the test FITS file.
+- No extension HDUs in this sprint.
+
+#### Sprint 4b: Read Extension HDU Metadata
+**Detailed Plan**: See `docs/plan/v2.0.0-sprint4b-fits-extension-metadata.md`
+
+- Each extension HDU becomes a child group of the root group, named from `EXTNAME` (or `hdu_N` if absent).
+- Image extension HDUs: same dim/variable/attribute mapping as 4a, applied to the child group.
+- Binary and ASCII table HDUs: create a row dimension (`NAXIS2`), one netCDF variable per column (named from `TTYPEn`), with `TUNITn`→`units` attributes. Vector columns become 2D variables.
+- All HDU header keywords stored as group-level attributes.
+- C and Fortran tests updated to verify extension group names, dims, variables, and attributes for the test FITS file.
+- By the end of this sprint, all FITS metadata will have been converted to the netCDF model.
 
 #### Sprint 5: Read the FITS Data
 - NEP C and Fortran tests read data from FITS file, and confirm it is correct by comparing agains stored values for some subset of the data.
