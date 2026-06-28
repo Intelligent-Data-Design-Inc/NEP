@@ -100,9 +100,11 @@ AC_SUBST([BUILD_LZF], [$enable_lzf])
 # Numeric build flags for Fortran compilation
 AS_IF([test "x$enable_lz4" = "xyes"],  [BUILD_LZ4_DEF=1], [BUILD_LZ4_DEF=0])
 AS_IF([test "x$enable_bzip2" = "xyes"], [BUILD_BZIP2_DEF=1], [BUILD_BZIP2_DEF=0])
+AS_IF([test "x$enable_fits" = "xyes"], [BUILD_FITS_DEF=1], [BUILD_FITS_DEF=0])
 
 AC_SUBST([BUILD_LZ4_DEF])
 AC_SUBST([BUILD_BZIP2_DEF])
+AC_SUBST([BUILD_FITS_DEF])
 
 dnl if test "x$enable_lz4" = xyes; then
 dnl    AC_CONFIG_SUBDIRS([LZ4])
@@ -192,12 +194,12 @@ fi
 AC_SUBST([GEOTIFF_LIBS])
 AC_SUBST([TIFF_LIBS])
 
-# FITS reader support (v2.0.0) - default OFF; enable with --enable-fits
+# FITS reader support (v2.0.0) - default ON; disable with --disable-fits
 AC_MSG_CHECKING([whether FITS reader should be enabled])
 AC_ARG_ENABLE([fits],
               [AS_HELP_STRING([--enable-fits],
-                              [Enable FITS reader support (default: disabled)])])
-test "x$enable_fits" = xyes || enable_fits=no
+                              [Enable FITS reader support (default: enabled)])])
+test "x$enable_fits" = xno || enable_fits=yes
 AC_MSG_RESULT([$enable_fits])
 
 # FITS (CFITSIO) library detection (v2.0.0)
@@ -208,12 +210,26 @@ if test "x$enable_fits" = "xyes"; then
     if test "x$cfitsio_header" = "xyes" && test "x$cfitsio_lib" = "xyes"; then
         HAVE_FITS=yes
         AC_DEFINE([HAVE_FITS], [1], [Define if CFITSIO library is found])
+        CFITSIO_LDFLAGS=""
+        # Embed rpath so libncfits.so finds libcfitsio at runtime.
+        for flag in $LDFLAGS; do
+            case $flag in
+                -L*)
+                    _ld_dir=`echo $flag | sed 's/^-L//'`
+                    if test -f "$_ld_dir/libcfitsio.so" || test -f "$_ld_dir/libcfitsio.a"; then
+                        CFITSIO_LDFLAGS="$CFITSIO_LDFLAGS -R$_ld_dir"
+                    fi
+                    ;;
+            esac
+        done
         AC_MSG_NOTICE([FITS reader enabled])
     else
         AC_MSG_ERROR([libcfitsio is required for the FITS reader. Install libcfitsio-dev or use --disable-fits])
     fi
 fi
 AC_SUBST([CFITSIO_LIBS])
+AC_SUBST([CFITSIO_LDFLAGS])
+AC_SUBST([BUILD_FITS], [$enable_fits])
 
 # GRIB2 library detection (v1.7.0) - default ON; disable with --disable-grib2
 # GRIB2 and CDF share UDF slot 2 and are mutually exclusive.
@@ -357,7 +373,7 @@ AM_CONDITIONAL([HAVE_CDF], [test "x$HAVE_CDF" = "xyes"])
 AM_CONDITIONAL([HAVE_GEOTIFF], [test "x$HAVE_GEOTIFF" = "xyes"])
 AM_CONDITIONAL([HAVE_GRIB2], [test "x$HAVE_GRIB2" = "xyes"])
 AM_CONDITIONAL([HAVE_FITS], [test "x$HAVE_FITS" = "xyes"])
-AM_CONDITIONAL([BUILD_NCRC], [test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes" || test "x$HAVE_GRIB2" = "xyes"])
+AM_CONDITIONAL([BUILD_NCRC], [test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes" || test "x$HAVE_GRIB2" = "xyes" || test "x$HAVE_FITS" = "xyes"])
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$HAVE_DOXYGEN" = "xyes"])
 
 # Initialize Automake
@@ -626,7 +642,7 @@ AC_ARG_WITH([ncrc-dir],
     [NEP_NCRC_DIR="\${datarootdir}"])
 AC_SUBST([NEP_NCRC_DIR])
 
-if test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes" || test "x$HAVE_GRIB2" = "xyes"; then
+if test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes" || test "x$HAVE_GRIB2" = "xyes" || test "x$HAVE_FITS" = "xyes"; then
     # Expand libdir now so AC_CONFIG_COMMANDS receives a concrete path
     nep_expanded_prefix=$prefix
     test "x$nep_expanded_prefix" = xNONE && nep_expanded_prefix=$ac_default_prefix
@@ -635,21 +651,41 @@ if test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes" || test "x$HAVE_
     nep_expanded_libdir=$nep_expanded_exec_prefix/lib
     AC_CONFIG_COMMANDS([.ncrc],
         [
+            # Build-tree .ncrc points at the freshly built libraries.
+            nep_build_libdir="${ac_pwd}/src/.libs"
             cat "${srcdir}/.ncrc.in" > .ncrc
             if test "x$nep_have_geotiff" = "xyes"; then
-                sed "s|@NEP_LIBDIR@|${nep_libdir}|g" "${srcdir}/.ncrc-geotiff.in" >> .ncrc
+                sed "s|@NEP_LIBDIR@|${nep_build_libdir}|g" "${srcdir}/.ncrc-geotiff.in" >> .ncrc
             fi
             if test "x$nep_have_cdf" = "xyes"; then
-                sed "s|@NEP_LIBDIR@|${nep_libdir}|g" "${srcdir}/.ncrc-cdf.in" >> .ncrc
+                sed "s|@NEP_LIBDIR@|${nep_build_libdir}|g" "${srcdir}/.ncrc-cdf.in" >> .ncrc
             fi
             if test "x$nep_have_grib2" = "xyes"; then
-                sed "s|@NEP_LIBDIR@|${nep_libdir}|g" "${srcdir}/.ncrc-grib2.in" >> .ncrc
+                sed "s|@NEP_LIBDIR@|${nep_build_libdir}|g" "${srcdir}/.ncrc-grib2.in" >> .ncrc
+            fi
+            if test "x$nep_have_fits" = "xyes"; then
+                sed "s|@NEP_LIBDIR@|${nep_build_libdir}|g" "${srcdir}/.ncrc-fits.in" >> .ncrc
+            fi
+            # Install-tree .ncrc uses the configured install libdir.
+            cat "${srcdir}/.ncrc.in" > .ncrc-install
+            if test "x$nep_have_geotiff" = "xyes"; then
+                sed "s|@NEP_LIBDIR@|${nep_libdir}|g" "${srcdir}/.ncrc-geotiff.in" >> .ncrc-install
+            fi
+            if test "x$nep_have_cdf" = "xyes"; then
+                sed "s|@NEP_LIBDIR@|${nep_libdir}|g" "${srcdir}/.ncrc-cdf.in" >> .ncrc-install
+            fi
+            if test "x$nep_have_grib2" = "xyes"; then
+                sed "s|@NEP_LIBDIR@|${nep_libdir}|g" "${srcdir}/.ncrc-grib2.in" >> .ncrc-install
+            fi
+            if test "x$nep_have_fits" = "xyes"; then
+                sed "s|@NEP_LIBDIR@|${nep_libdir}|g" "${srcdir}/.ncrc-fits.in" >> .ncrc-install
             fi
         ],
         [
             nep_have_geotiff="$HAVE_GEOTIFF"
             nep_have_cdf="$HAVE_CDF"
             nep_have_grib2="$HAVE_GRIB2"
+            nep_have_fits="$HAVE_FITS"
             nep_libdir="$nep_expanded_libdir"
         ])
 fi

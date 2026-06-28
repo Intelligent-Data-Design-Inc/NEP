@@ -7,7 +7,7 @@
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/fsrc
 
 # Fortran compile flags: pass build options from configure.ac
-AM_FCFLAGS = -DBUILD_LZ4=$(BUILD_LZ4_DEF) -DBUILD_BZIP2=$(BUILD_BZIP2_DEF)
+AM_FCFLAGS = -DBUILD_LZ4=$(BUILD_LZ4_DEF) -DBUILD_BZIP2=$(BUILD_BZIP2_DEF) -DBUILD_FITS=$(BUILD_FITS_DEF)
 
 # Link to our assembled libraries.
 LDADD = ${top_builddir}/fsrc/libnepf.la ${top_builddir}/src/libnep.la -lnetcdff
@@ -26,8 +26,18 @@ check_PROGRAMS += ftst_nep_lz4
 ftst_nep_lz4_SOURCES = ftst_nep_lz4.F90
 endif
 
+# Build the FITS UDF test if FITS is enabled.
+if HAVE_FITS
+check_PROGRAMS += ftst_fits_udf
+ftst_fits_udf_SOURCES = ftst_fits_udf.F90
+ftst_fits_udf_LDADD = ${top_builddir}/src/libncfits.la ${top_builddir}/fsrc/libnepf.la ${top_builddir}/src/libnep.la -lnetcdff
+endif
+
 # Run our test programs.
 TESTS = run_tests.sh
+if HAVE_FITS
+TESTS += ftst_fits_udf
+endif
 
 # Delete files created in testing.
 CLEANFILES = ftst_*.nc

@@ -35,13 +35,19 @@ if BUILD_LZ4
 all-local:
 	$(MAKE) -C hdf5_plugins all
 endif
-EXTRA_DIST = autogen.sh .ncrc.in .ncrc-geotiff.in .ncrc-cdf.in .ncrc-grib2.in
+EXTRA_DIST = autogen.sh .ncrc.in .ncrc-geotiff.in .ncrc-cdf.in .ncrc-grib2.in .ncrc-fits.in
 
 if BUILD_NCRC
 # Install .ncrc to $(NEP_NCRC_DIR) (default: $(datarootdir)/nep)
-# .ncrc is assembled by configure (AC_CONFIG_COMMANDS) with the correct install libdir
+# .ncrc-install is assembled by configure (AC_CONFIG_COMMANDS) with the correct install libdir
 ncrcdir = $(NEP_NCRC_DIR)
-ncrc_DATA = .ncrc
+ncrc_DATA = .ncrc-install
+
+install-data-hook:
+	mv $(DESTDIR)$(ncrcdir)/.ncrc-install $(DESTDIR)$(ncrcdir)/.ncrc
+
+uninstall-hook:
+	rm -f $(DESTDIR)$(ncrcdir)/.ncrc
 endif
 
 # Documentation target

@@ -22,6 +22,7 @@
 # Build directories
 b/
 build/
+build_*/
 build_test/
 */build/
 */*/build/
@@ -63,6 +64,7 @@ dkms.conf
 
 # Autotools generated files
 .ncrc
+.ncrc-install
 Makefile
 Makefile.in
 aclocal.m4
@@ -138,6 +140,8 @@ ftst_ncsqueeze_bzip2
 ftst_ncsqueeze_lz4
 ftest/ftst_nep_bzip2
 ftest/ftst_nep_lz4
+ftest/ftst_fits_udf
+tst_fits_udf
 tst_cdf_basic
 tst_imap_mag
 

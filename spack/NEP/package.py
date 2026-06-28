@@ -28,6 +28,7 @@ class Nep(CMakePackage):
     variant("lz4", default=True, description="Enable LZ4 compression support")
     variant("bzip2", default=True, description="Enable BZIP2 compression support")
     variant("fortran", default=True, description="Build Fortran wrappers")
+    variant("fits", default=False, description="Enable FITS reader support via CFITSIO")
 
     depends_on("c", type="build")
     depends_on("fortran", when="+fortran", type="build")
@@ -37,12 +38,14 @@ class Nep(CMakePackage):
     depends_on("lz4", when="+lz4", type=("build", "link"))
     depends_on("bzip2", when="+bzip2", type=("build", "link"))
     depends_on("netcdf-fortran", when="+fortran", type=("build", "link"))
+    depends_on("cfitsio", when="+fits", type=("build", "link"))
     depends_on("doxygen", when="+docs", type="build")
 
     def cmake_args(self):
         args = [
             self.define_from_variant("BUILD_DOCUMENTATION", "docs"),
             self.define_from_variant("ENABLE_FORTRAN", "fortran"),
+            self.define_from_variant("ENABLE_FITS", "fits"),
         ]
         return args
 

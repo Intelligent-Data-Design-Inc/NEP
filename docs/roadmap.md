@@ -22,13 +22,22 @@
 - FITS assigned to UDF3 slot
 
 #### Sprint 2: Set up FITS Dispatch Layer and Tests
-- Set up FITS dispatch table.
-- All functions should just be noops which return success.
-- Set up C and Fortran test programs.
-- There is a FITS file WFPC2u5780205r_c0fx.fits in test/data.
-- Make sure that test file is available for the tests in the build directories.
-- Follow the pattern of how GeoTIFF, GRIB2, and CDF readers are set up and tested.
-- In this sprint, FITS dispatch table is up and running, and passing simple test, but not yet really opening a read FITS file.
+**Detailed Plan**: See `docs/plan/v2.0.0-sprint2-fits-dispatch.md`
+
+- Build the FITS UDF dispatch library (`libncfits`) with no-op read functions.
+- Flip `ENABLE_FITS` / `--enable-fits` default to **ON**; add `-DENABLE_FITS=OFF` / `--disable-fits` to the other CI workflows so only `ci-fits.yml` needs CFITSIO.
+- Create `include/fitsdispatch.h`, `src/fitsdispatch.c`, and `src/fitsfile.c` following the GRIB2/CDF/GeoTIFF pattern.
+- Generate the `.ncrc` UDF3 autoload block for FITS in both CMake and Autotools.
+- Create `test/tst_fits_udf.c` that calls `NC_FITS_initialize()` and does an `nc_open()`/`nc_close()` round-trip on the real FITS file without reading CFITSIO metadata.
+- Create `ftest/ftst_fits_udf.F90` and add `ftest/CMakeLists.txt` so the Fortran test is built in both CMake and Autotools.
+- Ensure `test/data/WFPC2u5780205r_c0fx.fits` is copied to build directories for both tests.
+
+**Clarified decisions:**
+- `ENABLE_FITS` / `--enable-fits` default ON.
+- C test: `nc_open()`/`nc_close()` round-trip on the real FITS file.
+- Fortran test: `ftest/ftst_fits_udf.F90` with a new `ftest/CMakeLists.txt`.
+- Primary HDU content goes in the root group; extension HDUs become child groups.
+- WCS coordinate variables are deferred to a later release.
 
 #### Sprint 3: Open a Real FITS File
 - Tests (C and Fortran) now open the real FITS file.

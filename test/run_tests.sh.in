@@ -5,15 +5,20 @@ set -x
 set -e
 
 # Ensure the selected HDF5 shared libraries can be found at runtime.
-if [[ -n "${LD_LIBRARY_PATH:-}" ]]; then
+if test -n "${LD_LIBRARY_PATH:-}"; then
     export LD_LIBRARY_PATH=@MY_LD_LIBRARY_PATH@:$LD_LIBRARY_PATH
 else
     export LD_LIBRARY_PATH=@MY_LD_LIBRARY_PATH@
 fi
 
+# Use the generated .ncrc for UDF autoload (FITS, GRIB2, CDF, GeoTIFF).
+# NETCDF_RC must be a directory containing a file named .ncrc.
+NETCDF_RC="$(cd .. && pwd)"
+export NETCDF_RC
+
 # This will find the zstd filter with the netcdf-c install, and the LZ4 plugin
 # built in the local tree.
-if [[ -n "${HDF5_PLUGIN_PATH:-}" ]]; then
+if test -n "${HDF5_PLUGIN_PATH:-}"; then
     export HDF5_PLUGIN_PATH=@MY_HDF5_PLUGIN_PATH@:@MY_LZ4_PLUGIN_PATH@:$HDF5_PLUGIN_PATH
 else
     export HDF5_PLUGIN_PATH=@MY_HDF5_PLUGIN_PATH@:@MY_LZ4_PLUGIN_PATH@

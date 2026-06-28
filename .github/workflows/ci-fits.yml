@@ -1,6 +1,6 @@
 # GitHub Actions CI workflow for building and testing NEP with FITS reader support.
 #
-# V2.0.0 Sprint 1: FITS CI Pipeline
+# V2.0.0 Sprint 2: FITS Dispatch Layer and Tests
 #
 # This workflow builds NEP with ENABLE_FITS=ON using:
 # - HDF5 2.1.1 (built from source, cached)
@@ -8,8 +8,7 @@
 # - NetCDF-Fortran (built from main branch, cached)
 # - CFITSIO (installed via apt-get)
 #
-# No FITS source code or tests exist yet — this sprint proves that
-# NEP compiles and existing tests pass with the new build option.
+# This sprint now includes the FITS dispatch layer and C/Fortran UDF tests.
 #
 # Edward Hartnett, Intelligent Data Design, Inc.
 name: ci_fits

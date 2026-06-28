@@ -107,8 +107,8 @@ if(NOT DOCS_ONLY)
     set(CMAKE_BUILD_RPATH "${HDF5_LIBRARY_DIRS};${NETCDF_LIBRARY_DIRS}")
 endif()
 
-# FITS reader support (v2.0.0) - default OFF; enable with -DENABLE_FITS=ON
-option(ENABLE_FITS "Enable FITS reader support via CFITSIO" OFF)
+# FITS reader support (v2.0.0) - default ON; disable with -DENABLE_FITS=OFF
+option(ENABLE_FITS "Enable FITS reader support via CFITSIO" ON)
 
 # GRIB2 library detection (v1.7.0) - default ON; disable with -DENABLE_GRIB2=OFF
 # GRIB2 and CDF share UDF slot 2 and are mutually exclusive.
@@ -165,6 +165,7 @@ if(NOT DOCS_ONLY)
         find_path(CFITSIO_INCLUDE_DIR fitsio.h)
 
         if(CFITSIO_LIBRARY AND CFITSIO_INCLUDE_DIR)
+            get_filename_component(CFITSIO_LIBRARY_DIR "${CFITSIO_LIBRARY}" DIRECTORY)
             message(STATUS "Found CFITSIO: ${CFITSIO_LIBRARY}")
             message(STATUS "Found CFITSIO headers: ${CFITSIO_INCLUDE_DIR}")
             include_directories(${CFITSIO_INCLUDE_DIR})
@@ -269,7 +270,37 @@ if(NOT DOCS_ONLY)
         add_subdirectory(fsrc)
     endif()
 
+    # Derive HDF5 and NetCDF library directories for test runtime environment.
+    # This ensures all CTest tests find shared libraries without needing
+    # LD_LIBRARY_PATH to be set in the shell.
+    set(_nep_test_lib_dirs "")
+    foreach(_lib ${HDF5_LIBRARIES})
+        if(IS_ABSOLUTE "${_lib}")
+            get_filename_component(_d "${_lib}" DIRECTORY)
+            list(APPEND _nep_test_lib_dirs "${_d}")
+        endif()
+    endforeach()
+    if(NETCDF_LIBRARY_DIRS)
+        list(APPEND _nep_test_lib_dirs ${NETCDF_LIBRARY_DIRS})
+    elseif(DEFINED NETCDF_PREFIX)
+        list(APPEND _nep_test_lib_dirs "${NETCDF_PREFIX}/lib")
+    endif()
+    list(APPEND _nep_test_lib_dirs "${CMAKE_BINARY_DIR}/src")
+    if(HAVE_FITS AND CFITSIO_LIBRARY_DIR)
+        list(APPEND _nep_test_lib_dirs "${CFITSIO_LIBRARY_DIR}")
+    endif()
+    if(ENABLE_FORTRAN AND NetCDF_Fortran_LIBRARY_DIRS)
+        list(APPEND _nep_test_lib_dirs ${NetCDF_Fortran_LIBRARY_DIRS})
+    endif()
+    list(REMOVE_DUPLICATES _nep_test_lib_dirs)
+    string(REPLACE ";" ":" _nep_test_ld_path "${_nep_test_lib_dirs}")
+    file(WRITE "${CMAKE_BINARY_DIR}/CTestCustom.cmake" "")
+
     add_subdirectory (src)
+
+    if(ENABLE_FORTRAN)
+        add_subdirectory(ftest)
+    endif()
     
     # Build the LZ4 HDF5 filter plugin with CMake (BZIP2 is expected to be provided by the NetCDF/HDF5 installation)
     set(NEP_HDF5_PLUGIN_INSTALL_DIR "${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin")
@@ -329,25 +360,6 @@ if(NOT DOCS_ONLY)
         add_subdirectory (test_parallel)
     endif()
 
-    # Derive HDF5 and NetCDF library directories for test runtime environment.
-    # This ensures all CTest tests find shared libraries without needing
-    # LD_LIBRARY_PATH to be set in the shell.
-    set(_nep_test_lib_dirs "")
-    foreach(_lib ${HDF5_LIBRARIES})
-        if(IS_ABSOLUTE "${_lib}")
-            get_filename_component(_d "${_lib}" DIRECTORY)
-            list(APPEND _nep_test_lib_dirs "${_d}")
-        endif()
-    endforeach()
-    if(NETCDF_LIBRARY_DIRS)
-        list(APPEND _nep_test_lib_dirs ${NETCDF_LIBRARY_DIRS})
-    elseif(DEFINED NETCDF_PREFIX)
-        list(APPEND _nep_test_lib_dirs "${NETCDF_PREFIX}/lib")
-    endif()
-    list(REMOVE_DUPLICATES _nep_test_lib_dirs)
-    string(REPLACE ";" ":" _nep_test_ld_path "${_nep_test_lib_dirs}")
-    file(WRITE "${CMAKE_BINARY_DIR}/CTestCustom.cmake" "")
-
     # Make tests depend on plugins being built
     # Add test directory last so tst_cdf_udf runs after tst_cdf_basic
     add_subdirectory (test)
@@ -356,8 +368,7 @@ if(NOT DOCS_ONLY)
     endif()
 
     # .ncrc: assemble from fragments for enabled formats (issue #134)
-    if(HAVE_GEOTIFF OR HAVE_CDF OR HAVE_GRIB2)
-        set(NEP_LIBDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+    if(HAVE_GEOTIFF OR HAVE_CDF OR HAVE_GRIB2 OR HAVE_FITS)
         set(NEP_NCRC_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}"
             CACHE PATH "Directory where .ncrc is installed")
 
@@ -372,18 +383,33 @@ if(NOT DOCS_ONLY)
         if(HAVE_GRIB2)
             list(APPEND NCRC_FRAGMENTS "${CMAKE_SOURCE_DIR}/.ncrc-grib2.in")
         endif()
+        if(HAVE_FITS)
+            list(APPEND NCRC_FRAGMENTS "${CMAKE_SOURCE_DIR}/.ncrc-fits.in")
+        endif()
 
-        # Assemble and substitute @NEP_LIBDIR@ in one step via cmake -P script
+        # Assemble a .ncrc for the build tree (tests point to the freshly built libraries)
+        set(NEP_LIBDIR_BUILD "${CMAKE_BINARY_DIR}/src")
         set(NCRC_OUT "${CMAKE_BINARY_DIR}/.ncrc")
         file(WRITE "${NCRC_OUT}" "")
         foreach(_frag ${NCRC_FRAGMENTS})
             file(READ "${_frag}" _content)
-            string(REPLACE "@NEP_LIBDIR@" "${NEP_LIBDIR}" _content "${_content}")
+            string(REPLACE "@NEP_LIBDIR@" "${NEP_LIBDIR_BUILD}" _content "${_content}")
             file(APPEND "${NCRC_OUT}" "${_content}")
         endforeach()
 
-        install(FILES "${NCRC_OUT}"
+        # Assemble a .ncrc for installation (uses the install libdir)
+        set(NEP_LIBDIR_INSTALL "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+        set(NCRC_INSTALL_OUT "${CMAKE_BINARY_DIR}/.ncrc-install")
+        file(WRITE "${NCRC_INSTALL_OUT}" "")
+        foreach(_frag ${NCRC_FRAGMENTS})
+            file(READ "${_frag}" _content)
+            string(REPLACE "@NEP_LIBDIR@" "${NEP_LIBDIR_INSTALL}" _content "${_content}")
+            file(APPEND "${NCRC_INSTALL_OUT}" "${_content}")
+        endforeach()
+
+        install(FILES "${NCRC_INSTALL_OUT}"
             DESTINATION "${NEP_NCRC_INSTALL_DIR}"
+            RENAME ".ncrc"
         )
         message(STATUS ".ncrc will be installed to: ${NEP_NCRC_INSTALL_DIR}")
     endif()
