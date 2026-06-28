@@ -1,5 +1,46 @@
 # NEP Development Roadmap
 
+### V2.0.0 Read-only FITS Layer
+#### Sprint 1: Set up CI and Build Systems
+- Add a CI run which will test FITS reader.
+- Needs to install CFITSIO library on github runner.
+- Needs to install latest build main branch of netcdf-c from github repo (can be built with --disable-dap for this CI run)
+- Will also need netcdf-fortran, built from latest main on github.
+- Will also need HDF5-2.1.1 installed before netcdf-c in order to get netCDF-4
+- All CI installs should be cached.
+- Autotools and cmake build systems should be updated to include new option to build FITS reader (default on).
+- For this sprint, the CI should then build NEP and run tests, but there is no FITS code or tests in NEP yet.
+
+#### Sprint 2: Set up FITS Dispatch Layer and Tests
+- Set up FITS dispatch table.
+- All functions should just be noops which return success.
+- Set up C and Fortran test programs.
+- There is a FITS file WFPC2u5780205r_c0fx.fits in test/data.
+- Make sure that test file is available for the tests in the build directories.
+- Follow the pattern of how GeoTIFF, GRIB2, and CDF readers are set up and tested.
+- In this sprint, FITS dispatch table is up and running, and passing simple test, but not yet really opening a read FITS file.
+
+#### Sprint 3: Open a Real FITS File
+- Tests (C and Fortran) now open the real FITS file.
+- NEP tests open and close file, but nothing else yet.
+- In this sprint, the real FITS file is opened, and closed, but no metadata or data are read yet.
+
+#### Sprint 4: Read the FITS Metadata
+- NEP code will read in all the FITS metadata into local variables.
+- Metadata will be used to construct netcdf data model objects.
+- The main FITS HDU will be in the root group. Additional ADUs will be child groups of the root group.
+- nc_inq* functions will now return correct results for the file. Tests are updated to confirm all file metadata is as expected for this test file.
+- By the end of this sprint, FITS metadata will have been converted to the netCDF model.
+
+#### Sprint 5: Read the FITS Data
+- NEP C and Fortran tests read data from FITS file, and confirm it is correct by comparing agains stored values for some subset of the data.
+- NetCDF vara functions are used to read subsets of FITS data.
+- By the end of this sprint, the FITS reader will be fully functional.
+
+#### Sprint 6: Documentation and More Tests
+- Can we add more testing?
+- Update the doxygen and README to include the new FITS reading capability.
+
 ### V1.11.0 NcZarr Examples
 
 #### Sprint 1: Add `examples/nczarr/nczarr_simple.c` — Local NcZarr Create/Read/Write
