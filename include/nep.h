@@ -13,7 +13,8 @@
  * - UDF2: GRIB2 meteorological data (magic: "GRIB") [default]
  *         or NASA CDF format (magic: 0xCDF30001) [if built with --enable-cdf]
  *         GRIB2 and CDF are mutually exclusive; only one may be built at a time.
- * - UDF3-UDF9: Reserved for future use
+ * - UDF3: FITS astronomical data (magic: "SIMPLE")
+ * - UDF4-UDF9: Reserved for future use
  *
  * @author Edward Hartnett
  * @date Nov 13, 2025
@@ -68,6 +69,9 @@ extern "C" {
 /** NASA CDF format uses UDF2 slot (mutually exclusive with GRIB2) */
 #define NEP_UDF_CDF NC_UDF2
 
+/** FITS astronomical data format uses UDF3 slot */
+#define NEP_UDF_FITS NC_UDF3
+
 /** @} */
 
 /**
@@ -87,6 +91,9 @@ extern "C" {
 /** GRIB2 magic number: "GRIB" */
 #define NEP_MAGIC_GRIB2 "GRIB"
 
+/** FITS magic number: "SIMPLE" (first 6 bytes of a FITS file) */
+#define NEP_MAGIC_FITS "SIMPLE"
+
 /** @} */
 
 /**
@@ -102,6 +109,9 @@ extern "C" {
 
 /** GRIB2 format display name */
 #define NEP_FORMAT_NAME_GRIB2 "GRIB2"
+
+/** FITS format display name */
+#define NEP_FORMAT_NAME_FITS "FITS"
 
 /** @} */
 

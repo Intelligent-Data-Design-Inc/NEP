@@ -23,6 +23,10 @@
 /* Define if GeoTIFF library is found */
 #cmakedefine HAVE_GEOTIFF
 
+/* FITS reader support (v2.0.0) */
+/* Define if CFITSIO library is found */
+#cmakedefine HAVE_FITS
+
 /* Defined if you have HDF5 support */
 #cmakedefine HAVE_HDF5
 

@@ -18,6 +18,12 @@
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
+/* Define if CFITSIO library is found */
+#undef HAVE_FITS
+
+/* Define to 1 if you have the <fitsio.h> header file. */
+#undef HAVE_FITSIO_H
+
 /* Define if GeoTIFF library is found */
 #undef HAVE_GEOTIFF
 
