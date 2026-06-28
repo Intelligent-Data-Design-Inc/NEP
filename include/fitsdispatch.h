@@ -16,6 +16,11 @@
 #include "ncdispatch.h"
 #include "nep.h"
 
+/* Include CFITSIO header if available */
+#ifdef HAVE_FITS
+#include <fitsio.h>
+#endif
+
 /** FITS format uses UDF3 slot for dispatch table model field (see nep.h for slot allocation) */
 #ifdef NC_FORMATX_UDF3
 #define NC_FORMATX_NC_FITS NC_FORMATX_UDF3
@@ -26,10 +31,14 @@
 /** FITS magic number length (6 bytes: "SIMPLE") */
 #define FITS_MAGIC_LEN 6
 
-/** Per-file FITS state (placeholder for future CFITSIO integration) */
+/** Per-file FITS state with CFITSIO integration */
 typedef struct NC_FITS_FILE_INFO
 {
-    void *fptr;                   /**< Future CFITSIO fitsfile pointer */
+#ifdef HAVE_FITS
+    fitsfile *fptr;               /**< CFITSIO fitsfile pointer */
+#else
+    void *fptr;                   /**< Placeholder when CFITSIO not available */
+#endif
     char *path;                   /**< Path to the open FITS file */
 } NC_FITS_FILE_INFO_T;
 

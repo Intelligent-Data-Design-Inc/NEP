@@ -3,9 +3,9 @@
  * @internal The FITS file functions. These provide a read-only
  * interface to FITS astronomical data files via CFITSIO.
  *
- * Sprint 2: no-op implementations. The open function only creates the
- * internal NetCDF-4 file skeleton and stores the path; no CFITSIO
- * calls are made yet.
+ * Sprint 3: real CFITSIO integration. The open function calls
+ * fits_open_file() and stores the CFITSIO file handle for later
+ * use in metadata and data reading.
  *
  * @author Edward Hartnett
  * @date 2026-06-28
@@ -17,6 +17,41 @@
 #include <string.h>
 #include "nep_nc4.h"
 #include "fitsdispatch.h"
+
+/* Include CFITSIO header if available */
+#ifdef HAVE_FITS
+#include <fitsio.h>
+#endif
+
+/**
+ * @internal Map CFITSIO status codes to NetCDF error codes.
+ *
+ * @param status CFITSIO status code.
+ *
+ * @return NetCDF error code.
+ * @author Edward Hartnett
+ */
+static int
+map_fitsio_error(int status)
+{
+    if (status == 0)
+        return NC_NOERR;
+    
+    /* Common CFITSIO error mappings */
+    switch (status)
+    {
+    case 104: /* FILE_NOT_OPENED */
+        return NC_EINVAL;
+    case 107: /* END_OF_FILE */
+        return NC_EIO;
+    case 108: /* READ_ERROR */
+        return NC_EIO;
+    case 202: /* KEY_NO_EXIST */
+        return NC_ENOTFOUND;
+    default:
+        return NC_EIO;
+    }
+}
 
 /**
  * @internal Open a FITS file for read-only access.
@@ -43,6 +78,9 @@ NC_FITS_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     NC_FILE_INFO_T *h5;
     NC_FITS_FILE_INFO_T *fits_file;
     int retval;
+#ifdef HAVE_FITS
+    int fits_status = 0;
+#endif
 
     assert(basepe || !basepe);
     assert(chunksizehintp || !chunksizehintp);
@@ -67,15 +105,30 @@ NC_FITS_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     h5->no_write = NC_TRUE;
     h5->root_grp->atts_read = 1;
 
-    /* Allocate FITS-specific file info (placeholder for future CFITSIO state). */
+    /* Allocate FITS-specific file info with CFITSIO integration. */
     if (!(fits_file = calloc(1, sizeof(NC_FITS_FILE_INFO_T))))
         return NC_ENOMEM;
-    fits_file->fptr = NULL;
+    
     if (!(fits_file->path = strdup(path)))
     {
         free(fits_file);
         return NC_ENOMEM;
     }
+
+#ifdef HAVE_FITS
+    /* Open the FITS file with CFITSIO */
+    fits_status = 0;
+    fits_open_file(&fits_file->fptr, path, READONLY, &fits_status);
+    if (fits_status != 0)
+    {
+        free(fits_file->path);
+        free(fits_file);
+        return map_fitsio_error(fits_status);
+    }
+#else
+    fits_file->fptr = NULL;
+#endif
+
     h5->format_file_info = fits_file;
 
     return NC_NOERR;
@@ -98,6 +151,9 @@ NC_FITS_close(int ncid, void *ignore)
     NC_GRP_INFO_T *grp;
     NC_FITS_FILE_INFO_T *fits_file;
     int retval;
+#ifdef HAVE_FITS
+    int fits_status = 0;
+#endif
 
     assert(ignore || !ignore);
 
@@ -110,7 +166,17 @@ NC_FITS_close(int ncid, void *ignore)
     if (!fits_file)
         return NC_NOERR;
 
-    /* Free FITS-specific info. No CFITSIO calls in Sprint 2. */
+    /* Close CFITSIO file if it was opened. */
+#ifdef HAVE_FITS
+    if (fits_file->fptr)
+    {
+        fits_status = 0;
+        fits_close_file(fits_file->fptr, &fits_status);
+        /* Ignore close errors - we still want to free memory */
+    }
+#endif
+
+    /* Free FITS-specific info. */
     free(fits_file->path);
     free(fits_file);
     h5->format_file_info = NULL;
@@ -129,7 +195,38 @@ NC_FITS_close(int ncid, void *ignore)
 int
 NC_FITS_abort(int ncid)
 {
-    (void)ncid;
+    NC_FILE_INFO_T *h5;
+    NC_GRP_INFO_T *grp;
+    NC_FITS_FILE_INFO_T *fits_file;
+    int retval;
+#ifdef HAVE_FITS
+    int fits_status = 0;
+#endif
+
+    /* Get file info structure. */
+    if ((retval = nc4_find_grp_h5(ncid, &grp, &h5)))
+        return retval;
+
+    /* Get FITS-specific info. */
+    fits_file = (NC_FITS_FILE_INFO_T *)h5->format_file_info;
+    if (!fits_file)
+        return NC_NOERR;
+
+    /* Close CFITSIO file if it was opened. */
+#ifdef HAVE_FITS
+    if (fits_file->fptr)
+    {
+        fits_status = 0;
+        fits_close_file(fits_file->fptr, &fits_status);
+        /* Ignore close errors - we still want to free memory */
+    }
+#endif
+
+    /* Free FITS-specific info. */
+    free(fits_file->path);
+    free(fits_file);
+    h5->format_file_info = NULL;
+
     return NC_NOERR;
 }
 

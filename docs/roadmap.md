@@ -40,9 +40,16 @@
 - WCS coordinate variables are deferred to a later release.
 
 #### Sprint 3: Open a Real FITS File
+**Detailed Plan**: See `docs/plan/v2.0.0-sprint3-fits-open.md`
+
 - Tests (C and Fortran) now open the real FITS file.
 - NEP tests open and close file, but nothing else yet.
 - In this sprint, the real FITS file is opened, and closed, but no metadata or data are read yet.
+- Modify `NC_FITS_open()` to call `fits_open_file()` and store the CFITSIO file handle.
+- Update `NC_FITS_close()` to properly close the CFITSIO file handle.
+- Tests remain unchanged - they still just verify successful open/close operations.
+
+**Status**: In progress - need to implement actual CFITSIO integration in the dispatch layer.
 
 #### Sprint 4: Read the FITS Metadata
 - NEP code will read in all the FITS metadata into local variables.
