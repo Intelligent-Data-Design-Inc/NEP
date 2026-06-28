@@ -22,6 +22,7 @@
 # Build directories
 b/
 build/
+build_*/
 build_test/
 */build/
 */*/build/

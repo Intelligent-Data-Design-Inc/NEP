@@ -2,7 +2,6 @@
 # Edward Hartnett 8/27/25
 
 # Include directories to match Makefile.am AM_CPPFLAGS
-include_directories(${CMAKE_BINARY_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_SOURCE_DIR})
@@ -107,6 +106,7 @@ endif()
 # Configure run_tests.sh script with proper paths
 # For CMake builds, point to the installed plugin location
 set(MY_HDF5_PLUGIN_PATH "${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin:${NETCDF_PREFIX}/hdf5/lib/plugin:${NETCDF_PREFIX}/lib/plugin:${NETCDF_PREFIX}/lib/hdf5/plugin")
+set(MY_LZ4_PLUGIN_PATH "${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin")
 
 # Provide a runtime library search path for the selected HDF5.
 # FindHDF5.cmake does not always populate HDF5_LIBRARY_DIRS, so derive it.

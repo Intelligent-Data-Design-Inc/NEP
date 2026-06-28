@@ -60,6 +60,11 @@ else()
     set(BUILD_FITS "no")
 endif()
 
+# Set the HDF5 plugin path for the generated test script. This must include
+# the NetCDF-C plugin directory (for bzip2/zstd) and the locally-built LZ4
+# plugin directory used by the CMake build.
+set(MY_HDF5_PLUGIN_PATH "${NETCDF_PREFIX}/hdf5/lib/plugin:${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin")
+
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/run_tests.sh.in
                ${CMAKE_CURRENT_BINARY_DIR}/run_tests.sh @ONLY)
 
