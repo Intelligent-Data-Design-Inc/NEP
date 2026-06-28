@@ -146,6 +146,7 @@ jobs:
             -DENABLE_GEOTIFF=OFF \
             -DBUILD_LZ4=OFF \
             -DBUILD_BZIP2=OFF \
+            -DENABLE_FITS=OFF \
             -DBUILD_DOCUMENTATION=OFF \
             -DBUILD_EXAMPLES=ON \
             -DBUILD_TESTING=ON
@@ -192,6 +193,7 @@ jobs:
             --disable-geotiff \
             --disable-lz4 \
             --disable-bzip2 \
+            --disable-fits \
             --disable-docs \
             --enable-examples \
             || (echo "Configure failed. Printing config.log:"; cat config.log; exit 1)
