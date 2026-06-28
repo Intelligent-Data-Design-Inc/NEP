@@ -50,9 +50,9 @@ jobs:
       - name: Download and build HDF5 2.1.1
         if: steps.cache-hdf5-fits.outputs.cache-hit != 'true'
         run: |
-          wget https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5_2.1.1.tar.gz &> /dev/null
-          tar -xzf hdf5_2.1.1.tar.gz
-          cd hdf5-hdf5_2.1.1
+          wget -q https://github.com/HDFGroup/hdf5/archive/refs/tags/2.1.1.tar.gz -O hdf5-2.1.1.tar.gz
+          tar -xzf hdf5-2.1.1.tar.gz
+          cd hdf5-2.1.1
           mkdir build && cd build
           cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DHDF5_ENABLE_ZLIB_SUPPORT=ON ..
           make -j$(nproc)
