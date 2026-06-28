@@ -31,6 +31,13 @@
 /** FITS magic number length (6 bytes: "SIMPLE") */
 #define FITS_MAGIC_LEN 6
 
+/** Per-variable FITS info: which HDU and (for tables) which column. */
+typedef struct NC_FITS_VAR_INFO
+{
+    int hdu_num;    /**< 1-based HDU number in the FITS file */
+    int col_num;    /**< 1-based column number; 0 = image variable */
+} NC_FITS_VAR_INFO_T;
+
 /** Per-file FITS state with CFITSIO integration */
 typedef struct NC_FITS_FILE_INFO
 {
@@ -40,6 +47,7 @@ typedef struct NC_FITS_FILE_INFO
     void *fptr;                   /**< Placeholder when CFITSIO not available */
 #endif
     char *path;                   /**< Path to the open FITS file */
+    int num_hdus;                 /**< Total number of HDUs in the file */
 } NC_FITS_FILE_INFO_T;
 
 #if defined(__cplusplus)
