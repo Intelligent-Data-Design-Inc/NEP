@@ -223,23 +223,124 @@ fits_bitpix_to_nc_type(int bitpix, nc_type *xtypep, size_t *type_sizep,
 }
 
 /**
+ * @internal Map a CFITSIO table column typecode to a netCDF type.
+ *
+ * @param typecode CFITSIO typecode from fits_get_coltype().
+ * @param xtypep Pointer that gets the nc_type. Ignored if NULL.
+ * @param type_sizep Pointer that gets the type size in bytes. Ignored if NULL.
+ * @param type_name Buffer (at least NC_MAX_NAME+1 bytes) for type name string.
+ * Ignored if NULL.
+ * @param endiannessp Pointer that gets endianness. Ignored if NULL.
+ *
+ * @return ::NC_NOERR No error.
+ * @return ::NC_EBADTYPE Unknown typecode.
+ * @author Edward Hartnett
+ */
+static int
+fits_typecode_to_nc_type(int typecode, nc_type *xtypep, size_t *type_sizep,
+                         char *type_name, int *endiannessp)
+{
+    nc_type xtype;
+    size_t type_size;
+    const char *name;
+    int endianness = NC_ENDIAN_BIG;
+
+    switch (typecode)
+    {
+    case 1:  /* TBIT */
+    case 11: /* TBYTE */
+    case 14: /* TLOGICAL */
+        xtype = NC_UBYTE; type_size = 1; name = "ubyte";
+        endianness = NC_ENDIAN_NATIVE;
+        break;
+    case 16: /* TSTRING */
+        xtype = NC_CHAR; type_size = 1; name = "char";
+        endianness = NC_ENDIAN_NATIVE;
+        break;
+    case 21: /* TSHORT */
+        xtype = NC_SHORT; type_size = 2; name = "short";
+        break;
+    case 22: /* TUSHORT */
+        xtype = NC_USHORT; type_size = 2; name = "ushort";
+        break;
+    case 31: /* TFLOAT */
+        xtype = NC_FLOAT; type_size = 4; name = "float";
+        break;
+    case 41: /* TINT / TINT32BIT */
+    case 40:
+        xtype = NC_INT; type_size = 4; name = "int";
+        break;
+    case 42: /* TUINT / TULONG */
+        xtype = NC_UINT; type_size = 4; name = "uint";
+        break;
+    case 81: /* TLONGLONG */
+        xtype = NC_INT64; type_size = 8; name = "int64";
+        break;
+    case 82: /* TDOUBLE */
+        xtype = NC_DOUBLE; type_size = 8; name = "double";
+        break;
+    case 83: /* TCOMPLEX — store real part as float */
+        xtype = NC_FLOAT; type_size = 4; name = "float";
+        break;
+    case 84: /* TDBLCOMPLEX — store real part as double */
+        xtype = NC_DOUBLE; type_size = 8; name = "double";
+        break;
+    default:
+        return NC_EBADTYPE;
+    }
+
+    if (xtypep) *xtypep = xtype;
+    if (type_sizep) *type_sizep = type_size;
+    if (type_name) strncpy(type_name, name, NC_MAX_NAME);
+    if (endiannessp) *endiannessp = endianness;
+
+    return NC_NOERR;
+}
+
+/**
+ * @internal Sanitize a FITS EXTNAME string for use as a netCDF group name.
+ *
+ * Replaces any character not in [A-Za-z0-9_] with '_', and truncates to
+ * NC_MAX_NAME characters.
+ *
+ * @param src Source string (EXTNAME value).
+ * @param dst Destination buffer.
+ * @param dstlen Size of destination buffer.
+ * @author Edward Hartnett
+ */
+static void
+fits_sanitize_name(const char *src, char *dst, size_t dstlen)
+{
+    size_t i;
+    for (i = 0; i < dstlen - 1 && src[i] != '\0'; i++)
+    {
+        char c = src[i];
+        dst[i] = ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+                  (c >= '0' && c <= '9') || c == '_') ? c : '_';
+    }
+    dst[i] = '\0';
+}
+
+/**
  * @internal Read all header keywords from the current FITS HDU and store
  * them as NC_CHAR global attributes on the given group.
  *
  * Structural keywords (SIMPLE, BITPIX, NAXIS, NAXISn, EXTEND, XTENSION,
- * PCOUNT, GCOUNT, END) are skipped. Multiple COMMENT and HISTORY cards are
- * each concatenated into a single attribute of the same name, separated by
- * newlines.
+ * PCOUNT, GCOUNT, END) are always skipped. When is_table is non-zero,
+ * table column descriptor keywords (TTYPEn, TFORMn, TUNITn, etc.) and
+ * EXTNAME are also skipped. Multiple COMMENT and HISTORY cards are
+ * concatenated into a single attribute separated by newlines.
  *
  * @param fptr CFITSIO file pointer, positioned at the HDU to read.
  * @param grp Pointer to the netCDF-4 group that receives the attributes.
+ * @param is_table Non-zero to also skip table column descriptor keywords.
  *
  * @return ::NC_NOERR No error.
  * @return ::NC_ENOMEM Out of memory.
  * @author Edward Hartnett
  */
 static int
-fits_read_primary_atts(fitsfile *fptr, NC_GRP_INFO_T *grp)
+fits_read_hdu_atts(fitsfile *fptr, NC_GRP_INFO_T *grp, int is_table)
 {
     int status = 0, nkeys, k, retval;
     char card[81];
@@ -248,6 +349,14 @@ fits_read_primary_atts(fitsfile *fptr, NC_GRP_INFO_T *grp)
     static const char *skip_keys[] = {
         "SIMPLE", "BITPIX", "NAXIS", "EXTEND", "XTENSION",
         "PCOUNT", "GCOUNT", "END", NULL
+    };
+    /* Additional keywords to skip for table HDUs */
+    static const char *skip_table_prefixes[] = {
+        "TTYPE", "TFORM", "TUNIT", "TSCAL", "TZERO",
+        "TNULL", "TDISP", "TDIM", NULL
+    };
+    static const char *skip_table_keys[] = {
+        "TFIELDS", "EXTNAME", "EXTVER", NULL
     };
 
     fits_get_hdrspace(fptr, &nkeys, NULL, &status);
@@ -288,6 +397,33 @@ fits_read_primary_atts(fitsfile *fptr, NC_GRP_INFO_T *grp)
             {
                 skip = 1;
                 break;
+            }
+        }
+        if (skip)
+            continue;
+
+        /* For table HDUs, skip column descriptor keywords */
+        if (is_table && !skip)
+        {
+            for (i = 0; skip_table_prefixes[i] != NULL; i++)
+            {
+                if (strncmp(keyword, skip_table_prefixes[i],
+                            strlen(skip_table_prefixes[i])) == 0)
+                {
+                    skip = 1;
+                    break;
+                }
+            }
+            if (!skip)
+            {
+                for (i = 0; skip_table_keys[i] != NULL; i++)
+                {
+                    if (strcmp(keyword, skip_table_keys[i]) == 0)
+                    {
+                        skip = 1;
+                        break;
+                    }
+                }
             }
         }
         if (skip)
@@ -463,8 +599,310 @@ fits_read_primary_hdu(NC_FILE_INFO_T *h5)
     }
 
     /* Read all header keywords as global attributes */
-    if ((retval = fits_read_primary_atts(fits_file->fptr, grp)))
+    if ((retval = fits_read_hdu_atts(fits_file->fptr, grp, 0)))
         return retval;
+
+    return NC_NOERR;
+}
+
+/**
+ * @internal Read an image extension HDU and populate a netCDF child group.
+ *
+ * Uses the same axis-reversal and variable mapping logic as
+ * fits_read_primary_hdu(), but writes into the provided child group.
+ *
+ * @param h5 Pointer to the netCDF-4 file info struct.
+ * @param grp Child group to populate.
+ * @param hdu_num 1-based HDU number (for NC_FITS_VAR_INFO_T).
+ *
+ * @return ::NC_NOERR No error.
+ * @author Edward Hartnett
+ */
+static int
+fits_read_image_ext_hdu(NC_FILE_INFO_T *h5, NC_GRP_INFO_T *grp, int hdu_num)
+{
+    NC_FITS_FILE_INFO_T *fits_file;
+    int status = 0, bitpix, naxis, retval, d;
+    long naxes[NC_MAX_VAR_DIMS];
+    nc_type xtype;
+    size_t type_size;
+    char type_name[NC_MAX_NAME + 1];
+    int endianness;
+    int dimids[NC_MAX_VAR_DIMS];
+    NC_FITS_VAR_INFO_T *var_info = NULL;
+    NC_VAR_INFO_T *var = NULL;
+
+    fits_file = (NC_FITS_FILE_INFO_T *)h5->format_file_info;
+
+    fits_get_img_param(fits_file->fptr, NC_MAX_VAR_DIMS, &bitpix, &naxis,
+                       naxes, &status);
+    if (status)
+        return map_fitsio_error(status);
+
+    if ((retval = fits_bitpix_to_nc_type(bitpix, &xtype, &type_size,
+                                         type_name, &endianness)))
+        return retval;
+
+    if (naxis > 0)
+    {
+        for (d = 0; d < naxis; d++)
+        {
+            NC_DIM_INFO_T *dim;
+            char dimname[NC_MAX_NAME + 1];
+            size_t dimsize = (size_t)naxes[naxis - 1 - d];
+
+            snprintf(dimname, NC_MAX_NAME, "dim_%d", d);
+            if ((retval = nc4_dim_list_add(grp, dimname, dimsize, -1, &dim)))
+                return retval;
+            dimids[d] = dim->hdr.id;
+        }
+
+        if (!(var_info = calloc(1, sizeof(NC_FITS_VAR_INFO_T))))
+            return NC_ENOMEM;
+        var_info->hdu_num = hdu_num;
+        var_info->col_num = 0;
+
+        if ((retval = nc4_var_list_add_full(grp, "image", naxis, xtype,
+                                            endianness, type_size, type_name,
+                                            NULL, 1, NULL, var_info, &var)))
+        {
+            free(var_info);
+            return retval;
+        }
+
+        for (d = 0; d < naxis; d++)
+            var->dimids[d] = dimids[d];
+    }
+
+    if ((retval = fits_read_hdu_atts(fits_file->fptr, grp, 0)))
+        return retval;
+
+    return NC_NOERR;
+}
+
+/**
+ * @internal Read a table HDU (ASCII or binary) and populate a netCDF child
+ * group with one variable per column and a shared row dimension.
+ *
+ * @param h5 Pointer to the netCDF-4 file info struct.
+ * @param grp Child group to populate.
+ * @param hdu_num 1-based HDU number.
+ *
+ * @return ::NC_NOERR No error.
+ * @author Edward Hartnett
+ */
+static int
+fits_read_table_hdu(NC_FILE_INFO_T *h5, NC_GRP_INFO_T *grp, int hdu_num)
+{
+    NC_FITS_FILE_INFO_T *fits_file;
+    int status = 0, ncols, c, retval;
+    long nrows;
+    NC_DIM_INFO_T *row_dim;
+    int row_dimid;
+
+    fits_file = (NC_FITS_FILE_INFO_T *)h5->format_file_info;
+
+    fits_get_num_rows(fits_file->fptr, &nrows, &status);
+    if (status)
+        return map_fitsio_error(status);
+    fits_get_num_cols(fits_file->fptr, &ncols, &status);
+    if (status)
+        return map_fitsio_error(status);
+
+    /* Create shared row dimension */
+    if ((retval = nc4_dim_list_add(grp, "row", (size_t)nrows, -1, &row_dim)))
+        return retval;
+    row_dimid = row_dim->hdr.id;
+
+    /* One variable per column */
+    for (c = 1; c <= ncols; c++)
+    {
+        char ttype[FLEN_VALUE] = "";
+        char tunit[FLEN_VALUE] = "";
+        char key[16];
+        char varname[NC_MAX_NAME + 1];
+        int typecode, s2 = 0, s3 = 0;
+        long repeat, width;
+        nc_type xtype;
+        size_t type_size;
+        char type_name[NC_MAX_NAME + 1];
+        int endianness;
+        NC_FITS_VAR_INFO_T *var_info;
+        NC_VAR_INFO_T *var;
+        int dimids[2];
+        int ndims;
+
+        snprintf(key, sizeof(key), "TTYPE%d", c);
+        fits_read_key(fits_file->fptr, TSTRING, key, ttype, NULL, &s2);
+        if (s2 || ttype[0] == '\0')
+            snprintf(ttype, sizeof(ttype), "col_%d", c);
+
+        snprintf(key, sizeof(key), "TUNIT%d", c);
+        fits_read_key(fits_file->fptr, TSTRING, key, tunit, NULL, &s3);
+
+        status = 0;
+        fits_get_coltype(fits_file->fptr, c, &typecode, &repeat, &width,
+                         &status);
+        if (status)
+        {
+            status = 0;
+            continue;
+        }
+
+        /* Negative typecode = variable-length array — skip for now */
+        if (typecode < 0)
+            continue;
+
+        if ((retval = fits_typecode_to_nc_type(typecode, &xtype, &type_size,
+                                               type_name, &endianness)))
+            continue; /* skip unknown types */
+
+        fits_sanitize_name(ttype, varname, NC_MAX_NAME);
+
+        if (!(var_info = calloc(1, sizeof(NC_FITS_VAR_INFO_T))))
+            return NC_ENOMEM;
+        var_info->hdu_num = hdu_num;
+        var_info->col_num = c;
+
+        if (xtype == NC_CHAR)
+        {
+            /* String column: 2D [nrows, width] using NC_CHAR */
+            NC_DIM_INFO_T *str_dim;
+            char sdimname[NC_MAX_NAME + 1];
+
+            strncpy(sdimname, varname, NC_MAX_NAME - 4);
+            sdimname[NC_MAX_NAME - 4] = '\0';
+            strncat(sdimname, "_len", 5);
+            if ((retval = nc4_dim_list_add(grp, sdimname, (size_t)width,
+                                           -1, &str_dim)))
+            {
+                free(var_info);
+                return retval;
+            }
+            dimids[0] = row_dimid;
+            dimids[1] = str_dim->hdr.id;
+            ndims = 2;
+        }
+        else if (repeat > 1)
+        {
+            /* Numeric vector column: 2D [nrows, repeat] */
+            NC_DIM_INFO_T *vec_dim;
+            char vdimname[NC_MAX_NAME + 1];
+
+            strncpy(vdimname, varname, NC_MAX_NAME - 4);
+            vdimname[NC_MAX_NAME - 4] = '\0';
+            strncat(vdimname, "_vec", 5);
+            if ((retval = nc4_dim_list_add(grp, vdimname, (size_t)repeat,
+                                           -1, &vec_dim)))
+            {
+                free(var_info);
+                return retval;
+            }
+            dimids[0] = row_dimid;
+            dimids[1] = vec_dim->hdr.id;
+            ndims = 2;
+        }
+        else
+        {
+            dimids[0] = row_dimid;
+            ndims = 1;
+        }
+
+        if ((retval = nc4_var_list_add_full(grp, varname, ndims, xtype,
+                                            endianness, type_size, type_name,
+                                            NULL, 1, NULL, var_info, &var)))
+        {
+            free(var_info);
+            return retval;
+        }
+
+        var->dimids[0] = dimids[0];
+        if (ndims > 1)
+            var->dimids[1] = dimids[1];
+
+        /* Add units attribute if TUNITn is present */
+        if (!s3 && tunit[0] != '\0')
+        {
+            NC_ATT_INFO_T *att;
+            size_t ulen = strlen(tunit);
+            char *udata;
+
+            if ((retval = nc4_att_list_add(var->att, "units", &att)))
+                return retval;
+            att->nc_typeid = NC_CHAR;
+            att->len = ulen;
+            if (ulen > 0)
+            {
+                if (!(udata = malloc(ulen + 1)))
+                    return NC_ENOMEM;
+                memcpy(udata, tunit, ulen + 1);
+                att->data = udata;
+            }
+            att->dirty = NC_TRUE;
+        }
+    }
+
+    /* Read non-structural header keywords as group attributes */
+    if ((retval = fits_read_hdu_atts(fits_file->fptr, grp, 1)))
+        return retval;
+
+    return NC_NOERR;
+}
+
+/**
+ * @internal Read all extension HDUs (HDU 2..N) and map each to a child group
+ * of the root group.
+ *
+ * Each child group is named from EXTNAME (sanitized) or "hdu_N" if absent.
+ * Image extensions are mapped identically to the primary HDU. ASCII and binary
+ * table extensions create one variable per column.
+ *
+ * @param h5 Pointer to the netCDF-4 file info struct.
+ *
+ * @return ::NC_NOERR No error.
+ * @author Edward Hartnett
+ */
+static int
+fits_read_extension_hdus(NC_FILE_INFO_T *h5)
+{
+    NC_FITS_FILE_INFO_T *fits_file;
+    int h, hdutype, status, retval;
+
+    fits_file = (NC_FITS_FILE_INFO_T *)h5->format_file_info;
+
+    for (h = 2; h <= fits_file->num_hdus; h++)
+    {
+        char extname[FLEN_VALUE] = "";
+        char grpname[NC_MAX_NAME + 1];
+        NC_GRP_INFO_T *child_grp;
+        int s2 = 0;
+
+        status = 0;
+        fits_movabs_hdu(fits_file->fptr, h, &hdutype, &status);
+        if (status)
+            return map_fitsio_error(status);
+
+        fits_read_key(fits_file->fptr, TSTRING, "EXTNAME", extname, NULL, &s2);
+        if (s2 || extname[0] == '\0')
+            snprintf(extname, sizeof(extname), "hdu_%d", h);
+
+        fits_sanitize_name(extname, grpname, NC_MAX_NAME);
+
+        if ((retval = nc4_grp_list_add(h5, h5->root_grp, grpname, &child_grp)))
+            return retval;
+        child_grp->atts_read = 1;
+
+        if (hdutype == IMAGE_HDU)
+        {
+            if ((retval = fits_read_image_ext_hdu(h5, child_grp, h)))
+                return retval;
+        }
+        else if (hdutype == ASCII_TBL || hdutype == BINARY_TBL)
+        {
+            if ((retval = fits_read_table_hdu(h5, child_grp, h)))
+                return retval;
+        }
+    }
 
     return NC_NOERR;
 }
@@ -557,6 +995,16 @@ NC_FITS_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
 
     /* Read primary HDU metadata into the netCDF-4 in-memory model */
     if ((retval = fits_read_primary_hdu(h5)))
+    {
+        fits_close_file(fits_file->fptr, &fits_status);
+        free(fits_file->path);
+        free(fits_file);
+        h5->format_file_info = NULL;
+        return retval;
+    }
+
+    /* Read extension HDU metadata into child groups */
+    if ((retval = fits_read_extension_hdus(h5)))
     {
         fits_close_file(fits_file->fptr, &fits_status);
         free(fits_file->path);
