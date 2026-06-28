@@ -234,6 +234,10 @@ examples/nczarr/f_nczarr_chunking
 examples/nczarr/f_nczarr_chunking.zarr
 examples/nczarr/f_nczarr_compression
 examples/nczarr/f_nczarr_compression.zarr
+examples/nczarr/nczarr_enhanced
+examples/nczarr/nczarr_enhanced.zarr
+examples/nczarr/f_nczarr_enhanced
+examples/nczarr/f_nczarr_enhanced.zarr
 
 # Valgrind logs
 valgrind*.log

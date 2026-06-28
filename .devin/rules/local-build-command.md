@@ -13,6 +13,7 @@ For CI/GitHub Actions, different paths are used (see `.github/workflows/`).
 - **NetCDF-Fortran**: `/usr/local/netcdf-fortran/` (if Fortran enabled)
 - **CDF**: `/usr/local/cdf-3.9.1/` (if CDF enabled)
 - **GeoTIFF**: System packages (`libgeotiff-dev`, `libtiff-dev`)
+- **CFITSIO**: `/usr/local/cfitsio-4.6.4/` (FITS reader support)
 
 ## Runtime Environment
 Before running tests or executables:

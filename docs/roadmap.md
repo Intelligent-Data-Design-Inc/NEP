@@ -2,6 +2,8 @@
 
 ### V2.0.0 Read-only FITS Layer
 #### Sprint 1: Set up CI and Build Systems
+**Detailed Plan**: See `docs/plan/v2.0.0-sprint1-fits-ci.md`
+
 - Add a CI run which will test FITS reader.
 - Needs to install CFITSIO library on github runner.
 - Needs to install latest build main branch of netcdf-c from github repo (can be built with --disable-dap for this CI run)
@@ -10,6 +12,14 @@
 - All CI installs should be cached.
 - Autotools and cmake build systems should be updated to include new option to build FITS reader (default on).
 - For this sprint, the CI should then build NEP and run tests, but there is no FITS code or tests in NEP yet.
+
+**Clarified decisions:**
+- HDF5 2.1.1 (separate cache keys from ci.yml)
+- NetCDF-C and NetCDF-Fortran from main branch
+- CFITSIO via apt-get install libcfitsio-dev
+- Separate workflow file: ci-fits.yml
+- Build matrix: cmake × autotools, Fortran ON
+- FITS assigned to UDF3 slot
 
 #### Sprint 2: Set up FITS Dispatch Layer and Tests
 - Set up FITS dispatch table.

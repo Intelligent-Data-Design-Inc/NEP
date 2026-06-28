@@ -137,6 +137,7 @@ PKG_PROG_PKG_CONFIG
 HAVE_CDF=no
 HAVE_GEOTIFF=no
 HAVE_GRIB2=no
+HAVE_FITS=no
 HAVE_DOXYGEN=no
 
 # CDF library detection (v1.3.0) - library detection only, no UDF implementation yet
@@ -190,6 +191,29 @@ if test "x$enable_geotiff" = "xyes"; then
 fi
 AC_SUBST([GEOTIFF_LIBS])
 AC_SUBST([TIFF_LIBS])
+
+# FITS reader support (v2.0.0) - default ON; disable with --disable-fits
+AC_MSG_CHECKING([whether FITS reader should be enabled])
+AC_ARG_ENABLE([fits],
+              [AS_HELP_STRING([--disable-fits],
+                              [Disable FITS reader support (default: enabled)])])
+test "x$enable_fits" = xno || enable_fits=yes
+AC_MSG_RESULT([$enable_fits])
+
+# FITS (CFITSIO) library detection (v2.0.0)
+if test "x$enable_fits" = "xyes"; then
+    AC_CHECK_HEADERS([fitsio.h], [cfitsio_header=yes], [cfitsio_header=no])
+    AC_CHECK_LIB([cfitsio], [ffopen], [cfitsio_lib=yes; CFITSIO_LIBS="-lcfitsio"], [cfitsio_lib=no])
+
+    if test "x$cfitsio_header" = "xyes" && test "x$cfitsio_lib" = "xyes"; then
+        HAVE_FITS=yes
+        AC_DEFINE([HAVE_FITS], [1], [Define if CFITSIO library is found])
+        AC_MSG_NOTICE([FITS reader enabled])
+    else
+        AC_MSG_ERROR([libcfitsio is required for the FITS reader. Install libcfitsio-dev or use --disable-fits])
+    fi
+fi
+AC_SUBST([CFITSIO_LIBS])
 
 # GRIB2 library detection (v1.7.0) - default ON; disable with --disable-grib2
 # GRIB2 and CDF share UDF slot 2 and are mutually exclusive.
@@ -332,7 +356,8 @@ fi
 AM_CONDITIONAL([HAVE_CDF], [test "x$HAVE_CDF" = "xyes"])
 AM_CONDITIONAL([HAVE_GEOTIFF], [test "x$HAVE_GEOTIFF" = "xyes"])
 AM_CONDITIONAL([HAVE_GRIB2], [test "x$HAVE_GRIB2" = "xyes"])
-AM_CONDITIONAL([BUILD_NCRC], [test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes" || test "x$HAVE_GRIB2" = "xyes"])
+AM_CONDITIONAL([HAVE_FITS], [test "x$HAVE_FITS" = "xyes"])
+AM_CONDITIONAL([BUILD_NCRC], [test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes" || test "x$HAVE_GRIB2" = "xyes" || test "x$HAVE_FITS" = "xyes"])
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$HAVE_DOXYGEN" = "xyes"])
 
 # Initialize Automake

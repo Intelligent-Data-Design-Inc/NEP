@@ -107,6 +107,9 @@ if(NOT DOCS_ONLY)
     set(CMAKE_BUILD_RPATH "${HDF5_LIBRARY_DIRS};${NETCDF_LIBRARY_DIRS}")
 endif()
 
+# FITS reader support (v2.0.0) - default ON; disable with -DENABLE_FITS=OFF
+option(ENABLE_FITS "Enable FITS reader support via CFITSIO" ON)
+
 # GRIB2 library detection (v1.7.0) - default ON; disable with -DENABLE_GRIB2=OFF
 # GRIB2 and CDF share UDF slot 2 and are mutually exclusive.
 option(ENABLE_GRIB2 "Enable GRIB2 support; mutually exclusive with ENABLE_CDF" ON)
@@ -153,6 +156,21 @@ if(NOT DOCS_ONLY)
             message(STATUS "GeoTIFF library detection enabled (library location only, no UDF yet)")
         else()
             message(FATAL_ERROR "libgeotiff is required for the GeoTIFF dispatch layer. Include the library path in CPPFLAGS/LDFLAGS, or use -DENABLE_GEOTIFF=OFF")
+        endif()
+    endif()
+
+    # FITS (CFITSIO) library detection (v2.0.0)
+    if(ENABLE_FITS)
+        find_library(CFITSIO_LIBRARY NAMES cfitsio)
+        find_path(CFITSIO_INCLUDE_DIR fitsio.h)
+
+        if(CFITSIO_LIBRARY AND CFITSIO_INCLUDE_DIR)
+            message(STATUS "Found CFITSIO: ${CFITSIO_LIBRARY}")
+            message(STATUS "Found CFITSIO headers: ${CFITSIO_INCLUDE_DIR}")
+            include_directories(${CFITSIO_INCLUDE_DIR})
+            set(HAVE_FITS TRUE)
+        else()
+            message(FATAL_ERROR "libcfitsio is required for the FITS reader. Install libcfitsio-dev or use -DENABLE_FITS=OFF")
         endif()
     endif()
 
