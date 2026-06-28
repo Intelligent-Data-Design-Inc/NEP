@@ -4,7 +4,6 @@
 # Include directories to find the generated nep.mod and netcdf-fortran modules.
 include_directories(${CMAKE_BINARY_DIR}/fsrc)
 include_directories(${CMAKE_SOURCE_DIR}/fsrc)
-include_directories(${CMAKE_BINARY_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # Find NetCDF-Fortran for Fortran tests.
