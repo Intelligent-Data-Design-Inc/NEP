@@ -1,0 +1,4 @@
+# FITS astronomical data (UDF slot 3)
+NETCDF.UDF3.LIBRARY=@NEP_LIBDIR@/libncfits.so
+NETCDF.UDF3.INIT=NC_FITS_initialize
+NETCDF.UDF3.MAGIC=SIMPLE

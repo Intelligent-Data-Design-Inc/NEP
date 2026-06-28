@@ -43,3 +43,12 @@ libncgrib2_la_LDFLAGS = -version-info 1:0:0 $(G2C_LDFLAGS)
 libncgrib2_la_SOURCES = grib2dispatch.c grib2file.c
 libncgrib2_la_LIBADD = $(HDF5_LIBS) $(NETCDF_LIBS) $(G2C_LIBS)
 endif
+
+# FITS UDF Handler - v2.0.0
+# FITS library (netCDF UDF support)
+if HAVE_FITS
+lib_LTLIBRARIES += libncfits.la
+libncfits_la_LDFLAGS = -version-info 1:0:0 $(CFITSIO_LDFLAGS)
+libncfits_la_SOURCES = fitsdispatch.c fitsfile.c
+libncfits_la_LIBADD = $(HDF5_LIBS) $(NETCDF_LIBS) $(CFITSIO_LIBS)
+endif

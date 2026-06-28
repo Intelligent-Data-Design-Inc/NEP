@@ -104,3 +104,32 @@ if(HAVE_GRIB2)
     message(STATUS "  g2c: ${G2C_LIBRARY}")
     message(STATUS "  jasper: ${JASPER_LIBRARY}")
 endif()
+
+# FITS UDF Handler - v2.0.0
+# Build FITS library if enabled (netCDF UDF support)
+if(HAVE_FITS)
+    get_filename_component(CFITSIO_LIBRARY_DIR "${CFITSIO_LIBRARY}" DIRECTORY)
+
+    set(FITS_LIB_NAME ncfits)
+    add_library(${FITS_LIB_NAME} SHARED
+        fitsdispatch.c fitsfile.c)
+    target_include_directories(${FITS_LIB_NAME} PRIVATE ${CFITSIO_INCLUDE_DIR})
+    target_link_libraries(${FITS_LIB_NAME} PRIVATE
+        ${HDF5_C_${LIB_TYPE}_LIBRARY} ${NETCDF_LIBRARIES} ${CFITSIO_LIBRARY})
+    set_target_properties(${FITS_LIB_NAME} PROPERTIES
+        VERSION ${PROJECT_VERSION}
+        SOVERSION 1
+        INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR};${CFITSIO_LIBRARY_DIR}"
+        INSTALL_RPATH_USE_LINK_PATH TRUE
+        BUILD_RPATH "${CFITSIO_LIBRARY_DIR}"
+    )
+    install(TARGETS ${FITS_LIB_NAME}
+        EXPORT NEPTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
+    install(FILES "${CMAKE_SOURCE_DIR}/include/fitsdispatch.h"
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+    message(STATUS "Building FITS UDF library: ${FITS_LIB_NAME}")
+    message(STATUS "  cfitsio: ${CFITSIO_LIBRARY}")
+endif()

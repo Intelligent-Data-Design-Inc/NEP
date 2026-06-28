@@ -88,6 +88,22 @@ if(HAVE_GRIB2)
                    COPYONLY)
 endif()
 
+# Build FITS UDF test if FITS is enabled
+if(HAVE_FITS)
+    add_executable(tst_fits_udf tst_fits_udf.c)
+    target_link_libraries(tst_fits_udf PRIVATE ncfits nep ${NETCDF_LIBRARIES})
+    target_include_directories(tst_fits_udf PRIVATE ${NETCDF_INCLUDE_DIRS} ${CFITSIO_INCLUDE_DIR})
+    add_test(NAME tst_fits_udf COMMAND tst_fits_udf)
+    set_tests_properties(tst_fits_udf PROPERTIES
+        ENVIRONMENT "NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+
+    # Copy FITS test data to build directory
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/WFPC2u5780205r_c0fx.fits
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/WFPC2u5780205r_c0fx.fits
+                   COPYONLY)
+endif()
+
 # Configure run_tests.sh script with proper paths
 # For CMake builds, point to the installed plugin location
 set(MY_HDF5_PLUGIN_PATH "${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin:${NETCDF_PREFIX}/hdf5/lib/plugin:${NETCDF_PREFIX}/lib/plugin:${NETCDF_PREFIX}/lib/hdf5/plugin")
@@ -151,6 +167,9 @@ if(HAVE_CDF)
 endif()
 if(HAVE_GRIB2)
     list(APPEND _test_exe_deps tst_grib2_udf)
+endif()
+if(HAVE_FITS)
+    list(APPEND _test_exe_deps tst_fits_udf)
 endif()
 add_custom_target(test_executables ALL DEPENDS ${_test_exe_deps})
 add_dependencies(test_executables hdf5_plugins)

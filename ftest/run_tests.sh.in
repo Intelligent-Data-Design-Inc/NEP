@@ -4,6 +4,11 @@
 set -x
 set -e
 
+# Use the generated .ncrc for UDF autoload (FITS, GRIB2, CDF, GeoTIFF).
+# NETCDF_RC must be a directory containing a file named .ncrc.
+NETCDF_RC="$(cd .. && pwd)"
+export NETCDF_RC
+
 # Set HDF5 plugin path to find the pre-built bzip2/zstd plugins from the
 # netcdf-c install, and the locally-built LZ4 plugin.
 if test -n "${HDF5_PLUGIN_PATH:-}"; then
@@ -22,7 +27,8 @@ if test "@BUILD_LZ4@" = "yes"; then
     ./ftst_nep_lz4
 fi
 
-
-
-
+# If FITS is enabled, run the FITS UDF test.
+if test "@BUILD_FITS@" = "yes"; then
+    ./ftst_fits_udf
+fi
 

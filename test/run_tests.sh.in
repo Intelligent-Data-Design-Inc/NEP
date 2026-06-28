@@ -11,6 +11,11 @@ else
     export LD_LIBRARY_PATH=@MY_LD_LIBRARY_PATH@
 fi
 
+# Use the generated .ncrc for UDF autoload (FITS, GRIB2, CDF, GeoTIFF).
+# NETCDF_RC must be a directory containing a file named .ncrc.
+NETCDF_RC="$(cd .. && pwd)"
+export NETCDF_RC
+
 # This will find the zstd filter with the netcdf-c install, and the LZ4 plugin
 # built in the local tree.
 if [[ -n "${HDF5_PLUGIN_PATH:-}" ]]; then
