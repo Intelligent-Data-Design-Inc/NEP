@@ -13,66 +13,92 @@ NEP (NetCDF Extension Pack) extends NetCDF-4 with high-performance compression a
 
 NEP provides flexible compression options and unified data access for diverse scientific data workflows.
 
+Over 55 C and Fortran **example programs** cover classic NetCDF, NetCDF-4, NcZarr, OPeNDAP remote access, performance tuning, and parallel I/O. They are companion code for *[The NetCDF Developer's Handbook: The Authoritative Guide to Writing High-Performance Programs for Scientific Data Management](https://www.amazon.com/NetCDF-Developers-Handbook-Authoritative-High-Performance/dp/B0GYP4R5ZZ/ref=tmm_pap_swatch_0)*.
+
 ## NetCDF Example Programs
 
-NEP includes 26 comprehensive example programs demonstrating NetCDF API usage in both C and Fortran. These examples cover classic NetCDF and NetCDF-4 features, providing practical learning resources for users at all levels.
+NEP includes over 55 C and Fortran example programs covering classic NetCDF, NetCDF-4, NcZarr, OPeNDAP remote access, performance tuning, and parallel I/O. They are companion code for *The NetCDF Developer's Handbook: The Authoritative Guide to Writing High-Performance Programs for Scientific Data Management*.
 
-### Example Categories
+### Classic NetCDF (`examples/classic/`, `examples/f_classic/`)
 
-**Quickstart Examples** (2 programs):
-- quickstart.c - Minimal introduction to NetCDF (C) - the simplest starting point
-- f_quickstart.f90 - Minimal introduction to NetCDF (Fortran) - the simplest starting point
+Both C and Fortran versions provided for all programs.
 
-**C Classic Examples** (6 programs):
-- simple_2D.c - Basic 2D arrays
-- coord_vars.c - Coordinate variables
-- format_variants.c - Format variants
-- size_limits.c - Size limits
-- unlimited_dim.c - Unlimited dimensions
-- var4d.c - 4D variables
+- `quickstart.c` / `f_quickstart.f90` — Minimal introduction; the simplest starting point
+- `simple_2D.c` / `f_simple_2D.f90` — Basic 2D arrays with dimensions and variables
+- `coord_vars.c` / `f_coord_vars.f90` — Coordinate variables and named dimensions
+- `coord.c` / `f_coord.f90` — Multi-dimensional coordinate systems
+- `dump_classic_metadata.c` / `f_dump_classic_metadata.f90` — Reading and printing all metadata
+- `size_limits.c` / `f_size_limits.f90` — Classic format size limits and 64-bit offset format
+- `unlimited_dim.c` / `f_unlimited_dim.f90` — Unlimited dimensions and record variables
+- `var4d.c` / `f_var4d.f90` — 4-dimensional variables
 
-**C NetCDF-4 Examples** (6 programs):
-- simple_nc4.c - NetCDF-4 basics
-- compression.c - Compression filters
-- chunking_performance.c - Chunking strategies
-- multi_unlimited.c - Multiple unlimited dimensions
-- user_types.c - User-defined types
-- groups.c - Hierarchical groups
+### NetCDF-4 (`examples/netcdf-4/`, `examples/f_netcdf-4/`)
 
-**Fortran Classic Examples** (6 programs):
-- f_simple_2D.f90 - Basic 2D arrays
-- f_coord_vars.f90 - Coordinate variables
-- f_format_variants.f90 - Format variants
-- f_size_limits.f90 - Size limits
-- f_unlimited_dim.f90 - Unlimited dimensions
-- f_var4d.f90 - 4D variables
+Both C and Fortran versions provided for all programs.
 
-**Fortran NetCDF-4 Examples** (6 programs):
-- f_simple_nc4.f90 - NetCDF-4 basics
-- f_compression.f90 - Compression filters
-- f_chunking_performance.f90 - Chunking strategies
-- f_multi_unlimited.f90 - Multiple unlimited dimensions
-- f_user_types.f90 - User-defined types
-- f_groups.f90 - Hierarchical groups
+- `simple_nc4.c` / `f_simple_nc4.f90` — NetCDF-4 file creation basics
+- `format_variants.c` / `f_format_variants.f90` — Classic, 64-bit, CDF-5, and NetCDF-4 formats
+- `compression.c` / `f_compression.f90` — Deflate and shuffle compression filters
+- `chunking_performance.c` / `f_chunking_performance.f90` — Chunking strategies and performance impact
+- `multi_unlimited.c` / `f_multi_unlimited.f90` — Multiple independent unlimited dimensions
+- `user_types.c` / `f_user_types.f90` — Compound and enum user-defined types
+- `groups.c` / `f_groups.f90` — Hierarchical groups and dimension visibility
+- `dump_nc4_metadata.c` / `f_dump_nc4_metadata.f90` — Reading and printing NetCDF-4 metadata
 
-### Key Features
+### NcZarr (`examples/nczarr/`)
 
-- **Automated Testing**: All examples run as automated tests with CDL-based output validation
-- **C/Fortran Equivalence**: Parallel implementations produce identical output, enabling cross-language learning
-- **Comprehensive Documentation**: Doxygen-integrated with learning paths from beginner to advanced
-- **Build Integration**: Examples build by default in both CMake and Autotools, can be disabled with `-DBUILD_EXAMPLES=OFF` or `--disable-examples`
+Both C and Fortran versions provided for all programs.
+
+- `nczarr_simple.c` / `f_nczarr_simple.f90` — Local NcZarr create/read/write with `file://...#mode=nczarr` URLs
+- `nczarr_chunking.c` / `f_nczarr_chunking.f90` — Explicit chunk shape with `nc_def_var_chunking()`
+- `nczarr_compression.c` / `f_nczarr_compression.f90` — Deflate + shuffle compression in NcZarr stores
+- `nczarr_enhanced.c` / `f_nczarr_enhanced.f90` — Hierarchical groups and multiple unlimited dimensions
+
+### OPeNDAP Remote Access (`examples/opendap/`)
+
+Both C and Fortran versions provided for all programs.
+
+- `opendap_simple.c` / `f_opendap_simple.f90` — Open and read a remote dataset via OPeNDAP URL
+- `opendap_subset.c` / `f_opendap_subset.f90` — Read a hyperslab from a remote variable
+- `opendap_constraint.c` / `f_opendap_constraint.f90` — Apply constraint expressions to filter remote data
+
+### Performance and Compression Benchmarking (`examples/performance/`)
+
+C only. Built with `-DENABLE_BENCHMARKS=ON` (CMake) or `--enable-benchmarks` (Autotools).
+
+- `cache_tuning.c` — Chunk cache size and slots effect on read performance
+- `chunking.c` — Row-optimized, column-optimized, and balanced chunk shape comparison
+- `deflate.c` — Deflate compression levels 1–9 speed and ratio benchmarking
+- `lz4.c` — LZ4 compression performance vs deflate
+- `bzip2.c` — BZIP2 compression performance vs deflate
+- `zstandard.c` — Zstandard (ZSTD) compression benchmarking
+- `szip.c` — SZIP compression benchmarking
+- `lossless.c` — Lossless compression algorithm comparison
+- `quantize.c` — Quantization for lossy compression and storage reduction
+- `endianness.c` — Byte order effects on I/O performance
+- `fill_values.c` — Fill value storage and read performance
+
+### Parallel I/O (`examples/parallelIO/`)
+
+Built only when parallel tests are enabled (`--enable-parallel-tests` / `-DENABLE_PARALLEL_TESTS=ON`).
+
+- `square16_par.c` / `f_square16_par.f90` — MPI-based parallel NetCDF-4 write and read
 
 ### Learning Paths
 
-**Absolute Beginners**: Start with quickstart.c / f_quickstart.f90 - the simplest possible introduction with just 6 data values
+**Beginners**: `quickstart` → `simple_2D` → `coord_vars` → `unlimited_dim`
 
-**Beginners**: Progress to simple_2D.c / f_simple_2D.f90 → coord_vars.c / f_coord_vars.f90 → unlimited_dim.c / f_unlimited_dim.f90
+**Intermediate**: `format_variants` → `size_limits` → `var4d` → `dump_classic_metadata`
 
-**Intermediate**: Continue with format_variants.c / f_format_variants.f90 → size_limits.c / f_size_limits.f90 → var4d.c / f_var4d.f90
+**NetCDF-4**: `simple_nc4` → `compression` → `chunking_performance` → `groups` → `multi_unlimited` → `user_types`
 
-**Advanced (NetCDF-4)**: Master simple_nc4.c / f_simple_nc4.f90 → compression.c / f_compression.f90 → chunking_performance.c / f_chunking_performance.f90 → groups.c / f_groups.f90 → multi_unlimited.c / f_multi_unlimited.f90 → user_types.c / f_user_types.f90
+**Cloud/Zarr**: `nczarr_simple` → `nczarr_chunking` → `nczarr_compression` → `nczarr_enhanced`
 
-See examples/README.md for complete details, build instructions, and usage guides.
+**Remote Access**: `opendap_simple` → `opendap_subset` → `opendap_constraint`
+
+**Performance**: `cache_tuning` → `chunking` → `deflate` → `lz4` → `bzip2`
+
+See `examples/README.md` for build instructions and usage details.
 
 ## Compression Algorithms
 
