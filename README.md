@@ -131,340 +131,58 @@ To enable CDF support during build, use the `--enable-cdf` (Autotools) or `-DENA
 
 ## GeoTIFF Reader
 
-NEP v1.6.0 provides full-featured reading of GeoTIFF files through the NetCDF API, including CF-1.8 compliant CRS metadata, coordinate variables, and coordinate bounds.
-
-### What is GeoTIFF?
-
-GeoTIFF is a public domain metadata standard that allows georeferencing information to be embedded within TIFF image files. It's the de facto standard for geospatial raster data exchange and is widely used in remote sensing, GIS applications, and Earth observation missions.
-
-**Key characteristics:**
-- Standard TIFF format with geospatial extensions
-- Embedded coordinate reference system (CRS) information
-- Support for various map projections and datums
-- Multi-band raster data support
-- Platform-independent format
-
-### Resources
-
-- **[GeoTIFF Homepage](https://www.geotiff.org/)** - Official GeoTIFF specification
-- **[libgeotiff](https://github.com/OSGeo/libgeotiff)** - Open source GeoTIFF library
+GeoTIFF is the de facto standard for geospatial raster data, embedding coordinate reference system (CRS) information directly in a TIFF file. It is widely used in remote sensing, GIS, and Earth observation (MODIS, Landsat, Sentinel, DEMs).
 
 ### GeoTIFF Support in NEP
 
-NEP provides a User-Defined Format (UDF) handler that allows reading GeoTIFF files using NetCDF-style API calls. This enables applications to work with GeoTIFF, NetCDF, and CDF files through a unified interface.
+NEP provides a UDF handler that reads GeoTIFF (and BigTIFF) files through the standard NetCDF API, with CF-1.8 compliant CRS metadata, coordinate variables (`lon`/`lat` or `x`/`y`), coordinate bounds, and full hyperslab support. See [docs/cf-compliance.md](docs/cf-compliance.md) for the CF grid-mapping attribute specification.
 
-**Current Features (v1.6.0):**
-- ✅ Automatic format detection — GeoTIFF files recognized by magic number
-- ✅ **BigTIFF support** — handles files >4 GB via dual UDF registration
-- ✅ Open/close via standard `nc_open()` and `nc_close()`
-- ✅ Dimension and data type extraction
-- ✅ **CF-1.8 CRS metadata** — `crs` grid-mapping variable with `grid_mapping_name`, `semi_major_axis`, `inverse_flattening`, and projection-specific attributes
-- ✅ **Coordinate variables** — `lon`/`lat` (degrees) for geographic CRS, `x`/`y` (metres) for projected CRS
-- ✅ **Coordinate bounds** — `lon_bnds`/`lat_bnds` or `x_bnds`/`y_bnds` for pixel-as-area rasters
-- ✅ **Pixel raster type** — pixel-as-point and pixel-as-area handling via `GTRasterTypeGeoKey`
-- ✅ **Multi-band raster reading** — 3D variable access (band, y, x)
-- ✅ **Single-band raster reading** — optimised 2D access
-- ✅ **Hyperslab operations** — efficient subsetting and partial reads
-- ✅ Both tiled and striped TIFF organisations; PLANARCONFIG_CONTIG and PLANARCONFIG_SEPARATE
-- ✅ Graceful degradation — files without CRS tags still open and data is readable
-- ⏳ Coordinate transformations via PROJ (future release)
-
-See [docs/cf-compliance.md](docs/cf-compliance.md) for the full CF grid mapping attribute specification.
-
-**Usage Example:**
-
-```c
-#include <netcdf.h>
-
-int ncid, varid, crs_varid, lon_varid;
-int retval;
-
-/* Open GeoTIFF file - automatically detected (standard TIFF and BigTIFF) */
-if ((retval = nc_open("satellite_image.tif", NC_NOWRITE, &ncid)))
-    ERR(retval);
-
-/* Get raster data variable (always named "data" for single-band files) */
-if ((retval = nc_inq_varid(ncid, "data", &varid)))
-    ERR(retval);
-
-/* Read a single pixel [y=100, x=200] */
-size_t start[2] = {100, 200};
-size_t count[2] = {1, 1};
-unsigned char pixel;
-if ((retval = nc_get_vara_uchar(ncid, varid, start, count, &pixel)))
-    ERR(retval);
-
-/* Read a 100x100 hyperslab from the top-left corner */
-size_t start2[2] = {0, 0};
-size_t count2[2] = {100, 100};
-unsigned char *buffer = malloc(100 * 100);
-if ((retval = nc_get_vara_uchar(ncid, varid, start2, count2, buffer)))
-    ERR(retval);
-
-/* Access CF-1.8 CRS metadata on the 'crs' grid-mapping variable */
-char grid_mapping_name[NC_MAX_NAME + 1];
-double semi_major;
-if ((retval = nc_inq_varid(ncid, "crs", &crs_varid)) == NC_NOERR) {
-    nc_get_att_text(ncid, crs_varid, "grid_mapping_name", grid_mapping_name);
-    nc_get_att_double(ncid, crs_varid, "semi_major_axis", &semi_major);
-}
-
-/* Multi-band files: use 3D access (band, y, x) */
-size_t start3[3] = {0, 100, 200};  /* band 0, y=100, x=200 */
-size_t count3[3] = {1, 50, 50};    /* 1 band, 50×50 pixels */
-unsigned char *multiband = malloc(50 * 50);
-if ((retval = nc_get_vara_uchar(ncid, varid, start3, count3, multiband)))
-    ERR(retval);
-
-/* Close file */
-if ((retval = nc_close(ncid)))
-    ERR(retval);
-```
-
-**Build Configuration:**
-
-GeoTIFF support is enabled by default. To disable:
+To disable GeoTIFF support at build time:
 
 ```bash
-# CMake
-cmake -B build -DENABLE_GEOTIFF=OFF
-
-# Autotools
-./configure --disable-geotiff
+cmake -B build -DENABLE_GEOTIFF=OFF   # CMake
+./configure --disable-geotiff          # Autotools
 ```
 
-You must have libgeotiff and libtiff installed on your system.
-
-**Useful Tools for Working with GeoTIFF Files:**
-
-```bash
-# Essential tools for GeoTIFF inspection and manipulation
-sudo apt install gdal-bin        # GDAL command-line utilities
-sudo apt install libtiff-tools   # TIFF utilities (tiffinfo, tiffdump)
-sudo apt install qgis            # GUI for viewing/analyzing GeoTIFF files (optional)
-```
-
-**Key GDAL commands:**
-- `gdalinfo <file.tif>` - Display detailed file information (bands, CRS, metadata)
-- `gdal_translate` - Convert between formats and extract subsets
-- `gdalwarp` - Reproject and transform raster data
-- `gdal_merge.py` - Merge multiple GeoTIFF files
-
-**Key libtiff commands:**
-- `tiffinfo <file.tif>` - Display TIFF structure and tags
-- `tiffdump <file.tif>` - Dump TIFF directory contents
-- `tiffcp` - Copy and convert TIFF files
-
-**Example usage:**
-```bash
-# Check if a file is multi-band
-gdalinfo satellite_image.tif | grep "Band"
-
-# View planar configuration
-tiffinfo satellite_image.tif | grep "Planar Configuration"
-
-# Get basic file info
-tiffinfo satellite_image.tif | grep -E "(Image Width|Image Length|Samples)"
-```
-
-**Use Cases:**
-- NASA Earth observation data (MODIS, Landsat, Sentinel)
-- Satellite imagery analysis
-- Digital elevation models (DEMs)
-- Land cover classification maps
-- Climate and weather model outputs
-- Integration of GIS data with NetCDF workflows
-
-### GeoTIFF Performance Characteristics
-
-NEP's GeoTIFF implementation is optimized for selective data access patterns typical of NetCDF applications. Performance characteristics vary significantly between full raster reads and hyperslab (partial) reads:
-
-#### Hyperslab Read Performance
-
-For hyperslab operations (reading subsets of data), NEP demonstrates excellent performance:
-
-| Operation | File Size | NEP Performance vs Native |
-|-----------|-----------|---------------------------|
-| Small hyperslab (10×10) | 4800×4800 | **99% faster** |
-| Medium hyperslab (100×100) | 4800×4800 | **84% faster** |
-| Small hyperslab (10×10) | 41013×55877 | **90% faster** |
-| Medium hyperslab (100×100) | 41013×55877 | **98% faster** |
-
-NEP outperforms naive native libgeotiff approaches for hyperslab reads because:
-- Tiled implementation reads only necessary data
-- Optimized for selective access patterns
-- Efficient tile-based I/O minimizes data transfer
-
-#### Full Raster Read Performance
-
-Full raster reads (reading entire images) show different characteristics:
-
-| Operation | File Size | NEP vs Native |
-|-----------|-----------|---------------|
-| Full raster read | 4800×4800 | ~60× slower |
-
-Full raster reads are slower because:
-- NEP reads tile-by-tile through the NetCDF API layer
-- Native comparison uses highly optimized bulk read functions (`TIFFReadRGBAImageOriented`)
-- This operation is not the primary use case for NetCDF API
-
-#### Performance Context
-
-The NetCDF API is designed for selective data access (hyperslabs, strided reads, single variables) rather than bulk file reads. NEP's GeoTIFF implementation reflects this design philosophy:
-
-- **Optimized for**: Subsetting, regional analysis, time-series extraction, multi-file workflows
-- **Not optimized for**: Reading entire rasters in a single operation
-
-For applications requiring full raster reads, consider using native GeoTIFF tools (GDAL, libgeotiff) or pre-processing data into NetCDF format. For typical scientific workflows involving selective data access, NEP provides excellent performance.
-
-**Benchmark Details**: Performance measurements conducted on tiled GeoTIFF files using 1 iteration per test. Results represent typical performance on modern hardware. See `docs/performance.md` for complete methodology and detailed results.
+Requires libgeotiff and libtiff.
 
 ---
 
 ## GRIB2 Reader
 
-NEP v1.7.0 provides reading of GRIB2 meteorological and oceanographic data files through the standard NetCDF API.
-
-### What is GRIB2?
-
-GRIB2 (General Regularly-distributed Information in Binary form, Edition 2) is the standard format used by NOAA, ECMWF, and other agencies to distribute numerical weather prediction (NWP) model output and wave forecast data.
-
-**Key characteristics:**
-- Gridded binary format optimized for meteorological data
-- Products organized by discipline, category, and parameter number
-- Bitmap-based land/sea masking
-- Used by NOAA GFS, NAM, HRRR, GDAS, and global wave forecast models
+GRIB2 is the standard binary format used by NOAA, ECMWF, and other agencies to distribute NWP model output and wave forecast data (GFS, NAM, HRRR, GDAS). Each GRIB2 product is exposed as a named `NC_FLOAT` variable on shared `[y, x]` dimensions; land/masked points are filled with `_FillValue = 9.999e20f`.
 
 ### GRIB2 Support in NEP
 
-**Current Features (v1.7.0):**
-- ✅ Automatic format detection — GRIB2 files recognized by `GRIB` magic number
-- ✅ Open/close via standard `nc_open()` and `nc_close()`; `ncdump` works directly
-- ✅ Product inventory — all GRIB2 products exposed as named `NC_FLOAT` variables
-- ✅ Shared `[y, x]` dimensions — all variables on the same grid share one dim pair
-- ✅ Full grid expansion — `g2_getfld(expand=1)` fills complete `[ny][nx]` grid
-- ✅ Bitmap handling — land/masked points filled with `_FillValue = 9.999e20f`
-- ✅ Variable names from `g2c_param_abbrev()`; duplicates uniquified with `_2`, `_3` suffixes
-- ✅ Per-variable attributes: `long_name`, `_FillValue`, `GRIB2_discipline`, `GRIB2_category`, `GRIB2_param_number`
-- ✅ Global attributes: `Conventions = "GRIB2"`, `GRIB2_edition = 2`
-- ✅ `.ncrc` autoload support
+NEP provides a UDF handler that reads GRIB2 files through the standard NetCDF API. `ncdump` works directly on `.grib2` files once NEP is installed. Variable names come from the GRIB2 parameter abbreviation; per-variable attributes include `long_name`, `_FillValue`, and GRIB2 discipline/category/parameter metadata.
 
-**Usage Example:**
-
-```c
-#include <netcdf.h>
-
-int ncid, varid;
-float data[151 * 241];  /* ny=151, nx=241 for GDAS West Coast wave grid */
-
-/* Open GRIB2 file - automatically detected */
-if ((retval = nc_open("gdaswave.t00z.wcoast.0p16.f000.grib2", NC_NOWRITE, &ncid)))
-    ERR(retval);
-
-/* Look up a variable by GRIB2 parameter abbreviation */
-if ((retval = nc_inq_varid(ncid, "WIND", &varid)))
-    ERR(retval);
-
-/* Read full [ny][nx] grid; land points = 9.999e20 (_FillValue) */
-if ((retval = nc_get_var_float(ncid, varid, data)))
-    ERR(retval);
-
-if ((retval = nc_close(ncid)))
-    ERR(retval);
-```
-
-Or use `ncdump` directly:
+To disable GRIB2 support at build time:
 
 ```bash
-ncdump -h gdaswave.t00z.wcoast.0p16.f000.grib2
-ncdump -v WIND gdaswave.t00z.wcoast.0p16.f000.grib2
+cmake -B build -DENABLE_GRIB2=OFF   # CMake
+./configure --disable-grib2          # Autotools
 ```
 
-**Build Configuration:**
-
-GRIB2 support is enabled by default. To disable:
-
-```bash
-# CMake
-cmake -B build -DENABLE_GRIB2=OFF
-
-# Autotools
-./configure --disable-grib2
-```
-
-Requires NOAA NCEPLIBS-g2c (>= 2.1.0) and libjasper (>= 3.0.0). Supply the g2c install path via `G2C_PATH` or `--with-g2c` at configure time.
-
-**Note**: GRIB2 and CDF are mutually exclusive — both use UDF slot 2. Enable one or the other, not both.
+Requires NOAA NCEPLIBS-g2c (>= 2.1.0) and libjasper (>= 3.0.0). **Note**: GRIB2 and CDF are mutually exclusive — both use UDF slot 2.
 
 ---
 
-### What is FITS?
+## FITS File Reader
 
-FITS (Flexible Image Transport System) is the standard format used by NASA, ESA, and the astronomical community to store images, spectra, and tables from telescopes and instruments such as the Hubble Space Telescope, Chandra X-ray Observatory, and the James Webb Space Telescope.
+FITS (Flexible Image Transport System) is the standard format used by NASA, ESA, and the astronomical community for images, spectra, and tables from instruments such as the Hubble Space Telescope, Chandra X-ray Observatory, and the James Webb Space Telescope.
 
-**Key characteristics:**
-- Multi-HDU structure: primary image plus optional extension HDUs (image, ASCII table, binary table)
-- BITPIX keyword encodes data type (8/16/32-bit integer, 32/64-bit IEEE float)
-- Dimension order is column-major (FITS) vs. row-major (netCDF/C) — handled automatically by NEP
-- WCS (World Coordinate System) keywords stored as netCDF attributes
+### FITS Support in NEP
 
-### FITS File Reader: Astronomical Data Access
+NEP provides a UDF handler that reads FITS files through the standard NetCDF API. The primary HDU image appears as a variable in the root group; extension HDUs each become a child group named from `EXTNAME`. Standard FITS keywords are mapped to netCDF attributes (`BUNIT`→`units`, `BZERO`→`add_offset`, `BSCALE`→`scale_factor`). Dimension order reversal (FITS column-major ↔ netCDF row-major) is handled automatically.
 
-**Current Features (v2.0.0):**
-- ✅ Automatic format detection — FITS files recognized by `SIMPLE` magic bytes
-- ✅ Open/close via standard `nc_open()` and `nc_close()`; `ncdump` works directly
-- ✅ Primary HDU: image variable in the root group; `BITPIX` mapped to `nc_type`
-- ✅ Standard keywords mapped to netCDF attributes: `BUNIT`→`units`, `BZERO`→`add_offset`, `BSCALE`→`scale_factor`, `BLANK`→`_FillValue`
-- ✅ All header keywords stored as global attributes
-- ✅ Extension HDUs: each becomes a child group named from `EXTNAME`
-- ✅ ASCII and binary table HDUs: row dimension + one variable per column; `TUNITn`→`units`
-- ✅ Data reading via `nc_get_vara_*`: `fits_read_subset()` for images, `fits_read_col()` for table columns
-- ✅ Dimension order reversal handled automatically (FITS column-major ↔ netCDF row-major)
-- ✅ CFITSIO applies `BSCALE`/`BZERO` and `TSCALn`/`TZEROn` scaling automatically
-
-**Usage Example:**
-
-```c
-#include <netcdf.h>
-
-int ncid, varid;
-float pixels[4];  /* 4 pixels from a [4, 200, 200] float image */
-size_t start[3] = {0, 0, 0};
-size_t count[3] = {1, 1, 4};
-
-/* Open FITS file - automatically detected */
-if ((retval = nc_open("WFPC2u5780205r_c0fx.fits", NC_NOWRITE, &ncid)))
-    ERR(retval);
-
-/* Read a hyperslab from the primary image */
-if ((retval = nc_inq_varid(ncid, "image", &varid)))
-    ERR(retval);
-if ((retval = nc_get_vara_float(ncid, varid, start, count, pixels)))
-    ERR(retval);
-
-if ((retval = nc_close(ncid)))
-    ERR(retval);
-```
-
-Or use `ncdump` directly:
+To disable FITS support at build time:
 
 ```bash
-ncdump -h WFPC2u5780205r_c0fx.fits
+cmake -B build -DENABLE_FITS=OFF   # CMake
+./configure --disable-fits          # Autotools
 ```
 
-**Build Configuration:**
-
-FITS support is enabled by default when CFITSIO is found. To disable:
-
-```bash
-# CMake
-cmake -B build -DENABLE_FITS=OFF
-
-# Autotools
-./configure --disable-fits
-```
-
-Requires CFITSIO (>= 3.0). Supply the install path via `CFITSIO_PATH` or `--with-cfitsio` at configure time.
+Requires CFITSIO (>= 3.0).
 
 ---
 
