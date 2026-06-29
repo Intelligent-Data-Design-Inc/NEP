@@ -4,6 +4,46 @@
 
 **[📚 Full Documentation](https://intelligent-data-design-inc.github.io/NEP/)**
 
+---
+
+## Summary
+
+### Compression
+
+| Algorithm | Speed vs DEFLATE | Ratio vs DEFLATE | Best For |
+|---|---|---|---|
+| **LZ4** | 2–3× faster | ~2.2× | Real-time processing, HPC I/O |
+| **BZIP2** | Slower | ~6.7× | Long-term archives, bandwidth-limited |
+
+Both are HDF5 filter plugins — drop-in with existing NetCDF-4 applications, no code changes.
+
+### Multi-Format Readers
+
+| Format | Domain | API |
+|---|---|---|
+| **NASA CDF** | Space physics (IMAP, MMS, Van Allen) | `nc_open()` / `nf90_open()` |
+| **GeoTIFF** | Geospatial rasters, CF-1.8 CRS metadata | `nc_open()` / `nf90_open()` |
+| **GRIB2** | NWP model output (GFS, NAM, HRRR, wave) | `nc_open()` / `nf90_open()` |
+| **FITS** | Astronomical images and tables (HST, JWST) | `nc_open()` / `nf90_open()` |
+
+All readers use the standard NetCDF UDF system. **Existing C and Fortran programs require no code modification** — an existing Fortran program that calls `nf90_open()` and `nf90_get_var()` can read a FITS, CDF, GeoTIFF, or GRIB2 file without changing a single line of code. NEP registers the format handler at startup; the rest of the program stays identical.
+
+### Example Programs
+
+NEP includes over 26 C and Fortran example programs, organized by topic. They are companion code for *[The NetCDF Developer's Handbook: The Authoritative Guide to Writing High-Performance Programs for Scientific Data Management](https://www.amazon.com/NetCDF-Developers-Handbook-Authoritative-High-Performance/dp/B0GYP4R5ZZ/ref=tmm_pap_swatch_0)*.
+
+| Category | Examples |
+|---|---|
+| **Classic NetCDF** | Quickstart, 2D arrays, coord vars, format variants, unlimited dims |
+| **NetCDF-4** | Compression, chunking, groups, compound/enum types, multiple unlimited dims |
+| **NcZarr** | Local store create/read/write, chunking, deflate compression |
+| **Performance** | Chunk cache tuning, chunking strategy comparison, compression benchmarking |
+| **Parallel I/O** | MPI-based parallel write and read |
+
+Both C and Fortran versions provided for Classic, NetCDF-4, and NcZarr categories.
+
+---
+
 ## High-Performance Compression + Multi-Format Data Access
 
 NEP extends NetCDF-4 with powerful new capabilities for scientific data workflows:
