@@ -2,13 +2,14 @@
  * @file tst_fits_udf.c
  * @brief Test for FITS User Defined Format (UDF) handler.
  *
- * Sprint 4a: validates that the primary HDU of a real FITS file is correctly
- * mapped to the netCDF-4 in-memory model — dimensions, variable, and global
- * attributes are all accessible via nc_inq* functions.
+ * Sprint 4a: validates primary HDU metadata (dims, variable, attributes).
+ * Sprint 4b: validates extension HDU child group (49 table vars, row dim).
+ * Sprint 5: validates data reads — image pixels and table column values.
  *
  * Test file: WFPC2u5780205r_c0fx.fits
  *   Primary HDU: BITPIX=-32 (NC_FLOAT), NAXIS=3, NAXIS1=200 NAXIS2=200 NAXIS3=4
  *   Expected netCDF mapping: 3 dims (4,200,200), 1 var "image" (NC_FLOAT)
+ *   HDU 2: ASCII table, 4 rows x 49 cols -> group "u5780205r_cvt_c0h_tab"
  *
  * @author Edward Hartnett
  * @date 2026-06-28
@@ -21,6 +22,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include <netcdf.h>
 #include "fitsdispatch.h"
 
@@ -182,6 +184,70 @@ main(void)
     if (var_ndims != 2)
     { fprintf(stderr, "CTYPE1: expected ndims=2, got %d\n", var_ndims); return 1; }
     printf("PASS: var 'CTYPE1' NC_CHAR ndims=2\n");
+
+    /* ---- Sprint 5: read image data ---- */
+    {
+        /* Read 4 consecutive pixels along dim_2 (NAXIS1) from image[0,0,0:4].
+         * Known values extracted from raw FITS bytes (BSCALE=1, BZERO=0). */
+        float pixels[4];
+        size_t img_start[3] = {0, 0, 0};
+        size_t img_count[3] = {1, 1, 4};
+        int image_varid;
+
+        if ((retval = nc_inq_varid(root_ncid, "image", &image_varid)))
+            ERR(retval);
+        if ((retval = nc_get_vara_float(root_ncid, image_varid,
+                                        img_start, img_count, pixels)))
+            ERR(retval);
+        /* Expected: pixel[0]=-1.5442986, [1]=0.9169310, [2]=-0.0955117, [3]=0.8646135 */
+        if (fabsf(pixels[0] - (-1.5442986f)) > 1e-5f)
+        { fprintf(stderr, "image[0,0,0]: expected ~-1.5443, got %g\n", pixels[0]); return 1; }
+        if (fabsf(pixels[1] - 0.9169310f) > 1e-5f)
+        { fprintf(stderr, "image[0,0,1]: expected ~0.9169, got %g\n", pixels[1]); return 1; }
+        printf("PASS: image pixels[0,0,0:4] = %g %g %g %g\n",
+               pixels[0], pixels[1], pixels[2], pixels[3]);
+    }
+
+    /* ---- Sprint 5: read table column CRVAL1 (NC_DOUBLE, 4 rows) ---- */
+    {
+        double crval1[4];
+        size_t tbl_start[1] = {0};
+        size_t tbl_count[1] = {4};
+        int crval1_varid;
+
+        if ((retval = nc_inq_varid(grpid, "CRVAL1", &crval1_varid)))
+            ERR(retval);
+        if ((retval = nc_get_vara_double(grpid, crval1_varid,
+                                          tbl_start, tbl_count, crval1)))
+            ERR(retval);
+        /* Expected row 0: ~182.63118863, row 1: ~182.62552336 */
+        if (fabs(crval1[0] - 182.63118863080002) > 1e-6)
+        { fprintf(stderr, "CRVAL1[0]: expected ~182.631, got %g\n", crval1[0]); return 1; }
+        if (fabs(crval1[1] - 182.62552336340000) > 1e-6)
+        { fprintf(stderr, "CRVAL1[1]: expected ~182.626, got %g\n", crval1[1]); return 1; }
+        printf("PASS: CRVAL1 = %g %g %g %g\n",
+               crval1[0], crval1[1], crval1[2], crval1[3]);
+    }
+
+    /* ---- Sprint 5: read table column FILLCNT (NC_INT, 4 rows) ---- */
+    {
+        int fillcnt[4];
+        size_t tbl_start[1] = {0};
+        size_t tbl_count[1] = {4};
+        int fillcnt_varid;
+
+        if ((retval = nc_inq_varid(grpid, "FILLCNT", &fillcnt_varid)))
+            ERR(retval);
+        if ((retval = nc_get_vara_int(grpid, fillcnt_varid,
+                                       tbl_start, tbl_count, fillcnt)))
+            ERR(retval);
+        /* All four rows have FILLCNT=0 */
+        if (fillcnt[0] != 0 || fillcnt[1] != 0 || fillcnt[2] != 0 || fillcnt[3] != 0)
+        { fprintf(stderr, "FILLCNT: expected all zeros, got %d %d %d %d\n",
+                  fillcnt[0], fillcnt[1], fillcnt[2], fillcnt[3]); return 1; }
+        printf("PASS: FILLCNT = %d %d %d %d\n",
+               fillcnt[0], fillcnt[1], fillcnt[2], fillcnt[3]);
+    }
 
     if ((retval = nc_close(root_ncid)))
         ERR(retval);

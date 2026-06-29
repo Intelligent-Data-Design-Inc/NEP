@@ -770,6 +770,7 @@ fits_read_table_hdu(NC_FILE_INFO_T *h5, NC_GRP_INFO_T *grp, int hdu_num)
             NC_DIM_INFO_T *str_dim;
             char sdimname[NC_MAX_NAME + 1];
 
+            var_info->col_width = (int)width;
             strncpy(sdimname, varname, NC_MAX_NAME - 4);
             sdimname[NC_MAX_NAME - 4] = '\0';
             strncat(sdimname, "_len", 5);
@@ -1155,30 +1156,166 @@ NC_FITS_inq_format_extended(int ncid, int *formatp, int *modep)
     return NC_NOERR;
 }
 
+#ifdef HAVE_FITS
+/**
+ * @internal Map a netCDF memory type to the corresponding CFITSIO datatype
+ * constant for use with fits_read_pix(), fits_read_subset(), fits_read_col().
+ *
+ * @param memtype netCDF type.
+ * @param cfitsio_type Pointer that receives the CFITSIO type constant.
+ *
+ * @return ::NC_NOERR No error.
+ * @return ::NC_EBADTYPE Unknown type.
+ * @author Edward Hartnett
+ */
+static int
+nc_type_to_cfitsio_type(nc_type memtype, int *cfitsio_type)
+{
+    switch (memtype)
+    {
+    case NC_BYTE:   *cfitsio_type = TSBYTE;     break;
+    case NC_UBYTE:  *cfitsio_type = TBYTE;      break;
+    case NC_SHORT:  *cfitsio_type = TSHORT;     break;
+    case NC_USHORT: *cfitsio_type = TUSHORT;    break;
+    case NC_INT:    *cfitsio_type = TINT;       break;
+    case NC_UINT:   *cfitsio_type = TUINT;      break;
+    case NC_INT64:  *cfitsio_type = TLONGLONG;  break;
+    case NC_UINT64: *cfitsio_type = TULONGLONG; break;
+    case NC_FLOAT:  *cfitsio_type = TFLOAT;     break;
+    case NC_DOUBLE: *cfitsio_type = TDOUBLE;    break;
+    case NC_CHAR:   *cfitsio_type = TSTRING;    break;
+    default:        return NC_EBADTYPE;
+    }
+    return NC_NOERR;
+}
+#endif /* HAVE_FITS */
+
 /**
  * @internal Read a hyperslab of data from a FITS variable.
  *
- * Sprint 2: no-op. No variables are defined yet.
+ * For image variables (col_num == 0): converts 0-based netCDF start/count to
+ * 1-based FITS fpixel/lpixel with reversed dimension order, then calls
+ * fits_read_subset().
+ *
+ * For table column variables (col_num > 0): calls fits_read_col() using
+ * start[0]+1 as firstrow. For 2D variables (vector or string columns),
+ * start[1]+1 is used as firstelem.
+ *
+ * CFITSIO applies BSCALE/BZERO and TSCALn/TZEROn scaling automatically when
+ * reading into floating-point types.
  *
  * @param ncid NetCDF ID.
  * @param varid Variable ID.
- * @param start Start indices.
+ * @param start Start indices (0-based).
  * @param count Counts.
- * @param value Buffer.
- * @param memtype Memory type.
+ * @param value Output buffer.
+ * @param memtype Memory type requested by caller.
  *
  * @return ::NC_NOERR No error.
+ * @return ::NC_EBADID Bad ncid or varid.
+ * @return ::NC_EINVAL Invalid parameters.
+ * @return ::NC_EIO CFITSIO read error.
  * @author Edward Hartnett
  */
 int
 NC_FITS_get_vara(int ncid, int varid, const size_t *start, const size_t *count,
                  void *value, nc_type memtype)
 {
-    (void)ncid;
-    (void)varid;
-    (void)start;
-    (void)count;
-    (void)value;
-    (void)memtype;
+#ifdef HAVE_FITS
+    NC_FILE_INFO_T *h5;
+    NC_GRP_INFO_T *grp;
+    NC_VAR_INFO_T *var;
+    NC_FITS_FILE_INFO_T *fits_file;
+    NC_FITS_VAR_INFO_T *fits_var;
+    int cfitsio_type;
+    int fits_status = 0;
+    int anynul;
+    int retval;
+
+    if (!start || !count || !value)
+        return NC_EINVAL;
+
+    if ((retval = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var)))
+        return retval;
+    if (!var || !var->format_var_info)
+        return NC_EBADID;
+
+    fits_file = (NC_FITS_FILE_INFO_T *)h5->format_file_info;
+    fits_var  = (NC_FITS_VAR_INFO_T *)var->format_var_info;
+
+    /* Use variable's own type if caller did not specify */
+    if (memtype == NC_NAT)
+        memtype = (nc_type)var->type_info->hdr.id;
+
+    if ((retval = nc_type_to_cfitsio_type(memtype, &cfitsio_type)))
+        return retval;
+
+    fits_status = 0;
+    fits_movabs_hdu(fits_file->fptr, fits_var->hdu_num, NULL, &fits_status);
+    if (fits_status)
+        return map_fitsio_error(fits_status);
+
+    if (fits_var->col_num == 0)
+    {
+        /* Image variable: reverse dimension order for FITS column-major layout */
+        int ndims = var->ndims;
+        long fpixel[NC_MAX_VAR_DIMS];
+        long lpixel[NC_MAX_VAR_DIMS];
+        long inc[NC_MAX_VAR_DIMS];
+        int d;
+
+        for (d = 0; d < ndims; d++)
+        {
+            int fd = ndims - 1 - d;   /* FITS dimension index (reversed) */
+            fpixel[fd] = (long)(start[d] + 1);
+            lpixel[fd] = (long)(start[d] + count[d]);
+            inc[fd]    = 1L;
+        }
+
+        fits_read_subset(fits_file->fptr, cfitsio_type, fpixel, lpixel, inc,
+                         NULL, value, &anynul, &fits_status);
+        if (fits_status)
+            return map_fitsio_error(fits_status);
+    }
+    else
+    {
+        /* Table column variable */
+        long firstrow  = (long)(start[0] + 1);
+        long firstelem = (var->ndims > 1) ? (long)(start[1] + 1) : 1L;
+        long nelements = (long)count[0] * ((var->ndims > 1) ? (long)count[1] : 1L);
+
+        if (memtype == NC_CHAR && fits_var->col_width > 0)
+        {
+            /* String column: CFITSIO needs char** pointing into flat buffer */
+            long nrows = (long)count[0];
+            int w = fits_var->col_width;
+            char **ptrs = (char **)malloc((size_t)nrows * sizeof(char *));
+            long r;
+
+            if (!ptrs)
+                return NC_ENOMEM;
+            for (r = 0; r < nrows; r++)
+                ptrs[r] = (char *)value + r * w;
+
+            fits_read_col(fits_file->fptr, TSTRING, fits_var->col_num,
+                          firstrow, 1L, nrows,
+                          NULL, ptrs, &anynul, &fits_status);
+            free(ptrs);
+        }
+        else
+        {
+            fits_read_col(fits_file->fptr, cfitsio_type, fits_var->col_num,
+                          firstrow, firstelem, nelements,
+                          NULL, value, &anynul, &fits_status);
+        }
+
+        if (fits_status)
+            return map_fitsio_error(fits_status);
+    }
+
     return NC_NOERR;
+#else
+    (void)ncid; (void)varid; (void)start; (void)count; (void)value; (void)memtype;
+    return NC_ENOTBUILT;
+#endif
 }

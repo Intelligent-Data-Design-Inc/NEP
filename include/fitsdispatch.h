@@ -36,6 +36,7 @@ typedef struct NC_FITS_VAR_INFO
 {
     int hdu_num;    /**< 1-based HDU number in the FITS file */
     int col_num;    /**< 1-based column number; 0 = image variable */
+    int col_width;  /**< bytes per string element (TSTRING columns only; 0 otherwise) */
 } NC_FITS_VAR_INFO_T;
 
 /** Per-file FITS state with CFITSIO integration */

@@ -71,9 +71,28 @@
 - By the end of this sprint, all FITS metadata will have been converted to the netCDF model.
 
 #### Sprint 5: Read the FITS Data
-- NEP C and Fortran tests read data from FITS file, and confirm it is correct by comparing agains stored values for some subset of the data.
-- NetCDF vara functions are used to read subsets of FITS data.
+**Detailed Plan**: See `docs/plan/v2.0.0-sprint5-fits-data.md`
+
+- Implement `NC_FITS_get_vara()` to read actual pixel/column data via CFITSIO.
+- For image variables (`col_num == 0`): convert netCDF 0-based `start[]/count[]` to
+  FITS 1-based `fpixel[]/lpixel[]` with reversed dimension order, then call
+  `fits_read_subset()`.
+- For table column variables (`col_num > 0`): call `fits_read_col()` using
+  `start[0]+1` as `firstrow` and `count[0]` as `nelements`; for 2D variables
+  (vector or string columns) use `start[1]+1` as `firstelem`.
+- Map netCDF `memtype` to the appropriate CFITSIO datatype constant.
+- C test updated to read a small subset of the primary image and verify pixel values
+  against known data, and to read one scalar column from the extension table.
+- Fortran test updated to read a row of the `image` variable and verify at least one value.
 - By the end of this sprint, the FITS reader will be fully functional.
+
+**Clarified decisions:**
+- Image data: use `fits_read_subset()` with dimension order reversal.
+- Table data: use `fits_read_col()`; string columns read via `TSTRING` into a flat
+  `char` buffer.
+- CFITSIO performs `BSCALE`/`BZERO` and `TSCALn`/`TZEROn` scaling automatically when
+  reading into floating-point types; no extra scaling step needed.
+- Known pixel values extracted from the test file before implementation to anchor the test.
 
 #### Sprint 6: Documentation and More Tests
 - Can we add more testing?
