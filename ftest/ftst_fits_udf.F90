@@ -198,6 +198,23 @@ program ftst_fits_udf
   endif
   print *, "PASS: FILLCNT =", fillcnt
 
+  ! --- Sprint 6: second image plane image[1,0,0] ---
+  ! Fortran dim order reversed: dim 3 = C dim_0 (size 4, plane index).
+  ! start=(1,1,2) count=(1,1,1) => C start={1,0,0} count={1,1,1}
+  s3 = (/ 1, 1, 2 /)
+  c3 = (/ 1, 1, 1 /)
+  retval = nf90_get_var(ncid, image_varid, pixels(1:1), start=s3, count=c3)
+  if (retval /= nf90_noerr) then
+     print *, "Error reading image[1,0,0]: ", trim(nf90_strerror(retval))
+     stop 1
+  endif
+  ! Expected: ~0.5045
+  if (abs(pixels(1) - 0.5044580698) > 1e-5) then
+     print *, "image[1,0,0]: expected ~0.5045, got ", pixels(1)
+     stop 1
+  endif
+  print *, "PASS: image[1,0,0] =", pixels(1)
+
   ! Close the file.
   retval = nf90_close(ncid)
   if (retval /= nf90_noerr) then

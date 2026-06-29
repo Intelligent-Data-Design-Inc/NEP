@@ -1,14 +1,22 @@
 /**
- * @file
- * @internal The FITS file functions. These provide a read-only
- * interface to FITS astronomical data files via CFITSIO.
+ * @file fitsfile.c
+ * @brief FITS User-Defined Format (UDF) dispatch layer.
  *
- * Sprint 3: real CFITSIO integration. The open function calls
- * fits_open_file() and stores the CFITSIO file handle for later
- * use in metadata and data reading.
+ * Implements the NEP FITS reader, which maps NASA/ESA Flexible Image
+ * Transport System (FITS) files to the netCDF-4 data model via CFITSIO.
+ *
+ * - Primary HDU: image variable in the root group; BITPIX mapped to nc_type;
+ *   standard keywords (BUNIT, BSCALE, BZERO, BLANK) mapped to attributes.
+ * - Extension HDUs: each becomes a child group named from EXTNAME.
+ *   ASCII/binary table HDUs: row dimension + one variable per column.
+ *   Image extension HDUs: same dim/var/attribute mapping as the primary HDU.
+ * - Data reading: NC_FITS_get_vara() calls fits_read_subset() for image
+ *   variables and fits_read_col() for table columns. Dimension order is
+ *   reversed (FITS column-major <-> netCDF row-major). CFITSIO applies
+ *   BSCALE/BZERO scaling automatically.
  *
  * @author Edward Hartnett
- * @date 2026-06-28
+ * @date 2026-06-29
  * @copyright Intelligent Data Design, Inc. All rights reserved.
  */
 

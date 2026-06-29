@@ -9,6 +9,7 @@ NEP (NetCDF Extension Pack) extends NetCDF-4 with high-performance compression a
 - **CDF File Reader**: Read NASA Common Data Format files through the NetCDF API
 - **GeoTIFF File Reader**: Read GeoTIFF geospatial raster files through the NetCDF API
 - **GRIB2 File Reader**: Read GRIB2 meteorological and oceanographic data files through the NetCDF API
+- **FITS File Reader**: Read NASA/ESA FITS astronomical image and table HDUs through the NetCDF API
 
 NEP provides flexible compression options and unified data access for diverse scientific data workflows.
 
