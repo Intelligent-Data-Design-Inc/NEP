@@ -249,6 +249,58 @@ main(void)
                fillcnt[0], fillcnt[1], fillcnt[2], fillcnt[3]);
     }
 
+    /* ---- Sprint 6: second image plane image[1,0,0] ---- */
+    {
+        float pix;
+        size_t s[3] = {1, 0, 0};
+        size_t c[3] = {1, 1, 1};
+        int image_varid2;
+
+        if ((retval = nc_inq_varid(root_ncid, "image", &image_varid2)))
+            ERR(retval);
+        if ((retval = nc_get_vara_float(root_ncid, image_varid2, s, c, &pix)))
+            ERR(retval);
+        /* Expected: 0.5044580698f */
+        if (fabsf(pix - 0.5044580698f) > 1e-5f)
+        { fprintf(stderr, "image[1,0,0]: expected ~0.5045, got %g\n", pix); return 1; }
+        printf("PASS: image[1,0,0] = %g\n", pix);
+    }
+
+    /* ---- Sprint 6: non-zero-start hyperslab image[0,1,0:4] ---- */
+    {
+        float row1[4];
+        size_t s[3] = {0, 1, 0};
+        size_t c[3] = {1, 1, 4};
+        int image_varid3;
+
+        if ((retval = nc_inq_varid(root_ncid, "image", &image_varid3)))
+            ERR(retval);
+        if ((retval = nc_get_vara_float(root_ncid, image_varid3, s, c, row1)))
+            ERR(retval);
+        /* Expected: {-0.8824396f, -1.0924211f, 0.9486601f, -0.0793435f} */
+        if (fabsf(row1[0] - (-0.8824396f)) > 1e-5f)
+        { fprintf(stderr, "image[0,1,0]: expected ~-0.8824, got %g\n", row1[0]); return 1; }
+        printf("PASS: image[0,1,0:4] = %g %g %g %g\n",
+               row1[0], row1[1], row1[2], row1[3]);
+    }
+
+    /* ---- Sprint 6: 2D string column CTYPE1 [4 rows x 8 chars] ---- */
+    {
+        char ctype1[4][8];
+        int ctype1_varid;
+        size_t s[2] = {0, 0};
+        size_t c[2] = {4, 8};
+
+        if ((retval = nc_inq_varid(grpid, "CTYPE1", &ctype1_varid)))
+            ERR(retval);
+        if ((retval = nc_get_vara_text(grpid, ctype1_varid, s, c, &ctype1[0][0])))
+            ERR(retval);
+        /* All 4 rows should be "RA---TAN" */
+        if (strncmp(ctype1[0], "RA---TAN", 8) != 0)
+        { fprintf(stderr, "CTYPE1[0]: expected 'RA---TAN', got '%.8s'\n", ctype1[0]); return 1; }
+        printf("PASS: CTYPE1[0] = '%.8s'\n", ctype1[0]);
+    }
+
     if ((retval = nc_close(root_ncid)))
         ERR(retval);
     printf("PASS: nc_close\n");

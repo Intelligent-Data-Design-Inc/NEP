@@ -13,6 +13,7 @@ NEP extends NetCDF-4 with powerful new capabilities for scientific data workflow
 - **NASA CDF File Reader**: Access Common Data Format files directly through the familiar NetCDF API - no conversion needed
 - **GeoTIFF File Reader**: Read GeoTIFF geospatial raster files through the NetCDF API with CF-1.8 compliant CRS metadata
 - **GRIB2 File Reader**: Read GRIB2 meteorological and oceanographic data files (NWP model output, wave forecasts) through the NetCDF API
+- **FITS File Reader**: Read NASA/ESA FITS astronomical image and table files (HST, Chandra, JWST) through the NetCDF API
 - **Drop-In Compatibility**: Works with existing NetCDF-4 applications without code changes
 
 ## Why NEP?
@@ -401,6 +402,76 @@ cmake -B build -DENABLE_GRIB2=OFF
 Requires NOAA NCEPLIBS-g2c (>= 2.1.0) and libjasper (>= 3.0.0). Supply the g2c install path via `G2C_PATH` or `--with-g2c` at configure time.
 
 **Note**: GRIB2 and CDF are mutually exclusive — both use UDF slot 2. Enable one or the other, not both.
+
+---
+
+### What is FITS?
+
+FITS (Flexible Image Transport System) is the standard format used by NASA, ESA, and the astronomical community to store images, spectra, and tables from telescopes and instruments such as the Hubble Space Telescope, Chandra X-ray Observatory, and the James Webb Space Telescope.
+
+**Key characteristics:**
+- Multi-HDU structure: primary image plus optional extension HDUs (image, ASCII table, binary table)
+- BITPIX keyword encodes data type (8/16/32-bit integer, 32/64-bit IEEE float)
+- Dimension order is column-major (FITS) vs. row-major (netCDF/C) — handled automatically by NEP
+- WCS (World Coordinate System) keywords stored as netCDF attributes
+
+### FITS File Reader: Astronomical Data Access
+
+**Current Features (v2.0.0):**
+- ✅ Automatic format detection — FITS files recognized by `SIMPLE` magic bytes
+- ✅ Open/close via standard `nc_open()` and `nc_close()`; `ncdump` works directly
+- ✅ Primary HDU: image variable in the root group; `BITPIX` mapped to `nc_type`
+- ✅ Standard keywords mapped to netCDF attributes: `BUNIT`→`units`, `BZERO`→`add_offset`, `BSCALE`→`scale_factor`, `BLANK`→`_FillValue`
+- ✅ All header keywords stored as global attributes
+- ✅ Extension HDUs: each becomes a child group named from `EXTNAME`
+- ✅ ASCII and binary table HDUs: row dimension + one variable per column; `TUNITn`→`units`
+- ✅ Data reading via `nc_get_vara_*`: `fits_read_subset()` for images, `fits_read_col()` for table columns
+- ✅ Dimension order reversal handled automatically (FITS column-major ↔ netCDF row-major)
+- ✅ CFITSIO applies `BSCALE`/`BZERO` and `TSCALn`/`TZEROn` scaling automatically
+
+**Usage Example:**
+
+```c
+#include <netcdf.h>
+
+int ncid, varid;
+float pixels[4];  /* 4 pixels from a [4, 200, 200] float image */
+size_t start[3] = {0, 0, 0};
+size_t count[3] = {1, 1, 4};
+
+/* Open FITS file - automatically detected */
+if ((retval = nc_open("WFPC2u5780205r_c0fx.fits", NC_NOWRITE, &ncid)))
+    ERR(retval);
+
+/* Read a hyperslab from the primary image */
+if ((retval = nc_inq_varid(ncid, "image", &varid)))
+    ERR(retval);
+if ((retval = nc_get_vara_float(ncid, varid, start, count, pixels)))
+    ERR(retval);
+
+if ((retval = nc_close(ncid)))
+    ERR(retval);
+```
+
+Or use `ncdump` directly:
+
+```bash
+ncdump -h WFPC2u5780205r_c0fx.fits
+```
+
+**Build Configuration:**
+
+FITS support is enabled by default when CFITSIO is found. To disable:
+
+```bash
+# CMake
+cmake -B build -DENABLE_FITS=OFF
+
+# Autotools
+./configure --disable-fits
+```
+
+Requires CFITSIO (>= 3.0). Supply the install path via `CFITSIO_PATH` or `--with-cfitsio` at configure time.
 
 ---
 

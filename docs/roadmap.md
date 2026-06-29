@@ -95,8 +95,18 @@
 - Known pixel values extracted from the test file before implementation to anchor the test.
 
 #### Sprint 6: Documentation and More Tests
-- Can we add more testing?
-- Update the doxygen and README to include the new FITS reading capability.
+**Detailed Plan**: See `docs/plan/v2.0.0-sprint6-fits-docs-tests.md`
+
+- Add FITS reader section to `README.md` (Capability / Benefits / How It Works / Use Cases),
+  consistent with the existing CDF, GeoTIFF, and GRIB2 sections.
+- Add FITS to the format list in `docs/mainpage.md` (Doxygen landing page).
+- Update the `@file` block in `src/fitsfile.c` to reflect the fully implemented state.
+- Add moderate additional test coverage to `test/tst_fits_udf.c`:
+  - Read a second image plane (`image[1,0,0]`) and verify against the known float value.
+  - Read a non-zero-start hyperslab (`image[0,1,0:4]`) to exercise the offset path.
+  - Read all 4 rows of the 2D string column `CTYPE1` and verify the first string.
+- Add matching additional assertions to `ftest/ftst_fits_udf.F90`.
+- By the end of this sprint, the FITS reader is fully documented and tested.
 
 ### V1.11.0 NcZarr Examples
 
