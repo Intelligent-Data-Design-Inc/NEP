@@ -57,7 +57,6 @@ Both C and Fortran versions provided for Classic, NetCDF-4, and NcZarr categorie
 - High-throughput simulation output
 - Interactive data analysis workflows
 - Cloud-based data pipelines
-
 **How It Works**: LZ4 compression is provided as an HDF5 filter plugin. Simply set `HDF5_PLUGIN_PATH` and use standard NetCDF-4 compression APIs - no code changes required.
 
 ### BZIP2 Compression: Maximum Storage Efficiency
@@ -71,33 +70,6 @@ Both C and Fortran versions provided for Classic, NetCDF-4, and NcZarr categorie
 - Bandwidth-constrained data transfers
 
 **How It Works**: Like LZ4, BZIP2 integrates as an HDF5 filter plugin with zero code changes to existing applications.
-
-### CDF File Reader: Unified Data Access
-
-**Capability**: Read NASA Common Data Format files using the NetCDF API you already know.
-
-**Benefits**:
-- No file conversion required - access CDF data directly
-- Automatic type mapping (CDF types → NetCDF types)
-- Support for TT2000 time variables and multi-dimensional arrays
-- Unified analysis tools for both NetCDF and CDF datasets
-
-**Use Cases**:
-- Space physics and heliophysics research
-- NASA mission data analysis (IMAP, MMS, Van Allen Probes)
-- Cross-format data integration
-- Legacy CDF data access in modern workflows
-
-**How It Works**: NEP provides a User-Defined Format (UDF) handler that transparently reads CDF files through standard NetCDF functions like `nc_open()`, `nc_get_var()`, and `nc_get_att()`.
-
-## Key Benefits
-
-- **Choose Your Trade-Off**: Select LZ4 for speed or BZIP2 for compression ratio - optimize for your specific workflow
-- **No Code Changes**: Drop-in replacement for existing NetCDF-4 applications via HDF5 filter plugins
-- **Multi-Format Support**: Work with both NetCDF and CDF files using a single API
-- **Production Ready**: Full CMake and Autotools build support, comprehensive test suites, CI validation
-- **HPC Optimized**: Designed for large-scale scientific computing with Spack package manager support
-- **Cost Savings**: Reduce storage and bandwidth costs without sacrificing data access performance
 
 ## Compression Performance
 
