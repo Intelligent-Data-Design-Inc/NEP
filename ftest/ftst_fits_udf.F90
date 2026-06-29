@@ -1,8 +1,7 @@
 !> @file
 !!
 !! This is a test program for the NEP FITS User Defined Format (UDF)
-!! handler. It opens and closes a real FITS file through the netCDF
-!! Fortran API, relying on the generated .ncrc for UDF autoload.
+!! handler. Sprints 4a/4b: metadata checks. Sprint 5: data reads.
 !!
 !! @author Edward Hartnett
 !! @date 2026-06-28
@@ -29,6 +28,11 @@ program ftst_fits_udf
   integer :: grpid, grpid2
   character(len=NF90_MAX_NAME) :: dimname
   integer :: dimlen
+  integer :: image_varid, crval1_varid, fillcnt_varid
+  real    :: pixels(4)
+  double precision :: crval1(4)
+  integer :: fillcnt(4)
+  integer :: s3(3), c3(3), s1(1), c1(1)
 
   ! Ensure the FITS UDF handler is registered (also covers builds where
   ! .ncrc autoload is not active).
@@ -126,6 +130,73 @@ program ftst_fits_udf
      stop 1
   endif
   print *, "PASS: group row dim len=", dimlen
+
+  ! --- Sprint 5: read image data ---
+  ! Read image[0,0,0:4] (4 pixels along fastest dim_2 / NAXIS1).
+  ! Fortran nf90_get_var uses 1-based indices; dim order same as C here
+  ! because netCDF Fortran reverses vs C, but we match with reversed start/count.
+  retval = nf90_inq_varid(ncid, "image", image_varid)
+  if (retval /= nf90_noerr) then
+     print *, "Error finding image var: ", trim(nf90_strerror(retval))
+     stop 1
+  endif
+  ! netCDF Fortran dim order is reversed vs C: dim 1 = C dim_2 (size 200),
+  ! dim 2 = C dim_1 (size 200), dim 3 = C dim_0 (size 4).
+  ! start=(1,1,1) count=(4,1,1) reads 4 pixels along NAXIS1.
+  s3 = (/ 1, 1, 1 /)
+  c3 = (/ 4, 1, 1 /)
+  retval = nf90_get_var(ncid, image_varid, pixels, start=s3, count=c3)
+  if (retval /= nf90_noerr) then
+     print *, "Error reading image pixels: ", trim(nf90_strerror(retval))
+     stop 1
+  endif
+  ! Expected: pixels(1)~-1.5443, pixels(2)~0.9169
+  if (abs(pixels(1) - (-1.5442986)) > 1e-5) then
+     print *, "image pixel(1): expected ~-1.5443, got ", pixels(1)
+     stop 1
+  endif
+  if (abs(pixels(2) - 0.9169310) > 1e-5) then
+     print *, "image pixel(2): expected ~0.9169, got ", pixels(2)
+     stop 1
+  endif
+  print *, "PASS: image pixels(1:4) =", pixels
+
+  ! --- Sprint 5: read table column CRVAL1 (NC_DOUBLE, 4 rows) ---
+  retval = nf90_inq_varid(grpid, "CRVAL1", crval1_varid)
+  if (retval /= nf90_noerr) then
+     print *, "Error finding CRVAL1 var: ", trim(nf90_strerror(retval))
+     stop 1
+  endif
+  s1 = (/ 1 /)
+  c1 = (/ 4 /)
+  retval = nf90_get_var(grpid, crval1_varid, crval1, start=s1, count=c1)
+  if (retval /= nf90_noerr) then
+     print *, "Error reading CRVAL1: ", trim(nf90_strerror(retval))
+     stop 1
+  endif
+  ! Expected row 0: ~182.631, row 1: ~182.626
+  if (abs(crval1(1) - 182.63118863080002d0) > 1d-6) then
+     print *, "CRVAL1(1): expected ~182.631, got ", crval1(1)
+     stop 1
+  endif
+  print *, "PASS: CRVAL1 =", crval1
+
+  ! --- Sprint 5: read table column FILLCNT (NC_INT, 4 rows) ---
+  retval = nf90_inq_varid(grpid, "FILLCNT", fillcnt_varid)
+  if (retval /= nf90_noerr) then
+     print *, "Error finding FILLCNT var: ", trim(nf90_strerror(retval))
+     stop 1
+  endif
+  retval = nf90_get_var(grpid, fillcnt_varid, fillcnt, start=s1, count=c1)
+  if (retval /= nf90_noerr) then
+     print *, "Error reading FILLCNT: ", trim(nf90_strerror(retval))
+     stop 1
+  endif
+  if (fillcnt(1) /= 0 .or. fillcnt(2) /= 0 .or. fillcnt(3) /= 0 .or. fillcnt(4) /= 0) then
+     print *, "FILLCNT: expected all zeros, got", fillcnt
+     stop 1
+  endif
+  print *, "PASS: FILLCNT =", fillcnt
 
   ! Close the file.
   retval = nf90_close(ncid)
