@@ -8,6 +8,8 @@
 
 ## Summary
 
+NEP extends NetCDF-4 with powerful new capabilities for scientific data workflows:
+
 ### Compression
 
 | Algorithm | Speed vs DEFLATE | Ratio vs DEFLATE | Best For |
@@ -43,27 +45,6 @@ NEP includes over 26 C and Fortran example programs, organized by topic. They ar
 Both C and Fortran versions provided for Classic, NetCDF-4, and NcZarr categories.
 
 ---
-
-## High-Performance Compression + Multi-Format Data Access
-
-NEP extends NetCDF-4 with powerful new capabilities for scientific data workflows:
-
-- **Ultra-Fast LZ4 Compression**: 2-3x faster than DEFLATE with excellent compression ratios - ideal for real-time data processing and HPC workflows
-- **High-Ratio BZIP2 Compression**: Superior compression for archival storage - reduce storage costs while maintaining data integrity
-- **NASA CDF File Reader**: Access Common Data Format files directly through the familiar NetCDF API - no conversion needed
-- **GeoTIFF File Reader**: Read GeoTIFF geospatial raster files through the NetCDF API with CF-1.8 compliant CRS metadata
-- **GRIB2 File Reader**: Read GRIB2 meteorological and oceanographic data files (NWP model output, wave forecasts) through the NetCDF API
-- **FITS File Reader**: Read NASA/ESA FITS astronomical image and table files (HST, Chandra, JWST) through the NetCDF API
-- **Drop-In Compatibility**: Works with existing NetCDF-4 applications without code changes
-
-## Why NEP?
-
-Scientific data producers need better tools to handle growing data volumes:
-
-- **Storage Costs**: Petabyte-scale datasets require efficient compression without sacrificing performance
-- **Processing Speed**: DEFLATE compression creates bottlenecks in data pipelines and analysis workflows
-- **Data Format Silos**: CDF and NetCDF communities use different tools despite similar data structures
-- **Limited Options**: NetCDF-4 needs more compression algorithms optimized for different use cases
 
 ## What NEP Delivers
 
