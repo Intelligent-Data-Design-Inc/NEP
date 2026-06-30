@@ -117,6 +117,9 @@ H5Z_filter_lz4(unsigned int flags, size_t cd_nelmts, const unsigned int cd_value
         const uint64_t        origSize = (uint64_t)(be64toht(*i64Buf)); /* is saved in be format */
         rpos += 8;                                                      /* advance the pointer */
 
+        if (origSize == 0 || origSize > (uint64_t)INT32_MAX)
+            goto error;
+
         i32Buf    = (uint32_t *)rpos;
         blockSize = (uint32_t)(be32toht(*i32Buf));
         rpos += 4;
@@ -138,6 +141,8 @@ H5Z_filter_lz4(unsigned int flags, size_t cd_nelmts, const unsigned int cd_value
             i32Buf              = (uint32_t *)rpos;
             compressedBlockSize = be32toht(*i32Buf); /// is saved in be format
             rpos += 4;
+            if (compressedBlockSize == 0 || rpos + compressedBlockSize > (const char *)*buf + nbytes)
+                goto error;
             if (compressedBlockSize == blockSize) /* there was no compression */
             {
                 memcpy(roBuf, rpos, blockSize);
