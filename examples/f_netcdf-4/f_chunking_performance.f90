@@ -1,8 +1,10 @@
 !> @file f_chunking_performance.f90
 !! @brief Demonstrates chunking strategies and I/O performance impact (Fortran)
 !!
-!! Fortran equivalent of chunking_performance.c, exploring NetCDF-4 chunking using
-!! the Fortran 90 NetCDF API. Creates datasets with different chunking strategies.
+!! Fortran equivalent of chunking_performance.c,
+!! exploring NetCDF-4 chunking using the Fortran
+!! 90 NetCDF API. Creates datasets with different
+!! chunking strategies.
 !!
 !! **Learning Objectives:**
 !! - Configure chunking with nf90_def_var_chunking() in Fortran
@@ -24,7 +26,8 @@
 !!
 !! **Compilation:**
 !! @code
-!! gfortran -o f_chunking_performance f_chunking_performance.f90 -lnetcdff -lnetcdf
+!! gfortran -o f_chunking_performance \
+!!   f_chunking_performance.f90 -lnetcdff -lnetcdf
 !! @endcode
 !!
 !! @author Edward Hartnett, Intelligent Data Design, Inc.
@@ -48,7 +51,9 @@ program f_chunking_performance
    
    print *, "Chunking Performance Demonstration"
    print *, "==================================="
-   print *, "Dataset dimensions: [time=", NTIME, ", lat=", NLAT, ", lon=", NLON, "]"
+   print *, "Dataset dimensions: [time=", &
+        NTIME, ", lat=", NLAT, &
+        ", lon=", NLON, "]"
    print *, "Total data points: ", NTIME * NLAT * NLON
    print *, "Total data size: ", (NTIME * NLAT * NLON * 4) / 1048576.0, " MB"
    
@@ -84,10 +89,18 @@ program f_chunking_performance
    ! Read and validate all files
    print *, ""
    print *, "=== Reading and Validating Files ==="
-   call read_and_validate("f_chunk_contiguous.nc", "Contiguous", data, read_times(1))
-   call read_and_validate("f_chunk_time_optimized.nc", "Time-optimized", data, read_times(2))
-   call read_and_validate("f_chunk_spatial_optimized.nc", "Spatial-optimized", data, read_times(3))
-   call read_and_validate("f_chunk_balanced.nc", "Balanced", data, read_times(4))
+   call read_and_validate( &
+        "f_chunk_contiguous.nc", &
+        "Contiguous", data, read_times(1))
+   call read_and_validate( &
+        "f_chunk_time_optimized.nc", &
+        "Time-optimized", data, read_times(2))
+   call read_and_validate( &
+        "f_chunk_spatial_optimized.nc", &
+        "Spatial-optimized", data, read_times(3))
+   call read_and_validate( &
+        "f_chunk_balanced.nc", &
+        "Balanced", data, read_times(4))
    
    ! Performance summary
    print *, ""
@@ -95,13 +108,16 @@ program f_chunking_performance
    print '(A25, A12, A12)', "Strategy", "Write (s)", "Read (s)"
    print '(A25, F12.3, F12.3)', "Contiguous", write_times(1), read_times(1)
    print '(A25, F12.3, F12.3)', "Time-optimized", write_times(2), read_times(2)
-   print '(A25, F12.3, F12.3)', "Spatial-optimized", write_times(3), read_times(3)
+   print '(A25, F12.3, F12.3)', &
+        "Spatial-optimized", &
+        write_times(3), read_times(3)
    print '(A25, F12.3, F12.3)', "Balanced", write_times(4), read_times(4)
    
    print *, ""
    print *, "=== Recommendations ==="
    print *, "- Contiguous storage: Best for small datasets or sequential access"
-   print *, "- Time-optimized: Best for time-series analysis at specific locations"
+   print *, "- Time-optimized: Best for", &
+        " time-series at specific locations"
    print *, "- Spatial-optimized: Best for spatial analysis at specific times"
    print *, "- Balanced: Good compromise for mixed access patterns"
    print *, "- Chunk size should align with typical access patterns"
@@ -115,7 +131,9 @@ program f_chunking_performance
    
 contains
 
-   subroutine create_chunked_file(filename, strategy_name, storage, chunksizes, data, write_time)
+   subroutine create_chunked_file(filename, &
+        strategy_name, storage, chunksizes, &
+        data, write_time)
       character(len=*), intent(in) :: filename, strategy_name
       integer, intent(in) :: storage
       integer, intent(in) :: chunksizes(3)
@@ -178,13 +196,18 @@ contains
       ! Get file size
       inquire(file=filename, exist=file_exists, size=file_size)
       if (file_exists) then
-         print *, "File size: ", file_size, " bytes (", file_size / 1048576.0, " MB)"
+         print *, "File size: ", file_size, &
+              " bytes (", &
+              file_size / 1048576.0, " MB)"
       end if
       
       print *, "Write time: ", write_time, " seconds"
       
       if (storage == NF90_CHUNKED) then
-         print *, "Chunk sizes: [", chunksizes(1), ",", chunksizes(2), ",", chunksizes(3), "]"
+         print *, "Chunk sizes: [", &
+              chunksizes(1), ",", &
+              chunksizes(2), ",", &
+              chunksizes(3), "]"
       else
          print *, "Storage: Contiguous (no chunking)"
       end if
@@ -243,8 +266,11 @@ contains
                expected = expected_data(lon, lat, t)
                actual = data(lon, lat, t)
                if (actual /= expected) then
-                  print *, "Error: data(", lon, ",", lat, ",", t, ") = ", actual, &
-                           ", expected ", expected
+                  print *, "Error: data(", &
+                       lon, ",", lat, &
+                       ",", t, ") = ", &
+                       actual, &
+                       ", expected ", expected
                   errors = errors + 1
                end if
             end do

@@ -1,9 +1,13 @@
 !> @file f_coord.f90
-!! @brief Demonstrates 3D surface temperature with time, lat, lon coordinate variables (Fortran)
+!! @brief 3D surface temperature with time,
+!! lat, lon coordinate variables (Fortran)
 !!
-!! This is the Fortran equivalent of coord.c, demonstrating 3D surface temperature
-!! data with time, latitude, and longitude coordinate variables following CF conventions.
-!! The program creates a surface temperature dataset on a 4x5 lat/lon grid with 3
+!! This is the Fortran equivalent of coord.c,
+!! demonstrating 3D surface temperature data with
+!! time, latitude, and longitude coordinate
+!! variables following CF conventions. The program
+!! creates a surface temperature dataset on a
+!! 4x5 lat/lon grid with 3
 !! time steps using the Fortran 90 NetCDF API.
 !!
 !! **Learning Objectives:**
@@ -14,8 +18,10 @@
 !! - Handle Fortran column-major array ordering for multi-dimensional data
 !!
 !! **Key Fortran Concepts:**
-!! - **Array Ordering**: sfc_temp(NLON, NLAT, NTIME) vs C sfc_temp[NTIME][NLAT][NLON]
-!! - **Dimension Order**: dimids = (/lon_dimid, lat_dimid, time_dimid/) reversed from C
+!! - **Array Ordering**: sfc_temp(NLON, NLAT,
+!!   NTIME) vs C sfc_temp[NTIME][NLAT][NLON]
+!! - **Dimension Order**: dimids = (/lon_dimid,
+!!   lat_dimid, time_dimid/) reversed from C
 !! - **1-Based Indexing**: Loop indices start at 1, adjust formula accordingly
 !! - **Character Attributes**: nf90_put_att handles string length automatically
 !!
@@ -145,7 +151,8 @@ program f_coord
    if (retval /= nf90_noerr) call handle_err(retval)
    retval = nf90_put_att(ncid, temp_varid, "units", "K")
    if (retval /= nf90_noerr) call handle_err(retval)
-   retval = nf90_put_att(ncid, temp_varid, "standard_name", "surface_temperature")
+   retval = nf90_put_att(ncid, temp_varid, &
+        "standard_name", "surface_temperature")
    if (retval /= nf90_noerr) call handle_err(retval)
    retval = nf90_put_att(ncid, temp_varid, "long_name", "Surface Temperature")
    if (retval /= nf90_noerr) call handle_err(retval)
@@ -214,7 +221,9 @@ program f_coord
       print *, "Error: dimension sizes incorrect"
       stop 2
    end if
-   print *, "Verified: dimensions correct (time=", time_len, ", lat=", lat_len, ", lon=", lon_len, ")"
+   print *, "Verified: dims (time=", &
+        time_len, ", lat=", lat_len, &
+        ", lon=", lon_len, ")"
 
    ! Verify time coordinate attributes
    retval = nf90_get_att(ncid, time_varid, "units", time_units)
@@ -292,7 +301,9 @@ program f_coord
    errors = 0
    do t = 1, NTIME
       if (time_in(t) /= time_data(t)) then
-         print *, "Error: time(", t, ") = ", time_in(t), ", expected ", time_data(t)
+         print *, "Error: time(", t, ") = ", &
+              time_in(t), ", expected ", &
+              time_data(t)
          errors = errors + 1
       end if
    end do
@@ -313,9 +324,13 @@ program f_coord
 
    if (errors == 0) then
       print *, "Verified: coordinate arrays correct"
-      print *, "  time: [", time_data(1), ", ", time_data(2), ", ", time_data(3), "]"
+      print *, "  time: [", time_data(1), &
+           ", ", time_data(2), &
+           ", ", time_data(3), "]"
       print *, "  lat: [", lat(1), ", ", lat(2), ", ", lat(3), ", ", lat(4), "]"
-      print *, "  lon: [", lon(1), ", ", lon(2), ", ", lon(3), ", ", lon(4), ", ", lon(5), "]"
+      print *, "  lon: [", lon(1), ", ", &
+           lon(2), ", ", lon(3), ", ", &
+           lon(4), ", ", lon(5), "]"
    end if
 
    ! Read surface temperature data
@@ -327,8 +342,12 @@ program f_coord
       do i = 1, NLAT
          do j = 1, NLON
             if (sfc_temp_in(j, i, t) /= sfc_temp(j, i, t)) then
-               print *, "Error: sfc_temp(", j, ",", i, ",", t, ") = ", sfc_temp_in(j, i, t), &
-                        ", expected ", sfc_temp(j, i, t)
+               print *, "Error: sfc_temp(", &
+                    j, ",", i, ",", t, &
+                    ") = ", &
+                    sfc_temp_in(j, i, t), &
+                    ", expected ", &
+                    sfc_temp(j, i, t)
                errors = errors + 1
             end if
          end do
@@ -340,7 +359,8 @@ program f_coord
       stop 2
    end if
 
-   print *, "Verified: all surface temperature data correct (", NTIME * NLAT * NLON, " values)"
+   print *, "Verified: all sfc_temp correct (", &
+        NTIME * NLAT * NLON, " values)"
 
    ! Close the file
    retval = nf90_close(ncid)

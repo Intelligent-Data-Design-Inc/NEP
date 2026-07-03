@@ -1,8 +1,10 @@
 !> @file f_multi_unlimited.f90
 !! @brief Demonstrates multiple unlimited dimensions (NetCDF-4 feature, Fortran)
 !!
-!! Fortran equivalent of multi_unlimited.c, showcasing NetCDF-4's multiple unlimited
-!! dimensions using the Fortran 90 NetCDF API. Demonstrates appending along both dimensions.
+!! Fortran equivalent of multi_unlimited.c,
+!! showcasing NetCDF-4's multiple unlimited
+!! dimensions using the Fortran 90 NetCDF API.
+!! Demonstrates appending along both dimensions.
 !!
 !! **Learning Objectives:**
 !! - Create multiple unlimited dimensions in Fortran
@@ -90,7 +92,9 @@ program f_multi_unlimited
    retval = nf90_put_var(ncid, varid, initial_data, start=start, count=count)
    if (retval /= nf90_noerr) call handle_err(retval)
    
-   print *, "Wrote initial data: ", INITIAL_STATIONS, " stations x ", INITIAL_TIMES, " times"
+   print *, "Wrote initial data: ", &
+        INITIAL_STATIONS, " stations x ", &
+        INITIAL_TIMES, " times"
    
    retval = nf90_close(ncid)
    if (retval /= nf90_noerr) call handle_err(retval)
@@ -108,7 +112,9 @@ program f_multi_unlimited
    
    do s = 1, ADDED_STATIONS
       do t = 1, INITIAL_TIMES
-         new_station_data(t, s) = 20.0 + (INITIAL_STATIONS + s - 1) * 2.0 + (t-1) * 0.5
+         new_station_data(t, s) = 20.0 &
+              + (INITIAL_STATIONS + s - 1) * 2.0 &
+              + (t-1) * 0.5
       end do
    end do
    
@@ -117,7 +123,9 @@ program f_multi_unlimited
    count(1) = INITIAL_TIMES
    count(2) = ADDED_STATIONS
    
-   retval = nf90_put_var(ncid, varid, new_station_data, start=start, count=count)
+   retval = nf90_put_var(ncid, varid, &
+        new_station_data, start=start, &
+        count=count)
    if (retval /= nf90_noerr) call handle_err(retval)
    
    print *, "Appended ", ADDED_STATIONS, " stations (now ", &
@@ -139,7 +147,9 @@ program f_multi_unlimited
    
    do s = 1, INITIAL_STATIONS + ADDED_STATIONS
       do t = 1, ADDED_TIMES
-         new_time_data(t, s) = 20.0 + (s-1) * 2.0 + (INITIAL_TIMES + t - 1) * 0.5
+         new_time_data(t, s) = 20.0 &
+              + (s-1) * 2.0 &
+              + (INITIAL_TIMES + t - 1) * 0.5
       end do
    end do
    
@@ -208,7 +218,9 @@ contains
       expected_times = INITIAL_TIMES + ADDED_TIMES
       
       if (nstations /= expected_stations) then
-         print *, "Error: Expected ", expected_stations, " stations, found ", nstations
+         print *, "Error: Expected ", &
+              expected_stations, &
+              " stations, found ", nstations
          stop 2
       end if
       if (ntimes /= expected_times) then
@@ -232,7 +244,10 @@ contains
             expected = 20.0 + (s-1) * 2.0 + (t-1) * 0.5
             actual = all_data(t, s)
             if (abs(actual - expected) > 0.001) then
-               print *, "Error: data(", t, ",", s, ") = ", actual, ", expected ", expected
+               print *, "Error: data(", &
+                    t, ",", s, ") = ", &
+                    actual, ", expected ", &
+                    expected
                errors = errors + 1
                if (errors >= 10) exit
             end if

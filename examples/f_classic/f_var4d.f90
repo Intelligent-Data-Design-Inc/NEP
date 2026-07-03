@@ -1,7 +1,9 @@
 !> @file f_var4d.f90
-!! @brief Demonstrates multi-dimensional arrays (2D, 3D, 4D) with dimension reuse (Fortran)
+!! @brief Multi-dimensional arrays (2D, 3D, 4D)
+!! with dimension reuse (Fortran)
 !!
-!! This is the Fortran equivalent of var4d.c, demonstrating multi-dimensional arrays
+!! This is the Fortran equivalent of var4d.c,
+!! demonstrating multi-dimensional arrays
 !! using the Fortran 90 NetCDF API. The program creates variables of different
 !! dimensionalities (2D, 3D, 4D) that share common dimensions.
 !!
@@ -14,7 +16,8 @@
 !! **Critical Fortran vs C Difference:**
 !! - **Fortran**: temp_3d(NLON, NLAT, NLEVEL, NTIME) - fastest to slowest
 !! - **C**: temp_3d[NTIME][NLEVEL][NLAT][NLON] - slowest to fastest
-!! - **NetCDF dimids**: Fortran (lon, lat, level, time) vs C (time, level, lat, lon)
+!! - **NetCDF dimids**: Fortran (lon, lat, level,
+!!   time) vs C (time, level, lat, lon)
 !! - **Access**: Fortran temp_3d(j,i,lev,t) vs C temp_3d[t][lev][i][j]
 !!
 !! **Prerequisites:**
@@ -80,7 +83,9 @@ program f_var4d
    do t = 1, NTIME
       do i = 1, NLAT
          do j = 1, NLON
-            temp_profile(j, i, t) = 273.15 + (t-1) * 1.0 + (i-1) * 5.0 + (j-1) * 2.0
+            temp_profile(j, i, t) = 273.15 &
+                 + (t-1) * 1.0 &
+                 + (i-1) * 5.0 + (j-1) * 2.0
          end do
       end do
    end do
@@ -195,7 +200,9 @@ program f_var4d
    ! Verify variable types and dimensions
    
    ! Check 2D variable
-   retval = nf90_inquire_variable(ncid, varid_2d, xtype=var_type, ndims=var_ndims)
+   retval = nf90_inquire_variable(ncid, &
+        varid_2d, xtype=var_type, &
+        ndims=var_ndims)
    if (retval /= nf90_noerr) call handle_err(retval)
    if (var_type /= NF90_FLOAT .or. var_ndims /= 2) then
       print *, "Error: temp_surface has wrong type or dimensions"
@@ -204,7 +211,9 @@ program f_var4d
    print *, "Verified: temp_surface is 2D NF90_FLOAT"
    
    ! Check 3D variable
-   retval = nf90_inquire_variable(ncid, varid_3d, xtype=var_type, ndims=var_ndims)
+   retval = nf90_inquire_variable(ncid, &
+        varid_3d, xtype=var_type, &
+        ndims=var_ndims)
    if (retval /= nf90_noerr) call handle_err(retval)
    if (var_type /= NF90_FLOAT .or. var_ndims /= 3) then
       print *, "Error: temp_profile has wrong type or dimensions"
@@ -213,7 +222,9 @@ program f_var4d
    print *, "Verified: temp_profile is 3D NF90_FLOAT"
    
    ! Check 4D variable
-   retval = nf90_inquire_variable(ncid, varid_4d, xtype=var_type, ndims=var_ndims)
+   retval = nf90_inquire_variable(ncid, &
+        varid_4d, xtype=var_type, &
+        ndims=var_ndims)
    if (retval /= nf90_noerr) call handle_err(retval)
    if (var_type /= NF90_FLOAT .or. var_ndims /= 4) then
       print *, "Error: temp_3d has wrong type or dimensions"
@@ -260,7 +271,9 @@ program f_var4d
          do i = 1, NLAT
             do j = 1, NLON
                if (temp_3d_in(j, i, k, t) /= temp_3d(j, i, k, t)) then
-                  print *, "Error: temp_3d(", j, ",", i, ",", k, ",", t, ") mismatch"
+                  print *, "Error: temp_3d(", &
+                       j, ",", i, ",", &
+                       k, ",", t, ") mismatch"
                   errors = errors + 1
                end if
             end do

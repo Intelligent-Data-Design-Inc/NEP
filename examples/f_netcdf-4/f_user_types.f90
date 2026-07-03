@@ -128,7 +128,8 @@ program f_user_types
    dimids(1) = obs_dimid
    retval = nf_def_var(ncid, "cloud_cover", enum_typeid, 1, dimids, enum_varid)
    if (retval /= nf90_noerr) call handle_err(retval)
-   retval = nf_def_var(ncid, "calibration", opaque_typeid, 0, dimids, opaque_varid)
+   retval = nf_def_var(ncid, "calibration", &
+        opaque_typeid, 0, dimids, opaque_varid)
    if (retval /= nf90_noerr) call handle_err(retval)
 
    retval = nf90_enddef(ncid)
@@ -170,7 +171,8 @@ program f_user_types
         base_type_in, nfields_in, class_in)
    if (retval /= nf90_noerr) call handle_err(retval)
    if (trim(type_name_in) /= "cloud_cover_t") then
-      print *, "Error: expected type name cloud_cover_t, found ", trim(type_name_in)
+      print *, "Error: expected cloud_cover_t", &
+           ", found ", trim(type_name_in)
       stop 2
    end if
    if (class_in /= NF90_ENUM) then
@@ -190,21 +192,33 @@ program f_user_types
    print *, "Verified: base type NF90_INT, ", num_members, " members"
 
    ! Check each enum member
-   retval = nf90_inq_enum_member(ncid, typeids(1), 1, member_name_in, member_value)
+   retval = nf90_inq_enum_member(ncid, &
+        typeids(1), 1, member_name_in, &
+        member_value)
    if (retval /= nf90_noerr) call handle_err(retval)
-   if (trim(member_name_in) /= "CLEAR" .or. member_value /= 0) stop 2
+   if (trim(member_name_in) /= "CLEAR" &
+        .or. member_value /= 0) stop 2
 
-   retval = nf90_inq_enum_member(ncid, typeids(1), 2, member_name_in, member_value)
+   retval = nf90_inq_enum_member(ncid, &
+        typeids(1), 2, member_name_in, &
+        member_value)
    if (retval /= nf90_noerr) call handle_err(retval)
-   if (trim(member_name_in) /= "PARTLY_CLOUDY" .or. member_value /= 1) stop 2
+   if (trim(member_name_in) /= "PARTLY_CLOUDY" &
+        .or. member_value /= 1) stop 2
 
-   retval = nf90_inq_enum_member(ncid, typeids(1), 3, member_name_in, member_value)
+   retval = nf90_inq_enum_member(ncid, &
+        typeids(1), 3, member_name_in, &
+        member_value)
    if (retval /= nf90_noerr) call handle_err(retval)
-   if (trim(member_name_in) /= "CLOUDY" .or. member_value /= 2) stop 2
+   if (trim(member_name_in) /= "CLOUDY" &
+        .or. member_value /= 2) stop 2
 
-   retval = nf90_inq_enum_member(ncid, typeids(1), 4, member_name_in, member_value)
+   retval = nf90_inq_enum_member(ncid, &
+        typeids(1), 4, member_name_in, &
+        member_value)
    if (retval /= nf90_noerr) call handle_err(retval)
-   if (trim(member_name_in) /= "OVERCAST" .or. member_value /= 3) stop 2
+   if (trim(member_name_in) /= "OVERCAST" &
+        .or. member_value /= 3) stop 2
    print *, "Verified: all 4 enum members correct"
 
    ! Validate opaque type
@@ -212,7 +226,8 @@ program f_user_types
         base_type_in, nfields_in, class_in)
    if (retval /= nf90_noerr) call handle_err(retval)
    if (trim(type_name_in) /= "calibration_t") then
-      print *, "Error: expected type name calibration_t, found ", trim(type_name_in)
+      print *, "Error: expected calibration_t", &
+           ", found ", trim(type_name_in)
       stop 2
    end if
    if (class_in /= NF90_OPAQUE) then
@@ -220,7 +235,8 @@ program f_user_types
       stop 2
    end if
    if (type_size_in /= CALIB_SIZE) then
-      print *, "Error: expected opaque size ", CALIB_SIZE, ", found ", type_size_in
+      print *, "Error: expected opaque size ", &
+           CALIB_SIZE, ", found ", type_size_in
       stop 2
    end if
    print *, "Verified: calibration_t is opaque type (", type_size_in, " bytes)"
@@ -234,7 +250,9 @@ program f_user_types
    errors = 0
    do i = 1, NOBS
       if (cloud_in(i) /= cloud_out(i)) then
-         print *, "Error: cloud_cover(", i, ") = ", cloud_in(i), ", expected ", cloud_out(i)
+         print *, "Error: cloud_cover(", i, &
+              ") = ", cloud_in(i), &
+              ", expected ", cloud_out(i)
          errors = errors + 1
       end if
    end do

@@ -1,5 +1,6 @@
 !> @file f_unlimited_dim.f90
-!! @brief Demonstrates unlimited dimensions for appendable time-series data (Fortran)
+!! @brief Unlimited dimensions for appendable
+!! time-series data (Fortran)
 !!
 !! This is the Fortran equivalent of unlimited_dim.c, demonstrating unlimited
 !! dimensions using the Fortran 90 NetCDF API. The program creates a file with
@@ -72,7 +73,9 @@ program f_unlimited_dim
    do t = 1, TOTAL_TIMESTEPS
       do i = 1, NLAT
          do j = 1, NLON
-            temp_data(j, i, t) = 273.15 + (t-1) * 1.0 + (i-1) * 5.0 + (j-1) * 2.0
+            temp_data(j, i, t) = 273.15 &
+                 + (t-1) * 1.0 &
+                 + (i-1) * 5.0 + (j-1) * 2.0
          end do
       end do
    end do
@@ -142,7 +145,9 @@ program f_unlimited_dim
    if (retval /= nf90_noerr) call handle_err(retval)
    
    if (current_size /= INITIAL_TIMESTEPS) then
-      print *, "Error: Expected ", INITIAL_TIMESTEPS, " timesteps, found ", current_size
+      print *, "Error: Expected ", &
+           INITIAL_TIMESTEPS, &
+           " timesteps, found ", current_size
       stop 2
    end if
    print *, "Current time dimension size: ", current_size
@@ -192,7 +197,9 @@ program f_unlimited_dim
    if (retval /= nf90_noerr) call handle_err(retval)
    
    if (final_size /= TOTAL_TIMESTEPS) then
-      print *, "Error: Expected ", TOTAL_TIMESTEPS, " total timesteps, found ", final_size
+      print *, "Error: Expected ", &
+           TOTAL_TIMESTEPS, &
+           " total timesteps, found ", final_size
       stop 2
    end if
    print *, "Verified: ", final_size, " total timesteps after append"
@@ -205,7 +212,9 @@ program f_unlimited_dim
    errors = 0
    do t = 1, TOTAL_TIMESTEPS
       if (time_in(t) /= time_data(t)) then
-         print *, "Error: time(", t, ") = ", time_in(t), ", expected ", time_data(t)
+         print *, "Error: time(", t, ") = ", &
+              time_in(t), ", expected ", &
+              time_data(t)
          errors = errors + 1
       end if
    end do
@@ -238,10 +247,15 @@ program f_unlimited_dim
       stop 2
    end if
    
-   print *, "Verified: all temperature data correct (", TOTAL_TIMESTEPS, " timesteps x ", &
-            NLAT, " x ", NLON, " = ", TOTAL_TIMESTEPS * NLAT * NLON, " values)"
+   print *, "Verified: all temp data (", &
+        TOTAL_TIMESTEPS, " timesteps x ", &
+        NLAT, " x ", NLON, " = ", &
+        TOTAL_TIMESTEPS * NLAT * NLON, &
+        " values)"
    print *, "  Initial write: timesteps 0-", INITIAL_TIMESTEPS - 1
-   print *, "  Appended: timesteps ", INITIAL_TIMESTEPS, "-", TOTAL_TIMESTEPS - 1
+   print *, "  Appended: timesteps ", &
+        INITIAL_TIMESTEPS, "-", &
+        TOTAL_TIMESTEPS - 1
    
    ! Close the file
    retval = nf90_close(ncid)

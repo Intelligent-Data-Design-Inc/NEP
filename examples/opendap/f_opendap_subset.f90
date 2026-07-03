@@ -27,6 +27,55 @@
 !! - nf90_get_var uses 1-based start indices: (/1, 1, 1/)
 !! - allocatable arrays handle dynamic sizes based on dimensions
 !!
+!! **Learning Objectives:**
+!! - Open a full remote dataset without constraint expressions from Fortran
+!! - Use start/count arrays (1-based) for multiple targeted data requests
+!! - Implement four different access patterns
+!!   (time slice, time series, regional, scattered)
+!! - Understand the trade-offs between client-side and server-side subsetting
+!! - Recognize the overhead of many small requests vs fewer large requests
+!!
+!! **Key Concepts:**
+!! - **Client-Side Subsetting**: Open the full
+!!   dataset once, then use start/count
+!!   in nf90_get_var() calls to select different subregions on each read
+!! - **Time Slice Access**: Read all spatial points for one time step
+!!   (start=(/1,1,1/), count=(/lon_len,lat_len,1/) in Fortran column-major)
+!! - **Time Series Access**: Read all time points at one spatial location
+!!   (start=(/lon,lat,1/), count=(/1,1,time_len/))
+!! - **Regional Subset**: Read a small 3D cube from the full dataset
+!! - **Multiple Requests**: One nf90_open()
+!!   supports unlimited nf90_get_var() calls
+!!   with different start/count values — no need to reopen for each subset
+!! - **1-Based Indexing**: Fortran start arrays
+!!   begin at 1, unlike C's 0-based indexing
+!!
+!! **Prerequisites:**
+!! - f_opendap_simple.f90 - Basic OPeNDAP access from Fortran
+!! - opendap_subset.c - C equivalent for comparison
+!! - f_simple_2D.f90 - Understanding start/count subsetting for local files
+!!
+!! **Related Examples:**
+!! - opendap_subset.c - C equivalent
+!! - f_opendap_simple.f90 - Simplest OPeNDAP access (single subset)
+!! - f_opendap_constraint.f90 - Server-side subsetting via URL constraints
+!!
+!! **Compilation:**
+!! @code
+!! gfortran -o f_opendap_subset f_opendap_subset.f90 -lnetcdff -lnetcdf
+!! @endcode
+!!
+!! **Usage:**
+!! @code
+!! ./f_opendap_subset
+!! @endcode
+!!
+!! **Expected Output:**
+!! - Opens remote SST dataset and prints full dimension sizes
+!! - Demonstrates four access patterns with data summaries:
+!!   single time slice, time series at a point, regional 3D cube,
+!!   and multiple scattered requests
+!!
 !! @author Edward Hartnett
 !! @date 6/15/26
 !
@@ -41,7 +90,9 @@ program f_opendap_subset
   integer :: time_len, lat_len, lon_len
   
   ! URL without constraint - we'll subset client-side
-  character(len=256) :: url = "http://test.opendap.org/dap/data/nc/sst.mnmean.nc.gz"
+  character(len=256) :: url = &
+       "http://test.opendap.org" // &
+       "/dap/data/nc/sst.mnmean.nc.gz"
   
   ! Data arrays for reading subsets
   real :: data_3d(3, 10, 10)
@@ -63,7 +114,8 @@ program f_opendap_subset
   status = nf90_inq_varid(ncid, "sst", varid)
   if (status /= NF90_NOERR) stop 1
 
-  status = nf90_inquire_variable(ncid, varid, ndims=var_ndims, dimids=var_dimids)
+  status = nf90_inquire_variable(ncid, varid, &
+       ndims=var_ndims, dimids=var_dimids)
   status = nf90_inquire_dimension(ncid, var_dimids(1), len=time_len)
   status = nf90_inquire_dimension(ncid, var_dimids(2), len=lat_len)
   status = nf90_inquire_dimension(ncid, var_dimids(3), len=lon_len)
@@ -81,7 +133,8 @@ program f_opendap_subset
   status = nf90_get_var(ncid, varid, data_slice, start=start, count=count)
   if (status /= NF90_NOERR) stop 1
 
-  print *, "Shape ", lat_len, "x", lon_len, ", sample[45,90]=", data_slice(45, 90)
+  print *, "Shape ", lat_len, "x", lon_len, &
+       ", sample[45,90]=", data_slice(45, 90)
   deallocate(data_slice)
   
   ! Request 2: Time series at one location
