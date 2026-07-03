@@ -12,15 +12,32 @@
 !! This is a useful pattern for building tools that inspect arbitrary NetCDF files.
 !!
 !! **Learning Objectives:**
-!! - Use nf90_inquire() to discover file structure
-!! - Iterate over dimensions with nf90_inquire_dimension()
-!! - Iterate over variables with nf90_inquire_variable()
+!! - Use nf90_inquire() to discover file structure without prior knowledge
+!! - Iterate over dimensions with nf90_inquire_dimension() and detect unlimited dimensions
+!! - Iterate over variables with nf90_inquire_variable() to get type, shape, and attribute count
 !! - Iterate over attributes with nf90_inq_attname() and nf90_inquire_attribute()
-!! - Read attribute values of different types
-!! - Handle unlimited dimensions
-!! - Accept command-line arguments in Fortran
+!! - Read attribute values of different types (text, numeric, arrays)
+!! - Handle unlimited dimensions specially in output
+!! - Accept command-line arguments in Fortran with get_command_argument()
 !!
-!! **Prerequisites:** Basic Fortran programming, familiarity with NetCDF concepts
+!! **Key Concepts:**
+!! - **Inquiry Functions**: nf90_inquire*() family discovers file contents at runtime
+!! - **Variable Iteration**: Loop from varid=1 to nvars to visit all variables
+!! - **Attribute Iteration**: Loop from attnum=1 to natts for each variable or NF90_GLOBAL
+!! - **Type Discovery**: nf90_inquire_attribute() returns xtype for proper interpretation
+!! - **NF90_GLOBAL**: Special varid constant for accessing global (file-level) attributes
+!! - **Command-Line Arguments**: get_command_argument() for Fortran 2003+ file input
+!! - **Generic Tool Pattern**: Read structure first, then interpret — enables tools
+!!   that work on any NetCDF file regardless of contents
+!!
+!! **Prerequisites:**
+!! - f_simple_2D.f90 - Basic Fortran NetCDF operations
+!! - f_coord_vars.f90 - Understanding dimensions, variables, and attributes
+!!
+!! **Related Examples:**
+!! - dump_classic_metadata.c - C equivalent
+!! - f_dump_nc4_metadata.f90 - Extended version with NetCDF-4 groups and user types
+!! - f_coord_vars.f90 - Creates a file suitable for inspection with this tool
 !!
 !! **Compilation:**
 !! @code
@@ -31,6 +48,12 @@
 !! @code
 !! ./f_dump_classic_metadata f_coord_vars.nc
 !! @endcode
+!!
+!! **Expected Output:**
+!! Prints all metadata from the specified file:
+!! - Dimensions with names and lengths (unlimited flagged)
+!! - Global attributes with names, types, and values
+!! - Variables with names, types, dimension lists, and per-variable attributes
 !!
 !! @author Edward Hartnett, Intelligent Data Design, Inc.
 !! @date 2026

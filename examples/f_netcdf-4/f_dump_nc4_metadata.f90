@@ -14,12 +14,28 @@
 !!
 !! **Learning Objectives:**
 !! - Use nf90_inq_typeids() to discover user-defined types
-!! - Use nf90_inq_user_type() to determine type class
+!! - Use nf90_inq_user_type() to determine type class (enum, opaque, compound, vlen)
 !! - Use nf90_inq_enum(), nf90_inq_enum_member(), nf90_inq_opaque()
-!! - Use nf90_inq_grps() to discover groups
-!! - Recursively traverse the group hierarchy
+!! - Use nf90_inq_grps() to discover groups and traverse hierarchies recursively
+!! - Build a generic metadata inspection tool for NetCDF-4/HDF5 files
 !!
-!! **Prerequisites:** Basic Fortran programming, familiarity with NetCDF-4
+!! **Key Concepts:**
+!! - **User-Defined Types**: NetCDF-4 supports enum, opaque, compound, and vlen types;
+!!   Fortran handles enum and opaque well but has limited compound/vlen support
+!! - **Type Class Discovery**: nf90_inq_user_type() returns the type class for dispatch
+!! - **Group Hierarchy**: nf90_inq_grps() returns child group IDs; recurse to traverse
+!! - **Recursive Traversal**: Process root group, then recurse into each child group
+!! - **NF90_GLOBAL**: Used for file-level and group-level attribute access
+!!
+!! **Prerequisites:**
+!! - f_dump_classic_metadata.f90 - Classic metadata inspection (simpler, no groups/types)
+!! - f_user_types.f90 - Creating files with user-defined types
+!!
+!! **Related Examples:**
+!! - dump_nc4_metadata.c - C equivalent (handles all four user-defined type classes)
+!! - f_dump_classic_metadata.f90 - Simpler classic-format version
+!! - f_groups.f90 - Creates files with group hierarchies
+!! - f_user_types.f90 - Creates files with enum and opaque types
 !!
 !! **Compilation:**
 !! @code
@@ -30,6 +46,14 @@
 !! @code
 !! ./f_dump_nc4_metadata f_user_types.nc
 !! @endcode
+!!
+!! **Expected Output:**
+!! Prints all metadata from the specified NetCDF-4 file:
+!! - User-defined types with class, name, and member details
+!! - Dimensions with names and lengths (unlimited flagged)
+!! - Global attributes with names, types, and values
+!! - Variables with names, types, dimensions, and per-variable attributes
+!! - Groups (recursively) with their own types, dimensions, variables, and attributes
 !!
 !! @author Edward Hartnett, Intelligent Data Design, Inc.
 !! @date 2026

@@ -26,6 +26,49 @@
 !! server extract only requested data. The constrained dataset appears
 !! to have only the subset dimensions, not the full original dimensions.
 !!
+!! **Learning Objectives:**
+!! - Build constrained OPeNDAP URLs with server-side subsetting expressions
+!! - Understand that constraint expressions use 0-based indexing (independent of Fortran)
+!! - See how nf90_inquire_dimension() returns constrained sizes, not full sizes
+!! - Use allocatable arrays to handle dynamically-sized constrained data
+!! - Apply stride constraints for temporal sampling
+!!
+!! **Key Concepts:**
+!! - **Server-Side Subsetting**: Constraint expression appended to URL (e.g., ?sst[0:2][0:88][0:179])
+!!   tells the server to send only the requested subset — reduces network transfer
+!! - **Constrained Dimensions**: After opening a constrained URL, dimension queries
+!!   return the constrained sizes (e.g., time=3 instead of full time=1857)
+!! - **0-Based Constraints**: URL constraints always use 0-based C-style indexing
+!!   regardless of the client language; Fortran nf90_get_var still uses 1-based
+!! - **Stride Expressions**: [start:stride:stop] syntax (e.g., [0:2:12]) samples
+!!   every Nth element on the server side
+!! - **Dynamic Allocation**: Fortran allocatable arrays adapt to constrained sizes
+!!
+!! **Prerequisites:**
+!! - f_opendap_simple.f90 - Basic OPeNDAP access from Fortran
+!! - opendap_constraint.c - C equivalent for comparison
+!!
+!! **Related Examples:**
+!! - opendap_constraint.c - C equivalent
+!! - f_opendap_simple.f90 - Simplest OPeNDAP access (no constraints)
+!! - f_opendap_subset.f90 - Client-side subsetting (no URL constraints)
+!!
+!! **Compilation:**
+!! @code
+!! gfortran -o f_opendap_constraint f_opendap_constraint.f90 -lnetcdff -lnetcdf
+!! @endcode
+!!
+!! **Usage:**
+!! @code
+!! ./f_opendap_constraint
+!! @endcode
+!!
+!! **Expected Output:**
+!! - Opens constrained SST dataset (3 time steps, full spatial) and prints
+!!   constrained dimension sizes
+!! - Reads and displays a sample of the constrained data
+!! - Reopens with stride constraint and shows sampled time steps
+!!
 !! @author Edward Hartnett
 !! @date 6/15/26
 !

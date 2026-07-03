@@ -27,6 +27,51 @@
 !! - nf90_get_var uses 1-based start indices: (/1, 1, 1/)
 !! - allocatable arrays handle dynamic sizes based on dimensions
 !!
+!! **Learning Objectives:**
+!! - Open a full remote dataset without constraint expressions from Fortran
+!! - Use start/count arrays (1-based) for multiple targeted data requests
+!! - Implement four different access patterns (time slice, time series, regional, scattered)
+!! - Understand the trade-offs between client-side and server-side subsetting
+!! - Recognize the overhead of many small requests vs fewer large requests
+!!
+!! **Key Concepts:**
+!! - **Client-Side Subsetting**: Open the full dataset once, then use start/count
+!!   in nf90_get_var() calls to select different subregions on each read
+!! - **Time Slice Access**: Read all spatial points for one time step
+!!   (start=(/1,1,1/), count=(/lon_len,lat_len,1/) in Fortran column-major)
+!! - **Time Series Access**: Read all time points at one spatial location
+!!   (start=(/lon,lat,1/), count=(/1,1,time_len/))
+!! - **Regional Subset**: Read a small 3D cube from the full dataset
+!! - **Multiple Requests**: One nf90_open() supports unlimited nf90_get_var() calls
+!!   with different start/count values — no need to reopen for each subset
+!! - **1-Based Indexing**: Fortran start arrays begin at 1, unlike C's 0-based indexing
+!!
+!! **Prerequisites:**
+!! - f_opendap_simple.f90 - Basic OPeNDAP access from Fortran
+!! - opendap_subset.c - C equivalent for comparison
+!! - f_simple_2D.f90 - Understanding start/count subsetting for local files
+!!
+!! **Related Examples:**
+!! - opendap_subset.c - C equivalent
+!! - f_opendap_simple.f90 - Simplest OPeNDAP access (single subset)
+!! - f_opendap_constraint.f90 - Server-side subsetting via URL constraints
+!!
+!! **Compilation:**
+!! @code
+!! gfortran -o f_opendap_subset f_opendap_subset.f90 -lnetcdff -lnetcdf
+!! @endcode
+!!
+!! **Usage:**
+!! @code
+!! ./f_opendap_subset
+!! @endcode
+!!
+!! **Expected Output:**
+!! - Opens remote SST dataset and prints full dimension sizes
+!! - Demonstrates four access patterns with data summaries:
+!!   single time slice, time series at a point, regional 3D cube,
+!!   and multiple scattered requests
+!!
 !! @author Edward Hartnett
 !! @date 6/15/26
 !
