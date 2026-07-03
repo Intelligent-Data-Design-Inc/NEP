@@ -12,14 +12,32 @@
  * This is a useful pattern for building tools that inspect arbitrary NetCDF files.
  *
  * **Learning Objectives:**
- * - Use nc_inq() to discover file structure
- * - Iterate over dimensions with nc_inq_dim()
- * - Iterate over variables with nc_inq_var()
+ * - Use nc_inq() to discover file structure without prior knowledge
+ * - Iterate over dimensions with nc_inq_dim() and detect unlimited dimensions
+ * - Iterate over variables with nc_inq_var() to get type, shape, and attribute count
  * - Iterate over attributes with nc_inq_att() and nc_inq_attname()
- * - Read attribute values of different types
- * - Handle unlimited dimensions
+ * - Read attribute values of different types (text, numeric, arrays)
+ * - Handle unlimited dimensions specially in output
+ * - Build generic file inspection tools using only inquiry functions
  *
- * **Prerequisites:** Basic C programming, familiarity with NetCDF concepts
+ * **Key Concepts:**
+ * - **Inquiry Functions**: nc_inq_*() family discovers file contents at runtime
+ * - **Variable Iteration**: Loop from varid=0 to nvars-1 to visit all variables
+ * - **Attribute Iteration**: Loop from attnum=0 to natts-1 for each variable or NC_GLOBAL
+ * - **Type Discovery**: nc_inq_att() returns nc_type for proper value interpretation
+ * - **Unlimited Dimension**: Detected by comparing dimid to nc_inq_unlimdim() result
+ * - **NC_GLOBAL**: Special varid constant for accessing global (file-level) attributes
+ * - **Generic Tool Pattern**: Read structure first, then interpret — enables tools
+ *   that work on any NetCDF file regardless of contents
+ *
+ * **Prerequisites:**
+ * - simple_2D.c - Basic NetCDF file operations
+ * - coord_vars.c - Understanding of dimensions, variables, and attributes
+ *
+ * **Related Examples:**
+ * - dump_nc4_metadata.c - Extended version with NetCDF-4 groups and user types
+ * - coord_vars.c - Creates a file suitable for inspection with this tool
+ * - coord.c - Creates a 3D file with more metadata to explore
  *
  * **Compilation:**
  * @code
@@ -30,6 +48,12 @@
  * @code
  * ./dump_classic_metadata coord_vars.nc
  * @endcode
+ *
+ * **Expected Output:**
+ * Prints all metadata from the specified file:
+ * - Dimensions with names and lengths (unlimited flagged)
+ * - Global attributes with names, types, and values
+ * - Variables with names, types, dimension lists, and per-variable attributes
  *
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  * @date 2026

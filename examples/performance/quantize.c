@@ -43,6 +43,42 @@
  *   python3 plot_quantize.py   # produces quantize_performance.jpg
  * @endcode
  *
+ * **Learning Objectives:**
+ * - Understand lossy quantization as a pre-filter that improves lossless compression
+ * - Learn the three quantization algorithms: BitGroom, GranularBitRound, BitRound
+ * - See how NSD (Number of Significant Digits) controls precision vs compression
+ * - Measure the interaction between quantization and each lossless filter
+ * - Quantify precision loss (max absolute error) to make informed trade-offs
+ * - Recognize that quantization + lossless can achieve 10–50× compression ratios
+ *   with bounded, predictable precision loss
+ *
+ * **Key Concepts:**
+ * - **Quantization**: Lossy pre-filter that zeroes excess significand bits of
+ *   IEEE 754 floats; the zeroed bits compress dramatically better because
+ *   adjacent values share identical trailing bit patterns
+ * - **NSD (Significant Digits)**: Number of significant decimal digits preserved;
+ *   higher NSD = less compression but less precision loss
+ * - **NSB (Significant Bits)**: Number of binary significand bits retained
+ *   (BitRound only); provides finer control than NSD
+ * - **BitGroom**: Alternates excess bits between 0 and 1 to preserve array mean;
+ *   simplest algorithm, well-established
+ * - **GranularBitRound**: Computes minimum required bits per value using IEEE
+ *   rounding; better compression than BitGroom at same NSD
+ * - **BitRound**: User specifies NSB directly; free from multipoint statistics
+ *   artifacts; most control over precision/compression balance
+ * - **Call Order**: shuffle → lossless filter → nc_def_var_quantize() → nc_enddef()
+ *
+ * **Prerequisites:**
+ * - simple_nc4.c - NetCDF-4 file creation basics
+ * - chunking.c - Understanding chunked storage
+ * - lossless.c - Understanding the lossless filter landscape
+ * - deflate.c - Understanding baseline lossless performance
+ *
+ * **Related Examples:**
+ * - lossless.c - Lossless-only comparison (baseline for quantize improvements)
+ * - deflate.c - Deflate performance without quantization
+ * - zstandard.c - Zstandard performance without quantization
+ *
  * **Key API functions:**
  * - nc_def_var_quantize()    Enable quantization pre-filter (BitGroom/GranularBitRound/BitRound)
  * - nc_inq_var_quantize()    Query quantization settings on an open variable

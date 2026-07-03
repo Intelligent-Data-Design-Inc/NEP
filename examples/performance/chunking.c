@@ -33,12 +33,33 @@
  *   # Import results.csv into any spreadsheet or Python/R plotting tool
  * @endcode
  *
- * **Learning objectives:**
+ * **Learning Objectives:**
  * - Understand how chunk shape determines which access patterns are fast or slow
  * - Learn to use nc_def_var_chunking() to set chunk shape at creation time
  * - Use nc_inq_var_chunking() to verify chunk shape on an existing variable
  * - Measure read throughput with gettimeofday() wall-clock timing
  * - See that neither chunk shape is universally better — match shape to access
+ *
+ * **Key Concepts:**
+ * - **Chunk Shape**: The dimensions of each storage block; determines how many
+ *   chunks must be read for a given access pattern (fewer = faster)
+ * - **Time-Optimized Chunks (1×NY×NX)**: Each chunk holds one complete time slab;
+ *   reading a time step loads exactly one chunk — ideal for spatial analysis
+ * - **Column-Optimized Chunks (NZ×1×1)**: Each chunk holds one complete time series;
+ *   extracting a station record loads exactly one chunk — ideal for point analysis
+ * - **Access Pattern Mismatch**: When chunk shape conflicts with access pattern,
+ *   many extra chunks must be read and mostly discarded — 10–100× slower
+ * - **No Universal Best**: The optimal chunk shape depends entirely on how the
+ *   data will be read; design for the dominant access pattern
+ *
+ * **Prerequisites:**
+ * - simple_nc4.c - NetCDF-4 file creation basics
+ * - chunking_performance.c - Broader chunking strategies overview
+ *
+ * **Related Examples:**
+ * - chunking_performance.c - Three chunking strategies compared (netcdf-4 tutorial)
+ * - deflate.c - Compression performance (depends on chunk shape)
+ * - cache_tuning.c - Chunk cache tuning (mitigates mismatch overhead)
  *
  * **Key API functions:**
  * - nc_def_var_chunking()     Set chunk shape at variable definition time

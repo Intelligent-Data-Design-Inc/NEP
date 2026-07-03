@@ -26,6 +26,39 @@
  *   python3 plot_fill_values.py   # produces fill_values_performance.jpg
  * @endcode
  *
+ * **Learning Objectives:**
+ * - Understand fill value behavior in NetCDF (automatic pre-filling of unwritten data)
+ * - Learn the performance impact of fill mode ON vs OFF for different formats
+ * - Recognize the difference between nc_set_fill() (file-level) and nc_def_var_fill()
+ *   (variable-level) APIs
+ * - Measure write overhead caused by fill pre-initialization
+ * - Make informed decisions about when to disable fill mode for performance
+ *
+ * **Key Concepts:**
+ * - **Fill Mode (NC_FILL)**: When enabled (default), NetCDF pre-initializes all
+ *   allocated storage with the fill value before user data is written; ensures
+ *   unwritten elements return a known sentinel value on read
+ * - **NC_NOFILL**: Disables pre-initialization; unwritten elements contain
+ *   arbitrary bytes — faster writes but dangerous if data has gaps
+ * - **Classic vs NetCDF-4**: In classic format, fill pre-writes the entire variable
+ *   as a contiguous block; in NetCDF-4/HDF5, fill applies per-chunk and the cost
+ *   depends on chunk cache behavior
+ * - **_FillValue Attribute**: The sentinel value used for unwritten data; default
+ *   varies by type (e.g., 9.96921e+36 for NC_FLOAT); set via nc_put_att_*() or
+ *   nc_def_var_fill()
+ * - **When to Disable Fill**: Safe when you guarantee every element will be written;
+ *   eliminates the write-before-write overhead (can save 30–50% on large datasets)
+ *
+ * **Prerequisites:**
+ * - simple_2D.c - Fill value basics (nc_def_var_fill, nc_inq_var_fill)
+ * - simple_nc4.c - NetCDF-4 file creation
+ * - chunking.c - Chunk-level storage understanding
+ *
+ * **Related Examples:**
+ * - deflate.c - Compression performance (fill affects compressibility)
+ * - endianness.c - Another storage property performance benchmark
+ * - chunking.c - Chunk shape performance
+ *
  * **Key API functions:**
  * - nc_set_fill()           Enable/disable fill value mode
  * - nc_inq_fill()           Query current fill mode setting

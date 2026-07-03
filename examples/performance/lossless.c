@@ -41,6 +41,40 @@
  *   python3 plot_lossless.py   # produces lossless_performance.jpg
  * @endcode
  *
+ * **Learning Objectives:**
+ * - Compare all available lossless compression filters at their optimal settings
+ * - Understand the performance trade-offs: ratio vs write speed vs read speed
+ * - Learn which filter is best for different priorities (archival vs real-time)
+ * - See the consistent benefit of the shuffle filter across all lossless compressors
+ * - Make informed filter selection decisions based on empirical measurements
+ *
+ * **Key Concepts:**
+ * - **Filter Comparison**: Each lossless filter has different strengths:
+ *   - DEFLATE: universal compatibility, moderate speed and ratio
+ *   - Zstandard: best speed/ratio tradeoff for most workloads
+ *   - SZIP: designed for scientific data, good for correlated integers
+ *   - LZ4: fastest decompression, lowest ratio
+ *   - BZIP2: highest ratio, slowest speed
+ * - **Optimal Settings**: Each filter tested at its empirically best single setting
+ *   (determined from individual filter benchmarks), not all possible levels
+ * - **Shuffle Baseline**: All filters tested with shuffle enabled, since shuffle
+ *   universally improves ratio for IEEE 754 float data at minimal cost
+ * - **Unified Methodology**: Same dataset, chunk shape, and measurement approach
+ *   across all filters for fair comparison
+ *
+ * **Prerequisites:**
+ * - simple_nc4.c - NetCDF-4 file creation basics
+ * - chunking.c - Understanding chunked storage
+ * - deflate.c - Understanding individual filter benchmarks
+ *
+ * **Related Examples:**
+ * - deflate.c - Detailed deflate level sweep
+ * - zstandard.c - Detailed Zstandard level sweep
+ * - bzip2.c - Detailed BZIP2 level sweep
+ * - lz4.c - Detailed LZ4 level sweep
+ * - szip.c - Detailed SZIP pixels_per_block sweep
+ * - quantize.c - Lossy quantization combined with lossless filters
+ *
  * **Key API functions:**
  * - nc_def_var_deflate()      Enable shuffle and/or DEFLATE compression
  * - nc_def_var_zstandard()    Enable Zstandard compression

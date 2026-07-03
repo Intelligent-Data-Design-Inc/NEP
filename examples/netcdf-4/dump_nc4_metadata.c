@@ -14,13 +14,31 @@
  * This extends the classic dump_classic_metadata example with NetCDF-4 features.
  *
  * **Learning Objectives:**
- * - Use nc_inq_typeids() to discover user-defined types
- * - Use nc_inq_user_type() to determine type class
- * - Use nc_inq_compound(), nc_inq_enum(), nc_inq_vlen(), nc_inq_opaque()
- * - Use nc_inq_grps() to discover groups
+ * - Use nc_inq_typeids() to discover user-defined types in a group
+ * - Use nc_inq_user_type() to determine type class (compound, enum, vlen, opaque)
+ * - Use nc_inq_compound(), nc_inq_enum(), nc_inq_vlen(), nc_inq_opaque() for details
+ * - Use nc_inq_grps() to discover child groups
  * - Recursively traverse the group hierarchy
+ * - Build generic inspection tools for NetCDF-4 files with complex structure
  *
- * **Prerequisites:** Basic C programming, familiarity with NetCDF-4 concepts
+ * **Key Concepts:**
+ * - **User-Defined Types**: Types beyond atomic (compound, enum, vlen, opaque)
+ * - **Type Discovery**: nc_inq_typeids() returns all type IDs in a group
+ * - **Type Classes**: NC_COMPOUND, NC_ENUM, NC_VLEN, NC_OPAQUE identified by nc_inq_user_type()
+ * - **Group Hierarchy**: nc_inq_grps() returns child group IDs for recursive traversal
+ * - **Recursive Pattern**: Process root group, then recurse into each child group
+ * - **NC_GLOBAL in Groups**: Each group has its own global attributes, accessed via group ncid
+ * - **Type Scope**: User-defined types are visible in their defining group and descendants
+ *
+ * **Prerequisites:**
+ * - dump_classic_metadata.c - Classic metadata inspection pattern
+ * - groups.c - Understanding group hierarchy
+ * - user_types.c - Understanding user-defined types
+ *
+ * **Related Examples:**
+ * - dump_classic_metadata.c - Simpler version for classic files
+ * - user_types.c - Creates a file with all four user-defined type classes
+ * - groups.c - Creates a file with nested groups suitable for inspection
  *
  * **Compilation:**
  * @code
@@ -31,6 +49,14 @@
  * @code
  * ./dump_nc4_metadata user_types.nc
  * @endcode
+ *
+ * **Expected Output:**
+ * Prints all metadata from the specified NetCDF-4 file:
+ * - User-defined types with class, size, and member details
+ * - Dimensions (with unlimited flagged) per group
+ * - Global attributes per group
+ * - Variables with types, dimensions, and per-variable attributes
+ * - Recursive output for all child groups
  *
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  * @date 2026

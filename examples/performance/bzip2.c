@@ -38,6 +38,37 @@
  *   python3 plot_bzip2.py   # produces bzip2_performance.jpg
  * @endcode
  *
+ * **Learning Objectives:**
+ * - Understand BZIP2 block-sorting compression in NetCDF-4/HDF5
+ * - Learn how BZIP2 levels (1–9) affect compression ratio and speed
+ * - See how the shuffle filter interacts with BZIP2 for float data
+ * - Compare BZIP2 trade-offs: highest ratio but slowest speed among filters
+ * - Determine when BZIP2's ratio advantage justifies its speed penalty
+ *
+ * **Key Concepts:**
+ * - **BZIP2**: Block-sorting (Burrows-Wheeler) lossless compression; typically
+ *   achieves the highest ratio among NetCDF-4 filters but at 5–10× slower
+ *   compression speed compared to deflate or Zstandard
+ * - **Block Sorting**: BZIP2 rearranges data blocks to group similar bytes,
+ *   then applies move-to-front transform and Huffman coding
+ * - **Level Range (1–9)**: Higher levels use larger block sizes (100K–900K);
+ *   level 9 gives marginally better compression at more memory use
+ * - **Shuffle + BZIP2**: The shuffle filter pre-groups float bytes for the
+ *   block sorter, typically adding 3–5× compression ratio improvement
+ * - **Use Case**: Best for archival storage where compression time is
+ *   acceptable and maximum file size reduction is the priority
+ *
+ * **Prerequisites:**
+ * - simple_nc4.c - NetCDF-4 file creation basics
+ * - chunking.c - Understanding chunked storage (required for compression)
+ * - deflate.c - Comparison baseline (deflate is the traditional default)
+ *
+ * **Related Examples:**
+ * - deflate.c - Traditional deflate/zlib compression (faster, lower ratio)
+ * - zstandard.c - Zstandard compression (faster than BZIP2, similar ratio)
+ * - lz4.c - LZ4 compression (fastest, lowest ratio)
+ * - lossless.c - Unified comparison of all lossless filters
+ *
  * **Key API functions:**
  * - nc_def_var_bzip2()      Enable BZIP2 compression at a given level
  * - nc_inq_var_bzip2()      Query BZIP2 settings on an open variable
