@@ -51,7 +51,9 @@ program f_nczarr_chunking
    use netcdf
    implicit none
 
-   character(len=*), parameter :: FILE_URL = "file://f_nczarr_chunking.zarr#mode=nczarr"
+   character(len=*), parameter :: FILE_URL = &
+        "file://f_nczarr_chunking.zarr" // &
+        "#mode=nczarr"
    integer, parameter :: NX = 5, NY = 4
    integer, parameter :: NDIMS = 2
    integer, parameter :: CHUNK_Y = 2, CHUNK_X = 5
@@ -123,7 +125,9 @@ program f_nczarr_chunking
    retval = nf90_inquire_dimension(ncid, x_dimid, len=len_x)
    if (retval /= nf90_noerr) call handle_err(retval)
 
-   print *, "Dataset:", ndims_in, "dims,", nvars_in, "vars, y=", len_y, ", x=", len_x
+   print *, "Dataset:", ndims_in, "dims,", &
+        nvars_in, "vars, y=", len_y, &
+        ", x=", len_x
 
    retval = nf90_inq_varid(ncid, "temperature", varid)
    if (retval /= nf90_noerr) call handle_err(retval)
@@ -150,7 +154,9 @@ program f_nczarr_chunking
       do i = 1, NX
          expected_val = 280.0 + real(j - 1) * 2.0 + real(i - 1) * 0.5
          if (data_in(i, j) /= expected_val) then
-            print *, "Mismatch at", i, j, ": got", data_in(i, j), ", expected", expected_val
+            print *, "Mismatch at", i, j, &
+                 ": got", data_in(i, j), &
+                 ", expected", expected_val
             errors = errors + 1
          end if
       end do

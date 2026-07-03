@@ -28,21 +28,27 @@
 !!
 !! **Learning Objectives:**
 !! - Build constrained OPeNDAP URLs with server-side subsetting expressions
-!! - Understand that constraint expressions use 0-based indexing (independent of Fortran)
+!! - Understand that constraint expressions
+!!   use 0-based indexing (not Fortran-based)
 !! - See how nf90_inquire_dimension() returns constrained sizes, not full sizes
 !! - Use allocatable arrays to handle dynamically-sized constrained data
 !! - Apply stride constraints for temporal sampling
 !!
 !! **Key Concepts:**
-!! - **Server-Side Subsetting**: Constraint expression appended to URL (e.g., ?sst[0:2][0:88][0:179])
-!!   tells the server to send only the requested subset — reduces network transfer
-!! - **Constrained Dimensions**: After opening a constrained URL, dimension queries
+!! - **Server-Side Subsetting**: Constraint
+!!   expression appended to URL (e.g.,
+!!   ?sst[0:2][0:88][0:179]) tells the server
+!!   to send only the requested subset
+!! - **Constrained Dimensions**: After opening
+!!   a constrained URL, dimension queries
 !!   return the constrained sizes (e.g., time=3 instead of full time=1857)
-!! - **0-Based Constraints**: URL constraints always use 0-based C-style indexing
+!! - **0-Based Constraints**: URL constraints
+!!   always use 0-based C-style indexing
 !!   regardless of the client language; Fortran nf90_get_var still uses 1-based
 !! - **Stride Expressions**: [start:stride:stop] syntax (e.g., [0:2:12]) samples
 !!   every Nth element on the server side
-!! - **Dynamic Allocation**: Fortran allocatable arrays adapt to constrained sizes
+!! - **Dynamic Allocation**: Fortran allocatable
+!!   arrays adapt to constrained sizes
 !!
 !! **Prerequisites:**
 !! - f_opendap_simple.f90 - Basic OPeNDAP access from Fortran
@@ -84,7 +90,9 @@ program f_opendap_constraint
   character(len=NF90_MAX_NAME) :: dim_name
   
   ! Base URL and constrained URL
-  character(len=512) :: base_url = "http://test.opendap.org/dap/data/nc/sst.mnmean.nc.gz"
+  character(len=512) :: base_url = &
+       "http://test.opendap.org" // &
+       "/dap/data/nc/sst.mnmean.nc.gz"
   character(len=1024) :: url
   
   ! Data array for reading constrained data
@@ -108,7 +116,8 @@ program f_opendap_constraint
   ! Get variable and constrained dimension info
   status = nf90_inq_varid(ncid, "sst", varid)
   if (status /= NF90_NOERR) stop 1
-  status = nf90_inquire_variable(ncid, varid, ndims=var_ndims, dimids=var_dimids)
+  status = nf90_inquire_variable(ncid, varid, &
+       ndims=var_ndims, dimids=var_dimids)
   if (status /= NF90_NOERR) stop 1
 
   ! Print constrained dimensions (subset sizes)

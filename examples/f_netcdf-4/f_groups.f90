@@ -1,14 +1,24 @@
 !> @file f_groups.f90
-!! @brief Demonstrates NetCDF-4 hierarchical groups, nested groups, and dimension visibility (Fortran)
+!! @brief NetCDF-4 hierarchical groups, nested
+!! groups, and dimension visibility (Fortran)
 !!
-!! Fortran equivalent of groups.c, demonstrating NetCDF-4's hierarchical group feature using
-!! the Fortran 90 NetCDF API. Groups enable organizing datasets into logical groupings similar
-!! to directories in a filesystem, providing namespace isolation for variables while allowing
-!! dimensions to be shared across the hierarchy through dimension visibility rules.
+!! Fortran equivalent of groups.c, demonstrating
+!! NetCDF-4's hierarchical group feature using
+!! the Fortran 90 NetCDF API. Groups enable
+!! organizing datasets into logical groupings
+!! similar to directories in a filesystem,
+!! providing namespace isolation for variables
+!! while allowing dimensions to be shared across
+!! the hierarchy through dimension visibility
+!! rules.
 !!
-!! The program creates a three-level group hierarchy (root → SubGroup1, root → SubGroup2 → 
-!! NestedGroup), demonstrates dimension visibility across group boundaries, and showcases
-!! all five new NetCDF-4 integer types (NF90_UBYTE, NF90_USHORT, NF90_UINT, NF90_INT64, NF90_UINT64).
+!! The program creates a three-level group
+!! hierarchy (root->SubGroup1, root->SubGroup2->
+!! NestedGroup), demonstrates dimension visibility
+!! across group boundaries, and showcases all five
+!! new NetCDF-4 integer types (NF90_UBYTE,
+!! NF90_USHORT, NF90_UINT, NF90_INT64,
+!! NF90_UINT64).
 !!
 !! **Learning Objectives:**
 !! - Understand NetCDF-4 hierarchical group structures in Fortran
@@ -18,11 +28,14 @@
 !! - Recognize when groups provide organizational benefits
 !!
 !! **Key Concepts:**
-!! - **Hierarchical Groups**: Organize datasets into logical groupings (like directories)
+!! - **Hierarchical Groups**: Organize datasets
+!!   into logical groupings (like directories)
 !! - **Dimension Visibility**: Parent dimensions visible in all child groups
 !! - **Variable Scoping**: Variables only visible in their defining group
 !! - **Group Navigation**: Use nf90_inq_grp_ncid() to navigate by name
-!! - **New Integer Types**: NF90_UBYTE, NF90_USHORT, NF90_UINT, NF90_INT64, NF90_UINT64
+!! - **New Integer Types**: NF90_UBYTE,
+!!   NF90_USHORT, NF90_UINT, NF90_INT64,
+!!   NF90_UINT64
 !!
 !! **NetCDF-4 Group Architecture:**
 !! - Groups implemented via NC_GRP_INFO_T structures (libsrc4/libhdf5)
@@ -157,7 +170,9 @@ program f_groups
    
    ! SubGroup1: NF90_USHORT variable (2D: x, y)
    print *, "  SubGroup1: ushort_var (NF90_USHORT, 2D: x, y)"
-   retval = nf90_def_var(grp1_id, "ushort_var", NF90_USHORT, dimids_2d, ushort_varid)
+   retval = nf90_def_var(grp1_id, &
+        "ushort_var", NF90_USHORT, &
+        dimids_2d, ushort_varid)
    if (retval /= nf90_noerr) call handle_err(retval)
    
    ! SubGroup2: NF90_UINT variable (2D: x, y)
@@ -167,7 +182,9 @@ program f_groups
    
    ! NestedGroup: NF90_INT64 variable (2D: x, y)
    print *, "  NestedGroup: int64_var (NF90_INT64, 2D: x, y)"
-   retval = nf90_def_var(nested_id, "int64_var", NF90_INT64, dimids_2d, int64_varid)
+   retval = nf90_def_var(nested_id, &
+        "int64_var", NF90_INT64, &
+        dimids_2d, int64_varid)
    if (retval /= nf90_noerr) call handle_err(retval)
    
    ! NestedGroup: NF90_UINT64 variable (3D: x, y, z)
@@ -175,7 +192,9 @@ program f_groups
    dimids_3d(1) = x_dimid
    dimids_3d(2) = y_dimid
    dimids_3d(3) = z_dimid
-   retval = nf90_def_var(nested_id, "uint64_var", NF90_UINT64, dimids_3d, uint64_varid)
+   retval = nf90_def_var(nested_id, &
+        "uint64_var", NF90_UINT64, &
+        dimids_3d, uint64_varid)
    if (retval /= nf90_noerr) call handle_err(retval)
    
    ! End define mode
@@ -267,12 +286,16 @@ program f_groups
    call validate_dimensions(ncid, nested_id)
    
    ! Query and validate all variable metadata
-   call validate_variables(ncid, grp1_id, grp2_id, nested_id, &
-                           ubyte_varid, ushort_varid, uint_varid, int64_varid, uint64_varid)
+   call validate_variables(ncid, grp1_id, &
+        grp2_id, nested_id, &
+        ubyte_varid, ushort_varid, &
+        uint_varid, int64_varid, uint64_varid)
    
    ! Read and validate all data
-   call validate_data(ncid, grp1_id, grp2_id, nested_id, &
-                      ubyte_varid, ushort_varid, uint_varid, int64_varid, uint64_varid)
+   call validate_data(ncid, grp1_id, &
+        grp2_id, nested_id, &
+        ubyte_varid, ushort_varid, &
+        uint_varid, int64_varid, uint64_varid)
    
    ! Close the file
    retval = nf90_close(ncid)
@@ -345,21 +368,24 @@ contains
       retval = nf90_inq_grpname(grp1_id, grpname)
       if (retval /= nf90_noerr) call handle_err(retval)
       if (trim(grpname) /= "SubGroup1") then
-         print *, "Error: Expected group name 'SubGroup1', found '", trim(grpname), "'"
+         print *, "Error: Expected 'SubGroup1'", &
+              ", found '", trim(grpname), "'"
          stop ERRCODE
       end if
       
       retval = nf90_inq_grpname(grp2_id, grpname)
       if (retval /= nf90_noerr) call handle_err(retval)
       if (trim(grpname) /= "SubGroup2") then
-         print *, "Error: Expected group name 'SubGroup2', found '", trim(grpname), "'"
+         print *, "Error: Expected 'SubGroup2'", &
+              ", found '", trim(grpname), "'"
          stop ERRCODE
       end if
       
       retval = nf90_inq_grpname(nested_id, grpname)
       if (retval /= nf90_noerr) call handle_err(retval)
       if (trim(grpname) /= "NestedGroup") then
-         print *, "Error: Expected group name 'NestedGroup', found '", trim(grpname), "'"
+         print *, "Error: Expected 'NestedGroup'", &
+              ", found '", trim(grpname), "'"
          stop ERRCODE
       end if
       print *, "Verified: All group names correct"
@@ -450,10 +476,18 @@ contains
       print *, "Verified: All dimension sizes correct"
    end subroutine validate_dimensions
    
-   subroutine validate_variables(ncid, grp1_id, grp2_id, nested_id, &
-                                 ubyte_varid, ushort_varid, uint_varid, int64_varid, uint64_varid)
-      integer, intent(in) :: ncid, grp1_id, grp2_id, nested_id
-      integer, intent(out) :: ubyte_varid, ushort_varid, uint_varid, int64_varid, uint64_varid
+   subroutine validate_variables(ncid, &
+        grp1_id, grp2_id, nested_id, &
+        ubyte_varid, ushort_varid, &
+        uint_varid, int64_varid, &
+        uint64_varid)
+      integer, intent(in) :: ncid, grp1_id
+      integer, intent(in) :: grp2_id, nested_id
+      integer, intent(out) :: ubyte_varid
+      integer, intent(out) :: ushort_varid
+      integer, intent(out) :: uint_varid
+      integer, intent(out) :: int64_varid
+      integer, intent(out) :: uint64_varid
       integer :: retval, vartype, varndims
       
       print *, ""
@@ -462,7 +496,9 @@ contains
       ! Validate ubyte_var in root
       retval = nf90_inq_varid(ncid, "ubyte_var", ubyte_varid)
       if (retval /= nf90_noerr) call handle_err(retval)
-      retval = nf90_inquire_variable(ncid, ubyte_varid, xtype=vartype, ndims=varndims)
+      retval = nf90_inquire_variable(ncid, &
+           ubyte_varid, xtype=vartype, &
+           ndims=varndims)
       if (retval /= nf90_noerr) call handle_err(retval)
       if (vartype /= NF90_UBYTE .or. varndims /= NDIMS_2D) then
          print *, "Error: ubyte_var has wrong type or dimensions"
@@ -473,7 +509,9 @@ contains
       ! Validate ushort_var in SubGroup1
       retval = nf90_inq_varid(grp1_id, "ushort_var", ushort_varid)
       if (retval /= nf90_noerr) call handle_err(retval)
-      retval = nf90_inquire_variable(grp1_id, ushort_varid, xtype=vartype, ndims=varndims)
+      retval = nf90_inquire_variable(grp1_id, &
+           ushort_varid, xtype=vartype, &
+           ndims=varndims)
       if (retval /= nf90_noerr) call handle_err(retval)
       if (vartype /= NF90_USHORT .or. varndims /= NDIMS_2D) then
          print *, "Error: ushort_var has wrong type or dimensions"
@@ -484,7 +522,9 @@ contains
       ! Validate uint_var in SubGroup2
       retval = nf90_inq_varid(grp2_id, "uint_var", uint_varid)
       if (retval /= nf90_noerr) call handle_err(retval)
-      retval = nf90_inquire_variable(grp2_id, uint_varid, xtype=vartype, ndims=varndims)
+      retval = nf90_inquire_variable(grp2_id, &
+           uint_varid, xtype=vartype, &
+           ndims=varndims)
       if (retval /= nf90_noerr) call handle_err(retval)
       if (vartype /= NF90_UINT .or. varndims /= NDIMS_2D) then
          print *, "Error: uint_var has wrong type or dimensions"
@@ -495,7 +535,9 @@ contains
       ! Validate int64_var in NestedGroup
       retval = nf90_inq_varid(nested_id, "int64_var", int64_varid)
       if (retval /= nf90_noerr) call handle_err(retval)
-      retval = nf90_inquire_variable(nested_id, int64_varid, xtype=vartype, ndims=varndims)
+      retval = nf90_inquire_variable( &
+           nested_id, int64_varid, &
+           xtype=vartype, ndims=varndims)
       if (retval /= nf90_noerr) call handle_err(retval)
       if (vartype /= NF90_INT64 .or. varndims /= NDIMS_2D) then
          print *, "Error: int64_var has wrong type or dimensions"
@@ -506,7 +548,9 @@ contains
       ! Validate uint64_var in NestedGroup
       retval = nf90_inq_varid(nested_id, "uint64_var", uint64_varid)
       if (retval /= nf90_noerr) call handle_err(retval)
-      retval = nf90_inquire_variable(nested_id, uint64_varid, xtype=vartype, ndims=varndims)
+      retval = nf90_inquire_variable( &
+           nested_id, uint64_varid, &
+           xtype=vartype, ndims=varndims)
       if (retval /= nf90_noerr) call handle_err(retval)
       if (vartype /= NF90_UINT64 .or. varndims /= NDIMS_3D) then
          print *, "Error: uint64_var has wrong type or dimensions"
@@ -517,10 +561,18 @@ contains
       print *, "Verified: All variable metadata correct"
    end subroutine validate_variables
    
-   subroutine validate_data(ncid, grp1_id, grp2_id, nested_id, &
-                           ubyte_varid, ushort_varid, uint_varid, int64_varid, uint64_varid)
-      integer, intent(in) :: ncid, grp1_id, grp2_id, nested_id
-      integer, intent(in) :: ubyte_varid, ushort_varid, uint_varid, int64_varid, uint64_varid
+   subroutine validate_data(ncid, grp1_id, &
+        grp2_id, nested_id, &
+        ubyte_varid, ushort_varid, &
+        uint_varid, int64_varid, &
+        uint64_varid)
+      integer, intent(in) :: ncid, grp1_id
+      integer, intent(in) :: grp2_id, nested_id
+      integer, intent(in) :: ubyte_varid
+      integer, intent(in) :: ushort_varid
+      integer, intent(in) :: uint_varid
+      integer, intent(in) :: int64_varid
+      integer, intent(in) :: uint64_varid
       integer :: retval, i, j, k, value, errors, total_values
       
       integer(kind=1), dimension(NX, NY) :: ubyte_in
@@ -551,8 +603,10 @@ contains
       do j = 1, NY
          do i = 1, NX
             if (ubyte_in(i, j) /= int(value, kind=1)) then
-               print *, "Error: ubyte_var(", i, ",", j, ") = ", ubyte_in(i, j), &
-                        ", expected ", value
+               print *, "Error: ubyte(", &
+                    i, ",", j, ") = ", &
+                    ubyte_in(i, j), &
+                    ", expected ", value
                errors = errors + 1
             end if
             value = value + 1
@@ -563,8 +617,10 @@ contains
       do j = 1, NY
          do i = 1, NX
             if (ushort_in(i, j) /= int(value, kind=2)) then
-               print *, "Error: ushort_var(", i, ",", j, ") = ", ushort_in(i, j), &
-                        ", expected ", value
+               print *, "Error: ushort(", &
+                    i, ",", j, ") = ", &
+                    ushort_in(i, j), &
+                    ", expected ", value
                errors = errors + 1
             end if
             value = value + 1
@@ -587,8 +643,10 @@ contains
       do j = 1, NY
          do i = 1, NX
             if (int64_in(i, j) /= int(value, kind=8)) then
-               print *, "Error: int64_var(", i, ",", j, ") = ", int64_in(i, j), &
-                        ", expected ", value
+               print *, "Error: int64(", &
+                    i, ",", j, ") = ", &
+                    int64_in(i, j), &
+                    ", expected ", value
                errors = errors + 1
             end if
             value = value + 1
@@ -600,8 +658,11 @@ contains
          do j = 1, NY
             do i = 1, NX
                if (uint64_in(i, j, k) /= int(value, kind=8)) then
-                  print *, "Error: uint64_var(", i, ",", j, ",", k, ") = ", uint64_in(i, j, k), &
-                           ", expected ", value
+                  print *, "Error: uint64(", &
+                       i, ",", j, ",", k, &
+                       ") = ", &
+                       uint64_in(i, j, k), &
+                       ", expected ", value
                   errors = errors + 1
                end if
                value = value + 1
@@ -615,7 +676,9 @@ contains
       end if
       
       total_values = NX * NY * 4 + NX * NY * NZ
-      print *, "Verified: All ", total_values, " data values correct (sequential 1 to ", total_values, ")"
+      print *, "Verified: All ", total_values, &
+           " data values correct (1 to ", &
+           total_values, ")"
    end subroutine validate_data
    
    subroutine handle_err(status)

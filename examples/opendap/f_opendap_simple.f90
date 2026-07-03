@@ -25,13 +25,17 @@
 !! sst.mnmean.nc.gz - NOAA Extended Reconstructed Sea Surface Temperature
 !!
 !! **Learning Objectives:**
-!! - Open a remote OPeNDAP dataset from Fortran using nf90_open() with an HTTP URL
-!! - Query dataset metadata (dimensions, variables, attributes) via nf90_inquire()
-!! - Read a spatial subset using start/count arrays with 1-based Fortran indexing
+!! - Open a remote OPeNDAP dataset from Fortran
+!!   using nf90_open() with an HTTP URL
+!! - Query dataset metadata (dimensions,
+!!   variables, attributes) via nf90_inquire()
+!! - Read a spatial subset using start/count
+!!   arrays with 1-based Fortran indexing
 !! - Understand that OPeNDAP access is transparent — same API as local files
 !!
 !! **Key Concepts:**
-!! - **Transparent Remote Access**: nf90_open() accepts HTTP URLs just like local paths
+!! - **Transparent Remote Access**: nf90_open()
+!!   accepts HTTP URLs just like local paths
 !! - **1-Based Indexing**: Fortran start arrays begin at 1, not 0 as in C
 !! - **Constraint vs Client Subsetting**: This example uses no URL constraints;
 !!   subsetting is done client-side via start/count in nf90_get_var()
@@ -78,7 +82,9 @@ program f_opendap_simple
   character(len=NF90_MAX_NAME) :: var_name, dim_name
   
   ! Public OPeNDAP test server dataset
-  character(len=256) :: url = "http://test.opendap.org/dap/data/nc/sst.mnmean.nc.gz"
+  character(len=256) :: url = &
+       "http://test.opendap.org" // &
+       "/dap/data/nc/sst.mnmean.nc.gz"
   
   ! Data array for reading subset
   real :: data(5, 5)
@@ -97,7 +103,9 @@ program f_opendap_simple
 
   status = nf90_inquire(ncid, ndims, nvars, natts, unlimdimid)
   if (status /= NF90_NOERR) stop 1
-  print *, "Dataset: ", ndims, " dims, ", nvars, " vars, ", natts, " atts, unlimdim=", unlimdimid
+  print *, "Dataset: ", ndims, " dims, ", &
+       nvars, " vars, ", natts, &
+       " atts, unlimdim=", unlimdimid
 
   ! Print dimensions compactly
   write(*, '(A)', advance='no') "Dimensions: "
@@ -112,9 +120,18 @@ program f_opendap_simple
   ! Get variable 'sst' info and read subset
   status = nf90_inq_varid(ncid, "sst", varid)
   if (status == NF90_NOERR) then
-     status = nf90_inquire_variable(ncid, varid, var_name, xtype, var_ndims, var_dimids, var_natts)
+     status = nf90_inquire_variable(ncid, &
+          varid, var_name, xtype, &
+          var_ndims, var_dimids, var_natts)
      if (status == NF90_NOERR) then
-        write(*, '(A,A,A,I0,A,I0,A,I0,A)', advance='no') "Variable '"//trim(var_name)//"': type=", xtype, ", ndims=", var_ndims, ", natts=", var_natts, ", shape=["
+        write(*, '(A,I0,A,I0,A,I0,A)', &
+             advance='no') &
+             "Variable '" // &
+             trim(var_name) // &
+             "': type=", xtype, &
+             ", ndims=", var_ndims, &
+             ", natts=", var_natts, &
+             ", shape=["
         do i = 1, var_ndims
            status = nf90_inquire_dimension(ncid, var_dimids(i), len=dimlen)
            write(*, '(I0,A)', advance='no') dimlen, merge(",","]", i<var_ndims)

@@ -1,5 +1,6 @@
 !> @file f_simple_nc4.f90
-!! @brief Basic NetCDF-4/HDF5 format file creation and format detection (Fortran)
+!! @brief Basic NetCDF-4/HDF5 format file
+!! creation and format detection (Fortran)
 !!
 !! Fortran equivalent of simple_nc4.c, demonstrating NetCDF-4 format using the
 !! Fortran 90 NetCDF API. Creates a simple 2D array with NF90_NETCDF4 flag.
@@ -118,7 +119,9 @@ program f_simple_nc4
    if (retval /= nf90_noerr) call handle_err(retval)
    
    if (ndims_in /= NDIMS .or. nvars_in /= 1) then
-      print *, "Error: Expected ", NDIMS, " dims/1 var, found ", ndims_in, "/", nvars_in
+      print *, "Error: Expected ", NDIMS, &
+           " dims/1 var, found ", &
+           ndims_in, "/", nvars_in
       stop 2
    end if
    print *, "Verified: ", ndims_in, " dimensions, ", nvars_in, " variable"
@@ -130,7 +133,9 @@ program f_simple_nc4
    if (retval /= nf90_noerr) call handle_err(retval)
    
    if (len_x /= NX .or. len_y /= NY) then
-      print *, "Error: Expected x=", NX, "/y=", NY, ", found x=", len_x, "/y=", len_y
+      print *, "Error: Expected x=", NX, &
+           "/y=", NY, ", found x=", &
+           len_x, "/y=", len_y
       stop 2
    end if
    print *, "Verified: x=", len_x, ", y=", len_y

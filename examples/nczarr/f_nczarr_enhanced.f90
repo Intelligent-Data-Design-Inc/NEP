@@ -24,7 +24,8 @@
 !!   from the NetCDF-4 enhanced model (but not user-defined types)
 !! - **Groups in Zarr**: nf90_def_grp() creates sub-groups stored as nested
 !!   directories in the Zarr store
-!! - **Unlimited Dimensions**: NF90_UNLIMITED works in NcZarr just like NetCDF-4/HDF5
+!! - **Unlimited Dimensions**: NF90_UNLIMITED
+!!   works in NcZarr just like NetCDF-4/HDF5
 !! - **Mixed Variables**: Root and child groups can have independent variables
 !!   with different dimensions
 !! - **Column-Major Ordering**: Fortran arrays have reversed dimension order
@@ -66,7 +67,9 @@ program f_nczarr_enhanced
    use netcdf
    implicit none
 
-   character(len=*), parameter :: FILE_URL = "file://f_nczarr_enhanced.zarr#mode=nczarr"
+   character(len=*), parameter :: FILE_URL = &
+        "file://f_nczarr_enhanced.zarr" // &
+        "#mode=nczarr"
    integer, parameter :: NX = 5, NTIMES = 2, NSTATIONS = 3
 
    integer :: ncid, obs_grpid, retval
@@ -117,7 +120,9 @@ program f_nczarr_enhanced
    if (retval /= nf90_noerr) call handle_err(retval)
    retval = nf90_put_att(ncid, pres_varid, "units", "hPa")
    if (retval /= nf90_noerr) call handle_err(retval)
-   retval = nf90_put_att(ncid, NF90_GLOBAL, "title", "NcZarr Enhanced Model Example")
+   retval = nf90_put_att(ncid, NF90_GLOBAL, &
+        "title", &
+        "NcZarr Enhanced Model Example")
    if (retval /= nf90_noerr) call handle_err(retval)
 
    ! Child group obs/ with its own independent unlimited dimension
@@ -125,13 +130,19 @@ program f_nczarr_enhanced
    if (retval /= nf90_noerr) call handle_err(retval)
    retval = nf90_def_dim(obs_grpid, "station", NF90_UNLIMITED, station_dimid)
    if (retval /= nf90_noerr) call handle_err(retval)
-   retval = nf90_def_var(obs_grpid, "obs_value", NF90_FLOAT, (/ station_dimid /), obs_value_varid)
+   retval = nf90_def_var(obs_grpid, &
+        "obs_value", NF90_FLOAT, &
+        (/ station_dimid /), obs_value_varid)
    if (retval /= nf90_noerr) call handle_err(retval)
-   retval = nf90_def_var(obs_grpid, "obs_time",  NF90_INT,   (/ station_dimid /), obs_time_varid)
+   retval = nf90_def_var(obs_grpid, &
+        "obs_time", NF90_INT, &
+        (/ station_dimid /), obs_time_varid)
    if (retval /= nf90_noerr) call handle_err(retval)
    retval = nf90_put_att(obs_grpid, obs_value_varid, "units", "Celsius")
    if (retval /= nf90_noerr) call handle_err(retval)
-   retval = nf90_put_att(obs_grpid, NF90_GLOBAL, "description", "Station observation records")
+   retval = nf90_put_att(obs_grpid, &
+        NF90_GLOBAL, "description", &
+        "Station observation records")
    if (retval /= nf90_noerr) call handle_err(retval)
 
    retval = nf90_enddef(ncid)
@@ -173,7 +184,9 @@ program f_nczarr_enhanced
    retval = nf90_inquire_dimension(obs_grpid, station_dimid, len=i)
    if (retval /= nf90_noerr) call handle_err(retval)
    if (i /= NSTATIONS) then
-      print *, "*** FAILED: station length =", i, ", expected", NSTATIONS; stop 2
+      print *, "*** FAILED: station length =", &
+           i, ", expected", NSTATIONS
+      stop 2
    end if
    print *, "obs/station=", i
 
