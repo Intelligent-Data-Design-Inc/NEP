@@ -9,25 +9,36 @@
 !! - All global attributes (name, type, and value)
 !! - All variables (name, type, dimensions, and attributes)
 !!
-!! This is a useful pattern for building tools that inspect arbitrary NetCDF files.
+!! This is a useful pattern for building tools
+!! that inspect arbitrary NetCDF files.
 !!
 !! **Learning Objectives:**
 !! - Use nf90_inquire() to discover file structure without prior knowledge
-!! - Iterate over dimensions with nf90_inquire_dimension() and detect unlimited dimensions
-!! - Iterate over variables with nf90_inquire_variable() to get type, shape, and attribute count
-!! - Iterate over attributes with nf90_inq_attname() and nf90_inquire_attribute()
+!! - Iterate over dimensions with
+!!   nf90_inquire_dimension() and detect unlimited
+!! - Iterate over variables with
+!!   nf90_inquire_variable() to get type, shape,
+!!   and attribute count
+!! - Iterate over attributes with
+!!   nf90_inq_attname() and nf90_inquire_attribute()
 !! - Read attribute values of different types (text, numeric, arrays)
 !! - Handle unlimited dimensions specially in output
 !! - Accept command-line arguments in Fortran with get_command_argument()
 !!
 !! **Key Concepts:**
-!! - **Inquiry Functions**: nf90_inquire*() family discovers file contents at runtime
+!! - **Inquiry Functions**: nf90_inquire*()
+!!   family discovers file contents at runtime
 !! - **Variable Iteration**: Loop from varid=1 to nvars to visit all variables
-!! - **Attribute Iteration**: Loop from attnum=1 to natts for each variable or NF90_GLOBAL
-!! - **Type Discovery**: nf90_inquire_attribute() returns xtype for proper interpretation
-!! - **NF90_GLOBAL**: Special varid constant for accessing global (file-level) attributes
-!! - **Command-Line Arguments**: get_command_argument() for Fortran 2003+ file input
-!! - **Generic Tool Pattern**: Read structure first, then interpret — enables tools
+!! - **Attribute Iteration**: Loop from attnum=1
+!!   to natts for each variable or NF90_GLOBAL
+!! - **Type Discovery**: nf90_inquire_attribute()
+!!   returns xtype for proper interpretation
+!! - **NF90_GLOBAL**: Special varid constant for
+!!   accessing global (file-level) attributes
+!! - **Command-Line Arguments**:
+!!   get_command_argument() for Fortran 2003+ input
+!! - **Generic Tool Pattern**: Read structure
+!!   first, then interpret — enables tools
 !!   that work on any NetCDF file regardless of contents
 !!
 !! **Prerequisites:**
@@ -36,12 +47,14 @@
 !!
 !! **Related Examples:**
 !! - dump_classic_metadata.c - C equivalent
-!! - f_dump_nc4_metadata.f90 - Extended version with NetCDF-4 groups and user types
+!! - f_dump_nc4_metadata.f90 - Extended version
+!!   with NetCDF-4 groups and user types
 !! - f_coord_vars.f90 - Creates a file suitable for inspection with this tool
 !!
 !! **Compilation:**
 !! @code
-!! gfortran -o f_dump_classic_metadata f_dump_classic_metadata.f90 -lnetcdff -lnetcdf
+!! gfortran -o f_dump_classic_metadata \
+!!   f_dump_classic_metadata.f90 -lnetcdff -lnetcdf
 !! @endcode
 !!
 !! **Usage:**
@@ -103,7 +116,9 @@ program f_dump_classic_metadata
       retval = nf90_inquire_dimension(ncid, d, dim_name, dim_len)
       if (retval /= nf90_noerr) call handle_err(retval)
       if (d == unlimdimid) then
-         write(*, '(A,A,A,I0,A)') "  ", trim(dim_name), " = ", dim_len, " (unlimited)"
+         write(*, '(A,A,A,I0,A)') "  ", &
+              trim(dim_name), " = ", &
+              dim_len, " (unlimited)"
       else
          write(*, '(A,A,A,I0)') "  ", trim(dim_name), " = ", dim_len
       end if
@@ -129,8 +144,11 @@ program f_dump_classic_metadata
       if (retval /= nf90_noerr) call handle_err(retval)
 
       ! Print variable header with type and dimension count.
-      write(*, '(A,A,A,A,A,I0,A)', advance='no') "  ", trim(var_name), &
-           ": type ", trim(type_name(var_type)), ", ", var_ndims, " dimension(s)"
+      write(*, '(A,A,A,A,A,I0,A)', &
+           advance='no') "  ", &
+           trim(var_name), ": type ", &
+           trim(type_name(var_type)), &
+           ", ", var_ndims, " dimension(s)"
 
       ! Print dimension names for this variable.
       if (var_ndims > 0) then
@@ -197,8 +215,12 @@ contains
       retval = nf90_inquire_attribute(ncid, varid, att_name, att_type, att_len)
       if (retval /= nf90_noerr) call handle_err(retval)
 
-      write(*, '(A,A,A,A,A,I0,A)', advance='no') indent, trim(att_name), &
-           ": type ", trim(type_name(att_type)), ", length ", att_len, ", value: "
+      write(*, '(A,A,A,A,A,I0,A)', &
+           advance='no') indent, &
+           trim(att_name), ": type ", &
+           trim(type_name(att_type)), &
+           ", length ", att_len, &
+           ", value: "
 
       select case (att_type)
       case (NF90_CHAR)

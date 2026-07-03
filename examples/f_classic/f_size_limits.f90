@@ -1,8 +1,11 @@
 !> @file f_size_limits.f90
-!! @brief Demonstrates file size and dimension limits for NetCDF classic formats (Fortran)
+!! @brief File size and dimension limits for
+!! NetCDF classic formats (Fortran)
 !!
-!! This is the Fortran equivalent of size_limits.c, exploring size limitations of
-!! classic NetCDF formats using the Fortran 90 NetCDF API. The program demonstrates
+!! This is the Fortran equivalent of
+!! size_limits.c, exploring size limitations of
+!! classic NetCDF formats using the Fortran 90
+!! NetCDF API. The program demonstrates
 !! when format upgrades are necessary for large datasets.
 !!
 !! **Learning Objectives:**

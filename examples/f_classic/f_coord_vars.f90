@@ -1,9 +1,12 @@
 !> @file f_coord_vars.f90
 !! @brief Demonstrates coordinate variables and CF convention metadata (Fortran)
 !!
-!! This is the Fortran equivalent of coord_vars.c, demonstrating coordinate variables
-!! and CF (Climate and Forecast) convention metadata using the Fortran 90 NetCDF API.
-!! The program creates a 2D temperature field with latitude and longitude coordinate
+!! This is the Fortran equivalent of coord_vars.c,
+!! demonstrating coordinate variables and CF
+!! (Climate and Forecast) convention metadata using
+!! the Fortran 90 NetCDF API. The program creates a
+!! 2D temperature field with latitude and longitude
+!! coordinate
 !! variables following CF conventions.
 !!
 !! **Learning Objectives:**
@@ -247,7 +250,9 @@ program f_coord_vars
    if (errors == 0) then
       print *, "Verified: coordinate arrays correct"
       print *, "  lat: [", lat(1), ", ", lat(2), ", ", lat(3), ", ", lat(4), "]"
-      print *, "  lon: [", lon(1), ", ", lon(2), ", ", lon(3), ", ", lon(4), ", ", lon(5), "]"
+      print *, "  lon: [", lon(1), ", ", &
+           lon(2), ", ", lon(3), ", ", &
+           lon(4), ", ", lon(5), "]"
    end if
    
    ! Read temperature data
@@ -258,8 +263,11 @@ program f_coord_vars
    do i = 1, NLAT
       do j = 1, NLON
          if (temperature_in(j, i) /= temperature(j, i)) then
-            print *, "Error: temperature(", j, ",", i, ") = ", temperature_in(j, i), &
-                     ", expected ", temperature(j, i)
+            print *, "Error: temp(", &
+                 j, ",", i, ") = ", &
+                 temperature_in(j, i), &
+                 ", expected ", &
+                 temperature(j, i)
             errors = errors + 1
          end if
       end do

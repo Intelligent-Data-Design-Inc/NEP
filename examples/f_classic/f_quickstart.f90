@@ -1,5 +1,6 @@
 !> @file f_quickstart.f90
-!! @brief Minimal introduction to NetCDF from Fortran - the simplest starting point
+!! @brief Minimal introduction to NetCDF from
+!! Fortran - the simplest starting point
 !!
 !! This is the most basic NetCDF example in Fortran, demonstrating the essential
 !! 6-step pattern:
@@ -10,8 +11,10 @@
 !!   5. Write data           (nf90_put_var)
 !!   6. Close file           (nf90_close)
 !!
-!! The program creates a tiny 2D array (2x3) with 6 integer values, adds descriptive
-!! attributes, writes it to a file, then reopens and reads the data back to verify
+!! The program creates a tiny 2D array (2x3)
+!! with 6 integer values, adds descriptive
+!! attributes, writes it to a file, then reopens
+!! and reads the data back to verify
 !! the round-trip worked.
 !!
 !! **Learning Objectives:**
@@ -25,7 +28,8 @@
 !! - **Dimensions**: Named axes that define array shapes (X=2, Y=3)
 !! - **Variables**: Named data arrays with dimensions and types
 !! - **Attributes**: Metadata describing the file or variables
-!! - **Define Mode**: Phase where structure is defined (dimensions, variables, attributes)
+!! - **Define Mode**: Phase where structure is
+!!   defined (dimensions, variables, attributes)
 !! - **Data Mode**: Phase where actual data is written/read
 !! - **Column-Major**: Fortran arrays are stored column-first, opposite of C
 !!
@@ -103,7 +107,8 @@ program f_quickstart
   call check(retval, "defining variable")
   
   ! Add global attribute
-  retval = nf90_put_att(ncid, nf90_global, "description", "a quickstart example")
+  retval = nf90_put_att(ncid, nf90_global, &
+       "description", "a quickstart example")
   call check(retval, "adding global attribute")
   
   ! Add variable attribute

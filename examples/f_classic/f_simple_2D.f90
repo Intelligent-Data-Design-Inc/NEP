@@ -1,5 +1,6 @@
 !> @file f_simple_2D.f90
-!! @brief Basic example demonstrating 2D array creation and reading in NetCDF (Fortran)
+!! @brief Basic example: 2D array creation
+!! and reading in NetCDF (Fortran)
 !!
 !! This is the Fortran equivalent of simple_2D.c, demonstrating the fundamental
 !! workflow for working with NetCDF files using the Fortran 90 NetCDF API. The
@@ -12,25 +13,32 @@
 !! - Understand Fortran NetCDF API (nf90_* functions)
 !! - Learn Fortran column-major vs C row-major array ordering
 !! - Add global and variable attributes
-!! - Query file metadata with nf90_inquire(), nf90_inquire_dimension(), nf90_inquire_variable()
+!! - Query file metadata with nf90_inquire(),
+!!   nf90_inquire_dimension(), nf90_inquire_variable()
 !! - Master error handling with nf90_noerr and nf90_strerror()
 !! - Work with Fortran array indexing (1-based vs C's 0-based)
 !! - Verify equivalence with C version (simple_2D.c)
 !!
 !! **Key Concepts:**
-!! - **Fortran Column-Major**: Arrays stored column-first [i,j] vs C row-first [j][i]
+!! - **Fortran Column-Major**: Arrays stored
+!!   column-first [i,j] vs C row-first [j][i]
 !! - **Dimension Ordering**: Fortran reverses dimension order from C
 !! - **1-Based Indexing**: Fortran arrays start at 1, C arrays start at 0
 !! - **nf90 Module**: Fortran 90 NetCDF interface (use netcdf)
 !! - **Error Handling**: Check retval against nf90_noerr
-!! - **Fill Value**: Sentinel value returned for unwritten or missing data elements;
-!!   set with nf90_def_var_fill() during define mode, queried with nf90_inq_var_fill().
-!!   Note: f_coord.f90 uses nf90_put_att() with "_FillValue" which is the CF convention
-!!   for documenting fill values as an attribute — a complementary but separate approach.
+!! - **Fill Value**: Sentinel value returned for
+!!   unwritten or missing data elements; set with
+!!   nf90_def_var_fill() during define mode,
+!!   queried with nf90_inq_var_fill().
+!!   Note: f_coord.f90 uses nf90_put_att() with
+!!   "_FillValue" which is the CF convention for
+!!   documenting fill values as an attribute — a
+!!   complementary but separate approach.
 !!
 !! **Fortran vs C Differences:**
 !! - **Array Declaration**: Fortran data_out(NX, NY) vs C data_out[NY][NX]
-!! - **Dimension Order**: Fortran dimids(1)=x, dimids(2)=y vs C dimids[0]=y, dimids[1]=x
+!! - **Dimension Order**: Fortran dimids(1)=x,
+!!   dimids(2)=y vs C dimids[0]=y, dimids[1]=x
 !! - **Indexing**: Fortran 1-based (1 to N) vs C 0-based (0 to N-1)
 !! - **API Prefix**: Fortran nf90_* vs C nc_*
 !! - **Error Handling**: Fortran subroutine call vs C macro
@@ -60,7 +68,8 @@
 !! - 1 variable: data(x, y) of type int with fill value -9999
 !! - 1 global attribute: title = "Simple 2D Example"
 !! - 1 variable attribute: units = "m/s"
-!! - Data: sequential integers from 0 to 65 (first NY-1 rows); last row = -9999 (fill value)
+!! - Data: sequential integers from 0 to 65
+!!   (first NY-1 rows); last row = -9999 (fill)
 !! - Output structure identical to simple_2D.c (verified via ncdump)
 !!
 !! @author Edward Hartnett, Intelligent Data Design, Inc.
@@ -101,7 +110,8 @@ program f_simple_2D
    print *, "Creating NetCDF file: ", FILE_NAME
    
    ! Initialize data with sequential integers (0, 1, 2, 3, ...)
-   ! Note: Fortran is column-major, so we fill by column to match C row-major layout
+   ! Note: Fortran is column-major, so we fill
+   ! by column to match C row-major layout
    do j = 1, NY
       do i = 1, NX
          data_out(i, j) = (j-1) * NX + (i-1)
@@ -132,8 +142,9 @@ program f_simple_2D
    retval = nf90_put_att(ncid, varid, "units", "m/s")
    if (retval /= nf90_noerr) call handle_err(retval)
    
-   ! Set fill value: nf90_def_var_fill() registers the sentinel value returned for
-   ! unwritten or missing elements. NF90_FILL (0) enables fill mode for this variable.
+   ! Set fill value: nf90_def_var_fill() registers
+   ! the sentinel value returned for unwritten or
+   ! missing elements. 0 enables fill mode.
    retval = nf90_def_var_fill(ncid, varid, 0, FILL_VALUE)
    if (retval /= nf90_noerr) call handle_err(retval)
    
@@ -141,19 +152,25 @@ program f_simple_2D
    retval = nf90_enddef(ncid)
    if (retval /= nf90_noerr) call handle_err(retval)
    
-   ! Write only the first NY-1 columns (partial write), leaving the last column unwritten.
-   ! In Fortran column-major layout: dimension 1=x, dimension 2=y; leaving the last
-   ! y-index (column) unwritten means those elements return FILL_VALUE when read back.
+   ! Write only the first NY-1 columns (partial
+   ! write), leaving the last column unwritten.
+   ! In Fortran column-major layout: dim 1=x,
+   ! dim 2=y; leaving the last y-index (column)
+   ! unwritten means those elements return
+   ! FILL_VALUE when read back.
    start_idx = (/ 1, 1 /)
    count_idx = (/ NX, NY - 1 /)
-   retval = nf90_put_var(ncid, varid, data_out(:, 1:NY-1), start=start_idx, count=count_idx)
+   retval = nf90_put_var(ncid, varid, &
+        data_out(:, 1:NY-1), &
+        start=start_idx, count=count_idx)
    if (retval /= nf90_noerr) call handle_err(retval)
    
    ! Close the file
    retval = nf90_close(ncid)
    if (retval /= nf90_noerr) call handle_err(retval)
    
-   print *, "*** SUCCESS writing file (first ", NY - 1, " of ", NY, " columns written)!"
+   print *, "*** SUCCESS writing file (first ", &
+        NY - 1, " of ", NY, " cols written)!"
    
    ! ========== READ PHASE ==========
    print *, ""
@@ -174,10 +191,14 @@ program f_simple_2D
    print *, "Verified: ", ndims_in, " dimensions"
    
    if (nvars_in /= 1 .or. ngatts_in /= 1 .or. unlimdimid_in /= -1) then
-      print *, "Error: file metadata incorrect (vars=", nvars_in, ", atts=", ngatts_in, ", unlim=", unlimdimid_in, ")"
+      print *, "Error: file metadata incorrect", &
+           " (vars=", nvars_in, &
+           ", atts=", ngatts_in, &
+           ", unlim=", unlimdimid_in, ")"
       stop 2
    end if
-   print *, "Verified: file metadata correct (", ndims_in, " dims, 1 var, 1 att, no unlimited)"
+   print *, "Verified: file metadata correct (", &
+        ndims_in, " dims, 1 var, 1 att)"
    
    ! Verify dimensions using nf90_inquire_dimension()
    retval = nf90_inquire_dimension(ncid, x_dimid, name=dim_name_x, len=len_x)
@@ -193,16 +214,21 @@ program f_simple_2D
    print *, "Verified: dimensions correct (x=", len_x, ", y=", len_y, ")"
    
    ! Verify variable using nf90_inquire_variable()
-   retval = nf90_inquire_variable(ncid, varid, name=var_name_in, xtype=var_type, &
-                                  ndims=var_ndims, dimids=var_dimids)
+   retval = nf90_inquire_variable(ncid, varid, &
+        name=var_name_in, xtype=var_type, &
+        ndims=var_ndims, dimids=var_dimids)
    if (retval /= nf90_noerr) call handle_err(retval)
 
    if (trim(var_name_in) /= "data" .or. var_type /= NF90_INT .or. &
-       var_ndims /= NDIMS .or. var_dimids(1) /= x_dimid .or. var_dimids(2) /= y_dimid) then
+       var_ndims /= NDIMS .or. &
+       var_dimids(1) /= x_dimid .or. &
+       var_dimids(2) /= y_dimid) then
       print *, "Error: variable metadata incorrect"
       stop 2
    end if
-   print *, "Verified: variable metadata correct ('", trim(var_name_in), "', NF90_INT, ", var_ndims, " dims)"
+   print *, "Verified: variable metadata ('", &
+        trim(var_name_in), "', NF90_INT, ", &
+        var_ndims, " dims)"
    
    ! Verify global attributes, variable attributes, and fill value
    retval = nf90_get_att(ncid, NF90_GLOBAL, "title", title_in)
@@ -240,8 +266,10 @@ program f_simple_2D
    ! Verify unwritten last column contains fill value
    do i = 1, NX
       if (data_in(i, NY) /= FILL_VALUE) then
-         print *, "Error: unwritten data(", i, ",", NY, ") = ", data_in(i, NY), &
-                  ", expected fill value ", FILL_VALUE
+         print *, "Error: unwritten data(", &
+              i, ",", NY, ") = ", &
+              data_in(i, NY), &
+              ", expected fill ", FILL_VALUE
          errors = errors + 1
       end if
    end do
@@ -251,9 +279,11 @@ program f_simple_2D
       stop 2
    end if
    
-   print *, "Verified: ", NX * (NY - 1), " written values correct (0, 1, 2, ..., ", &
-            NX * (NY - 1) - 1, ")"
-   print *, "Verified: unwritten last column (", NX, " elements) = fill value ", FILL_VALUE
+   print *, "Verified: ", NX * (NY - 1), &
+        " written values correct (0...", &
+        NX * (NY - 1) - 1, ")"
+   print *, "Verified: unwritten last col (", &
+        NX, " elements) = fill ", FILL_VALUE
    
    ! Close the file
    retval = nf90_close(ncid)
