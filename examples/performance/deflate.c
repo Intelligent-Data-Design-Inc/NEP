@@ -31,6 +31,34 @@
  *   python3 plot_deflate.py   # produces deflate_performance.jpg
  * @endcode
  *
+ * **Learning Objectives:**
+ * - Understand the deflate (zlib/gzip) compression algorithm in NetCDF-4
+ * - Learn how compression level (0–9) trades CPU time for file size reduction
+ * - See how the shuffle filter improves compression for floating-point data
+ * - Measure and compare write time, read time, and compression ratio
+ * - Make data-driven decisions about compression settings for production use
+ *
+ * **Key Concepts:**
+ * - **Deflate (zlib)**: The default lossless compression in HDF5/NetCDF-4;
+ *   uses LZ77 + Huffman coding; level 0 = store only, level 9 = max effort
+ * - **Shuffle Filter**: Byte transposition that groups corresponding bytes of
+ *   adjacent values (e.g., all MSBs together), exploiting IEEE 754 structure
+ * - **Level 1 Sweet Spot**: For scientific float data, level 1 typically achieves
+ *   90–95% of level 9's compression ratio at 3–5× faster write speed
+ * - **Chunked Storage**: Compression requires chunked layout; each chunk is
+ *   compressed independently as a single block
+ *
+ * **Prerequisites:**
+ * - simple_nc4.c - NetCDF-4 file creation basics
+ * - chunking.c - Understanding chunked storage (required for compression)
+ *
+ * **Related Examples:**
+ * - zstandard.c - Zstandard compression (wider level range, often faster)
+ * - bzip2.c - BZIP2 compression (higher ratio, slower)
+ * - lz4.c - LZ4 compression (fastest decompression)
+ * - lossless.c - Unified comparison of all lossless filters
+ * - compression.c - NetCDF-4 compression tutorial (non-benchmark)
+ *
  * **Key API functions:**
  * - nc_def_var_deflate()   Enable deflate and/or shuffle filter on a variable
  * - nc_inq_var_deflate()   Query deflate and shuffle settings

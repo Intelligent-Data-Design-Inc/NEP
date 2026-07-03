@@ -38,6 +38,36 @@
  *   python3 plot_zstandard.py   # produces zstandard_performance.jpg
  * @endcode
  *
+ * **Learning Objectives:**
+ * - Understand Zstandard (zstd) compression and its wide level range (-7 to 22)
+ * - Learn how negative levels trade compression ratio for extreme write speed
+ * - See how the shuffle filter interacts with Zstandard for float data
+ * - Compare Zstandard performance against deflate at equivalent quality points
+ * - Make data-driven decisions about Zstandard level selection
+ *
+ * **Key Concepts:**
+ * - **Zstandard (zstd)**: Modern compression algorithm by Facebook/Meta; uses
+ *   asymmetric numeral systems (ANS) for faster decode than deflate at equal ratio
+ * - **Negative Levels (-7 to -1)**: Ultra-fast compression with lower ratios;
+ *   useful when write speed is paramount (e.g., real-time data acquisition)
+ * - **Level 1 Default**: Good balance of speed and compression; comparable ratio
+ *   to deflate level 6 at much faster write speed
+ * - **High Levels (12–22)**: Push toward maximum compression at significant CPU
+ *   cost; useful for archival of rarely-rewritten datasets
+ * - **Shuffle + Zstandard**: The shuffle filter typically adds 3–5× improvement
+ *   to zstd compression ratio for IEEE 754 float data
+ *
+ * **Prerequisites:**
+ * - simple_nc4.c - NetCDF-4 file creation basics
+ * - chunking.c - Understanding chunked storage (required for compression)
+ * - deflate.c - Comparison baseline (deflate is the traditional default)
+ *
+ * **Related Examples:**
+ * - deflate.c - Traditional deflate/zlib compression
+ * - bzip2.c - BZIP2 compression (higher ratio, much slower)
+ * - lz4.c - LZ4 compression (fastest decompression)
+ * - lossless.c - Unified comparison of all lossless filters
+ *
  * **Key API functions:**
  * - nc_def_var_zstandard()  Enable Zstandard compression at a given level
  * - nc_inq_var_zstandard()  Query Zstandard settings on an open variable

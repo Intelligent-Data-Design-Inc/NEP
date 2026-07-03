@@ -37,6 +37,36 @@
  *   python3 plot_lz4.py   # produces lz4_performance.jpg
  * @endcode
  *
+ * **Learning Objectives:**
+ * - Understand LZ4 compression characteristics: fastest decompression of all filters
+ * - Learn how to use the generic nc_def_var_filter() API with HDF5 filter IDs
+ * - See how LZ4 levels (1–9) trade compression speed for ratio
+ * - Recognize LZ4's strength: consistently fast decompression regardless of level
+ * - Determine when LZ4 is preferred (read-heavy workloads, real-time access)
+ *
+ * **Key Concepts:**
+ * - **LZ4**: A fast lossless compression algorithm optimized for decompression
+ *   speed; achieves lower ratios than deflate or zstd but decompresses 2–4× faster
+ * - **Generic Filter API**: nc_def_var_filter(ncid, varid, id, nparams, params)
+ *   enables any registered HDF5 filter; LZ4 uses filter ID 32004
+ * - **Decompression Speed**: LZ4's main advantage — constant high-speed decode
+ *   regardless of compression level; ideal for read-intensive applications
+ * - **Level Range (1–9)**: Higher levels spend more CPU on compression for
+ *   marginally better ratios; decompression speed is unaffected
+ * - **Shuffle + LZ4**: Shuffle pre-groups IEEE 754 bytes, improving LZ4's
+ *   ratio by 3–5× at minimal cost to decompression speed
+ *
+ * **Prerequisites:**
+ * - simple_nc4.c - NetCDF-4 file creation basics
+ * - chunking.c - Understanding chunked storage (required for compression)
+ * - deflate.c - Comparison baseline (deflate is the traditional default)
+ *
+ * **Related Examples:**
+ * - deflate.c - Traditional deflate/zlib compression (better ratio, slower decompress)
+ * - zstandard.c - Zstandard compression (better ratio, slightly slower decompress)
+ * - bzip2.c - BZIP2 compression (best ratio, slowest)
+ * - lossless.c - Unified comparison of all lossless filters
+ *
  * **Key API functions:**
  * - nc_def_var_filter()     Enable LZ4 compression using HDF5 filter ID 32004
  * - nc_inq_var_filter()     Query filter settings on an open variable

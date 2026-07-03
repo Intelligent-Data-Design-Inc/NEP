@@ -26,6 +26,34 @@
  *   python3 plot_endianness.py   # produces endianness_performance.jpg
  * @endcode
  *
+ * **Learning Objectives:**
+ * - Understand byte order (endianness) in scientific data storage
+ * - Learn to control byte order with nc_def_var_endian()
+ * - Measure the performance cost of byte-swapping on non-native endianness
+ * - Recognize when explicit endianness control is beneficial for portability
+ * - Make informed decisions about endianness for cross-platform data exchange
+ *
+ * **Key Concepts:**
+ * - **Endianness**: Byte order of multi-byte values; little-endian (LE) stores
+ *   least-significant byte first (x86/ARM), big-endian (BE) stores MSB first
+ * - **NC_ENDIAN_NATIVE**: Store in the platform's native byte order (default);
+ *   fastest I/O since no byte-swapping is needed on the writing platform
+ * - **NC_ENDIAN_LITTLE**: Force little-endian storage regardless of platform;
+ *   ensures portability and fast reads on x86/ARM systems
+ * - **NC_ENDIAN_BIG**: Force big-endian storage; matches legacy formats and
+ *   network byte order (useful for interoperability with older tools)
+ * - **Byte-Swapping Cost**: When reading non-native endianness, HDF5 must swap
+ *   bytes for every value — typically adds 5–15% overhead for large arrays
+ *
+ * **Prerequisites:**
+ * - simple_nc4.c - NetCDF-4 file creation basics
+ * - chunking.c - Understanding chunked storage in NetCDF-4
+ *
+ * **Related Examples:**
+ * - deflate.c - Compression performance (endianness affects compressibility slightly)
+ * - fill_values.c - Another storage property that affects write performance
+ * - chunking.c - Chunk shape performance (orthogonal to endianness)
+ *
  * **Key API functions:**
  * - nc_def_var_endian()    Set byte order for a variable
  * - nc_inq_var_endian()    Query current byte order setting

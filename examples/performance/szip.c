@@ -39,6 +39,37 @@
  *   python3 plot_szip.py   # produces szip_performance.jpg
  * @endcode
  *
+ * **Learning Objectives:**
+ * - Understand SZIP compression designed specifically for scientific data
+ * - Learn the pixels_per_block parameter and its constraints (even, divides chunk)
+ * - Recognize the difference between NC_SZIP_NN (float-safe) and NC_SZIP_EC (integer-only)
+ * - Measure SZIP performance characteristics vs other filters
+ * - Understand SZIP's niche: good for integer sensor data and satellite imagery
+ *
+ * **Key Concepts:**
+ * - **SZIP**: Lossless compression developed at JPL for scientific data; integrated
+ *   into HDF5 as filter ID 4; uses an entropy coding scheme optimized for
+ *   correlated scientific data
+ * - **NC_SZIP_NN (Nearest-Neighbor)**: Coding mode safe for all data types
+ *   including NC_FLOAT; the standard choice for floating-point data
+ * - **NC_SZIP_EC (Entropy Coding)**: Higher compression but requires integer data
+ *   with defined bit depth; will fail on NC_FLOAT variables
+ * - **pixels_per_block**: Block size for SZIP encoder (must be even, 2–32, and
+ *   must divide the fastest-varying chunk dimension); larger values provide
+ *   more context for better compression
+ * - **License**: SZIP decompression is always available in HDF5; SZIP write
+ *   (encoding) requires a build linked with an SZIP encoder library (libaec)
+ *
+ * **Prerequisites:**
+ * - simple_nc4.c - NetCDF-4 file creation basics
+ * - chunking.c - Understanding chunked storage (required for compression)
+ * - deflate.c - Comparison baseline
+ *
+ * **Related Examples:**
+ * - deflate.c - Deflate compression (more portable, no license concerns)
+ * - zstandard.c - Zstandard compression (modern alternative)
+ * - lossless.c - Unified comparison of all lossless filters including SZIP
+ *
  * **Key API functions:**
  * - nc_def_var_szip()     Enable SZIP compression (NC_SZIP_NN) with given block size
  * - nc_inq_var_szip()     Query SZIP settings on an open variable

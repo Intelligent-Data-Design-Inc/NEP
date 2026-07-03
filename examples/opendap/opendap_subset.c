@@ -36,6 +36,50 @@
  * The 3D array layout is [time][lat][lon] with dimensions approximately
  * [time~200][lat=89][lon=180] depending on the dataset version.
  *
+ * **Learning Objectives:**
+ * - Open a full remote dataset without constraint expressions
+ * - Use start[] and count[] arrays for multiple targeted data requests
+ * - Implement four different access patterns (time slice, time series, regional, scattered)
+ * - Understand the trade-offs between client-side and server-side subsetting
+ * - Recognize the overhead of many small requests vs fewer large requests
+ *
+ * **Key Concepts:**
+ * - **Client-Side Subsetting**: Open the full dataset once, then use start/count
+ *   in nc_get_vara_*() calls to select different subregions on each read
+ * - **Time Slice Access**: Read all spatial points for one time step
+ *   (start=[t,0,0], count=[1,nlat,nlon])
+ * - **Time Series Access**: Read all time points at one spatial location
+ *   (start=[0,lat,lon], count=[ntime,1,1])
+ * - **Regional Subset**: Read a small 3D cube from the full dataset
+ *   (start=[t0,lat0,lon0], count=[nt,nlat_sub,nlon_sub])
+ * - **Multiple Requests**: One nc_open() supports unlimited nc_get_vara_*() calls
+ *   with different start/count values — no need to reopen for each subset
+ *
+ * **Prerequisites:**
+ * - opendap_simple.c - Basic OPeNDAP access and metadata query
+ * - simple_2D.c - Understanding start/count subsetting for local files
+ * - A NetCDF-C library built with OPeNDAP support (NC_HAS_DAP2 or NC_HAS_DAP4)
+ *
+ * **Related Examples:**
+ * - opendap_simple.c - Simplest OPeNDAP access (single subset)
+ * - opendap_constraint.c - Server-side subsetting via URL constraints
+ *
+ * **Compilation:**
+ * @code
+ * gcc -o opendap_subset opendap_subset.c -lnetcdf
+ * @endcode
+ *
+ * **Usage:**
+ * @code
+ * ./opendap_subset
+ * @endcode
+ *
+ * **Expected Output:**
+ * - Opens remote SST dataset and prints full dimension sizes
+ * - Demonstrates four access patterns with timing and data summaries:
+ *   single time slice, time series at a point, regional 3D cube,
+ *   and multiple scattered requests
+ *
  * @author Edward Hartnett
  * @date 6/15/26
  */

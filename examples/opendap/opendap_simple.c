@@ -26,6 +26,47 @@
  * NOAA Extended Reconstructed Sea Surface Temperature data. The server
  * transparently decompresses and serves the data via OPeNDAP.
  *
+ * **Learning Objectives:**
+ * - Open a remote dataset by passing an HTTP URL to nc_open()
+ * - Query remote dataset metadata (dimensions, variables, attributes)
+ * - Read a spatial subset using start/count arrays to minimize data transfer
+ * - Understand that the netCDF API is transport-agnostic (local file vs remote URL)
+ * - Recognize that data transfer occurs only on nc_get_var_*() calls, not on open
+ *
+ * **Key Concepts:**
+ * - **OPeNDAP**: Open-source protocol for accessing remote scientific data via HTTP
+ * - **Transparent Access**: nc_open() with a URL triggers the OPeNDAP dispatch layer;
+ *   all subsequent nc_*() calls work identically to local file access
+ * - **Lazy Data Transfer**: Opening a URL fetches only metadata (DAS/DDS); actual
+ *   array data is transferred only when nc_get_var_*() is called
+ * - **Client-Side Subsetting**: Use start[] and count[] arrays in nc_get_vara_*()
+ *   to request only needed data, reducing network bandwidth
+ * - **NC_NOWRITE**: Remote datasets are always read-only; this flag is required
+ *
+ * **Prerequisites:**
+ * - simple_2D.c - Basic nc_open/nc_inq/nc_get_var workflow
+ * - coord_vars.c - Understanding dimension and variable relationships
+ * - A NetCDF-C library built with OPeNDAP support (NC_HAS_DAP2 or NC_HAS_DAP4)
+ *
+ * **Related Examples:**
+ * - opendap_subset.c - Client-side subsetting with multiple access patterns
+ * - opendap_constraint.c - Server-side subsetting via constraint expressions
+ *
+ * **Compilation:**
+ * @code
+ * gcc -o opendap_simple opendap_simple.c -lnetcdf
+ * @endcode
+ *
+ * **Usage:**
+ * @code
+ * ./opendap_simple
+ * @endcode
+ *
+ * **Expected Output:**
+ * - Prints dataset metadata (dimensions, variables, attributes)
+ * - Prints dimension names and sizes
+ * - Reads and displays a 5x5 spatial subset of SST from the first time step
+ *
  * @author Edward Hartnett
  * @date 6/15/26
  */

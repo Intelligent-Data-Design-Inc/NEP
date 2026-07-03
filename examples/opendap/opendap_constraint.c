@@ -32,6 +32,50 @@
  * - For large reductions in data size (e.g., one region from global data)
  * - When making a single request for a specific time/space subset
  *
+ * **Learning Objectives:**
+ * - Construct OPeNDAP constraint expressions appended to URLs
+ * - Understand that constrained dimensions report subset sizes, not full sizes
+ * - Use range selection [start:stop] and stride [start:stride:stop] syntax
+ * - Compare server-side constraints with client-side subsetting (start/count)
+ * - Recognize when server-side subsetting is more bandwidth-efficient
+ *
+ * **Key Concepts:**
+ * - **Constraint Expression**: URL suffix (?var[start:stop]) that tells the server
+ *   to extract and return only the specified subset
+ * - **Server-Side Subsetting**: The OPeNDAP server processes the constraint and
+ *   sends only the requested data — reduces network transfer significantly
+ * - **Dimension Size After Constraint**: nc_inq_dimlen() returns the constrained
+ *   subset size, not the original full dimension size
+ * - **Stride Selection**: [start:stride:stop] samples every Nth element along
+ *   a dimension, useful for quick-look previews of large datasets
+ * - **Multiple Variables**: Comma-separated constraints (?var1[...],var2[...])
+ *   can select subsets of multiple variables in one open
+ *
+ * **Prerequisites:**
+ * - opendap_simple.c - Basic OPeNDAP access pattern
+ * - simple_2D.c - Understanding start/count arrays for local subsetting
+ * - A NetCDF-C library built with OPeNDAP support (NC_HAS_DAP2 or NC_HAS_DAP4)
+ *
+ * **Related Examples:**
+ * - opendap_simple.c - Simplest OPeNDAP access (no constraints)
+ * - opendap_subset.c - Client-side subsetting (multiple requests, one open)
+ *
+ * **Compilation:**
+ * @code
+ * gcc -o opendap_constraint opendap_constraint.c -lnetcdf
+ * @endcode
+ *
+ * **Usage:**
+ * @code
+ * ./opendap_constraint
+ * @endcode
+ *
+ * **Expected Output:**
+ * - Opens a constrained URL requesting first 3 time steps of SST
+ * - Prints constrained dimension sizes (subset, not full dataset)
+ * - Reads the entire constrained variable
+ * - Reopens with a stride constraint to sample every 2nd time step
+ *
  * @author Edward Hartnett
  * @date 6/15/26
  */
