@@ -8,7 +8,7 @@
 !! performance.
 !!
 !! **Learning Objectives:**
-!! - Configure compression with nf90_def_var_deflate() in Fortran
+!! - Configure compression with nf90_def_var_deflate() and nf90_def_var_zstandard() in Fortran
 !! - Measure compression performance in Fortran applications
 !! - Select appropriate compression levels for different data
 !! - Set fill values with nf90_def_var_fill() for chunked/compressed variables
@@ -16,10 +16,11 @@
 !!
 !! **Fortran Compression Functions:**
 !! - nf90_def_var_deflate(ncid, varid, shuffle, deflate, deflate_level)
-!! - shuffle: 0=off, 1=on
-!! - deflate: 0=off, 1=on
-!! - deflate_level: 1-9 (higher=better compression, slower)
-!! - For almost all real-world data, level 1 is the preferred value.
+!!   - shuffle: 0=off, 1=on; deflate: 0=off, 1=on; deflate_level: 1-9
+!! - nf90_def_var_zstandard(ncid, varid, level)
+!!   - level: 1-22 (higher=better compression, slower)
+!! - For almost all real-world data, zlib level 1 is the preferred deflate value.
+!!   Zstandard level 3 is the best Zstandard tradeoff for most data.
 !!   Higher levels yield diminishing returns at much greater CPU cost.
 !!
 !! **Fortran Fill Value Functions:**
@@ -53,7 +54,7 @@ program f_compression
    integer, parameter :: NLAT = 90
    integer, parameter :: NLON = 180
    integer, parameter :: NDIMS = 3
-   integer, parameter :: NUM_TESTS = 6
+   integer, parameter :: NUM_TESTS = 11
    real, parameter :: FILL_VALUE = -9999.0
    
    real, allocatable :: data(:,:,:)
@@ -65,6 +66,7 @@ program f_compression
    integer :: shuffle_flags(NUM_TESTS)
    integer :: deflate_flags(NUM_TESTS)
    integer :: deflate_levels(NUM_TESTS)
+   integer :: zstd_levels(NUM_TESTS)
    integer :: i, t, lat, lon
    real :: base_temp, seasonal, spatial
    real, parameter :: PI = 3.14159265359
@@ -99,36 +101,77 @@ program f_compression
    shuffle_flags(1) = 0
    deflate_flags(1) = 0
    deflate_levels(1) = 0
+   zstd_levels(1) = -1
    
    test_names(2) = "Shuffle only"
    filenames(2) = "f_compress_shuffle.nc"
    shuffle_flags(2) = 1
    deflate_flags(2) = 0
    deflate_levels(2) = 0
+   zstd_levels(2) = -1
    
    test_names(3) = "Deflate level 1 (preferred)"
    filenames(3) = "f_compress_deflate1.nc"
    shuffle_flags(3) = 0
    deflate_flags(3) = 1
    deflate_levels(3) = 1
+   zstd_levels(3) = -1
    
    test_names(4) = "Deflate level 5"
    filenames(4) = "f_compress_deflate5.nc"
    shuffle_flags(4) = 0
    deflate_flags(4) = 1
    deflate_levels(4) = 5
+   zstd_levels(4) = -1
    
    test_names(5) = "Deflate level 9"
    filenames(5) = "f_compress_deflate9.nc"
    shuffle_flags(5) = 0
    deflate_flags(5) = 1
    deflate_levels(5) = 9
+   zstd_levels(5) = -1
    
    test_names(6) = "Shuffle + Deflate 1 (recommended)"
    filenames(6) = "f_compress_shuffle_deflate1.nc"
    shuffle_flags(6) = 1
    deflate_flags(6) = 1
    deflate_levels(6) = 1
+   zstd_levels(6) = -1
+   
+   test_names(7) = "Zstandard level 1"
+   filenames(7) = "f_compress_zstd1.nc"
+   shuffle_flags(7) = 0
+   deflate_flags(7) = 0
+   deflate_levels(7) = 0
+   zstd_levels(7) = 1
+   
+   test_names(8) = "Zstandard level 3"
+   filenames(8) = "f_compress_zstd3.nc"
+   shuffle_flags(8) = 0
+   deflate_flags(8) = 0
+   deflate_levels(8) = 0
+   zstd_levels(8) = 3
+   
+   test_names(9) = "Zstandard level 9"
+   filenames(9) = "f_compress_zstd9.nc"
+   shuffle_flags(9) = 0
+   deflate_flags(9) = 0
+   deflate_levels(9) = 0
+   zstd_levels(9) = 9
+   
+   test_names(10) = "Shuffle + Zstandard 3"
+   filenames(10) = "f_compress_shuffle_zstd3.nc"
+   shuffle_flags(10) = 1
+   deflate_flags(10) = 0
+   deflate_levels(10) = 0
+   zstd_levels(10) = 3
+   
+   test_names(11) = "Shuffle + Zstandard 9"
+   filenames(11) = "f_compress_shuffle_zstd9.nc"
+   shuffle_flags(11) = 1
+   deflate_flags(11) = 0
+   deflate_levels(11) = 0
+   zstd_levels(11) = 9
    
    ! Run all tests
    do i = 1, NUM_TESTS
@@ -138,12 +181,14 @@ program f_compression
            shuffle_flags(i), &
            deflate_flags(i), &
            deflate_levels(i), &
+           zstd_levels(i), &
            data, write_times(i), file_sizes(i))
       call read_compressed_file( &
            trim(filenames(i)), &
            shuffle_flags(i), &
            deflate_flags(i), &
-           deflate_levels(i), data, &
+           deflate_levels(i), &
+           zstd_levels(i), data, &
            read_times(i))
    end do
    
@@ -168,17 +213,57 @@ program f_compression
          real(file_sizes(i), 8) / 1048576.0_8, compression_ratios(i), "x"
    end do
    
+   ! Find best zlib and best zstd by compression ratio
+   block
+     integer :: best_zlib, best_zstd
+     best_zlib = -1
+     best_zstd = -1
+     do i = 1, NUM_TESTS
+        if (deflate_flags(i) == 1) then
+           if (best_zlib == -1 .or. compression_ratios(i) > compression_ratios(best_zlib)) then
+              best_zlib = i
+           end if
+        end if
+        if (zstd_levels(i) >= 0) then
+           if (best_zstd == -1 .or. compression_ratios(i) > compression_ratios(best_zstd)) then
+              best_zstd = i
+           end if
+        end if
+     end do
+
+     print *, ""
+     print *, "=== Best Ratio Head-to-Head ==="
+     print '(A35, A12, A12, A12, A10)', &
+          "Strategy", "Write (s)", &
+          "Read (s)", "Size (MB)", "Ratio"
+     print '(A35, A12, A12, A12, A10)', &
+          "--------", "---------", &
+          "--------", "---------", "-----"
+     if (best_zlib > 0) then
+        print '(A35, F12.3, F12.3, F12.2, F9.2, A1)', &
+             trim(test_names(best_zlib)), write_times(best_zlib), read_times(best_zlib), &
+             real(file_sizes(best_zlib), 8) / 1048576.0_8, compression_ratios(best_zlib), "x"
+     end if
+     if (best_zstd > 0) then
+        print '(A35, F12.3, F12.3, F12.2, F9.2, A1)', &
+             trim(test_names(best_zstd)), write_times(best_zstd), read_times(best_zstd), &
+             real(file_sizes(best_zstd), 8) / 1048576.0_8, compression_ratios(best_zstd), "x"
+     end if
+   end block
+
    ! Print recommendations
    print *, ""
    print *, "=== Recommendations ==="
    print *, "- Uncompressed: Fastest I/O but largest files"
    print *, "- Shuffle only: Reorganizes", &
-        " bytes for better compression"
-   print *, "- Deflate level 1: PREFERRED for almost all real-world data"
+        " bytes for better compression (use with deflate or zstd)"
+   print *, "- Deflate level 1: PREFERRED zlib setting for almost all real-world data"
    print *, "- Deflate level 5: Marginally better ratio, significantly slower"
-   print *, "- Deflate level 9: Maximum", &
-        " compression, much slower"
-   print *, "- Shuffle + Deflate 1: RECOMMENDED default for scientific data"
+   print *, "- Deflate level 9: Maximum zlib compression, much slower"
+   print *, "- Zstandard level 3: Better ratio than zlib level 1, often faster writes"
+   print *, "- Zstandard level 9: Best zstd ratio; compare against zlib level 9 for archival"
+   print *, "- Shuffle + Zstandard 3: Strong speed/ratio tradeoff for scientific data"
+   print *, "- Shuffle + Deflate 1: RECOMMENDED default for universal compatibility"
    print *, "- Level 1 gives nearly the same compression as higher levels"
    print *, "- Higher levels cost much more CPU time for diminishing returns"
    print *, "- Read performance generally similar across compression levels"
@@ -193,9 +278,9 @@ contains
    subroutine create_compressed_file( &
         test_name, filename, &
         shuffle, deflate, deflate_level, &
-                                     data, write_time, file_size)
+        zstd_level, data, write_time, file_size)
       character(len=*), intent(in) :: test_name, filename
-      integer, intent(in) :: shuffle, deflate, deflate_level
+      integer, intent(in) :: shuffle, deflate, deflate_level, zstd_level
       real, intent(in) :: data(:,:,:)
       real(8), intent(out) :: write_time
       integer(int64), intent(out) :: file_size
@@ -207,6 +292,7 @@ contains
       integer(int64) :: start_count, end_count, count_rate
       logical :: file_exists
       integer :: start_idx(NDIMS), count_idx(NDIMS)
+      integer :: chunksizes(NDIMS)
 
       print *, ""
       print *, "=== ", trim(test_name), " ==="
@@ -228,8 +314,20 @@ contains
       dimids(3) = time_dimid
       retval = nf90_def_var(ncid, "temperature", NF90_FLOAT, dimids, varid)
       if (retval /= nf90_noerr) call handle_err(retval)
+
+      ! Set consistent chunking for all compression tests
+      chunksizes = (/ 90, 45, 10 /)
+      retval = nf90_def_var_chunking(ncid, varid, NF90_CHUNKED, chunksizes)
+      if (retval /= nf90_noerr) call handle_err(retval)
       
-      if (deflate == 1 .or. shuffle == 1) then
+      if (zstd_level >= 0) then
+         if (shuffle == 1) then
+            retval = nf90_def_var_deflate(ncid, varid, 1, 0, 0)
+            if (retval /= nf90_noerr) call handle_err(retval)
+         end if
+         retval = nf90_def_var_zstandard(ncid, varid, zstd_level)
+         if (retval /= nf90_noerr) call handle_err(retval)
+      else if (deflate == 1 .or. shuffle == 1) then
          retval = nf90_def_var_deflate(ncid, &
               varid, shuffle, deflate, &
               deflate_level)
@@ -276,14 +374,15 @@ contains
       
       if (shuffle == 1) print *, "Shuffle: enabled"
       if (deflate == 1) print *, "Deflate: level ", deflate_level
+      if (zstd_level >= 0) print *, "Zstandard: level ", zstd_level
       
    end subroutine create_compressed_file
    
    subroutine read_compressed_file(filename, &
         expected_shuffle, expected_deflate, &
-        expected_level, original_data, read_time)
+        expected_level, expected_zstd, original_data, read_time)
       character(len=*), intent(in) :: filename
-      integer, intent(in) :: expected_shuffle, expected_deflate, expected_level
+      integer, intent(in) :: expected_shuffle, expected_deflate, expected_level, expected_zstd
       real, intent(in) :: original_data(:,:,:)
       real(8), intent(out) :: read_time
       
@@ -292,6 +391,7 @@ contains
       integer(int64) :: start_count, end_count, count_rate
       real, allocatable :: data(:,:,:)
       integer :: shuffle, deflate, deflate_level
+      integer :: zstd, zstd_level
       integer :: errors, i
       integer :: no_fill
       real :: fill_value_in
@@ -306,15 +406,23 @@ contains
       retval = nf90_inq_varid(ncid, "temperature", varid)
       if (retval /= nf90_noerr) call handle_err(retval)
       
-      retval = nf90_inq_var_deflate(ncid, &
-           varid, shuffle, deflate, &
-           deflate_level)
-      if (retval /= nf90_noerr) call handle_err(retval)
-      
-      if (shuffle /= expected_shuffle .or. deflate /= expected_deflate .or. &
-          (deflate == 1 .and. deflate_level /= expected_level)) then
-         print *, "Error: Compression settings mismatch"
-         stop 2
+      if (expected_zstd >= 0) then
+         retval = nf90_inq_var_zstandard(ncid, varid, zstd, zstd_level)
+         if (retval /= nf90_noerr) call handle_err(retval)
+         if (zstd /= 1 .or. zstd_level /= expected_zstd) then
+            print *, "Error: Zstandard settings mismatch"
+            stop 2
+         end if
+      else
+         retval = nf90_inq_var_deflate(ncid, &
+              varid, shuffle, deflate, &
+              deflate_level)
+         if (retval /= nf90_noerr) call handle_err(retval)
+         if (shuffle /= expected_shuffle .or. deflate /= expected_deflate .or. &
+             (deflate == 1 .and. deflate_level /= expected_level)) then
+            print *, "Error: Compression settings mismatch"
+            stop 2
+         end if
       end if
       
       ! Verify fill value using nf90_inq_var_fill()
