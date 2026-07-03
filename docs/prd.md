@@ -500,7 +500,7 @@ Parallel I/O builds are tested in a separate CI workflow (`ci-parallel.yml`) wit
 ### 13.2 Optional Dependencies
 - LZ4 library (for LZ4 compression)
 - BZIP2 library (for BZIP2 compression)
-- NetCDF-Fortran v4.5.4+ (for Fortran wrappers)
+- NetCDF-Fortran v4.6.2+ (for Fortran wrappers; zstd API requires 4.6.0+)
 - NASA CDF Library v3.9.x (for CDF support)
 - libgeotiff (for GeoTIFF support)
 - libtiff (transitive, for GeoTIFF support)
