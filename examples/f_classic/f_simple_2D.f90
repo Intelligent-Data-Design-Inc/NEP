@@ -73,7 +73,7 @@
 !! - Output structure identical to simple_2D.c (verified via ncdump)
 !!
 !! @author Edward Hartnett, Intelligent Data Design, Inc.
-!! @date 2026
+!! @date May 1, 2026
 
 
 program f_simple_2D
