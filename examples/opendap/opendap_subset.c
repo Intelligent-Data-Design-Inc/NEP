@@ -87,6 +87,7 @@
 #include <netcdf.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
 
 /* Error handling macro like coord.c */
 #define ERR(e) do { \
@@ -102,6 +103,8 @@ int main(void)
     int var_ndims;
     int var_dimids[NC_MAX_VAR_DIMS];
     size_t time_len, lat_len, lon_len;
+    struct timeval t0, t1;
+    double elapsed;
     
     /* URL without constraint - we'll subset client-side */
     const char *url = "http://test.opendap.org/dap/data/nc/sst.mnmean.nc.gz";
@@ -135,9 +138,13 @@ int main(void)
         float *data = malloc(lat_len * lon_len * sizeof(float));
         if (!data) { fprintf(stderr, "Memory allocation failed\n"); return 1; }
 
+        gettimeofday(&t0, NULL);
         if ((retval = nc_get_vara_float(ncid, varid, start, count, data)))
             ERR(retval);
+        gettimeofday(&t1, NULL);
+        elapsed = (t1.tv_sec - t0.tv_sec) + (t1.tv_usec - t0.tv_usec) / 1e6;
         printf("   Shape: %zux%zu, sample[45,90]=%.2f\n", lat_len, lon_len, data[45 * lon_len + 90]);
+        printf("   Time: %.3f s\n", elapsed);
         free(data);
     }
     
@@ -149,12 +156,16 @@ int main(void)
         float *data = malloc(time_len * sizeof(float));
         if (!data) { fprintf(stderr, "Memory allocation failed\n"); return 1; }
 
+        gettimeofday(&t0, NULL);
         if ((retval = nc_get_vara_float(ncid, varid, start, count, data)))
             ERR(retval);
+        gettimeofday(&t1, NULL);
+        elapsed = (t1.tv_sec - t0.tv_sec) + (t1.tv_usec - t0.tv_usec) / 1e6;
         printf("   %zu time points, first 5: ", time_len);
         for (int i = 0; i < 5 && i < (int)time_len; i++)
             printf("%.2f ", data[i]);
         printf("\n");
+        printf("   Time: %.3f s\n", elapsed);
         free(data);
     }
     
@@ -165,9 +176,13 @@ int main(void)
         size_t count[3] = {3, 10, 10};
         float data[3][10][10];
 
+        gettimeofday(&t0, NULL);
         if ((retval = nc_get_vara_float(ncid, varid, start, count, &data[0][0][0])))
             ERR(retval);
+        gettimeofday(&t1, NULL);
+        elapsed = (t1.tv_sec - t0.tv_sec) + (t1.tv_usec - t0.tv_usec) / 1e6;
         printf("   Shape 3x10x10, value[0,5,5]=%.2f\n", data[0][5][5]);
+        printf("   Time: %.3f s\n", elapsed);
     }
     
     /* Request 4: Multiple scattered reads */
@@ -175,13 +190,17 @@ int main(void)
     {
         float data[10][10];
 
+        gettimeofday(&t0, NULL);
         for (int t = 0; t < 3; t++) {
             size_t start[3] = {(size_t)t, 40, 85};
             size_t count[3] = {1, 10, 10};
             if ((retval = nc_get_vara_float(ncid, varid, start, count, &data[0][0])))
                 ERR(retval);
         }
+        gettimeofday(&t1, NULL);
+        elapsed = (t1.tv_sec - t0.tv_sec) + (t1.tv_usec - t0.tv_usec) / 1e6;
         printf("   Complete\n");
+        printf("   Time: %.3f s (3 requests)\n", elapsed);
     }
     
     /* Close */
