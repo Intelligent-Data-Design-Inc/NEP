@@ -143,7 +143,7 @@ All features integrate seamlessly with the standard NetCDF API.
 - **Operating System**: Linux or Unix
 - **Core Libraries**: NetCDF-C (v4.9+), HDF5 (v1.12+)
 - **Compression (optional)**: LZ4, BZIP2
-- **Fortran Support (optional)**: NetCDF-Fortran (v4.5.4+)
+- **Fortran Support (optional)**: NetCDF-Fortran (v4.6.2+; zstd API requires 4.6.0+)
 - **CDF Support (optional)**: NASA CDF Library (v3.9.x)
 - **GeoTIFF Support (optional)**: libgeotiff, libtiff
 - **GRIB2 Support (optional)**: NOAA NCEPLIBS-g2c (≥ 2.1.0), libjasper (≥ 3.0.0)

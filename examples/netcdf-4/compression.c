@@ -8,23 +8,25 @@
  * I/O bandwidth for large scientific datasets.
  *
  * The program generates realistic 3D temperature data (time×lat×lon) and creates
- * files with various compression configurations: no compression, deflate only,
- * shuffle only, and shuffle+deflate combinations at different compression levels.
- * It measures write/read times, file sizes, and compression ratios.
+ * files with various compression configurations: no compression, deflate (zlib)
+ * only, Zstandard (zstd) only, shuffle only, and shuffle+deflate or shuffle+zstd
+ * combinations at different compression levels. It measures write/read times,
+ * file sizes, and compression ratios.
  *
  * **Learning Objectives:**
- * - Understand NetCDF-4 compression filters (deflate, shuffle)
- * - Learn to configure compression with nc_def_var_deflate() and nc_def_var_shuffle()
- * - Master compression level selection (1-9 tradeoff between speed and ratio)
+ * - Understand NetCDF-4 compression filters (deflate, shuffle, Zstandard)
+ * - Learn to configure compression with nc_def_var_deflate() and nc_def_var_zstandard()
+ * - Master compression level selection (zlib 1-9, zstd 1-22 tradeoff)
  * - Measure compression performance (time, size, ratio)
  * - Make informed compression decisions for different data types
  *
  * **Key Concepts:**
  * - **Deflate Filter**: GZIP compression (levels 1-9, higher = better compression)
+ * - **Zstandard Filter**: Modern zstd compression (levels 1-22, wider speed/ratio range)
  * - **Shuffle Filter**: Byte reordering to improve compression of typed data
  * - **Compression Ratio**: Original size / compressed size
  * - **Compression Overhead**: Extra CPU time for compression/decompression
- * - **Filter Pipeline**: Shuffle then deflate for optimal results
+ * - **Filter Pipeline**: Shuffle then deflate or shuffle then zstd for optimal results
  * - **Level 1 is best**: For almost all real-world scientific data, deflate
  *   level 1 provides nearly the same compression ratio as higher levels but
  *   at a fraction of the CPU cost. Higher levels yield diminishing returns.
@@ -65,12 +67,15 @@
  *
  * **Expected Output:**
  * Creates multiple files with compression analysis:
- * - compression_none.nc (uncompressed baseline)
- * - compression_deflate_N.nc (deflate levels 1, 5, 9)
- * - compression_shuffle.nc (shuffle only)
- * - compression_shuffle_deflate_N.nc (combined, levels 1, 5, 9)
- * Note: Level 1 is the preferred deflate level for almost all real-world data.
- * Displays performance comparison table with times, sizes, and ratios.
+ * - compress_none.nc (uncompressed baseline)
+ * - compress_deflate_N.nc (deflate levels 1, 5, 9)
+ * - compress_shuffle.nc (shuffle only)
+ * - compress_shuffle_deflate1.nc (combined, level 1)
+ * - compress_zstd_N.nc (zstd levels 1, 3, 9)
+ * - compress_shuffle_zstd_N.nc (combined, levels 3, 9)
+ * Note: Level 1 is the preferred deflate level; zstd level 3 is the best
+ * Zstandard tradeoff for most real-world data.
+ * Displays performance comparison table and a best zlib vs best zstd head-to-head.
  *
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  * @date 2026
@@ -82,6 +87,7 @@
 #include <time.h>
 #include <math.h>
 #include <netcdf.h>
+#include <netcdf_filter.h>
 
 #define NTIME 50
 #define NLAT 90
@@ -97,6 +103,7 @@ typedef struct {
     int shuffle;
     int deflate;
     int deflate_level;
+    int zstd_level;
     double write_time;
     double read_time;
     long file_size;
@@ -143,6 +150,7 @@ void create_compressed_file(CompressionTest *test, float *data) {
     int dimids[NDIMS];
     int retval;
     struct timespec start, end;
+    size_t chunksizes[NDIMS] = {10, 45, 90};
     
     printf("\n=== %s ===\n", test->name);
     
@@ -168,16 +176,26 @@ void create_compressed_file(CompressionTest *test, float *data) {
     if ((retval = nc_def_var(ncid, "temperature", NC_FLOAT, NDIMS, dimids, &varid)))
         ERR(retval);
     
+    if ((retval = nc_def_var_chunking(ncid, varid, NC_CHUNKED, chunksizes)))
+        ERR(retval);
+
     /* Set fill value: nc_def_var_fill() registers the sentinel returned for unwritten
      * chunks. In chunked/compressed variables, unwritten chunks are stored as fill
      * value data, making fill value part of the chunk metadata. */
     float fill_value = FILL_VALUE;
     if ((retval = nc_def_var_fill(ncid, varid, NC_FILL, &fill_value)))
         ERR(retval);
-    
+
     /* Set compression */
-    if (test->deflate || test->shuffle) {
-        if ((retval = nc_def_var_deflate(ncid, varid, test->shuffle, 
+    if (test->zstd_level >= 0) {
+        if (test->shuffle) {
+            if ((retval = nc_def_var_deflate(ncid, varid, 1, 0, 0)))
+                ERR(retval);
+        }
+        if ((retval = nc_def_var_zstandard(ncid, varid, test->zstd_level)))
+            ERR(retval);
+    } else if (test->deflate || test->shuffle) {
+        if ((retval = nc_def_var_deflate(ncid, varid, test->shuffle,
                                          test->deflate, test->deflate_level)))
             ERR(retval);
     }
@@ -212,6 +230,7 @@ void create_compressed_file(CompressionTest *test, float *data) {
     
     if (test->shuffle) printf("Shuffle: enabled\n");
     if (test->deflate) printf("Deflate: level %d\n", test->deflate_level);
+    if (test->zstd_level >= 0) printf("Zstandard: level %d\n", test->zstd_level);
 }
 
 /* Read and validate compressed file */
@@ -239,13 +258,22 @@ void read_compressed_file(CompressionTest *test, float *original_data) {
         ERR(retval);
     
     /* Verify compression settings */
-    if ((retval = nc_inq_var_deflate(ncid, varid, &shuffle, &deflate, &deflate_level)))
-        ERR(retval);
-    
-    if (shuffle != test->shuffle || deflate != test->deflate || 
-        (deflate && deflate_level != test->deflate_level)) {
-        printf("Error: Compression settings mismatch\n");
-        exit(ERRCODE);
+    if (test->zstd_level >= 0) {
+        int zstd_out, zstd_level_out;
+        if ((retval = nc_inq_var_zstandard(ncid, varid, &zstd_out, &zstd_level_out)))
+            ERR(retval);
+        if (!zstd_out || zstd_level_out != test->zstd_level) {
+            printf("Error: Zstandard settings mismatch\n");
+            exit(ERRCODE);
+        }
+    } else {
+        if ((retval = nc_inq_var_deflate(ncid, varid, &shuffle, &deflate, &deflate_level)))
+            ERR(retval);
+        if (shuffle != test->shuffle || deflate != test->deflate ||
+            (deflate && deflate_level != test->deflate_level)) {
+            printf("Error: Compression settings mismatch\n");
+            exit(ERRCODE);
+        }
     }
     
     /* Verify fill value using nc_inq_var_fill() */
@@ -302,6 +330,29 @@ void read_compressed_file(CompressionTest *test, float *original_data) {
     free(data);
 }
 
+/* Check whether Zstandard is available at runtime by attempting to create
+ * a tiny file with the zstd filter applied. */
+int check_zstd_support(void) {
+    int ncid, varid, dimid;
+    int retval;
+    int supported = 0;
+
+    if ((retval = nc_create("zstd_probe.nc", NC_CLOBBER|NC_NETCDF4, &ncid)))
+        return 0;
+
+    if ((retval = nc_def_dim(ncid, "x", 1, &dimid)) == NC_NOERR &&
+        (retval = nc_def_var(ncid, "v", NC_FLOAT, 1, &dimid, &varid)) == NC_NOERR)
+        retval = nc_def_var_zstandard(ncid, varid, 3);
+
+    nc_close(ncid);
+    remove("zstd_probe.nc");
+
+    supported = (retval == NC_NOERR);
+    if (!supported)
+        printf("Note: Zstandard not available at runtime (skipping zstd tests)\n");
+    return supported;
+}
+
 int main() {
     printf("Compression Filter Demonstration\n");
     printf("=================================\n");
@@ -317,20 +368,30 @@ int main() {
         return ERRCODE;
     }
     generate_temperature_data(data);
+
+    /* Probe for runtime Zstandard support */
+    int zstd_available = check_zstd_support();
     
     /* Define compression tests */
     CompressionTest tests[] = {
-        {"Uncompressed (baseline)", "compress_none.nc", 0, 0, 0, 0, 0, 0, 0},
-        {"Shuffle only", "compress_shuffle.nc", 1, 0, 0, 0, 0, 0, 0},
-        {"Deflate level 1 (preferred)", "compress_deflate1.nc", 0, 1, 1, 0, 0, 0, 0},
-        {"Deflate level 5", "compress_deflate5.nc", 0, 1, 5, 0, 0, 0, 0},
-        {"Deflate level 9", "compress_deflate9.nc", 0, 1, 9, 0, 0, 0, 0},
-        {"Shuffle + Deflate 1 (recommended)", "compress_shuffle_deflate1.nc", 1, 1, 1, 0, 0, 0, 0}
+        {"Uncompressed (baseline)", "compress_none.nc", 0, 0, 0, -1, 0, 0, 0, 0},
+        {"Shuffle only", "compress_shuffle.nc", 1, 0, 0, -1, 0, 0, 0, 0},
+        {"Deflate level 1 (preferred)", "compress_deflate1.nc", 0, 1, 1, -1, 0, 0, 0, 0},
+        {"Deflate level 5", "compress_deflate5.nc", 0, 1, 5, -1, 0, 0, 0, 0},
+        {"Deflate level 9", "compress_deflate9.nc", 0, 1, 9, -1, 0, 0, 0, 0},
+        {"Shuffle + Deflate 1 (recommended)", "compress_shuffle_deflate1.nc", 1, 1, 1, -1, 0, 0, 0, 0},
+        {"Zstandard level 1", "compress_zstd1.nc", 0, 0, 0, 1, 0, 0, 0, 0},
+        {"Zstandard level 3", "compress_zstd3.nc", 0, 0, 0, 3, 0, 0, 0, 0},
+        {"Zstandard level 9", "compress_zstd9.nc", 0, 0, 0, 9, 0, 0, 0, 0},
+        {"Shuffle + Zstandard 3", "compress_shuffle_zstd3.nc", 1, 0, 0, 3, 0, 0, 0, 0},
+        {"Shuffle + Zstandard 9", "compress_shuffle_zstd9.nc", 1, 0, 0, 9, 0, 0, 0, 0}
     };
     int num_tests = sizeof(tests) / sizeof(tests[0]);
     
-    /* Run all tests */
+    /* Run all tests, skipping zstd cases if the filter is unavailable */
     for (int i = 0; i < num_tests; i++) {
+        if (tests[i].zstd_level >= 0 && !zstd_available)
+            continue;
         create_compressed_file(&tests[i], data);
         read_compressed_file(&tests[i], data);
     }
@@ -349,6 +410,8 @@ int main() {
            "--------", "---------", "--------", "---------", "-----");
     
     for (int i = 0; i < num_tests; i++) {
+        if (tests[i].zstd_level >= 0 && !zstd_available)
+            continue;
         printf("%-35s %12.3f %12.3f %12.2f %10.2fx\n",
                tests[i].name,
                tests[i].write_time,
@@ -357,15 +420,56 @@ int main() {
                tests[i].compression_ratio);
     }
     
+    /* Find best zlib and best zstd by compression ratio */
+    int best_zlib = -1, best_zstd = -1;
+    for (int i = 0; i < num_tests; i++) {
+        if (tests[i].zstd_level >= 0 && !zstd_available)
+            continue;
+        if (tests[i].deflate &&
+            (best_zlib == -1 || tests[i].compression_ratio > tests[best_zlib].compression_ratio))
+            best_zlib = i;
+        if (tests[i].zstd_level >= 0 &&
+            (best_zstd == -1 || tests[i].compression_ratio > tests[best_zstd].compression_ratio))
+            best_zstd = i;
+    }
+
+    /* Print head-to-head comparison */
+    printf("\n=== Best Ratio Head-to-Head ===\n");
+    printf("%-35s %12s %12s %12s %10s\n",
+           "Strategy", "Write (s)", "Read (s)", "Size (MB)", "Ratio");
+    printf("%-35s %12s %12s %12s %10s\n",
+           "--------", "---------", "--------", "---------", "-----");
+    if (best_zlib >= 0) {
+        printf("%-35s %12.3f %12.3f %12.2f %10.2fx\n",
+               tests[best_zlib].name,
+               tests[best_zlib].write_time,
+               tests[best_zlib].read_time,
+               tests[best_zlib].file_size / 1048576.0,
+               tests[best_zlib].compression_ratio);
+    }
+    if (best_zstd >= 0) {
+        printf("%-35s %12.3f %12.3f %12.2f %10.2fx\n",
+               tests[best_zstd].name,
+               tests[best_zstd].write_time,
+               tests[best_zstd].read_time,
+               tests[best_zstd].file_size / 1048576.0,
+               tests[best_zstd].compression_ratio);
+    }
+
     /* Print recommendations */
     printf("\n=== Recommendations ===\n");
     printf("- Uncompressed: Fastest I/O but largest files\n");
-    printf("- Shuffle only: Reorganizes bytes for better compression (use with deflate)\n");
-    printf("- Deflate level 1: PREFERRED for almost all real-world data\n");
+    printf("- Shuffle only: Reorganizes bytes for better compression (use with deflate or zstd)\n");
+    printf("- Deflate level 1: PREFERRED zlib setting for almost all real-world data\n");
     printf("- Deflate level 5: Marginally better ratio, significantly slower\n");
-    printf("- Deflate level 9: Maximum compression, much slower, rarely worth it\n");
-    printf("- Shuffle + Deflate 1: RECOMMENDED default for scientific data\n");
-    printf("- Level 1 gives nearly the same compression as higher levels\n");
+    printf("- Deflate level 9: Maximum zlib compression, much slower, rarely worth it\n");
+    if (zstd_available) {
+        printf("- Zstandard level 3: Better ratio than zlib level 1, often faster writes\n");
+        printf("- Zstandard level 9: Best zstd ratio; compare against zlib level 9 for archival\n");
+        printf("- Shuffle + Zstandard 3: Strong speed/ratio tradeoff for scientific data\n");
+    }
+    printf("- Shuffle + Deflate 1: RECOMMENDED default for universal compatibility\n");
+    printf("- Level 1 gives nearly the same compression as higher levels for most data\n");
     printf("- Higher levels cost much more CPU time for diminishing returns\n");
     printf("- Read performance generally similar across compression levels\n");
     printf("- Compression effectiveness depends on data patterns\n");

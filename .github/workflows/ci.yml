@@ -342,7 +342,7 @@ jobs:
 
       - name: Install base dependencies
         run: |
-          sudo apt-get install -y cmake make wget zlib1g-dev libjpeg-dev liblz4-dev libbz2-dev liblzf-dev
+          sudo apt-get install -y cmake make wget zlib1g-dev libjpeg-dev liblz4-dev libbz2-dev liblzf-dev libzstd-dev
 
       - name: Install documentation dependencies
         if: matrix.fortran == 'on' && matrix.compression == 'all'
@@ -409,7 +409,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-c-install
-          key: netcdf-c-4.10.0-${{ runner.os }}-2
+          key: netcdf-c-4.10.0-${{ runner.os }}-3
 
       - name: Download and build NetCDF-C
         if: steps.cache-netcdf-c.outputs.cache-hit != 'true'
@@ -452,14 +452,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-fortran-install
-          key: netcdf-fortran-4.5.4-${{ runner.os }}-1
+          key: netcdf-fortran-4.6.2-${{ runner.os }}-2
 
       - name: Download and build NetCDF-Fortran
         if: steps.cache-netcdf-fortran.outputs.cache-hit != 'true'
         run: |
-          wget https://github.com/Unidata/netcdf-fortran/archive/v4.5.4.tar.gz &> /dev/null
-          tar -xzf v4.5.4.tar.gz
-          cd netcdf-fortran-4.5.4
+          wget https://github.com/Unidata/netcdf-fortran/archive/v4.6.2.tar.gz &> /dev/null
+          tar -xzf v4.6.2.tar.gz
+          cd netcdf-fortran-4.6.2
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$GITHUB_WORKSPACE/netcdf-c-install/bin:$PATH"
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib"
