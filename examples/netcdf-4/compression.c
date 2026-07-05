@@ -27,17 +27,22 @@
  * - **Compression Ratio**: Original size / compressed size
  * - **Compression Overhead**: Extra CPU time for compression/decompression
  * - **Filter Pipeline**: Shuffle then deflate or shuffle then zstd for optimal results
- * - **Level 1 is best**: For almost all real-world scientific data, deflate
- *   level 1 provides nearly the same compression ratio as higher levels but
- *   at a fraction of the CPU cost. Higher levels yield diminishing returns.
+ * - **Zstandard is preferred**: When available, Zstandard (zstd) is generally
+ *   faster than zlib and provides better compression ratios. Use zstd level 3
+ *   as the default; higher levels yield diminishing returns at greater CPU cost.
+ * - **Deflate level 1 is best for zlib**: For almost all real-world scientific
+ *   data, deflate level 1 provides nearly the same compression ratio as higher
+ *   zlib levels but at a fraction of the CPU cost. Use deflate only when zstd is
+ *   unavailable.
  *
  * **Compression Strategies:**
  * - **No Compression**: Fastest I/O, largest files, use for small datasets
  * - **Deflate Only**: Good compression, slower, use for mixed data types
  * - **Shuffle Only**: Minimal overhead, modest gains, use for fast I/O
- * - **Shuffle+Deflate 1**: Best tradeoff, recommended default for nearly all data
- * - **High Deflate Levels (5-9)**: Marginally better compression, much slower,
- *   rarely worth the cost except for one-time archival of small datasets
+ * - **Shuffle+Deflate 1**: Best zlib tradeoff; default when zstd is unavailable
+ * - **Shuffle+Zstandard 3**: Best overall tradeoff; preferred when zstd is available
+ * - **High Deflate/Zstandard Levels (5-9)**: Marginally better compression, much
+ *   slower, rarely worth the cost except for one-time archival of small datasets
  *
  * **When to Use Compression:**
  * - Large datasets where storage/bandwidth is limited

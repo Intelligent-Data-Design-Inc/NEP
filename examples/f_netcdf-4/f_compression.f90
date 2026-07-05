@@ -19,9 +19,11 @@
 !!   - shuffle: 0=off, 1=on; deflate: 0=off, 1=on; deflate_level: 1-9
 !! - nf90_def_var_zstandard(ncid, varid, level)
 !!   - level: 1-22 (higher=better compression, slower)
-!! - For almost all real-world data, zlib level 1 is the preferred deflate value.
-!!   Zstandard level 3 is the best Zstandard tradeoff for most data.
-!!   Higher levels yield diminishing returns at much greater CPU cost.
+!!   - Zstandard is generally faster than zlib and provides better compression ratios.
+!!     Prefer Zstandard when it is available; level 3 is the best tradeoff.
+!! - zlib is the fallback when Zstandard is unavailable. For almost all real-world
+!!   data, zlib level 1 is the preferred deflate value. Higher levels yield
+!!   diminishing returns at much greater CPU cost.
 !!
 !! **Fortran Fill Value Functions:**
 !! - nf90_def_var_fill(ncid, varid, no_fill,
