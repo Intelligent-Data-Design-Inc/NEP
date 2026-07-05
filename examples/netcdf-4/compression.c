@@ -330,6 +330,29 @@ void read_compressed_file(CompressionTest *test, float *original_data) {
     free(data);
 }
 
+/* Check whether Zstandard is available at runtime by attempting to create
+ * a tiny file with the zstd filter applied. */
+int check_zstd_support(void) {
+    int ncid, varid, dimid;
+    int retval;
+    int supported = 0;
+
+    if ((retval = nc_create("zstd_probe.nc", NC_CLOBBER|NC_NETCDF4, &ncid)))
+        return 0;
+
+    if ((retval = nc_def_dim(ncid, "x", 1, &dimid)) == NC_NOERR &&
+        (retval = nc_def_var(ncid, "v", NC_FLOAT, 1, &dimid, &varid)) == NC_NOERR)
+        retval = nc_def_var_zstandard(ncid, varid, 3);
+
+    nc_close(ncid);
+    remove("zstd_probe.nc");
+
+    supported = (retval == NC_NOERR);
+    if (!supported)
+        printf("Note: Zstandard not available at runtime (skipping zstd tests)\n");
+    return supported;
+}
+
 int main() {
     printf("Compression Filter Demonstration\n");
     printf("=================================\n");
@@ -345,6 +368,9 @@ int main() {
         return ERRCODE;
     }
     generate_temperature_data(data);
+
+    /* Probe for runtime Zstandard support */
+    int zstd_available = check_zstd_support();
     
     /* Define compression tests */
     CompressionTest tests[] = {
@@ -362,8 +388,10 @@ int main() {
     };
     int num_tests = sizeof(tests) / sizeof(tests[0]);
     
-    /* Run all tests */
+    /* Run all tests, skipping zstd cases if the filter is unavailable */
     for (int i = 0; i < num_tests; i++) {
+        if (tests[i].zstd_level >= 0 && !zstd_available)
+            continue;
         create_compressed_file(&tests[i], data);
         read_compressed_file(&tests[i], data);
     }
@@ -382,6 +410,8 @@ int main() {
            "--------", "---------", "--------", "---------", "-----");
     
     for (int i = 0; i < num_tests; i++) {
+        if (tests[i].zstd_level >= 0 && !zstd_available)
+            continue;
         printf("%-35s %12.3f %12.3f %12.2f %10.2fx\n",
                tests[i].name,
                tests[i].write_time,
@@ -393,6 +423,8 @@ int main() {
     /* Find best zlib and best zstd by compression ratio */
     int best_zlib = -1, best_zstd = -1;
     for (int i = 0; i < num_tests; i++) {
+        if (tests[i].zstd_level >= 0 && !zstd_available)
+            continue;
         if (tests[i].deflate &&
             (best_zlib == -1 || tests[i].compression_ratio > tests[best_zlib].compression_ratio))
             best_zlib = i;
@@ -431,9 +463,11 @@ int main() {
     printf("- Deflate level 1: PREFERRED zlib setting for almost all real-world data\n");
     printf("- Deflate level 5: Marginally better ratio, significantly slower\n");
     printf("- Deflate level 9: Maximum zlib compression, much slower, rarely worth it\n");
-    printf("- Zstandard level 3: Better ratio than zlib level 1, often faster writes\n");
-    printf("- Zstandard level 9: Best zstd ratio; compare against zlib level 9 for archival\n");
-    printf("- Shuffle + Zstandard 3: Strong speed/ratio tradeoff for scientific data\n");
+    if (zstd_available) {
+        printf("- Zstandard level 3: Better ratio than zlib level 1, often faster writes\n");
+        printf("- Zstandard level 9: Best zstd ratio; compare against zlib level 9 for archival\n");
+        printf("- Shuffle + Zstandard 3: Strong speed/ratio tradeoff for scientific data\n");
+    }
     printf("- Shuffle + Deflate 1: RECOMMENDED default for universal compatibility\n");
     printf("- Level 1 gives nearly the same compression as higher levels for most data\n");
     printf("- Higher levels cost much more CPU time for diminishing returns\n");

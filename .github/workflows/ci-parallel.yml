@@ -38,7 +38,7 @@ jobs:
       - name: Install base dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake make wget zlib1g-dev autoconf automake libtool pkg-config
+          sudo apt-get install -y cmake make wget zlib1g-dev autoconf automake libtool pkg-config libzstd-dev
 
       - name: Install OpenMPI
         run: |
@@ -83,7 +83,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-c-install
-          key: netcdf-c-4.10.0-parallel-openmpi-${{ runner.os }}-3
+          key: netcdf-c-4.10.0-parallel-openmpi-${{ runner.os }}-4
 
       - name: Download and build NetCDF-C (parallel)
         if: steps.cache-netcdf-c.outputs.cache-hit != 'true'
@@ -109,7 +109,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-fortran-install
-          key: netcdf-fortran-4.6.2-parallel-openmpi-${{ runner.os }}-1
+          key: netcdf-fortran-4.6.2-parallel-openmpi-${{ runner.os }}-2
 
       - name: Download and build NetCDF-Fortran (parallel)
         if: steps.cache-netcdf-fortran.outputs.cache-hit != 'true'

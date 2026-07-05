@@ -70,6 +70,7 @@ program f_compression
    integer :: i, t, lat, lon
    real :: base_temp, seasonal, spatial
    real, parameter :: PI = 3.14159265359
+   logical :: zstd_available
    
    print *, "Compression Filter Demonstration"
    print *, "================================="
@@ -173,8 +174,15 @@ program f_compression
    deflate_levels(11) = 0
    zstd_levels(11) = 9
    
+   ! Probe for runtime Zstandard support
+   zstd_available = check_zstd_support()
+   if (.not. zstd_available) then
+      print *, "Note: Zstandard not available at runtime (skipping zstd tests)"
+   end if
+
    ! Run all tests
    do i = 1, NUM_TESTS
+      if (zstd_levels(i) >= 0 .and. .not. zstd_available) cycle
       call create_compressed_file( &
            trim(test_names(i)), &
            trim(filenames(i)), &
@@ -208,6 +216,7 @@ program f_compression
         "--------", "---------", "-----"
    
    do i = 1, NUM_TESTS
+      if (zstd_levels(i) >= 0 .and. .not. zstd_available) cycle
       print '(A35, F12.3, F12.3, F12.2, F9.2, A1)', &
          trim(test_names(i)), write_times(i), read_times(i), &
          real(file_sizes(i), 8) / 1048576.0_8, compression_ratios(i), "x"
@@ -219,6 +228,7 @@ program f_compression
      best_zlib = -1
      best_zstd = -1
      do i = 1, NUM_TESTS
+        if (zstd_levels(i) >= 0 .and. .not. zstd_available) cycle
         if (deflate_flags(i) == 1) then
            if (best_zlib == -1 .or. compression_ratios(i) > compression_ratios(best_zlib)) then
               best_zlib = i
@@ -260,9 +270,11 @@ program f_compression
    print *, "- Deflate level 1: PREFERRED zlib setting for almost all real-world data"
    print *, "- Deflate level 5: Marginally better ratio, significantly slower"
    print *, "- Deflate level 9: Maximum zlib compression, much slower"
-   print *, "- Zstandard level 3: Better ratio than zlib level 1, often faster writes"
-   print *, "- Zstandard level 9: Best zstd ratio; compare against zlib level 9 for archival"
-   print *, "- Shuffle + Zstandard 3: Strong speed/ratio tradeoff for scientific data"
+   if (zstd_available) then
+      print *, "- Zstandard level 3: Better ratio than zlib level 1, often faster writes"
+      print *, "- Zstandard level 9: Best zstd ratio; compare against zlib level 9 for archival"
+      print *, "- Shuffle + Zstandard 3: Strong speed/ratio tradeoff for scientific data"
+   end if
    print *, "- Shuffle + Deflate 1: RECOMMENDED default for universal compatibility"
    print *, "- Level 1 gives nearly the same compression as higher levels"
    print *, "- Higher levels cost much more CPU time for diminishing returns"
@@ -274,6 +286,23 @@ program f_compression
    print *, "*** SUCCESS: All compression strategies tested!"
    
 contains
+
+   function check_zstd_support() result(zstd_available)
+      logical :: zstd_available
+      integer :: ncid, varid, dimid, retval, zstd_ret
+
+      zstd_available = .false.
+      retval = nf90_create("zstd_probe.nc", NF90_CLOBBER + NF90_NETCDF4, ncid)
+      if (retval /= nf90_noerr) return
+
+      retval = nf90_def_dim(ncid, "x", 1, dimid)
+      if (retval == nf90_noerr) retval = nf90_def_var(ncid, "v", NF90_FLOAT, (/dimid/), varid)
+      zstd_ret = nf90_def_var_zstandard(ncid, varid, 3)
+
+      retval = nf90_close(ncid)
+      call system("rm -f zstd_probe.nc")
+      zstd_available = (retval == nf90_noerr .and. zstd_ret == nf90_noerr)
+   end function check_zstd_support
 
    subroutine create_compressed_file( &
         test_name, filename, &

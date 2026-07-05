@@ -37,7 +37,7 @@ jobs:
       - name: Install base dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake make wget zlib1g-dev autoconf automake libtool pkg-config libcfitsio-dev gfortran
+          sudo apt-get install -y cmake make wget zlib1g-dev autoconf automake libtool pkg-config libcfitsio-dev gfortran libzstd-dev
 
       - name: Cache HDF5 install
         id: cache-hdf5-fits
@@ -62,7 +62,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-c-install
-          key: netcdf-c-main-fits-${{ runner.os }}-1
+          key: netcdf-c-main-fits-${{ runner.os }}-2
 
       - name: Clone and build NetCDF-C (main branch)
         if: steps.cache-netcdf-c-fits.outputs.cache-hit != 'true'
@@ -83,7 +83,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-fortran-install
-          key: netcdf-fortran-main-fits-${{ runner.os }}-1
+          key: netcdf-fortran-main-fits-${{ runner.os }}-2
 
       - name: Clone and build NetCDF-Fortran (main branch)
         if: steps.cache-netcdf-fortran-fits.outputs.cache-hit != 'true'
