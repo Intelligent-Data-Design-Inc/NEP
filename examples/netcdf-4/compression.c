@@ -152,8 +152,6 @@ void create_compressed_file(CompressionTest *test, float *data) {
     struct timespec start, end;
     size_t chunksizes[NDIMS] = {10, 45, 90};
     
-    printf("\n=== %s ===\n", test->name);
-    
     /* Start timing */
     clock_gettime(CLOCK_MONOTONIC, &start);
     
@@ -223,14 +221,6 @@ void create_compressed_file(CompressionTest *test, float *data) {
     
     /* Get file size */
     test->file_size = get_file_size(test->filename);
-    
-    printf("Write time: %.3f seconds\n", test->write_time);
-    printf("File size: %ld bytes (%.2f MB)\n", 
-           test->file_size, test->file_size / 1048576.0);
-    
-    if (test->shuffle) printf("Shuffle: enabled\n");
-    if (test->deflate) printf("Deflate: level %d\n", test->deflate_level);
-    if (test->zstd_level >= 0) printf("Zstandard: level %d\n", test->zstd_level);
 }
 
 /* Read and validate compressed file */
@@ -323,10 +313,6 @@ void read_compressed_file(CompressionTest *test, float *original_data) {
         exit(ERRCODE);
     }
     
-    printf("Read time: %.3f seconds\n", test->read_time);
-    printf("Data validated (written steps 0-%d correct, last step = fill value %g)\n",
-           NTIME - 2, FILL_VALUE);
-    
     free(data);
 }
 
@@ -349,16 +335,13 @@ int check_zstd_support(void) {
 
     supported = (retval == NC_NOERR);
     if (!supported)
-        printf("Note: Zstandard not available at runtime (skipping zstd tests)\n");
+        printf("Zstandard not available; skipping zstd tests.\n");
     return supported;
 }
 
 int main() {
-    printf("Compression Filter Demonstration\n");
-    printf("=================================\n");
-    printf("Dataset dimensions: [time=%d, lat=%d, lon=%d]\n", NTIME, NLAT, NLON);
-    printf("Total data points: %d\n", NTIME * NLAT * NLON);
-    printf("Total data size: %.2f MB\n", 
+    printf("Compression: %dx%dx%d floats (%.2f MB)\n",
+           NTIME, NLAT, NLON,
            (NTIME * NLAT * NLON * sizeof(float)) / 1048576.0);
     
     /* Generate realistic temperature data */
@@ -402,24 +385,6 @@ int main() {
         tests[i].compression_ratio = (double)baseline_size / tests[i].file_size;
     }
     
-    /* Print summary table */
-    printf("\n=== Performance Summary ===\n");
-    printf("%-35s %12s %12s %12s %10s\n", 
-           "Strategy", "Write (s)", "Read (s)", "Size (MB)", "Ratio");
-    printf("%-35s %12s %12s %12s %10s\n",
-           "--------", "---------", "--------", "---------", "-----");
-    
-    for (int i = 0; i < num_tests; i++) {
-        if (tests[i].zstd_level >= 0 && !zstd_available)
-            continue;
-        printf("%-35s %12.3f %12.3f %12.2f %10.2fx\n",
-               tests[i].name,
-               tests[i].write_time,
-               tests[i].read_time,
-               tests[i].file_size / 1048576.0,
-               tests[i].compression_ratio);
-    }
-    
     /* Find best zlib and best zstd by compression ratio */
     int best_zlib = -1, best_zstd = -1;
     for (int i = 0; i < num_tests; i++) {
@@ -433,48 +398,25 @@ int main() {
             best_zstd = i;
     }
 
-    /* Print head-to-head comparison */
-    printf("\n=== Best Ratio Head-to-Head ===\n");
-    printf("%-35s %12s %12s %12s %10s\n",
-           "Strategy", "Write (s)", "Read (s)", "Size (MB)", "Ratio");
-    printf("%-35s %12s %12s %12s %10s\n",
-           "--------", "---------", "--------", "---------", "-----");
-    if (best_zlib >= 0) {
-        printf("%-35s %12.3f %12.3f %12.2f %10.2fx\n",
-               tests[best_zlib].name,
-               tests[best_zlib].write_time,
-               tests[best_zlib].read_time,
-               tests[best_zlib].file_size / 1048576.0,
-               tests[best_zlib].compression_ratio);
-    }
-    if (best_zstd >= 0) {
-        printf("%-35s %12.3f %12.3f %12.2f %10.2fx\n",
-               tests[best_zstd].name,
-               tests[best_zstd].write_time,
-               tests[best_zstd].read_time,
-               tests[best_zstd].file_size / 1048576.0,
-               tests[best_zstd].compression_ratio);
+    /* Print compact results */
+    printf("\nResults: write/read (s), size (MB), ratio\n");
+    for (int i = 0; i < num_tests; i++) {
+        if (tests[i].zstd_level >= 0 && !zstd_available)
+            continue;
+        printf("%s: %.3f/%.3f, %.2f MB, %.2fx\n",
+               tests[i].name,
+               tests[i].write_time, tests[i].read_time,
+               tests[i].file_size / 1048576.0,
+               tests[i].compression_ratio);
     }
 
-    /* Print recommendations */
-    printf("\n=== Recommendations ===\n");
-    printf("- Uncompressed: Fastest I/O but largest files\n");
-    printf("- Shuffle only: Reorganizes bytes for better compression (use with deflate or zstd)\n");
-    printf("- Deflate level 1: PREFERRED zlib setting for almost all real-world data\n");
-    printf("- Deflate level 5: Marginally better ratio, significantly slower\n");
-    printf("- Deflate level 9: Maximum zlib compression, much slower, rarely worth it\n");
-    if (zstd_available) {
-        printf("- Zstandard level 3: Better ratio than zlib level 1, often faster writes\n");
-        printf("- Zstandard level 9: Best zstd ratio; compare against zlib level 9 for archival\n");
-        printf("- Shuffle + Zstandard 3: Strong speed/ratio tradeoff for scientific data\n");
-    }
-    printf("- Shuffle + Deflate 1: RECOMMENDED default for universal compatibility\n");
-    printf("- Level 1 gives nearly the same compression as higher levels for most data\n");
-    printf("- Higher levels cost much more CPU time for diminishing returns\n");
-    printf("- Read performance generally similar across compression levels\n");
-    printf("- Compression effectiveness depends on data patterns\n");
-    
+    if (best_zlib >= 0 && best_zstd >= 0)
+        printf("\nBest zlib: %s (%.2fx); best zstd: %s (%.2fx)\n",
+               tests[best_zlib].name, tests[best_zlib].compression_ratio,
+               tests[best_zstd].name, tests[best_zstd].compression_ratio);
+
+    printf("\nUse shuffle+deflate 1 for compatibility; zstd level 3 for best ratio.\n");
+
     free(data);
-    printf("\n*** SUCCESS: All compression strategies tested!\n");
     return 0;
 }
