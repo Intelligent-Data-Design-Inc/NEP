@@ -66,6 +66,10 @@
  * - nc_inq_var_chunking()     Query chunk shape on an open variable
  * - nc_get_vara_float()       Read a hyperslab (both access patterns)
  *
+ * @note Companion code for "The NetCDF Developer's Handbook: The Authoritative Guide to Writing
+ * High-Performance Programs for Scientific Data Management, Second Edition"
+ * (https://www.amazon.com/dp/B0H7Q1Z75L)
+ *
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
 

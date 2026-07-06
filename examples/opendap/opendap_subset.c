@@ -80,6 +80,10 @@
  *   single time slice, time series at a point, regional 3D cube,
  *   and multiple scattered requests
  *
+ * @note Companion code for "The NetCDF Developer's Handbook: The Authoritative Guide to Writing
+ * High-Performance Programs for Scientific Data Management, Second Edition"
+ * (https://www.amazon.com/dp/B0H7Q1Z75L)
+ *
  * @author Edward Hartnett
  * @date 6/15/26
  */

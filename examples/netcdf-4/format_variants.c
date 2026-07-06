@@ -68,6 +68,10 @@
  * - format_netcdf4_classic.nc (NetCDF-4 Classic Model)
  * All contain identical data with similar file sizes for this small dataset.
  *
+ * @note Companion code for "The NetCDF Developer's Handbook: The Authoritative Guide to Writing
+ * High-Performance Programs for Scientific Data Management, Second Edition"
+ * (https://www.amazon.com/dp/B0H7Q1Z75L)
+ *
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  * @date 2026
  */
