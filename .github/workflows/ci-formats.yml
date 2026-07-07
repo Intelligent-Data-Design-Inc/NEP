@@ -136,15 +136,14 @@ jobs:
         if: matrix.format_set == 'combined' && steps.cache-jasper.outputs.cache-hit != 'true'
         run: |
           git clone --depth 1 --branch version-4.2.4 https://github.com/jasper-software/jasper.git jasper-4.2.4
-          cd jasper-4.2.4
-          rm -rf build
-          mkdir build && cd build
+          # Build outside the source tree; Jasper's build/cmake/modules directory
+          # contains required CMake modules and must not be removed.
+          mkdir jasper-build && cd jasper-build
           cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/jasper-install \
                 -DBUILD_SHARED_LIBS=ON \
                 -DJAS_ENABLE_DOC=OFF \
                 -DJAS_ENABLE_PROGRAMS=OFF \
-                -DJAS_ENABLE_HDF5=OFF \
-                ..
+                $GITHUB_WORKSPACE/jasper-4.2.4
           make -j$(nproc)
           make install
 
