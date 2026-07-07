@@ -1,0 +1,24 @@
+Master NetCDF programming through hands-on examples in C and Fortran
+
+NetCDF is the standard format for scientific data across climate science, oceanography, atmospheric research, and geophysics. But learning NetCDF from API documentation alone can be overwhelming. This book provides what you really need: complete, runnable programs that demonstrate real-world usage patterns.
+
+The NetCDF Developer's Handbook takes you from basic file creation to advanced parallel I/O through a carefully structured progression of working examples. Each program is complete, tested, and ready to compile—no guessing about missing pieces or wondering how the parts fit together.
+
+You'll learn to:
+- Create self-describing NetCDF files following CF conventions
+- Work with classic, NetCDF-4/HDF5, and NcZarr formats
+- Implement coordinate variables for geospatial data
+- Optimize performance with chunking, caching, and compression
+- Scale to high-performance computing with parallel I/O
+- Choose the right format and features for your use case
+
+What makes this book different:
+- Complete programs, not code snippets—every example compiles and runs
+- Double language coverage—equivalent C and Fortran examples throughout
+- Progressive learning—builds from fundamentals to advanced topics systematically
+- Production-ready patterns—follows best practices and community conventions
+- Performance focus—includes benchmarks and optimization techniques
+- Implementation details not covered in the netCDF documentation
+- Fully up-to-date to 2026, with all the most recent netCDF developments in compression and NcZarr
+
+Whether you're integrating NetCDF into simulation code, converting legacy data formats, or building data analysis pipelines, this book gives you the practical knowledge and working code to succeed.

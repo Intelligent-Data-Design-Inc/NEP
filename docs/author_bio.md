@@ -1,0 +1,1 @@
+Edward Hartnett, a co-author of netCDF, is an engineer and data scientist who has contibuted research and operational software to NOAA, NASA, ESA, and meteorologists and climate scientits worldwide. He lives and works in Boulder, Colorado, where he continues to help scientists cope with the deluge of data from weather and climate models and modern observational systems.

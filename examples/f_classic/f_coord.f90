@@ -46,6 +46,10 @@
 !! ncdump f_coord.nc
 !! @endcode
 !!
+!! @note Companion code for "The NetCDF Developer's Handbook: The Authoritative Guide to Writing
+!! High-Performance Programs for Scientific Data Management, Second Edition"
+!! (https://www.amazon.com/dp/B0H7Q1Z75L)
+!!
 !! @author Edward Hartnett, Intelligent Data Design, Inc.
 !! @date 2026
 

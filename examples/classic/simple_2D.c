@@ -66,6 +66,10 @@
  * - 1 variable attribute: units = "m/s"
  * - Data: sequential integers from 0 to 59 (first NY-1 rows); last row = -9999 (fill value)
  *
+ * @note Companion code for "The NetCDF Developer's Handbook: The Authoritative Guide to Writing
+ * High-Performance Programs for Scientific Data Management, Second Edition"
+ * (https://www.amazon.com/dp/B0H7Q1Z75L)
+ *
  * @author Edward Hartnett
  * @date 2026-01-15
  */
