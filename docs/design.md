@@ -41,9 +41,9 @@ NEP implements NetCDF's UDF system to provide transparent access to various scie
 
 1. **Core NetCDF API**: Standard API used by applications
 2. **NC_Dispatch Layer**: Format-specific function pointer tables
-3. **Format Handlers**: CDF and GeoTIFF UDF handlers
-4. **Format Libraries**: Integration with libgeotiff and NASA CDF library
-5. **Multi-format Storage**: Access to NetCDF-4, CDF, and GeoTIFF files
+3. **Format Handlers**: CDF, GeoTIFF, GRIB2, FITS, and (in v2.2.0) PDS4 UDF handlers
+4. **Format Libraries**: Integration with libgeotiff, NASA CDF library, NCEPLIBS-g2c, CFITSIO, and libxml2
+5. **Multi-format Storage**: Access to NetCDF-4, CDF, GeoTIFF, GRIB2, FITS, and PDS4 files
 
 ```
 [Application Layer]
@@ -52,16 +52,31 @@ NEP implements NetCDF's UDF system to provide transparent access to various scie
        │
 [NC_Dispatch Layer]
        │
-┌──────┴────────────┬──────────────┬──────────────┐
-│                   │              │              │
-[HDF5 Backend]  [CDF Handler]  [GeoTIFF Handler]  [GRIB2 Handler]
-│                   │              │              │
-│               [CDF Library]  [libgeotiff]  [NCEPLIBS-g2c]
-│                   │              │              │
-└───────┬───────────┼──────────────┴──────────────┘
-        │           │              │              │
-[NetCDF-4 Files]  [CDF Files]  [GeoTIFF Files]  [GRIB2 Files]
+┌──────┴──────┬─────────────┬───────────────┬────────────┬─────────────┐
+│             │             │               │            │             │
+[HDF5 Backend] [CDF Handler] [GeoTIFF Handler] [GRIB2 Handler] [FITS Handler] [PDS4 Handler]
+│             │             │               │            │             │
+│          [CDF Library] [libgeotiff]  [NCEPLIBS-g2c] [CFITSIO]   [libxml2]
+│             │             │               │            │             │
+└──────┬──────┴──────┬──────┴───────┬───────┴─────┬──────┴──────┬──────┘
+       │             │              │             │             │
+[NetCDF-4 Files] [CDF Files] [GeoTIFF Files] [GRIB2 Files] [FITS Files] [PDS4 Files]
 ```
+
+#### UDF Slot Allocation
+
+NetCDF-C exposes ten UDF slots (0–9). NEP assigns each format handler a permanent slot:
+
+| Format | UDF Slot | NetCDF-C Constant | Notes |
+|--------|----------|-------------------|-------|
+| GeoTIFF BigTIFF | 0 | `NC_UDF0` | Large TIFF files (>4 GB) |
+| GeoTIFF standard TIFF | 1 | `NC_UDF1` | Regular TIFF/GeoTIFF files |
+| GRIB2 | 2 | `NC_UDF2` | NOAA/ECMWF GRIB2 messages |
+| FITS | 3 | `NC_UDF3` | Astronomical images and tables (v2.0.0) |
+| CDF | 4 | `NC_UDF4` | NASA CDF; moved from UDF2 in v2.2.0 Sprint 2 |
+| PDS4 | 5 | `NC_UDF5` | NASA/ESA planetary data labels (v2.2.0 Sprint 3) |
+
+Before v2.2.0, CDF and GRIB2 shared UDF slot 2 and were mutually exclusive. v2.2.0 Sprint 2 removes that restriction by moving CDF to its own slot.
 
 ## Project Structure
 
@@ -547,7 +562,8 @@ The GRIB2 UDF handler follows the same NC_Dispatch pattern used for CDF and GeoT
 7. `g2_free(gfld)`, `free(full_buf)`, `free(msgbuf)`
 
 #### UDF Slot and `.ncrc` Registration
-- UDF slot 2 (`NC_UDF2`) used for GRIB2 in `include/nep.h`; GRIB2 and CDF are mutually exclusive and share this slot
+- UDF slot 2 (`NC_UDF2`) used for GRIB2 in `include/nep.h`
+- Starting with v2.2.0, CDF uses UDF slot 4 (`NC_UDF4`) and is no longer mutually exclusive with GRIB2
 - `NC_GRIB2_initialize()` registers dispatch table via `.ncrc` autoload
 - `nep.ncrc` UDF2 block: `NETCDF.UDF2.LIBRARY`, `NETCDF.UDF2.INIT=NC_GRIB2_initialize`, `NETCDF.UDF2.MAGIC=GRIB`
 

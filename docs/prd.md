@@ -91,10 +91,12 @@ NASA Common Data Format (CDF) support via UDF handler enables transparent access
 
 ### 4.3 Build Configuration
 **CMake:**
-- `ENABLE_CDF=ON/OFF` - Enable/disable CDF support (default: OFF; mutually exclusive with GRIB2)
+- `ENABLE_CDF=ON/OFF` - Enable/disable CDF support (default: OFF)
 
 **Autotools:**
-- `--enable-cdf` - Enable CDF support (default: disabled; mutually exclusive with GRIB2)
+- `--enable-cdf` - Enable CDF support (default: disabled)
+
+**Note on UDF slots:** Before v2.2.0, CDF and GRIB2 shared UDF slot 2 and were mutually exclusive. v2.2.0 moves CDF to UDF slot 4, removing the mutual-exclusivity restriction.
 
 ### 4.4 Dependencies
 - NASA CDF Library v3.9.x (required when enabled)
@@ -157,10 +159,10 @@ GeoTIFF geospatial raster data support via UDF handler enables transparent acces
 
 ### 6.4 Build Configuration
 **CMake:**
-- `ENABLE_GEOTIFF=ON/OFF` - Enable/disable GeoTIFF support
+- `ENABLE_GEOTIFF=ON/OFF` - Enable/disable GeoTIFF support (default: OFF)
 
 **Autotools:**
-- `--enable-geotiff/--disable-geotiff` - GeoTIFF support
+- `--enable-geotiff/--disable-geotiff` - GeoTIFF support (default: disabled)
 
 ### 6.5 Dependencies
 - libgeotiff (required when enabled)
@@ -215,12 +217,12 @@ GRIB2 (General Regularly-distributed Information in Binary form, Edition 2) supp
 
 ### 7.3 Build Configuration
 **CMake:**
-- `ENABLE_GRIB2=ON/OFF` - Enable/disable GRIB2 support (default: ON)
-- Note: `ENABLE_GRIB2` and `ENABLE_CDF` are mutually exclusive (both use UDF slot 2)
+- `ENABLE_GRIB2=ON/OFF` - Enable/disable GRIB2 support (default: OFF)
 
 **Autotools:**
-- `--disable-grib2` - Disable GRIB2 support (default: enabled)
-- Note: `--enable-cdf` and GRIB2 are mutually exclusive; configure errors if both requested
+- `--enable-grib2/--disable-grib2` - GRIB2 support (default: disabled)
+
+**Note on UDF slots:** GRIB2 uses UDF slot 2. Before v2.2.0, CDF shared this slot and the two formats were mutually exclusive. v2.2.0 moves CDF to UDF slot 4, allowing both formats to be enabled together.
 
 ### 7.4 Dependencies
 - **NOAA NCEPLIBS-g2c** >= 2.1.0 (required when enabled); user supplies install path at configure time
@@ -505,6 +507,8 @@ Parallel I/O builds are tested in a separate CI workflow (`ci-parallel.yml`) wit
 - libgeotiff (for GeoTIFF support)
 - libtiff (transitive, for GeoTIFF support)
 - NOAA NCEPLIBS-g2c (for GRIB2 support)
+- CFITSIO >= 3.0 (for FITS support)
+- libxml2 (for PDS4 support, v2.2.0)
 - Doxygen and Graphviz (for documentation)
 
 ---

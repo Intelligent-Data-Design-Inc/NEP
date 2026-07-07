@@ -124,12 +124,12 @@ AC_ARG_ENABLE([cdf],
 test "x$enable_cdf" = xyes || enable_cdf=no
 AC_MSG_RESULT([$enable_cdf])
 
-# GeoTIFF library detection (v1.5.0) - default ON; disable with --disable-geotiff
+# GeoTIFF library detection (v1.5.0) - default OFF; enable with --enable-geotiff
 AC_MSG_CHECKING([whether GeoTIFF library detection should be enabled])
 AC_ARG_ENABLE([geotiff],
-              [AS_HELP_STRING([--disable-geotiff],
-                              [Disable GeoTIFF library detection (default: enabled)])])
-test "x$enable_geotiff" = xno || enable_geotiff=yes
+              [AS_HELP_STRING([--enable-geotiff],
+                              [Enable GeoTIFF library detection (default: disabled)])])
+test "x$enable_geotiff" = xyes || enable_geotiff=no
 AC_MSG_RESULT([$enable_geotiff])
 
 # Ensure PKG_CONFIG is set before any pkg-config queries below.
@@ -194,12 +194,12 @@ fi
 AC_SUBST([GEOTIFF_LIBS])
 AC_SUBST([TIFF_LIBS])
 
-# FITS reader support (v2.0.0) - default ON; disable with --disable-fits
+# FITS reader support (v2.0.0) - default OFF; enable with --enable-fits
 AC_MSG_CHECKING([whether FITS reader should be enabled])
 AC_ARG_ENABLE([fits],
               [AS_HELP_STRING([--enable-fits],
-                              [Enable FITS reader support (default: enabled)])])
-test "x$enable_fits" = xno || enable_fits=yes
+                              [Enable FITS reader support (default: disabled)])])
+test "x$enable_fits" = xyes || enable_fits=no
 AC_MSG_RESULT([$enable_fits])
 
 # FITS (CFITSIO) library detection (v2.0.0)
@@ -231,13 +231,13 @@ AC_SUBST([CFITSIO_LIBS])
 AC_SUBST([CFITSIO_LDFLAGS])
 AC_SUBST([BUILD_FITS], [$enable_fits])
 
-# GRIB2 library detection (v1.7.0) - default ON; disable with --disable-grib2
+# GRIB2 library detection (v1.7.0) - default OFF; enable with --enable-grib2
 # GRIB2 and CDF share UDF slot 2 and are mutually exclusive.
 AC_MSG_CHECKING([whether GRIB2 library detection should be enabled])
 AC_ARG_ENABLE([grib2],
-              [AS_HELP_STRING([--disable-grib2],
-                              [Disable GRIB2 library detection; mutually exclusive with --enable-cdf (default: enabled)])])
-test "x$enable_grib2" = xno || enable_grib2=yes
+              [AS_HELP_STRING([--enable-grib2],
+                              [Enable GRIB2 library detection; mutually exclusive with --enable-cdf (default: disabled)])])
+test "x$enable_grib2" = xyes || enable_grib2=no
 AC_MSG_RESULT([$enable_grib2])
 
 # Enforce mutual exclusion: GRIB2 and CDF both use UDF slot 2.

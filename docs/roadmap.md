@@ -1,4 +1,49 @@
 # NEP Development Roadmap
+### V2.2.0 Read NASA/ESA Planetary Data System 4 Data
+
+#### Sprint 1: Make Extended Data Formats Off by Default
+**Detailed Plan**: See `docs/plan/v2.2.0-sprint1-formats-off-by-default.md`
+
+- GeoTIFF, GRIB2, and FITS currently default to ON in both CMake and Autotools; CDF already defaults OFF. Change all four extended format readers to default OFF.
+- Remove the hard requirement to install libgeotiff, libg2c/libjasper, and CFITSIO for a default NEP build.
+- Keep the existing CDF/GRIB2 UDF slot 2 mutual exclusivity in place for this sprint.
+- Add a new `.github/workflows/ci-formats.yml` workflow that tests GeoTIFF + GRIB2 + FITS together in one job and CDF alone in a second job, so every reader is exercised somewhere without triggering the slot conflict.
+- Update `README.md` and `docs/prd.md` to reflect the new default-off status and the opt-in build flags.
+
+**Clarified decisions:**
+- Sprint 1 does **not** reassign UDF slots; slot reassignment is deferred to Sprint 2.
+- Combined CI job uses GRIB2 (not CDF) alongside GeoTIFF and FITS.
+- CDF is exercised in a separate job within `ci-formats.yml`.
+
+#### Sprint 2: Reassign UDF Slot for CDF
+**Detailed Plan**: See `docs/plan/v2.2.0-sprint2-udf-slot-reassignment.md`
+
+- Move CDF from UDF slot 2 to a dedicated permanent slot (UDF4) using the expanded NetCDF-C 0–9 slot range.
+- Remove the CMake/Autotools error that prevents CDF and GRIB2 from being enabled together.
+- Upgrade `ci-formats.yml` to build and test GeoTIFF + GRIB2 + CDF + FITS simultaneously.
+- Update `docs/design.md`, `include/nep.h`, and `.ncrc` generation to reflect the new permanent slot assignments.
+
+**Clarified decisions:**
+- Permanent slot assignments: GeoTIFF BigTIFF=UDF0, GeoTIFF standard=UDF1, GRIB2=UDF2, FITS=UDF3, CDF=UDF4.
+- No PDS4 code in this sprint; PDS4 slot reserved in Sprint 3.
+
+#### Sprint 3: Prepare for PDS4
+**Detailed Plan**: See `docs/plan/v2.2.0-sprint3-pds4-prep.md`
+
+- Study PDS4 and create skill files under `.devin/skills/pds4/`.
+- Add `--enable-pds4` / `-DENABLE_PDS4=ON` build options to both build systems; default OFF.
+- Assign PDS4 to UDF5.
+- Build the PDS4 UDF dispatch library with no-op read functions (`ncpds4dispatch.c`/`ncpds4file.c`) following the existing handler pattern.
+- Add a C test that attempts to open a real PDS4 label file via `nc_open()`.
+- Populate `test/data/PDS4/` with sample PDS4 files and copy them to build directories for testing.
+- Add a PDS4-only job to `ci-formats.yml`.
+
+**Clarified decisions:**
+- PDS4 uses XML label files; parse labels with **libxml2** (`libxml2-dev` on Ubuntu).
+- PDS4 is assigned **UDF5** slot.
+
+### V2.1.0 Updated Examples for Boook
+- Examples and docs were updated in support of second edition of NetCDF Developer's Handbook.
 
 ### V2.0.0 Read-only FITS Layer
 #### Sprint 1: Set up CI and Build Systems
@@ -41,7 +86,7 @@
 
 #### Sprint 3: Open a Real FITS File
 **Detailed Plan**: See `docs/plan/v2.0.0-sprint3-fits-open.md`
-
+git tag -d v2.1.0 2>/dev/null ; git push origin :refs/tags/v2.1.0 ; git tag -a v2.1.0 -m "NEP v2.1.0" && git push origin v2.1.0
 - Tests (C and Fortran) now open the real FITS file.
 - NEP tests open and close file, but nothing else yet.
 - In this sprint, the real FITS file is opened, and closed, but no metadata or data are read yet.

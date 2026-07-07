@@ -26,8 +26,8 @@ add_definitions(-DUSE_HDF5=yes)
 # CDF and GRIB2 share UDF slot 2 and are mutually exclusive.
 option(ENABLE_CDF "Enable CDF library detection; mutually exclusive with ENABLE_GRIB2" OFF)
 
-# GeoTIFF library detection (v1.5.0) - default ON; disable with -DENABLE_GEOTIFF=OFF
-option(ENABLE_GEOTIFF "Enable GeoTIFF library detection" ON)
+# GeoTIFF library detection (v1.5.0) - default OFF; enable with -DENABLE_GEOTIFF=ON
+option(ENABLE_GEOTIFF "Enable GeoTIFF library detection" OFF)
 
 # Documentation option
 option(BUILD_DOCUMENTATION "Build documentation with Doxygen" ON)
@@ -107,12 +107,12 @@ if(NOT DOCS_ONLY)
     set(CMAKE_BUILD_RPATH "${HDF5_LIBRARY_DIRS};${NETCDF_LIBRARY_DIRS}")
 endif()
 
-# FITS reader support (v2.0.0) - default ON; disable with -DENABLE_FITS=OFF
-option(ENABLE_FITS "Enable FITS reader support via CFITSIO" ON)
+# FITS reader support (v2.0.0) - default OFF; enable with -DENABLE_FITS=ON
+option(ENABLE_FITS "Enable FITS reader support via CFITSIO" OFF)
 
-# GRIB2 library detection (v1.7.0) - default ON; disable with -DENABLE_GRIB2=OFF
+# GRIB2 library detection (v1.7.0) - default OFF; enable with -DENABLE_GRIB2=ON
 # GRIB2 and CDF share UDF slot 2 and are mutually exclusive.
-option(ENABLE_GRIB2 "Enable GRIB2 support; mutually exclusive with ENABLE_CDF" ON)
+option(ENABLE_GRIB2 "Enable GRIB2 support; mutually exclusive with ENABLE_CDF" OFF)
 
 # Parallel I/O test support (v1.9.0) - default OFF; enable with -DENABLE_PARALLEL_TESTS=ON
 option(ENABLE_PARALLEL_TESTS "Enable parallel I/O test programs" OFF)
