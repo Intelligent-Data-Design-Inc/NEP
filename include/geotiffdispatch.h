@@ -1,9 +1,6 @@
 /**
  * @file
- * @internal This header file contains the prototypes for the
- * GeoTIFF versions of the netCDF functions. This is part of the GeoTIFF
- * dispatch layer and this header should not be included by any file
- * outside the libgeotiff directory.
+ * @brief Public types and prototypes for the GeoTIFF UDF dispatch layer.
  *
  * @author Edward Hartnett
  * @date 2025-12-26

@@ -1,8 +1,6 @@
 /**
- * @file @internal This header file contains the prototypes for the
- * CDF versions of the netCDF functions. This is part of the CDF
- * dispatch layer and this header should not be included by any file
- * outside the libcdf directory.
+ * @file
+ * @brief Public types and prototypes for the CDF UDF dispatch layer.
  *
  * @author Edward Hartnett
  * @date 2025-11-23

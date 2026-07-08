@@ -1,9 +1,6 @@
 /**
  * @file
- * @internal This header file contains the prototypes for the
- * GRIB2 versions of the netCDF functions. This is part of the GRIB2
- * dispatch layer and this header should not be included by any file
- * outside the libgrib2 directory.
+ * @brief Public types and prototypes for the GRIB2 UDF dispatch layer.
  *
  * @author Edward Hartnett
  * @date 2026-03-08

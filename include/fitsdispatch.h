@@ -1,9 +1,6 @@
 /**
  * @file
- * @internal This header file contains the prototypes for the
- * FITS versions of the netCDF functions. This is part of the FITS
- * dispatch layer and this header should not be included by any file
- * outside the libncfits directory.
+ * @brief Public types and prototypes for the FITS UDF dispatch layer.
  *
  * @author Edward Hartnett
  * @date 2026-06-28
