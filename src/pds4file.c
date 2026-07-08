@@ -1578,7 +1578,6 @@ NC_PDS4_get_vara(int ncid, int varid, const size_t *start, const size_t *count,
             /* Compute the number of inner-row reads and the file stride. */
             size_t inner_count = count[var->ndims - 1];
             size_t nrows = total_elems / inner_count;
-            size_t full_inner_len = dim_lens[var->ndims - 1];
             unsigned char *out = (unsigned char *)value;
             size_t row;
 
