@@ -1,7 +1,6 @@
 /**
  * @file
- * @internal The GRIB2 file functions. These provide a read-only
- * interface to GRIB2 meteorological data files via NCEPLIBS-g2c.
+ * @brief GRIB2 file reader functions.
  *
  * @author Edward Hartnett
  * @date 2026-03-08
@@ -71,8 +70,8 @@ nc4_set_var_type(nc_type xtype, int endianness, size_t type_size,
  * @param format_var_info Format-specific var info (may be NULL).
  * @param var Output: pointer to the new NC_VAR_INFO_T.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_ENOMEM Out of memory.
+ * @return NC_NOERR No error.
+ * @return NC_ENOMEM Out of memory.
  */
 static int
 grib2_var_list_add(NC_GRP_INFO_T *grp, const char *name,
@@ -106,8 +105,8 @@ grib2_var_list_add(NC_GRP_INFO_T *grp, const char *name,
  * @param name Attribute name.
  * @param value Integer value.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_ENOMEM Out of memory.
+ * @return NC_NOERR No error.
+ * @return NC_ENOMEM Out of memory.
  */
 static int
 grib2_add_int_att(NCindex *att_list, const char *name, int value)
@@ -134,8 +133,8 @@ grib2_add_int_att(NCindex *att_list, const char *name, int value)
  * @param name Attribute name.
  * @param value String value (not NUL-terminated in att->data per NC_CHAR convention).
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_ENOMEM Out of memory.
+ * @return NC_NOERR No error.
+ * @return NC_ENOMEM Out of memory.
  */
 static int
 grib2_add_str_att(NCindex *att_list, const char *name, const char *value)
@@ -163,8 +162,8 @@ grib2_add_str_att(NCindex *att_list, const char *name, const char *value)
  * @param name Attribute name.
  * @param value Float value.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_ENOMEM Out of memory.
+ * @return NC_NOERR No error.
+ * @return NC_ENOMEM Out of memory.
  */
 static int
 grib2_add_float_att(NCindex *att_list, const char *name, float value)
@@ -199,10 +198,10 @@ ILLEGAL_OPEN_FLAGS = (NC_MMAP|NC_64BIT_OFFSET|NC_DISKLESS|NC_WRITE);
  * @param dispatch Pointer to dispatch table.
  * @param ncid NetCDF ID assigned to this file.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EINVAL Invalid parameters or mode flags.
- * @return ::NC_ENOTNC File is not a valid GRIB2 file.
- * @return ::NC_ENOMEM Out of memory.
+ * @return NC_NOERR No error.
+ * @return NC_EINVAL Invalid parameters or mode flags.
+ * @return NC_ENOTNC File is not a valid GRIB2 file.
+ * @return NC_ENOMEM Out of memory.
  * @author Edward Hartnett
  */
 int
@@ -511,8 +510,8 @@ NC_GRIB2_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
  *
  * @param ncid NetCDF ID.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
  * @author Edward Hartnett
  */
 int
@@ -527,8 +526,8 @@ NC_GRIB2_abort(int ncid)
  * @param ncid NetCDF ID.
  * @param ignore Ignored.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
  * @author Edward Hartnett
  */
 int
@@ -568,7 +567,7 @@ NC_GRIB2_close(int ncid, void *ignore)
  * @param ncid NetCDF ID.
  * @param formatp Pointer that gets format code.
  *
- * @return ::NC_ENOTBUILT GRIB2 support not yet implemented.
+ * @return NC_ENOTBUILT GRIB2 support not yet implemented.
  * @author Edward Hartnett
  */
 int
@@ -587,7 +586,7 @@ NC_GRIB2_inq_format(int ncid, int *formatp)
  * @param formatp Pointer that gets format code.
  * @param modep Pointer that gets mode flags.
  *
- * @return ::NC_ENOTBUILT GRIB2 support not yet implemented.
+ * @return NC_ENOTBUILT GRIB2 support not yet implemented.
  * @author Edward Hartnett
  */
 int
@@ -611,10 +610,10 @@ NC_GRIB2_inq_format_extended(int ncid, int *formatp, int *modep)
  * @param value Pointer to buffer for the read data.
  * @param memtype Memory type for the data.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_ENOMEM Out of memory.
- * @return ::NC_EHDFERR Error from g2c or g2_getfld.
- * @return ::NC_EINVALCOORDS start/count exceeds dimension bounds.
+ * @return NC_NOERR No error.
+ * @return NC_ENOMEM Out of memory.
+ * @return NC_EHDFERR Error from g2c or g2_getfld.
+ * @return NC_EINVALCOORDS start/count exceeds dimension bounds.
  * @author Edward Hartnett
  */
 int

@@ -1,6 +1,6 @@
 /**
  * @file
- * @internal Dispatch code for GRIB2. GRIB2 access is read-only.
+ * @brief GRIB2 dispatch layer.
  *
  * @author Edward Hartnett
  * @date 2026-03-08
@@ -131,7 +131,7 @@ NC_GRIB2_initialize(void)
 /**
  * @internal Finalize GRIB2 dispatch layer.
  *
- * @return ::NC_NOERR No error.
+ * @return NC_NOERR No error.
  * @author Edward Hartnett
  */
 int

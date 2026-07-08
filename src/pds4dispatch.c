@@ -116,10 +116,17 @@ static const NC_Dispatch PDS4_dispatcher = {
 const NC_Dispatch *PDS4_dispatch_table = NULL;
 
 /**
- * @internal Initialize PDS4 dispatch layer.
+ * Initialize the PDS4 dispatch layer.
  *
- * @return ::NC_NOERR on success.
+ * Registers the PDS4 dispatch table for UDF slot 5 via
+ * `nc_def_user_format()`. Safe to call when the handler has already
+ * been registered via `.ncrc` autoload; in that case `NC_EINVAL` is
+ * returned and can be ignored.
+ *
+ * @return NC_NOERR Handler registered successfully.
+ * @return NC_EINVAL Handler already registered (safe to ignore).
  * @author Edward Hartnett
+ * @date 2026-07-08
  */
 int
 NC_PDS4_initialize(void)
@@ -130,10 +137,13 @@ NC_PDS4_initialize(void)
 }
 
 /**
- * @internal Finalize PDS4 dispatch layer.
+ * Finalize the PDS4 dispatch layer.
  *
- * @return ::NC_NOERR No error.
+ * No-op in the current implementation.
+ *
+ * @return NC_NOERR No error.
  * @author Edward Hartnett
+ * @date 2026-07-08
  */
 int
 NC_PDS4_finalize(void)

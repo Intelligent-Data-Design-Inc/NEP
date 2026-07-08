@@ -520,12 +520,8 @@ Parallel I/O builds are tested in a separate CI workflow (`ci-parallel.yml`) wit
 PDS4 (Planetary Data System version 4) support via UDF handler enables transparent
 access to NASA/ESA Planetary Data System 4 label files through the standard NetCDF
 API. PDS4 is used to archive and distribute planetary science data from missions
-such as Mars Reconnaissance Orbiter, Curiosity, Perseverance, Cassini, and many
-others.
-
-v2.2.0 Sprint 3 delivers the dispatch skeleton: UDF5 slot registration, libxml2
-label parsing and namespace validation, and an open/close round-trip. Metadata and
-data reading will be added in subsequent releases.
+such as Mars Reconnaissance Orbiter, Curiosity, Perseverance, Cassini, OSIRIS-REx,
+and many others.
 
 ### 14.2 Features
 
@@ -533,40 +529,99 @@ data reading will be added in subsequent releases.
   verified against `http://pds.nasa.gov/pds4/pds/v1`
 - **UDF Registration**: PDS4 assigned to UDF slot 5 (`NC_UDF5`), permanently
   separate from all other NEP format slots
-- **Open/Close Round-trip**: `nc_open()` / `nc_close()` succeed on any valid
-  PDS4 XML label; returns `NC_ENOTNC` for XML files that are not PDS4 labels
+- **Metadata Mapping**: Full label-to-netCDF model mapping (see §14.3)
+- **Data Reading**: `NC_PDS4_get_vara()` reads array hyperslabs and table field
+  values with automatic byte-order conversion for MSB/LSB binary types and text
+  parsing for ASCII fields
 - **libxml2 Integration**: XML parsing uses libxml2 with `XML_PARSE_NONET` to
-  avoid network access during format detection
+  avoid network access
 
-### 14.3 Build Configuration
+### 14.3 netCDF Model Mapping
 
-CMake:
+The PDS4 XML label is mapped into the netCDF-4 in-memory model as follows:
+
+- **Root group**: `Identification_Area` and `Observation_Area` elements become
+  global string attributes
+- **Child groups**: Each `File_Area_Observational` becomes a child group named
+  from `File/file_name`
+- **Array / Array_2D_Image**: Dimensions from `Axis_Array` entries (sorted by
+  `sequence_number`); `axis_name` → dimension name; `elements` → dimension length;
+  `Last Index Fastest` maps to C-order. Variable type from `Element_Array/data_type`
+- **Table_Binary / Table_Character / Table_Delimited**: `record` dimension from
+  `<records>`; one netCDF variable per `Field_*` with name from `<name>`, type from
+  `<data_type>`, optional `units` attribute from `<unit>`
+
+### 14.4 Public API
+
+**Initializer / Finalizer** (in `src/pds4dispatch.c`):
+- `NC_PDS4_initialize(void)` — Registers the PDS4 dispatch table for UDF slot 5
+  via `nc_def_user_format()`. Returns `NC_NOERR` on success or `NC_EINVAL` if
+  already registered (safe to call repeatedly; `.ncrc` autoload also registers it).
+- `NC_PDS4_finalize(void)` — No-op; returns `NC_NOERR`.
+
+**File Operations** (in `src/pds4file.c`):
+- `NC_PDS4_open()` — Parses the XML label, validates PDS4 namespace, maps label
+  to netCDF-4 in-memory model. Read-only (`NC_NOWRITE` only).
+- `NC_PDS4_close()` — Frees XML document and per-file PDS4 state.
+- `NC_PDS4_abort()` — Releases partial-open resources.
+- `NC_PDS4_inq_format()` — Returns `NC_FORMAT_NETCDF4`.
+- `NC_PDS4_inq_format_extended()` — Returns `NC_FORMATX_NC_PDS4`
+  (`NC_FORMATX_UDF5`) and `NC_NOWRITE`.
+- `NC_PDS4_get_vara()` — Reads array hyperslabs or table field records from
+  the referenced data file; byte-swaps binary types as needed; parses ASCII types
+  via `strtod()`/`strtoll()`.
+
+**Per-Variable Layout Struct** (`NC_PDS4_VAR_INFO_T` in `include/pds4dispatch.h`):
+
+Stored in `var->format_var_info` for every PDS4 variable. Fields:
+
+| Field | Description |
+|-------|-------------|
+| `data_offset` | Byte offset of the Array or Table start in the data file |
+| `record_length` | Record length in bytes (tables only) |
+| `field_offset` | Field byte offset within each record, 0-based (tables only) |
+| `field_length` | Field byte length (tables only) |
+| `is_table_field` | 1 if this variable is a table field; 0 if it is an array |
+| `is_ascii` | 1 if the field is ASCII text (needs parsing); 0 if binary |
+
+### 14.5 Build Configuration
+
+**CMake:**
 - `ENABLE_PDS4=ON/OFF` — Enable/disable PDS4 support (default: OFF)
 - Requires `find_package(LibXml2 REQUIRED)` when enabled
 
-Autotools:
+**Autotools:**
 - `--enable-pds4/--disable-pds4` — PDS4 support (default: disabled)
 - Uses `AC_CHECK_HEADERS([libxml/parser.h])` + `AC_CHECK_LIB([xml2], [xmlReadFile])`
 
-### 14.4 Dependencies
+### 14.6 Dependencies
 
-- libxml2 (`libxml2-dev` on Ubuntu / Debian; `libxml2-devel` on RHEL/Fedora)
+- libxml2 (`libxml2-dev` on Ubuntu/Debian; `libxml2-devel` on RHEL/Fedora)
 
-### 14.5 Known Limitations (v2.2.0)
+### 14.7 UDF Slot
 
-- Array metadata and data are read for `Array` and `Array_2D_Image` products.
-  Hyperslab access (`nc_get_vara`) is supported with automatic byte-order
-  conversion for MSB/LSB types.
-- Table metadata and data are read for `Table_Binary`, `Table_Character`, and
-  `Table_Delimited`: each table creates a `record` dimension and one variable per
-  field. Binary fields are byte-swapped; ASCII numeric fields are parsed.
-- Data file paths are resolved relative to the XML label directory.
-- Only `Product_Observational` root element type is validated; other PDS4 product
-  classes are not checked in this release.
-- Grouped fields (`Group_Field_Binary`, etc.) and bit fields are not yet supported.
-- `nc_get_vars()` and `nc_get_varm()` rely on default dispatch fallbacks.
+PDS4 is assigned UDF slot 5 (`NC_FORMATX_UDF5`). Permanent slot map:
+
+| Slot | Format |
+|------|--------|
+| UDF0 | GeoTIFF (BigTIFF) |
+| UDF1 | GeoTIFF (standard) |
+| UDF2 | GRIB2 |
+| UDF3 | FITS |
+| UDF4 | CDF |
+| UDF5 | PDS4 |
+
+### 14.8 Known Limitations (v2.2.0)
+
+- `nc_get_vars()` and `nc_get_varm()` rely on default dispatch fallbacks (no
+  native strided reads)
 - Type conversion between `memtype` and the file type is not yet performed; the
-  caller must request data in the native type.
+  caller must request the native type
+- Grouped fields (`Group_Field_Binary`, etc.) and bit fields are not supported
+- Only `Product_Observational` root element type is validated; other PDS4 product
+  classes are not checked
+- Delimited table row count is derived from the label `<records>` element only
+  (no file scanning)
 
 ---
 

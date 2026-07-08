@@ -10,6 +10,7 @@ NEP (NetCDF Extension Pack) extends NetCDF-4 with high-performance compression a
 - **GeoTIFF File Reader**: Read GeoTIFF geospatial raster files through the NetCDF API
 - **GRIB2 File Reader**: Read GRIB2 meteorological and oceanographic data files through the NetCDF API
 - **FITS File Reader**: Read NASA/ESA FITS astronomical image and table HDUs through the NetCDF API
+- **PDS4 File Reader**: Read NASA/ESA Planetary Data System 4 XML-label datasets through the NetCDF API
 
 NEP provides flexible compression options and unified data access for diverse scientific data workflows.
 
@@ -138,6 +139,87 @@ BZIP2 is a lossless data compression algorithm using the Burrows-Wheeler block s
 
 - **Use LZ4 when**: I/O speed is critical, working with real-time data, running on HPC systems, need fast decompression
 - **Use BZIP2 when**: Storage space is limited, archiving data long-term, transferring over slow networks, compression ratio matters most
+
+## PDS4 File Reader
+
+NEP provides a User-Defined Format (UDF) handler that enables reading PDS4 (Planetary Data System version 4) datasets using the familiar NetCDF API.
+
+### What is PDS4?
+
+PDS4 is the current archival standard used by NASA and ESA for planetary science data. A PDS4 dataset consists of an XML label file (`.xml`) that describes the data layout and one or more binary or text data files. The XML label is self-describing: it identifies the data types, dimensions, byte order, and physical units for every data object in the dataset.
+
+**Key Characteristics:**
+- Self-describing XML label with full data provenance metadata
+- Multiple data object types: n-dimensional arrays, binary tables, character (ASCII) tables, and delimited tables
+- Mandatory namespace validation (`http://pds.nasa.gov/pds4/pds/v1`) prevents false positive opens
+- Used by NASA/ESA missions: Mars Reconnaissance Orbiter, Curiosity, Perseverance, Cassini, OSIRIS-REx, and many others
+- Data files may be big-endian (MSB) or little-endian (LSB); byte order is recorded in the label
+
+### PDS4 Support in NEP
+
+**Transparent Access**: Read PDS4 datasets using standard NetCDF functions (`nc_open()`, `nc_get_vara()`, `nc_inq_dim()`) without file conversion.
+
+**netCDF Model Mapping**: The XML label structure is mapped into the netCDF-4 in-memory model:
+- `Identification_Area` and `Observation_Area` elements become global string attributes on the root group
+- Each `File_Area_Observational` becomes a child group named from the `File/file_name` element
+- `Array` / `Array_2D_Image`: dimensions created from `Axis_Array` entries (sorted by `sequence_number`); `axis_name` becomes the dimension name; `Last Index Fastest` maps to C-order (fastest-varying rightmost)
+- `Table_Binary` / `Table_Character` / `Table_Delimited`: a `record` dimension from `<records>`; one netCDF variable per `Field_*` with name, type, and optional `units` attribute
+
+**Data Reading** (`NC_PDS4_get_vara`):
+- Arrays: contiguous row-major reads with full hyperslab (`start`/`count`) support
+- Binary table fields: per-record seek using `field_location`, `field_length`, and `record_length`
+- ASCII table fields: fixed-width text parsed via `strtod`/`strtoll` into the mapped netCDF type
+- Automatic byte-order conversion: MSB (big-endian) types are swapped on little-endian hosts; LSB types are native
+
+**Data File Resolution**: Data filenames from `<File/file_name>` are resolved relative to the directory that contains the XML label file.
+
+**`.ncrc` Autoload**: Placing the generated `.ncrc` in your home directory allows `nc_open()` and `ncdump` to open PDS4 files with no code changes.
+
+**Use Cases:**
+- Planetary science data access (images, spectra, tables from rover and orbiter missions)
+- Cross-format workflows combining PDS4 with NetCDF, FITS, or GeoTIFF
+- Archive ingestion and format conversion pipelines
+
+### Enabling PDS4 Support
+
+PDS4 support is disabled by default. To enable:
+
+```bash
+# CMake
+cmake -B build -DENABLE_PDS4=ON
+
+# Autotools
+./configure --enable-pds4
+```
+
+**Requirements**: libxml2 must be installed (`libxml2-dev` on Ubuntu/Debian; `libxml2-devel` on RHEL/Fedora).
+
+### C API Usage Example
+
+```c
+#include <netcdf.h>
+#include "pds4dispatch.h"
+
+int ncid, grpid, varid;
+float image_data[512 * 512];
+size_t start[2] = {0, 0};
+size_t count[2] = {512, 512};
+
+/* Register the PDS4 handler (returns NC_EINVAL if already registered via .ncrc) */
+NC_PDS4_initialize();
+
+/* Open a PDS4 XML label file using the standard NetCDF API */
+nc_open("test_image.xml", NC_NOWRITE, &ncid);
+
+/* The label file area becomes a child group named from File/file_name */
+nc_inq_grp_ncid(ncid, "test_image.img", &grpid);
+
+/* Read the image array hyperslab */
+nc_inq_varid(grpid, "Array_2D_Image", &varid);
+nc_get_vara_float(grpid, varid, start, count, image_data);
+
+nc_close(ncid);
+```
 
 ## CDF File Reader
 

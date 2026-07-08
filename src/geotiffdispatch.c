@@ -1,6 +1,6 @@
 /**
  * @file
- * @internal Dispatch code for GeoTIFF. GeoTIFF access is read-only.
+ * @brief GeoTIFF dispatch layer.
  *
  * @author Edward Hartnett
  * @date 2025-12-26

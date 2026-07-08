@@ -1,7 +1,6 @@
 /**
  * @file
- * @internal Dispatch code for CDF. CDF access is read-only, for
- * CDF SD files only.
+ * @brief CDF dispatch layer.
  *
  * @author Edward Hartnett
  * @date 2025-11-23
@@ -132,7 +131,7 @@ NC_CDF_initialize(void)
 /**
  * @internal Finalize CDF dispatch layer.
  *
- * @return ::NC_NOERR No error.
+ * @return NC_NOERR No error.
  * @author Ed Hartnett
  */
 int
