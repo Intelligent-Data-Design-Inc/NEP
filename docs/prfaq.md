@@ -161,7 +161,7 @@ See the README for detailed instructions.
 **A:** Yes! Use build options to control which features are compiled:
 - **CMake**: `-DBUILD_LZ4=ON/OFF`, `-DBUILD_BZIP2=ON/OFF`, `-DENABLE_FORTRAN=ON/OFF`, `-DENABLE_CDF=ON/OFF`, `-DENABLE_GEOTIFF=ON/OFF`, `-DENABLE_GRIB2=ON/OFF`, `-DBUILD_EXAMPLES=ON/OFF`
 - **Autotools**: `--enable-lz4`, `--enable-bzip2`, `--enable-fortran`, `--enable-cdf`, `--enable-geotiff`, `--disable-grib2`, `--disable-examples`
-- Note: `ENABLE_CDF` and `ENABLE_GRIB2` are mutually exclusive (both use UDF slot 2)
+- Note: `ENABLE_CDF` and `ENABLE_GRIB2` can be used together (CDF uses UDF slot 4, GRIB2 uses UDF slot 2)
 - **Spack**: `spack install nep+lz4+bzip2+fortran` (variants control features)
 
 #### Q: How do I use LZ4 compression in my NetCDF files?
@@ -245,7 +245,7 @@ Or use `ncdump forecast.grib2` directly after installing the `.ncrc` file.
 #### Q: What is the current version?
 **A:** NEP v1.7.0 is the current release (March 2026), providing:
 - LZ4 and BZIP2 compression for HDF5/NetCDF-4 files (C and Fortran APIs)
-- NASA CDF format support via UDF handler (mutually exclusive with GRIB2)
+- NASA CDF format support via UDF handler (UDF slot 4)
 - GeoTIFF format support via UDF handler
 - **GRIB2 meteorological/oceanographic data support via UDF handler**
 - Spack package manager support

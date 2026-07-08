@@ -42,8 +42,10 @@ NEP has two primary components:
 NetCDF-C 4.10.0+ provides 10 UDF slots:
 - **UDF0**: GeoTIFF BigTIFF (magic: "II+")
 - **UDF1**: GeoTIFF standard TIFF (magic: "II*")
-- **UDF2**: GRIB2 (magic: "GRIB") [default] OR NASA CDF (magic: 0xCDF30001) [mutually exclusive]
-- **UDF3-UDF9**: Reserved for future use
+- **UDF2**: GRIB2 (magic: "GRIB")
+- **UDF3**: FITS (magic: "SIMPLE")
+- **UDF4**: NASA CDF (magic: 0xCDF30001)
+- **UDF5-UDF9**: Reserved for future use
 
 ## Directory Structure
 
@@ -181,7 +183,7 @@ ctest -V
 |--------------|------------------|-------------|
 | `-DENABLE_CDF=ON` | `--enable-cdf` | Enable CDF file support |
 | `-DENABLE_GEOTIFF=ON` | `--enable-geotiff` | Enable GeoTIFF support |
-| `-DENABLE_GRIB2=ON` | `--enable-grib2` | Enable GRIB2 support (mutually exclusive with CDF) |
+| `-DENABLE_GRIB2=ON` | `--enable-grib2` | Enable GRIB2 support |
 | `-DBUILD_LZ4=ON` | `--enable-lz4` | Build LZ4 filter |
 | `-DBUILD_BZIP2=ON` | `--enable-bzip2` | Build BZIP2 filter |
 | `-DENABLE_FORTRAN=ON` | `--enable-fortran` | Build Fortran wrappers |

@@ -116,11 +116,10 @@ AC_ARG_ENABLE([docs],
     [enable_docs=auto])
 
 # CDF library detection (v1.3.0) - default OFF; enable with --enable-cdf
-# CDF and GRIB2 share UDF slot 2 and are mutually exclusive.
 AC_MSG_CHECKING([whether CDF library detection should be enabled])
 AC_ARG_ENABLE([cdf],
               [AS_HELP_STRING([--enable-cdf],
-                              [Enable CDF library detection; mutually exclusive with --enable-grib2 (default: disabled)])])
+                              [Enable CDF library detection (default: disabled)])])
 test "x$enable_cdf" = xyes || enable_cdf=no
 AC_MSG_RESULT([$enable_cdf])
 
@@ -232,18 +231,12 @@ AC_SUBST([CFITSIO_LDFLAGS])
 AC_SUBST([BUILD_FITS], [$enable_fits])
 
 # GRIB2 library detection (v1.7.0) - default OFF; enable with --enable-grib2
-# GRIB2 and CDF share UDF slot 2 and are mutually exclusive.
 AC_MSG_CHECKING([whether GRIB2 library detection should be enabled])
 AC_ARG_ENABLE([grib2],
               [AS_HELP_STRING([--enable-grib2],
-                              [Enable GRIB2 library detection; mutually exclusive with --enable-cdf (default: disabled)])])
+                              [Enable GRIB2 library detection (default: disabled)])])
 test "x$enable_grib2" = xyes || enable_grib2=no
 AC_MSG_RESULT([$enable_grib2])
-
-# Enforce mutual exclusion: GRIB2 and CDF both use UDF slot 2.
-if test "x$enable_grib2" = xyes && test "x$enable_cdf" = xyes; then
-    AC_MSG_ERROR([--enable-grib2 and --enable-cdf are mutually exclusive: both use UDF slot 2. Build with one or the other.])
-fi
 
 if test "x$enable_grib2" = "xyes"; then
     LIBS="-ljasper $LIBS"

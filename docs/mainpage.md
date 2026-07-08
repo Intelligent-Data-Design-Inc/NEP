@@ -174,14 +174,14 @@ The Common Data Format (CDF) is a self-describing data format developed by NASA'
 
 ### Enabling CDF Support
 
-CDF support is disabled by default (mutually exclusive with GRIB2). To enable:
+CDF support is disabled by default. To enable:
 
 ```bash
 # CMake
-cmake -B build -DENABLE_CDF=ON -DENABLE_GRIB2=OFF
+cmake -B build -DENABLE_CDF=ON
 
 # Autotools
-./configure --enable-cdf --disable-grib2
+./configure --enable-cdf
 ```
 
 **Requirements**: NASA CDF library v3.9+ must be installed. Download from: https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/
@@ -235,7 +235,7 @@ cmake -B build -DENABLE_GRIB2=OFF
 
 **Requirements**: NOAA NCEPLIBS-g2c (>= 2.1.0) and libjasper (>= 3.0.0) must be installed. Supply the g2c install path at configure time.
 
-**Note**: GRIB2 and CDF are mutually exclusive — both use UDF slot 2. Enable one or the other, not both.
+**Note**: GRIB2 uses UDF slot 2. CDF uses UDF slot 4 (since v2.2.0). Both can be enabled together.
 
 ## GeoTIFF File Reader
 
@@ -295,7 +295,7 @@ NEP requires:
 - LZ4 library
 - BZIP2 library
 - NetCDF-Fortran library (optional, for Fortran support)
-- NASA CDF library v3.9+ (optional, for CDF file reading; mutually exclusive with GRIB2)
+- NASA CDF library v3.9+ (optional, for CDF file reading)
 - libgeotiff and libtiff (enabled by default, for GeoTIFF file reading)
 - NOAA NCEPLIBS-g2c >= 2.1.0 and libjasper >= 3.0.0 (enabled by default, for GRIB2 file reading)
 
@@ -424,7 +424,7 @@ No special code is needed—the GeoTIFF UDF handler automatically detects and pr
   - `.ncrc` autoload support for zero-code-change `nc_open()` / `ncdump` access
 - **Configurable Build Options**:
   - LZ4 and BZIP2 support can be enabled or disabled at build time
-  - CDF support is optional (disabled by default; mutually exclusive with GRIB2)
+  - CDF support is optional (disabled by default)
   - GeoTIFF and GRIB2 support are enabled by default; disable with `--disable-geotiff` / `--disable-grib2`
 - **Fortran Support**:
   - Optional Fortran wrappers for NEP functions

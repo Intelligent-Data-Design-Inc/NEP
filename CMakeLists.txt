@@ -23,8 +23,7 @@ option(BUILD_BZIP2 "Enable BZIP2 filter support" OFF)
 add_definitions(-DUSE_HDF5=yes)
 
 # CDF library detection (v1.3.0) - default OFF; enable with -DENABLE_CDF=ON
-# CDF and GRIB2 share UDF slot 2 and are mutually exclusive.
-option(ENABLE_CDF "Enable CDF library detection; mutually exclusive with ENABLE_GRIB2" OFF)
+option(ENABLE_CDF "Enable CDF library detection" OFF)
 
 # GeoTIFF library detection (v1.5.0) - default OFF; enable with -DENABLE_GEOTIFF=ON
 option(ENABLE_GEOTIFF "Enable GeoTIFF library detection" OFF)
@@ -111,8 +110,7 @@ endif()
 option(ENABLE_FITS "Enable FITS reader support via CFITSIO" OFF)
 
 # GRIB2 library detection (v1.7.0) - default OFF; enable with -DENABLE_GRIB2=ON
-# GRIB2 and CDF share UDF slot 2 and are mutually exclusive.
-option(ENABLE_GRIB2 "Enable GRIB2 support; mutually exclusive with ENABLE_CDF" OFF)
+option(ENABLE_GRIB2 "Enable GRIB2 support" OFF)
 
 # Parallel I/O test support (v1.9.0) - default OFF; enable with -DENABLE_PARALLEL_TESTS=ON
 option(ENABLE_PARALLEL_TESTS "Enable parallel I/O test programs" OFF)
@@ -173,11 +171,6 @@ if(NOT DOCS_ONLY)
         else()
             message(FATAL_ERROR "libcfitsio is required for the FITS reader. Install libcfitsio-dev or use -DENABLE_FITS=OFF")
         endif()
-    endif()
-
-    # Enforce mutual exclusion: GRIB2 and CDF both use UDF slot 2.
-    if(ENABLE_GRIB2 AND ENABLE_CDF)
-        message(FATAL_ERROR "ENABLE_GRIB2 and ENABLE_CDF are mutually exclusive: both use UDF slot 2. Enable only one.")
     endif()
 
     # GRIB2 library detection
