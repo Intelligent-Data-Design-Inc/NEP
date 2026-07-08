@@ -14,11 +14,22 @@ if HAVE_GEOTIFF
 # Copy test data files to build directory before running tests.
 # Also generate an empty .ncrc so NCRCENV_RC suppresses ~/.ncrc dlopen loading;
 # tests that need UDF registration do so explicitly via nc_def_user_format().
-check-local:
-	cp -f $(top_srcdir)/test/data/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif $(builddir)/
-	cp -f $(top_srcdir)/test/data/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif $(builddir)/
-	cp -f $(top_srcdir)/test/data/ABBA_2022_C61_HNL.tif $(builddir)/
-	echo "" > $(builddir)/empty.ncrc
+check_DATA = MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif \
+             MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif \
+             ABBA_2022_C61_HNL.tif \
+             empty.ncrc
+
+MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif: $(top_srcdir)/test/data/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif
+	cp -f $< $@
+
+MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif: $(top_srcdir)/test/data/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif
+	cp -f $< $@
+
+ABBA_2022_C61_HNL.tif: $(top_srcdir)/test/data/ABBA_2022_C61_HNL.tif
+	cp -f $< $@
+
+empty.ncrc:
+	echo "" > $@
 
 # Test programs
 check_PROGRAMS = tst_geotiff_handle tst_geotiff_metadata tst_phase2_acceptance \

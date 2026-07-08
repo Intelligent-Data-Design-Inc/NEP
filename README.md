@@ -28,7 +28,25 @@ Both are HDF5 filter plugins — drop-in with existing NetCDF-4 applications, no
 | **GRIB2** | NWP model output (GFS, NAM, HRRR, wave) | `nc_open()` / `nf90_open()` |
 | **FITS** | Astronomical images and tables (HST, JWST) | `nc_open()` / `nf90_open()` |
 
-All readers use the standard NetCDF UDF system. **Existing C and Fortran programs require no code modification** — an existing Fortran program that calls `nf90_open()` and `nf90_get_var()` can read a FITS, CDF, GeoTIFF, or GRIB2 file without changing a single line of code. NEP registers the format handler at startup; the rest of the program stays identical.
+All readers use the standard NetCDF UDF system and are **opt-in at build time** (default OFF). Once enabled, **existing C and Fortran programs require no code modification** — an existing Fortran program that calls `nf90_open()` and `nf90_get_var()` can read a FITS, CDF, GeoTIFF, or GRIB2 file without changing a single line of code. NEP registers the format handler at startup; the rest of the program stays identical.
+
+Enable one or more readers at configure time:
+
+```bash
+# CMake
+cmake -B build \
+  -DENABLE_GEOTIFF=ON \
+  -DENABLE_GRIB2=ON \
+  -DENABLE_CDF=ON \
+  -DENABLE_FITS=ON
+
+# Autotools
+./configure \
+  --enable-geotiff \
+  --enable-grib2 \
+  --enable-cdf \
+  --enable-fits
+```
 
 ### Example Programs
 
@@ -125,7 +143,7 @@ The Common Data Format (CDF) is a conceptually similar format to NetCDF, develop
 
 NEP provides a User-Defined Format (UDF) handler that allows reading CDF files using NetCDF-style API calls. This enables applications to work with both NetCDF and CDF files through a unified interface.
 
-To enable CDF support during build, use the `--enable-cdf` (Autotools) or `-DENABLE_CDF=ON` (CMake) configuration option. You must have the NASA CDF library installed on your system.
+To enable CDF support during build, use the `--enable-cdf` (Autotools) or `-DENABLE_CDF=ON` (CMake) configuration option. You must have the NASA CDF library installed on your system. CDF defaults OFF.
 
 ---
 
@@ -137,14 +155,14 @@ GeoTIFF is the de facto standard for geospatial raster data, embedding coordinat
 
 NEP provides a UDF handler that reads GeoTIFF (and BigTIFF) files through the standard NetCDF API, with CF-1.8 compliant CRS metadata, coordinate variables (`lon`/`lat` or `x`/`y`), coordinate bounds, and full hyperslab support. See [docs/cf-compliance.md](docs/cf-compliance.md) for the CF grid-mapping attribute specification.
 
-To disable GeoTIFF support at build time:
+To enable GeoTIFF support at build time:
 
 ```bash
-cmake -B build -DENABLE_GEOTIFF=OFF   # CMake
-./configure --disable-geotiff          # Autotools
+cmake -B build -DENABLE_GEOTIFF=ON   # CMake
+./configure --enable-geotiff          # Autotools
 ```
 
-Requires libgeotiff and libtiff.
+Requires libgeotiff and libtiff. GeoTIFF defaults OFF.
 
 ---
 
@@ -156,14 +174,14 @@ GRIB2 is the standard binary format used by NOAA, ECMWF, and other agencies to d
 
 NEP provides a UDF handler that reads GRIB2 files through the standard NetCDF API. `ncdump` works directly on `.grib2` files once NEP is installed. Variable names come from the GRIB2 parameter abbreviation; per-variable attributes include `long_name`, `_FillValue`, and GRIB2 discipline/category/parameter metadata.
 
-To disable GRIB2 support at build time:
+To enable GRIB2 support at build time:
 
 ```bash
-cmake -B build -DENABLE_GRIB2=OFF   # CMake
-./configure --disable-grib2          # Autotools
+cmake -B build -DENABLE_GRIB2=ON   # CMake
+./configure --enable-grib2          # Autotools
 ```
 
-Requires NOAA NCEPLIBS-g2c (>= 2.1.0) and libjasper (>= 3.0.0). **Note**: GRIB2 and CDF are mutually exclusive — both use UDF slot 2.
+Requires NOAA NCEPLIBS-g2c (>= 2.1.0) and libjasper (>= 3.0.0). GRIB2 defaults OFF. Starting with v2.2.0, GRIB2 and CDF can be enabled together.
 
 ---
 
@@ -175,23 +193,23 @@ FITS (Flexible Image Transport System) is the standard format used by NASA, ESA,
 
 NEP provides a UDF handler that reads FITS files through the standard NetCDF API. The primary HDU image appears as a variable in the root group; extension HDUs each become a child group named from `EXTNAME`. Standard FITS keywords are mapped to netCDF attributes (`BUNIT`→`units`, `BZERO`→`add_offset`, `BSCALE`→`scale_factor`). Dimension order reversal (FITS column-major ↔ netCDF row-major) is handled automatically.
 
-To disable FITS support at build time:
+To enable FITS support at build time:
 
 ```bash
-cmake -B build -DENABLE_FITS=OFF   # CMake
-./configure --disable-fits          # Autotools
+cmake -B build -DENABLE_FITS=ON   # CMake
+./configure --enable-fits          # Autotools
 ```
 
-Requires CFITSIO (>= 3.0).
+Requires CFITSIO (>= 3.0). FITS defaults OFF.
 
 ---
 
 ## UDF Autoloading via .ncrc
 
 NEP installs a `.ncrc` configuration file that enables NetCDF-C's UDF self-loading
-mechanism. Once configured, any application can open GeoTIFF, CDF, and GRIB2 files through the
+mechanism. Once configured, any application can open GeoTIFF, CDF, GRIB2, and FITS files through the
 standard `nc_open()` API without calling `NC_GEOTIFF_initialize()`, `NC_CDF_initialize()`,
-or `NC_GRIB2_initialize()` explicitly.
+`NC_GRIB2_initialize()`, or `NC_FITS_initialize()` explicitly.
 
 ### Quickstart
 
@@ -201,13 +219,14 @@ After installing NEP, merge the configuration into your `~/.ncrc`:
 cat /usr/local/share/nep/.ncrc >> ~/.ncrc
 ```
 
-Then open GeoTIFF, CDF, or GRIB2 files from any application without extra initialization:
+Then open GeoTIFF, CDF, GRIB2, or FITS files from any application without extra initialization:
 
 ```c
 int ncid;
 nc_open("satellite_image.tif",                        NC_NOWRITE, &ncid);  /* GeoTIFF */
 nc_open("data.cdf",                                   NC_NOWRITE, &ncid);  /* CDF */
 nc_open("gdaswave.t00z.wcoast.0p16.f000.grib2",       NC_NOWRITE, &ncid);  /* GRIB2 */
+nc_open("image.fits",                                 NC_NOWRITE, &ncid);  /* FITS */
 ```
 
 ### Alternate: per-session via NETCDF_RC
@@ -320,6 +339,8 @@ NEP v1.5.0 requires the following dependencies:
 - **NASA CDF library** (v3.9+, optional, for CDF file support)
 - **libgeotiff** (latest stable, optional, for GeoTIFF file support)
 - **libtiff** (latest stable, optional, required by libgeotiff)
+- **NOAA NCEPLIBS-g2c** (>= 2.1.0, optional, for GRIB2 file support)
+- **CFITSIO** (>= 3.0, optional, for FITS file support)
 - **Doxygen** (optional, for building documentation)
 
 ### Spack Installation (Recommended for HPC)
@@ -457,6 +478,9 @@ make uninstall
 | `-DENABLE_FORTRAN=ON/OFF` | `--enable-fortran/--disable-fortran` | ON/enabled | Fortran wrappers and tests |
 | `-DENABLE_CDF=ON/OFF` | `--enable-cdf/--disable-cdf` | OFF/disabled | CDF UDF handler build (v1.3.0+) |
 | `-DENABLE_GEOTIFF=ON/OFF` | `--enable-geotiff/--disable-geotiff` | OFF/disabled | GeoTIFF UDF handler build (v1.5.0+) |
+| `-DENABLE_GRIB2=ON/OFF` | `--enable-grib2/--disable-grib2` | OFF/disabled | GRIB2 UDF handler build (v1.7.0+) |
+| `-DENABLE_FITS=ON/OFF` | `--enable-fits/--disable-fits` | OFF/disabled | FITS UDF handler build (v2.0.0+) |
+| `-DENABLE_PDS4=ON/OFF` | `--enable-pds4/--disable-pds4` | OFF/disabled | PDS4 UDF handler build (v2.2.0+) |
 | N/A | `--enable-lz4/--disable-lz4` | enabled | LZ4 compression support |
 | N/A | `--enable-bzip2/--disable-bzip2` | enabled | BZIP2 compression support |
 
