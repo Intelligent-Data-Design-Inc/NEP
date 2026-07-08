@@ -8,7 +8,7 @@
  * file, then calls nc_open() directly. NetCDF-C reads the RC file and
  * loads libnep automatically.
  *
- * UDF slot used: UDF2 (NASA CDF, magic: \xCD\xF3\x00\x01)
+ * UDF slot used: UDF4 (NASA CDF, magic: \xCD\xF3\x00\x01)
  *
  * The test file tst_cdf_simple.cdf must already exist (created by
  * tst_cdf_basic which runs before this test).
@@ -54,8 +54,8 @@ static int setup_netcdf_rc(const char *lib_path)
         return 1;
     }
 
-    fprintf(f, "NETCDF.UDF2.LIBRARY=%s\n", lib_path);
-    fprintf(f, "NETCDF.UDF2.INIT=NC_CDF_initialize\n");
+    fprintf(f, "NETCDF.UDF4.LIBRARY=%s\n", lib_path);
+    fprintf(f, "NETCDF.UDF4.INIT=NC_CDF_initialize\n");
     fclose(f);
 
     if (setenv("NETCDF_RC", TMP_NCRC_DIR, 1) != 0)

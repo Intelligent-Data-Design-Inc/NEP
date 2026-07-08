@@ -71,9 +71,9 @@ static int test_self_load_behavior(void)
     printf("    - NC_CDF_initialize() does NOT call nc_def_user_format()\n");
     printf("    - UDF registration happens via NetCDF-C plugin system\n");
     printf("    - Applications configure via RC file (.ncrc):\n");
-    printf("        NETCDF.UDF2.LIBRARY=/path/to/libnep.so\n");
-    printf("        NETCDF.UDF2.INIT=NC_CDF_initialize\n");
-    printf("        NETCDF.UDF2.MAGIC=\\xCD\\xF3\\x00\\x01\n");
+    printf("        NETCDF.UDF4.LIBRARY=/path/to/libnep.so\n");
+    printf("        NETCDF.UDF4.INIT=NC_CDF_initialize\n");
+    printf("        NETCDF.UDF4.MAGIC=\\xCD\\xF3\\x00\\x01\n");
     printf("    - NetCDF-C calls initialization function automatically\n");
     printf("    \u2713 Self-loading behavior documented\n");
     
@@ -132,9 +132,9 @@ static int test_with_rc_file(void)
         return 1;
     }
     
-    fprintf(rc, "NETCDF.UDF2.LIBRARY=%s\n", lib_path);
-    fprintf(rc, "NETCDF.UDF2.INIT=NC_CDF_initialize\n");
-    fprintf(rc, "NETCDF.UDF2.MAGIC=\\xCD\\xF3\\x00\\x01\n");
+    fprintf(rc, "NETCDF.UDF4.LIBRARY=%s\n", lib_path);
+    fprintf(rc, "NETCDF.UDF4.INIT=NC_CDF_initialize\n");
+    fprintf(rc, "NETCDF.UDF4.MAGIC=\\xCD\\xF3\\x00\\x01\n");
     fclose(rc);
     printf("    ✓ Created .ncrc configuration\n");
     

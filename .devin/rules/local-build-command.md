@@ -66,8 +66,6 @@ make -j$(nproc) -C build && ctest --test-dir build
 finds the system HDF5 1.14.6 instead, which conflicts with NetCDF-C 4.10.0 (built
 against HDF5 2.1.0) and causes `NetCDF: HDF error` at runtime.
 
-**IMPORTANT**: `ENABLE_CDF` and `ENABLE_GRIB2` are mutually exclusive (both use
-UDF slot 2). Always set `-DENABLE_GRIB2=OFF` when `-DENABLE_CDF=ON`.
 
 **IMPORTANT**: If CMakeCache.txt has stale HDF5 entries, delete it before reconfiguring:
 ```bash
