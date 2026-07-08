@@ -513,7 +513,55 @@ Parallel I/O builds are tested in a separate CI workflow (`ci-parallel.yml`) wit
 
 ---
 
-## 14. Performance Examples (v1.10.0)
+## 14. PDS4 Format Support (v2.2.0)
+
+### 14.1 Overview
+
+PDS4 (Planetary Data System version 4) support via UDF handler enables transparent
+access to NASA/ESA Planetary Data System 4 label files through the standard NetCDF
+API. PDS4 is used to archive and distribute planetary science data from missions
+such as Mars Reconnaissance Orbiter, Curiosity, Perseverance, Cassini, and many
+others.
+
+v2.2.0 Sprint 3 delivers the dispatch skeleton: UDF5 slot registration, libxml2
+label parsing and namespace validation, and an open/close round-trip. Metadata and
+data reading will be added in subsequent releases.
+
+### 14.2 Features
+
+- **Format Detection**: Automatic `<?xml` magic-number detection; root namespace
+  verified against `http://pds.nasa.gov/pds4/pds/v1`
+- **UDF Registration**: PDS4 assigned to UDF slot 5 (`NC_UDF5`), permanently
+  separate from all other NEP format slots
+- **Open/Close Round-trip**: `nc_open()` / `nc_close()` succeed on any valid
+  PDS4 XML label; returns `NC_ENOTNC` for XML files that are not PDS4 labels
+- **libxml2 Integration**: XML parsing uses libxml2 with `XML_PARSE_NONET` to
+  avoid network access during format detection
+
+### 14.3 Build Configuration
+
+CMake:
+- `ENABLE_PDS4=ON/OFF` — Enable/disable PDS4 support (default: OFF)
+- Requires `find_package(LibXml2 REQUIRED)` when enabled
+
+Autotools:
+- `--enable-pds4/--disable-pds4` — PDS4 support (default: disabled)
+- Uses `AC_CHECK_HEADERS([libxml/parser.h])` + `AC_CHECK_LIB([xml2], [xmlReadFile])`
+
+### 14.4 Dependencies
+
+- libxml2 (`libxml2-dev` on Ubuntu / Debian; `libxml2-devel` on RHEL/Fedora)
+
+### 14.5 Known Limitations (v2.2.0)
+
+- No metadata (`nc_inq_*`) or data (`nc_get_vara`) reading yet; these return
+  `NC_NOERR` / `NC_EINVAL` respectively via no-op dispatch functions
+- Only `Product_Observational` root element type is validated; other PDS4 product
+  classes are not checked in this sprint
+
+---
+
+## 15. Performance Examples (v1.10.0)
 
 Performance benchmark programs gated by `ENABLE_BENCHMARKS` (CMake) or
 `--enable-benchmarks` (Autotools). Not run in regular CI. Dataset for all
@@ -562,7 +610,7 @@ shape 10×45×90.
 
 ---
 
-## 15. Release History
+## 16. Release History
 
 - **v0.1.3** (Nov 2025): Architecture shift from HDF5 VOL to NetCDF UDF, Doxygen documentation
 - **v1.0.0**: LZ4 and BZIP2 compression filters

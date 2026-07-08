@@ -13,7 +13,8 @@
  * - UDF2: GRIB2 meteorological data (magic: "GRIB")
  * - UDF3: FITS astronomical data (magic: "SIMPLE")
  * - UDF4: NASA CDF format (magic: 0xCDF30001)
- * - UDF5-UDF9: Reserved for future use
+ * - UDF5: PDS4 planetary data system (magic: "<?xml")
+ * - UDF6-UDF9: Reserved for future use
  *
  * @author Edward Hartnett
  * @date Nov 13, 2025
@@ -71,6 +72,9 @@ extern "C" {
 /** FITS astronomical data format uses UDF3 slot */
 #define NEP_UDF_FITS NC_UDF3
 
+/** PDS4 planetary data system format uses UDF5 slot */
+#define NEP_UDF_PDS4 NC_UDF5
+
 /** @} */
 
 /**
@@ -93,6 +97,9 @@ extern "C" {
 /** FITS magic number: "SIMPLE" (first 6 bytes of a FITS file) */
 #define NEP_MAGIC_FITS "SIMPLE"
 
+/** PDS4 magic number: XML label files begin with "<?xml" */
+#define NEP_MAGIC_PDS4 "<?xml"
+
 /** @} */
 
 /**
@@ -111,6 +118,9 @@ extern "C" {
 
 /** FITS format display name */
 #define NEP_FORMAT_NAME_FITS "FITS"
+
+/** PDS4 format display name */
+#define NEP_FORMAT_NAME_PDS4 "PDS4"
 
 /** @} */
 

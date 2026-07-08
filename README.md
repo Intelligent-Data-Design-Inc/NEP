@@ -27,8 +27,9 @@ Both are HDF5 filter plugins — drop-in with existing NetCDF-4 applications, no
 | **GeoTIFF** | Geospatial rasters, CF-1.8 CRS metadata | `nc_open()` / `nf90_open()` |
 | **GRIB2** | NWP model output (GFS, NAM, HRRR, wave) | `nc_open()` / `nf90_open()` |
 | **FITS** | Astronomical images and tables (HST, JWST) | `nc_open()` / `nf90_open()` |
+| **PDS4** | NASA/ESA planetary science (Mars, Moon, etc.) | `nc_open()` / `nf90_open()` |
 
-All readers use the standard NetCDF UDF system and are **opt-in at build time** (default OFF). Once enabled, **existing C and Fortran programs require no code modification** — an existing Fortran program that calls `nf90_open()` and `nf90_get_var()` can read a FITS, CDF, GeoTIFF, or GRIB2 file without changing a single line of code. NEP registers the format handler at startup; the rest of the program stays identical.
+All readers use the standard NetCDF UDF system and are **opt-in at build time** (default OFF). Once enabled, **existing C and Fortran programs require no code modification** — an existing Fortran program that calls `nf90_open()` and `nf90_get_var()` can read a FITS, CDF, GeoTIFF, GRIB2, or PDS4 file without changing a single line of code. NEP registers the format handler at startup; the rest of the program stays identical.
 
 Enable one or more readers at configure time:
 
@@ -38,14 +39,16 @@ cmake -B build \
   -DENABLE_GEOTIFF=ON \
   -DENABLE_GRIB2=ON \
   -DENABLE_CDF=ON \
-  -DENABLE_FITS=ON
+  -DENABLE_FITS=ON \
+  -DENABLE_PDS4=ON
 
 # Autotools
 ./configure \
   --enable-geotiff \
   --enable-grib2 \
   --enable-cdf \
-  --enable-fits
+  --enable-fits \
+  --enable-pds4
 ```
 
 ### Example Programs
@@ -204,12 +207,37 @@ Requires CFITSIO (>= 3.0). FITS defaults OFF.
 
 ---
 
+## PDS4 Reader
+
+PDS4 (Planetary Data System version 4) is the data standard maintained by NASA's
+Planetary Data System and ESA for archiving and distributing planetary science data —
+Mars rover images, lunar surface DEMs, asteroid spectra, and more.
+
+### PDS4 Support in NEP
+
+NEP provides a UDF handler (v2.2.0, Sprint 3 skeleton) that opens PDS4 XML label
+files through the standard NetCDF API. The handler parses the XML label with
+**libxml2** and validates the PDS4 namespace
+(`http://pds.nasa.gov/pds4/pds/v1`). Metadata and data reading will be added in
+future releases; this release proves the UDF registration and open/close paths.
+
+To enable PDS4 support at build time:
+
+```bash
+cmake -B build -DENABLE_PDS4=ON   # CMake
+./configure --enable-pds4          # Autotools
+```
+
+Requires libxml2 (`libxml2-dev` on Ubuntu). PDS4 defaults OFF.
+
+---
+
 ## UDF Autoloading via .ncrc
 
 NEP installs a `.ncrc` configuration file that enables NetCDF-C's UDF self-loading
-mechanism. Once configured, any application can open GeoTIFF, CDF, GRIB2, and FITS files through the
-standard `nc_open()` API without calling `NC_GEOTIFF_initialize()`, `NC_CDF_initialize()`,
-`NC_GRIB2_initialize()`, or `NC_FITS_initialize()` explicitly.
+mechanism. Once configured, any application can open GeoTIFF, CDF, GRIB2, FITS, and
+PDS4 files through the standard `nc_open()` API without calling the format-specific
+`NC_*_initialize()` functions explicitly.
 
 ### Quickstart
 
@@ -341,6 +369,7 @@ NEP v1.5.0 requires the following dependencies:
 - **libtiff** (latest stable, optional, required by libgeotiff)
 - **NOAA NCEPLIBS-g2c** (>= 2.1.0, optional, for GRIB2 file support)
 - **CFITSIO** (>= 3.0, optional, for FITS file support)
+- **libxml2** (optional, for PDS4 file support, v2.2.0)
 - **Doxygen** (optional, for building documentation)
 
 ### Spack Installation (Recommended for HPC)

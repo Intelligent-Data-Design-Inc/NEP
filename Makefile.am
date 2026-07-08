@@ -35,7 +35,7 @@ if BUILD_LZ4
 all-local:
 	$(MAKE) -C hdf5_plugins all
 endif
-EXTRA_DIST = autogen.sh .ncrc.in .ncrc-geotiff.in .ncrc-cdf.in .ncrc-grib2.in .ncrc-fits.in
+EXTRA_DIST = autogen.sh .ncrc.in .ncrc-geotiff.in .ncrc-cdf.in .ncrc-grib2.in .ncrc-fits.in .ncrc-pds4.in
 
 if BUILD_NCRC
 # Install .ncrc to $(NEP_NCRC_DIR) (default: $(datarootdir)/nep)
