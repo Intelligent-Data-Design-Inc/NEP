@@ -289,7 +289,16 @@ jobs:
         if: matrix.build_system == 'autotools'
         run: |
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$GITHUB_WORKSPACE/jasper-install/lib:$LD_LIBRARY_PATH"
-          make check || (echo "Tests failed:"; cat test/test-suite.log; exit 1)
+          make check || (
+            echo "Tests failed. Collecting test logs:";
+            for log in test/test-suite.log test_geotiff/test-suite.log test_grib2/test-suite.log test_fits/test-suite.log ftest/test-suite.log; do
+              if [ -f "$log" ]; then
+                echo "=== $log ===";
+                cat "$log";
+              fi;
+            done;
+            exit 1
+          )
 
       - name: Summary
         if: always()
