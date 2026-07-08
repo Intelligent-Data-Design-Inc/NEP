@@ -1,9 +1,10 @@
 /**
  * @file
- * @internal This header file contains the prototypes for the
- * PDS4 versions of the netCDF functions. This is part of the PDS4
- * dispatch layer and this header should not be included by any file
- * outside the libncpds4 directory.
+ * @brief Public types and prototypes for the PDS4 UDF dispatch layer.
+ *
+ * Defines the per-variable layout struct (NC_PDS4_VAR_INFO_T), the
+ * per-file state struct (NC_PDS4_FILE_INFO_T), and the public API
+ * prototypes for the PDS4 User-Defined Format handler.
  *
  * @author Edward Hartnett
  * @date 2026-07-08

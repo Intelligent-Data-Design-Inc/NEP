@@ -1,4 +1,22 @@
 # NEP Development Roadmap
+
+### V2.3.0 Documentation and More Testing for PDS4 Read
+
+#### Sprint 1: Doxygen Docs for PDS4 Reader
+**Detailed Plan**: See `docs/plan/v2.3.0-sprint1-pds4-doxygen.md`
+
+- Add a "PDS4 File Reader" section to `docs/mainpage.md` matching the style and depth of the existing FITS section (What is PDS4 / Key Characteristics / PDS4 Support in NEP / Enabling PDS4 Support / C API usage example).
+- Expand the `@file` block in `src/pds4file.c` to add sections on the netCDF model mapping (groups, dimensions, variables, attributes), byte-order handling, and data file resolution. Add `@param`/`@return` Doxygen tags to all public functions missing them; leave internal helpers with their existing comments.
+- Fix struct visibility in the Doxygen Data Structures page: remove the `@internal` tag from the `@file` block in `include/pds4dispatch.h` so `NC_PDS4_VAR_INFO_T` and `NC_PDS4_FILE_INFO_T` appear publicly, and add `@brief` descriptions to all struct fields.
+- Add a PDS4 API subsection to `docs/prd.md` covering `NC_PDS4_initialize()`, `NC_PDS4_finalize()`, and `NC_PDS4_get_vara()`, consistent with the CDF/GeoTIFF/GRIB2/FITS sections already present.
+
+**Clarified decisions:**
+- `pds4file.c` expansion: public functions only (not `@internal` helpers); add `@param`/`@return` where missing.
+- Struct fix: remove `@internal` from `pds4dispatch.h` `@file` tag (not `EXTRACT_PRIVATE=YES`, which would expose other internal entities globally).
+- `docs/mainpage.md`: full PDS4 section with C usage example, matching FITS section depth.
+- `docs/prd.md`: new PDS4 API subsection; no code changes.
+- Sprint 1 is documentation-only; new tests deferred to Sprint 2.
+
 ### V2.2.0 Read NASA/ESA Planetary Data System 4 Data
 
 #### Sprint 1: Make Extended Data Formats Off by Default

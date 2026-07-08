@@ -13,6 +13,48 @@
  * - Table_Character (fixed-record, ASCII fields)
  * - Table_Delimited (variable-record, ASCII fields)
  *
+ * @section pds4_model netCDF Model Mapping
+ *
+ * A PDS4 label file contains one or more `File_Area_Observational` elements,
+ * each referencing a separate binary or ASCII data file. The NEP PDS4 reader
+ * maps the label structure into the netCDF-4 in-memory model as follows:
+ *
+ * - The XML label root → root group. Elements of `Identification_Area` and
+ *   `Observation_Area` become global string attributes on the root group.
+ * - Each `File_Area_Observational` → a child group of the root group, named
+ *   from the `File/file_name` text content.
+ * - `Array` / `Array_2D_Image` inside a file area → netCDF dimensions created
+ *   from the `Axis_Array` children (sorted ascending by `sequence_number`);
+ *   each `axis_name` becomes the dimension name and `elements` its length;
+ *   `Last Index Fastest` maps to C-order (fastest-varying index is rightmost).
+ *   The array becomes a single netCDF variable in the child group, with type
+ *   derived from `Element_Array/data_type`.
+ * - `Table_Binary`, `Table_Character`, `Table_Delimited` → a `record`
+ *   dimension whose length comes from `<records>`; one netCDF variable per
+ *   `Field_Binary`/`Field_Character`/`Field_Delimited` child, named from
+ *   `<name>`, typed from `<data_type>`, with an optional `units` attribute
+ *   from `<unit>`.
+ *
+ * @section pds4_byteorder Byte-Order Handling
+ *
+ * PDS4 specifies byte order per data object: MSB (Most Significant Byte
+ * first, big-endian) or LSB (Least Significant Byte first, little-endian).
+ * NEP records the byte order as `NC_ENDIAN_BIG` or `NC_ENDIAN_LITTLE` on
+ * each netCDF variable at open time. During data reading in
+ * NC_PDS4_get_vara(), elements are byte-swapped in-place when the file
+ * byte order differs from the host byte order. ASCII numeric fields
+ * (Table_Character, Table_Delimited) do not require byte-swapping; they are
+ * parsed directly via `strtod()` or `strtoll()`.
+ *
+ * @section pds4_datapath Data File Resolution
+ *
+ * Binary and text data files are referenced by filename only in the PDS4
+ * label (the `File/file_name` element). NEP resolves each data filename
+ * relative to the directory that contains the XML label file, using
+ * pds4_resolve_data_path(). If the label has no directory component (i.e.
+ * it is in the current directory), the data file is also looked up in the
+ * current directory.
+ *
  * @author Edward Hartnett
  * @date 2026-07-08
  * @copyright Intelligent Data Design, Inc. All rights reserved.
@@ -44,6 +86,7 @@
  *
  * @return Pointer to newly allocated trimmed string, or NULL on failure.
  * @author Edward Hartnett
+ * @date 2026-07-08
  */
 static char *
 pds4_trim(const char *s)
@@ -83,6 +126,7 @@ pds4_trim(const char *s)
  *
  * @return Newly allocated trimmed text, or NULL if the node has no text.
  * @author Edward Hartnett
+ * @date 2026-07-08
  */
 static char *
 pds4_get_text(xmlNode *node)
@@ -110,6 +154,7 @@ pds4_get_text(xmlNode *node)
  *
  * @return Pointer to the child element, or NULL if not found.
  * @author Edward Hartnett
+ * @date 2026-07-08
  */
 static xmlNode *
 pds4_find_child(xmlNode *parent, const char *name)
@@ -134,6 +179,7 @@ pds4_find_child(xmlNode *parent, const char *name)
  *
  * @return 1 if it exists, 0 otherwise.
  * @author Edward Hartnett
+ * @date 2026-07-08
  */
 static int
 pds4_att_exists(NCindex *list, const char *name)
@@ -160,6 +206,7 @@ pds4_att_exists(NCindex *list, const char *name)
  *
  * @return ::NC_NOERR on success.
  * @author Edward Hartnett
+ * @date 2026-07-08
  */
 static int
 pds4_add_att(NCindex *list, const char *name, const char *value)
@@ -200,6 +247,7 @@ pds4_add_att(NCindex *list, const char *name, const char *value)
  * @return ::NC_NOERR on success.
  * @return ::NC_EBADTYPE if the type is unknown.
  * @author Edward Hartnett
+ * @date 2026-07-08
  */
 static int
 pds4_type_to_nc_type(const char *pds4_type, nc_type *xtypep, size_t *type_sizep,
@@ -289,6 +337,7 @@ pds4_type_to_nc_type(const char *pds4_type, nc_type *xtypep, size_t *type_sizep,
  *
  * @return ::NC_NOERR on success.
  * @author Edward Hartnett
+ * @date 2026-07-08
  */
 static int
 pds4_set_var_type(nc_type xtype, int endianness, size_t type_size,
@@ -319,6 +368,7 @@ pds4_set_var_type(nc_type xtype, int endianness, size_t type_size,
  *
  * @return ::NC_NOERR on success.
  * @author Edward Hartnett
+ * @date 2026-07-08
  */
 static int
 pds4_add_area_atts(NC_GRP_INFO_T *grp, xmlNode *area)
@@ -360,6 +410,7 @@ pds4_add_area_atts(NC_GRP_INFO_T *grp, xmlNode *area)
  *
  * @return ::NC_NOERR on success.
  * @author Edward Hartnett
+ * @date 2026-07-08
  */
 static int
 pds4_add_leaf_atts(NC_GRP_INFO_T *grp, xmlNode *node)
@@ -441,6 +492,7 @@ pds4_axis_cmp(const void *a, const void *b)
  *
  * @return ::NC_NOERR on success.
  * @author Edward Hartnett
+ * @date 2026-07-08
  */
 static int
 pds4_read_array(NC_GRP_INFO_T *grp, xmlNode *array)
@@ -668,6 +720,7 @@ cleanup:
  *
  * @return ::NC_NOERR on success.
  * @author Edward Hartnett
+ * @date 2026-07-08
  */
 static int
 pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
@@ -1008,6 +1061,7 @@ pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
  *
  * @return ::NC_NOERR on success.
  * @author Edward Hartnett
+ * @date 2026-07-08
  */
 static int
 pds4_read_file_area(NC_FILE_INFO_T *h5, NC_GRP_INFO_T *root_grp,
@@ -1089,6 +1143,7 @@ pds4_read_file_area(NC_FILE_INFO_T *h5, NC_GRP_INFO_T *root_grp,
  *
  * @return ::NC_NOERR on success.
  * @author Edward Hartnett
+ * @date 2026-07-08
  */
 static int
 pds4_read_label(NC_FILE_INFO_T *h5, NC_PDS4_FILE_INFO_T *pds4_file)
@@ -1132,28 +1187,28 @@ pds4_read_label(NC_FILE_INFO_T *h5, NC_PDS4_FILE_INFO_T *pds4_file)
 #endif /* HAVE_PDS4 */
 
 /**
- * @internal Open a PDS4 XML label file.
+ * Open a PDS4 XML label file.
  *
- * Validates that the file begins with the XML declaration, parses the
- * XML label with libxml2, confirms the root element belongs to the PDS4
- * namespace, and stores the document pointer in per-file state.
- *
- * In Sprint 4 the parsed label is also converted into netCDF-4 metadata
- * (groups, dimensions, variables, attributes). Data reading is still disabled.
+ * Parses the PDS4 XML label with libxml2, validates the root element
+ * namespace, and maps the label content into the netCDF-4 in-memory
+ * model (root-group attributes, child groups, dimensions, variables).
+ * Only read-only access (NC_NOWRITE) is supported.
  *
  * @param path Path to the PDS4 XML label file.
- * @param mode Open mode flags.
- * @param basepe Ignored.
+ * @param mode Open mode flags; NC_WRITE causes NC_EPERM to be returned.
+ * @param basepe Ignored (present for dispatch interface compatibility).
  * @param chunksizehintp Ignored.
  * @param parameters Ignored.
- * @param dispatch Dispatch table pointer.
- * @param ncid NetCDF ID assigned by the dispatch layer.
+ * @param dispatch Dispatch table pointer assigned by NetCDF-C.
+ * @param ncid NetCDF ID assigned by the NetCDF-C dispatch layer.
  *
  * @return ::NC_NOERR No error.
- * @return ::NC_EINVAL Invalid parameters or not a PDS4 label.
+ * @return ::NC_EINVAL Null path, XML parse failure, or non-PDS4 namespace.
  * @return ::NC_EPERM Write mode requested.
+ * @return ::NC_ENOTNC Root element namespace is not the PDS4 namespace.
  * @return ::NC_ENOMEM Out of memory.
  * @author Edward Hartnett
+ * @date 2026-07-08
  */
 int
 NC_PDS4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
@@ -1251,16 +1306,6 @@ NC_PDS4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
 }
 
 /**
- * @internal Close a PDS4 file.
- *
- * @param ncid NetCDF ID.
- * @param ignore Ignored.
- *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
- * @author Edward Hartnett
- */
-/**
  * @internal Free format_var_info for all variables in a group and its
  * subgroups.
  */
@@ -1289,6 +1334,20 @@ pds4_free_var_info(NC_GRP_INFO_T *grp)
     }
 }
 
+/**
+ * Close a PDS4 file.
+ *
+ * Frees per-variable layout info, the parsed XML document, and the
+ * per-file PDS4 state struct.
+ *
+ * @param ncid NetCDF ID of the open PDS4 file.
+ * @param ignore Ignored (NULL).
+ *
+ * @return ::NC_NOERR No error.
+ * @return ::NC_EBADID Bad ncid.
+ * @author Edward Hartnett
+ * @date 2026-07-08
+ */
 int
 NC_PDS4_close(int ncid, void *ignore)
 {
@@ -1329,12 +1388,17 @@ NC_PDS4_close(int ncid, void *ignore)
 }
 
 /**
- * @internal Abort opening a PDS4 file.
+ * Abort opening a PDS4 file.
  *
- * @param ncid NetCDF ID.
+ * Releases all resources allocated during a partial open, including the
+ * parsed XML document and per-file PDS4 state.
+ *
+ * @param ncid NetCDF ID of the partially opened file.
  *
  * @return ::NC_NOERR No error.
+ * @return ::NC_EBADID Bad ncid.
  * @author Edward Hartnett
+ * @date 2026-07-08
  */
 int
 NC_PDS4_abort(int ncid)
@@ -1369,13 +1433,14 @@ NC_PDS4_abort(int ncid)
 }
 
 /**
- * @internal Inquire the format of a PDS4 file.
+ * Inquire the format of a PDS4 file.
  *
  * @param ncid NetCDF ID.
- * @param formatp Pointer that gets format code.
+ * @param formatp Pointer that receives the format code (NC_FORMAT_NETCDF4).
  *
  * @return ::NC_NOERR No error.
  * @author Edward Hartnett
+ * @date 2026-07-08
  */
 int
 NC_PDS4_inq_format(int ncid, int *formatp)
@@ -1387,14 +1452,16 @@ NC_PDS4_inq_format(int ncid, int *formatp)
 }
 
 /**
- * @internal Inquire the extended format of a PDS4 file.
+ * Inquire the extended format of a PDS4 file.
  *
  * @param ncid NetCDF ID.
- * @param formatp Pointer that gets format code.
- * @param modep Pointer that gets mode flags.
+ * @param formatp Pointer that receives the extended format code
+ *        (NC_FORMATX_NC_PDS4 = NC_FORMATX_UDF5).
+ * @param modep Pointer that receives the mode flags (NC_NOWRITE).
  *
  * @return ::NC_NOERR No error.
  * @author Edward Hartnett
+ * @date 2026-07-08
  */
 int
 NC_PDS4_inq_format_extended(int ncid, int *formatp, int *modep)
@@ -1416,6 +1483,7 @@ NC_PDS4_inq_format_extended(int ncid, int *formatp, int *modep)
  *
  * @return ::NC_NOERR on success.
  * @author Edward Hartnett
+ * @date 2026-07-08
  */
 static int
 pds4_resolve_data_path(const char *label_path, const char *data_filename,
@@ -1450,6 +1518,7 @@ pds4_resolve_data_path(const char *label_path, const char *data_filename,
  * @param nelems Number of elements.
  *
  * @author Edward Hartnett
+ * @date 2026-07-08
  */
 static void
 pds4_byte_swap(void *buf, size_t elem_size, size_t nelems)
@@ -1475,6 +1544,8 @@ pds4_byte_swap(void *buf, size_t elem_size, size_t nelems)
  * @param endianness Variable endianness (NC_ENDIAN_BIG or NC_ENDIAN_LITTLE).
  *
  * @return 1 if swapping needed, 0 otherwise.
+ * @author Edward Hartnett
+ * @date 2026-07-08
  */
 static int
 pds4_needs_swap(int endianness)
@@ -1490,19 +1561,31 @@ pds4_needs_swap(int endianness)
 }
 
 /**
- * @internal Read a hyperslab of data from a PDS4 variable.
+ * Read a hyperslab of data from a PDS4 variable.
  *
- * Supports contiguous array reads and fixed-record table field reads.
+ * Reads contiguous array data or fixed-record table field data from the
+ * binary or ASCII data file referenced by the PDS4 label. Array reads
+ * honor the `start`/`count` hyperslab in C (row-major) order. Table
+ * field reads iterate over records `start[0]` through
+ * `start[0]+count[0]-1`. Byte-order conversion is applied automatically
+ * for binary types; ASCII fields are parsed via `strtod()`/`strtoll()`.
  *
- * @param ncid NetCDF ID.
- * @param varid Variable ID.
- * @param start Start indices.
- * @param count Counts.
- * @param value Output buffer.
- * @param memtype Memory type.
+ * @param ncid NetCDF ID of the group containing the variable.
+ * @param varid Variable ID within the group.
+ * @param start Array of start indices (0-based) for each dimension.
+ * @param count Number of elements to read along each dimension.
+ * @param value Output buffer large enough to hold the requested elements.
+ * @param memtype Requested memory type (type conversion not yet implemented;
+ *        caller must request the native file type).
  *
- * @return ::NC_NOERR on success.
+ * @return ::NC_NOERR No error.
+ * @return ::NC_EBADID Bad ncid.
+ * @return ::NC_ENOTVAR No variable with varid in this group.
+ * @return ::NC_EINVAL Invalid parameters or seek error.
+ * @return ::NC_ENOMEM Out of memory.
+ * @return ::NC_ENOTFOUND Data file not found.
  * @author Edward Hartnett
+ * @date 2026-07-08
  */
 int
 NC_PDS4_get_vara(int ncid, int varid, const size_t *start, const size_t *count,
