@@ -242,6 +242,21 @@ pds4_type_to_nc_type(const char *pds4_type, nc_type *xtypep, size_t *type_sizep,
     { xtype = NC_INT64; type_size = 8; endianness = NC_ENDIAN_BIG; name = "int64"; }
     else if (strcmp(pds4_type, "SignedLSB8") == 0)
     { xtype = NC_INT64; type_size = 8; endianness = NC_ENDIAN_LITTLE; name = "int64"; }
+    /* ASCII table field types. */
+    else if (strcmp(pds4_type, "ASCII_Real") == 0)
+    { xtype = NC_DOUBLE; type_size = 8; endianness = NC_ENDIAN_NATIVE; name = "double"; }
+    else if (strcmp(pds4_type, "ASCII_Integer") == 0)
+    { xtype = NC_INT64; type_size = 8; endianness = NC_ENDIAN_NATIVE; name = "int64"; }
+    else if (strcmp(pds4_type, "ASCII_NonNegative_Integer") == 0)
+    { xtype = NC_UINT64; type_size = 8; endianness = NC_ENDIAN_NATIVE; name = "uint64"; }
+    else if (strcmp(pds4_type, "ASCII_Boolean") == 0)
+    { xtype = NC_UBYTE; type_size = 1; endianness = NC_ENDIAN_NATIVE; name = "ubyte"; }
+    else if (strcmp(pds4_type, "ASCII_String") == 0 ||
+             strcmp(pds4_type, "ASCII_Date") == 0 ||
+             strcmp(pds4_type, "ASCII_Date_Time_YMD") == 0 ||
+             strcmp(pds4_type, "ASCII_Date_Time_YMD_UTC") == 0 ||
+             strcmp(pds4_type, "UTF8_String") == 0)
+    { xtype = NC_CHAR; type_size = 1; endianness = NC_ENDIAN_NATIVE; name = "char"; }
     else
     {
         return NC_EBADTYPE;
@@ -608,8 +623,282 @@ cleanup:
 }
 
 /**
+ * @internal Read a `Table_Binary`, `Table_Character`, or `Table_Delimited`
+ * element and create the corresponding netCDF dimension and variables
+ * inside the file-area group.
+ *
+ * Creates a `record` dimension of length `records` and one variable per
+ * field. Each variable has dimension `[record]` (or `[record, field_length]`
+ * for NC_CHAR string fields) and an optional `units` attribute.
+ *
+ * @param grp File-area group that will contain the dimension and variables.
+ * @param table XML `Table_Binary`, `Table_Character`, or `Table_Delimited` element.
+ *
+ * @return ::NC_NOERR on success.
+ * @author Edward Hartnett
+ */
+static int
+pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
+{
+    xmlNode *records_node;
+    xmlNode *record_node;
+    xmlNode *name_node;
+    xmlNode *cur;
+    char *records_str = NULL;
+    char *table_name = NULL;
+    size_t nrecords;
+    NC_DIM_INFO_T *record_dim = NULL;
+    int record_dimid;
+    int retval = NC_NOERR;
+    const char *record_child_name;
+    const char *field_child_name;
+
+    /* Determine which Record_* and Field_* elements to look for. */
+    if (xmlStrcmp(table->name, (const xmlChar *)"Table_Binary") == 0)
+    {
+        record_child_name = "Record_Binary";
+        field_child_name = "Field_Binary";
+    }
+    else if (xmlStrcmp(table->name, (const xmlChar *)"Table_Character") == 0)
+    {
+        record_child_name = "Record_Character";
+        field_child_name = "Field_Character";
+    }
+    else if (xmlStrcmp(table->name, (const xmlChar *)"Table_Delimited") == 0)
+    {
+        record_child_name = "Record_Delimited";
+        field_child_name = "Field_Delimited";
+    }
+    else
+    {
+        return NC_EINVAL;
+    }
+
+    /* Get the number of records. */
+    records_node = pds4_find_child(table, "records");
+    if (!records_node)
+        return NC_EINVAL;
+
+    records_str = pds4_get_text(records_node);
+    if (!records_str || !*records_str)
+    {
+        free(records_str);
+        return NC_EINVAL;
+    }
+    nrecords = (size_t)atol(records_str);
+    free(records_str);
+
+    /* Table name: use <name> if present, otherwise "table". */
+    name_node = pds4_find_child(table, "name");
+    if (name_node)
+        table_name = pds4_get_text(name_node);
+    if (!table_name || !*table_name)
+    {
+        free(table_name);
+        table_name = strdup("table");
+    }
+    if (!table_name)
+        return NC_ENOMEM;
+
+    /* Store table name as a group attribute. */
+    if ((retval = pds4_add_att(grp->att, "table_name", table_name)))
+    {
+        free(table_name);
+        return retval;
+    }
+    free(table_name);
+
+    /* Create the record dimension. */
+    if ((retval = nc4_dim_list_add(grp, "record", nrecords, -1, &record_dim)))
+        return retval;
+    record_dimid = record_dim->hdr.id;
+
+    /* Find the Record_* child. */
+    record_node = pds4_find_child(table, record_child_name);
+    if (!record_node)
+        return NC_EINVAL;
+
+    /* Iterate over Field_* children inside the Record_* element. */
+    for (cur = record_node->children; cur; cur = cur->next)
+    {
+        xmlNode *field_name_node;
+        xmlNode *field_type_node;
+        xmlNode *field_unit_node;
+        xmlNode *field_length_node;
+        char *field_name = NULL;
+        char *field_type_str = NULL;
+        char *field_unit = NULL;
+        char *field_length_str = NULL;
+        char type_name[NC_MAX_NAME + 1];
+        nc_type xtype;
+        size_t type_size;
+        int endianness;
+        NC_VAR_INFO_T *var;
+        NC_TYPE_INFO_T *type_info;
+
+        if (cur->type != XML_ELEMENT_NODE || !cur->ns ||
+            xmlStrcmp(cur->ns->href, (const xmlChar *)PDS4_NS) != 0 ||
+            xmlStrcmp(cur->name, (const xmlChar *)field_child_name) != 0)
+            continue;
+
+        /* Get field name. */
+        field_name_node = pds4_find_child(cur, "name");
+        if (!field_name_node)
+            continue;
+        field_name = pds4_get_text(field_name_node);
+        if (!field_name || !*field_name)
+        {
+            free(field_name);
+            continue;
+        }
+
+        /* Sanitize field name: replace spaces with underscores. */
+        {
+            char *p;
+            for (p = field_name; *p; p++)
+                if (*p == ' ')
+                    *p = '_';
+        }
+
+        /* Get field data_type. */
+        field_type_node = pds4_find_child(cur, "data_type");
+        if (!field_type_node)
+        {
+            free(field_name);
+            continue;
+        }
+        field_type_str = pds4_get_text(field_type_node);
+        if (!field_type_str)
+        {
+            free(field_name);
+            continue;
+        }
+
+        /* Map PDS4 type to netCDF type. */
+        retval = pds4_type_to_nc_type(field_type_str, &xtype, &type_size,
+                                      &endianness, type_name);
+        if (retval)
+        {
+            free(field_name);
+            free(field_type_str);
+            continue; /* Skip unsupported types. */
+        }
+
+        /* For NC_CHAR fields, create a 2D variable [record, strlen]. */
+        if (xtype == NC_CHAR)
+        {
+            NC_DIM_INFO_T *strlen_dim;
+            int dimids[2];
+            char strlen_dimname[NC_MAX_NAME + 1];
+            size_t field_length = 0;
+
+            field_length_node = pds4_find_child(cur, "field_length");
+            if (field_length_node)
+            {
+                field_length_str = pds4_get_text(field_length_node);
+                if (field_length_str)
+                {
+                    field_length = (size_t)atol(field_length_str);
+                    free(field_length_str);
+                }
+            }
+            if (field_length == 0)
+                field_length = 1;
+
+            /* Create a per-field string length dimension. */
+            snprintf(strlen_dimname, NC_MAX_NAME, "%s_strlen", field_name);
+            if ((retval = nc4_dim_list_add(grp, strlen_dimname, field_length,
+                                           -1, &strlen_dim)))
+            {
+                free(field_name);
+                free(field_type_str);
+                return retval;
+            }
+
+            dimids[0] = record_dimid;
+            dimids[1] = strlen_dim->hdr.id;
+
+            if ((retval = nc4_var_list_add(grp, field_name, 2, &var)))
+            {
+                free(field_name);
+                free(field_type_str);
+                return retval;
+            }
+            if ((retval = nc4_var_set_ndims(var, 2)))
+            {
+                free(field_name);
+                free(field_type_str);
+                return retval;
+            }
+            var->dimids[0] = dimids[0];
+            var->dimids[1] = dimids[1];
+        }
+        else
+        {
+            /* Scalar numeric field: 1D variable [record]. */
+            if ((retval = nc4_var_list_add(grp, field_name, 1, &var)))
+            {
+                free(field_name);
+                free(field_type_str);
+                return retval;
+            }
+            if ((retval = nc4_var_set_ndims(var, 1)))
+            {
+                free(field_name);
+                free(field_type_str);
+                return retval;
+            }
+            var->dimids[0] = record_dimid;
+        }
+
+        /* Set variable type. */
+        if ((retval = pds4_set_var_type(xtype, endianness, type_size,
+                                        type_name, &type_info)))
+        {
+            free(field_name);
+            free(field_type_str);
+            return retval;
+        }
+        var->type_info = type_info;
+        var->type_info->rc++;
+        var->endianness = endianness;
+        var->created = NC_TRUE;
+        var->written_to = NC_TRUE;
+        var->atts_read = 1;
+        var->storage = NC_CONTIGUOUS;
+
+        /* Optional units attribute. */
+        field_unit_node = pds4_find_child(cur, "unit");
+        if (field_unit_node)
+        {
+            field_unit = pds4_get_text(field_unit_node);
+            if (field_unit && *field_unit)
+            {
+                retval = pds4_add_att(var->att, "units", field_unit);
+                free(field_unit);
+                if (retval)
+                {
+                    free(field_name);
+                    free(field_type_str);
+                    return retval;
+                }
+            }
+            else
+            {
+                free(field_unit);
+            }
+        }
+
+        free(field_name);
+        free(field_type_str);
+    }
+
+    return NC_NOERR;
+}
+
+/**
  * @internal Read a `File_Area_Observational` element and create a child
- * group for it, then read each array inside the group.
+ * group for it, then read each array or table inside the group.
  *
  * @param h5 Pointer to the file info struct.
  * @param root_grp Root group.
@@ -668,6 +957,16 @@ pds4_read_file_area(NC_FILE_INFO_T *h5, NC_GRP_INFO_T *root_grp,
             xmlStrcmp(cur->name, (const xmlChar *)"Array") == 0)
         {
             if ((retval = pds4_read_array(file_grp, cur)))
+            {
+                free(file_name);
+                return retval;
+            }
+        }
+        else if (xmlStrcmp(cur->name, (const xmlChar *)"Table_Binary") == 0 ||
+                 xmlStrcmp(cur->name, (const xmlChar *)"Table_Character") == 0 ||
+                 xmlStrcmp(cur->name, (const xmlChar *)"Table_Delimited") == 0)
+        {
+            if ((retval = pds4_read_table(file_grp, cur)))
             {
                 free(file_name);
                 return retval;

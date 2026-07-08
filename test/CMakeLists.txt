@@ -106,7 +106,7 @@ endif()
 # Build PDS4 UDF test if PDS4 is enabled
 if(HAVE_PDS4)
     add_executable(tst_pds4_udf tst_pds4_udf.c)
-    target_link_libraries(tst_pds4_udf PRIVATE ncpds4 nep ${NETCDF_LIBRARIES})
+    target_link_libraries(tst_pds4_udf PRIVATE ncpds4 nep ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
     target_include_directories(tst_pds4_udf PRIVATE ${NETCDF_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR})
     add_test(NAME tst_pds4_udf COMMAND tst_pds4_udf)
     set_tests_properties(tst_pds4_udf PROPERTIES
@@ -119,6 +119,18 @@ if(HAVE_PDS4)
                    COPYONLY)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/test_image.img
                    ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/test_image.img
+                   COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/test_table_binary.xml
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/test_table_binary.xml
+                   COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/test_table_binary.dat
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/test_table_binary.dat
+                   COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/Table_Character_Example.xml
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/Table_Character_Example.xml
+                   COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/Table_Character_Example.tab
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/Table_Character_Example.tab
                    COPYONLY)
 endif()
 

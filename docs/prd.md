@@ -554,12 +554,14 @@ Autotools:
 
 ### 14.5 Known Limitations (v2.2.0)
 
-- Array metadata (`nc_inq_*`) is now read for `Array` and `Array_2D_Image` products.
-- Table metadata (`Table_Binary`, `Table_Character`, `Table_Delimited`) is not yet
-  implemented.
+- Array metadata (`nc_inq_*`) is read for `Array` and `Array_2D_Image` products.
+- Table metadata (`Table_Binary`, `Table_Character`, `Table_Delimited`) is read:
+  each table creates a `record` dimension and one variable per field with type
+  mapped from the PDS4 `data_type` and an optional `units` attribute from `unit`.
 - Data reading (`nc_get_vara`) is not yet implemented; it returns `NC_EINVAL`.
 - Only `Product_Observational` root element type is validated; other PDS4 product
   classes are not checked in this release.
+- Grouped fields (`Group_Field_Binary`, etc.) and bit fields are not yet supported.
 
 ---
 

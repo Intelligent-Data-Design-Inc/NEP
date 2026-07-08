@@ -74,6 +74,10 @@ check-local:
 		$(MKDIR_P) $(builddir)/data/PDS4; \
 		cp $(srcdir)/data/PDS4/test_image.xml $(builddir)/data/PDS4/ 2>/dev/null || true; \
 		cp $(srcdir)/data/PDS4/test_image.img $(builddir)/data/PDS4/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/test_table_binary.xml $(builddir)/data/PDS4/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/test_table_binary.dat $(builddir)/data/PDS4/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/Table_Character_Example.xml $(builddir)/data/PDS4/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/Table_Character_Example.tab $(builddir)/data/PDS4/ 2>/dev/null || true; \
 	fi
 
 TESTS_ENVIRONMENT = LD_LIBRARY_PATH=@MY_LD_LIBRARY_PATH@:$$LD_LIBRARY_PATH
@@ -84,7 +88,7 @@ TESTS += run_tests.sh
 # Delete files created in testing.
 CLEANFILES = tst_*.nc
 
-EXTRA_DIST = run_tests.sh.in data/imap_mag_l1b-calibration_20240229_v001.cdf data/gdaswave.t00z.wcoast.0p16.f000.grib2 data/WFPC2u5780205r_c0fx.fits data/PDS4/test_image.xml data/PDS4/test_image.img
+EXTRA_DIST = run_tests.sh.in data/imap_mag_l1b-calibration_20240229_v001.cdf data/gdaswave.t00z.wcoast.0p16.f000.grib2 data/WFPC2u5780205r_c0fx.fits data/PDS4/test_image.xml data/PDS4/test_image.img data/PDS4/test_table_binary.xml data/PDS4/test_table_binary.dat data/PDS4/Table_Character_Example.xml data/PDS4/Table_Character_Example.tab
 
 DISTCLEANFILES = run_tests.sh
 
