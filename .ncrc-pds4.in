@@ -1,0 +1,5 @@
+# PDS4 planetary data system (UDF slot 5)
+NETCDF.UDF5.LIBRARY=@NEP_LIBDIR@/libncpds4.so
+NETCDF.UDF5.INIT=NC_PDS4_initialize
+NETCDF.UDF5.MAGIC=<?xml
+

@@ -27,6 +27,10 @@
 /* Define if CFITSIO library is found */
 #cmakedefine HAVE_FITS
 
+/* PDS4 reader support (v2.2.0) */
+/* Define if libxml2 library is found */
+#cmakedefine HAVE_PDS4
+
 /* Defined if you have HDF5 support */
 #cmakedefine HAVE_HDF5
 

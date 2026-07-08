@@ -139,6 +139,7 @@ HAVE_CDF=no
 HAVE_GEOTIFF=no
 HAVE_GRIB2=no
 HAVE_FITS=no
+HAVE_PDS4=no
 HAVE_DOXYGEN=no
 
 # CDF library detection (v1.3.0) - library detection only, no UDF implementation yet
@@ -229,6 +230,60 @@ fi
 AC_SUBST([CFITSIO_LIBS])
 AC_SUBST([CFITSIO_LDFLAGS])
 AC_SUBST([BUILD_FITS], [$enable_fits])
+
+# PDS4 reader support (v2.2.0) - default OFF; enable with --enable-pds4
+AC_MSG_CHECKING([whether PDS4 reader should be enabled])
+AC_ARG_ENABLE([pds4],
+              [AS_HELP_STRING([--enable-pds4],
+                              [Enable PDS4 reader support (default: disabled)])])
+test "x$enable_pds4" = xyes || enable_pds4=no
+AC_MSG_RESULT([$enable_pds4])
+
+# PDS4 (libxml2) library detection (v2.2.0)
+# libxml2 on Ubuntu/Debian places headers under /usr/include/libxml2/, which is
+# not in the default CPPFLAGS.  Use xml2-config or pkg-config to discover the
+# correct -I flag before the header check.
+if test "x$enable_pds4" = "xyes"; then
+    # Try xml2-config first, then fall back to pkg-config
+    XML2_CFLAGS=""
+    if xml2-config --version > /dev/null 2>&1; then
+        XML2_CFLAGS=`xml2-config --cflags`
+        XML2_LIBS=`xml2-config --libs`
+    elif pkg-config --exists libxml-2.0 2>/dev/null; then
+        XML2_CFLAGS=`pkg-config --cflags libxml-2.0`
+        XML2_LIBS=`pkg-config --libs libxml-2.0`
+    fi
+
+    if test -n "$XML2_CFLAGS"; then
+        # Save and extend CPPFLAGS/LIBS so AC_CHECK_HEADERS/AC_CHECK_LIB succeed
+        ac_save_CPPFLAGS="$CPPFLAGS"
+        ac_save_LIBS="$LIBS"
+        CPPFLAGS="$CPPFLAGS $XML2_CFLAGS"
+        LIBS="$XML2_LIBS $LIBS"
+
+        AC_CHECK_HEADERS([libxml/parser.h], [xml_header=yes], [xml_header=no])
+        AC_CHECK_LIB([xml2], [xmlReadFile], [xml_lib=yes; XML_LIBS="$XML2_LIBS"], [xml_lib=no])
+
+        CPPFLAGS="$ac_save_CPPFLAGS"
+        LIBS="$ac_save_LIBS"
+    else
+        # No xml2-config / pkg-config: try the plain system paths
+        AC_CHECK_HEADERS([libxml/parser.h], [xml_header=yes], [xml_header=no])
+        AC_CHECK_LIB([xml2], [xmlReadFile], [xml_lib=yes; XML_LIBS="-lxml2"], [xml_lib=no])
+    fi
+
+    if test "x$xml_header" = "xyes" && test "x$xml_lib" = "xyes"; then
+        HAVE_PDS4=yes
+        AC_DEFINE([HAVE_PDS4], [1], [Define if libxml2 library is found])
+        # Persist the cflags so they're available in Makefile.am
+        XML2_CFLAGS="$XML2_CFLAGS"
+        AC_MSG_NOTICE([PDS4 reader enabled (CFLAGS: $XML2_CFLAGS)])
+    else
+        AC_MSG_ERROR([libxml2 is required for the PDS4 reader. Install libxml2-dev or use --disable-pds4])
+    fi
+fi
+AC_SUBST([XML_LIBS])
+AC_SUBST([XML2_CFLAGS])
 
 # GRIB2 library detection (v1.7.0) - default OFF; enable with --enable-grib2
 AC_MSG_CHECKING([whether GRIB2 library detection should be enabled])
@@ -366,7 +421,8 @@ AM_CONDITIONAL([HAVE_CDF], [test "x$HAVE_CDF" = "xyes"])
 AM_CONDITIONAL([HAVE_GEOTIFF], [test "x$HAVE_GEOTIFF" = "xyes"])
 AM_CONDITIONAL([HAVE_GRIB2], [test "x$HAVE_GRIB2" = "xyes"])
 AM_CONDITIONAL([HAVE_FITS], [test "x$HAVE_FITS" = "xyes"])
-AM_CONDITIONAL([BUILD_NCRC], [test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes" || test "x$HAVE_GRIB2" = "xyes" || test "x$HAVE_FITS" = "xyes"])
+AM_CONDITIONAL([HAVE_PDS4], [test "x$HAVE_PDS4" = "xyes"])
+AM_CONDITIONAL([BUILD_NCRC], [test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes" || test "x$HAVE_GRIB2" = "xyes" || test "x$HAVE_FITS" = "xyes" || test "x$HAVE_PDS4" = "xyes"])
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$HAVE_DOXYGEN" = "xyes"])
 
 # Initialize Automake
@@ -635,7 +691,7 @@ AC_ARG_WITH([ncrc-dir],
     [NEP_NCRC_DIR="\${datarootdir}"])
 AC_SUBST([NEP_NCRC_DIR])
 
-if test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes" || test "x$HAVE_GRIB2" = "xyes" || test "x$HAVE_FITS" = "xyes"; then
+if test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes" || test "x$HAVE_GRIB2" = "xyes" || test "x$HAVE_FITS" = "xyes" || test "x$HAVE_PDS4" = "xyes"; then
     # Expand libdir now so AC_CONFIG_COMMANDS receives a concrete path
     nep_expanded_prefix=$prefix
     test "x$nep_expanded_prefix" = xNONE && nep_expanded_prefix=$ac_default_prefix
@@ -659,6 +715,9 @@ if test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes" || test "x$HAVE_
             if test "x$nep_have_fits" = "xyes"; then
                 sed "s|@NEP_LIBDIR@|${nep_build_libdir}|g" "${srcdir}/.ncrc-fits.in" >> .ncrc
             fi
+            if test "x$nep_have_pds4" = "xyes"; then
+                sed "s|@NEP_LIBDIR@|${nep_build_libdir}|g" "${srcdir}/.ncrc-pds4.in" >> .ncrc
+            fi
             # Install-tree .ncrc uses the configured install libdir.
             cat "${srcdir}/.ncrc.in" > .ncrc-install
             if test "x$nep_have_geotiff" = "xyes"; then
@@ -673,12 +732,16 @@ if test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes" || test "x$HAVE_
             if test "x$nep_have_fits" = "xyes"; then
                 sed "s|@NEP_LIBDIR@|${nep_libdir}|g" "${srcdir}/.ncrc-fits.in" >> .ncrc-install
             fi
+            if test "x$nep_have_pds4" = "xyes"; then
+                sed "s|@NEP_LIBDIR@|${nep_libdir}|g" "${srcdir}/.ncrc-pds4.in" >> .ncrc-install
+            fi
         ],
         [
             nep_have_geotiff="$HAVE_GEOTIFF"
             nep_have_cdf="$HAVE_CDF"
             nep_have_grib2="$HAVE_GRIB2"
             nep_have_fits="$HAVE_FITS"
+            nep_have_pds4="$HAVE_PDS4"
             nep_libdir="$nep_expanded_libdir"
         ])
 fi

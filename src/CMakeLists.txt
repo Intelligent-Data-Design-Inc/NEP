@@ -132,3 +132,29 @@ if(HAVE_FITS)
     message(STATUS "Building FITS UDF library: ${FITS_LIB_NAME}")
     message(STATUS "  cfitsio: ${CFITSIO_LIBRARY}")
 endif()
+
+# PDS4 UDF Handler - v2.2.0
+# Build PDS4 library if enabled (netCDF UDF support)
+if(HAVE_PDS4)
+    set(PDS4_LIB_NAME ncpds4)
+    add_library(${PDS4_LIB_NAME} SHARED
+        pds4dispatch.c pds4file.c)
+    target_include_directories(${PDS4_LIB_NAME} PRIVATE ${LIBXML2_INCLUDE_DIR})
+    target_link_libraries(${PDS4_LIB_NAME} PRIVATE
+        ${HDF5_C_${LIB_TYPE}_LIBRARY} ${NETCDF_LIBRARIES} ${LIBXML2_LIBRARIES})
+    set_target_properties(${PDS4_LIB_NAME} PROPERTIES
+        VERSION ${PROJECT_VERSION}
+        SOVERSION 1
+        INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
+        INSTALL_RPATH_USE_LINK_PATH TRUE
+    )
+    install(TARGETS ${PDS4_LIB_NAME}
+        EXPORT NEPTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
+    install(FILES "${CMAKE_SOURCE_DIR}/include/pds4dispatch.h"
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+    message(STATUS "Building PDS4 UDF library: ${PDS4_LIB_NAME}")
+    message(STATUS "  libxml2: ${LIBXML2_LIBRARIES}")
+endif()

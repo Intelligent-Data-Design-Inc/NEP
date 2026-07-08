@@ -109,6 +109,9 @@ endif()
 # FITS reader support (v2.0.0) - default OFF; enable with -DENABLE_FITS=ON
 option(ENABLE_FITS "Enable FITS reader support via CFITSIO" OFF)
 
+# PDS4 reader support (v2.2.0) - default OFF; enable with -DENABLE_PDS4=ON
+option(ENABLE_PDS4 "Enable PDS4 reader support via libxml2" OFF)
+
 # GRIB2 library detection (v1.7.0) - default OFF; enable with -DENABLE_GRIB2=ON
 option(ENABLE_GRIB2 "Enable GRIB2 support" OFF)
 
@@ -185,6 +188,18 @@ if(NOT DOCS_ONLY)
             set(HAVE_GRIB2 TRUE)
         else()
             message(FATAL_ERROR "libg2c is required for the GRIB2 dispatch layer. Include the library path in CPPFLAGS/LDFLAGS, or use -DENABLE_GRIB2=OFF")
+        endif()
+    endif()
+
+    # PDS4 (libxml2) library detection (v2.2.0)
+    if(ENABLE_PDS4)
+        find_package(LibXml2 REQUIRED)
+        if(LIBXML2_FOUND)
+            message(STATUS "Found libxml2: ${LIBXML2_LIBRARIES}")
+            include_directories(${LIBXML2_INCLUDE_DIR})
+            set(HAVE_PDS4 TRUE)
+        else()
+            message(FATAL_ERROR "libxml2 is required for the PDS4 reader. Install libxml2-dev or use -DENABLE_PDS4=OFF")
         endif()
     endif()
 
@@ -282,6 +297,10 @@ if(NOT DOCS_ONLY)
     if(HAVE_FITS AND CFITSIO_LIBRARY_DIR)
         list(APPEND _nep_test_lib_dirs "${CFITSIO_LIBRARY_DIR}")
     endif()
+    if(HAVE_PDS4 AND LIBXML2_LIBRARIES)
+        get_filename_component(_xml2_lib_dir "${LIBXML2_LIBRARIES}" DIRECTORY)
+        list(APPEND _nep_test_lib_dirs "${_xml2_lib_dir}")
+    endif()
     if(ENABLE_FORTRAN AND NetCDF_Fortran_LIBRARY_DIRS)
         list(APPEND _nep_test_lib_dirs ${NetCDF_Fortran_LIBRARY_DIRS})
     endif()
@@ -361,7 +380,7 @@ if(NOT DOCS_ONLY)
     endif()
 
     # .ncrc: assemble from fragments for enabled formats (issue #134)
-    if(HAVE_GEOTIFF OR HAVE_CDF OR HAVE_GRIB2 OR HAVE_FITS)
+    if(HAVE_GEOTIFF OR HAVE_CDF OR HAVE_GRIB2 OR HAVE_FITS OR HAVE_PDS4)
         set(NEP_NCRC_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}"
             CACHE PATH "Directory where .ncrc is installed")
 
@@ -378,6 +397,9 @@ if(NOT DOCS_ONLY)
         endif()
         if(HAVE_FITS)
             list(APPEND NCRC_FRAGMENTS "${CMAKE_SOURCE_DIR}/.ncrc-fits.in")
+        endif()
+        if(HAVE_PDS4)
+            list(APPEND NCRC_FRAGMENTS "${CMAKE_SOURCE_DIR}/.ncrc-pds4.in")
         endif()
 
         # Assemble a .ncrc for the build tree (tests point to the freshly built libraries)

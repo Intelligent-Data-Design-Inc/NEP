@@ -56,6 +56,14 @@ tst_fits_udf_LDADD = ${top_builddir}/src/libncfits.la ${top_builddir}/src/libnep
 TESTS += tst_fits_udf
 endif
 
+# Build PDS4 UDF test, if PDS4 is enabled.
+if HAVE_PDS4
+check_PROGRAMS += tst_pds4_udf
+tst_pds4_udf_CFLAGS = $(XML2_CFLAGS)
+tst_pds4_udf_LDADD = ${top_builddir}/src/libncpds4.la ${top_builddir}/src/libnep.la
+TESTS += tst_pds4_udf
+endif
+
 # Copy test data to build directory for out-of-tree builds.
 check-local:
 	if test "$(srcdir)" != "$(builddir)" ; then \
@@ -63,6 +71,9 @@ check-local:
 		cp $(srcdir)/data/gdaswave.t00z.wcoast.0p16.f000.grib2 $(builddir)/data/ 2>/dev/null || true; \
 		cp $(srcdir)/data/imap_mag_l1b-calibration_20240229_v001.cdf $(builddir)/data/ 2>/dev/null || true; \
 		cp $(srcdir)/data/WFPC2u5780205r_c0fx.fits $(builddir)/data/ 2>/dev/null || true; \
+		$(MKDIR_P) $(builddir)/data/PDS4; \
+		cp $(srcdir)/data/PDS4/test_image.xml $(builddir)/data/PDS4/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/test_image.img $(builddir)/data/PDS4/ 2>/dev/null || true; \
 	fi
 
 TESTS_ENVIRONMENT = LD_LIBRARY_PATH=@MY_LD_LIBRARY_PATH@:$$LD_LIBRARY_PATH
@@ -73,7 +84,7 @@ TESTS += run_tests.sh
 # Delete files created in testing.
 CLEANFILES = tst_*.nc
 
-EXTRA_DIST = run_tests.sh.in data/imap_mag_l1b-calibration_20240229_v001.cdf data/gdaswave.t00z.wcoast.0p16.f000.grib2 data/WFPC2u5780205r_c0fx.fits
+EXTRA_DIST = run_tests.sh.in data/imap_mag_l1b-calibration_20240229_v001.cdf data/gdaswave.t00z.wcoast.0p16.f000.grib2 data/WFPC2u5780205r_c0fx.fits data/PDS4/test_image.xml data/PDS4/test_image.img
 
 DISTCLEANFILES = run_tests.sh
 

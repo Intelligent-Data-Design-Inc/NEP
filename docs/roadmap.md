@@ -42,6 +42,51 @@
 - PDS4 uses XML label files; parse labels with **libxml2** (`libxml2-dev` on Ubuntu).
 - PDS4 is assigned **UDF5** slot.
 
+#### Sprint 4: Read PDS4 Array Metadata
+**Detailed Plan**: See `docs/plan/v2.2.0-sprint4-pds4-array-metadata.md`
+
+- Parse the opened PDS4 XML label and map `Identification_Area` and `Observation_Area` contents to global attributes on the root group.
+- For each `File_Area_Observational`, create a child group named from `File/file_name`.
+- For each `Array` / `Array_2D_Image` inside a file area, create netCDF dimensions from `Axis_Array` entries and a netCDF variable from `Element_Array/data_type`.
+- Replace no-op metadata inquiry dispatch functions with implementations that return the actual group/dimension/variable/attribute structure.
+- Extend `test/tst_pds4_udf.c` to verify global attributes, group names, dimensions, variables, and types for the existing `test_image.xml` sample.
+- Leave data reading (`NC_PDS4_get_vara`) returning `NC_EINVAL`; metadata-only this sprint.
+
+**Clarified decisions:**
+- `Axis_Array` sequence number determines dimension order; `axis_name` becomes the dimension name.
+- `Last Index Fastest` maps to C-order netCDF dimensions (fastest-varying rightmost).
+- Array element data types are mapped to the closest netCDF type; byte order is recorded for the data sprint.
+
+#### Sprint 5: Read PDS4 Table Metadata
+**Detailed Plan**: See `docs/plan/v2.2.0-sprint5-pds4-table-metadata.md`
+
+- Add support for `Table_Binary`, `Table_Character`, and `Table_Delimited` inside `File_Area_Observational`.
+- Create a row dimension for each table (length from `records` or computed from file size/record size).
+- Create one netCDF variable per `Field_*` with name from `name`, type from `data_type`, and `units` attribute from `unit`.
+- Add a sample table PDS4 label and data file to `test/data/PDS4/`.
+- Update tests to verify table group/dimension/variable/attribute metadata.
+- Keep data reading no-op.
+
+**Clarified decisions:**
+- Fixed-record binary/character tables use record count as row dimension.
+- Delimited tables derive row count by parsing the file or from label `records`.
+- Repeated/vector fields become additional trailing dimensions.
+
+#### Sprint 6: Read PDS4 Data
+**Detailed Plan**: See `docs/plan/v2.2.0-sprint6-pds4-data-read.md`
+
+- Implement `NC_PDS4_get_vara()` for both arrays and table fields.
+- Resolve referenced data file paths relative to the XML label directory.
+- Read binary array data honoring PDS4 byte order and convert to requested `memtype`.
+- Read table data: fixed-record binary/character fields by offset, delimited fields by parsing.
+- Update tests to read subsets from the array and table samples and verify values.
+- Update `docs/prd.md` and `README.md` to remove the “no data reading” limitation and document usage.
+
+**Clarified decisions:**
+- Array I/O maps netCDF 0-based `start[]/count[]` directly to PDS4 line/sample order, applying byte-swap when the label type is MSB on a little-endian host.
+- Table field reads use the row dimension index as the record index; delimited tables scan lines on first access.
+- ASCII numeric fields are parsed as the mapped netCDF type.
+
 ### V2.1.0 Updated Examples for Boook
 - Examples and docs were updated in support of second edition of NetCDF Developer's Handbook.
 

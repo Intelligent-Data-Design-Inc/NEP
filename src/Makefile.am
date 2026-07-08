@@ -52,3 +52,13 @@ libncfits_la_LDFLAGS = -version-info 1:0:0 $(CFITSIO_LDFLAGS)
 libncfits_la_SOURCES = fitsdispatch.c fitsfile.c
 libncfits_la_LIBADD = $(HDF5_LIBS) $(NETCDF_LIBS) $(CFITSIO_LIBS)
 endif
+
+# PDS4 UDF Handler - v2.2.0
+# PDS4 library (netCDF UDF support)
+if HAVE_PDS4
+lib_LTLIBRARIES += libncpds4.la
+libncpds4_la_CFLAGS = $(XML2_CFLAGS)
+libncpds4_la_LDFLAGS = -version-info 1:0:0
+libncpds4_la_SOURCES = pds4dispatch.c pds4file.c
+libncpds4_la_LIBADD = $(HDF5_LIBS) $(NETCDF_LIBS) $(XML_LIBS)
+endif
