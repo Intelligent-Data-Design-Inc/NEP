@@ -164,12 +164,36 @@ match the magic but fail this check should return `NC_ENOTNC`.
 
 ## Implementation Status
 
-As of v2.2.0 Sprint 4:
+As of v2.2.0 Sprint 5:
 - `Identification_Area` and `Observation_Area` are mapped to global string attributes.
 - Each `File_Area_Observational` becomes a child group named from `File/file_name`.
-- `Array` and `Array_2D_Image` metadata (dimensions, variable, and type) are read; data is not.
-- Table metadata (`Table_Binary`, `Table_Character`, `Table_Delimited`) is not yet implemented.
+- `Array` and `Array_2D_Image` metadata (dimensions, variable, and type) are read.
+- `Table_Binary`, `Table_Character`, and `Table_Delimited` metadata are read:
+  - A `record` dimension is created with length from `<records>`.
+  - Each `Field_*` becomes a 1-D variable with dimension `[record]` (or 2-D `[record, strlen]` for NC_CHAR string fields).
+  - Field `unit` is mapped to a `units` attribute on the variable.
+  - Field names with spaces are sanitized (spaces replaced with underscores).
+  - Unsupported field types are silently skipped.
 - Data reading (`nc_get_vara`) is deferred to Sprint 6.
+
+### Table mapping details
+
+| PDS4 table element | Record element | Field element |
+|---|---|---|
+| `Table_Binary` | `Record_Binary` | `Field_Binary` |
+| `Table_Character` | `Record_Character` | `Field_Character` |
+| `Table_Delimited` | `Record_Delimited` | `Field_Delimited` |
+
+### Additional ASCII type mappings (Sprint 5)
+
+| PDS4 `data_type` | `nc_type` | Notes |
+|---|---|---|
+| `ASCII_NonNegative_Integer` | `NC_UINT64` | Unsigned integer |
+| `ASCII_Boolean` | `NC_UBYTE` | Boolean flag |
+| `ASCII_Date` | `NC_CHAR` | Date string |
+| `ASCII_Date_Time_YMD` | `NC_CHAR` | Date-time string |
+| `ASCII_Date_Time_YMD_UTC` | `NC_CHAR` | UTC date-time string |
+| `UTF8_String` | `NC_CHAR` | Unicode string |
 
 ## libxml2 Usage in NEP
 
