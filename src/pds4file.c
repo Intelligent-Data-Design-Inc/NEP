@@ -2,13 +2,16 @@
  * @file pds4file.c
  * @brief PDS4 User-Defined Format (UDF) dispatch layer.
  *
- * Implements the NEP PDS4 reader. Sprint 4 reads the PDS4 XML label and
- * maps array product metadata into the netCDF-4 in-memory model. Data reading
- * is deferred to a later sprint.
+ * Implements the NEP PDS4 reader. The PDS4 XML label is parsed with libxml2
+ * and mapped into the netCDF-4 in-memory model (groups, dimensions, variables,
+ * attributes). Data reading via nc_get_vara() reads from the referenced binary
+ * or ASCII data files with automatic byte-order conversion.
  *
- * PDS4 label files are XML documents that reference external data files.
- * This layer uses libxml2 to parse the XML label, validates the PDS4
- * namespace, and stores the document pointer for future sprints.
+ * Supported data objects:
+ * - Array / Array_2D_Image (contiguous, row-major)
+ * - Table_Binary (fixed-record, binary fields)
+ * - Table_Character (fixed-record, ASCII fields)
+ * - Table_Delimited (variable-record, ASCII fields)
  *
  * @author Edward Hartnett
  * @date 2026-07-08
@@ -16,6 +19,7 @@
  */
 
 #include "config.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -446,15 +450,19 @@ pds4_read_array(NC_GRP_INFO_T *grp, xmlNode *array)
     xmlNode *data_type_node;
     xmlNode *name_node;
     xmlNode *unit_node;
+    xmlNode *offset_node;
     char *data_type_str = NULL;
     char *var_name = NULL;
     char *unit_str = NULL;
+    char *offset_str = NULL;
     char type_name[NC_MAX_NAME + 1];
     nc_type xtype;
     size_t type_size;
+    size_t data_offset = 0;
     int endianness;
     NC_VAR_INFO_T *var;
     NC_TYPE_INFO_T *type_info;
+    NC_PDS4_VAR_INFO_T *var_info = NULL;
     struct pds4_axis *axes = NULL;
     int *dimids = NULL;
     int naxes = 0;
@@ -600,6 +608,30 @@ pds4_read_array(NC_GRP_INFO_T *grp, xmlNode *array)
     for (d = 0; d < naxes; d++)
         var->dimids[d] = dimids[d];
 
+    /* Parse optional <offset> element (defaults to 0). */
+    offset_node = pds4_find_child(array, "offset");
+    if (offset_node)
+    {
+        offset_str = pds4_get_text(offset_node);
+        if (offset_str)
+        {
+            data_offset = (size_t)atol(offset_str);
+            free(offset_str);
+        }
+    }
+
+    /* Store per-variable layout info. */
+    var_info = calloc(1, sizeof(NC_PDS4_VAR_INFO_T));
+    if (!var_info)
+    {
+        retval = NC_ENOMEM;
+        goto cleanup;
+    }
+    var_info->data_offset = data_offset;
+    var_info->is_table_field = 0;
+    var_info->is_ascii = 0;
+    var->format_var_info = var_info;
+
     /* Optional units attribute. */
     unit_node = pds4_find_child(element_array, "unit");
     if (!unit_node)
@@ -643,10 +675,17 @@ pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
     xmlNode *records_node;
     xmlNode *record_node;
     xmlNode *name_node;
+    xmlNode *offset_node;
+    xmlNode *record_length_node;
     xmlNode *cur;
     char *records_str = NULL;
     char *table_name = NULL;
+    char *offset_str = NULL;
+    char *record_length_str = NULL;
     size_t nrecords;
+    size_t table_offset = 0;
+    size_t record_length = 0;
+    int is_ascii_table;
     NC_DIM_INFO_T *record_dim = NULL;
     int record_dimid;
     int retval = NC_NOERR;
@@ -658,16 +697,19 @@ pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
     {
         record_child_name = "Record_Binary";
         field_child_name = "Field_Binary";
+        is_ascii_table = 0;
     }
     else if (xmlStrcmp(table->name, (const xmlChar *)"Table_Character") == 0)
     {
         record_child_name = "Record_Character";
         field_child_name = "Field_Character";
+        is_ascii_table = 1;
     }
     else if (xmlStrcmp(table->name, (const xmlChar *)"Table_Delimited") == 0)
     {
         record_child_name = "Record_Delimited";
         field_child_name = "Field_Delimited";
+        is_ascii_table = 1;
     }
     else
     {
@@ -687,6 +729,18 @@ pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
     }
     nrecords = (size_t)atol(records_str);
     free(records_str);
+
+    /* Parse optional <offset> (defaults to 0). */
+    offset_node = pds4_find_child(table, "offset");
+    if (offset_node)
+    {
+        offset_str = pds4_get_text(offset_node);
+        if (offset_str)
+        {
+            table_offset = (size_t)atol(offset_str);
+            free(offset_str);
+        }
+    }
 
     /* Table name: use <name> if present, otherwise "table". */
     name_node = pds4_find_child(table, "name");
@@ -718,6 +772,18 @@ pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
     if (!record_node)
         return NC_EINVAL;
 
+    /* Parse record_length. */
+    record_length_node = pds4_find_child(record_node, "record_length");
+    if (record_length_node)
+    {
+        record_length_str = pds4_get_text(record_length_node);
+        if (record_length_str)
+        {
+            record_length = (size_t)atol(record_length_str);
+            free(record_length_str);
+        }
+    }
+
     /* Iterate over Field_* children inside the Record_* element. */
     for (cur = record_node->children; cur; cur = cur->next)
     {
@@ -725,16 +791,21 @@ pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
         xmlNode *field_type_node;
         xmlNode *field_unit_node;
         xmlNode *field_length_node;
+        xmlNode *field_location_node;
         char *field_name = NULL;
         char *field_type_str = NULL;
         char *field_unit = NULL;
         char *field_length_str = NULL;
+        char *field_location_str = NULL;
         char type_name[NC_MAX_NAME + 1];
         nc_type xtype;
         size_t type_size;
+        size_t field_length = 0;
+        size_t field_location = 0;
         int endianness;
         NC_VAR_INFO_T *var;
         NC_TYPE_INFO_T *type_info;
+        NC_PDS4_VAR_INFO_T *var_info;
 
         if (cur->type != XML_ELEMENT_NODE || !cur->ns ||
             xmlStrcmp(cur->ns->href, (const xmlChar *)PDS4_NS) != 0 ||
@@ -784,26 +855,40 @@ pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
             continue; /* Skip unsupported types. */
         }
 
+        /* Parse field_location (1-based in PDS4). */
+        field_location_node = pds4_find_child(cur, "field_location");
+        if (field_location_node)
+        {
+            field_location_str = pds4_get_text(field_location_node);
+            if (field_location_str)
+            {
+                field_location = (size_t)atol(field_location_str);
+                free(field_location_str);
+            }
+        }
+
+        /* Parse field_length. */
+        field_length_node = pds4_find_child(cur, "field_length");
+        if (!field_length_node)
+            field_length_node = pds4_find_child(cur, "maximum_field_length");
+        if (field_length_node)
+        {
+            field_length_str = pds4_get_text(field_length_node);
+            if (field_length_str)
+            {
+                field_length = (size_t)atol(field_length_str);
+                free(field_length_str);
+            }
+        }
+        if (field_length == 0)
+            field_length = type_size;
+
         /* For NC_CHAR fields, create a 2D variable [record, strlen]. */
         if (xtype == NC_CHAR)
         {
             NC_DIM_INFO_T *strlen_dim;
             int dimids[2];
             char strlen_dimname[NC_MAX_NAME + 1];
-            size_t field_length = 0;
-
-            field_length_node = pds4_find_child(cur, "field_length");
-            if (field_length_node)
-            {
-                field_length_str = pds4_get_text(field_length_node);
-                if (field_length_str)
-                {
-                    field_length = (size_t)atol(field_length_str);
-                    free(field_length_str);
-                }
-            }
-            if (field_length == 0)
-                field_length = 1;
 
             /* Create a per-field string length dimension. */
             snprintf(strlen_dimname, NC_MAX_NAME, "%s_strlen", field_name);
@@ -866,6 +951,23 @@ pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
         var->written_to = NC_TRUE;
         var->atts_read = 1;
         var->storage = NC_CONTIGUOUS;
+
+        /* Store per-variable layout info for data reading. */
+        var_info = calloc(1, sizeof(NC_PDS4_VAR_INFO_T));
+        if (!var_info)
+        {
+            free(field_name);
+            free(field_type_str);
+            return NC_ENOMEM;
+        }
+        var_info->data_offset = table_offset;
+        var_info->record_length = record_length;
+        /* PDS4 field_location is 1-based; convert to 0-based. */
+        var_info->field_offset = (field_location > 0) ? field_location - 1 : 0;
+        var_info->field_length = field_length;
+        var_info->is_table_field = 1;
+        var_info->is_ascii = is_ascii_table;
+        var->format_var_info = var_info;
 
         /* Optional units attribute. */
         field_unit_node = pds4_find_child(cur, "unit");
@@ -1158,6 +1260,35 @@ NC_PDS4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
  * @return ::NC_EBADID Bad ncid.
  * @author Edward Hartnett
  */
+/**
+ * @internal Free format_var_info for all variables in a group and its
+ * subgroups.
+ */
+static void
+pds4_free_var_info(NC_GRP_INFO_T *grp)
+{
+    size_t i;
+
+    /* Free format_var_info on each variable. */
+    for (i = 0; i < ncindexsize(grp->vars); i++)
+    {
+        NC_VAR_INFO_T *var = (NC_VAR_INFO_T *)ncindexith(grp->vars, i);
+        if (var && var->format_var_info)
+        {
+            free(var->format_var_info);
+            var->format_var_info = NULL;
+        }
+    }
+
+    /* Recurse into child groups. */
+    for (i = 0; i < ncindexsize(grp->children); i++)
+    {
+        NC_GRP_INFO_T *child = (NC_GRP_INFO_T *)ncindexith(grp->children, i);
+        if (child)
+            pds4_free_var_info(child);
+    }
+}
+
 int
 NC_PDS4_close(int ncid, void *ignore)
 {
@@ -1171,6 +1302,9 @@ NC_PDS4_close(int ncid, void *ignore)
     /* Get file info structure. */
     if ((retval = nc4_find_grp_h5(ncid, &grp, &h5)))
         return retval;
+
+    /* Free format_var_info on all variables. */
+    pds4_free_var_info(h5->root_grp);
 
     /* Get PDS4-specific info. */
     pds4_file = (NC_PDS4_FILE_INFO_T *)h5->format_file_info;
@@ -1274,9 +1408,91 @@ NC_PDS4_inq_format_extended(int ncid, int *formatp, int *modep)
 }
 
 /**
+ * @internal Resolve the data file path relative to the XML label directory.
+ *
+ * @param label_path Path to the PDS4 XML label.
+ * @param data_filename Data file name from <File/file_name>.
+ * @param resolved Buffer (at least PATH_MAX bytes) to receive result.
+ *
+ * @return ::NC_NOERR on success.
+ * @author Edward Hartnett
+ */
+static int
+pds4_resolve_data_path(const char *label_path, const char *data_filename,
+                       char *resolved)
+{
+    const char *last_slash;
+    size_t dir_len;
+
+    last_slash = strrchr(label_path, '/');
+    if (last_slash)
+    {
+        dir_len = (size_t)(last_slash - label_path + 1);
+        if (dir_len + strlen(data_filename) >= 4096)
+            return NC_EINVAL;
+        memcpy(resolved, label_path, dir_len);
+        strcpy(resolved + dir_len, data_filename);
+    }
+    else
+    {
+        /* No directory separator: data file is in current directory. */
+        strncpy(resolved, data_filename, 4095);
+        resolved[4095] = '\0';
+    }
+    return NC_NOERR;
+}
+
+/**
+ * @internal Swap bytes in-place for an array of elements.
+ *
+ * @param buf Buffer containing elements.
+ * @param elem_size Size of each element in bytes.
+ * @param nelems Number of elements.
+ *
+ * @author Edward Hartnett
+ */
+static void
+pds4_byte_swap(void *buf, size_t elem_size, size_t nelems)
+{
+    unsigned char *p = (unsigned char *)buf;
+    size_t i, j;
+
+    for (i = 0; i < nelems; i++)
+    {
+        unsigned char *elem = p + i * elem_size;
+        for (j = 0; j < elem_size / 2; j++)
+        {
+            unsigned char tmp = elem[j];
+            elem[j] = elem[elem_size - 1 - j];
+            elem[elem_size - 1 - j] = tmp;
+        }
+    }
+}
+
+/**
+ * @internal Determine if byte swapping is needed.
+ *
+ * @param endianness Variable endianness (NC_ENDIAN_BIG or NC_ENDIAN_LITTLE).
+ *
+ * @return 1 if swapping needed, 0 otherwise.
+ */
+static int
+pds4_needs_swap(int endianness)
+{
+    static const int one = 1;
+    int host_is_little = (*(const char *)&one == 1);
+
+    if (endianness == NC_ENDIAN_BIG && host_is_little)
+        return 1;
+    if (endianness == NC_ENDIAN_LITTLE && !host_is_little)
+        return 1;
+    return 0;
+}
+
+/**
  * @internal Read a hyperslab of data from a PDS4 variable.
  *
- * Data reading is not implemented in Sprint 4. Returns NC_EINVAL.
+ * Supports contiguous array reads and fixed-record table field reads.
  *
  * @param ncid NetCDF ID.
  * @param varid Variable ID.
@@ -1285,18 +1501,239 @@ NC_PDS4_inq_format_extended(int ncid, int *formatp, int *modep)
  * @param value Output buffer.
  * @param memtype Memory type.
  *
- * @return ::NC_EINVAL Data reading not yet implemented.
+ * @return ::NC_NOERR on success.
  * @author Edward Hartnett
  */
 int
 NC_PDS4_get_vara(int ncid, int varid, const size_t *start, const size_t *count,
                  void *value, nc_type memtype)
 {
-    (void)ncid;
-    (void)varid;
-    (void)start;
-    (void)count;
-    (void)value;
-    (void)memtype;
-    return NC_EINVAL;
+    NC_FILE_INFO_T *h5;
+    NC_GRP_INFO_T *grp;
+    NC_VAR_INFO_T *var;
+    NC_PDS4_FILE_INFO_T *pds4_file;
+    NC_PDS4_VAR_INFO_T *var_info;
+    char data_path[4096];
+    FILE *fp = NULL;
+    int retval = NC_NOERR;
+
+    (void)memtype; /* Type conversion deferred. */
+
+    /* Get file and group info. */
+    if ((retval = nc4_find_grp_h5(ncid, &grp, &h5)))
+        return retval;
+
+    /* Get the PDS4 file info for the label path. */
+    pds4_file = (NC_PDS4_FILE_INFO_T *)h5->format_file_info;
+    if (!pds4_file)
+        return NC_EINVAL;
+
+    /* Find the variable. */
+    var = (NC_VAR_INFO_T *)ncindexith(grp->vars, varid);
+    if (!var)
+        return NC_ENOTVAR;
+
+    /* Get the layout info. */
+    var_info = (NC_PDS4_VAR_INFO_T *)var->format_var_info;
+    if (!var_info)
+        return NC_EINVAL;
+
+    /* Resolve the data file path. The group name IS the data filename. */
+    if ((retval = pds4_resolve_data_path(pds4_file->path, grp->hdr.name,
+                                         data_path)))
+        return retval;
+
+    /* Open the data file. */
+    fp = fopen(data_path, "rb");
+    if (!fp)
+        return NC_ENOTFOUND;
+
+    if (!var_info->is_table_field)
+    {
+        /* --- Array data reading --- */
+        size_t elem_size = var->type_info->size;
+        size_t total_elems = 1;
+        size_t d;
+        int need_swap;
+        size_t *dim_lens = NULL;
+
+        /* Compute total elements requested and collect dim lengths. */
+        dim_lens = calloc(var->ndims, sizeof(size_t));
+        if (!dim_lens)
+        {
+            fclose(fp);
+            return NC_ENOMEM;
+        }
+        for (d = 0; d < var->ndims; d++)
+        {
+            NC_DIM_INFO_T *dim = (NC_DIM_INFO_T *)ncindexith(grp->dim, var->dimids[d]);
+            dim_lens[d] = dim->len;
+            total_elems *= count[d];
+        }
+
+        /* For 1D or when last dim count matches last dim length, we can
+         * do a simpler read. But the general approach for any dimensions
+         * is to iterate over the "inner rows" of the last dimension. */
+        {
+            /* Compute the number of inner-row reads and the file stride. */
+            size_t inner_count = count[var->ndims - 1];
+            size_t nrows = total_elems / inner_count;
+            size_t full_inner_len = dim_lens[var->ndims - 1];
+            unsigned char *out = (unsigned char *)value;
+            size_t row;
+
+            for (row = 0; row < nrows; row++)
+            {
+                /* Convert the linear row index back to multi-dim indices
+                 * for dimensions 0..ndims-2. */
+                size_t row_tmp = row;
+                size_t file_linear = 0;
+
+                /* Compute file linear element index for this row. */
+                for (d = 0; d < var->ndims - 1; d++)
+                {
+                    size_t row_count_product = 1;
+                    size_t dd;
+                    for (dd = d + 1; dd < var->ndims - 1; dd++)
+                        row_count_product *= count[dd];
+
+                    size_t idx_in_count = row_tmp / row_count_product;
+                    row_tmp %= row_count_product;
+
+                    /* The actual index in the file for this dimension. */
+                    size_t file_idx = start[d] + idx_in_count;
+
+                    /* Accumulate into linear offset. */
+                    size_t file_stride = 1;
+                    for (dd = d + 1; dd < var->ndims; dd++)
+                        file_stride *= dim_lens[dd];
+                    file_linear += file_idx * file_stride;
+                }
+                /* Add the start offset for the last dimension. */
+                file_linear += start[var->ndims - 1];
+
+                size_t byte_offset = var_info->data_offset + file_linear * elem_size;
+
+                if (fseek(fp, (long)byte_offset, SEEK_SET) != 0)
+                {
+                    free(dim_lens);
+                    fclose(fp);
+                    return NC_EINVAL;
+                }
+                if (fread(out + row * inner_count * elem_size, elem_size,
+                          inner_count, fp) != inner_count)
+                {
+                    free(dim_lens);
+                    fclose(fp);
+                    return NC_EINVAL;
+                }
+            }
+        }
+
+        free(dim_lens);
+
+        /* Byte-swap if needed. */
+        need_swap = pds4_needs_swap(var->endianness);
+        if (need_swap && elem_size > 1)
+            pds4_byte_swap(value, elem_size, total_elems);
+    }
+    else
+    {
+        /* --- Table field data reading --- */
+        size_t nrecords = count[0];
+        size_t start_record = start[0];
+        size_t r;
+        size_t elem_size = var->type_info->size;
+        int need_swap;
+
+        if (var_info->is_ascii)
+        {
+            /* ASCII table: read text and parse. */
+            char *field_buf = malloc(var_info->field_length + 1);
+            if (!field_buf)
+            {
+                fclose(fp);
+                return NC_ENOMEM;
+            }
+
+            for (r = 0; r < nrecords; r++)
+            {
+                size_t seek_pos = var_info->data_offset +
+                    (start_record + r) * var_info->record_length +
+                    var_info->field_offset;
+
+                if (fseek(fp, (long)seek_pos, SEEK_SET) != 0)
+                {
+                    free(field_buf);
+                    fclose(fp);
+                    return NC_EINVAL;
+                }
+                if (fread(field_buf, 1, var_info->field_length, fp) != var_info->field_length)
+                {
+                    free(field_buf);
+                    fclose(fp);
+                    return NC_EINVAL;
+                }
+                field_buf[var_info->field_length] = '\0';
+
+                /* Parse based on the netCDF type. */
+                switch (var->type_info->nc_type_class)
+                {
+                case NC_DOUBLE:
+                    ((double *)value)[r] = strtod(field_buf, NULL);
+                    break;
+                case NC_FLOAT:
+                    ((float *)value)[r] = (float)strtod(field_buf, NULL);
+                    break;
+                case NC_INT64:
+                    ((long long *)value)[r] = strtoll(field_buf, NULL, 10);
+                    break;
+                case NC_UINT64:
+                    ((unsigned long long *)value)[r] = strtoull(field_buf, NULL, 10);
+                    break;
+                case NC_INT:
+                    ((int *)value)[r] = (int)strtol(field_buf, NULL, 10);
+                    break;
+                case NC_CHAR:
+                    /* Copy raw text into output. */
+                    memcpy((char *)value + r * var_info->field_length,
+                           field_buf, var_info->field_length);
+                    break;
+                default:
+                    ((double *)value)[r] = strtod(field_buf, NULL);
+                    break;
+                }
+            }
+            free(field_buf);
+        }
+        else
+        {
+            /* Binary table: read raw bytes and byte-swap. */
+            for (r = 0; r < nrecords; r++)
+            {
+                size_t seek_pos = var_info->data_offset +
+                    (start_record + r) * var_info->record_length +
+                    var_info->field_offset;
+
+                if (fseek(fp, (long)seek_pos, SEEK_SET) != 0)
+                {
+                    fclose(fp);
+                    return NC_EINVAL;
+                }
+                if (fread((unsigned char *)value + r * elem_size, 1, elem_size, fp) != elem_size)
+                {
+                    fclose(fp);
+                    return NC_EINVAL;
+                }
+            }
+
+            /* Byte-swap if needed. */
+            need_swap = pds4_needs_swap(var->endianness);
+            if (need_swap && elem_size > 1)
+                pds4_byte_swap(value, elem_size, nrecords);
+        }
+    }
+
+    fclose(fp);
+    return NC_NOERR;
 }

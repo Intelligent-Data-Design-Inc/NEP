@@ -164,17 +164,23 @@ match the magic but fail this check should return `NC_ENOTNC`.
 
 ## Implementation Status
 
-As of v2.2.0 Sprint 5:
+As of v2.2.0 Sprint 6:
 - `Identification_Area` and `Observation_Area` are mapped to global string attributes.
 - Each `File_Area_Observational` becomes a child group named from `File/file_name`.
-- `Array` and `Array_2D_Image` metadata (dimensions, variable, and type) are read.
-- `Table_Binary`, `Table_Character`, and `Table_Delimited` metadata are read:
+- `Array` and `Array_2D_Image` metadata and data are fully read:
+  - Dimensions, variable, and type are created from the label.
+  - `nc_get_vara()` reads hyperslab data from the binary data file.
+  - Byte-order conversion is automatic (MSB/LSB → host order).
+  - Data file paths are resolved relative to the XML label directory.
+- `Table_Binary`, `Table_Character`, and `Table_Delimited` metadata and data are read:
   - A `record` dimension is created with length from `<records>`.
   - Each `Field_*` becomes a 1-D variable with dimension `[record]` (or 2-D `[record, strlen]` for NC_CHAR string fields).
   - Field `unit` is mapped to a `units` attribute on the variable.
   - Field names with spaces are sanitized (spaces replaced with underscores).
+  - Binary table fields: raw bytes read + byte-swapped per endianness.
+  - ASCII table fields: text parsed via strtod/strtoll into the mapped type.
+  - Per-field layout stored in `var->format_var_info` (`NC_PDS4_VAR_INFO_T`).
   - Unsupported field types are silently skipped.
-- Data reading (`nc_get_vara`) is deferred to Sprint 6.
 
 ### Table mapping details
 

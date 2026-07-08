@@ -554,14 +554,19 @@ Autotools:
 
 ### 14.5 Known Limitations (v2.2.0)
 
-- Array metadata (`nc_inq_*`) is read for `Array` and `Array_2D_Image` products.
-- Table metadata (`Table_Binary`, `Table_Character`, `Table_Delimited`) is read:
-  each table creates a `record` dimension and one variable per field with type
-  mapped from the PDS4 `data_type` and an optional `units` attribute from `unit`.
-- Data reading (`nc_get_vara`) is not yet implemented; it returns `NC_EINVAL`.
+- Array metadata and data are read for `Array` and `Array_2D_Image` products.
+  Hyperslab access (`nc_get_vara`) is supported with automatic byte-order
+  conversion for MSB/LSB types.
+- Table metadata and data are read for `Table_Binary`, `Table_Character`, and
+  `Table_Delimited`: each table creates a `record` dimension and one variable per
+  field. Binary fields are byte-swapped; ASCII numeric fields are parsed.
+- Data file paths are resolved relative to the XML label directory.
 - Only `Product_Observational` root element type is validated; other PDS4 product
   classes are not checked in this release.
 - Grouped fields (`Group_Field_Binary`, etc.) and bit fields are not yet supported.
+- `nc_get_vars()` and `nc_get_varm()` rely on default dispatch fallbacks.
+- Type conversion between `memtype` and the file type is not yet performed; the
+  caller must request data in the native type.
 
 ---
 
