@@ -21,6 +21,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include <netcdf.h>
 #include "pds4dispatch.h"
 
@@ -267,6 +268,234 @@ test_table_character(void)
     return 0;
 }
 
+/**
+ * @internal Test Sprint 6 array data reading.
+ *
+ * Opens test_image.xml and reads the 4x4 float array.
+ * Known values: row-major 0.0, 1.0, 2.0, ..., 15.0
+ */
+static int
+test_array_data_read(void)
+{
+    int ncid, grp_ncid, varid, retval;
+    float data[16];
+    size_t start[2] = {0, 0};
+    size_t count[2] = {4, 4};
+    int i;
+
+    printf("\n--- Sprint 6: Array data reading tests ---\n");
+
+    if ((retval = nc_open(PDS4_TEST_FILE, NC_NOWRITE, &ncid)))
+        ERR(retval);
+
+    if ((retval = nc_inq_ncid(ncid, "test_image.img", &grp_ncid)))
+        ERR(retval);
+
+    if ((retval = nc_inq_varid(grp_ncid, "data", &varid)))
+        ERR(retval);
+
+    /* Read the full 4x4 array. */
+    if ((retval = nc_get_vara_float(grp_ncid, varid, start, count, data)))
+        ERR(retval);
+
+    /* Verify all 16 values: 0.0, 1.0, ..., 15.0 */
+    for (i = 0; i < 16; i++)
+    {
+        if (fabs(data[i] - (float)i) > 1e-6f)
+        {
+            fprintf(stderr, "Array data[%d]: expected %f, got %f\n",
+                    i, (float)i, data[i]);
+            nc_close(ncid);
+            return 1;
+        }
+    }
+    printf("PASS: array full read: 16 values verified\n");
+
+    /* Read a 2x2 sub-hyperslab starting at [1,1]. Expected: 5,6,9,10 */
+    {
+        float sub[4];
+        size_t s2[2] = {1, 1};
+        size_t c2[2] = {2, 2};
+
+        if ((retval = nc_get_vara_float(grp_ncid, varid, s2, c2, sub)))
+            ERR(retval);
+
+        if (fabs(sub[0] - 5.0f) > 1e-6f || fabs(sub[1] - 6.0f) > 1e-6f ||
+            fabs(sub[2] - 9.0f) > 1e-6f || fabs(sub[3] - 10.0f) > 1e-6f)
+        {
+            fprintf(stderr, "Sub-hyperslab: expected 5,6,9,10 got %f,%f,%f,%f\n",
+                    sub[0], sub[1], sub[2], sub[3]);
+            nc_close(ncid);
+            return 1;
+        }
+        printf("PASS: array sub-hyperslab [1:2,1:2] = {5,6,9,10}\n");
+    }
+
+    if ((retval = nc_close(ncid)))
+        ERR(retval);
+    printf("PASS: Array data reading tests PASSED.\n");
+    return 0;
+}
+
+/**
+ * @internal Test Sprint 6 binary table data reading.
+ *
+ * Opens test_table_binary.xml and reads field data.
+ * Known values (record 0):
+ *   Timestamp = 667917639.0 (s)
+ *   Detector_Counts = 1024 (DN)
+ *   Temperature = 273.15 (K, approx)
+ */
+static int
+test_table_binary_data_read(void)
+{
+    int ncid, grp_ncid, varid, retval;
+    double timestamps[5];
+    int counts[5];
+    float temps[5];
+    size_t start[1] = {0};
+    size_t count[1] = {5};
+
+    printf("\n--- Sprint 6: Table_Binary data reading tests ---\n");
+
+    if ((retval = nc_open(PDS4_TABLE_BINARY_FILE, NC_NOWRITE, &ncid)))
+        ERR(retval);
+
+    if ((retval = nc_inq_ncid(ncid, "test_table_binary.dat", &grp_ncid)))
+        ERR(retval);
+
+    /* Read Timestamp field (all 5 records). */
+    if ((retval = nc_inq_varid(grp_ncid, "Timestamp", &varid)))
+        ERR(retval);
+    if ((retval = nc_get_vara_double(grp_ncid, varid, start, count, timestamps)))
+        ERR(retval);
+    if (fabs(timestamps[0] - 667917639.0) > 0.01 ||
+        fabs(timestamps[1] - 667917640.0) > 0.01 ||
+        fabs(timestamps[4] - 667917643.0) > 0.01)
+    {
+        fprintf(stderr, "Timestamp: got %f, %f, ..., %f\n",
+                timestamps[0], timestamps[1], timestamps[4]);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: Timestamp[0..4] = {%.1f, %.1f, ..., %.1f}\n",
+           timestamps[0], timestamps[1], timestamps[4]);
+
+    /* Read Detector_Counts field. */
+    if ((retval = nc_inq_varid(grp_ncid, "Detector_Counts", &varid)))
+        ERR(retval);
+    if ((retval = nc_get_vara_int(grp_ncid, varid, start, count, counts)))
+        ERR(retval);
+    if (counts[0] != 1024 || counts[1] != 1087 || counts[4] != 1056)
+    {
+        fprintf(stderr, "Counts: got %d, %d, ..., %d\n",
+                counts[0], counts[1], counts[4]);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: Detector_Counts[0..4] = {%d, %d, ..., %d}\n",
+           counts[0], counts[1], counts[4]);
+
+    /* Read Temperature field. */
+    if ((retval = nc_inq_varid(grp_ncid, "Temperature", &varid)))
+        ERR(retval);
+    if ((retval = nc_get_vara_float(grp_ncid, varid, start, count, temps)))
+        ERR(retval);
+    if (fabs(temps[0] - 273.15f) > 0.01f || fabs(temps[4] - 273.19f) > 0.01f)
+    {
+        fprintf(stderr, "Temperature: got %f, ..., %f\n", temps[0], temps[4]);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: Temperature[0..4] = {%.2f, ..., %.2f}\n", temps[0], temps[4]);
+
+    if ((retval = nc_close(ncid)))
+        ERR(retval);
+    printf("PASS: Table_Binary data reading tests PASSED.\n");
+    return 0;
+}
+
+/**
+ * @internal Test Sprint 6 character table data reading.
+ *
+ * Opens Table_Character_Example.xml and reads field data.
+ * Known values (record 0):
+ *   Wavelength = 320.0 (nm)
+ *   Reflectance = 0.05039
+ *   Error = 0.01451
+ */
+static int
+test_table_character_data_read(void)
+{
+    int ncid, grp_ncid, varid, retval;
+    double wavelengths[3];
+    double reflectances[3];
+    double errors[3];
+    size_t start[1] = {0};
+    size_t count[1] = {3};
+
+    printf("\n--- Sprint 6: Table_Character data reading tests ---\n");
+
+    if ((retval = nc_open(PDS4_TABLE_CHAR_FILE, NC_NOWRITE, &ncid)))
+        ERR(retval);
+
+    if ((retval = nc_inq_ncid(ncid, "Table_Character_Example.tab", &grp_ncid)))
+        ERR(retval);
+
+    /* Read Wavelength field (first 3 records). */
+    if ((retval = nc_inq_varid(grp_ncid, "Wavelength", &varid)))
+        ERR(retval);
+    if ((retval = nc_get_vara_double(grp_ncid, varid, start, count, wavelengths)))
+        ERR(retval);
+    if (fabs(wavelengths[0] - 320.0) > 0.01 ||
+        fabs(wavelengths[1] - 330.0) > 0.01 ||
+        fabs(wavelengths[2] - 340.0) > 0.01)
+    {
+        fprintf(stderr, "Wavelength: got %f, %f, %f\n",
+                wavelengths[0], wavelengths[1], wavelengths[2]);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: Wavelength[0..2] = {%.1f, %.1f, %.1f}\n",
+           wavelengths[0], wavelengths[1], wavelengths[2]);
+
+    /* Read Reflectance field. */
+    if ((retval = nc_inq_varid(grp_ncid, "Reflectance", &varid)))
+        ERR(retval);
+    if ((retval = nc_get_vara_double(grp_ncid, varid, start, count, reflectances)))
+        ERR(retval);
+    if (fabs(reflectances[0] - 0.05039) > 0.0001 ||
+        fabs(reflectances[1] - 0.05898) > 0.0001)
+    {
+        fprintf(stderr, "Reflectance: got %f, %f\n",
+                reflectances[0], reflectances[1]);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: Reflectance[0..2] = {%f, %f, %f}\n",
+           reflectances[0], reflectances[1], reflectances[2]);
+
+    /* Read Error field. */
+    if ((retval = nc_inq_varid(grp_ncid, "Error", &varid)))
+        ERR(retval);
+    if ((retval = nc_get_vara_double(grp_ncid, varid, start, count, errors)))
+        ERR(retval);
+    if (fabs(errors[0] - 0.01451) > 0.0001 ||
+        fabs(errors[1] - 0.01123) > 0.0001)
+    {
+        fprintf(stderr, "Error: got %f, %f\n", errors[0], errors[1]);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: Error[0..2] = {%f, %f, %f}\n",
+           errors[0], errors[1], errors[2]);
+
+    if ((retval = nc_close(ncid)))
+        ERR(retval);
+    printf("PASS: Table_Character data reading tests PASSED.\n");
+    return 0;
+}
+
 int
 main(void)
 {
@@ -426,6 +655,16 @@ main(void)
         return 1;
 
     printf("\nAll PDS4 UDF Sprint 4 + Sprint 5 tests PASSED.\n");
+
+    /* Sprint 6: Data reading tests. */
+    if (test_array_data_read())
+        return 1;
+    if (test_table_binary_data_read())
+        return 1;
+    if (test_table_character_data_read())
+        return 1;
+
+    printf("\nAll PDS4 UDF Sprint 4 + Sprint 5 + Sprint 6 tests PASSED.\n");
     return 0;
 }
 

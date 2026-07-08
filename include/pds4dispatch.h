@@ -35,6 +35,17 @@
 /** PDS4 XML namespace URI */
 #define PDS4_NAMESPACE "http://pds.nasa.gov/pds4/pds/v1"
 
+/** Per-variable PDS4 layout info (stored in var->format_var_info) */
+typedef struct NC_PDS4_VAR_INFO
+{
+    size_t data_offset;           /**< Byte offset of Array or Table in data file */
+    size_t record_length;         /**< Record length in bytes (tables only) */
+    size_t field_offset;          /**< Field byte offset within record (0-based, tables only) */
+    size_t field_length;          /**< Field byte length (tables only) */
+    int is_table_field;           /**< 1 if this is a table field, 0 if array */
+    int is_ascii;                 /**< 1 if ASCII text field (needs parsing), 0 if binary */
+} NC_PDS4_VAR_INFO_T;
+
 /** Per-file PDS4 state */
 typedef struct NC_PDS4_FILE_INFO
 {
