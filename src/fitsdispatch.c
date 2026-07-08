@@ -118,7 +118,7 @@ const NC_Dispatch *FITS_dispatch_table = NULL;
 /**
  * @internal Initialize FITS dispatch layer.
  *
- * @return ::NC_NOERR on success.
+ * @return NC_NOERR on success.
  * @author Edward Hartnett
  */
 int
@@ -132,7 +132,7 @@ NC_FITS_initialize(void)
 /**
  * @internal Finalize FITS dispatch layer.
  *
- * @return ::NC_NOERR No error.
+ * @return NC_NOERR No error.
  * @author Edward Hartnett
  */
 int

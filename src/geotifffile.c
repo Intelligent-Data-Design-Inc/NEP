@@ -152,7 +152,7 @@ geotiff_projection_to_cf_name(int ct_projection)
  * @param type_name A name for the type.
  * @param typep Pointer to a pointer that gets the TYPE_INFO_T struct.
  *
- * @return ::NC_NOERR No error.
+ * @return NC_NOERR No error.
  * @author Ed Hartnett
  */
 static int
@@ -204,8 +204,8 @@ nc4_set_var_type(nc_type xtype, int endianness, size_t type_size, char *type_nam
  * @param format_var_info Pointer to format-specific var info struct.
  * @param var Pointer in which to return a pointer to the new var.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_ENOMEM Out of memory.
+ * @return NC_NOERR No error.
+ * @return NC_ENOMEM Out of memory.
  * @author Ed Hartnett
  */
 static int

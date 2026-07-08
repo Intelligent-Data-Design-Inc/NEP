@@ -204,7 +204,7 @@ pds4_att_exists(NCindex *list, const char *name)
  * @param name Attribute name.
  * @param value Attribute string value.
  *
- * @return ::NC_NOERR on success.
+ * @return NC_NOERR on success.
  * @author Edward Hartnett
  * @date 2026-07-08
  */
@@ -244,8 +244,8 @@ pds4_add_att(NCindex *list, const char *name, const char *value)
  * @param endiannessp Pointer that gets the endianness.
  * @param type_name Buffer (at least NC_MAX_NAME+1 bytes) that gets the type name.
  *
- * @return ::NC_NOERR on success.
- * @return ::NC_EBADTYPE if the type is unknown.
+ * @return NC_NOERR on success.
+ * @return NC_EBADTYPE if the type is unknown.
  * @author Edward Hartnett
  * @date 2026-07-08
  */
@@ -335,7 +335,7 @@ pds4_type_to_nc_type(const char *pds4_type, nc_type *xtypep, size_t *type_sizep,
  * @param type_name Type name.
  * @param typep Pointer that gets the TYPE_INFO_T struct.
  *
- * @return ::NC_NOERR on success.
+ * @return NC_NOERR on success.
  * @author Edward Hartnett
  * @date 2026-07-08
  */
@@ -366,7 +366,7 @@ pds4_set_var_type(nc_type xtype, int endianness, size_t type_size,
  * @param grp Group to receive attributes.
  * @param area XML area element.
  *
- * @return ::NC_NOERR on success.
+ * @return NC_NOERR on success.
  * @author Edward Hartnett
  * @date 2026-07-08
  */
@@ -408,7 +408,7 @@ pds4_add_area_atts(NC_GRP_INFO_T *grp, xmlNode *area)
  * @param grp Group to receive attributes.
  * @param node XML node to examine.
  *
- * @return ::NC_NOERR on success.
+ * @return NC_NOERR on success.
  * @author Edward Hartnett
  * @date 2026-07-08
  */
@@ -490,7 +490,7 @@ pds4_axis_cmp(const void *a, const void *b)
  * @param grp File-area group that will contain the variable.
  * @param array XML `Array` or `Array_2D_Image` element.
  *
- * @return ::NC_NOERR on success.
+ * @return NC_NOERR on success.
  * @author Edward Hartnett
  * @date 2026-07-08
  */
@@ -718,7 +718,7 @@ cleanup:
  * @param grp File-area group that will contain the dimension and variables.
  * @param table XML `Table_Binary`, `Table_Character`, or `Table_Delimited` element.
  *
- * @return ::NC_NOERR on success.
+ * @return NC_NOERR on success.
  * @author Edward Hartnett
  * @date 2026-07-08
  */
@@ -1059,7 +1059,7 @@ pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
  * @param root_grp Root group.
  * @param file_area XML `File_Area_Observational` element.
  *
- * @return ::NC_NOERR on success.
+ * @return NC_NOERR on success.
  * @author Edward Hartnett
  * @date 2026-07-08
  */
@@ -1141,7 +1141,7 @@ pds4_read_file_area(NC_FILE_INFO_T *h5, NC_GRP_INFO_T *root_grp,
  * @param h5 Pointer to the file info struct.
  * @param pds4_file PDS4-specific file info containing the parsed XML document.
  *
- * @return ::NC_NOERR on success.
+ * @return NC_NOERR on success.
  * @author Edward Hartnett
  * @date 2026-07-08
  */
@@ -1202,11 +1202,11 @@ pds4_read_label(NC_FILE_INFO_T *h5, NC_PDS4_FILE_INFO_T *pds4_file)
  * @param dispatch Dispatch table pointer assigned by NetCDF-C.
  * @param ncid NetCDF ID assigned by the NetCDF-C dispatch layer.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EINVAL Null path, XML parse failure, or non-PDS4 namespace.
- * @return ::NC_EPERM Write mode requested.
- * @return ::NC_ENOTNC Root element namespace is not the PDS4 namespace.
- * @return ::NC_ENOMEM Out of memory.
+ * @return NC_NOERR No error.
+ * @return NC_EINVAL Null path, XML parse failure, or non-PDS4 namespace.
+ * @return NC_EPERM Write mode requested.
+ * @return NC_ENOTNC Root element namespace is not the PDS4 namespace.
+ * @return NC_ENOMEM Out of memory.
  * @author Edward Hartnett
  * @date 2026-07-08
  */
@@ -1343,8 +1343,8 @@ pds4_free_var_info(NC_GRP_INFO_T *grp)
  * @param ncid NetCDF ID of the open PDS4 file.
  * @param ignore Ignored (NULL).
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
  * @author Edward Hartnett
  * @date 2026-07-08
  */
@@ -1395,8 +1395,8 @@ NC_PDS4_close(int ncid, void *ignore)
  *
  * @param ncid NetCDF ID of the partially opened file.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
  * @author Edward Hartnett
  * @date 2026-07-08
  */
@@ -1438,7 +1438,7 @@ NC_PDS4_abort(int ncid)
  * @param ncid NetCDF ID.
  * @param formatp Pointer that receives the format code (NC_FORMAT_NETCDF4).
  *
- * @return ::NC_NOERR No error.
+ * @return NC_NOERR No error.
  * @author Edward Hartnett
  * @date 2026-07-08
  */
@@ -1459,7 +1459,7 @@ NC_PDS4_inq_format(int ncid, int *formatp)
  *        (NC_FORMATX_NC_PDS4 = NC_FORMATX_UDF5).
  * @param modep Pointer that receives the mode flags (NC_NOWRITE).
  *
- * @return ::NC_NOERR No error.
+ * @return NC_NOERR No error.
  * @author Edward Hartnett
  * @date 2026-07-08
  */
@@ -1481,7 +1481,7 @@ NC_PDS4_inq_format_extended(int ncid, int *formatp, int *modep)
  * @param data_filename Data file name from <File/file_name>.
  * @param resolved Buffer (at least PATH_MAX bytes) to receive result.
  *
- * @return ::NC_NOERR on success.
+ * @return NC_NOERR on success.
  * @author Edward Hartnett
  * @date 2026-07-08
  */
@@ -1578,12 +1578,12 @@ pds4_needs_swap(int endianness)
  * @param memtype Requested memory type (type conversion not yet implemented;
  *        caller must request the native file type).
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
- * @return ::NC_ENOTVAR No variable with varid in this group.
- * @return ::NC_EINVAL Invalid parameters or seek error.
- * @return ::NC_ENOMEM Out of memory.
- * @return ::NC_ENOTFOUND Data file not found.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
+ * @return NC_ENOTVAR No variable with varid in this group.
+ * @return NC_EINVAL Invalid parameters or seek error.
+ * @return NC_ENOMEM Out of memory.
+ * @return NC_ENOTFOUND Data file not found.
  * @author Edward Hartnett
  * @date 2026-07-08
  */

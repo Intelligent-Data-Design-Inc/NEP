@@ -131,7 +131,7 @@ NC_GRIB2_initialize(void)
 /**
  * @internal Finalize GRIB2 dispatch layer.
  *
- * @return ::NC_NOERR No error.
+ * @return NC_NOERR No error.
  * @author Edward Hartnett
  */
 int

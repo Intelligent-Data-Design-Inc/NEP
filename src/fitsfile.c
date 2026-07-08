@@ -73,7 +73,7 @@ extern int nc4_var_list_add(NC_GRP_INFO_T *grp, const char *name, int ndims,
  * @param type_name A name for the type.
  * @param typep Pointer to a pointer that gets the TYPE_INFO_T struct.
  *
- * @return ::NC_NOERR No error.
+ * @return NC_NOERR No error.
  * @author Ed Hartnett
  */
 static int
@@ -126,8 +126,8 @@ nc4_set_var_type(nc_type xtype, int endianness, size_t type_size,
  * @param format_var_info Format-specific per-variable metadata.
  * @param var Output: pointer to the new variable.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_ENOMEM Out of memory.
+ * @return NC_NOERR No error.
+ * @return NC_ENOMEM Out of memory.
  * @author Ed Hartnett
  */
 static int
@@ -183,8 +183,8 @@ nc4_var_list_add_full(NC_GRP_INFO_T *grp, const char *name, int ndims,
  * name string. Ignored if NULL.
  * @param endiannessp Pointer that gets the endianness. Ignored if NULL.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADTYPE Unknown BITPIX value.
+ * @return NC_NOERR No error.
+ * @return NC_EBADTYPE Unknown BITPIX value.
  * @author Edward Hartnett
  */
 #ifdef HAVE_FITS
@@ -240,8 +240,8 @@ fits_bitpix_to_nc_type(int bitpix, nc_type *xtypep, size_t *type_sizep,
  * Ignored if NULL.
  * @param endiannessp Pointer that gets endianness. Ignored if NULL.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADTYPE Unknown typecode.
+ * @return NC_NOERR No error.
+ * @return NC_EBADTYPE Unknown typecode.
  * @author Edward Hartnett
  */
 static int
@@ -343,8 +343,8 @@ fits_sanitize_name(const char *src, char *dst, size_t dstlen)
  * @param grp Pointer to the netCDF-4 group that receives the attributes.
  * @param is_table Non-zero to also skip table column descriptor keywords.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_ENOMEM Out of memory.
+ * @return NC_NOERR No error.
+ * @return NC_ENOMEM Out of memory.
  * @author Edward Hartnett
  */
 static int
@@ -531,8 +531,8 @@ fits_read_hdu_atts(fitsfile *fptr, NC_GRP_INFO_T *grp, int is_table)
  *
  * @param h5 Pointer to the netCDF-4 file info struct.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_ENOMEM Out of memory.
+ * @return NC_NOERR No error.
+ * @return NC_ENOMEM Out of memory.
  * @author Edward Hartnett
  */
 static int
@@ -623,7 +623,7 @@ fits_read_primary_hdu(NC_FILE_INFO_T *h5)
  * @param grp Child group to populate.
  * @param hdu_num 1-based HDU number (for NC_FITS_VAR_INFO_T).
  *
- * @return ::NC_NOERR No error.
+ * @return NC_NOERR No error.
  * @author Edward Hartnett
  */
 static int
@@ -696,7 +696,7 @@ fits_read_image_ext_hdu(NC_FILE_INFO_T *h5, NC_GRP_INFO_T *grp, int hdu_num)
  * @param grp Child group to populate.
  * @param hdu_num 1-based HDU number.
  *
- * @return ::NC_NOERR No error.
+ * @return NC_NOERR No error.
  * @author Edward Hartnett
  */
 static int
@@ -868,7 +868,7 @@ fits_read_table_hdu(NC_FILE_INFO_T *h5, NC_GRP_INFO_T *grp, int hdu_num)
  *
  * @param h5 Pointer to the netCDF-4 file info struct.
  *
- * @return ::NC_NOERR No error.
+ * @return NC_NOERR No error.
  * @author Edward Hartnett
  */
 static int
@@ -928,10 +928,10 @@ fits_read_extension_hdus(NC_FILE_INFO_T *h5)
  * @param dispatch Pointer to dispatch table.
  * @param ncid NetCDF ID assigned to this file.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EINVAL Invalid parameters or mode flags.
- * @return ::NC_EPERM Write mode requested.
- * @return ::NC_ENOMEM Out of memory.
+ * @return NC_NOERR No error.
+ * @return NC_EINVAL Invalid parameters or mode flags.
+ * @return NC_EPERM Write mode requested.
+ * @return NC_ENOMEM Out of memory.
  * @author Edward Hartnett
  */
 int
@@ -1035,8 +1035,8 @@ NC_FITS_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
  * @param ncid NetCDF ID.
  * @param ignore Ignored.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
  * @author Edward Hartnett
  */
 int
@@ -1084,7 +1084,7 @@ NC_FITS_close(int ncid, void *ignore)
  *
  * @param ncid NetCDF ID.
  *
- * @return ::NC_NOERR No error.
+ * @return NC_NOERR No error.
  * @author Edward Hartnett
  */
 int
@@ -1131,7 +1131,7 @@ NC_FITS_abort(int ncid)
  * @param ncid NetCDF ID.
  * @param formatp Pointer that gets format code.
  *
- * @return ::NC_NOERR No error.
+ * @return NC_NOERR No error.
  * @author Edward Hartnett
  */
 int
@@ -1150,7 +1150,7 @@ NC_FITS_inq_format(int ncid, int *formatp)
  * @param formatp Pointer that gets format code.
  * @param modep Pointer that gets mode flags.
  *
- * @return ::NC_NOERR No error.
+ * @return NC_NOERR No error.
  * @author Edward Hartnett
  */
 int
@@ -1172,8 +1172,8 @@ NC_FITS_inq_format_extended(int ncid, int *formatp, int *modep)
  * @param memtype netCDF type.
  * @param cfitsio_type Pointer that receives the CFITSIO type constant.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADTYPE Unknown type.
+ * @return NC_NOERR No error.
+ * @return NC_EBADTYPE Unknown type.
  * @author Edward Hartnett
  */
 static int
@@ -1219,10 +1219,10 @@ nc_type_to_cfitsio_type(nc_type memtype, int *cfitsio_type)
  * @param value Output buffer.
  * @param memtype Memory type requested by caller.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid or varid.
- * @return ::NC_EINVAL Invalid parameters.
- * @return ::NC_EIO CFITSIO read error.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid or varid.
+ * @return NC_EINVAL Invalid parameters.
+ * @return NC_EIO CFITSIO read error.
  * @author Edward Hartnett
  */
 int

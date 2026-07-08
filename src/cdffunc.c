@@ -29,8 +29,8 @@
  * @param ncid File ID (ignored).
  * @param formatp Pointer that gets the constant indicating format.
 
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
  * @author Edward Hartnett
  */
 int
@@ -54,8 +54,8 @@ NC_CDF_inq_format(int ncid, int *formatp)
  * @param modep a pointer that gets the open/create mode associated with
  * this file. Ignored if NULL.
 
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
  * @author Edward Hartnett
  */
 int

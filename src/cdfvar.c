@@ -59,11 +59,11 @@ get_nc4type_size(nc_type type)
  * @param ip pointer that gets the data.
  * @param memtype The type of these data after it is read into memory.
  *
- * @return ::NC_NOERR for success.
- * @return ::NC_EBADID Bad ncid.
- * @return ::NC_EINVAL Invalid input.
- * @return ::NC_ECDF CDF library error.
- * @return ::NC_ENOMEM Out of memory.
+ * @return NC_NOERR for success.
+ * @return NC_EBADID Bad ncid.
+ * @return NC_EINVAL Invalid input.
+ * @return NC_ECDF CDF library error.
+ * @return NC_ENOMEM Out of memory.
  * @author Edward Hartnett
  */
 int

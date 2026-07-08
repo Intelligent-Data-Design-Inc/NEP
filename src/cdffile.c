@@ -47,7 +47,7 @@ nc_type_size_g[NUM_TYPES] = {sizeof(char), sizeof(char), sizeof(short),
  *
  * @param grp Pointer to group info struct.
  *
- * @return ::NC_NOERR No error.
+ * @return NC_NOERR No error.
  * @author Edward Hartnett
  */
 static int
@@ -80,7 +80,7 @@ cdf_rec_grp_del(NC_GRP_INFO_T *grp)
  * @param type_sizep Pointer that gets type size. Ignored if NULL.
  * @param type_name Pointer that gets the type name. Ignored if NULL.
  *
- * @return ::NC_NOERR No error.
+ * @return NC_NOERR No error.
  * @author Ed Hartnett
  */
 static int
@@ -191,7 +191,7 @@ cdf_type_info(NC_FILE_INFO_T *h5, int cdf_typeid, nc_type* xtypep,
  * @param type_name A name for the type.
  * @param typep Pointer to a pointer that gets the TYPE_INFO_T struct.
  *
- * @return ::NC_NOERR No error.
+ * @return NC_NOERR No error.
  * @author Ed Hartnett
  */
 static int
@@ -225,10 +225,10 @@ nc4_set_var_type(nc_type xtype, int endianness, size_t type_size, char *type_nam
  * attributes.
  * @param a Index of attribute to read.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EHDFERR CDF error.
- * @return ::NC_EATTMETA Error reading CDF attribute.
- * @return ::NC_ENOMEM Out of memory.
+ * @return NC_NOERR No error.
+ * @return NC_EHDFERR CDF error.
+ * @return NC_EATTMETA Error reading CDF attribute.
+ * @return NC_ENOMEM Out of memory.
  * @author Ed Hartnett
  */
 static int
@@ -379,11 +379,11 @@ cdf_read_att(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var, int a)
  * @param rec_dim_len Actual length of first dim for this SD.
  * @param d Dimension index for this SD.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EHDFERR CDF error.
- * @return ::NC_EDIMMETA Error reading CDF dimension info.
- * @return ::NC_ENOMEM Out of memory.
- * @return ::NC_EMAXNAME Name too long.
+ * @return NC_NOERR No error.
+ * @return NC_EHDFERR CDF error.
+ * @return NC_EDIMMETA Error reading CDF dimension info.
+ * @return NC_ENOMEM Out of memory.
+ * @return NC_EMAXNAME Name too long.
  * @author Ed Hartnett
  */
 #if 0
@@ -407,8 +407,8 @@ cdf_read_dim(NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var, int rec_dim_len, int d)
  * @param format_var_info Pointer to format-specific var info struct.
  * @param var Pointer in which to return a pointer to the new var.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_ENOMEM Out of memory.
+ * @return NC_NOERR No error.
+ * @return NC_ENOMEM Out of memory.
  * @author Ed Hartnett
  */
 static int
@@ -455,13 +455,13 @@ nc4_var_list_add_full(NC_GRP_INFO_T* grp, const char* name, int ndims, nc_type x
  * @param h5 Pointer to the file metadata struct.
  * @param v Index of variable to read.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EHDFERR CDF error.
- * @return ::NC_EDIMMETA Error reading CDF dimension info.
- * @return ::NC_EVARMETA Error reading CDF dataset or att.
- * @return ::NC_EATTMETA Error reading CDF attribute.
- * @return ::NC_ENOMEM Out of memory.
- * @return ::NC_EMAXNAME Name too long.
+ * @return NC_NOERR No error.
+ * @return NC_EHDFERR CDF error.
+ * @return NC_EDIMMETA Error reading CDF dimension info.
+ * @return NC_EVARMETA Error reading CDF dataset or att.
+ * @return NC_EATTMETA Error reading CDF attribute.
+ * @return NC_ENOMEM Out of memory.
+ * @return NC_EMAXNAME Name too long.
  * @author Ed Hartnett
  */
 static int
@@ -616,10 +616,10 @@ cdf_read_var(NC_FILE_INFO_T *h5, int v)
  * @param nc_file Pointer to an instance of NC. The ncid has already
  * been assigned, and is in nc_file->ext_ncid.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EINVAL Invalid input.
- * @return ::NC_EHDFERR Error from CDF layer.
- * @return ::NC_ENOMEM Out of memory.
+ * @return NC_NOERR No error.
+ * @return NC_EINVAL Invalid input.
+ * @return NC_EHDFERR Error from CDF layer.
+ * @return NC_ENOMEM Out of memory.
  * @author Ed Hartnett
  */
 int
@@ -747,9 +747,9 @@ NC_CDF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
  *
  * @param ncid File ID.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
- * @return ::NC_EHDFERR Error from CDF layer.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
+ * @return NC_EHDFERR Error from CDF layer.
  * @author Ed Hartnett
  */
 int
@@ -765,9 +765,9 @@ NC_CDF_abort(int ncid)
  * @param ncid File ID.
  * @param ignore Ignore this pointer.
  *
- * @return ::NC_NOERR No error.
- * @return ::NC_EBADID Bad ncid.
- * @return ::NC_EHDFERR Error from CDF layer.
+ * @return NC_NOERR No error.
+ * @return NC_EBADID Bad ncid.
+ * @return NC_EHDFERR Error from CDF layer.
  * @author Ed Hartnett
  */
 int

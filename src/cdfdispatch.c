@@ -132,7 +132,7 @@ NC_CDF_initialize(void)
 /**
  * @internal Finalize CDF dispatch layer.
  *
- * @return ::NC_NOERR No error.
+ * @return NC_NOERR No error.
  * @author Ed Hartnett
  */
 int

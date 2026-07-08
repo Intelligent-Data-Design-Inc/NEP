@@ -934,8 +934,24 @@ WARN_LOGFILE           =
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  = @abs_top_srcdir@/src/nep.c \
+                         @abs_top_srcdir@/src/pds4dispatch.c \
                          @abs_top_srcdir@/src/pds4file.c \
+                         @abs_top_srcdir@/src/geotiffdispatch.c \
+                         @abs_top_srcdir@/src/geotifffile.c \
+                         @abs_top_srcdir@/src/grib2dispatch.c \
+                         @abs_top_srcdir@/src/grib2file.c \
+                         @abs_top_srcdir@/src/fitsdispatch.c \
+                         @abs_top_srcdir@/src/fitsfile.c \
+                         @abs_top_srcdir@/src/cdfdispatch.c \
+                         @abs_top_srcdir@/src/cdffile.c \
+                         @abs_top_srcdir@/src/cdffunc.c \
+                         @abs_top_srcdir@/src/cdfvar.c \
+                         @abs_top_srcdir@/include/nep.h \
                          @abs_top_srcdir@/include/pds4dispatch.h \
+                         @abs_top_srcdir@/include/geotiffdispatch.h \
+                         @abs_top_srcdir@/include/grib2dispatch.h \
+                         @abs_top_srcdir@/include/fitsdispatch.h \
+                         @abs_top_srcdir@/include/cdfdispatch.h \
                          @abs_top_srcdir@/fsrc/nep.F90 \
                          @abs_top_srcdir@/docs/mainpage.md \
                          @abs_top_srcdir@/docs/build-options.md \

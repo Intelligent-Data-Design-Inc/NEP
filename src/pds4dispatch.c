@@ -123,8 +123,8 @@ const NC_Dispatch *PDS4_dispatch_table = NULL;
  * been registered via `.ncrc` autoload; in that case `NC_EINVAL` is
  * returned and can be ignored.
  *
- * @return ::NC_NOERR Handler registered successfully.
- * @return ::NC_EINVAL Handler already registered (safe to ignore).
+ * @return NC_NOERR Handler registered successfully.
+ * @return NC_EINVAL Handler already registered (safe to ignore).
  * @author Edward Hartnett
  * @date 2026-07-08
  */
@@ -141,7 +141,7 @@ NC_PDS4_initialize(void)
  *
  * No-op in the current implementation.
  *
- * @return ::NC_NOERR No error.
+ * @return NC_NOERR No error.
  * @author Edward Hartnett
  * @date 2026-07-08
  */
