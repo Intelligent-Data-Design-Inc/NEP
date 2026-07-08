@@ -59,6 +59,7 @@ endif
 # Build PDS4 UDF test, if PDS4 is enabled.
 if HAVE_PDS4
 check_PROGRAMS += tst_pds4_udf
+tst_pds4_udf_CFLAGS = $(XML2_CFLAGS)
 tst_pds4_udf_LDADD = ${top_builddir}/src/libncpds4.la ${top_builddir}/src/libnep.la
 TESTS += tst_pds4_udf
 endif

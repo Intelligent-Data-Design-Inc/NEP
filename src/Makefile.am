@@ -57,6 +57,7 @@ endif
 # PDS4 library (netCDF UDF support)
 if HAVE_PDS4
 lib_LTLIBRARIES += libncpds4.la
+libncpds4_la_CFLAGS = $(XML2_CFLAGS)
 libncpds4_la_LDFLAGS = -version-info 1:0:0
 libncpds4_la_SOURCES = pds4dispatch.c pds4file.c
 libncpds4_la_LIBADD = $(HDF5_LIBS) $(NETCDF_LIBS) $(XML_LIBS)
