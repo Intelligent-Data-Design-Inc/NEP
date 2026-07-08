@@ -554,10 +554,12 @@ Autotools:
 
 ### 14.5 Known Limitations (v2.2.0)
 
-- No metadata (`nc_inq_*`) or data (`nc_get_vara`) reading yet; these return
-  `NC_NOERR` / `NC_EINVAL` respectively via no-op dispatch functions
+- Array metadata (`nc_inq_*`) is now read for `Array` and `Array_2D_Image` products.
+- Table metadata (`Table_Binary`, `Table_Character`, `Table_Delimited`) is not yet
+  implemented.
+- Data reading (`nc_get_vara`) is not yet implemented; it returns `NC_EINVAL`.
 - Only `Product_Observational` root element type is validated; other PDS4 product
-  classes are not checked in this sprint
+  classes are not checked in this release.
 
 ---
 

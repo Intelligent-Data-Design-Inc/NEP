@@ -132,6 +132,14 @@ match the magic but fail this check should return `NC_ENOTNC`.
 | `Table_*/Record_*/Field_*` | Variable per field (name from `Field_*/name`) |
 | Field `unit` | `units` attribute |
 
+### Implementation details
+
+- `Identification_Area` direct children are stored as root-level global string attributes.
+- `Observation_Area` is flattened recursively: each leaf text element becomes a global string attribute; duplicate names are skipped to keep the mapping deterministic.
+- `Axis_Array` entries are sorted by `sequence_number`; the resulting order is the netCDF dimension order (leftmost = slowest).
+- `Array` / `Array_2D_Image` variables are named from the `name` element if present, otherwise default to `data`.
+- Byte order is recorded from the MSB/LSB prefix of the PDS4 `data_type` and is used by the data reader.
+
 ### PDS4 data_type → nc_type mapping
 
 | PDS4 `data_type` | `nc_type` | Notes |
@@ -153,6 +161,15 @@ match the magic but fail this check should return `NC_ENOTNC`.
 | `ASCII_String` | `NC_CHAR` | ASCII table string field |
 
 ---
+
+## Implementation Status
+
+As of v2.2.0 Sprint 4:
+- `Identification_Area` and `Observation_Area` are mapped to global string attributes.
+- Each `File_Area_Observational` becomes a child group named from `File/file_name`.
+- `Array` and `Array_2D_Image` metadata (dimensions, variable, and type) are read; data is not.
+- Table metadata (`Table_Binary`, `Table_Character`, `Table_Delimited`) is not yet implemented.
+- Data reading (`nc_get_vara`) is deferred to Sprint 6.
 
 ## libxml2 Usage in NEP
 
