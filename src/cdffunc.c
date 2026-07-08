@@ -1,5 +1,6 @@
 /**
- * @file @internal CDF functions.
+ * @file
+ * @brief CDF format inquiry functions.
  *
  * @author Edward Hartnett
  * @date 2025-11-23

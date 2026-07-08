@@ -1,7 +1,6 @@
 /**
  * @file
- * @internal The CDF file functions. These provide a read-only
- * interface to CDF SD files.
+ * @brief CDF file reader functions.
  *
  * @author Edward Hartnett
  * @date 2025-11-23

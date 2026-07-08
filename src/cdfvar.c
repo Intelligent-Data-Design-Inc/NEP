@@ -1,6 +1,6 @@
 /**
- * @file @internal This file handles the variable functions for the
- * CDF dispatch layer.
+ * @file
+ * @brief CDF variable read functions.
  *
  * @author Edward Hartnett
  * @date 2025-11-23

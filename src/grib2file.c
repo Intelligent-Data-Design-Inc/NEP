@@ -1,7 +1,6 @@
 /**
  * @file
- * @internal The GRIB2 file functions. These provide a read-only
- * interface to GRIB2 meteorological data files via NCEPLIBS-g2c.
+ * @brief GRIB2 file reader functions.
  *
  * @author Edward Hartnett
  * @date 2026-03-08

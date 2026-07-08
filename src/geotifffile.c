@@ -1,6 +1,6 @@
 /**
  * @file
- * @internal GeoTIFF file format detection and operations.
+ * @brief GeoTIFF file format detection and operations.
  *
  * This file implements GeoTIFF format detection for the NetCDF API.
  * It validates TIFF magic numbers, headers, and GeoTIFF-specific tags

@@ -1,7 +1,6 @@
 /**
  * @file
- * @internal Dispatch code for CDF. CDF access is read-only, for
- * CDF SD files only.
+ * @brief CDF dispatch layer.
  *
  * @author Edward Hartnett
  * @date 2025-11-23

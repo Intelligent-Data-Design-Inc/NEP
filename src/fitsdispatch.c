@@ -1,6 +1,6 @@
 /**
  * @file
- * @internal Dispatch code for FITS. FITS access is read-only.
+ * @brief FITS dispatch layer.
  *
  * @author Edward Hartnett
  * @date 2026-06-28

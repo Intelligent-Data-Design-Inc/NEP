@@ -1,6 +1,6 @@
 /**
  * @file
- * @internal Dispatch code for GRIB2. GRIB2 access is read-only.
+ * @brief GRIB2 dispatch layer.
  *
  * @author Edward Hartnett
  * @date 2026-03-08
