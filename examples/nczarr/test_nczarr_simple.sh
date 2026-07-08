@@ -4,9 +4,9 @@
 # 2026-06-26
 
 if [[ -n "${LD_LIBRARY_PATH:-}" ]]; then
-    export LD_LIBRARY_PATH=/home/ed/NEP/src/.libs:/usr/local/hdf5-2.1.0/lib:/usr/local/netcdf-c-4.10.0/lib:/usr/local/netcdf-fortran/lib:/usr/local/cfitsio-4.6.4/lib:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH=/home/ed/NEP/src/.libs:/usr/local/hdf5-2.1.0/lib:/usr/local/netcdf-c-4.10.0/lib:$LD_LIBRARY_PATH
 else
-    export LD_LIBRARY_PATH=/home/ed/NEP/src/.libs:/usr/local/hdf5-2.1.0/lib:/usr/local/netcdf-c-4.10.0/lib:/usr/local/netcdf-fortran/lib:/usr/local/cfitsio-4.6.4/lib
+    export LD_LIBRARY_PATH=/home/ed/NEP/src/.libs:/usr/local/hdf5-2.1.0/lib:/usr/local/netcdf-c-4.10.0/lib
 fi
 
 ./nczarr_simple

@@ -24,6 +24,7 @@ b/
 build/
 build_*/
 build-fortran/
+build-pds4-cmake/
 build_test/
 */build/
 */*/build/

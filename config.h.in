@@ -45,6 +45,9 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
+/* Define to 1 if you have the <libxml/parser.h> header file. */
+#undef HAVE_LIBXML_PARSER_H
+
 /* Define to 1 if you have the <netcdf.h> header file. */
 #undef HAVE_NETCDF_H
 
@@ -53,6 +56,9 @@
 
 /* Parallel I/O tests enabled */
 #undef HAVE_PARALLEL_TESTS
+
+/* Define if libxml2 library is found */
+#undef HAVE_PDS4
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H

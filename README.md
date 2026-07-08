@@ -215,11 +215,15 @@ Mars rover images, lunar surface DEMs, asteroid spectra, and more.
 
 ### PDS4 Support in NEP
 
-NEP provides a UDF handler (v2.2.0, Sprint 3 skeleton) that opens PDS4 XML label
-files through the standard NetCDF API. The handler parses the XML label with
+NEP provides a UDF handler (v2.2.0, Sprint 4) that opens PDS4 XML label files
+through the standard NetCDF API. The handler parses the XML label with
 **libxml2** and validates the PDS4 namespace
-(`http://pds.nasa.gov/pds4/pds/v1`). Metadata and data reading will be added in
-future releases; this release proves the UDF registration and open/close paths.
+(`http://pds.nasa.gov/pds4/pds/v1`). As of Sprint 4, array metadata is exposed
+through the NetCDF inquiry API: `Identification_Area` and `Observation_Area`
+become global attributes, each `File_Area_Observational` becomes a child group,
+and each `Array`/`Array_2D_Image` becomes a dimensioned variable with the
+correct `nc_type`. Table metadata and data reading are planned for subsequent
+releases.
 
 To enable PDS4 support at build time:
 
