@@ -45,8 +45,8 @@ main(void)
     size_t len;
     nc_type xtype;
     char name[NC_MAX_NAME + 1];
-    char title[256];
-    char lid[256];
+    char title[256] = {0};
+    char lid[256] = {0};
 
     /* Register the PDS4 UDF handler.
      * Accept NC_EINVAL in case it was already registered by a previous test. */
