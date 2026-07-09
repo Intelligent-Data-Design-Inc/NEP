@@ -503,6 +503,11 @@ test_mission_cassini_hrd(void)
     if ((retval = nc_get_vara_text(grp_ncid, varid, start2, count_flag, on_off_flag)))
         ERR(retval);
     on_off_flag[3] = '\0';
+    {
+        size_t flag_len = strlen(on_off_flag);
+        while (flag_len > 0 && (on_off_flag[flag_len - 1] == ' ' || on_off_flag[flag_len - 1] == '\t'))
+            on_off_flag[--flag_len] = '\0';
+    }
     if (strcmp(on_off_flag, "ON") != 0 && strcmp(on_off_flag, "OFF") != 0)
     {
         fprintf(stderr, "Unexpected ON_OFF_FLAG: '%s'\n", on_off_flag);
