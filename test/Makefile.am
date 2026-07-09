@@ -78,6 +78,15 @@ check-local:
 		cp $(srcdir)/data/PDS4/test_table_binary.dat $(builddir)/data/PDS4/ 2>/dev/null || true; \
 		cp $(srcdir)/data/PDS4/Table_Character_Example.xml $(builddir)/data/PDS4/ 2>/dev/null || true; \
 		cp $(srcdir)/data/PDS4/Table_Character_Example.tab $(builddir)/data/PDS4/ 2>/dev/null || true; \
+		$(MKDIR_P) $(builddir)/data/PDS4/cassini_hrd; \
+		cp $(srcdir)/data/PDS4/cassini_hrd/hrd_2000_on_off.xml $(builddir)/data/PDS4/cassini_hrd/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/cassini_hrd/hrd_2000_on_off.tab $(builddir)/data/PDS4/cassini_hrd/ 2>/dev/null || true; \
+		$(MKDIR_P) $(builddir)/data/PDS4/messenger_tnmap; \
+		cp $(srcdir)/data/PDS4/messenger_tnmap/thermal_neutron_map.xml $(builddir)/data/PDS4/messenger_tnmap/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/messenger_tnmap/thermal_neutron_map.img $(builddir)/data/PDS4/messenger_tnmap/ 2>/dev/null || true; \
+		$(MKDIR_P) $(builddir)/data/PDS4/lcs_9p; \
+		cp $(srcdir)/data/PDS4/lcs_9p/20050706_000.xml $(builddir)/data/PDS4/lcs_9p/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/lcs_9p/20050706_000.tab $(builddir)/data/PDS4/lcs_9p/ 2>/dev/null || true; \
 	fi
 
 TESTS_ENVIRONMENT = LD_LIBRARY_PATH=@MY_LD_LIBRARY_PATH@:$$LD_LIBRARY_PATH
@@ -88,7 +97,11 @@ TESTS += run_tests.sh
 # Delete files created in testing.
 CLEANFILES = tst_*.nc
 
-EXTRA_DIST = run_tests.sh.in data/imap_mag_l1b-calibration_20240229_v001.cdf data/gdaswave.t00z.wcoast.0p16.f000.grib2 data/WFPC2u5780205r_c0fx.fits data/PDS4/test_image.xml data/PDS4/test_image.img data/PDS4/test_table_binary.xml data/PDS4/test_table_binary.dat data/PDS4/Table_Character_Example.xml data/PDS4/Table_Character_Example.tab
+EXTRA_DIST = run_tests.sh.in data/imap_mag_l1b-calibration_20240229_v001.cdf data/gdaswave.t00z.wcoast.0p16.f000.grib2 data/WFPC2u5780205r_c0fx.fits \
+data/PDS4/test_image.xml data/PDS4/test_image.img data/PDS4/test_table_binary.xml data/PDS4/test_table_binary.dat data/PDS4/Table_Character_Example.xml data/PDS4/Table_Character_Example.tab \
+data/PDS4/cassini_hrd/hrd_2000_on_off.xml data/PDS4/cassini_hrd/hrd_2000_on_off.tab \
+data/PDS4/messenger_tnmap/thermal_neutron_map.xml data/PDS4/messenger_tnmap/thermal_neutron_map.img \
+data/PDS4/lcs_9p/20050706_000.xml data/PDS4/lcs_9p/20050706_000.tab
 
 DISTCLEANFILES = run_tests.sh
 

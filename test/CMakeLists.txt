@@ -132,6 +132,31 @@ if(HAVE_PDS4)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/Table_Character_Example.tab
                    ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/Table_Character_Example.tab
                    COPYONLY)
+
+    # Mission PDS4 test data
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/cassini_hrd)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/cassini_hrd/hrd_2000_on_off.xml
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/cassini_hrd/hrd_2000_on_off.xml
+                   COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/cassini_hrd/hrd_2000_on_off.tab
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/cassini_hrd/hrd_2000_on_off.tab
+                   COPYONLY)
+
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/messenger_tnmap)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/messenger_tnmap/thermal_neutron_map.xml
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/messenger_tnmap/thermal_neutron_map.xml
+                   COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/messenger_tnmap/thermal_neutron_map.img
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/messenger_tnmap/thermal_neutron_map.img
+                   COPYONLY)
+
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/lcs_9p)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/lcs_9p/20050706_000.xml
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/lcs_9p/20050706_000.xml
+                   COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/lcs_9p/20050706_000.tab
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/lcs_9p/20050706_000.tab
+                   COPYONLY)
 endif()
 
 # Configure run_tests.sh script with proper paths
