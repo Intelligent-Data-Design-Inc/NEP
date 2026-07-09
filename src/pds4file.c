@@ -307,6 +307,8 @@ pds4_type_to_nc_type(const char *pds4_type, nc_type *xtypep, size_t *type_sizep,
              strcmp(pds4_type, "ASCII_Date") == 0 ||
              strcmp(pds4_type, "ASCII_Date_Time_YMD") == 0 ||
              strcmp(pds4_type, "ASCII_Date_Time_YMD_UTC") == 0 ||
+             strcmp(pds4_type, "ASCII_Date_Time_DOY") == 0 ||
+             strcmp(pds4_type, "ASCII_Date_Time_DOY_UTC") == 0 ||
              strcmp(pds4_type, "UTF8_String") == 0)
     { xtype = NC_CHAR; type_size = 1; endianness = NC_ENDIAN_NATIVE; name = "char"; }
     else

@@ -37,6 +37,9 @@
 #define PDS4_TEST_FILE "data/PDS4/test_image.xml"
 #define PDS4_TABLE_BINARY_FILE "data/PDS4/test_table_binary.xml"
 #define PDS4_TABLE_CHAR_FILE "data/PDS4/Table_Character_Example.xml"
+#define PDS4_CASSINI_HRD_FILE "data/PDS4/cassini_hrd/hrd_2000_on_off.xml"
+#define PDS4_MESSENGER_TNMAP_FILE "data/PDS4/messenger_tnmap/thermal_neutron_map.xml"
+#define PDS4_LCS_9P_FILE "data/PDS4/lcs_9p/20050706_000.xml"
 
 /**
  * @internal Test Sprint 5 binary table metadata.
@@ -416,6 +419,261 @@ test_table_binary_data_read(void)
 }
 
 /**
+ * @internal Test real Cassini-Huygens HRD engineering table.
+ *
+ * Opens cassini_hrd/hrd_2000_on_off.xml and verifies:
+ * - A child group named hrd_2000_on_off.tab exists.
+ * - Two NC_CHAR variables: ON_OFF_TIME and ON_OFF_FLAG.
+ * - 11 records can be read.
+ */
+static int
+test_mission_cassini_hrd(void)
+{
+    int ncid, grp_ncid, varid, retval;
+    int ndims, nvars, natts, unlimdimid;
+    size_t len;
+    nc_type xtype;
+    char name[NC_MAX_NAME + 1];
+    char on_off_time[22] = {0};
+    char on_off_flag[4] = {0};
+    size_t start2[2] = {0, 0};
+    size_t count_time[2] = {1, 21};
+    size_t count_flag[2] = {1, 3};
+
+    printf("\n--- Mission: Cassini-Huygens HRD ---\n");
+
+    if ((retval = nc_open(PDS4_CASSINI_HRD_FILE, NC_NOWRITE, &ncid)))
+        ERR(retval);
+
+    if ((retval = nc_inq_ncid(ncid, "hrd_2000_on_off.tab", &grp_ncid)))
+        ERR(retval);
+
+    if ((retval = nc_inq(grp_ncid, &ndims, &nvars, &natts, &unlimdimid)))
+        ERR(retval);
+    /* One record dimension plus one strlen dimension per NC_CHAR field. */
+    if (ndims != 3 || nvars != 2)
+    {
+        fprintf(stderr, "Expected ndims=3 nvars=2, got %d %d\n", ndims, nvars);
+        return 1;
+    }
+
+    if ((retval = nc_inq_dimid(grp_ncid, "record", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_dim(grp_ncid, varid, name, &len)))
+        ERR(retval);
+    if (len != 11)
+    {
+        fprintf(stderr, "Expected 11 records, got %zu\n", len);
+        return 1;
+    }
+
+    if ((retval = nc_inq_varid(grp_ncid, "ON_OFF_TIME", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, name, &xtype, &ndims, NULL, &natts)))
+        ERR(retval);
+    if (xtype != NC_CHAR)
+    {
+        fprintf(stderr, "Expected ON_OFF_TIME xtype=NC_CHAR, got %d\n", xtype);
+        return 1;
+    }
+
+    if ((retval = nc_inq_varid(grp_ncid, "ON_OFF_FLAG", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, name, &xtype, &ndims, NULL, &natts)))
+        ERR(retval);
+    if (xtype != NC_CHAR)
+    {
+        fprintf(stderr, "Expected ON_OFF_FLAG xtype=NC_CHAR, got %d\n", xtype);
+        return 1;
+    }
+
+    if ((retval = nc_inq_varid(grp_ncid, "ON_OFF_TIME", &varid)))
+        ERR(retval);
+    if ((retval = nc_get_vara_text(grp_ncid, varid, start2, count_time, on_off_time)))
+        ERR(retval);
+    on_off_time[21] = '\0';
+    if (strstr(on_off_time, "2000") == NULL)
+    {
+        fprintf(stderr, "Unexpected ON_OFF_TIME: '%s'\n", on_off_time);
+        return 1;
+    }
+
+    if ((retval = nc_inq_varid(grp_ncid, "ON_OFF_FLAG", &varid)))
+        ERR(retval);
+    if ((retval = nc_get_vara_text(grp_ncid, varid, start2, count_flag, on_off_flag)))
+        ERR(retval);
+    on_off_flag[3] = '\0';
+    {
+        size_t flag_len = strlen(on_off_flag);
+        while (flag_len > 0 && (on_off_flag[flag_len - 1] == ' ' || on_off_flag[flag_len - 1] == '\t'))
+            on_off_flag[--flag_len] = '\0';
+    }
+    if (strcmp(on_off_flag, "ON") != 0 && strcmp(on_off_flag, "OFF") != 0)
+    {
+        fprintf(stderr, "Unexpected ON_OFF_FLAG: '%s'\n", on_off_flag);
+        return 1;
+    }
+
+    if ((retval = nc_close(ncid)))
+        ERR(retval);
+    printf("PASS: Cassini-Huygens HRD table opens and reads.\n");
+    return 0;
+}
+
+/**
+ * @internal Test real MESSENGER Mercury thermal neutron map.
+ *
+ * Opens messenger_tnmap/thermal_neutron_map.xml and verifies:
+ * - A child group named thermal_neutron_map.img exists.
+ * - One NC_UBYTE variable with dimensions [Line=360, Sample=720].
+ * - A small hyperslab can be read.
+ */
+static int
+test_mission_messenger_tnmap(void)
+{
+    int ncid, grp_ncid, varid, retval;
+    int ndims, nvars, natts, unlimdimid;
+    size_t len;
+    nc_type xtype;
+    char name[NC_MAX_NAME + 1];
+    unsigned char data[4];
+    size_t start[2] = {0, 0};
+    size_t count[2] = {2, 2};
+
+    printf("\n--- Mission: MESSENGER Thermal Neutron Map ---\n");
+
+    if ((retval = nc_open(PDS4_MESSENGER_TNMAP_FILE, NC_NOWRITE, &ncid)))
+        ERR(retval);
+
+    if ((retval = nc_inq_ncid(ncid, "thermal_neutron_map.img", &grp_ncid)))
+        ERR(retval);
+
+    if ((retval = nc_inq(grp_ncid, &ndims, &nvars, &natts, &unlimdimid)))
+        ERR(retval);
+    if (ndims != 2 || nvars != 1)
+    {
+        fprintf(stderr, "Expected ndims=2 nvars=1, got %d %d\n", ndims, nvars);
+        return 1;
+    }
+
+    if ((retval = nc_inq_dimid(grp_ncid, "Line", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_dim(grp_ncid, varid, name, &len)))
+        ERR(retval);
+    if (len != 360)
+    {
+        fprintf(stderr, "Expected Line=360, got %zu\n", len);
+        return 1;
+    }
+
+    if ((retval = nc_inq_dimid(grp_ncid, "Sample", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_dim(grp_ncid, varid, name, &len)))
+        ERR(retval);
+    if (len != 720)
+    {
+        fprintf(stderr, "Expected Sample=720, got %zu\n", len);
+        return 1;
+    }
+
+    if ((retval = nc_inq_varid(grp_ncid, "Mercury Thermal Neutron Map", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, name, &xtype, &ndims, NULL, &natts)))
+        ERR(retval);
+    if (xtype != NC_UBYTE || ndims != 2)
+    {
+        fprintf(stderr, "Unexpected variable: xtype=%d ndims=%d\n", xtype, ndims);
+        return 1;
+    }
+
+    if ((retval = nc_get_vara_uchar(grp_ncid, varid, start, count, data)))
+        ERR(retval);
+    printf("PASS: MESSENGER map [0:2,0:2] = {%u,%u,%u,%u}\n",
+           (unsigned)data[0], (unsigned)data[1], (unsigned)data[2], (unsigned)data[3]);
+
+    if ((retval = nc_close(ncid)))
+        ERR(retval);
+    return 0;
+}
+
+/**
+ * @internal Test real LCS-9P comet photometry table.
+ *
+ * Opens lcs_9p/20050706_000.xml and verifies:
+ * - A child group named 20050706_000.tab exists.
+ * - Eight variables including ASCII_Integer and ASCII_Real fields.
+ * - The first record reads successfully.
+ */
+static int
+test_mission_lcs_9p(void)
+{
+    int ncid, grp_ncid, varid, retval;
+    int ndims, nvars, natts, unlimdimid;
+    size_t len;
+    nc_type xtype;
+    char name[NC_MAX_NAME + 1];
+    long long spec_num;
+    double ha_pos;
+    size_t start[1] = {0};
+    size_t count[1] = {1};
+
+    printf("\n--- Mission: LCS-9P Comet Photometry ---\n");
+
+    if ((retval = nc_open(PDS4_LCS_9P_FILE, NC_NOWRITE, &ncid)))
+        ERR(retval);
+
+    if ((retval = nc_inq_ncid(ncid, "20050706_000.tab", &grp_ncid)))
+        ERR(retval);
+
+    if ((retval = nc_inq(grp_ncid, &ndims, &nvars, &natts, &unlimdimid)))
+        ERR(retval);
+    if (ndims != 1 || nvars != 8)
+    {
+        fprintf(stderr, "Expected ndims=1 nvars=8, got %d %d\n", ndims, nvars);
+        return 1;
+    }
+
+    if ((retval = nc_inq_dimid(grp_ncid, "record", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_dim(grp_ncid, varid, name, &len)))
+        ERR(retval);
+    if (len != 118)
+    {
+        fprintf(stderr, "Expected 118 records, got %zu\n", len);
+        return 1;
+    }
+
+    /* The PDS4 reader replaces spaces in field names with underscores. */
+    if ((retval = nc_inq_varid(grp_ncid, "Spec_Num", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, name, &xtype, &ndims, NULL, &natts)))
+        ERR(retval);
+    if (xtype != NC_INT64)
+    {
+        fprintf(stderr, "Expected Spec_Num xtype=NC_INT64, got %d\n", xtype);
+        return 1;
+    }
+
+    if ((retval = nc_get_vara_longlong(grp_ncid, varid, start, count, &spec_num)))
+        ERR(retval);
+    if (spec_num < 1)
+    {
+        fprintf(stderr, "Unexpected Spec_Num: %lld\n", spec_num);
+        return 1;
+    }
+
+    if ((retval = nc_inq_varid(grp_ncid, "HA_Pos", &varid)))
+        ERR(retval);
+    if ((retval = nc_get_vara_double(grp_ncid, varid, start, count, &ha_pos)))
+        ERR(retval);
+    printf("PASS: LCS-9P record 0: Spec_Num=%lld, HA_Pos=%.3f km\n", spec_num, ha_pos);
+
+    if ((retval = nc_close(ncid)))
+        ERR(retval);
+    return 0;
+}
+
+/**
  * @internal Test Sprint 6 character table data reading.
  *
  * Opens Table_Character_Example.xml and reads field data.
@@ -665,6 +923,16 @@ main(void)
         return 1;
 
     printf("\nAll PDS4 UDF Sprint 4 + Sprint 5 + Sprint 6 tests PASSED.\n");
+
+    /* Mission data validation tests. */
+    if (test_mission_cassini_hrd())
+        return 1;
+    if (test_mission_messenger_tnmap())
+        return 1;
+    if (test_mission_lcs_9p())
+        return 1;
+
+    printf("\nAll PDS4 UDF Sprint tests + Mission tests PASSED.\n");
     return 0;
 }
 

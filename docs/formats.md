@@ -39,6 +39,8 @@ cmake -B build -DENABLE_GEOTIFF=ON   # CMake
 ```
 **Dependencies**: libgeotiff, libtiff.
 
+**Resources**: [GeoTIFF Home](https://geotiff.io/) · [OGC GeoTIFF Standard](https://docs.ogc.org/is/19-008r4/19-008r4.html) · [GDAL GeoTIFF Driver](https://gdal.org/drivers/raster/gtiff.html)
+
 **Example:**
 ```c
 nc_open("satellite_image.tif", NC_NOWRITE, &ncid);
@@ -71,6 +73,8 @@ cmake -B build -DENABLE_GRIB2=ON   # CMake
 ./configure --enable-grib2          # Autotools
 ```
 **Dependencies**: NOAA NCEPLIBS-g2c ≥ 2.1.0, libjasper ≥ 3.0.0.
+
+**Resources**: [NCEP GRIB2 Documentation](https://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_doc/) · [WMO GRIB2 Specification](https://library.wmo.int/records/item/35713-manual-on-the-grib2-code-form) · [NCEPLIBS-g2c](https://github.com/NOAA-EMC/NCEPLIBS-g2c)
 
 **Example:**
 ```c
@@ -109,6 +113,8 @@ cmake -B build -DENABLE_FITS=ON   # CMake
 ./configure --enable-fits          # Autotools
 ```
 **Dependencies**: CFITSIO ≥ 3.0.
+
+**Resources**: [FITS Standard](https://fits.gsfc.nasa.gov/fits_standard.html) · [CFITSIO Home](https://heasarc.gsfc.nasa.gov/docs/software/fitsio/) · [FITS Documentation Index](https://fits.gsfc.nasa.gov/fits_documentation.html)
 
 **Example:**
 ```c
@@ -181,6 +187,8 @@ cmake -B build -DENABLE_PDS4=ON   # CMake
 ```
 **Dependencies**: libxml2 ≥ 2.9 (`libxml2-dev` on Ubuntu/Debian; `libxml2-devel` on RHEL/Fedora).
 
+**Resources**: [PDS4 Standards Documentation](https://pds.nasa.gov/data-standards/documentation/current-version.shtml) · [PDS4 Data Standards Handbook](https://pds.nasa.gov/data-standards/documents/im/current/index_1M00.shtml) · [PDS Tools and Services](https://pds.nasa.gov/tools/services/index.shtml)
+
 **Example:**
 ```c
 #include "pds4dispatch.h"
@@ -191,6 +199,30 @@ nc_inq_varid(grpid, "Array_2D_Image", &varid);
 nc_get_vara_float(grpid, varid, start, count, image_data);
 nc_close(ncid);
 ```
+
+---
+
+## Testing
+
+NEP's PDS4 reader is validated against a mix of small synthetic labels and real mission data products. The test files live under `test/data/PDS4/` and are copied into the build tree by both CMake and Autotools.
+
+### Synthetic / Unit Test Products
+
+| File | Product Type | Coverage |
+|------|--------------|----------|
+| `test_image.xml` / `test_image.img` | `Array_2D_Image` | 4×4 `IEEE754MSBSingle` array metadata and data reading |
+| `test_table_binary.xml` / `test_table_binary.dat` | `Table_Binary` | Binary fields (`IEEE754MSBDouble`, `SignedMSB4`, `IEEE754MSBSingle`) |
+| `Table_Character_Example.xml` / `Table_Character_Example.tab` | `Table_Character` | ASCII real fields and units |
+
+### Mission Test Products
+
+| Mission | Dataset | Files | Product Type | PDS4 Data Types |
+|---------|---------|-------|--------------|-----------------|
+| **Cassini-Huygens** | High Rate Detector (HRD) engineering on/off log | `cassini_hrd/hrd_2000_on_off.xml`, `hrd_2000_on_off.tab` | `Table_Character` | `ASCII_Date_Time_DOY`, `ASCII_String` |
+| **MESSENGER** | Mercury thermal neutron map (Peplowski et al., 2015) | `messenger_tnmap/thermal_neutron_map.xml`, `thermal_neutron_map.img` | `Array_2D_Image` | `UnsignedByte` |
+| **LCS-9P / McDonald Observatory** | Comet 9P/Tempel 1 CN photometry and column densities | `lcs_9p/20050706_000.xml`, `20050706_000.tab` | `Table_Character` | `ASCII_Integer`, `ASCII_Real` |
+
+These mission products exercise data types and structures not covered by the synthetic tests, including unsigned byte images, date/time strings, integer ASCII fields, and real-world table layouts.
 
 ---
 
