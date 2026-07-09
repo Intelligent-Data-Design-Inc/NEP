@@ -55,6 +55,26 @@ extern "C" {
 /**
  * @defgroup nep_udf_slots NEP UDF Slot Allocation
  * @{
+ *
+ * NetCDF-C exposes ten User-Defined Format (UDF) slots (UDF0–UDF9). Each NEP
+ * format handler occupies a permanently assigned slot so that multiple handlers
+ * can be enabled simultaneously without conflict. Slot assignments are stable
+ * across NEP releases; UDF6–UDF9 are reserved for future formats.
+ *
+ * | Slot  | Macro                      | Format                   | Magic       |
+ * |-------|----------------------------|--------------------------|-------------|
+ * | UDF0  | NEP_UDF_GEOTIFF_BIGTIFF    | GeoTIFF BigTIFF          | `II+`       |
+ * | UDF1  | NEP_UDF_GEOTIFF_STANDARD   | GeoTIFF standard TIFF    | `II*`       |
+ * | UDF2  | NEP_UDF_GRIB2              | GRIB2 meteorological     | `GRIB`      |
+ * | UDF3  | NEP_UDF_FITS               | FITS astronomical        | `SIMPLE`    |
+ * | UDF4  | NEP_UDF_CDF                | NASA CDF space physics   | `0xCDF30001`|
+ * | UDF5  | NEP_UDF_PDS4               | NASA/ESA PDS4 planetary  | `<?xml`     |
+ * | UDF6–9| —                          | Reserved                 | —           |
+ *
+ * Call `NC_GEOTIFF_initialize()`, `NC_GRIB2_initialize()`, `NC_FITS_initialize()`,
+ * `NC_CDF_initialize()`, or `NC_PDS4_initialize()` to register the corresponding
+ * handler before calling `nc_open()`. With `.ncrc` autoload (NetCDF-C main branch)
+ * no explicit call is needed.
  */
 
 /** GeoTIFF BigTIFF format uses UDF0 slot */
@@ -80,6 +100,22 @@ extern "C" {
 /**
  * @defgroup nep_magic_numbers Format Magic Numbers
  * @{
+ *
+ * Each NEP format handler is identified by a short byte sequence (magic number)
+ * at the start of the file. NetCDF-C compares the first bytes of any file opened
+ * with `nc_open()` against each registered magic string to select the correct
+ * UDF handler. All magic strings are null-terminated C strings except
+ * `NEP_MAGIC_CDF`, which contains embedded null bytes and must be matched by
+ * length.
+ *
+ * | Macro                       | Value         | Format                 | Notes                              |
+ * |-----------------------------|---------------|------------------------|-------------------------------------|
+ * | NEP_MAGIC_GEOTIFF_STANDARD  | `"II*"`        | GeoTIFF standard TIFF  | Little-endian TIFF byte-order mark |
+ * | NEP_MAGIC_GEOTIFF_BIGTIFF   | `"II+"`        | GeoTIFF BigTIFF        | Little-endian BigTIFF marker       |
+ * | NEP_MAGIC_GRIB2             | `"GRIB"`       | GRIB2                  | All GRIB editions share this magic |
+ * | NEP_MAGIC_FITS              | `"SIMPLE"`     | FITS                   | First 6 bytes of every FITS file   |
+ * | NEP_MAGIC_CDF               | `\xCD\xF3\x00\x01` | NASA CDF          | 4-byte binary signature            |
+ * | NEP_MAGIC_PDS4              | `"<?xml"`      | PDS4                   | XML declaration; namespace checked |
  */
 
 /** GeoTIFF standard TIFF magic number: "II*" */
@@ -105,6 +141,19 @@ extern "C" {
 /**
  * @defgroup nep_format_names Format Display Names
  * @{
+ *
+ * Human-readable display name strings for each NEP format handler. These are
+ * used in log messages, error output, and `.ncrc` UDF registration entries to
+ * identify the active handler. Use these macros rather than hard-coded strings
+ * to ensure consistent naming across the library.
+ *
+ * | Macro                    | Value         | Format                  |
+ * |--------------------------|---------------|-------------------------|
+ * | NEP_FORMAT_NAME_GEOTIFF  | `"GeoTIFF"`   | GeoTIFF / BigTIFF       |
+ * | NEP_FORMAT_NAME_GRIB2    | `"GRIB2"`     | GRIB2 meteorological    |
+ * | NEP_FORMAT_NAME_FITS     | `"FITS"`      | FITS astronomical       |
+ * | NEP_FORMAT_NAME_CDF      | `"NASA CDF"`  | NASA CDF space physics  |
+ * | NEP_FORMAT_NAME_PDS4     | `"PDS4"`      | NASA/ESA PDS4 planetary |
  */
 
 /** GeoTIFF format display name */

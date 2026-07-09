@@ -4,24 +4,18 @@
 
 NEP (NetCDF Extension Pack) extends NetCDF-4 with high-performance compression and multi-format data access.
 
-**Compression Filters** (HDF5 filter plugins for NetCDF-4 files):
-- **LZ4**: Speed-optimized lossless compression (2-3x faster than DEFLATE)
-- **BZIP2**: High-ratio lossless compression for archival storage
+**Compression Filters** — LZ4 and BZIP2 HDF5 filter plugins for NetCDF-4 files, both enabled by default. LZ4 targets speed (2–3× faster than DEFLATE); BZIP2 targets ratio (ideal for archival). See [Compression Filters](compression.md) for algorithm details, C/Fortran API reference, and performance benchmarks.
 
-See `docs/compression.md` for algorithm details, API reference, and performance benchmarks.
+**Format Readers** — Five NetCDF UDF handlers that expose external scientific formats through the standard `nc_open()` API, all disabled by default:
+- **GeoTIFF** (UDF0/UDF1): Geospatial raster files with CF-1.8 CRS metadata
+- **GRIB2** (UDF2): Meteorological and oceanographic NWP model output (NOAA GFS, NAM, HRRR)
+- **FITS** (UDF3): Astronomical images and tables from HST, JWST, Chandra, and other observatories
+- **CDF** (UDF4): NASA space physics and heliophysics time-series data
+- **PDS4** (UDF5): NASA/ESA planetary science archives (Curiosity, Perseverance, Cassini, and others)
 
-**Format Readers** (NetCDF UDF handlers; all disabled by default):
-- **GeoTIFF** (UDF0/UDF1): Geospatial raster files
-- **GRIB2** (UDF2): Meteorological and oceanographic NWP model output
-- **FITS** (UDF3): Astronomical images and tables (HST, JWST, Chandra)
-- **CDF** (UDF4): NASA space physics data
-- **PDS4** (UDF5): NASA/ESA planetary science archives
+See [Format Readers](formats.md) for usage, code examples, and dependency information for each reader.
 
-See `docs/formats.md` for usage, API examples, and dependency information for each reader.
-
-Over 55 C and Fortran **example programs** cover classic NetCDF, NetCDF-4, NcZarr, OPeNDAP remote access, performance tuning, and parallel I/O. They are companion code for *[The NetCDF Developer's Handbook: The Authoritative Guide to Writing High-Performance Programs for Scientific Data Management, Second Edition](https://www.amazon.com/dp/B0H7Q1Z75L)*.
-
-See `docs/examples.md` for the full program listing.
+**Example Programs** — Over 55 C and Fortran programs covering classic NetCDF, NetCDF-4, NcZarr, OPeNDAP remote access, performance tuning, and parallel I/O. Companion code for *[The NetCDF Developer's Handbook, Second Edition](https://www.amazon.com/dp/B0H7Q1Z75L)*. See [Example Programs](examples.md) for the complete listing.
 
 ## Installation
 
@@ -53,7 +47,7 @@ make install
 
 ## Build Options
 
-See `docs/build-options.md` for the full CMake and Autotools option reference.
+See the [Configuration Options](https://github.com/Intelligent-Data-Design-Inc/NEP#configuration-options) section of the README for the full CMake and Autotools option reference.
 
 ## API Documentation
 

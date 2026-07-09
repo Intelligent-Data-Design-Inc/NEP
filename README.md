@@ -277,8 +277,7 @@ export NETCDF_RC=/usr/local/share/nep
 | CMake | `${prefix}/share/nep/.ncrc` | `-DNEP_NCRC_INSTALL_DIR=<path>` |
 | Autotools | `${datarootdir}/nep/.ncrc` | `--with-ncrc-dir=<path>` |
 
-For full details see [docs/build-options.md](docs/build-options.md#udf-autoloading-via-ncrc-v155)
-and the [NetCDF UDF documentation](https://docs.unidata.ucar.edu/netcdf/NUG/user_defined_formats.html).
+For full details on the UDF RC file format see the [NetCDF UDF documentation](https://docs.unidata.ucar.edu/netcdf/NUG/user_defined_formats.html).
 
 ---
 
@@ -507,24 +506,56 @@ make uninstall
 
 ### Configuration Options
 
-| CMake Option | Autotools Option | Default | Description |
-|--------------|------------------|---------|-------------|
-| `-DBUILD_DOCUMENTATION=ON/OFF` | `--enable-docs/--disable-docs` | ON/enabled | Build API documentation |
-| `-DBUILD_EXAMPLES=ON/OFF` | `--enable-examples/--disable-examples` | ON/enabled | Build example programs (v3.5.1+) |
-| `-DENABLE_FORTRAN=ON/OFF` | `--enable-fortran/--disable-fortran` | ON/enabled | Fortran wrappers and tests |
-| `-DENABLE_CDF=ON/OFF` | `--enable-cdf/--disable-cdf` | OFF/disabled | CDF UDF handler build (v1.3.0+) |
-| `-DENABLE_GEOTIFF=ON/OFF` | `--enable-geotiff/--disable-geotiff` | OFF/disabled | GeoTIFF UDF handler build (v1.5.0+) |
-| `-DENABLE_GRIB2=ON/OFF` | `--enable-grib2/--disable-grib2` | OFF/disabled | GRIB2 UDF handler build (v1.7.0+) |
-| `-DENABLE_FITS=ON/OFF` | `--enable-fits/--disable-fits` | OFF/disabled | FITS UDF handler build (v2.0.0+) |
-| `-DENABLE_PDS4=ON/OFF` | `--enable-pds4/--disable-pds4` | OFF/disabled | PDS4 UDF handler build (v2.2.0+) |
-| N/A | `--enable-lz4/--disable-lz4` | enabled | LZ4 compression support |
-| N/A | `--enable-bzip2/--disable-bzip2` | enabled | BZIP2 compression support |
+#### Quick Reference
 
-**Note on CDF Support (v1.3.0):** The `--enable-cdf` option enables building the CDF UDF handler library (`libnccdf`) with full read support for CDF files. To use this option, you must have the NASA CDF library installed. Download from: https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/
+| Option (CMake / Autotools) | Default | Purpose |
+|---|---|---|
+| `-DBUILD_LZ4` / `--enable-lz4` | ON | LZ4 compression filter |
+| `-DBUILD_BZIP2` / `--enable-bzip2` | ON | BZIP2 compression filter |
+| `-DENABLE_FORTRAN` / `--enable-fortran` | ON | Fortran wrappers and tests |
+| `-DENABLE_GEOTIFF` / `--enable-geotiff` | **OFF** | GeoTIFF UDF handler (UDF0/UDF1) |
+| `-DENABLE_GRIB2` / `--enable-grib2` | **OFF** | GRIB2 UDF handler (UDF2) |
+| `-DENABLE_FITS` / `--enable-fits` | **OFF** | FITS UDF handler (UDF3) |
+| `-DENABLE_CDF` / `--enable-cdf` | **OFF** | NASA CDF UDF handler (UDF4) |
+| `-DENABLE_PDS4` / `--enable-pds4` | **OFF** | NASA/ESA PDS4 UDF handler (UDF5) |
+| `-DBUILD_EXAMPLES` / `--enable-examples` | ON | Example programs |
+| `-DENABLE_BENCHMARKS` / `--enable-benchmarks` | OFF | Performance benchmark examples |
+| `-DENABLE_PARALLEL_TESTS` / `--enable-parallel-tests` | OFF | MPI parallel I/O tests |
+| `-DBUILD_DOCUMENTATION` / `--enable-docs` | ON | Doxygen API docs |
 
-The CDF UDF handler library is installed to `${prefix}/lib/libnccdf.so` (CMake) or `${prefix}/lib/libnccdf.la` (Autotools) when CDF support is enabled.
+#### Compression
 
-**Spack Users:** Install CDF separately with `spack install cdf` (v1.4.0+). The CDF variant will be added back to the NEP Spack package once the CDF package is accepted into the main Spack repository.
+- **LZ4** (`-DBUILD_LZ4`, default ON): builds `libh5lz4.so` HDF5 filter plugin; provides `nc_def_var_lz4()` / `nf90_def_var_lz4()`. Requires liblz4.
+- **BZIP2** (`-DBUILD_BZIP2`, default ON): builds `libh5bzip2.so` HDF5 filter plugin; provides `nc_def_var_bzip2()` / `nf90_def_var_bzip2()`. Requires libbz2.
+
+#### Fortran
+
+`-DENABLE_FORTRAN` / `--enable-fortran` (default ON): builds Fortran wrappers in `fsrc/`, Fortran tests in `ftest/`, and Fortran examples in `examples/f_*/`. Requires NetCDF-Fortran and a Fortran 90+ compiler.
+
+#### Format Readers
+
+All five format readers default to **OFF** and are independent — any combination can be enabled simultaneously.
+
+| Format | CMake / Autotools | UDF Slot | Dependencies |
+|--------|-------------------|----------|--------------|
+| GeoTIFF | `-DENABLE_GEOTIFF` / `--enable-geotiff` | UDF0, UDF1 | libgeotiff, libtiff |
+| GRIB2 | `-DENABLE_GRIB2` / `--enable-grib2` | UDF2 | NCEPLIBS-g2c ≥ 2.1.0, libjasper ≥ 3.0.0 |
+| FITS | `-DENABLE_FITS` / `--enable-fits` | UDF3 | CFITSIO ≥ 3.0 |
+| NASA CDF | `-DENABLE_CDF` / `--enable-cdf` | UDF4 | NASA CDF library v3.9.x |
+| PDS4 | `-DENABLE_PDS4` / `--enable-pds4` | UDF5 | libxml2 ≥ 2.9 |
+
+- NASA CDF library: https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/ (or `spack install cdf`)
+- CDF moved from UDF2 to UDF4 in v2.2.0; GRIB2 and CDF can now be enabled together.
+
+#### Examples and Benchmarks
+
+- **`-DBUILD_EXAMPLES`** / `--enable-examples` (default ON): builds all example programs and registers them as tests.
+- **`-DENABLE_BENCHMARKS`** / `--enable-benchmarks` (default OFF): builds compression benchmark programs in `examples/performance/`.
+- **`-DENABLE_PARALLEL_TESTS`** / `--enable-parallel-tests` (default OFF): builds `examples/parallelIO/` and runs tests via `mpiexec -n 4`. Requires MPI and NetCDF-C with `NC_HAS_PARALLEL4`.
+
+#### Documentation
+
+`-DBUILD_DOCUMENTATION` / `--enable-docs` (default ON): generates Doxygen API documentation from C and Fortran sources, published to GitHub Pages. Requires Doxygen and Graphviz.
 
 ### Using NEP in Your Project
 
@@ -542,7 +573,7 @@ For more detailed information about the project:
 
 - **[PR/FAQ](docs/prfaq.md)** - Press release and frequently asked questions
 - **[Roadmap](docs/roadmap.md)** - Development roadmap and release schedule
-- **[Product Requirements](docs/prd.md)** - Detailed product requirements and specifications (v1.0.0)
-- **[Design Document](docs/design.md)** - Technical architecture and design details (v1.0.0)
+- **[Product Requirements](docs/prd.md)** - Detailed product requirements and specifications
+- **[Design Document](docs/design.md)** - Technical architecture and design details
 
 ---

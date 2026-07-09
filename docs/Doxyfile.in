@@ -954,7 +954,9 @@ INPUT                  = @abs_top_srcdir@/src/nep.c \
                          @abs_top_srcdir@/include/cdfdispatch.h \
                          @abs_top_srcdir@/fsrc/nep.F90 \
                          @abs_top_srcdir@/docs/mainpage.md \
-                         @abs_top_srcdir@/docs/build-options.md \
+                         @abs_top_srcdir@/docs/compression.md \
+                         @abs_top_srcdir@/docs/formats.md \
+                         @abs_top_srcdir@/docs/examples.md \
                          @abs_top_srcdir@/examples/README.md \
                          @abs_top_srcdir@/examples
 
