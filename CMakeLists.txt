@@ -64,14 +64,29 @@ if(NOT DOCS_ONLY)
     include_directories (${HDF5_INCLUDE_DIR})
     set (LINK_LIBS ${LINK_LIBS} ${HDF5_C_${LIB_TYPE}_LIBRARY})
 
-    # Find NetCDF-C (requires 4.10.0+ for UDF self-loading support)
+    # Find NetCDF-C (requires 4.10.1+ for UDF slots > 2)
     find_package(PkgConfig REQUIRED)
-    pkg_check_modules(NETCDF REQUIRED netcdf>=4.10.0)
+    pkg_check_modules(NETCDF REQUIRED netcdf>=4.10.1)
     pkg_get_variable(NETCDF_PREFIX netcdf prefix)
     include_directories(${NETCDF_INCLUDE_DIRS})
     link_directories(${NETCDF_LIBRARY_DIRS})
     set (LINK_LIBS ${LINK_LIBS} ${NETCDF_LIBRARIES})
     message(STATUS "Found NetCDF-C: ${NETCDF_VERSION}")
+
+    # Sanity-check the installed NetCDF-C headers are at least 4.10.1.
+    include(CheckCSourceCompiles)
+    set(_saved_cmake_required_includes "${CMAKE_REQUIRED_INCLUDES}")
+    set(CMAKE_REQUIRED_INCLUDES "${NETCDF_INCLUDE_DIRS}")
+    check_c_source_compiles("#include <netcdf_meta.h>
+#if NC_VERSION_MAJOR < 4 || (NC_VERSION_MAJOR == 4 && NC_VERSION_MINOR < 10) || (NC_VERSION_MAJOR == 4 && NC_VERSION_MINOR == 10 && NC_VERSION_PATCH < 1)
+#error NetCDF-C >= 4.10.1 is required
+#endif
+int main(void){ return 0; }" NETCDF_VERSION_OK)
+    set(CMAKE_REQUIRED_INCLUDES "${_saved_cmake_required_includes}")
+    unset(_saved_cmake_required_includes)
+    if(NOT NETCDF_VERSION_OK)
+        message(FATAL_ERROR "NetCDF-C >= 4.10.1 is required for UDF slots > 2, but the installed headers are older.")
+    endif()
 
     # Find ncdump from the NetCDF-C installation
     find_program(NCDUMP ncdump HINTS "${NETCDF_PREFIX}/bin" REQUIRED)

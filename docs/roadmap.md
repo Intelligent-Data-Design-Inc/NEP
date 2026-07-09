@@ -15,7 +15,21 @@
 - Struct fix: remove `@internal` from `pds4dispatch.h` `@file` tag (not `EXTRACT_PRIVATE=YES`, which would expose other internal entities globally).
 - `docs/mainpage.md`: full PDS4 section with C usage example, matching FITS section depth.
 - `docs/prd.md`: new PDS4 API subsection; no code changes.
-- Sprint 1 is documentation-only; new tests deferred to Sprint 2.
+- Sprint 1 is documentation-only; new tests deferred to Sprint 3.
+
+#### Sprint 2: Require netcdf-c-4.10.1
+**Detailed Plan**: See `docs/plan/v2.3.0-sprint2-netcdf-c-4.10.1.md`
+
+- netcdf-c-4.10.1 just released. This is the new minimum required netcdf-c version for the NEP.
+- CMake and autotools builds must require netcdf-c-4.10.1.
+- Update all CIs to use this netcdf-c version.
+- Document in `README.md` that this version is required, to support UDF numbers > 2.
+
+**Clarified decisions:**
+- Both build systems use a two-layer check: update the pkg-config minimum to `>= 4.10.1` and add a compile-time `NC_VERSION_*` sanity check.
+- All CI workflows that build NetCDF-C from source move to 4.10.1: `ci.yml`, `ci-fits.yml`, `ci-formats.yml`, `ci-parallel.yml`, and `geotiff-test.yml`.
+- No runtime version probe test is added; the build-system requirement is the verification mechanism.
+- Local build guidance documents are updated only if they currently mention a specific NetCDF-C version.
 
 ### V2.2.0 Read NASA/ESA Planetary Data System 4 Data
 
