@@ -435,12 +435,12 @@ AC_PREFIX_DEFAULT([`pwd`/plugin])
 # Initialize Libtool
 LT_INIT([shared disable-static])
 
-# Check for netCDF C library (requires 4.10.0+ for UDF self-loading support).
+# Check for netCDF C library (requires 4.10.1+ for UDF slots > 2).
 AC_SEARCH_LIBS([nc_create], [netcdf], [],
                             [AC_MSG_ERROR([Can't find or link to the netCDF C library, set CPPFLAGS/LDFLAGS.])])
 AC_CHECK_HEADERS([netcdf.h netcdf_meta.h])
 
-# Verify netcdf-c >= 4.10.0 via pkg-config
+# Verify netcdf-c >= 4.10.1 via pkg-config
 # Auto-discover netcdf.pc by scanning LDFLAGS for the directory containing libnetcdf
 for flag in $LDFLAGS; do
     case $flag in
@@ -457,8 +457,20 @@ for flag in $LDFLAGS; do
             ;;
     esac
 done
-PKG_CHECK_MODULES([NETCDF], [netcdf >= 4.10.0], [],
-    [AC_MSG_ERROR([netcdf-c >= 4.10.0 is required. Found older version or netcdf not found via pkg-config.])])
+PKG_CHECK_MODULES([NETCDF], [netcdf >= 4.10.1], [],
+    [AC_MSG_ERROR([netcdf-c >= 4.10.1 is required. Found older version or netcdf not found via pkg-config.])])
+
+# Sanity-check the installed NetCDF-C headers are at least 4.10.1.
+AC_MSG_CHECKING([whether NetCDF-C headers are >= 4.10.1])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([#include "netcdf_meta.h"],
+[[#if NC_VERSION_MAJOR < 4 || (NC_VERSION_MAJOR == 4 && NC_VERSION_MINOR < 10) || (NC_VERSION_MAJOR == 4 && NC_VERSION_MINOR == 10 && NC_VERSION_PATCH < 1)
+# error NetCDF-C >= 4.10.1 is required
+#endif]
+])], [netcdf_headers_ok=yes], [netcdf_headers_ok=no])
+AC_MSG_RESULT([$netcdf_headers_ok])
+if test "x$netcdf_headers_ok" = xno; then
+   AC_MSG_ERROR([NetCDF-C >= 4.10.1 is required for UDF slots > 2, but the installed headers are older.])
+fi
 
 
 # Find ncdump from the NetCDF-C installation

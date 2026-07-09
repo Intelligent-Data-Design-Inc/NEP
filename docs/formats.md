@@ -146,6 +146,8 @@ cmake -B build -DENABLE_CDF=ON   # CMake
 ```
 **Dependencies**: NASA CDF library v3.9.x — download from https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/ or `spack install cdf`.
 
+**Resources**: [NASA CDF Homepage](https://cdf.gsfc.nasa.gov/) · [CDF C Reference Manual](https://spdf.gsfc.nasa.gov/pub/software/cdf/doc/cdf_C_RefManual.pdf)
+
 **Example:**
 ```c
 nc_open("data.cdf", NC_NOWRITE, &ncid);
@@ -192,4 +194,38 @@ nc_close(ncid);
 
 ---
 
-See `docs/build-options.md` for the full build option reference and UDF autoload (`.ncrc`) setup.
+## UDF Autoloading via `.ncrc`
+
+NEP installs a `.ncrc` configuration file that enables NetCDF-C's UDF self-loading mechanism. Once configured, `nc_open()` and `ncdump` automatically select the correct format handler with no application code changes.
+
+**Setup** — merge the installed file into `~/.ncrc`:
+
+```bash
+cat /usr/local/share/nep/.ncrc >> ~/.ncrc
+```
+
+Or point `NETCDF_RC` to the directory for a per-session override:
+
+```bash
+export NETCDF_RC=/usr/local/share/nep
+```
+
+Then open any supported format transparently:
+
+```c
+nc_open("satellite_image.tif",                  NC_NOWRITE, &ncid);  /* GeoTIFF */
+nc_open("data.cdf",                             NC_NOWRITE, &ncid);  /* CDF */
+nc_open("gdaswave.t00z.wcoast.0p16.f000.grib2", NC_NOWRITE, &ncid);  /* GRIB2 */
+nc_open("image.fits",                           NC_NOWRITE, &ncid);  /* FITS */
+```
+
+**Install path**:
+
+| Build system | Default | Override |
+|---|---|---|
+| CMake | `${prefix}/share/nep/.ncrc` | `-DNEP_NCRC_INSTALL_DIR=<path>` |
+| Autotools | `${datarootdir}/nep/.ncrc` | `--with-ncrc-dir=<path>` |
+
+**Note**: `.ncrc` autoload requires NetCDF-C built from the main branch. With NetCDF-C 4.10.0, call `NC_*_initialize()` explicitly before `nc_open()`.
+
+See the [NetCDF UDF documentation](https://docs.unidata.ucar.edu/netcdf/NUG/user_defined_formats.html) for the full RC file format reference.

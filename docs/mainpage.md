@@ -4,18 +4,28 @@
 
 NEP (NetCDF Extension Pack) extends NetCDF-4 with high-performance compression and multi-format data access.
 
-**Compression Filters** — LZ4 and BZIP2 HDF5 filter plugins for NetCDF-4 files, both enabled by default. LZ4 targets speed (2–3× faster than DEFLATE); BZIP2 targets ratio (ideal for archival). See [Compression Filters](compression.md) for algorithm details, C/Fortran API reference, and performance benchmarks.
+### Compression Filters
 
-**Format Readers** — Five NetCDF UDF handlers that expose external scientific formats through the standard `nc_open()` API, all disabled by default:
+LZ4 and BZIP2 HDF5 filter plugins for NetCDF-4 files, both enabled by default. LZ4 targets speed (2–3× faster than DEFLATE); BZIP2 targets ratio (ideal for archival).
+
+See **[Compression Filters](compression.md)** — algorithm details, C/Fortran API reference, and performance benchmarks.
+
+### Format Readers
+
+Five NetCDF UDF handlers that expose external scientific formats through the standard `nc_open()` API, all disabled by default:
 - **GeoTIFF** (UDF0/UDF1): Geospatial raster files with CF-1.8 CRS metadata
 - **GRIB2** (UDF2): Meteorological and oceanographic NWP model output (NOAA GFS, NAM, HRRR)
 - **FITS** (UDF3): Astronomical images and tables from HST, JWST, Chandra, and other observatories
 - **CDF** (UDF4): NASA space physics and heliophysics time-series data
 - **PDS4** (UDF5): NASA/ESA planetary science archives (Curiosity, Perseverance, Cassini, and others)
 
-See [Format Readers](formats.md) for usage, code examples, and dependency information for each reader.
+See **[Format Readers](formats.md)** — usage, code examples, and dependency information for each reader.
 
-**Example Programs** — Over 55 C and Fortran programs covering classic NetCDF, NetCDF-4, NcZarr, OPeNDAP remote access, performance tuning, and parallel I/O. Companion code for *[The NetCDF Developer's Handbook, Second Edition](https://www.amazon.com/dp/B0H7Q1Z75L)*. See [Example Programs](examples.md) for the complete listing.
+### Example Programs
+
+Over 55 C and Fortran programs covering classic NetCDF, NetCDF-4, NcZarr, OPeNDAP remote access, performance tuning, and parallel I/O. Companion code for *[The NetCDF Developer's Handbook, Second Edition](https://www.amazon.com/dp/B0H7Q1Z75L)*.
+
+See **[Example Programs](examples.md)** — complete program listing by category.
 
 ## Installation
 

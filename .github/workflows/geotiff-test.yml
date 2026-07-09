@@ -75,14 +75,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-c-install
-          key: netcdf-c-4.10.0-${{ runner.os }}-geotiff-1
+          key: netcdf-c-4.10.1-${{ runner.os }}-geotiff-1
 
       - name: Download and build NetCDF-C
         if: steps.cache-netcdf-c.outputs.cache-hit != 'true'
         run: |
-          wget https://github.com/Unidata/netcdf-c/archive/v4.10.0.tar.gz &> /dev/null
-          tar -xzf v4.10.0.tar.gz
-          cd netcdf-c-4.10.0
+          wget https://github.com/Unidata/netcdf-c/archive/v4.10.1.tar.gz &> /dev/null
+          tar -xzf v4.10.1.tar.gz
+          cd netcdf-c-4.10.1
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib"
@@ -279,14 +279,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-c-install
-          key: netcdf-c-4.10.0-${{ runner.os }}-geotiff-1
+          key: netcdf-c-4.10.1-${{ runner.os }}-geotiff-1
 
       - name: Download and build NetCDF-C
         if: steps.cache-netcdf-c.outputs.cache-hit != 'true'
         run: |
-          wget https://github.com/Unidata/netcdf-c/archive/v4.10.0.tar.gz &> /dev/null
-          tar -xzf v4.10.0.tar.gz
-          cd netcdf-c-4.10.0
+          wget https://github.com/Unidata/netcdf-c/archive/v4.10.1.tar.gz &> /dev/null
+          tar -xzf v4.10.1.tar.gz
+          cd netcdf-c-4.10.1
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib"
@@ -422,14 +422,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-c-install
-          key: netcdf-c-4.10.0-${{ runner.os }}-geotiff-1
+          key: netcdf-c-4.10.1-${{ runner.os }}-geotiff-1
 
       - name: Download and build NetCDF-C
         if: steps.cache-netcdf-c.outputs.cache-hit != 'true'
         run: |
-          wget https://github.com/Unidata/netcdf-c/archive/v4.10.0.tar.gz &> /dev/null
-          tar -xzf v4.10.0.tar.gz
-          cd netcdf-c-4.10.0
+          wget https://github.com/Unidata/netcdf-c/archive/v4.10.1.tar.gz &> /dev/null
+          tar -xzf v4.10.1.tar.gz
+          cd netcdf-c-4.10.1
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib"
