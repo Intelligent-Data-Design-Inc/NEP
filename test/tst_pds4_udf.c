@@ -643,13 +643,14 @@ test_mission_lcs_9p(void)
         return 1;
     }
 
-    if ((retval = nc_inq_varid(grp_ncid, "Spec Num", &varid)))
+    /* The PDS4 reader replaces spaces in field names with underscores. */
+    if ((retval = nc_inq_varid(grp_ncid, "Spec_Num", &varid)))
         ERR(retval);
     if ((retval = nc_inq_var(grp_ncid, varid, name, &xtype, &ndims, NULL, &natts)))
         ERR(retval);
     if (xtype != NC_INT64)
     {
-        fprintf(stderr, "Expected Spec Num xtype=NC_INT64, got %d\n", xtype);
+        fprintf(stderr, "Expected Spec_Num xtype=NC_INT64, got %d\n", xtype);
         return 1;
     }
 
@@ -657,15 +658,15 @@ test_mission_lcs_9p(void)
         ERR(retval);
     if (spec_num < 1)
     {
-        fprintf(stderr, "Unexpected Spec Num: %lld\n", spec_num);
+        fprintf(stderr, "Unexpected Spec_Num: %lld\n", spec_num);
         return 1;
     }
 
-    if ((retval = nc_inq_varid(grp_ncid, "HA Pos", &varid)))
+    if ((retval = nc_inq_varid(grp_ncid, "HA_Pos", &varid)))
         ERR(retval);
     if ((retval = nc_get_vara_double(grp_ncid, varid, start, count, &ha_pos)))
         ERR(retval);
-    printf("PASS: LCS-9P record 0: Spec Num=%lld, HA Pos=%.3f km\n", spec_num, ha_pos);
+    printf("PASS: LCS-9P record 0: Spec_Num=%lld, HA_Pos=%.3f km\n", spec_num, ha_pos);
 
     if ((retval = nc_close(ncid)))
         ERR(retval);
