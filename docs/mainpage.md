@@ -2,15 +2,18 @@
 
 ## Overview
 
-NEP (NetCDF Extension Pack) extends NetCDF-4 with high-performance compression and multi-format data access:
+NEP (NetCDF Extension Pack) extends NetCDF-4 with high-performance compression and multi-format data access.
 
-- **LZ4 Compression**: Speed-optimized lossless compression (2-3x faster than DEFLATE)
-- **BZIP2 Compression**: High-ratio lossless compression for archival storage
-- **CDF File Reader**: Read NASA Common Data Format files through the NetCDF API
-- **GeoTIFF File Reader**: Read GeoTIFF geospatial raster files through the NetCDF API
-- **GRIB2 File Reader**: Read GRIB2 meteorological and oceanographic data files through the NetCDF API
-- **FITS File Reader**: Read NASA/ESA FITS astronomical image and table HDUs through the NetCDF API
-- **PDS4 File Reader**: Read NASA/ESA Planetary Data System 4 XML-label datasets through the NetCDF API
+**Compression Filters** (HDF5 filter plugins for NetCDF-4 files):
+- **LZ4**: Speed-optimized lossless compression (2-3x faster than DEFLATE)
+- **BZIP2**: High-ratio lossless compression for archival storage
+
+**Format Readers** (NetCDF UDF handlers; all disabled by default):
+- **GeoTIFF** (UDF0/UDF1): Read GeoTIFF geospatial raster files through the NetCDF API
+- **GRIB2** (UDF2): Read GRIB2 meteorological and oceanographic data files through the NetCDF API
+- **FITS** (UDF3): Read NASA/ESA FITS astronomical image and table HDUs through the NetCDF API
+- **CDF** (UDF4): Read NASA Common Data Format files through the NetCDF API
+- **PDS4** (UDF5): Read NASA/ESA Planetary Data System 4 XML-label datasets through the NetCDF API
 
 NEP provides flexible compression options and unified data access for diverse scientific data workflows.
 
@@ -84,20 +87,6 @@ C only. Built with `-DENABLE_BENCHMARKS=ON` (CMake) or `--enable-benchmarks` (Au
 Built only when parallel tests are enabled (`--enable-parallel-tests` / `-DENABLE_PARALLEL_TESTS=ON`).
 
 - `square16_par.c` / `f_square16_par.f90` — MPI-based parallel NetCDF-4 write and read
-
-### Learning Paths
-
-**Beginners**: `quickstart` → `simple_2D` → `coord_vars` → `unlimited_dim`
-
-**Intermediate**: `format_variants` → `size_limits` → `var4d` → `dump_classic_metadata`
-
-**NetCDF-4**: `simple_nc4` → `compression` → `chunking_performance` → `groups` → `multi_unlimited` → `user_types`
-
-**Cloud/Zarr**: `nczarr_simple` → `nczarr_chunking` → `nczarr_compression` → `nczarr_enhanced`
-
-**Remote Access**: `opendap_simple` → `opendap_subset` → `opendap_constraint`
-
-**Performance**: `cache_tuning` → `chunking` → `deflate` → `lz4` → `bzip2`
 
 See `examples/README.md` for build instructions and usage details.
 
@@ -305,14 +294,14 @@ GRIB2 is the standard binary format used by meteorological and oceanographic age
 
 ### Enabling GRIB2 Support
 
-GRIB2 support is enabled by default. To disable:
+GRIB2 support is disabled by default. To enable:
 
 ```bash
 # CMake
-cmake -B build -DENABLE_GRIB2=OFF
+cmake -B build -DENABLE_GRIB2=ON
 
 # Autotools
-./configure --disable-grib2
+./configure --enable-grib2
 ```
 
 **Requirements**: NOAA NCEPLIBS-g2c (>= 2.1.0) and libjasper (>= 3.0.0) must be installed. Supply the g2c install path at configure time.
@@ -355,14 +344,14 @@ GeoTIFF is a public domain metadata standard that allows georeferencing informat
 
 ### Enabling GeoTIFF Support
 
-GeoTIFF support is enabled by default. To disable:
+GeoTIFF support is disabled by default. To enable:
 
 ```bash
 # CMake
-cmake -B build -DENABLE_GEOTIFF=OFF
+cmake -B build -DENABLE_GEOTIFF=ON
 
 # Autotools
-./configure --disable-geotiff
+./configure --enable-geotiff
 ```
 
 **Requirements**: libgeotiff and libtiff libraries must be installed.
@@ -378,8 +367,10 @@ NEP requires:
 - BZIP2 library
 - NetCDF-Fortran library (optional, for Fortran support)
 - NASA CDF library v3.9+ (optional, for CDF file reading)
-- libgeotiff and libtiff (enabled by default, for GeoTIFF file reading)
-- NOAA NCEPLIBS-g2c >= 2.1.0 and libjasper >= 3.0.0 (enabled by default, for GRIB2 file reading)
+- libgeotiff and libtiff (optional, for GeoTIFF file reading; `--enable-geotiff`)
+- NOAA NCEPLIBS-g2c >= 2.1.0 and libjasper >= 3.0.0 (optional, for GRIB2 file reading; `--enable-grib2`)
+- CFITSIO >= 3.0 (optional, for FITS file reading; `--enable-fits`)
+- libxml2 >= 2.9 (optional, for PDS4 file reading; `--enable-pds4`)
 
 Build with CMake or Autotools:
 
@@ -484,44 +475,13 @@ nc_close(ncid);
 
 No special code is needed—the GeoTIFF UDF handler automatically detects and processes GeoTIFF files.
 
-## Features and Options
-
-- **Compression Algorithms**:
-  - LZ4: speed-optimized lossless compression
-  - BZIP2: high-ratio lossless compression
-- **CDF File Reader**:
-  - Read NASA CDF files via NetCDF API
-  - Automatic type and attribute mapping
-  - Support for TT2000 time variables
-- **GeoTIFF File Reader**:
-  - Read GeoTIFF geospatial raster files via NetCDF API
-  - Automatic dimension mapping (bands, rows, columns)
-  - CF-1.8 compliant CRS metadata (`crs` variable, coordinate variables, bounds)
-  - See `docs/cf-compliance.md` for the CF grid mapping attribute specification
-- **GRIB2 File Reader**:
-  - Read GRIB2 meteorological/oceanographic files via NetCDF API
-  - Each product exposed as a named `NC_FLOAT` variable with `[y, x]` dimensions
-  - Full grid expansion with `_FillValue` for bitmap-masked (land) points
-  - Per-variable GRIB2 metadata attributes and global `Conventions = "GRIB2"`
-  - `.ncrc` autoload support for zero-code-change `nc_open()` / `ncdump` access
-- **Configurable Build Options**:
-  - LZ4 and BZIP2 support can be enabled or disabled at build time
-  - CDF support is optional (disabled by default)
-  - GeoTIFF and GRIB2 support are enabled by default; disable with `--disable-geotiff` / `--disable-grib2`
-- **Fortran Support**:
-  - Optional Fortran wrappers for NEP functions
-  - Requires `netcdf-fortran` library when enabled
+## Build Options
 
 See the dedicated build and configuration page for full details on CMake and Autotools options:
 
 - `docs/build-options.md`
 
 ## API Documentation
-
-The API documentation is generated directly from the C and Fortran source code.
-
-- **Versioned API docs**: Documentation is published per release (for example, `/NEP/v1.2.0/api/`).
-- **Latest API docs**: A `latest` alias points to the most recent release documentation.
 
 Key API reference pages:
 

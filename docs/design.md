@@ -1,7 +1,7 @@
-# NEP – NetCDF Extension Pack v1.7.0
+# NEP – NetCDF Extension Pack v2.2.0
 ## Project Overview
 
-The NetCDF Extension Pack (NEP) v1.7.0 extends NetCDF-4 with high-performance compression filters and User Defined Format (UDF) handlers for accessing diverse scientific data formats through the standard NetCDF API. NEP provides flexible lossless compression with two complementary algorithms (LZ4 and BZIP2) and transparent access to NASA CDF, GeoTIFF, and GRIB2 files.
+The NetCDF Extension Pack (NEP) v2.2.0 extends NetCDF-4 with high-performance compression filters and User Defined Format (UDF) handlers for accessing diverse scientific data formats through the standard NetCDF API. NEP provides flexible lossless compression with two complementary algorithms (LZ4 and BZIP2) and transparent access to GeoTIFF, GRIB2, FITS, NASA CDF, and NASA/ESA PDS4 files.
 
 ## Architecture
 
@@ -397,18 +397,18 @@ Coordinate reference system (CRS) and georeferencing information stored followin
 ### Build System Integration
 
 #### GeoTIFF Support
-GeoTIFF support is enabled by default and can be disabled via build flags:
+GeoTIFF support defaults to **OFF** as of v2.2.0 and must be enabled explicitly:
 
 **CMake:**
 ```bash
-cmake -DENABLE_GEOTIFF=OFF # Disable GeoTIFF support
-cmake -DENABLE_GEOTIFF=ON  # Enable GeoTIFF support (default)
+cmake -DENABLE_GEOTIFF=ON   # Enable GeoTIFF support
+cmake -DENABLE_GEOTIFF=OFF  # Disable GeoTIFF support (default)
 ```
 
 **Autotools:**
 ```bash
-./configure --disable-geotiff  # Disable GeoTIFF support
-./configure --enable-geotiff   # Enable GeoTIFF support (default)
+./configure --enable-geotiff   # Enable GeoTIFF support
+./configure --disable-geotiff  # Disable GeoTIFF support (default)
 ```
 
 #### Dependency Detection
@@ -586,22 +586,231 @@ The GRIB2 UDF handler follows the same NC_Dispatch pattern used for CDF and GeoT
 
 ### Build System Integration
 
+GRIB2 support defaults to **OFF** as of v2.2.0 and must be enabled explicitly:
+
 **CMake:**
 ```bash
-cmake -DENABLE_GRIB2=OFF  # Disable GRIB2 support
-cmake -DENABLE_GRIB2=ON   # Enable GRIB2 support (default)
+cmake -DENABLE_GRIB2=ON   # Enable GRIB2 support
+cmake -DENABLE_GRIB2=OFF  # Disable GRIB2 support (default)
 ```
 
 **Autotools:**
 ```bash
-./configure --disable-grib2  # Disable GRIB2 support
-./configure --enable-grib2   # Enable GRIB2 support (default)
+./configure --enable-grib2   # Enable GRIB2 support
+./configure --disable-grib2  # Disable GRIB2 support (default)
 ```
 
 ### Known Limitations
 - Read-only access (NC_NOWRITE mode only)
 - 2D grids only; ensemble/time/level dimensions deferred to future releases
 - One NetCDF variable per GRIB2 message; multi-message aggregation not supported
+
+---
+
+## FITS Format Support (v2.0.0)
+
+### Overview
+
+NEP v2.0.0 adds support for FITS (Flexible Image Transport System) files through a User Defined Format (UDF) handler, using the CFITSIO library. FITS files from instruments such as HST, Chandra, and JWST can be opened with `nc_open()` and queried with standard NetCDF APIs — no conversion required.
+
+### Architecture
+
+```
+[Application Layer]
+       │
+[NetCDF-4 API]
+       │
+[NC_Dispatch Layer]
+       │
+┌──────┴──────────┐
+│                 │
+[HDF5 Backend]   [FITS UDF Handler]
+│                 │
+│             [CFITSIO]
+│                 │
+└──────┬──────────┘
+       │
+[NetCDF-4/HDF5 Files]  [FITS Files]
+```
+
+### Key Components
+
+#### FITS UDF Handler
+- **Format Detection**: Automatic identification via `"SIMPLE"` magic (first 6 bytes of every FITS file); registered at UDF slot 3 (`NEP_UDF_FITS = NC_UDF3`)
+- **NC_Dispatch Implementation**: Complete dispatch table; `NC_FITS_initialize()` calls `nc_def_user_format(NC_UDF3, &FITS_dispatch_table, "SIMPLE")`
+- **File Operations**: `NC_FITS_open()` calls `fits_open_file()` and stores the CFITSIO file handle; `NC_FITS_close()` calls `fits_close_file()`
+- **Data I/O**: `NC_FITS_get_vara()` reads pixel hyperslabs via `fits_read_subset()` (image path) and table column data via `fits_read_col()` (table path)
+
+#### HDU-to-Group Mapping
+- **Primary HDU**: Image or null — goes in the root group; variable named `image`
+- **Extension HDUs**: Each becomes a child group named from `EXTNAME` (sanitized) or `hdu_N` if absent
+- **Image extension HDUs**: Same dim/variable/attribute mapping as primary HDU applied to the child group
+- **Binary and ASCII table HDUs**: Row dimension from `NAXIS2`; one netCDF variable per column named from `TTYPEn`; `TUNITn` → `units` attributes; vector columns become 2D variables
+
+#### Metadata Mapping
+- **BITPIX → nc_type**: −64→`NC_DOUBLE`, −32→`NC_FLOAT`, 8→`NC_BYTE`, 16→`NC_SHORT`, 32→`NC_INT`, 64→`NC_INT64`
+- **Dimension order**: Reversed from FITS column-major (`NAXIS1`=fastest) to netCDF row-major
+- **Standard keyword mapping**: `BUNIT`→`units`, `BZERO`→`add_offset`, `BSCALE`→`scale_factor`, `BLANK`→`_FillValue`
+- **All header keywords**: Stored as group-level string attributes on root group or child group
+- **Column typecode → nc_type**: A→`NC_CHAR`, I→`NC_SHORT`, J→`NC_INT`, E→`NC_FLOAT`, D→`NC_DOUBLE`, etc.
+
+#### Key Data Structures
+
+| Struct | Location | Purpose |
+|--------|----------|---------|
+| `NC_FITS_FILE_INFO_T` | `include/fitsdispatch.h` | Per-file: CFITSIO `fitsfile *`, path |
+| `NC_FITS_VAR_INFO_T` | `include/fitsdispatch.h` | Per-variable: `hdu_num`, `col_num` (0=image), `col_width` (string columns) |
+
+#### `NC_FITS_get_vara()` Data Paths
+- **Image**: Reverses `start[]/count[]` into `fpixel[]/lpixel[]`, calls `fits_read_subset()`; CFITSIO applies `BSCALE`/`BZERO` automatically when reading into floating-point types
+- **Table column**: `fits_read_col()` with `firstrow = start[0]+1`, `firstelem = start[1]+1` for 2D; string columns use `char **` pointer array into a flat buffer
+
+### Source Files
+
+| File | Purpose |
+|------|---------|
+| `src/fitsdispatch.c` | NC_Dispatch table and `NC_FITS_initialize()` / `NC_FITS_finalize()` |
+| `src/fitsfile.c` | `NC_FITS_open()`, `NC_FITS_close()`, `NC_FITS_get_vara()`, HDU readers |
+| `include/fitsdispatch.h` | Public header: `NC_FITS_FILE_INFO_T`, `NC_FITS_VAR_INFO_T`, prototypes |
+
+### Dependencies
+
+| Component | Library | Version | Purpose |
+|-----------|---------|---------|---------|
+| FITS Handler | CFITSIO | ≥ 3.0 | FITS file I/O and HDU navigation |
+| Core | NetCDF-C | v4.9+ | NetCDF API |
+| Core | HDF5 | v1.12+ | HDF5 backend |
+
+### Build System Integration
+
+FITS support defaults to **OFF** as of v2.2.0 and must be enabled explicitly:
+
+**CMake:**
+```bash
+cmake -DENABLE_FITS=ON   # Enable FITS support
+cmake -DENABLE_FITS=OFF  # Disable FITS support (default)
+```
+
+**Autotools:**
+```bash
+./configure --enable-fits   # Enable FITS support
+./configure --disable-fits  # Disable FITS support (default)
+```
+
+### Test Data
+
+**`test/data/WFPC2u5780205r_c0fx.fits`** — HST WFPC2 file with:
+- Primary image HDU: `[4, 200, 200]` `NC_FLOAT` pixels
+- ASCII table extension HDU: 49 columns × 4 rows
+
+### Known Limitations
+- Write support not implemented; `nc_create()` on a FITS file returns `NC_EPERM`
+- `.ncrc` UDF autoload requires NetCDF-C main branch; local 4.10.0 requires explicit `NC_FITS_initialize()` call
+
+---
+
+## NASA/ESA PDS4 Format Support (v2.2.0)
+
+### Overview
+
+NEP v2.2.0 adds support for NASA/ESA Planetary Data System version 4 (PDS4) XML-labeled data products through a User Defined Format (UDF) handler using libxml2. PDS4 array images, binary tables, and character tables are accessible through the standard NetCDF API.
+
+### Architecture
+
+```
+[Application Layer]
+       │
+[NetCDF-4 API]
+       │
+[NC_Dispatch Layer]
+       │
+┌──────┴──────────┐
+│                 │
+[HDF5 Backend]   [PDS4 UDF Handler]
+│                 │
+│             [libxml2]
+│                 │
+└──────┬──────────┘
+       │
+[NetCDF-4/HDF5 Files]  [PDS4 XML Labels + Data Files]
+```
+
+### Key Components
+
+#### PDS4 UDF Handler
+- **Format Detection**: PDS4 XML label files (`.xml`) identified by `<?xml` / `Product_Observational` root element; registered at UDF slot 5 (`NEP_UDF_PDS4 = NC_UDF5`)
+- **NC_Dispatch Implementation**: `NC_PDS4_initialize()` calls `nc_def_user_format(NC_UDF5, &PDS4_dispatch_table, NULL)`
+- **XML Parsing**: libxml2 parses `Product_Observational` labels; PDS4 namespace validated on open
+- **Data File Resolution**: Data filenames resolved relative to the XML label directory
+
+#### Metadata Mapping
+
+| PDS4 Element | NetCDF Mapping |
+|---|---|
+| `Identification_Area` fields | Global string attributes on root group |
+| `Observation_Area` fields | Global string attributes on root group |
+| `File_Area_Observational` | Child group named from `File/file_name` |
+| `Array` / `Array_2D_Image` | netCDF dimensions (from `Axis_Array` sorted by `sequence_number`) + variable (from `Element_Array/data_type`) |
+| `Table_Binary` / `Table_Character` / `Table_Delimited` | `record` dimension from `<records>`; one variable per `Field_*` with type and optional `units` attribute |
+
+#### Data Reading (`NC_PDS4_get_vara`)
+- **Array data**: Contiguous row-major reads with `start[]/count[]` hyperslab support; MSB/LSB byte-swap applied based on label byte-order
+- **Binary table fields**: Per-record seek using `field_location` / `field_length` / `record_length`; byte-swap as required
+- **ASCII table fields**: Fixed-width text parsed via `strtod` / `strtoll` into the mapped netCDF type
+- **Delimited tables**: Row count derived from label `<records>`
+
+#### Key Data Structures
+
+| Struct | Location | Purpose |
+|--------|----------|---------|
+| `NC_PDS4_FILE_INFO_T` | `include/pds4dispatch.h` | Per-file: xmlDoc pointer, label path, data directory |
+| `NC_PDS4_VAR_INFO_T` | `include/pds4dispatch.h` | Per-variable: file offset, record length, field offset/length, table/ASCII flags, byte-order |
+
+### Source Files
+
+| File | Purpose |
+|------|---------|
+| `src/pds4dispatch.c` | NC_Dispatch table and `NC_PDS4_initialize()` / `NC_PDS4_finalize()` |
+| `src/pds4file.c` | `NC_PDS4_open()`, `NC_PDS4_close()`, `NC_PDS4_get_vara()`, XML metadata readers |
+| `include/pds4dispatch.h` | Public header: `NC_PDS4_FILE_INFO_T`, `NC_PDS4_VAR_INFO_T`, prototypes |
+
+### Dependencies
+
+| Component | Library | Version | Purpose |
+|-----------|---------|---------|---------|
+| PDS4 Handler | libxml2 | ≥ 2.9 (`libxml2-dev`) | XML label parsing |
+| Core | NetCDF-C | v4.9+ | NetCDF API |
+| Core | HDF5 | v1.12+ | HDF5 backend |
+
+### Build System Integration
+
+PDS4 support defaults to **OFF** and must be enabled explicitly:
+
+**CMake:**
+```bash
+cmake -DENABLE_PDS4=ON   # Enable PDS4 support
+cmake -DENABLE_PDS4=OFF  # Disable PDS4 support (default)
+```
+
+**Autotools:**
+```bash
+./configure --enable-pds4   # Enable PDS4 support
+./configure --disable-pds4  # Disable PDS4 support (default)
+```
+
+### Test Data
+
+Located in `test/data/PDS4/`:
+- `test_image.xml` / `test_image.img` — Array_2D_Image product
+- `test_table_binary.xml` / `test_table_binary.dat` — Table_Binary product (3 fields × 5 records)
+- `Table_Character_Example.xml` / `Table_Character_Example.tab` — Table_Character product (3 fields × 3 records)
+
+### Known Limitations
+- Write support not implemented; `nc_create()` returns `NC_EPERM`
+- `nc_get_vars()` / `nc_get_varm()` use default dispatch fallbacks (no strided native reads)
+- Type conversion between `memtype` and file type not performed; caller must request the native type
+- Grouped fields (`Group_Field_Binary`) and bit fields not yet supported
+- Only `Product_Observational` root element type validated
 
 ---
 
@@ -653,9 +862,10 @@ The CDF UDF handler follows the same NC_Dispatch pattern used for other format h
 - NASA CDF Library v3.9.x (required when enabled)
 
 #### Build Integration
-- CDF support is enabled by default; disable via build flags:
-  - CMake: `-DENABLE_CDF=OFF` to disable (default: ON)
-  - Autotools: `--disable-cdf` to disable (default: enabled)
+- CDF support defaults to **OFF**; enable via build flags:
+  - CMake: `-DENABLE_CDF=ON` to enable (default: OFF)
+  - Autotools: `--enable-cdf` to enable (default: disabled)
+- CDF uses **UDF slot 4** (`NC_UDF4`) as of v2.2.0; moved from UDF2 to eliminate mutual-exclusivity with GRIB2
 
 ## Spack Package Manager Support (v1.4.0)
 
@@ -737,22 +947,26 @@ Parallel tests run via `mpiexec -n 4` in CI:
 - ncdump verification of output files
 - Automated data integrity validation
 
-## Example Programs (v3.5.1)
+## Example Programs (v2.1.0+)
 
 ### Overview
 
-NEP v3.5.1 includes comprehensive example programs in C and Fortran demonstrating NetCDF API usage. These examples serve as learning resources and reference implementations for users new to NetCDF or exploring specific features.
+NEP includes comprehensive example programs in C and Fortran serving as companion code for *The NetCDF Developer's Handbook: The Authoritative Guide to Writing High-Performance Programs for Scientific Data Management, Second Edition* (https://www.amazon.com/dp/B0H7Q1Z75L). Examples are organized into categories covering Classic NetCDF, NetCDF-4, NcZarr, OPeNDAP, parallel I/O, and performance benchmarking.
 
 ### Architecture
 
-Example programs are organized into four categories based on language and NetCDF format:
+Example programs are organized by category:
 
 ```
 examples/
 ├── classic/          # Classic NetCDF examples in C
 ├── f_classic/        # Classic NetCDF examples in Fortran
 ├── netcdf-4/         # NetCDF-4 examples in C
-└── f_netcdf-4/       # NetCDF-4 examples in Fortran
+├── f_netcdf-4/       # NetCDF-4 examples in Fortran
+├── nczarr/           # NcZarr (local Zarr store) examples in C and Fortran
+├── opendap/          # OPeNDAP remote access examples in C and Fortran
+├── parallelIO/       # MPI parallel I/O examples in C and Fortran
+└── performance/      # Compression benchmark examples (ENABLE_BENCHMARKS)
 ```
 
 ### Example Categories
@@ -769,7 +983,7 @@ Located in `examples/classic/`:
 #### NetCDF-4 Examples (C)
 Located in `examples/netcdf-4/`:
 - **simple_nc4.c**: Basic NetCDF-4 file creation
-- **compression.c**: Using compression filters (deflate, shuffle)
+- **compression.c**: Using compression filters (deflate, zstd, shuffle)
 - **chunking_performance.c**: Chunking strategies and performance
 - **multi_unlimited.c**: Multiple unlimited dimensions (NetCDF-4 feature)
 - **user_types.c**: User-defined compound and enum types
@@ -786,10 +1000,41 @@ Located in `examples/f_classic/`:
 #### NetCDF-4 Examples (Fortran)
 Located in `examples/f_netcdf-4/`:
 - **f_simple_nc4.f90**: Basic NetCDF-4 in Fortran
-- **f_compression.f90**: Compression in Fortran
+- **f_compression.f90**: Compression in Fortran (deflate, zstd, shuffle)
 - **f_chunking_performance.f90**: Chunking in Fortran
 - **f_multi_unlimited.f90**: Multiple unlimited dimensions in Fortran
 - **f_user_types.f90**: User-defined types in Fortran
+
+#### NcZarr Examples (C and Fortran, v1.11.0)
+Located in `examples/nczarr/`:
+- **nczarr_simple.c / f_nczarr_simple.f90**: Create and read a local `file://...#mode=nczarr` store
+- **nczarr_chunking.c / f_nczarr_chunking.f90**: Explicit chunk shape via `nc_def_var_chunking()`
+- **nczarr_compression.c / f_nczarr_compression.f90**: Shuffle + deflate on a Zarr store
+- **nczarr_enhanced.c / f_nczarr_enhanced.f90**: Hierarchical groups and multiple independent unlimited dimensions
+- Built only when `HAVE_NCZARR` is detected in NetCDF-C
+
+#### OPeNDAP Examples (C and Fortran)
+Located in `examples/opendap/`:
+- Remote data access using OPeNDAP constraint expressions
+- Elapsed-time instrumentation via `gettimeofday()`
+
+#### Parallel I/O Examples (C and Fortran, v1.9.0)
+Located in `examples/parallelIO/`:
+- **square16_par.c / f_square16_par.f90**: 2×2 MPI domain decomposition, collective I/O
+- Uses `nc_create_par()` / `nc_var_par_access(NC_COLLECTIVE)` patterns
+- Built when `ENABLE_PARALLEL_TESTS=ON` / `--enable-parallel-tests`
+
+#### Performance Benchmark Examples (v1.10.0)
+Located in `examples/performance/`:
+- **cache_tuning.c**: File-level and variable-level chunk cache configuration
+- **chunking.c**: Chunk shape impact on time-slab vs column-profile access
+- **deflate.c**: Deflate levels 0–9 × shuffle (20 combinations)
+- **zstandard.c**: Zstandard levels × shuffle (24 combinations)
+- **szip.c**: SZIP `pixels_per_block` values with NC_SZIP_NN
+- **lz4.c**: LZ4 levels × shuffle (18 combinations)
+- **bzip2.c**: BZIP2 levels × shuffle (18 combinations)
+- **lossless.c**: Head-to-head best-setting comparison of all lossless filters
+- Built only when `ENABLE_BENCHMARKS=ON` / `--enable-benchmarks` (default OFF)
 
 ### Build System Integration
 
@@ -867,26 +1112,23 @@ Examples demonstrate:
 - **Language Parity**: Equivalent functionality in C and Fortran
 - **Real-world Patterns**: Common use cases in scientific computing
 
-### Future Extensions
-
-Planned example categories:
-- **Performance**: Optimization techniques and benchmarking
-- **Advanced Features**: Groups, user-defined types, compression filters
-- **New Formats**: Additional scientific data format support
-
 ## Release Information
 
-- **Version**: v1.5.0
+- **Version**: v2.2.0
 - **Status**: Production Release
-- **Release Date**: January 2026
+- **Release Date**: July 2026
 - **Features**:
-  - LZ4 and BZIP2 compression for HDF5/NetCDF-4 files
-  - Fortran wrappers for compression functions
-  - NASA CDF format support via UDF handler
-  - GeoTIFF format support via UDF handler
+  - LZ4 and BZIP2 compression for HDF5/NetCDF-4 files (C and Fortran APIs)
+  - GeoTIFF read support via UDF handler (UDF0/UDF1)
+  - GRIB2 read support via UDF handler (UDF2)
+  - FITS read support via UDF handler (UDF3)
+  - NASA CDF read support via UDF handler (UDF4)
+  - NASA/ESA PDS4 read support via UDF handler (UDF5)
+  - All five format readers can be enabled simultaneously
   - Spack package manager support
-  - Example programs (v3.5.1)
+  - NcZarr, OPeNDAP, parallel I/O, and performance benchmark examples
+  - Example programs as companion code for *The NetCDF Developer's Handbook, Second Edition*
 
 ---
 
-*Last Updated: January 2026*
+*Last Updated: July 2026*
