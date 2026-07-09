@@ -8,26 +8,27 @@
 
 ## Summary
 
-NEP extends NetCDF-4 with powerful new capabilities for scientific data workflows:
+NEP extends NetCDF-4 with powerful new capabilities:
+* more compression filters
+* read layers for different data formats
+* extra examples covering advanced netCDF use
 
 ### Compression
 
-| Algorithm | Speed vs DEFLATE | Ratio vs DEFLATE | Best For |
+| Algorithm | Description | Best For |
 |---|---|---|---|
-| **LZ4** | 2–3× faster | ~2.2× | Real-time processing, HPC I/O |
-| **BZIP2** | Slower | ~6.7× | Long-term archives, bandwidth-limited |
-
-Both are HDF5 filter plugins — drop-in with existing NetCDF-4 applications, no code changes.
+| **LZ4** | Faster than zstandard | Real-time processing, HPC I/O |
+| **BZIP2** | Very slow writes but best compression | Long-term archives, bandwidth-limited |
 
 ### Multi-Format Readers
 
-| Format | Domain | API |
-|---|---|---|
-| **NASA CDF** | Space physics (IMAP, MMS, Van Allen) | `nc_open()` / `nf90_open()` |
-| **GeoTIFF** | Geospatial rasters, CF-1.8 CRS metadata | `nc_open()` / `nf90_open()` |
-| **GRIB2** | NWP model output (GFS, NAM, HRRR, wave) | `nc_open()` / `nf90_open()` |
-| **FITS** | Astronomical images and tables (HST, JWST) | `nc_open()` / `nf90_open()` |
-| **PDS4** | NASA/ESA planetary science (Mars, Moon, etc.) | `nc_open()` / `nf90_open()` |
+| Format | Domain |
+|---|---|
+| **NASA CDF** | Space physics (IMAP, MMS, Van Allen) |
+| **GeoTIFF** | Geospatial rasters, CF-1.8 CRS metadata |
+| **GRIB2** | NWP model output (GFS, NAM, HRRR, wave) |
+| **FITS** | Astronomical images and tables (HST, JWST) |
+| **PDS4** | NASA/ESA planetary science (Mars, Moon, etc.) |
 
 All readers use the standard NetCDF UDF system and are **opt-in at build time** (default OFF). Once enabled, **existing C and Fortran programs require no code modification** — an existing Fortran program that calls `nf90_open()` and `nf90_get_var()` can read a FITS, CDF, GeoTIFF, GRIB2, or PDS4 file without changing a single line of code. NEP registers the format handler at startup; the rest of the program stays identical.
 
@@ -78,7 +79,7 @@ Both C and Fortran versions provided for Classic, NetCDF-4, and NcZarr categorie
 - High-throughput simulation output
 - Interactive data analysis workflows
 - Cloud-based data pipelines
-**How It Works**: LZ4 compression is provided as an HDF5 filter plugin. Simply set `HDF5_PLUGIN_PATH` and use standard NetCDF-4 compression APIs - no code changes required.
+**How It Works**: LZ4 compression is provided as an HDF5 filter plugin. Simply set `HDF5_PLUGIN_PATH` and call nc_def_var_lz4() to turn on LZ4 compression
 
 ### BZIP2 Compression: Maximum Storage Efficiency
 
@@ -90,21 +91,21 @@ Both C and Fortran versions provided for Classic, NetCDF-4, and NcZarr categorie
 - Datasets with repetitive patterns
 - Bandwidth-constrained data transfers
 
-**How It Works**: Like LZ4, BZIP2 integrates as an HDF5 filter plugin with zero code changes to existing applications.
+**How It Works**: Like LZ4, BZIP2 integrates as an HDF5 filter plugin. Call nc_def_var_bzip2() to turn on BZIP2 compression for a variable.
 
 ## Compression Performance
 
-The following benchmarks compare compression methods on a 150 MB NetCDF-4 dataset. For comparison, I include ZSTD, which was recently added to NetCDF and provides better performance than ZLIB, though not as fast as LZ4:
+The following benchmarks compare compression methods on a 150 MB NetCDF-4 dataset.
 
 ### All Compression Methods
 
-![Compression Performance](docs/compression_performance.svg)
+<img src="docs/compression_performance.svg" width="100%" alt="Compression Performance">
 
 ### Fast Compression Methods (Excluding BZIP2)
 
 For better visualization of the faster compression methods:
 
-![Fast Compression Performance](docs/compression_performance_fast.svg)
+<img src="docs/compression_performance_fast.svg" width="100%" alt="Fast Compression Performance">
 
 | Method | Write Time (s) | File Size (MB) | Read Time (s) | Compression Ratio | Write Speed | Read Speed |
 |--------|----------------|----------------|---------------|-------------------|-------------|------------|
