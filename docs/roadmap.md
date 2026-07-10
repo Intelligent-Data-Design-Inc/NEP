@@ -1,5 +1,12 @@
 # NEP Development Roadmap
 
+### V2.4.0 Spack Improvements
+#### Sprint 1: Spack 
+- Only NEP-2.3.0 release and later needs to be supported by spack
+
+#### Sprint 2: Support Formats
+- All format layers should be supported by spack.
+
 ### V2.3.0 Documentation and More Testing for PDS4 Read
 
 #### Sprint 1: Doxygen Docs for PDS4 Reader
@@ -45,11 +52,6 @@
 - Create required `metadata.txt` files for each SVG as part of this move, since the diagrams are already being touched.
 - `docs/compression.md` becomes the authoritative compression performance page; `README.md` keeps only a high-level summary with a cross-link.
 - Sprint 3 is documentation-only; no code, build system, or test changes.
-
-#### Sprint 4: Update Spack Build
-- Spack build does not include format handlers.
-- Update spack build until all format handlers work. One at a time.
-- This can be separate sprints if that is helpful.
 
 ### V2.2.0 Read NASA/ESA Planetary Data System 4 Data
 
