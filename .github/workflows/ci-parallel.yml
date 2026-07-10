@@ -139,16 +139,16 @@ jobs:
             -DCMAKE_C_FLAGS="-Wall -Werror" \
             -DCMAKE_Fortran_FLAGS="-Wall -Werror" \
             -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install" \
-            -DENABLE_FORTRAN=ON \
-            -DENABLE_PARALLEL_TESTS=ON \
-            -DENABLE_GRIB2=OFF \
-            -DENABLE_CDF=OFF \
-            -DENABLE_GEOTIFF=OFF \
-            -DBUILD_LZ4=OFF \
-            -DBUILD_BZIP2=OFF \
-            -DENABLE_FITS=OFF \
-            -DBUILD_DOCUMENTATION=OFF \
-            -DBUILD_EXAMPLES=ON \
+            -DNEP_ENABLE_FORTRAN=ON \
+            -DNEP_ENABLE_PARALLEL_TESTS=ON \
+            -DNEP_ENABLE_GRIB2=OFF \
+            -DNEP_ENABLE_CDF=OFF \
+            -DNEP_ENABLE_GEOTIFF=OFF \
+            -DNEP_BUILD_LZ4=OFF \
+            -DNEP_BUILD_BZIP2=OFF \
+            -DNEP_ENABLE_FITS=OFF \
+            -DNEP_BUILD_DOCUMENTATION=OFF \
+            -DNEP_BUILD_EXAMPLES=ON \
             -DBUILD_TESTING=ON
 
       - name: Build (CMake)

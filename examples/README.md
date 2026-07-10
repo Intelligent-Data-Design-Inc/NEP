@@ -65,7 +65,7 @@ cmake -B build
 cmake --build build
 
 # Disable examples
-cmake -B build -DBUILD_EXAMPLES=OFF
+cmake -B build -DNEP_BUILD_EXAMPLES=OFF
 cmake --build build
 ```
 
@@ -85,7 +85,7 @@ make
 Fortran examples require:
 - Fortran compiler
 - NetCDF-Fortran library
-- `ENABLE_FORTRAN=ON` (CMake) or `--enable-fortran` (Autotools)
+- `NEP_ENABLE_FORTRAN=ON` (CMake) or `--enable-fortran` (Autotools)
 
 If Fortran support is disabled or NetCDF-Fortran is unavailable, Fortran examples are automatically skipped.
 
@@ -95,11 +95,11 @@ Parallel I/O examples require:
 - MPI implementation (OpenMPI, MPICH, or Intel MPI)
 - NetCDF-C library built with parallel support (`--enable-parallel-netcdf4`)
 - NetCDF-Fortran library built with parallel support (for Fortran examples)
-- `ENABLE_PARALLEL_TESTS=ON` (CMake) or `--enable-parallel-tests` (Autotools)
+- `NEP_ENABLE_PARALLEL_TESTS=ON` (CMake) or `--enable-parallel-tests` (Autotools)
 
 **CMake:**
 ```bash
-cmake -B build -DENABLE_PARALLEL_TESTS=ON -DMPIEXEC_EXECUTABLE=/usr/bin/mpirun
+cmake -B build -DNEP_ENABLE_PARALLEL_TESTS=ON -DMPIEXEC_EXECUTABLE=/usr/bin/mpirun
 cmake --build build
 ```
 
@@ -184,7 +184,7 @@ The examples are integrated into the main NEP Doxygen documentation. After build
 
 ```bash
 # Build documentation
-cmake -B build -DBUILD_DOCUMENTATION=ON
+cmake -B build -DNEP_BUILD_DOCUMENTATION=ON
 cmake --build build --target doc
 
 # View in browser

@@ -21,7 +21,7 @@ set(OPENDAP_EXAMPLE_TARGETS
 )
 
 # Fortran Examples (if Fortran is enabled)
-if(ENABLE_FORTRAN)
+if(NEP_ENABLE_FORTRAN)
   # Find nf-config from the NetCDF-Fortran library directories
   find_program(NF_CONFIG nf-config
       HINTS ${NetCDF_Fortran_LIBRARY_DIRS}/../bin

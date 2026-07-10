@@ -177,15 +177,15 @@ jobs:
             -DCMAKE_C_FLAGS="-Wall -Werror" \
             -DCMAKE_Fortran_FLAGS="-Wall -Werror" \
             -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install;$GITHUB_WORKSPACE/cdf-install;$GITHUB_WORKSPACE/g2c-install;$GITHUB_WORKSPACE/jasper-install" \
-            -DENABLE_CDF=ON \
-            -DENABLE_GEOTIFF=ON \
-            -DENABLE_GRIB2=ON \
-            -DENABLE_FITS=ON \
-            -DENABLE_FORTRAN=ON \
-            -DBUILD_LZ4=OFF \
-            -DBUILD_BZIP2=OFF \
-            -DBUILD_DOCUMENTATION=OFF \
-            -DBUILD_EXAMPLES=OFF \
+            -DNEP_ENABLE_CDF=ON \
+            -DNEP_ENABLE_GEOTIFF=ON \
+            -DNEP_ENABLE_GRIB2=ON \
+            -DNEP_ENABLE_FITS=ON \
+            -DNEP_ENABLE_FORTRAN=ON \
+            -DNEP_BUILD_LZ4=OFF \
+            -DNEP_BUILD_BZIP2=OFF \
+            -DNEP_BUILD_DOCUMENTATION=OFF \
+            -DNEP_BUILD_EXAMPLES=OFF \
             -DBUILD_TESTING=ON
           echo "=== Checking config.h for format flags ==="
           grep "define HAVE_CDF" config.h && echo "SUCCESS: HAVE_CDF" || (echo "FAILURE: HAVE_CDF"; exit 1)
@@ -365,16 +365,16 @@ jobs:
             -DCMAKE_C_FLAGS="-Wall -Werror" \
             -DCMAKE_Fortran_FLAGS="-Wall -Werror" \
             -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install" \
-            -DENABLE_PDS4=ON \
-            -DENABLE_CDF=OFF \
-            -DENABLE_GEOTIFF=OFF \
-            -DENABLE_GRIB2=OFF \
-            -DENABLE_FITS=OFF \
-            -DENABLE_FORTRAN=ON \
-            -DBUILD_LZ4=OFF \
-            -DBUILD_BZIP2=OFF \
-            -DBUILD_DOCUMENTATION=OFF \
-            -DBUILD_EXAMPLES=OFF \
+            -DNEP_ENABLE_PDS4=ON \
+            -DNEP_ENABLE_CDF=OFF \
+            -DNEP_ENABLE_GEOTIFF=OFF \
+            -DNEP_ENABLE_GRIB2=OFF \
+            -DNEP_ENABLE_FITS=OFF \
+            -DNEP_ENABLE_FORTRAN=ON \
+            -DNEP_BUILD_LZ4=OFF \
+            -DNEP_BUILD_BZIP2=OFF \
+            -DNEP_BUILD_DOCUMENTATION=OFF \
+            -DNEP_BUILD_EXAMPLES=OFF \
             -DBUILD_TESTING=ON
           echo "=== Checking config.h for PDS4 flag ==="
           grep "define HAVE_PDS4" config.h && echo "SUCCESS: HAVE_PDS4" || (echo "FAILURE: HAVE_PDS4"; exit 1)

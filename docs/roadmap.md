@@ -8,7 +8,7 @@
 - Add `version("2.3.0", ...)` release (only 2.3.0+ is supported; no earlier version).
 - Update package description to reflect multi-format reader.
 - Bump `depends_on("netcdf-c@4.10.1:", ...)`.
-- Update `cmake_args` to pass all existing variants properly (`BUILD_LZ4`, `BUILD_BZIP2`, `BUILD_DOCUMENTATION`, `ENABLE_FORTRAN`, `ENABLE_FITS`).
+- Update `cmake_args` to pass all existing variants properly (`NEP_BUILD_LZ4`, `NEP_BUILD_BZIP2`, `NEP_BUILD_DOCUMENTATION`, `NEP_ENABLE_FORTRAN`, `NEP_ENABLE_FITS`).
 - **Testing**: Spec job keeps `nep@develop` checks; install job keeps `nep@develop` step and adds `nep@2.3.0~docs~fortran` install step.
 
 **Clarified decisions:**
@@ -149,7 +149,7 @@
 **Detailed Plan**: See `docs/plan/v2.2.0-sprint3-pds4-prep.md`
 
 - Study PDS4 and create skill files under `.devin/skills/pds4/`.
-- Add `--enable-pds4` / `-DENABLE_PDS4=ON` build options to both build systems; default OFF.
+- Add `--enable-pds4` / `-DNEP_ENABLE_PDS4=ON` build options to both build systems; default OFF.
 - Assign PDS4 to UDF5.
 - Build the PDS4 UDF dispatch library with no-op read functions (`ncpds4dispatch.c`/`ncpds4file.c`) following the existing handler pattern.
 - Add a C test that attempts to open a real PDS4 label file via `nc_open()`.
@@ -233,7 +233,7 @@
 **Detailed Plan**: See `docs/plan/v2.0.0-sprint2-fits-dispatch.md`
 
 - Build the FITS UDF dispatch library (`libncfits`) with no-op read functions.
-- Flip `ENABLE_FITS` / `--enable-fits` default to **ON**; add `-DENABLE_FITS=OFF` / `--disable-fits` to the other CI workflows so only `ci-fits.yml` needs CFITSIO.
+- Flip `NEP_ENABLE_FITS` / `--enable-fits` default to **ON**; add `-DNEP_ENABLE_FITS=OFF` / `--disable-fits` to the other CI workflows so only `ci-fits.yml` needs CFITSIO.
 - Create `include/fitsdispatch.h`, `src/fitsdispatch.c`, and `src/fitsfile.c` following the GRIB2/CDF/GeoTIFF pattern.
 - Generate the `.ncrc` UDF3 autoload block for FITS in both CMake and Autotools.
 - Create `test/tst_fits_udf.c` that calls `NC_FITS_initialize()` and does an `nc_open()`/`nc_close()` round-trip on the real FITS file without reading CFITSIO metadata.
@@ -241,7 +241,7 @@
 - Ensure `test/data/WFPC2u5780205r_c0fx.fits` is copied to build directories for both tests.
 
 **Clarified decisions:**
-- `ENABLE_FITS` / `--enable-fits` default ON.
+- `NEP_ENABLE_FITS` / `--enable-fits` default ON.
 - C test: `nc_open()`/`nc_close()` round-trip on the real FITS file.
 - Fortran test: `ftest/ftst_fits_udf.F90` with a new `ftest/CMakeLists.txt`.
 - Primary HDU content goes in the root group; extension HDUs become child groups.

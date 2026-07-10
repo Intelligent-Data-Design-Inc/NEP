@@ -152,7 +152,7 @@ All features integrate seamlessly with the standard NetCDF API.
 - **NcZarr examples**: Local NcZarr stores, chunking, compression, enhanced data model with hierarchical groups
 - **OPeNDAP examples**: Remote data access with constraint expressions and timing instrumentation
 - **Parallel I/O examples**: MPI collective I/O with domain decomposition (C and Fortran)
-- **Performance examples**: Benchmarking compression algorithms (gated by `ENABLE_BENCHMARKS`)
+- **Performance examples**: Benchmarking compression algorithms (gated by `NEP_ENABLE_BENCHMARKS`)
 - **Dual language support**: All examples available in both C and Fortran
 - **Built and tested**: Examples build with NEP and run as tests
 - **Location**: All examples in the `examples/` directory with detailed README
@@ -182,7 +182,7 @@ See the README for detailed instructions.
 
 #### Q: Can I enable only specific features?
 **A:** Yes! Use build options to control which features are compiled. All extended format readers default to **OFF** (v2.2.0+); enable explicitly as needed:
-- **CMake**: `-DBUILD_LZ4=ON/OFF`, `-DBUILD_BZIP2=ON/OFF`, `-DENABLE_FORTRAN=ON/OFF`, `-DENABLE_CDF=ON/OFF`, `-DENABLE_GEOTIFF=ON/OFF`, `-DENABLE_GRIB2=ON/OFF`, `-DENABLE_FITS=ON/OFF`, `-DENABLE_PDS4=ON/OFF`, `-DBUILD_EXAMPLES=ON/OFF`
+- **CMake**: `-DNEP_BUILD_LZ4=ON/OFF`, `-DNEP_BUILD_BZIP2=ON/OFF`, `-DNEP_ENABLE_FORTRAN=ON/OFF`, `-DNEP_ENABLE_CDF=ON/OFF`, `-DNEP_ENABLE_GEOTIFF=ON/OFF`, `-DNEP_ENABLE_GRIB2=ON/OFF`, `-DNEP_ENABLE_FITS=ON/OFF`, `-DNEP_ENABLE_PDS4=ON/OFF`, `-DNEP_BUILD_EXAMPLES=ON/OFF`
 - **Autotools**: `--enable-lz4`, `--enable-bzip2`, `--enable-fortran`, `--enable-cdf`, `--enable-geotiff`, `--enable-grib2`, `--enable-fits`, `--enable-pds4`, `--disable-examples`
 - All five format readers (CDF, GeoTIFF, GRIB2, FITS, PDS4) can be enabled simultaneously — there are no mutual-exclusivity restrictions as of v2.2.0
 - **Spack**: `spack install nep+lz4+bzip2+fortran` (variants control features)
@@ -195,7 +195,7 @@ nf90_def_var_lz4(ncid, varid, level) ! Fortran API
 ```
 
 #### Q: How do I read CDF files with NEP?
-**A:** Enable CDF support during build (`-DENABLE_CDF=ON`), then use standard NetCDF API:
+**A:** Enable CDF support during build (`-DNEP_ENABLE_CDF=ON`), then use standard NetCDF API:
 ```c
 nc_open("data.cdf", NC_NOWRITE, &ncid);
 nc_inq(ncid, &ndims, &nvars, &natts, &unlimdimid);
@@ -203,7 +203,7 @@ nc_get_var_double(ncid, varid, data);
 ```
 
 #### Q: How do I read GeoTIFF files with NEP?
-**A:** Enable GeoTIFF support during build (`-DENABLE_GEOTIFF=ON`), then use standard NetCDF API:
+**A:** Enable GeoTIFF support during build (`-DNEP_ENABLE_GEOTIFF=ON`), then use standard NetCDF API:
 ```c
 nc_open("image.tif", NC_NOWRITE, &ncid);
 nc_inq_dimlen(ncid, 0, &bands);
@@ -211,7 +211,7 @@ nc_get_var_float(ncid, varid, raster_data);
 ```
 
 #### Q: How do I read GRIB2 files with NEP?
-**A:** Enable GRIB2 support during build (`-DENABLE_GRIB2=ON`), supply NCEPLIBS-g2c path, then use standard NetCDF API:
+**A:** Enable GRIB2 support during build (`-DNEP_ENABLE_GRIB2=ON`), supply NCEPLIBS-g2c path, then use standard NetCDF API:
 ```c
 nc_open("forecast.grib2", NC_NOWRITE, &ncid);
 nc_inq_varid(ncid, "WIND", &varid);
@@ -220,7 +220,7 @@ nc_get_var_float(ncid, varid, data);  /* full [ny][nx] grid, land = _FillValue *
 Or use `ncdump forecast.grib2` directly after installing the `.ncrc` file.
 
 #### Q: How do I read FITS files with NEP?
-**A:** Enable FITS support during build (`-DENABLE_FITS=ON`), ensure CFITSIO is installed, then register the handler and use the standard NetCDF API:
+**A:** Enable FITS support during build (`-DNEP_ENABLE_FITS=ON`), ensure CFITSIO is installed, then register the handler and use the standard NetCDF API:
 ```c
 NC_FITS_initialize();                  /* register UDF3 handler */
 nc_open("image.fits", NC_NOWRITE, &ncid);
@@ -230,7 +230,7 @@ nc_get_vara_float(ncid, varid, start, count, pixels);
 Extension HDUs appear as child groups; use `nc_inq_grp_ncid()` to navigate them.
 
 #### Q: How do I read PDS4 files with NEP?
-**A:** Enable PDS4 support during build (`-DENABLE_PDS4=ON`), ensure libxml2 is installed, then register the handler and open the XML label:
+**A:** Enable PDS4 support during build (`-DNEP_ENABLE_PDS4=ON`), ensure libxml2 is installed, then register the handler and open the XML label:
 ```c
 NC_PDS4_initialize();                           /* register UDF5 handler */
 nc_open("product.xml", NC_NOWRITE, &ncid);

@@ -51,11 +51,11 @@ class Nep(CMakePackage):
 
     def cmake_args(self):
         args = [
-            self.define_from_variant("BUILD_DOCUMENTATION", "docs"),
-            self.define_from_variant("BUILD_LZ4", "lz4"),
-            self.define_from_variant("BUILD_BZIP2", "bzip2"),
-            self.define_from_variant("ENABLE_FORTRAN", "fortran"),
-            self.define_from_variant("ENABLE_FITS", "fits"),
+            self.define_from_variant("NEP_BUILD_DOCUMENTATION", "docs"),
+            self.define_from_variant("NEP_BUILD_LZ4", "lz4"),
+            self.define_from_variant("NEP_BUILD_BZIP2", "bzip2"),
+            self.define_from_variant("NEP_ENABLE_FORTRAN", "fortran"),
+            self.define_from_variant("NEP_ENABLE_FITS", "fits"),
         ]
         return args
 

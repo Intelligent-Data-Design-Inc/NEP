@@ -141,15 +141,15 @@ jobs:
           export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
           cmake .. \
             -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/g2c-install" \
-            -DENABLE_GRIB2=ON \
-            -DENABLE_FORTRAN=OFF \
-            -DENABLE_CDF=OFF \
-            -DENABLE_GEOTIFF=OFF \
+            -DNEP_ENABLE_GRIB2=ON \
+            -DNEP_ENABLE_FORTRAN=OFF \
+            -DNEP_ENABLE_CDF=OFF \
+            -DNEP_ENABLE_GEOTIFF=OFF \
             -DBUILD_TESTING=ON \
-            -DBUILD_LZ4=OFF \
-            -DBUILD_BZIP2=OFF \
-            -DENABLE_FITS=OFF \
-            -DBUILD_DOCUMENTATION=OFF
+            -DNEP_BUILD_LZ4=OFF \
+            -DNEP_BUILD_BZIP2=OFF \
+            -DNEP_ENABLE_FITS=OFF \
+            -DNEP_BUILD_DOCUMENTATION=OFF
           echo "=== Checking config.h for HAVE_GRIB2 ==="
           grep "define HAVE_GRIB2" config.h && echo "SUCCESS: HAVE_GRIB2 is defined" || (echo "FAILURE: HAVE_GRIB2 not defined"; exit 1)
 
@@ -477,20 +477,20 @@ jobs:
         working-directory: build
         run: |
           echo "Building NEP v1.3.0 - LZ4/BZIP2 compression + CDF library detection"
-          DOC_FLAG="-DBUILD_DOCUMENTATION=OFF"
+          DOC_FLAG="-DNEP_BUILD_DOCUMENTATION=OFF"
           if [ "${{ matrix.fortran }}" = "on" ] && [ "${{ matrix.compression }}" = "all" ]; then
-            DOC_FLAG="-DBUILD_DOCUMENTATION=ON"
+            DOC_FLAG="-DNEP_BUILD_DOCUMENTATION=ON"
           fi
-          FORTRAN_FLAG="-DENABLE_FORTRAN=ON"
+          FORTRAN_FLAG="-DNEP_ENABLE_FORTRAN=ON"
           if [ "${{ matrix.fortran }}" = "off" ]; then
-            FORTRAN_FLAG="-DENABLE_FORTRAN=OFF"
+            FORTRAN_FLAG="-DNEP_ENABLE_FORTRAN=OFF"
           fi
-          CDF_FLAG="-DENABLE_CDF=OFF"
+          CDF_FLAG="-DNEP_ENABLE_CDF=OFF"
           if [ "${{ matrix.fortran }}" = "on" ]; then
-            CDF_FLAG="-DENABLE_CDF=ON"
+            CDF_FLAG="-DNEP_ENABLE_CDF=ON"
           fi
           export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
-          cmake .. -DCMAKE_C_FLAGS="-Wall -Werror" -DCMAKE_Fortran_FLAGS="-Wall -Werror" -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install;$GITHUB_WORKSPACE/cdf-install;/usr/include/liblzf" -DBUILD_TESTING=ON -DBUILD_EXAMPLES=ON $DOC_FLAG $FORTRAN_FLAG $CDF_FLAG -DENABLE_FITS=OFF -DENABLE_GEOTIFF=OFF -DENABLE_GRIB2=OFF
+          cmake .. -DCMAKE_C_FLAGS="-Wall -Werror" -DCMAKE_Fortran_FLAGS="-Wall -Werror" -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install;$GITHUB_WORKSPACE/cdf-install;/usr/include/liblzf" -DBUILD_TESTING=ON -DNEP_BUILD_EXAMPLES=ON $DOC_FLAG $FORTRAN_FLAG $CDF_FLAG -DNEP_ENABLE_FITS=OFF -DNEP_ENABLE_GEOTIFF=OFF -DNEP_ENABLE_GRIB2=OFF
 
       - name: Build (CMake)
         if: matrix.build_system == 'cmake'

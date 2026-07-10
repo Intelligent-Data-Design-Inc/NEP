@@ -1,7 +1,7 @@
 # Parallel I/O test programs - v1.9.0
 #
 # This directory contains parallel I/O test programs that require MPI.
-# These tests are only built when ENABLE_PARALLEL_TESTS is ON.
+# These tests are only built when NEP_ENABLE_PARALLEL_TESTS is ON.
 
 message(STATUS "test_parallel/: Parallel test directory ready for Sprint 3")
 

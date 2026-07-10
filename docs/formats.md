@@ -34,7 +34,7 @@ GeoTIFF is a TIFF-based format for geospatial raster data, used widely in remote
 
 **Enabling:**
 ```bash
-cmake -B build -DENABLE_GEOTIFF=ON   # CMake
+cmake -B build -DNEP_ENABLE_GEOTIFF=ON   # CMake
 ./configure --enable-geotiff          # Autotools
 ```
 **Dependencies**: libgeotiff, libtiff.
@@ -69,7 +69,7 @@ GRIB2 is the standard binary format used by NOAA, ECMWF, and other meteorologica
 
 **Enabling:**
 ```bash
-cmake -B build -DENABLE_GRIB2=ON   # CMake
+cmake -B build -DNEP_ENABLE_GRIB2=ON   # CMake
 ./configure --enable-grib2          # Autotools
 ```
 **Dependencies**: NOAA NCEPLIBS-g2c ≥ 2.1.0, libjasper ≥ 3.0.0.
@@ -109,7 +109,7 @@ FITS (Flexible Image Transport System) is the standard format for astronomical d
 
 **Enabling:**
 ```bash
-cmake -B build -DENABLE_FITS=ON   # CMake
+cmake -B build -DNEP_ENABLE_FITS=ON   # CMake
 ./configure --enable-fits          # Autotools
 ```
 **Dependencies**: CFITSIO ≥ 3.0.
@@ -147,7 +147,7 @@ The Common Data Format (CDF) is developed by NASA's Space Physics Data Facility 
 
 **Enabling:**
 ```bash
-cmake -B build -DENABLE_CDF=ON   # CMake
+cmake -B build -DNEP_ENABLE_CDF=ON   # CMake
 ./configure --enable-cdf          # Autotools
 ```
 **Dependencies**: NASA CDF library v3.9.x — download from https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/ or `spack install cdf`.
@@ -182,7 +182,7 @@ PDS4 (Planetary Data System version 4) is the current archival standard used by 
 
 **Enabling:**
 ```bash
-cmake -B build -DENABLE_PDS4=ON   # CMake
+cmake -B build -DNEP_ENABLE_PDS4=ON   # CMake
 ./configure --enable-pds4          # Autotools
 ```
 **Dependencies**: libxml2 ≥ 2.9 (`libxml2-dev` on Ubuntu/Debian; `libxml2-devel` on RHEL/Fedora).

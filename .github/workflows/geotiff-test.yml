@@ -103,15 +103,15 @@ jobs:
           echo "=== Testing CMake GeoTIFF Detection ==="
           cmake .. \
             -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install" \
-            -DENABLE_GEOTIFF=ON \
-            -DENABLE_CDF=OFF \
-            -DENABLE_GRIB2=OFF \
-            -DENABLE_FORTRAN=OFF \
+            -DNEP_ENABLE_GEOTIFF=ON \
+            -DNEP_ENABLE_CDF=OFF \
+            -DNEP_ENABLE_GRIB2=OFF \
+            -DNEP_ENABLE_FORTRAN=OFF \
             -DBUILD_TESTING=OFF \
-            -DBUILD_LZ4=OFF \
-            -DBUILD_BZIP2=OFF \
-            -DENABLE_FITS=OFF \
-            -DBUILD_DOCUMENTATION=OFF
+            -DNEP_BUILD_LZ4=OFF \
+            -DNEP_BUILD_BZIP2=OFF \
+            -DNEP_ENABLE_FITS=OFF \
+            -DNEP_BUILD_DOCUMENTATION=OFF
           echo "=== Checking config.h for HAVE_GEOTIFF ==="
           grep -i "HAVE_GEOTIFF" config.h || echo "HAVE_GEOTIFF not found in config.h"
           grep "define HAVE_GEOTIFF" config.h && echo "SUCCESS: HAVE_GEOTIFF is defined" || echo "FAILURE: HAVE_GEOTIFF is not defined"
@@ -133,15 +133,15 @@ jobs:
           cd build_disabled
           cmake .. \
             -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install" \
-            -DENABLE_GEOTIFF=OFF \
-            -DENABLE_CDF=OFF \
-            -DENABLE_GRIB2=OFF \
-            -DENABLE_FORTRAN=OFF \
+            -DNEP_ENABLE_GEOTIFF=OFF \
+            -DNEP_ENABLE_CDF=OFF \
+            -DNEP_ENABLE_GRIB2=OFF \
+            -DNEP_ENABLE_FORTRAN=OFF \
             -DBUILD_TESTING=OFF \
-            -DBUILD_LZ4=OFF \
-            -DBUILD_BZIP2=OFF \
-            -DENABLE_FITS=OFF \
-            -DBUILD_DOCUMENTATION=OFF
+            -DNEP_BUILD_LZ4=OFF \
+            -DNEP_BUILD_BZIP2=OFF \
+            -DNEP_ENABLE_FITS=OFF \
+            -DNEP_BUILD_DOCUMENTATION=OFF
           echo "=== Checking that HAVE_GEOTIFF is not defined ==="
           if grep "define HAVE_GEOTIFF" config.h; then
             echo "FAILURE: HAVE_GEOTIFF should not be defined when disabled"
@@ -331,15 +331,15 @@ jobs:
           export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
           cmake .. \
             -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install" \
-            -DENABLE_GEOTIFF=ON \
-            -DENABLE_CDF=OFF \
-            -DENABLE_GRIB2=OFF \
-            -DENABLE_FORTRAN=OFF \
+            -DNEP_ENABLE_GEOTIFF=ON \
+            -DNEP_ENABLE_CDF=OFF \
+            -DNEP_ENABLE_GRIB2=OFF \
+            -DNEP_ENABLE_FORTRAN=OFF \
             -DBUILD_TESTING=ON \
-            -DBUILD_LZ4=OFF \
-            -DBUILD_BZIP2=OFF \
-            -DENABLE_FITS=OFF \
-            -DBUILD_DOCUMENTATION=OFF
+            -DNEP_BUILD_LZ4=OFF \
+            -DNEP_BUILD_BZIP2=OFF \
+            -DNEP_ENABLE_FITS=OFF \
+            -DNEP_BUILD_DOCUMENTATION=OFF
           make -j$(nproc)
 
       - name: Run tests under Valgrind
@@ -444,15 +444,15 @@ jobs:
           export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
           cmake .. \
             -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install" \
-            -DENABLE_GEOTIFF=ON \
-            -DENABLE_CDF=OFF \
-            -DENABLE_GRIB2=OFF \
-            -DENABLE_FORTRAN=OFF \
+            -DNEP_ENABLE_GEOTIFF=ON \
+            -DNEP_ENABLE_CDF=OFF \
+            -DNEP_ENABLE_GRIB2=OFF \
+            -DNEP_ENABLE_FORTRAN=OFF \
             -DBUILD_TESTING=ON \
-            -DBUILD_LZ4=OFF \
-            -DBUILD_BZIP2=OFF \
-            -DENABLE_FITS=OFF \
-            -DBUILD_DOCUMENTATION=OFF \
+            -DNEP_BUILD_LZ4=OFF \
+            -DNEP_BUILD_BZIP2=OFF \
+            -DNEP_ENABLE_FITS=OFF \
+            -DNEP_BUILD_DOCUMENTATION=OFF \
             -DCMAKE_C_FLAGS="--coverage -fprofile-arcs -ftest-coverage" \
             -DCMAKE_EXE_LINKER_FLAGS="--coverage"
           make -j$(nproc)

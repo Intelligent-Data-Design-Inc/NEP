@@ -52,9 +52,9 @@ mkdir -p build && cd build
 cmake .. \
   -DCMAKE_PREFIX_PATH="/usr/local/hdf5-1.14.6;/usr/local/netcdf-c" \
   -DCMAKE_BUILD_TYPE=Debug \
-  -DENABLE_GEOTIFF=ON \
-  -DENABLE_CDF=ON \
-  -DENABLE_FORTRAN=OFF
+  -DNEP_ENABLE_GEOTIFF=ON \
+  -DNEP_ENABLE_CDF=ON \
+  -DNEP_ENABLE_FORTRAN=OFF
 make -j$(nproc) && ctest
 ```
 
