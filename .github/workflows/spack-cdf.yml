@@ -117,7 +117,7 @@ jobs:
   # Install test - runs on pushes to main, exits successfully even on failure
   install:
     name: Spack CDF Install Test
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout NEP
