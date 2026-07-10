@@ -309,6 +309,13 @@ jobs:
           spack install -v --fail-fast nep@develop~docs~fortran 2>&1 | tee spack_install.log || true
           echo "=== Installation attempt complete ==="
 
+      - name: Install NEP 2.3.0 with Spack
+        run: |
+          echo "=== Installing nep@2.3.0 ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          spack install -v --fail-fast nep@2.3.0~docs~fortran 2>&1 | tee spack_install_2.3.0.log || true
+          echo "=== nep@2.3.0 installation attempt complete ==="
+
       - name: Show build logs (always runs)
         run: |
           echo "=== Showing build logs for manual review ==="
