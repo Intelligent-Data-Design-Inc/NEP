@@ -72,59 +72,9 @@ Both C and Fortran versions provided for Classic, NetCDF-4, and NcZarr categorie
 
 ---
 
-## What NEP Delivers
+## Compression
 
-### LZ4 Compression: Speed Without Compromise
-
-**Performance**: 2-3x faster compression and decompression than DEFLATE while achieving 2.2x compression ratios on typical scientific datasets.
-
-**Use Cases**:
-- Real-time satellite data processing
-- High-throughput simulation output
-- Interactive data analysis workflows
-- Cloud-based data pipelines
-**How It Works**: LZ4 compression is provided as an HDF5 filter plugin. Simply set `HDF5_PLUGIN_PATH` and call nc_def_var_lz4() to turn on LZ4 compression
-
-### BZIP2 Compression: Maximum Storage Efficiency
-
-**Performance**: 6.7x compression ratios on scientific datasets - significantly better than DEFLATE for long-term archival storage.
-
-**Use Cases**:
-- Long-term data archives
-- Reducing cloud storage costs
-- Datasets with repetitive patterns
-- Bandwidth-constrained data transfers
-
-**How It Works**: Like LZ4, BZIP2 integrates as an HDF5 filter plugin. Call nc_def_var_bzip2() to turn on BZIP2 compression for a variable.
-
-## Compression Performance
-
-The following benchmarks compare compression methods on a 150 MB NetCDF-4 dataset.
-
-### All Compression Methods
-
-<img src="docs/compression_performance.svg" width="100%" alt="Compression Performance">
-
-### Fast Compression Methods (Excluding BZIP2)
-
-For better visualization of the faster compression methods:
-
-<img src="docs/compression_performance_fast.svg" width="100%" alt="Fast Compression Performance">
-
-| Method | Write Time (s) | File Size (MB) | Read Time (s) | Compression Ratio | Write Speed | Read Speed |
-|--------|----------------|----------------|---------------|-------------------|-------------|------------|
-| none   | 0.27          | 150.01         | 0.14          | 1.0×              | 1.0×        | 1.0×       |
-| lz4    | 0.34          | 68.95          | 0.16          | 2.2×              | 0.79×       | 0.88×      |
-| zstd   | 0.66          | 34.94          | 0.26          | 4.3×              | 0.41×       | 0.54×      |
-| zlib   | 1.83          | 41.78          | 0.59          | 3.6×              | 0.15×       | 0.24×      |
-| bzip2  | 22.14         | 22.39          | 5.90          | 6.7×              | 0.01×       | 0.02×      |
-
-**Key Insights:**
-- **LZ4** offers the best balance: 2.2× compression with minimal performance impact (79% write speed, 88% read speed)
-- **ZSTD** (recently added to NetCDF) provides excellent compression (4.3×) with moderate performance impact (41% write speed, 54% read speed)
-- **ZLIB** (standard DEFLATE) shows 3.6× compression but is slower than both LZ4 and ZSTD
-- **BZIP2** achieves the highest compression ratio (6.7×) but is significantly slower (1% write speed, 2% read speed)
-- **Read performance** generally mirrors write performance, with LZ4 being fastest and BZIP2 slowest
+NEP adds LZ4 and BZIP2 HDF5 filter plugins for NetCDF-4 files, enabled by default. LZ4 favors speed (2–3× faster than DEFLATE); BZIP2 favors maximum compression ratio (up to 6.7× on typical scientific datasets). See [docs/compression.md](docs/compression.md) for algorithm details, C/Fortran API reference, and performance benchmarks.
 
 ---
 

@@ -73,19 +73,34 @@ export HDF5_PLUGIN_PATH=/usr/local/lib/plugin
 
 HDF5 then loads the appropriate filter automatically on open or create.
 
-## Performance Benchmarks
+## Performance Comparison
 
-Based on a 150 MB NetCDF-4 dataset:
+The following benchmarks compare compression methods on a 150 MB NetCDF-4 dataset. The programs used to generate these results are in `examples/performance/`.
 
-| Method | Write Time (s) | File Size (MB) | Read Time (s) | Compression Ratio |
-|--------|----------------|----------------|---------------|-------------------|
-| none   | 0.27           | 150.01         | 0.14          | 1.0×              |
-| lz4    | 0.34           | 68.95          | 0.16          | 2.2×              |
-| zstd   | 0.66           | 34.94          | 0.26          | 4.3×              |
-| zlib   | 1.83           | 41.78          | 0.59          | 3.6×              |
-| bzip2  | 22.14          | 22.39          | 5.90          | 6.7×              |
+### All Compression Methods
 
-See `examples/performance/` for the benchmark programs used to generate these results.
+![Compression performance comparison for no compression, LZ4, Zstandard, ZLIB, and BZIP2 on a 150 MB NetCDF-4 dataset](images/compression_performance.svg)
+
+### Fast Compression Methods (Excluding BZIP2)
+
+For better visualization of the faster compression methods:
+
+![Fast compression performance comparison excluding BZIP2](images/compression_performance_fast.svg)
+
+| Method | Write Time (s) | File Size (MB) | Read Time (s) | Compression Ratio | Write Speed | Read Speed |
+|--------|----------------|----------------|---------------|-------------------|-------------|------------|
+| none   | 0.27           | 150.01         | 0.14          | 1.0×              | 1.0×        | 1.0×       |
+| lz4    | 0.34           | 68.95          | 0.16          | 2.2×              | 0.79×       | 0.88×      |
+| zstd   | 0.66           | 34.94          | 0.26          | 4.3×              | 0.41×       | 0.54×      |
+| zlib   | 1.83           | 41.78          | 0.59          | 3.6×              | 0.15×       | 0.24×      |
+| bzip2  | 22.14          | 22.39          | 5.90          | 6.7×              | 0.01×       | 0.02×      |
+
+**Key Insights:**
+- **LZ4** offers the best balance: 2.2× compression with minimal performance impact (79% write speed, 88% read speed)
+- **ZSTD** (recently added to NetCDF) provides excellent compression (4.3×) with moderate performance impact (41% write speed, 54% read speed)
+- **ZLIB** (standard DEFLATE) shows 3.6× compression but is slower than both LZ4 and ZSTD
+- **BZIP2** achieves the highest compression ratio (6.7×) but is significantly slower (1% write speed, 2% read speed)
+- **Read performance** generally mirrors write performance, with LZ4 being fastest and BZIP2 being slowest
 
 ## Build Options
 
