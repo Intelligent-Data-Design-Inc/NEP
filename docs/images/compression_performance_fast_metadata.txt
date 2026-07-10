@@ -1,0 +1,3 @@
+title: Fast Compression Methods Comparison
+caption: Write time, read time, file size, and compression ratio for no compression, LZ4, Zstandard, and ZLIB on a 150 MB NetCDF-4 dataset. Excludes BZIP2 so the faster methods are easier to compare.
+alt_text: Bar chart comparing the faster compression methods on a 150 MB NetCDF-4 dataset, excluding BZIP2.

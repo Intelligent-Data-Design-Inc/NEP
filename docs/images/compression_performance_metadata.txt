@@ -1,0 +1,3 @@
+title: Compression Performance Comparison
+caption: Write time, read time, file size, and compression ratio for no compression, LZ4, Zstandard, ZLIB, and BZIP2 on a 150 MB NetCDF-4 temperature dataset. The benchmark highlights the trade-off between speed and compression ratio for each algorithm.
+alt_text: Bar chart comparing compression method write time, read time, file size, and compression ratio on a 150 MB NetCDF-4 dataset.
