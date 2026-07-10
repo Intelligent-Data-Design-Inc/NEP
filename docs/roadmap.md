@@ -31,6 +31,26 @@
 - No runtime version probe test is added; the build-system requirement is the verification mechanism.
 - Local build guidance documents are updated only if they currently mention a specific NetCDF-C version.
 
+#### Sprint 3: Move Diagrams
+**Detailed Plan**: See `docs/plan/v2.3.0-sprint3-move-diagrams.md`
+
+- Move the compression-related SVG plots (`docs/compression_performance.svg`, `docs/compression_performance_fast.svg`) from `docs/` to `docs/images/` and update all references in `README.md` and `docs/compression.md`.
+- Add companion `metadata.txt` files for both SVGs per the NEP diagram rules (title, caption ≤ 75 words, alt_text).
+- Expand `docs/compression.md` with the full performance discussion, comparison table, and key insights currently duplicated in `README.md`.
+- Trim the README compression section to a brief summary that links to `docs/compression.md`.
+- Verify Doxygen renders the compression page with the moved images and no new warnings.
+
+**Clarified decisions:**
+- Move both SVGs into `docs/images/` so all visual assets live in one directory.
+- Create required `metadata.txt` files for each SVG as part of this move, since the diagrams are already being touched.
+- `docs/compression.md` becomes the authoritative compression performance page; `README.md` keeps only a high-level summary with a cross-link.
+- Sprint 3 is documentation-only; no code, build system, or test changes.
+
+#### Sprint 4: Update Spack Build
+- Spack build does not include format handlers.
+- Update spack build until all format handlers work. One at a time.
+- This can be separate sprints if that is helpful.
+
 ### V2.2.0 Read NASA/ESA Planetary Data System 4 Data
 
 #### Sprint 1: Make Extended Data Formats Off by Default
