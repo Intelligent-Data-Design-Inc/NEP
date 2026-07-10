@@ -14,6 +14,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   # Lint and style checks - runs on all PRs and pushes
@@ -153,7 +154,7 @@ jobs:
   # Full install test - only runs on pushes to main
   install:
     name: Spack Install Test
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout NEP
@@ -308,6 +309,13 @@ jobs:
           # NOTE: Using || true to not fail CI - we will check results manually at first
           spack install -v --fail-fast nep@develop~docs~fortran 2>&1 | tee spack_install.log || true
           echo "=== Installation attempt complete ==="
+
+      - name: Install NEP 2.3.0 with Spack
+        run: |
+          echo "=== Installing nep@2.3.0 ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          spack install -v --fail-fast nep@2.3.0~docs~fortran 2>&1 | tee spack_install_2.3.0.log || true
+          echo "=== nep@2.3.0 installation attempt complete ==="
 
       - name: Show build logs (always runs)
         run: |

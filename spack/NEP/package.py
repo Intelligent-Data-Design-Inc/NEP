@@ -11,8 +11,10 @@ from spack.package import *
 
 
 class Nep(CMakePackage):
-    """NEP (NetCDF Expansion Pack) provides high-performance compression for
-    HDF5/NetCDF-4 files with LZ4 and BZIP2 compression algorithms."""
+    """NEP (NetCDF Extension Pack) provides high-performance LZ4 and BZIP2
+    compression filters for HDF5/NetCDF-4 files and transparent read access
+    to scientific data formats (GeoTIFF, GRIB2, FITS, NASA CDF, PDS4)
+    through the standard NetCDF API via User Defined Format handlers."""
 
     homepage = "https://github.com/Intelligent-Data-Design-Inc/NEP"
     url = "https://github.com/Intelligent-Data-Design-Inc/NEP/archive/v1.0.0.tar.gz"
@@ -24,6 +26,12 @@ class Nep(CMakePackage):
 
     version("develop", branch="main")
 
+    version(
+        "2.3.0",
+        sha256="ce6eb7640a44e4b068af4beef3a1b7c5a4772666fbea73db34d81d71b4144dde",
+        url="https://github.com/Intelligent-Data-Design-Inc/NEP/archive/v2.3.0.tar.gz",
+    )
+
     variant("docs", default=True, description="Build documentation with Doxygen")
     variant("lz4", default=True, description="Enable LZ4 compression support")
     variant("bzip2", default=True, description="Enable BZIP2 compression support")
@@ -33,7 +41,7 @@ class Nep(CMakePackage):
     depends_on("c", type="build")
     depends_on("fortran", when="+fortran", type="build")
 
-    depends_on("netcdf-c@4.10:", type=("build", "link"))
+    depends_on("netcdf-c@4.10.1:", type=("build", "link"))
     depends_on("hdf5@1.12:+hl~mpi", type=("build", "link"))
     depends_on("lz4", when="+lz4", type=("build", "link"))
     depends_on("bzip2", when="+bzip2", type=("build", "link"))
@@ -44,6 +52,8 @@ class Nep(CMakePackage):
     def cmake_args(self):
         args = [
             self.define_from_variant("BUILD_DOCUMENTATION", "docs"),
+            self.define_from_variant("BUILD_LZ4", "lz4"),
+            self.define_from_variant("BUILD_BZIP2", "bzip2"),
             self.define_from_variant("ENABLE_FORTRAN", "fortran"),
             self.define_from_variant("ENABLE_FITS", "fits"),
         ]
