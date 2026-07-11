@@ -1,0 +1,93 @@
+Subject: [ANN] NEP v1.5.1 Released - NetCDF Example Programs
+
+Dear NetCDF Community,
+
+We are pleased to announce the release of NEP (NetCDF Extension Pack) version 1.5.1, which adds comprehensive NetCDF example programs to help users learn and master the NetCDF API.
+
+## What's New in v1.5.1
+
+This release integrates 22 example programs demonstrating NetCDF programming patterns in both C and Fortran, covering classic NetCDF and NetCDF-4 features. All examples include automated output validation and are fully integrated into the build system.
+
+### Example Programs Included
+
+**C Classic Examples (6 programs):**
+- Basic 2D arrays and coordinate variables
+- NetCDF format variants (classic, 64-bit offset, CDF-5)
+- Size limits and unlimited dimensions
+- Multi-dimensional (4D) variables
+
+**C NetCDF-4 Examples (5 programs):**
+- NetCDF-4/HDF5 format basics
+- Compression filters (deflate, shuffle)
+- Chunking strategies and performance optimization
+- Multiple unlimited dimensions
+- User-defined types (compound, vlen, enum, opaque)
+
+**Fortran Examples (11 programs):**
+- Complete Fortran equivalents of all C examples
+- Identical output for cross-language learning
+- Demonstrates Fortran 90+ NetCDF API
+
+### Key Features
+
+- **Automated Testing**: All examples run as automated tests with CDL-based output validation
+- **Learning Paths**: Structured progression from beginner to advanced topics
+- **Comprehensive Documentation**: Doxygen-integrated with detailed explanations
+- **Build Integration**: Examples build by default, can be disabled with `-DBUILD_EXAMPLES=OFF` (CMake) or `--disable-examples` (Autotools)
+- **CI Validation**: Examples tested automatically in GitHub Actions
+
+### Building Examples
+
+CMake:
+```
+cmake -B build -DBUILD_EXAMPLES=ON
+cmake --build build
+ctest --test-dir build
+```
+
+Autotools:
+```
+./configure --enable-examples
+make
+make check
+```
+
+Fortran examples require NetCDF-Fortran library and are automatically skipped if unavailable.
+
+## About NEP
+
+NEP (NetCDF Extension Pack) extends NetCDF-4 with:
+- High-performance compression (LZ4, BZIP2)
+- CDF file reader (NASA Common Data Format)
+- GeoTIFF file reader (geospatial raster data)
+- Now: Comprehensive example programs
+
+## Download and Documentation
+
+- **GitHub**: https://github.com/Intelligent-Data-Design-Inc/NEP
+- **Release Notes**: https://github.com/Intelligent-Data-Design-Inc/NEP/blob/main/docs/releases/v1.5.1.md
+- **Documentation**: https://intelligent-data-design-inc.github.io/NEP/
+
+## Installation
+
+NEP requires NetCDF-C v4.9+ and HDF5 v1.12+. Install via:
+
+**From Source:**
+```
+git clone https://github.com/Intelligent-Data-Design-Inc/NEP.git
+cd NEP
+cmake -B build -DCMAKE_INSTALL_PREFIX=/usr/local
+cmake --build build
+cmake --install build
+```
+
+## Feedback
+
+We welcome feedback, bug reports, and contributions. Please visit our GitHub repository to report issues or submit pull requests.
+
+Thank you for your continued support of the NetCDF ecosystem!
+
+Best regards,
+Ed Hartnett
+Intelligent Data Design, Inc.
+https://github.com/Intelligent-Data-Design-Inc/NEP
