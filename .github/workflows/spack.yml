@@ -158,6 +158,13 @@ jobs:
           spack spec -I nep@2.4.0+geotiff
           spack spec -I nep@main+geotiff
 
+      - name: Check package concretization (grib2 variant)
+        run: |
+          echo "=== Concretizing NEP with GRIB2 variant ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          spack spec -I nep@2.4.0+grib2
+          spack spec -I nep@main+grib2
+
   # Full install test - only runs on pushes to main
   install:
     name: Spack Install Test
@@ -338,6 +345,20 @@ jobs:
           spack install -v --fail-fast nep@main+geotiff~docs~fortran 2>&1 | tee spack_install_main_geotiff.log || true
           echo "=== nep@main+geotiff installation attempt complete ==="
 
+      - name: Install NEP 2.4.0 with Spack (GRIB2 variant)
+        run: |
+          echo "=== Installing nep@2.4.0+grib2 ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          spack install -v --fail-fast nep@2.4.0+grib2~docs~fortran 2>&1 | tee spack_install_2.4.0_grib2.log || true
+          echo "=== nep@2.4.0+grib2 installation attempt complete ==="
+
+      - name: Install NEP main with Spack (GRIB2 variant)
+        run: |
+          echo "=== Installing nep@main+grib2 ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          spack install -v --fail-fast nep@main+grib2~docs~fortran 2>&1 | tee spack_install_main_grib2.log || true
+          echo "=== nep@main+grib2 installation attempt complete ==="
+
       - name: Show build logs (always runs)
         run: |
           echo "=== Showing build logs for manual review ==="
@@ -347,6 +368,10 @@ jobs:
           tail -200 spack_install_2.4.0_geotiff.log || true
           echo "=== Spack install main geotiff log (last 200 lines) ==="
           tail -200 spack_install_main_geotiff.log || true
+          echo "=== Spack install 2.4.0 grib2 log (last 200 lines) ==="
+          tail -200 spack_install_2.4.0_grib2.log || true
+          echo "=== Spack install main grib2 log (last 200 lines) ==="
+          tail -200 spack_install_main_grib2.log || true
           echo "=== Finding build directories ==="
           find $HOME/spack/var/spack/stage -name '*.log' -o -name 'spack-build-out.txt' 2>/dev/null | head -10 || true
           echo "=== Showing any build output files ==="
