@@ -57,7 +57,7 @@ class Nep(CMakePackage):
     depends_on("netcdf-fortran", when="+fortran", type=("build", "link"))
     depends_on("cfitsio", when="+fits", type=("build", "link"))
     depends_on("libgeotiff", when="+geotiff", type=("build", "link"))
-    depends_on("nceplibs-g2c", when="+grib2", type=("build", "link"))
+    depends_on("g2c", when="+grib2", type=("build", "link"))
     depends_on("libtiff", when="+geotiff", type=("build", "link"))
     depends_on("doxygen", when="+docs", type="build")
 
