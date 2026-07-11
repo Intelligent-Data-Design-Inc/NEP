@@ -1,5 +1,5 @@
 # CMakeLists.txt for parallel I/O examples
-# Only built when ENABLE_PARALLEL_TESTS is ON (Sprint 2 detection).
+# Only built when NEP_ENABLE_PARALLEL_TESTS is ON (Sprint 2 detection).
 # Edward Hartnett, Intelligent Data Design, Inc.
 # v1.9.0 Sprint 4
 
@@ -15,7 +15,7 @@ target_link_libraries(square16_par PRIVATE ${MPI_C_LIBRARIES} ${NETCDF_LDFLAGS})
 target_compile_options(square16_par PRIVATE ${NETCDF_CFLAGS_OTHER})
 
 # Fortran parallel example (only when Fortran is enabled)
-if(ENABLE_FORTRAN)
+if(NEP_ENABLE_FORTRAN)
     add_executable(f_square16_par f_square16_par.f90)
     target_include_directories(f_square16_par PRIVATE ${MPI_Fortran_INCLUDE_PATH} ${NETCDF_INCLUDE_DIRS} ${NETCDFF_INCLUDE_DIRS})
     target_link_libraries(f_square16_par PRIVATE ${MPI_Fortran_LIBRARIES} ${NETCDFF_LDFLAGS} ${NETCDF_LDFLAGS})

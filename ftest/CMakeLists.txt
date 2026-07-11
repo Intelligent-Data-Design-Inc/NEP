@@ -19,14 +19,14 @@ include_directories(${NetCDF_Fortran_INCLUDE_DIRS})
 link_directories(${NetCDF_Fortran_LIBRARY_DIRS})
 
 # Build the BZIP2 Fortran test if BZIP2 is enabled.
-if(BUILD_BZIP2)
+if(NEP_BUILD_BZIP2)
     add_executable(ftst_nep_bzip2 ftst_nep_bzip2.F90)
     target_link_libraries(ftst_nep_bzip2 PRIVATE nepf nep ${NetCDF_Fortran_LIBRARIES})
     target_include_directories(ftst_nep_bzip2 PRIVATE ${NetCDF_Fortran_INCLUDE_DIRS})
 endif()
 
 # Build the LZ4 Fortran test if LZ4 is enabled.
-if(BUILD_LZ4)
+if(NEP_BUILD_LZ4)
     add_executable(ftst_nep_lz4 ftst_nep_lz4.F90)
     target_link_libraries(ftst_nep_lz4 PRIVATE nepf nep ${NetCDF_Fortran_LIBRARIES})
     target_include_directories(ftst_nep_lz4 PRIVATE ${NetCDF_Fortran_INCLUDE_DIRS})
@@ -44,12 +44,12 @@ if(HAVE_FITS)
 endif()
 
 # Configure run_tests.sh script with proper paths.
-if(BUILD_LZ4)
+if(NEP_BUILD_LZ4)
     set(BUILD_LZ4 "yes")
 else()
     set(BUILD_LZ4 "no")
 endif()
-if(BUILD_BZIP2)
+if(NEP_BUILD_BZIP2)
     set(BUILD_BZIP2 "yes")
 else()
     set(BUILD_BZIP2 "no")

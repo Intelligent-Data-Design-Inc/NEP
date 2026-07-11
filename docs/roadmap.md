@@ -8,7 +8,7 @@
 - Add `version("2.3.0", ...)` release (only 2.3.0+ is supported; no earlier version).
 - Update package description to reflect multi-format reader.
 - Bump `depends_on("netcdf-c@4.10.1:", ...)`.
-- Update `cmake_args` to pass all existing variants properly (`BUILD_LZ4`, `BUILD_BZIP2`, `BUILD_DOCUMENTATION`, `ENABLE_FORTRAN`, `ENABLE_FITS`).
+- Update `cmake_args` to pass all existing variants properly (`NEP_BUILD_LZ4`, `NEP_BUILD_BZIP2`, `NEP_BUILD_DOCUMENTATION`, `NEP_ENABLE_FORTRAN`, `NEP_ENABLE_FITS`).
 - **Testing**: Spec job keeps `nep@develop` checks; install job keeps `nep@develop` step and adds `nep@2.3.0~docs~fortran` install step.
 
 **Clarified decisions:**
@@ -18,29 +18,49 @@
 - Install job adds `nep@2.3.0~docs~fortran` as a second install step alongside the existing `develop` step.
 - `spack-cdf.yml` not touched; deferred to Sprint 4.
 
+#### Sprint 1.5: Fix CMake Options
+**Detailed Plan**: See `docs/plan/v2.4.0-sprint1.5-fix-cmake-options.md`
+
+- Rename all project-specific CMake options to use the `NEP_` prefix, following the netcdf-c and HDF5 conventions. Affected options: `NEP_ENABLE_FORTRAN`, `NEP_BUILD_LZ4`, `NEP_BUILD_BZIP2`, `NEP_BUILD_DOCUMENTATION`, `NEP_BUILD_EXAMPLES`, `NEP_ENABLE_CDF`, `NEP_ENABLE_GEOTIFF`, `NEP_ENABLE_FITS`, `NEP_ENABLE_PDS4`, `NEP_ENABLE_GRIB2`, `NEP_ENABLE_PARALLEL_TESTS`, `NEP_ENABLE_BENCHMARKS`, `NEP_ENABLE_OPENDAP_EXAMPLES`.
+- Leave `BUILD_TESTING` and `DEBUG` unprefixed (`BUILD_TESTING` is managed by CTest; `DEBUG` is a generic debug flag).
+- Keep internal `config.h.cmake.in` macros (`BUILD_LZ4`, `BUILD_BZIP2`, `HAVE_*`) unchanged; only user-facing CMake option names change.
+- Remove old unprefixed option names with no deprecated aliases; update all in-repo callers in the same sprint.
+- Update `spack/NEP/package.py` `cmake_args` to pass the new `NEP_*` option names.
+- Update CI workflow files and `.devin/rules/local-build-command.md` to use the new option names.
+- Update `README.md` and any other documentation that references the old CMake option names.
+- **Testing**: Existing CI configure/build/test matrix exercises the renamed options. Old option names are removed entirely, so no regression test for them is added.
+
+**Clarified decisions:**
+- Hard rename with no backward-compatibility aliases; all in-repo callers updated in this sprint.
+- `BUILD_TESTING` and `DEBUG` are excluded from the prefix.
+- Internal `config.h` macros remain unchanged.
+- Spack package, CI workflows, and local build rules updated together.
+
+**GitHub Issue:** #265
+
 #### Sprint 2: GeoTIFF Variant
 - Add variant `geotiff` (default off).
 - Add `depends_on("libgeotiff", when="+geotiff")` and `depends_on("libtiff", when="+geotiff")`.
-- Pass `ENABLE_GEOTIFF` in `cmake_args`.
+- Pass `NEP_ENABLE_GEOTIFF` in `cmake_args`.
 - **Testing**: Add `spack spec -I nep@2.3.0+geotiff` to spec job; add `spack install -v nep@2.3.0+geotiff~docs~fortran` to install job.
 
 #### Sprint 3: GRIB2 Variant
 - Add variant `grib2` (default off).
 - Add appropriate spack dependency for g2c/GRIB2.
-- Pass `ENABLE_GRIB2` in `cmake_args`.
+- Pass `NEP_ENABLE_GRIB2` in `cmake_args`.
 - **Testing**: Add `spack spec -I nep@2.3.0+grib2` to spec job; add `spack install -v nep@2.3.0+grib2~docs~fortran` to install job.
 
 #### Sprint 4: CDF Variant
 - Add variant `cdf` (default off).
 - Add `depends_on("cdf", when="+cdf")` — references the in-repo `spack/cdf/package.py`.
-- Pass `ENABLE_CDF` in `cmake_args`.
+- Pass `NEP_ENABLE_CDF` in `cmake_args`.
 - Update `spack/cdf/package.py` as needed to work as a dependency.
 - **Testing**: Add `spack spec -I nep@2.3.0+cdf` to spec job; add `spack install -v nep@2.3.0+cdf~docs~fortran` to install job. Consider merging `spack-cdf.yml` into `spack.yml` since CDF becomes a transitive dependency.
 
 #### Sprint 5: PDS4 + Parallel + Remaining Variants
 - Add variants: `pds4`, `parallel`, `examples`, `benchmarks`.
 - Add deps: `libxml2` (pds4), `mpi` (parallel).
-- Pass all remaining `ENABLE_*` / `BUILD_*` flags in `cmake_args`.
+- Pass all remaining `NEP_ENABLE_*` / `NEP_BUILD_*` flags in `cmake_args`.
 - When `+parallel`, adjust `hdf5` dep to `+mpi`.
 - **Testing**: Add `spack spec -I nep@2.3.0+pds4` and `spack spec -I nep@2.3.0+parallel` to spec job; add `spack install -v nep@2.3.0+pds4~docs~fortran` to install job. Parallel install-test optional (requires MPI).
 
@@ -129,7 +149,7 @@
 **Detailed Plan**: See `docs/plan/v2.2.0-sprint3-pds4-prep.md`
 
 - Study PDS4 and create skill files under `.devin/skills/pds4/`.
-- Add `--enable-pds4` / `-DENABLE_PDS4=ON` build options to both build systems; default OFF.
+- Add `--enable-pds4` / `-DNEP_ENABLE_PDS4=ON` build options to both build systems; default OFF.
 - Assign PDS4 to UDF5.
 - Build the PDS4 UDF dispatch library with no-op read functions (`ncpds4dispatch.c`/`ncpds4file.c`) following the existing handler pattern.
 - Add a C test that attempts to open a real PDS4 label file via `nc_open()`.
@@ -213,7 +233,7 @@
 **Detailed Plan**: See `docs/plan/v2.0.0-sprint2-fits-dispatch.md`
 
 - Build the FITS UDF dispatch library (`libncfits`) with no-op read functions.
-- Flip `ENABLE_FITS` / `--enable-fits` default to **ON**; add `-DENABLE_FITS=OFF` / `--disable-fits` to the other CI workflows so only `ci-fits.yml` needs CFITSIO.
+- Flip `NEP_ENABLE_FITS` / `--enable-fits` default to **ON**; add `-DNEP_ENABLE_FITS=OFF` / `--disable-fits` to the other CI workflows so only `ci-fits.yml` needs CFITSIO.
 - Create `include/fitsdispatch.h`, `src/fitsdispatch.c`, and `src/fitsfile.c` following the GRIB2/CDF/GeoTIFF pattern.
 - Generate the `.ncrc` UDF3 autoload block for FITS in both CMake and Autotools.
 - Create `test/tst_fits_udf.c` that calls `NC_FITS_initialize()` and does an `nc_open()`/`nc_close()` round-trip on the real FITS file without reading CFITSIO metadata.
@@ -221,7 +241,7 @@
 - Ensure `test/data/WFPC2u5780205r_c0fx.fits` is copied to build directories for both tests.
 
 **Clarified decisions:**
-- `ENABLE_FITS` / `--enable-fits` default ON.
+- `NEP_ENABLE_FITS` / `--enable-fits` default ON.
 - C test: `nc_open()`/`nc_close()` round-trip on the real FITS file.
 - Fortran test: `ftest/ftst_fits_udf.F90` with a new `ftest/CMakeLists.txt`.
 - Primary HDU content goes in the root group; extension HDUs become child groups.

@@ -12,31 +12,31 @@ string(STRIP "${NEP_VERSION_FROM_FILE_RAW}" NEP_VERSION_FROM_FILE)
 option(DEBUG "Build with debugging symbols" OFF)
 
 # Add option to control building Fortran wrappers and tests
-option(ENABLE_FORTRAN "Build Fortran wrappers and related tests" ON)
+option(NEP_ENABLE_FORTRAN "Build Fortran wrappers and related tests" ON)
 
 # Build options for compression filters (mirror autotools options)
-option(BUILD_LZ4 "Enable LZ4 filter support" ON)
-option(BUILD_BZIP2 "Enable BZIP2 filter support" OFF)
+option(NEP_BUILD_LZ4 "Enable LZ4 filter support" ON)
+option(NEP_BUILD_BZIP2 "Enable BZIP2 filter support" OFF)
 
 # Define global preprocessor symbol to mirror Autotools AC_DEFINE([USE_HDF5],[yes])
 # Use add_definitions for compatibility with CMake 3.9
 add_definitions(-DUSE_HDF5=yes)
 
-# CDF library detection (v1.3.0) - default OFF; enable with -DENABLE_CDF=ON
-option(ENABLE_CDF "Enable CDF library detection" OFF)
+# CDF library detection (v1.3.0) - default OFF; enable with -DNEP_ENABLE_CDF=ON
+option(NEP_ENABLE_CDF "Enable CDF library detection" OFF)
 
-# GeoTIFF library detection (v1.5.0) - default OFF; enable with -DENABLE_GEOTIFF=ON
-option(ENABLE_GEOTIFF "Enable GeoTIFF library detection" OFF)
+# GeoTIFF library detection (v1.5.0) - default OFF; enable with -DNEP_ENABLE_GEOTIFF=ON
+option(NEP_ENABLE_GEOTIFF "Enable GeoTIFF library detection" OFF)
 
 # Documentation option
-option(BUILD_DOCUMENTATION "Build documentation with Doxygen" ON)
+option(NEP_BUILD_DOCUMENTATION "Build documentation with Doxygen" ON)
 
 # Testing option - enable by default
 option(BUILD_TESTING "Build tests" ON)
 
 # Examples option - disabled by default in CMake due to complex HDF5 linking (v1.5.1)
 # Autotools build handles examples correctly; use that for example builds
-option(BUILD_EXAMPLES "Build example programs" OFF)
+option(NEP_BUILD_EXAMPLES "Build example programs" OFF)
 
 # Set compiler flags based on DEBUG option
 if(DEBUG)
@@ -46,7 +46,7 @@ endif()
 
 # Determine if we're doing a documentation-only build
 set(DOCS_ONLY OFF)
-if(BUILD_DOCUMENTATION AND NOT BUILD_TESTING)
+if(NEP_BUILD_DOCUMENTATION AND NOT BUILD_TESTING)
     set(DOCS_ONLY ON)
     message(STATUS "Documentation-only build - skipping dependencies")
 endif()
@@ -106,7 +106,7 @@ int main(void){ return 0; }" NETCDF_VERSION_OK)
     endif()
 
     # Find NetCDF-Fortran (optional, for Fortran examples)
-    if(ENABLE_FORTRAN)
+    if(NEP_ENABLE_FORTRAN)
         pkg_check_modules(NetCDF_Fortran netcdf-fortran)
         if(NetCDF_Fortran_FOUND)
             message(STATUS "Found NetCDF-Fortran: ${NetCDF_Fortran_LIBRARIES}")
@@ -121,27 +121,31 @@ int main(void){ return 0; }" NETCDF_VERSION_OK)
     set(CMAKE_BUILD_RPATH "${HDF5_LIBRARY_DIRS};${NETCDF_LIBRARY_DIRS}")
 endif()
 
-# FITS reader support (v2.0.0) - default OFF; enable with -DENABLE_FITS=ON
-option(ENABLE_FITS "Enable FITS reader support via CFITSIO" OFF)
+# FITS reader support (v2.0.0) - default OFF; enable with -DNEP_ENABLE_FITS=ON
+option(NEP_ENABLE_FITS "Enable FITS reader support via CFITSIO" OFF)
 
-# PDS4 reader support (v2.2.0) - default OFF; enable with -DENABLE_PDS4=ON
-option(ENABLE_PDS4 "Enable PDS4 reader support via libxml2" OFF)
+# PDS4 reader support (v2.2.0) - default OFF; enable with -DNEP_ENABLE_PDS4=ON
+option(NEP_ENABLE_PDS4 "Enable PDS4 reader support via libxml2" OFF)
 
-# GRIB2 library detection (v1.7.0) - default OFF; enable with -DENABLE_GRIB2=ON
-option(ENABLE_GRIB2 "Enable GRIB2 support" OFF)
+# GRIB2 library detection (v1.7.0) - default OFF; enable with -DNEP_ENABLE_GRIB2=ON
+option(NEP_ENABLE_GRIB2 "Enable GRIB2 support" OFF)
 
-# Parallel I/O test support (v1.9.0) - default OFF; enable with -DENABLE_PARALLEL_TESTS=ON
-option(ENABLE_PARALLEL_TESTS "Enable parallel I/O test programs" OFF)
+# Parallel I/O test support (v1.9.0) - default OFF; enable with -DNEP_ENABLE_PARALLEL_TESTS=ON
+option(NEP_ENABLE_PARALLEL_TESTS "Enable parallel I/O test programs" OFF)
 
 # Performance benchmark support (v1.10.0) - default OFF; slow programs not for regular CI
-option(ENABLE_BENCHMARKS "Enable performance benchmark programs (slow, not for regular CI)" OFF)
+option(NEP_ENABLE_BENCHMARKS "Enable performance benchmark programs (slow, not for regular CI)" OFF)
 
 # OPeNDAP examples (v1.10.0) - default OFF; requires network access
-option(ENABLE_OPENDAP_EXAMPLES "Enable OPeNDAP remote data access examples (requires network)" OFF)
+option(NEP_ENABLE_OPENDAP_EXAMPLES "Enable OPeNDAP remote data access examples (requires network)" OFF)
+
+# Map user-facing NEP_ options to the internal macro names expected by config.h.cmake.in.
+set(BUILD_LZ4 ${NEP_BUILD_LZ4})
+set(BUILD_BZIP2 ${NEP_BUILD_BZIP2})
 
 if(NOT DOCS_ONLY)
     # CDF library detection (v1.3.0)
-    if(ENABLE_CDF)
+    if(NEP_ENABLE_CDF)
         find_library(CDF_LIBRARY NAMES cdf)
         find_path(CDF_INCLUDE_DIR cdf.h)
         
@@ -151,12 +155,12 @@ if(NOT DOCS_ONLY)
             set(HAVE_CDF TRUE)
             message(STATUS "CDF library detection enabled (library location only, no UDF yet)")
         else()
-            message(FATAL_ERROR "libcdf is required for the CDF dispatch layer. Include the library path in CPPFLAGS/LDFLAGS, or use -DENABLE_CDF=OFF")
+            message(FATAL_ERROR "libcdf is required for the CDF dispatch layer. Include the library path in CPPFLAGS/LDFLAGS, or use -DNEP_ENABLE_CDF=OFF")
         endif()
     endif()
 
     # GeoTIFF library detection (v1.5.0)
-    if(ENABLE_GEOTIFF)
+    if(NEP_ENABLE_GEOTIFF)
         find_library(GEOTIFF_LIBRARY NAMES geotiff)
         find_path(GEOTIFF_INCLUDE_DIR geotiff/geotiff.h)
         find_library(TIFF_LIBRARY NAMES tiff)
@@ -171,12 +175,12 @@ if(NOT DOCS_ONLY)
             set(HAVE_GEOTIFF TRUE)
             message(STATUS "GeoTIFF library detection enabled (library location only, no UDF yet)")
         else()
-            message(FATAL_ERROR "libgeotiff is required for the GeoTIFF dispatch layer. Include the library path in CPPFLAGS/LDFLAGS, or use -DENABLE_GEOTIFF=OFF")
+            message(FATAL_ERROR "libgeotiff is required for the GeoTIFF dispatch layer. Include the library path in CPPFLAGS/LDFLAGS, or use -DNEP_ENABLE_GEOTIFF=OFF")
         endif()
     endif()
 
     # FITS (CFITSIO) library detection (v2.0.0)
-    if(ENABLE_FITS)
+    if(NEP_ENABLE_FITS)
         find_library(CFITSIO_LIBRARY NAMES cfitsio)
         find_path(CFITSIO_INCLUDE_DIR fitsio.h)
 
@@ -187,12 +191,12 @@ if(NOT DOCS_ONLY)
             include_directories(${CFITSIO_INCLUDE_DIR})
             set(HAVE_FITS TRUE)
         else()
-            message(FATAL_ERROR "libcfitsio is required for the FITS reader. Install libcfitsio-dev or use -DENABLE_FITS=OFF")
+            message(FATAL_ERROR "libcfitsio is required for the FITS reader. Install libcfitsio-dev or use -DNEP_ENABLE_FITS=OFF")
         endif()
     endif()
 
     # GRIB2 library detection
-    if(ENABLE_GRIB2)
+    if(NEP_ENABLE_GRIB2)
         find_library(G2C_LIBRARY NAMES g2c)
         find_path(G2C_INCLUDE_DIR grib2.h)
 
@@ -202,31 +206,31 @@ if(NOT DOCS_ONLY)
             include_directories(${G2C_INCLUDE_DIR})
             set(HAVE_GRIB2 TRUE)
         else()
-            message(FATAL_ERROR "libg2c is required for the GRIB2 dispatch layer. Include the library path in CPPFLAGS/LDFLAGS, or use -DENABLE_GRIB2=OFF")
+            message(FATAL_ERROR "libg2c is required for the GRIB2 dispatch layer. Include the library path in CPPFLAGS/LDFLAGS, or use -DNEP_ENABLE_GRIB2=OFF")
         endif()
     endif()
 
     # PDS4 (libxml2) library detection (v2.2.0)
-    if(ENABLE_PDS4)
+    if(NEP_ENABLE_PDS4)
         find_package(LibXml2 REQUIRED)
         if(LIBXML2_FOUND)
             message(STATUS "Found libxml2: ${LIBXML2_LIBRARIES}")
             include_directories(${LIBXML2_INCLUDE_DIR})
             set(HAVE_PDS4 TRUE)
         else()
-            message(FATAL_ERROR "libxml2 is required for the PDS4 reader. Install libxml2-dev or use -DENABLE_PDS4=OFF")
+            message(FATAL_ERROR "libxml2 is required for the PDS4 reader. Install libxml2-dev or use -DNEP_ENABLE_PDS4=OFF")
         endif()
     endif()
 
     # Parallel I/O test support (v1.9.0)
-    if(ENABLE_PARALLEL_TESTS)
+    if(NEP_ENABLE_PARALLEL_TESTS)
         include(CheckSymbolExists)
         # Set up include paths for the symbol check
         set(CMAKE_REQUIRED_INCLUDES "${NETCDF_INCLUDE_DIRS}")
         check_symbol_exists(NC_HAS_PARALLEL4 "netcdf_meta.h" HAVE_PARALLEL_NETCDF)
 
         if(NOT HAVE_PARALLEL_NETCDF)
-            message(FATAL_ERROR "ENABLE_PARALLEL_TESTS requires NetCDF-C built with parallel support (NC_HAS_PARALLEL4 not found in ${NETCDF_INCLUDE_DIRS})")
+            message(FATAL_ERROR "NEP_ENABLE_PARALLEL_TESTS requires NetCDF-C built with parallel support (NC_HAS_PARALLEL4 not found in ${NETCDF_INCLUDE_DIRS})")
         endif()
 
         find_program(MPIEXEC_EXECUTABLE
@@ -235,7 +239,7 @@ if(NOT DOCS_ONLY)
         )
 
         if(NOT MPIEXEC_EXECUTABLE)
-            message(FATAL_ERROR "ENABLE_PARALLEL_TESTS requires mpiexec/mpirun/srun (set MPIEXEC_EXECUTABLE to specify)")
+            message(FATAL_ERROR "NEP_ENABLE_PARALLEL_TESTS requires mpiexec/mpirun/srun (set MPIEXEC_EXECUTABLE to specify)")
         endif()
 
         set(HAVE_PARALLEL_TESTS ON)
@@ -244,8 +248,8 @@ if(NOT DOCS_ONLY)
     endif()
 endif()
 
-message(STATUS "Performance benchmarks: ${ENABLE_BENCHMARKS}")
-message(STATUS "OPeNDAP examples: ${ENABLE_OPENDAP_EXAMPLES}")
+message(STATUS "Performance benchmarks: ${NEP_ENABLE_BENCHMARKS}")
+message(STATUS "OPeNDAP examples: ${NEP_ENABLE_OPENDAP_EXAMPLES}")
 
 # It's really easy to pick up the wrong HDF5 library if you set the path
 # wrong. Turn this on for added confirmation that you got it right.
@@ -288,7 +292,7 @@ if(NOT DOCS_ONLY)
     include(GNUInstallDirs)
     include(ExternalProject)
 
-    if(ENABLE_FORTRAN)
+    if(NEP_ENABLE_FORTRAN)
         enable_language(Fortran)
         add_subdirectory(fsrc)
     endif()
@@ -316,7 +320,7 @@ if(NOT DOCS_ONLY)
         get_filename_component(_xml2_lib_dir "${LIBXML2_LIBRARIES}" DIRECTORY)
         list(APPEND _nep_test_lib_dirs "${_xml2_lib_dir}")
     endif()
-    if(ENABLE_FORTRAN AND NetCDF_Fortran_LIBRARY_DIRS)
+    if(NEP_ENABLE_FORTRAN AND NetCDF_Fortran_LIBRARY_DIRS)
         list(APPEND _nep_test_lib_dirs ${NetCDF_Fortran_LIBRARY_DIRS})
     endif()
     list(REMOVE_DUPLICATES _nep_test_lib_dirs)
@@ -325,7 +329,7 @@ if(NOT DOCS_ONLY)
 
     add_subdirectory (src)
 
-    if(ENABLE_FORTRAN)
+    if(NEP_ENABLE_FORTRAN)
         add_subdirectory(ftest)
     endif()
     
@@ -335,7 +339,7 @@ if(NOT DOCS_ONLY)
 
     add_custom_target(hdf5_plugins)
 
-    if(BUILD_LZ4)
+    if(NEP_BUILD_LZ4)
         pkg_check_modules(LZ4 REQUIRED liblz4)
 
         set(NEP_LZ4_PLUGIN_SRC "${CMAKE_SOURCE_DIR}/hdf5_plugins/LZ4/src/H5Zlz4.c")
@@ -390,7 +394,7 @@ if(NOT DOCS_ONLY)
     # Make tests depend on plugins being built
     # Add test directory last so tst_cdf_udf runs after tst_cdf_basic
     add_subdirectory (test)
-    if(BUILD_LZ4 OR BUILD_BZIP2)
+    if(NEP_BUILD_LZ4 OR NEP_BUILD_BZIP2)
         add_subdirectory (test_h5)
     endif()
 
@@ -485,7 +489,7 @@ endif()
 
 
 # Doxygen documentation build
-if(BUILD_DOCUMENTATION)
+if(NEP_BUILD_DOCUMENTATION)
     find_package(Doxygen)
     if(DOXYGEN_FOUND)
         # Add build date for documentation
@@ -503,14 +507,14 @@ if(BUILD_DOCUMENTATION)
         )
         message(STATUS "Documentation generation enabled with doxygen")
     else()
-        message(FATAL_ERROR "Documentation enabled but doxygen not found. Install doxygen or disable with -DBUILD_DOCUMENTATION=OFF")
+        message(FATAL_ERROR "Documentation enabled but doxygen not found. Install doxygen or disable with -DNEP_BUILD_DOCUMENTATION=OFF")
     endif()
 else()
     message(STATUS "Documentation generation disabled")
 endif()
 
 # Add examples subdirectory (v1.5.1)
-if(BUILD_EXAMPLES AND NOT DOCS_ONLY)
+if(NEP_BUILD_EXAMPLES AND NOT DOCS_ONLY)
     message(STATUS "Building example programs")
     add_subdirectory(examples)
 else()

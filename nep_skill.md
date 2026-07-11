@@ -124,8 +124,8 @@ NetCDF-C 4.10.0+ provides 10 UDF slots:
 ```bash
 # Configure with all features
 cmake -B build -DCMAKE_INSTALL_PREFIX=/usr/local \
-    -DENABLE_CDF=ON -DENABLE_GEOTIFF=ON -DENABLE_GRIB2=OFF \
-    -DBUILD_LZ4=ON -DBUILD_BZIP2=ON
+    -DNEP_ENABLE_CDF=ON -DNEP_ENABLE_GEOTIFF=ON -DNEP_ENABLE_GRIB2=OFF \
+    -DNEP_BUILD_LZ4=ON -DNEP_BUILD_BZIP2=ON
 
 # Build
 cmake --build build
@@ -181,14 +181,14 @@ ctest -V
 
 | CMake Option | Autotools Option | Description |
 |--------------|------------------|-------------|
-| `-DENABLE_CDF=ON` | `--enable-cdf` | Enable CDF file support |
-| `-DENABLE_GEOTIFF=ON` | `--enable-geotiff` | Enable GeoTIFF support |
-| `-DENABLE_GRIB2=ON` | `--enable-grib2` | Enable GRIB2 support |
-| `-DBUILD_LZ4=ON` | `--enable-lz4` | Build LZ4 filter |
-| `-DBUILD_BZIP2=ON` | `--enable-bzip2` | Build BZIP2 filter |
-| `-DENABLE_FORTRAN=ON` | `--enable-fortran` | Build Fortran wrappers |
-| `-DBUILD_DOCUMENTATION=ON` | `--enable-docs` | Build Doxygen documentation |
-| `-DBUILD_EXAMPLES=ON` | `--enable-examples` | Build example programs |
+| `-DNEP_ENABLE_CDF=ON` | `--enable-cdf` | Enable CDF file support |
+| `-DNEP_ENABLE_GEOTIFF=ON` | `--enable-geotiff` | Enable GeoTIFF support |
+| `-DNEP_ENABLE_GRIB2=ON` | `--enable-grib2` | Enable GRIB2 support |
+| `-DNEP_BUILD_LZ4=ON` | `--enable-lz4` | Build LZ4 filter |
+| `-DNEP_BUILD_BZIP2=ON` | `--enable-bzip2` | Build BZIP2 filter |
+| `-DNEP_ENABLE_FORTRAN=ON` | `--enable-fortran` | Build Fortran wrappers |
+| `-DNEP_BUILD_DOCUMENTATION=ON` | `--enable-docs` | Build Doxygen documentation |
+| `-DNEP_BUILD_EXAMPLES=ON` | `--enable-examples` | Build example programs |
 | `-DBUILD_TESTING=ON` | - | Build test suite |
 
 ## Common Tasks
@@ -212,7 +212,7 @@ ctest -V
 ### Running Examples
 
 ```bash
-# After building with -DBUILD_EXAMPLES=ON
+# After building with -DNEP_BUILD_EXAMPLES=ON
 ./examples/netcdf-4/compression
 ./examples/netcdf-4/simple_nc4
 ```

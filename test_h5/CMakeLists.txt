@@ -7,7 +7,7 @@ include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${HDF5_INCLUDE_DIR})
 
-if(BUILD_LZ4)
+if(NEP_BUILD_LZ4)
     add_executable(tst_h_lz4 tst_h_lz4.c)
     target_link_libraries(tst_h_lz4 PRIVATE ${HDF5_LIBRARIES} m)
     add_executable(tst_lz4_size tst_lz4_size.c)
@@ -20,7 +20,7 @@ if(BUILD_LZ4)
         ENVIRONMENT "HDF5_PLUGIN_PATH=${NEP_HDF5_PLUGIN_INSTALL_DIR}")
 endif()
 
-if(BUILD_BZIP2)
+if(NEP_BUILD_BZIP2)
     add_executable(tst_h_bzip2 tst_h_bzip2.c)
     target_link_libraries(tst_h_bzip2 PRIVATE ${HDF5_C_${LIB_TYPE}_LIBRARY} m)
 

@@ -54,10 +54,10 @@ cmake -S . -B build \
   -DCMAKE_PREFIX_PATH="/usr/local/hdf5-2.1.0;/usr/local/netcdf-c-4.10.0;/usr/local/cdf-3.9.1;/usr/local/NCEPLIBS-g2c-2.3.0;/usr/local/jasper-3.0.3" \
   -DHDF5_ROOT=/usr/local/hdf5-2.1.0 \
   -DCMAKE_BUILD_TYPE=Debug \
-  -DENABLE_GEOTIFF=ON \
-  -DENABLE_CDF=ON \
-  -DENABLE_GRIB2=OFF \
-  -DENABLE_FORTRAN=OFF \
+  -DNEP_ENABLE_GEOTIFF=ON \
+  -DNEP_ENABLE_CDF=ON \
+  -DNEP_ENABLE_GRIB2=OFF \
+  -DNEP_ENABLE_FORTRAN=OFF \
   -DCMAKE_EXE_LINKER_FLAGS="-Wl,-rpath,/usr/local/hdf5-2.1.0/lib -Wl,-rpath,/usr/local/netcdf-c-4.10.0/lib"
 make -j$(nproc) -C build && ctest --test-dir build
 ```
@@ -72,9 +72,9 @@ against HDF5 2.1.0) and causes `NetCDF: HDF error` at runtime.
 rm -f build/CMakeCache.txt
 ```
 
-Add `-DENABLE_BENCHMARKS=ON -DBUILD_EXAMPLES=ON` to also build and run the performance examples.
+Add `-DNEP_ENABLE_BENCHMARKS=ON -DNEP_BUILD_EXAMPLES=ON` to also build and run the performance examples.
 
-**Running performance benchmarks** (after building with ENABLE_BENCHMARKS=ON):
+**Running performance benchmarks** (after building with NEP_ENABLE_BENCHMARKS=ON):
 ```bash
 LD_LIBRARY_PATH=/home/ed/NEP/build/src:/usr/local/hdf5-2.1.0/lib:/usr/local/netcdf-c-4.10.0/lib:/usr/local/jasper-3.0.3/lib:$LD_LIBRARY_PATH \
 HDF5_PLUGIN_PATH=/usr/local/hdf5/lib/plugin \
@@ -121,14 +121,14 @@ cmake -S . -B build \
   -DCMAKE_Fortran_COMPILER=mpif90 \
   -DCMAKE_PREFIX_PATH="/usr/local/hdf5-2.1.0_mpich;/usr/local/netcdf-c-4.10.0_mpich;/usr/local/netcdf-fortran-4.6.2_mpich" \
   -DCMAKE_BUILD_TYPE=Debug \
-  -DENABLE_FORTRAN=ON \
-  -DENABLE_PARALLEL_TESTS=ON \
-  -DENABLE_GEOTIFF=OFF \
-  -DENABLE_CDF=OFF \
-  -DENABLE_GRIB2=OFF \
-  -DBUILD_LZ4=OFF \
-  -DBUILD_BZIP2=OFF \
-  -DBUILD_EXAMPLES=ON \
+  -DNEP_ENABLE_FORTRAN=ON \
+  -DNEP_ENABLE_PARALLEL_TESTS=ON \
+  -DNEP_ENABLE_GEOTIFF=OFF \
+  -DNEP_ENABLE_CDF=OFF \
+  -DNEP_ENABLE_GRIB2=OFF \
+  -DNEP_BUILD_LZ4=OFF \
+  -DNEP_BUILD_BZIP2=OFF \
+  -DNEP_BUILD_EXAMPLES=ON \
   -DCMAKE_EXE_LINKER_FLAGS="-Wl,-rpath,/usr/local/hdf5-2.1.0_mpich/lib -Wl,-rpath,/usr/local/netcdf-c-4.10.0_mpich/lib -Wl,-rpath,/usr/local/netcdf-fortran-4.6.2_mpich/lib"
 make -j$(nproc) -C build && ctest --test-dir build --verbose
 ```

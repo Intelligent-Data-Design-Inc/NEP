@@ -1,24 +1,33 @@
 ---
-description: implement an issue
+description: implement a roadmap sprint
 auto_execution_mode: 3
 ---
 
-# Issue Implementation Workflow
+# Sprint Implementation Workflow
 
-This workflow implements GitHub issues by extracting planning information and following structured implementation plans.
+This workflow implements a roadmap sprint by resolving its GitHub issue, extracting planning information, and following the structured implementation plan.
 
-**Usage**: `/implement [issue_number]` or `Implement issue [issue_number]`
+**Usage**: `/implement <version> sprint <number>`
+
+**Example**: `/implement v2.4.0 sprint 1`
 
 ## Implementation Process
 
 ### Phase 1: Issue Analysis & Planning Extraction
 
-1. **Fetch GitHub Issue Details**
-   - Use `mcp0_issue_read` to get issue body, labels, and metadata
-   - Use `mcp0_issue_read` with `get_comments` to retrieve all comments
+1. **Resolve the sprint's GitHub issue**
+   - Read `docs/roadmap.md` and locate the specified version and sprint
+   - If the version or sprint is not found, report the error and stop
+   - Extract the GitHub issue number/link recorded for the sprint
+   - If no issue link is present, use `gh issue list --search "v{version} Sprint {n}:"` to find the issue
+   - Record the issue number for all subsequent steps
+
+2. **Fetch GitHub Issue Details**
+   - Use `gh issue view <number>` to get issue body, labels, and metadata
+   - Use `gh issue view --comments <number>` to retrieve all comments
    - Parse issue title, state, and assignee information
 
-2. **Extract Implementation Plan from Issue**
+3. **Extract Implementation Plan from Issue**
    - Look for these sections in issue body and comments:
      - "Implementation Plan", "Implementation Steps", or "Implementation Roadmap"
      - "Requirements & Acceptance Criteria" 
@@ -28,19 +37,19 @@ This workflow implements GitHub issues by extracting planning information and fo
    - Identify acceptance criteria with checkboxes
    - Parse technical specifications and code examples
 
-3. **Create Task Management Structure**
+4. **Create Task Management Structure**
    - Initialize todo list with extracted implementation steps
    - Mark first step as `in_progress`
    - Include dependencies, testing, and documentation tasks
 
 ### Phase 2: Context & Architecture Review
 
-4. **Review Project Documentation**
+5. **Review Project Documentation**
    - Read `docs/design.md` for architecture and design patterns
    - Read `docs/prd.md` for product requirements and specifications
    - Check for relevant format-specific documentation (e.g., GeoTIFF, CDF)
 
-5. **Examine Codebase Context**
+6. **Examine Codebase Context**
    - Locate relevant source files mentioned in the issue
    - Review existing implementation patterns
    - Identify similar functionality for reference
@@ -48,7 +57,7 @@ This workflow implements GitHub issues by extracting planning information and fo
 
 ### Phase 3: Structured Implementation
 
-6. **Execute Implementation Steps**
+7. **Execute Implementation Steps**
    For each step in the extracted plan:
    - **Code Implementation**: Write/modify code following existing patterns
    - **Documentation Updates**: Update relevant docs if specified
@@ -56,30 +65,30 @@ This workflow implements GitHub issues by extracting planning information and fo
    - **Validation**: Verify acceptance criteria are met
    - **Progress Tracking**: Mark step complete, update todo list
 
-7. **Handle Dependencies**
+8. **Handle Dependencies**
    - Verify all dependencies are satisfied before implementation
    - Check for blocking issues or prerequisites
    - Ensure build system changes are consistent across CMake/Autotools
 
 ### Phase 4: Quality Assurance & Completion
 
-8. **Testing & Validation**
+9. **Testing & Validation**
    - Run unit tests for new/modified code
    - Execute integration tests with sample data
    - Verify no regression in existing functionality
    - Check memory management and error handling
 
-9. **Definition of Done Verification**
+10. **Definition of Done Verification**
    - All acceptance criteria met
    - Tests passing with required coverage
    - Documentation updated
    - No regressions introduced
    - Code follows project patterns
 
-10. **Final Integration**
+11. **Final Integration**
     - Run full test suite using `/btest` workflow
-    - Update GitHub issue with implementation status
-    - Mark issue as ready for review/close if appropriate
+    - Use `gh issue comment <number>` to update the issue with implementation status
+    - Use `gh issue edit <number>` or `gh issue close <number>` to mark it ready for review/close if appropriate
 
 ## Implementation Guidelines
 
@@ -105,26 +114,28 @@ This workflow implements GitHub issues by extracting planning information and fo
 
 ## Error Handling
 
+- If the version or sprint is not found in `docs/roadmap.md`, report the error and stop
+- If the sprint has no GitHub issue, redirect to `/roadmap <version> sprint <number>` first
+- If `gh` CLI fails, retry once and then report the error; do not fall back to MCP GitHub tools on this network
 - If issue lacks clear implementation plan, redirect to `/issue` workflow first
 - If dependencies are missing, document and block implementation
 - If tests fail, debug and fix before proceeding
-- If acceptance criteria unclear, ask for clarification on GitHub issue
+- If acceptance criteria unclear, ask for clarification on the GitHub issue
 
 ## Progress Tracking
 
 - Use todo_list to track implementation steps
-- Update GitHub issue with progress comments
+- Use `gh issue comment <number>` to add progress comments to the GitHub issue
 - Mark tasks complete as they are finished
 - Document any deviations from the original plan
 
 ## Example Implementation Flow
 
-For issue 92 (CRS Metadata Extraction):
-1. Fetch issue → Extract 7-step implementation plan
-2. Review docs/design.md → Understand GeoTIFF architecture
-3. Examine src/geotifffile.c → Locate placeholder code
-4. Implement Step 1: Add CRS data structures → Update header
-5. Implement Step 2: extract_crs_parameters() → Write function
-6. Continue through all steps → Run tests → Update GitHub
+For `/implement v2.4.0 sprint 1`:
+1. Read docs/roadmap.md → Resolve GitHub issue for v2.4.0 Sprint 1
+2. Fetch issue → Extract implementation plan
+3. Review docs/design.md → Understand relevant architecture
+4. Examine source files → Locate code to change
+5. Implement steps → Run tests → Update GitHub
 
-Example usage: "/implement 60" or "Implement issue 60"
+Example usage: `/implement v2.4.0 sprint 1`

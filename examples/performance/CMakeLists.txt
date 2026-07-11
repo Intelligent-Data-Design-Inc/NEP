@@ -122,8 +122,8 @@ add_executable(bzip2 bzip2.c)
 perf_target(bzip2)
 target_link_libraries(bzip2 PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl m)
 
-# Performance examples run as tests only when ENABLE_BENCHMARKS=ON (slow; not for regular CI)
-if(ENABLE_BENCHMARKS)
+# Performance examples run as tests only when NEP_ENABLE_BENCHMARKS=ON (slow; not for regular CI)
+if(NEP_ENABLE_BENCHMARKS)
     target_compile_definitions(cache_tuning PRIVATE ENABLE_BENCHMARKS=1)
     target_compile_definitions(chunking PRIVATE ENABLE_BENCHMARKS=1)
     target_compile_definitions(deflate PRIVATE ENABLE_BENCHMARKS=1)
@@ -162,7 +162,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../validate_cdl.sh.in
                @ONLY)
 
 # CDL validation for cache_tuning (only when benchmarks enabled)
-if(ENABLE_BENCHMARKS AND BUILD_TESTING)
+if(NEP_ENABLE_BENCHMARKS AND BUILD_TESTING)
     add_test(NAME cache_tuning_validate
              COMMAND bash -c "cp /dev/null /dev/null; TMPFILE=cache_validate_$$.nc; ./cache_tuning && mv cache_test.nc \$TMPFILE && bash validate_cdl.sh cache_tuning \$TMPFILE ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/cache_tuning_expected.cdl; STATUS=$?; rm -f \$TMPFILE; exit \$STATUS"
              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})

@@ -138,7 +138,7 @@ if(BUILD_TESTING)
 endif()
 
 # Fortran NcZarr example — only built when Fortran is enabled and NetCDF-Fortran is found (v1.11.0 sprint 2)
-if(ENABLE_FORTRAN AND NetCDF_Fortran_FOUND)
+if(NEP_ENABLE_FORTRAN AND NetCDF_Fortran_FOUND)
     find_program(NF_CONFIG nf-config
         HINTS ${NetCDF_Fortran_LIBRARY_DIRS}/../bin
         PATHS ${NetCDF_Fortran_LIBRARY_DIRS}/../bin

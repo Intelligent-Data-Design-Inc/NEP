@@ -7,8 +7,8 @@ add_library(nepf SHARED nep.F90)
 target_link_libraries(nepf PRIVATE nep)
 
 target_compile_definitions(nepf PRIVATE
-    BUILD_LZ4=$<IF:$<BOOL:${BUILD_LZ4}>,1,0>
-    BUILD_BZIP2=$<IF:$<BOOL:${BUILD_BZIP2}>,1,0>
+    BUILD_LZ4=$<IF:$<BOOL:${NEP_BUILD_LZ4}>,1,0>
+    BUILD_BZIP2=$<IF:$<BOOL:${NEP_BUILD_BZIP2}>,1,0>
 )
 
 set_target_properties(nepf PROPERTIES

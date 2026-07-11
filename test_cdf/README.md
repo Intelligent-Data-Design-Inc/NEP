@@ -76,7 +76,7 @@ CDF library integration validated successfully.
 ## Build Systems
 
 ### CMake
-- **Conditional build**: Only builds when `ENABLE_CDF=ON`
+- **Conditional build**: Only builds when `NEP_ENABLE_CDF=ON`
 - **Test registration**: Registered with CTest
 - **Run test**: `ctest --verbose` (shows full output)
 

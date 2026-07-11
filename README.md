@@ -41,11 +41,11 @@ Enable one or more readers at configure time:
 ```bash
 # CMake
 cmake -B build \
-  -DENABLE_GEOTIFF=ON \
-  -DENABLE_GRIB2=ON \
-  -DENABLE_CDF=ON \
-  -DENABLE_FITS=ON \
-  -DENABLE_PDS4=ON
+  -DNEP_ENABLE_GEOTIFF=ON \
+  -DNEP_ENABLE_GRIB2=ON \
+  -DNEP_ENABLE_CDF=ON \
+  -DNEP_ENABLE_FITS=ON \
+  -DNEP_ENABLE_PDS4=ON
 
 # Autotools
 ./configure \
@@ -144,27 +144,27 @@ make uninstall
 
 | Option (CMake / Autotools) | Default | Purpose |
 |---|---|---|
-| `-DBUILD_LZ4` / `--enable-lz4` | ON | LZ4 compression filter |
-| `-DBUILD_BZIP2` / `--enable-bzip2` | ON | BZIP2 compression filter |
-| `-DENABLE_FORTRAN` / `--enable-fortran` | ON | Fortran wrappers and tests |
-| `-DENABLE_GEOTIFF` / `--enable-geotiff` | **OFF** | GeoTIFF UDF handler (UDF0/UDF1) |
-| `-DENABLE_GRIB2` / `--enable-grib2` | **OFF** | GRIB2 UDF handler (UDF2) |
-| `-DENABLE_FITS` / `--enable-fits` | **OFF** | FITS UDF handler (UDF3) |
-| `-DENABLE_CDF` / `--enable-cdf` | **OFF** | NASA CDF UDF handler (UDF4) |
-| `-DENABLE_PDS4` / `--enable-pds4` | **OFF** | NASA/ESA PDS4 UDF handler (UDF5) |
-| `-DBUILD_EXAMPLES` / `--enable-examples` | ON | Example programs |
-| `-DENABLE_BENCHMARKS` / `--enable-benchmarks` | OFF | Performance benchmark examples |
-| `-DENABLE_PARALLEL_TESTS` / `--enable-parallel-tests` | OFF | MPI parallel I/O tests |
-| `-DBUILD_DOCUMENTATION` / `--enable-docs` | ON | Doxygen API docs |
+| `-DNEP_BUILD_LZ4` / `--enable-lz4` | ON | LZ4 compression filter |
+| `-DNEP_BUILD_BZIP2` / `--enable-bzip2` | ON | BZIP2 compression filter |
+| `-DNEP_ENABLE_FORTRAN` / `--enable-fortran` | ON | Fortran wrappers and tests |
+| `-DNEP_ENABLE_GEOTIFF` / `--enable-geotiff` | **OFF** | GeoTIFF UDF handler (UDF0/UDF1) |
+| `-DNEP_ENABLE_GRIB2` / `--enable-grib2` | **OFF** | GRIB2 UDF handler (UDF2) |
+| `-DNEP_ENABLE_FITS` / `--enable-fits` | **OFF** | FITS UDF handler (UDF3) |
+| `-DNEP_ENABLE_CDF` / `--enable-cdf` | **OFF** | NASA CDF UDF handler (UDF4) |
+| `-DNEP_ENABLE_PDS4` / `--enable-pds4` | **OFF** | NASA/ESA PDS4 UDF handler (UDF5) |
+| `-DNEP_BUILD_EXAMPLES` / `--enable-examples` | ON | Example programs |
+| `-DNEP_ENABLE_BENCHMARKS` / `--enable-benchmarks` | OFF | Performance benchmark examples |
+| `-DNEP_ENABLE_PARALLEL_TESTS` / `--enable-parallel-tests` | OFF | MPI parallel I/O tests |
+| `-DNEP_BUILD_DOCUMENTATION` / `--enable-docs` | ON | Doxygen API docs |
 
 #### Compression
 
-- **LZ4** (`-DBUILD_LZ4`, default ON): builds `libh5lz4.so` HDF5 filter plugin; provides `nc_def_var_lz4()` / `nf90_def_var_lz4()`. Requires liblz4.
-- **BZIP2** (`-DBUILD_BZIP2`, default ON): builds `libh5bzip2.so` HDF5 filter plugin; provides `nc_def_var_bzip2()` / `nf90_def_var_bzip2()`. Requires libbz2.
+- **LZ4** (`-DNEP_BUILD_LZ4`, default ON): builds `libh5lz4.so` HDF5 filter plugin; provides `nc_def_var_lz4()` / `nf90_def_var_lz4()`. Requires liblz4.
+- **BZIP2** (`-DNEP_BUILD_BZIP2`, default ON): builds `libh5bzip2.so` HDF5 filter plugin; provides `nc_def_var_bzip2()` / `nf90_def_var_bzip2()`. Requires libbz2.
 
 #### Fortran
 
-`-DENABLE_FORTRAN` / `--enable-fortran` (default ON): builds Fortran wrappers in `fsrc/`, Fortran tests in `ftest/`, and Fortran examples in `examples/f_*/`. Requires NetCDF-Fortran and a Fortran 90+ compiler.
+`-DNEP_ENABLE_FORTRAN` / `--enable-fortran` (default ON): builds Fortran wrappers in `fsrc/`, Fortran tests in `ftest/`, and Fortran examples in `examples/f_*/`. Requires NetCDF-Fortran and a Fortran 90+ compiler.
 
 #### Format Readers
 
@@ -172,24 +172,24 @@ All five format readers default to **OFF** and are independent — any combinati
 
 | Format | CMake / Autotools | UDF Slot | Dependencies |
 |--------|-------------------|----------|--------------|
-| GeoTIFF | `-DENABLE_GEOTIFF` / `--enable-geotiff` | UDF0, UDF1 | libgeotiff, libtiff |
-| GRIB2 | `-DENABLE_GRIB2` / `--enable-grib2` | UDF2 | NCEPLIBS-g2c ≥ 2.1.0, libjasper ≥ 3.0.0 |
-| FITS | `-DENABLE_FITS` / `--enable-fits` | UDF3 | CFITSIO ≥ 3.0 |
-| NASA CDF | `-DENABLE_CDF` / `--enable-cdf` | UDF4 | NASA CDF library v3.9.x |
-| PDS4 | `-DENABLE_PDS4` / `--enable-pds4` | UDF5 | libxml2 ≥ 2.9 |
+| GeoTIFF | `-DNEP_ENABLE_GEOTIFF` / `--enable-geotiff` | UDF0, UDF1 | libgeotiff, libtiff |
+| GRIB2 | `-DNEP_ENABLE_GRIB2` / `--enable-grib2` | UDF2 | NCEPLIBS-g2c ≥ 2.1.0, libjasper ≥ 3.0.0 |
+| FITS | `-DNEP_ENABLE_FITS` / `--enable-fits` | UDF3 | CFITSIO ≥ 3.0 |
+| NASA CDF | `-DNEP_ENABLE_CDF` / `--enable-cdf` | UDF4 | NASA CDF library v3.9.x |
+| PDS4 | `-DNEP_ENABLE_PDS4` / `--enable-pds4` | UDF5 | libxml2 ≥ 2.9 |
 
 - NASA CDF library: https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/ (or `spack install cdf`)
 - CDF moved from UDF2 to UDF4 in v2.2.0; GRIB2 and CDF can now be enabled together.
 
 #### Examples and Benchmarks
 
-- **`-DBUILD_EXAMPLES`** / `--enable-examples` (default ON): builds all example programs and registers them as tests.
-- **`-DENABLE_BENCHMARKS`** / `--enable-benchmarks` (default OFF): builds compression benchmark programs in `examples/performance/`.
-- **`-DENABLE_PARALLEL_TESTS`** / `--enable-parallel-tests` (default OFF): builds `examples/parallelIO/` and runs tests via `mpiexec -n 4`. Requires MPI and NetCDF-C with `NC_HAS_PARALLEL4`.
+- **`-DNEP_BUILD_EXAMPLES`** / `--enable-examples` (default ON): builds all example programs and registers them as tests.
+- **`-DNEP_ENABLE_BENCHMARKS`** / `--enable-benchmarks` (default OFF): builds compression benchmark programs in `examples/performance/`.
+- **`-DNEP_ENABLE_PARALLEL_TESTS`** / `--enable-parallel-tests` (default OFF): builds `examples/parallelIO/` and runs tests via `mpiexec -n 4`. Requires MPI and NetCDF-C with `NC_HAS_PARALLEL4`.
 
 #### Documentation
 
-`-DBUILD_DOCUMENTATION` / `--enable-docs` (default ON): generates Doxygen API documentation from C and Fortran sources, published to GitHub Pages. Requires Doxygen and Graphviz.
+`-DNEP_BUILD_DOCUMENTATION` / `--enable-docs` (default ON): generates Doxygen API documentation from C and Fortran sources, published to GitHub Pages. Requires Doxygen and Graphviz.
 
 ### Using NEP in Your Project
 
