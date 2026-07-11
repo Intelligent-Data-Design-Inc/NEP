@@ -8,7 +8,7 @@
 - Add `depends_on("libgeotiff", when="+geotiff")` and `depends_on("libtiff", when="+geotiff")`.
 - Pass `NEP_ENABLE_GEOTIFF` in `cmake_args`.
 - Add a `check_install` assertion for the GeoTIFF dispatch library when `+geotiff`.
-- **Testing**: Add `spack spec -I nep@2.4.0+geotiff` and `spack spec -I nep@develop+geotiff` to spec job; add `spack install -v nep@2.4.0+geotiff~docs~fortran` and `spack install -v nep@develop+geotiff~docs~fortran` to install job.
+- **Testing**: Add `spack spec -I nep@2.4.0+geotiff` and `spack spec -I nep@main+geotiff` to spec job; add `spack install -v nep@2.4.0+geotiff~docs~fortran` and `spack install -v nep@main+geotiff~docs~fortran` to install job.
 
 **Clarified decisions:**
 - Add the v2.4.0 release entry now (SHA256 `d4144894ed5f7f544bd68252fdd905b5e8f8b27f8829049a9a344f226278c84b`) so the spec/install jobs can target a real pinned release.

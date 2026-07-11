@@ -25,6 +25,7 @@ class Nep(CMakePackage):
     license("Apache-2.0")
 
     version("develop", branch="main")
+    version("main", branch="main")
 
     version(
         "2.3.0",
