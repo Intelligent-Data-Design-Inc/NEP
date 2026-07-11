@@ -1,37 +1,50 @@
 # NEP Development Roadmap
 ### V2.5.0 More Spack Improvements
-#### Sprint 2: GeoTIFF Variant
+#### Sprint 1: GeoTIFF Variant
+**Detailed Plan**: See `docs/plan/v2.5.0-sprint1-geotiff-variant.md`
+
+- Add `version("2.4.0", ...)` to `spack/NEP/package.py` so `nep@2.4.0` can be used for variant checks.
 - Add variant `geotiff` (default off).
 - Add `depends_on("libgeotiff", when="+geotiff")` and `depends_on("libtiff", when="+geotiff")`.
 - Pass `NEP_ENABLE_GEOTIFF` in `cmake_args`.
-- **Testing**: Add `spack spec -I nep@2.3.0+geotiff` to spec job; add `spack install -v nep@2.3.0+geotiff~docs~fortran` to install job.
+- Add a `check_install` assertion for the GeoTIFF dispatch library when `+geotiff`.
+- **Testing**: Add `spack spec -I nep@2.4.0+geotiff` and `spack spec -I nep@main+geotiff` to spec job; add `spack install -v nep@2.4.0+geotiff~docs~fortran` and `spack install -v nep@main+geotiff~docs~fortran` to install job.
 
-#### Sprint 3: GRIB2 Variant
+**Clarified decisions:**
+- Add the v2.4.0 release entry now (SHA256 `d4144894ed5f7f544bd68252fdd905b5e8f8b27f8829049a9a344f226278c84b`) so the spec/install jobs can target a real pinned release.
+- Keep the `geotiff` variant default OFF to match `NEP_ENABLE_GEOTIFF=OFF` in CMake.
+- Declare both `libgeotiff` and `libtiff` explicitly in Spack to match CMake's dual-library requirement.
+- Keep the install-job style consistent with existing steps (`--fail-fast` wrapped with `|| true` and manual log tailing).
+- Verify the GeoTIFF dispatch library (`libncgeotiff.so`) is installed when `+geotiff`.
+
+**GitHub Issue:** #268
+
+#### Sprint 2: GRIB2 Variant
 - Add variant `grib2` (default off).
 - Add appropriate spack dependency for g2c/GRIB2.
 - Pass `NEP_ENABLE_GRIB2` in `cmake_args`.
-- **Testing**: Add `spack spec -I nep@2.3.0+grib2` to spec job; add `spack install -v nep@2.3.0+grib2~docs~fortran` to install job.
+- **Testing**: Add `spack spec -I nep@2.4.0+grib2` and `spack spec -I nep@main+grib2` to spec job; add `spack install -v nep@2.4.0+grib2~docs~fortran` and `spack install -v nep@main+grib2~docs~fortran` to install job.
 
-#### Sprint 4: CDF Variant
+#### Sprint 3: CDF Variant
 - Add variant `cdf` (default off).
 - Add `depends_on("cdf", when="+cdf")` — references the in-repo `spack/cdf/package.py`.
 - Pass `NEP_ENABLE_CDF` in `cmake_args`.
 - Update `spack/cdf/package.py` as needed to work as a dependency.
-- **Testing**: Add `spack spec -I nep@2.3.0+cdf` to spec job; add `spack install -v nep@2.3.0+cdf~docs~fortran` to install job. Consider merging `spack-cdf.yml` into `spack.yml` since CDF becomes a transitive dependency.
+- **Testing**: Add `spack spec -I nep@2.4.0+cdf` and `spack spec -I nep@main+cdf` to spec job; add `spack install -v nep@2.4.0+cdf~docs~fortran` and `spack install -v nep@main+cdf~docs~fortran` to install job. Consider merging `spack-cdf.yml` into `spack.yml` since CDF becomes a transitive dependency.
 
-#### Sprint 5: PDS4 + Parallel + Remaining Variants
+#### Sprint 4: PDS4 + Parallel + Remaining Variants
 - Add variants: `pds4`, `parallel`, `examples`, `benchmarks`.
 - Add deps: `libxml2` (pds4), `mpi` (parallel).
 - Pass all remaining `NEP_ENABLE_*` / `NEP_BUILD_*` flags in `cmake_args`.
 - When `+parallel`, adjust `hdf5` dep to `+mpi`.
-- **Testing**: Add `spack spec -I nep@2.3.0+pds4` and `spack spec -I nep@2.3.0+parallel` to spec job; add `spack install -v nep@2.3.0+pds4~docs~fortran` to install job. Parallel install-test optional (requires MPI).
+- **Testing**: Add `spack spec -I nep@2.4.0+pds4`, `spack spec -I nep@main+pds4`, `spack spec -I nep@2.4.0+parallel`, and `spack spec -I nep@main+parallel` to spec job; add `spack install -v nep@2.4.0+pds4~docs~fortran` and `spack install -v nep@main+pds4~docs~fortran` to install job. Parallel install-test optional (requires MPI).
 
-#### Sprint 6: Polish, CI, and Integration Testing
+#### Sprint 5: Polish, CI, and Integration Testing
 - Add `conflicts()` for known incompatibilities.
 - Add spack CI smoke test or documentation.
 - Verify full `spack install nep +geotiff +grib2 +cdf +fits +pds4` resolves and builds.
 - Update `README.md` spack installation instructions.
-- **Testing**: All-variants spec check: `spack spec -I nep@2.3.0+geotiff+grib2+cdf+fits+pds4+fortran+docs`. Full install with all format variants enabled. Verify `spack spec` correctly rejects invalid combinations from `conflicts()` declarations.
+- **Testing**: All-variants spec check: `spack spec -I nep@2.4.0+geotiff+grib2+cdf+fits+pds4+fortran+docs` and `spack spec -I nep@main+geotiff+grib2+cdf+fits+pds4+fortran+docs`. Full install with all format variants enabled for both versions. Verify `spack spec` correctly rejects invalid combinations from `conflicts()` declarations.
 
 
 ### V2.4.0 Spack Improvements
