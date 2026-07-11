@@ -20,10 +20,23 @@
 **GitHub Issue:** #268
 
 #### Sprint 2: GRIB2 Variant
+**Detailed Plan**: See `docs/plan/v2.5.0-sprint2-grib2-variant.md`
+
 - Add variant `grib2` (default off).
-- Add appropriate spack dependency for g2c/GRIB2.
-- Pass `NEP_ENABLE_GRIB2` in `cmake_args`.
-- **Testing**: Add `spack spec -I nep@2.4.0+grib2` and `spack spec -I nep@main+grib2` to spec job; add `spack install -v nep@2.4.0+grib2~docs~fortran` and `spack install -v nep@main+grib2~docs~fortran` to install job.
+- Add `depends_on("g2c", when="+grib2")` — the Spack builtin package name for NCEPLIBS-g2c; transitive deps (Jasper, libpng) resolved by Spack automatically.
+- Pass `NEP_ENABLE_GRIB2` in `cmake_args` via `self.define_from_variant("NEP_ENABLE_GRIB2", "grib2")`.
+- Add `check_install` assertion for `libncgrib2.so` when `+grib2`, consistent with Sprint 1.
+- **Testing**: Add `spack spec -I nep@2.4.0+grib2` and `spack spec -I nep@main+grib2` to spec job as a dedicated step; add `spack install -v nep@2.4.0+grib2~docs~fortran` and `spack install -v nep@main+grib2~docs~fortran` to install job with `|| true` and log tailing (Spack builds `nceplibs-g2c` from source).
+
+**Clarified decisions:**
+- `grib2` variant default OFF to match `NEP_ENABLE_GRIB2=OFF` in CMake and all other format variants.
+- Use `g2c` as the Spack package name (Spack builtin name for NCEPLIBS-g2c; see `spack/spack-packages` repo).
+- Transitive g2c dependencies (Jasper, libpng, zlib) are resolved by Spack through `g2c`; no explicit re-declaration needed.
+- `check_install()` asserts `libncgrib2.so` exists when `+grib2`, consistent with the `libncgeotiff.so` check in Sprint 1.
+- Dedicated spec step for `+grib2` (not combined with all-variants step) for easier CI triage.
+- Install job includes `+grib2` steps with `|| true`; Spack builds `nceplibs-g2c` from source since it is not in standard apt repos.
+
+**GitHub Issue:** #270
 
 #### Sprint 3: CDF Variant
 - Add variant `cdf` (default off).

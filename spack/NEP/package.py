@@ -45,6 +45,7 @@ class Nep(CMakePackage):
     variant("fortran", default=True, description="Build Fortran wrappers")
     variant("fits", default=False, description="Enable FITS reader support via CFITSIO")
     variant("geotiff", default=False, description="Enable GeoTIFF reader support via libgeotiff")
+    variant("grib2", default=False, description="Enable GRIB2 reader support via NCEPLIBS-g2c")
 
     depends_on("c", type="build")
     depends_on("fortran", when="+fortran", type="build")
@@ -56,6 +57,7 @@ class Nep(CMakePackage):
     depends_on("netcdf-fortran", when="+fortran", type=("build", "link"))
     depends_on("cfitsio", when="+fits", type=("build", "link"))
     depends_on("libgeotiff", when="+geotiff", type=("build", "link"))
+    depends_on("g2c", when="+grib2", type=("build", "link"))
     depends_on("libtiff", when="+geotiff", type=("build", "link"))
     depends_on("doxygen", when="+docs", type="build")
 
@@ -67,6 +69,7 @@ class Nep(CMakePackage):
             self.define_from_variant("NEP_ENABLE_FORTRAN", "fortran"),
             self.define_from_variant("NEP_ENABLE_FITS", "fits"),
             self.define_from_variant("NEP_ENABLE_GEOTIFF", "geotiff"),
+            self.define_from_variant("NEP_ENABLE_GRIB2", "grib2"),
         ]
         return args
 
@@ -83,3 +86,5 @@ class Nep(CMakePackage):
             assert os.path.exists(join_path(plugin_dir, "libh5lz4.so"))
         if "+geotiff" in self.spec:
             assert os.path.exists(join_path(self.prefix.lib, "libncgeotiff.so"))
+        if "+grib2" in self.spec:
+            assert os.path.exists(join_path(self.prefix.lib, "libncgrib2.so"))
