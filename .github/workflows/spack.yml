@@ -55,7 +55,9 @@ jobs:
         run: |
           echo "=== Creating local Spack repository for NEP ==="
           mkdir -p $HOME/nep-repo/packages/nep
+          mkdir -p $HOME/nep-repo/packages/cdf
           cp spack/NEP/package.py $HOME/nep-repo/packages/nep/
+          cp spack/cdf/package.py $HOME/nep-repo/packages/cdf/
           cat > $HOME/nep-repo/repo.yaml << 'EOF'
           repo:
             namespace: nep-local
@@ -117,7 +119,9 @@ jobs:
         run: |
           echo "=== Creating local Spack repository for NEP ==="
           mkdir -p $HOME/nep-repo/packages/nep
+          mkdir -p $HOME/nep-repo/packages/cdf
           cp spack/NEP/package.py $HOME/nep-repo/packages/nep/
+          cp spack/cdf/package.py $HOME/nep-repo/packages/cdf/
           cat > $HOME/nep-repo/repo.yaml << 'EOF'
           repo:
             namespace: nep-local
@@ -164,6 +168,13 @@ jobs:
           . $HOME/spack/share/spack/setup-env.sh
           spack spec -I nep@2.4.0+grib2
           spack spec -I nep@main+grib2
+
+      - name: Check package concretization (cdf variant)
+        run: |
+          echo "=== Concretizing NEP with CDF variant ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          spack spec -I nep@2.4.0+cdf
+          spack spec -I nep@main+cdf
 
   # Full install test - only runs on pushes to main
   install:
@@ -286,7 +297,9 @@ jobs:
         run: |
           echo "=== Creating local Spack repository for NEP ==="
           mkdir -p $HOME/nep-repo/packages/nep
+          mkdir -p $HOME/nep-repo/packages/cdf
           cp spack/NEP/package.py $HOME/nep-repo/packages/nep/
+          cp spack/cdf/package.py $HOME/nep-repo/packages/cdf/
           cat > $HOME/nep-repo/repo.yaml << 'EOF'
           repo:
             namespace: nep-local
@@ -359,6 +372,20 @@ jobs:
           spack install -v --fail-fast nep@main+grib2~docs~fortran 2>&1 | tee spack_install_main_grib2.log || true
           echo "=== nep@main+grib2 installation attempt complete ==="
 
+      - name: Install NEP 2.4.0 with Spack (CDF variant)
+        run: |
+          echo "=== Installing nep@2.4.0+cdf ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          spack install -v --fail-fast nep@2.4.0+cdf~docs~fortran 2>&1 | tee spack_install_2.4.0_cdf.log || true
+          echo "=== nep@2.4.0+cdf installation attempt complete ==="
+
+      - name: Install NEP main with Spack (CDF variant)
+        run: |
+          echo "=== Installing nep@main+cdf ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          spack install -v --fail-fast nep@main+cdf~docs~fortran 2>&1 | tee spack_install_main_cdf.log || true
+          echo "=== nep@main+cdf installation attempt complete ==="
+
       - name: Show build logs (always runs)
         run: |
           echo "=== Showing build logs for manual review ==="
@@ -372,6 +399,10 @@ jobs:
           tail -200 spack_install_2.4.0_grib2.log || true
           echo "=== Spack install main grib2 log (last 200 lines) ==="
           tail -200 spack_install_main_grib2.log || true
+          echo "=== Spack install 2.4.0 cdf log (last 200 lines) ==="
+          tail -200 spack_install_2.4.0_cdf.log || true
+          echo "=== Spack install main cdf log (last 200 lines) ==="
+          tail -200 spack_install_main_cdf.log || true
           echo "=== Finding build directories ==="
           find $HOME/spack/var/spack/stage -name '*.log' -o -name 'spack-build-out.txt' 2>/dev/null | head -10 || true
           echo "=== Showing any build output files ==="

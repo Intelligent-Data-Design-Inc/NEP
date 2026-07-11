@@ -46,6 +46,7 @@ class Nep(CMakePackage):
     variant("fits", default=False, description="Enable FITS reader support via CFITSIO")
     variant("geotiff", default=False, description="Enable GeoTIFF reader support via libgeotiff")
     variant("grib2", default=False, description="Enable GRIB2 reader support via NCEPLIBS-g2c")
+    variant("cdf", default=False, description="Enable NASA CDF reader support")
 
     depends_on("c", type="build")
     depends_on("fortran", when="+fortran", type="build")
@@ -58,6 +59,7 @@ class Nep(CMakePackage):
     depends_on("cfitsio", when="+fits", type=("build", "link"))
     depends_on("libgeotiff", when="+geotiff", type=("build", "link"))
     depends_on("g2c", when="+grib2", type=("build", "link"))
+    depends_on("cdf", when="+cdf", type=("build", "link"))
     depends_on("libtiff", when="+geotiff", type=("build", "link"))
     depends_on("doxygen", when="+docs", type="build")
 
@@ -70,6 +72,7 @@ class Nep(CMakePackage):
             self.define_from_variant("NEP_ENABLE_FITS", "fits"),
             self.define_from_variant("NEP_ENABLE_GEOTIFF", "geotiff"),
             self.define_from_variant("NEP_ENABLE_GRIB2", "grib2"),
+            self.define_from_variant("NEP_ENABLE_CDF", "cdf"),
         ]
         return args
 
@@ -88,3 +91,5 @@ class Nep(CMakePackage):
             assert os.path.exists(join_path(self.prefix.lib, "libncgeotiff.so"))
         if "+grib2" in self.spec:
             assert os.path.exists(join_path(self.prefix.lib, "libncgrib2.so"))
+        if "+cdf" in self.spec:
+            assert os.path.exists(join_path(self.prefix.lib, "libnccdf.so"))

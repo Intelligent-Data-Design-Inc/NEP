@@ -39,11 +39,25 @@
 **GitHub Issue:** #270
 
 #### Sprint 3: CDF Variant
+**Detailed Plan**: See `docs/plan/v2.5.0-sprint3-cdf-variant.md`
+
 - Add variant `cdf` (default off).
-- Add `depends_on("cdf", when="+cdf")` — references the in-repo `spack/cdf/package.py`.
-- Pass `NEP_ENABLE_CDF` in `cmake_args`.
-- Update `spack/cdf/package.py` as needed to work as a dependency.
-- **Testing**: Add `spack spec -I nep@2.4.0+cdf` and `spack spec -I nep@main+cdf` to spec job; add `spack install -v nep@2.4.0+cdf~docs~fortran` and `spack install -v nep@main+cdf~docs~fortran` to install job. Consider merging `spack-cdf.yml` into `spack.yml` since CDF becomes a transitive dependency.
+- Add `depends_on("cdf", when="+cdf")` — references the in-repo `spack/cdf/package.py`; not a Spack builtin.
+- Pass `NEP_ENABLE_CDF` in `cmake_args` via `self.define_from_variant("NEP_ENABLE_CDF", "cdf")`.
+- Register the in-repo CDF package in `spack.yml` by copying `spack/cdf/package.py` into the same `nep-repo` local repository (add a `cdf/` subdirectory alongside `nep/`).
+- Add `check_install` assertion for `libnccdf.so` when `+cdf` (library name confirmed from `src/CMakeLists.txt`: `set(CDF_LIB_NAME nccdf)`).
+- Keep `spack-cdf.yml` separate; consolidation deferred to Sprint 5.
+- **Testing**: Add dedicated spec step for `nep@2.4.0+cdf` and `nep@main+cdf`; add install steps with `|| true` and log tailing, consistent with sprints 1 and 2.
+
+**Clarified decisions:**
+- `cdf` variant default OFF to match `NEP_ENABLE_CDF=OFF` in CMake and all other format variants.
+- CDF is an in-repo Spack package (`spack/cdf/package.py`), not a builtin; `spack.yml` must register it in the local repo before concretizing `+cdf`.
+- Register by copying `spack/cdf/package.py` into `$HOME/nep-repo/packages/cdf/` in the "Add NEP package to Spack" step — one repo, one setup, no second `spack repo add`.
+- `check_install()` asserts `libnccdf.so` when `+cdf` (CMake target name: `nccdf`), consistent with `libncgeotiff.so` and `libncgrib2.so` checks.
+- `spack-cdf.yml` remains separate; merging into `spack.yml` deferred to Sprint 5.
+- Dedicated spec/install CI steps following the sprint 1 and 2 pattern.
+
+**GitHub Issue:** #272
 
 #### Sprint 4: PDS4 + Parallel + Remaining Variants
 - Add variants: `pds4`, `parallel`, `examples`, `benchmarks`.
