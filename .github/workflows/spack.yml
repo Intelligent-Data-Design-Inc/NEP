@@ -139,62 +139,62 @@ jobs:
         run: |
           echo "=== Concretizing NEP with default variants ==="
           . $HOME/spack/share/spack/setup-env.sh
-          spack spec -I nep@develop
+          spack spec -I nep@main
           echo "=== Dependency tree ==="
-          spack spec -t nep@develop
+          spack spec -t nep@main
 
       - name: Check package concretization (minimal variants)
         run: |
           echo "=== Concretizing NEP with minimal variants ==="
           . $HOME/spack/share/spack/setup-env.sh
-          spack spec -I nep@develop~docs~fortran
+          spack spec -I nep@main~docs~fortran
 
       - name: Check package concretization (all variants)
         run: |
           echo "=== Concretizing NEP with all variants ==="
           . $HOME/spack/share/spack/setup-env.sh
-          spack spec -I nep@develop+docs+fortran+lz4+bzip2
+          spack spec -I nep@main+docs+fortran+lz4+bzip2
 
       - name: Check package concretization (geotiff variant)
         run: |
           echo "=== Concretizing NEP with GeoTIFF variant ==="
           . $HOME/spack/share/spack/setup-env.sh
-          spack spec -I nep@2.4.0+geotiff
+          spack spec -I nep@2.5.0+geotiff
           spack spec -I nep@main+geotiff
 
       - name: Check package concretization (grib2 variant)
         run: |
           echo "=== Concretizing NEP with GRIB2 variant ==="
           . $HOME/spack/share/spack/setup-env.sh
-          spack spec -I nep@2.4.0+grib2
+          spack spec -I nep@2.5.0+grib2
           spack spec -I nep@main+grib2
 
       - name: Check package concretization (cdf variant)
         run: |
           echo "=== Concretizing NEP with CDF variant ==="
           . $HOME/spack/share/spack/setup-env.sh
-          spack spec -I nep@2.4.0+cdf
+          spack spec -I nep@2.5.0+cdf
           spack spec -I nep@main+cdf
 
       - name: Check package concretization (pds4 variant)
         run: |
           echo "=== Concretizing NEP with PDS4 variant ==="
           . $HOME/spack/share/spack/setup-env.sh
-          spack spec -I nep@2.4.0+pds4
+          spack spec -I nep@2.5.0+pds4
           spack spec -I nep@main+pds4
 
       - name: Check package concretization (parallel variant)
         run: |
           echo "=== Concretizing NEP with parallel variant ==="
           . $HOME/spack/share/spack/setup-env.sh
-          spack spec -I nep@2.4.0+parallel
+          spack spec -I nep@2.5.0+parallel
           spack spec -I nep@main+parallel
 
       - name: Check package concretization (all format variants)
         run: |
           echo "=== Concretizing NEP with all format variants ==="
           . $HOME/spack/share/spack/setup-env.sh
-          spack spec -I nep@2.4.0+geotiff+grib2+cdf+fits+pds4+fortran+docs
+          spack spec -I nep@2.5.0+geotiff+grib2+cdf+fits+pds4+fortran+docs
           spack spec -I nep@main+geotiff+grib2+cdf+fits+pds4+fortran+docs
 
   # Full install test - only runs on pushes to main
@@ -341,11 +341,11 @@ jobs:
           echo "=== Concretizing NEP (detailed view) ==="
           . $HOME/spack/share/spack/setup-env.sh
           echo "=== Install spec with dependencies ==="
-          spack spec -I nep@develop~docs~fortran
+          spack spec -I nep@main~docs~fortran
           echo "=== Dependency tree ==="
-          spack spec -t nep@develop~docs~fortran
+          spack spec -t nep@main~docs~fortran
           echo "=== What will be installed vs reused ==="
-          spack spec -N nep@develop~docs~fortran
+          spack spec -N nep@main~docs~fortran
 
       - name: Install NEP with Spack (minimal config for speed)
         run: |
@@ -355,7 +355,7 @@ jobs:
           # Install with minimal variants to reduce build time
           # Use system packages where possible
           # NOTE: Using || true to not fail CI - we will check results manually at first
-          spack install -v --fail-fast nep@develop~docs~fortran 2>&1 | tee spack_install.log || true
+          spack install -v --fail-fast nep@main~docs~fortran 2>&1 | tee spack_install.log || true
           echo "=== Installation attempt complete ==="
 
       - name: Install NEP 2.3.0 with Spack
@@ -365,12 +365,12 @@ jobs:
           spack install -v --fail-fast nep@2.3.0~docs~fortran 2>&1 | tee spack_install_2.3.0.log || true
           echo "=== nep@2.3.0 installation attempt complete ==="
 
-      - name: Install NEP 2.4.0 with Spack (GeoTIFF variant)
+      - name: Install NEP 2.5.0 with Spack (GeoTIFF variant)
         run: |
-          echo "=== Installing nep@2.4.0+geotiff ==="
+          echo "=== Installing nep@2.5.0+geotiff ==="
           . $HOME/spack/share/spack/setup-env.sh
-          spack install -v --fail-fast nep@2.4.0+geotiff~docs~fortran 2>&1 | tee spack_install_2.4.0_geotiff.log || true
-          echo "=== nep@2.4.0+geotiff installation attempt complete ==="
+          spack install -v --fail-fast nep@2.5.0+geotiff~docs~fortran 2>&1 | tee spack_install_2.5.0_geotiff.log || true
+          echo "=== nep@2.5.0+geotiff installation attempt complete ==="
 
       - name: Install NEP main with Spack (GeoTIFF variant)
         run: |
@@ -379,12 +379,12 @@ jobs:
           spack install -v --fail-fast nep@main+geotiff~docs~fortran 2>&1 | tee spack_install_main_geotiff.log || true
           echo "=== nep@main+geotiff installation attempt complete ==="
 
-      - name: Install NEP 2.4.0 with Spack (GRIB2 variant)
+      - name: Install NEP 2.5.0 with Spack (GRIB2 variant)
         run: |
-          echo "=== Installing nep@2.4.0+grib2 ==="
+          echo "=== Installing nep@2.5.0+grib2 ==="
           . $HOME/spack/share/spack/setup-env.sh
-          spack install -v --fail-fast nep@2.4.0+grib2~docs~fortran 2>&1 | tee spack_install_2.4.0_grib2.log || true
-          echo "=== nep@2.4.0+grib2 installation attempt complete ==="
+          spack install -v --fail-fast nep@2.5.0+grib2~docs~fortran 2>&1 | tee spack_install_2.5.0_grib2.log || true
+          echo "=== nep@2.5.0+grib2 installation attempt complete ==="
 
       - name: Install NEP main with Spack (GRIB2 variant)
         run: |
@@ -393,12 +393,12 @@ jobs:
           spack install -v --fail-fast nep@main+grib2~docs~fortran 2>&1 | tee spack_install_main_grib2.log || true
           echo "=== nep@main+grib2 installation attempt complete ==="
 
-      - name: Install NEP 2.4.0 with Spack (CDF variant)
+      - name: Install NEP 2.5.0 with Spack (CDF variant)
         run: |
-          echo "=== Installing nep@2.4.0+cdf ==="
+          echo "=== Installing nep@2.5.0+cdf ==="
           . $HOME/spack/share/spack/setup-env.sh
-          spack install -v --fail-fast nep@2.4.0+cdf~docs~fortran 2>&1 | tee spack_install_2.4.0_cdf.log || true
-          echo "=== nep@2.4.0+cdf installation attempt complete ==="
+          spack install -v --fail-fast nep@2.5.0+cdf~docs~fortran 2>&1 | tee spack_install_2.5.0_cdf.log || true
+          echo "=== nep@2.5.0+cdf installation attempt complete ==="
 
       - name: Install NEP main with Spack (CDF variant)
         run: |
@@ -407,12 +407,12 @@ jobs:
           spack install -v --fail-fast nep@main+cdf~docs~fortran 2>&1 | tee spack_install_main_cdf.log || true
           echo "=== nep@main+cdf installation attempt complete ==="
 
-      - name: Install NEP 2.4.0 with Spack (PDS4 variant)
+      - name: Install NEP 2.5.0 with Spack (PDS4 variant)
         run: |
-          echo "=== Installing nep@2.4.0+pds4 ==="
+          echo "=== Installing nep@2.5.0+pds4 ==="
           . $HOME/spack/share/spack/setup-env.sh
-          spack install -v --fail-fast nep@2.4.0+pds4~docs~fortran 2>&1 | tee spack_install_2.4.0_pds4.log || true
-          echo "=== nep@2.4.0+pds4 installation attempt complete ==="
+          spack install -v --fail-fast nep@2.5.0+pds4~docs~fortran 2>&1 | tee spack_install_2.5.0_pds4.log || true
+          echo "=== nep@2.5.0+pds4 installation attempt complete ==="
 
       - name: Install NEP main with Spack (PDS4 variant)
         run: |
@@ -421,12 +421,12 @@ jobs:
           spack install -v --fail-fast nep@main+pds4~docs~fortran 2>&1 | tee spack_install_main_pds4.log || true
           echo "=== nep@main+pds4 installation attempt complete ==="
 
-      - name: Install NEP 2.4.0 with Spack (all format variants)
+      - name: Install NEP 2.5.0 with Spack (all format variants)
         run: |
-          echo "=== Installing nep@2.4.0 with all format variants ==="
+          echo "=== Installing nep@2.5.0 with all format variants ==="
           . $HOME/spack/share/spack/setup-env.sh
-          spack install -v --fail-fast nep@2.4.0+geotiff+grib2+cdf+fits+pds4~docs~fortran 2>&1 | tee spack_install_2.4.0_all.log
-          echo "=== nep@2.4.0 all-format-variants installation complete ==="
+          spack install -v --fail-fast nep@2.5.0+geotiff+grib2+cdf+fits+pds4~docs~fortran 2>&1 | tee spack_install_2.5.0_all.log
+          echo "=== nep@2.5.0 all-format-variants installation complete ==="
 
       - name: Install NEP main with Spack (all format variants)
         run: |
@@ -440,24 +440,24 @@ jobs:
           echo "=== Showing build logs for manual review ==="
           echo "=== Spack install log (last 200 lines) ==="
           tail -200 spack_install.log || true
-          echo "=== Spack install 2.4.0 geotiff log (last 200 lines) ==="
-          tail -200 spack_install_2.4.0_geotiff.log || true
+          echo "=== Spack install 2.5.0 geotiff log (last 200 lines) ==="
+          tail -200 spack_install_2.5.0_geotiff.log || true
           echo "=== Spack install main geotiff log (last 200 lines) ==="
           tail -200 spack_install_main_geotiff.log || true
-          echo "=== Spack install 2.4.0 grib2 log (last 200 lines) ==="
-          tail -200 spack_install_2.4.0_grib2.log || true
+          echo "=== Spack install 2.5.0 grib2 log (last 200 lines) ==="
+          tail -200 spack_install_2.5.0_grib2.log || true
           echo "=== Spack install main grib2 log (last 200 lines) ==="
           tail -200 spack_install_main_grib2.log || true
-          echo "=== Spack install 2.4.0 cdf log (last 200 lines) ==="
-          tail -200 spack_install_2.4.0_cdf.log || true
+          echo "=== Spack install 2.5.0 cdf log (last 200 lines) ==="
+          tail -200 spack_install_2.5.0_cdf.log || true
           echo "=== Spack install main cdf log (last 200 lines) ==="
           tail -200 spack_install_main_cdf.log || true
-          echo "=== Spack install 2.4.0 pds4 log (last 200 lines) ==="
-          tail -200 spack_install_2.4.0_pds4.log || true
+          echo "=== Spack install 2.5.0 pds4 log (last 200 lines) ==="
+          tail -200 spack_install_2.5.0_pds4.log || true
           echo "=== Spack install main pds4 log (last 200 lines) ==="
           tail -200 spack_install_main_pds4.log || true
-          echo "=== Spack install 2.4.0 all-variants log (last 200 lines) ==="
-          tail -200 spack_install_2.4.0_all.log || true
+          echo "=== Spack install 2.5.0 all-variants log (last 200 lines) ==="
+          tail -200 spack_install_2.5.0_all.log || true
           echo "=== Spack install main all-variants log (last 200 lines) ==="
           tail -200 spack_install_main_all.log || true
           echo "=== Finding build directories ==="

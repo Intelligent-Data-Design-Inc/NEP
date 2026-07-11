@@ -24,13 +24,18 @@ class Nep(CMakePackage):
 
     license("Apache-2.0")
 
-    version("develop", branch="main")
     version("main", branch="main")
 
     version(
         "2.3.0",
         sha256="ce6eb7640a44e4b068af4beef3a1b7c5a4772666fbea73db34d81d71b4144dde",
         url="https://github.com/Intelligent-Data-Design-Inc/NEP/archive/v2.3.0.tar.gz",
+    )
+
+    version(
+        "2.5.0",
+        sha256="fbc160eb8333b2b34c49119c07947f5fa2f526c3ba747d482c8578be8b8c97ef",
+        url="https://github.com/Intelligent-Data-Design-Inc/NEP/archive/v2.5.0.tar.gz",
     )
 
     version(
@@ -48,7 +53,11 @@ class Nep(CMakePackage):
     variant("grib2", default=False, description="Enable GRIB2 reader support via NCEPLIBS-g2c")
     variant("cdf", default=False, description="Enable NASA CDF reader support")
     variant("pds4", default=False, description="Enable PDS4 reader support via libxml2")
-    variant("parallel", default=False, description="Enable parallel I/O tests (requires MPI-enabled HDF5 and netcdf-c)")
+    variant(
+        "parallel",
+        default=False,
+        description="Enable parallel I/O tests (requires MPI-enabled HDF5 and netcdf-c)",
+    )
     variant("examples", default=False, description="Build example programs")
     variant("benchmarks", default=False, description="Build performance benchmark programs")
 
@@ -65,7 +74,8 @@ class Nep(CMakePackage):
     depends_on("cfitsio", when="+fits", type=("build", "link"))
     depends_on("libgeotiff", when="+geotiff", type=("build", "link"))
     depends_on("g2c", when="+grib2", type=("build", "link"))
-    depends_on("cdf", when="+cdf", type=("build", "link"))
+    # cdf: NASA CDF library; not a Spack builtin. Register spack/cdf/package.py
+    # from the NEP repo in a local Spack repository before using +cdf.
     depends_on("libxml2", when="+pds4", type=("build", "link"))
     depends_on("mpi", when="+parallel", type=("build", "link", "run"))
     depends_on("libtiff", when="+geotiff", type=("build", "link"))
