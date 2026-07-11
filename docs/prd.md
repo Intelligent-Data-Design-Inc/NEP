@@ -685,9 +685,10 @@ shape 10×45×90.
 - **v1.5.0** (Jan 2026): GeoTIFF read support via UDF handler
 - **v1.7.0** (March 2026): GRIB2 read support via UDF handler
 - **v1.9.0** (May 2026): Parallel I/O build system support and parallel test examples
+- **v2.5.0** (July 2026): Complete Spack variant coverage for all optional format readers (GeoTIFF, GRIB2, CDF, FITS, PDS4, parallel, examples, benchmarks); all-variants CI integration testing; comprehensive README Spack installation section
 
 ---
 
-*Document Version: 1.7.0*  
-*Last Updated: March 2026*  
-*Status: Reflects released features through v1.7.0*
+*Document Version: 2.5.0*  
+*Last Updated: July 2026*  
+*Status: Reflects released features through v2.5.0*

@@ -206,6 +206,10 @@ NEP can be installed using the [Spack](https://spack.io) package manager.
 #### Default install
 
 ```bash
+# Latest stable release
+spack install nep@2.5.0
+
+# Or install from the main branch
 spack install nep
 ```
 

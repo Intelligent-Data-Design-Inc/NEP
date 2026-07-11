@@ -1,4 +1,28 @@
 # NEP Development Roadmap
+### V2.6.0 - Further Testing
+#### Sprint 1: Update Spack Package File
+**Detailed Plan**: See `docs/plan/v2.6.0-sprint1-spack-version-bump.md`
+
+- Add `version("2.5.0", sha256="fbc160eb8333b2b34c49119c07947f5fa2f526c3ba747d482c8578be8b8c97ef", url="https://github.com/Intelligent-Data-Design-Inc/NEP/archive/v2.5.0.tar.gz")` to `spack/NEP/package.py`.
+- Remove the `version("develop", branch="main")` alias; `version("main", branch="main")` is the canonical development branch name.
+- Update `.github/workflows/spack.yml` to replace `nep@2.4.0` spec and install steps with `nep@2.5.0`.
+- Open an upstream pull request against the [Spack builtin packages repo](https://github.com/spack/spack) to add the v2.5.0 `version()` entry to `var/spack/repos/builtin/packages/nep/package.py` (NEP is already present upstream as `nep`).
+- Update `README.md` Spack section to show `spack install nep@2.5.0` as the latest stable.
+- Update `docs/prd.md` release history to add the v2.5.0 entry.
+- **Testing**: CI spec job targets `nep@2.5.0` and `nep@main`; install job installs `nep@2.5.0~docs~fortran` and `nep@main~docs~fortran` with the existing variant coverage.
+
+**Clarified decisions:**
+- Add the v2.5.0 release entry with SHA256 `fbc160eb8333b2b34c49119c07947f5fa2f526c3ba747d482c8578be8b8c97ef` so the spec/install CI jobs can target the real pinned release.
+- Remove the `develop` alias (leftover from pre-v2.4.0 work); `main` is the correct branch name going forward.
+- Replace `nep@2.4.0` with `nep@2.5.0` in CI — 2.5.0 supersedes 2.4.0 as the pinned stable release under test.
+- Open an upstream Spack PR against `spack/spack`; NEP is already registered there as `nep` so only the new `version()` stanza needs adding.
+- `README.md` and `docs/prd.md` updated together with the version bump — small, naturally co-located changes.
+
+**GitHub Issue:** #278
+
+#### Sprint 2: PDS4 Testing
+- What PDS4 data types have we not tested with?
+
 ### V2.5.0 More Spack Improvements
 #### Sprint 1: GeoTIFF Variant
 **Detailed Plan**: See `docs/plan/v2.5.0-sprint1-geotiff-variant.md`
