@@ -47,12 +47,18 @@ class Nep(CMakePackage):
     variant("geotiff", default=False, description="Enable GeoTIFF reader support via libgeotiff")
     variant("grib2", default=False, description="Enable GRIB2 reader support via NCEPLIBS-g2c")
     variant("cdf", default=False, description="Enable NASA CDF reader support")
+    variant("pds4", default=False, description="Enable PDS4 reader support via libxml2")
+    variant("parallel", default=False, description="Enable parallel I/O tests (requires MPI-enabled HDF5 and netcdf-c)")
+    variant("examples", default=False, description="Build example programs")
+    variant("benchmarks", default=False, description="Build performance benchmark programs")
 
     depends_on("c", type="build")
     depends_on("fortran", when="+fortran", type="build")
 
     depends_on("netcdf-c@4.10.1:", type=("build", "link"))
-    depends_on("hdf5@1.12:+hl~mpi", type=("build", "link"))
+    depends_on("netcdf-c +mpi", when="+parallel", type=("build", "link"))
+    depends_on("hdf5@1.12:+hl~mpi", when="~parallel", type=("build", "link"))
+    depends_on("hdf5@1.12:+hl+mpi", when="+parallel", type=("build", "link"))
     depends_on("lz4", when="+lz4", type=("build", "link"))
     depends_on("bzip2", when="+bzip2", type=("build", "link"))
     depends_on("netcdf-fortran", when="+fortran", type=("build", "link"))
@@ -60,6 +66,8 @@ class Nep(CMakePackage):
     depends_on("libgeotiff", when="+geotiff", type=("build", "link"))
     depends_on("g2c", when="+grib2", type=("build", "link"))
     depends_on("cdf", when="+cdf", type=("build", "link"))
+    depends_on("libxml2", when="+pds4", type=("build", "link"))
+    depends_on("mpi", when="+parallel", type=("build", "link", "run"))
     depends_on("libtiff", when="+geotiff", type=("build", "link"))
     depends_on("doxygen", when="+docs", type="build")
 
@@ -73,6 +81,10 @@ class Nep(CMakePackage):
             self.define_from_variant("NEP_ENABLE_GEOTIFF", "geotiff"),
             self.define_from_variant("NEP_ENABLE_GRIB2", "grib2"),
             self.define_from_variant("NEP_ENABLE_CDF", "cdf"),
+            self.define_from_variant("NEP_ENABLE_PDS4", "pds4"),
+            self.define_from_variant("NEP_ENABLE_PARALLEL_TESTS", "parallel"),
+            self.define_from_variant("NEP_BUILD_EXAMPLES", "examples"),
+            self.define_from_variant("NEP_ENABLE_BENCHMARKS", "benchmarks"),
         ]
         return args
 
@@ -93,3 +105,7 @@ class Nep(CMakePackage):
             assert os.path.exists(join_path(self.prefix.lib, "libncgrib2.so"))
         if "+cdf" in self.spec:
             assert os.path.exists(join_path(self.prefix.lib, "libnccdf.so"))
+        if "+pds4" in self.spec:
+            assert os.path.exists(join_path(self.prefix.lib, "libncpds4.so"))
+        if "+fits" in self.spec:
+            assert os.path.exists(join_path(self.prefix.lib, "libncfits.so"))

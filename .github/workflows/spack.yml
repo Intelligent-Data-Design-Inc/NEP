@@ -176,6 +176,20 @@ jobs:
           spack spec -I nep@2.4.0+cdf
           spack spec -I nep@main+cdf
 
+      - name: Check package concretization (pds4 variant)
+        run: |
+          echo "=== Concretizing NEP with PDS4 variant ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          spack spec -I nep@2.4.0+pds4
+          spack spec -I nep@main+pds4
+
+      - name: Check package concretization (parallel variant)
+        run: |
+          echo "=== Concretizing NEP with parallel variant ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          spack spec -I nep@2.4.0+parallel
+          spack spec -I nep@main+parallel
+
   # Full install test - only runs on pushes to main
   install:
     name: Spack Install Test
@@ -386,6 +400,20 @@ jobs:
           spack install -v --fail-fast nep@main+cdf~docs~fortran 2>&1 | tee spack_install_main_cdf.log || true
           echo "=== nep@main+cdf installation attempt complete ==="
 
+      - name: Install NEP 2.4.0 with Spack (PDS4 variant)
+        run: |
+          echo "=== Installing nep@2.4.0+pds4 ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          spack install -v --fail-fast nep@2.4.0+pds4~docs~fortran 2>&1 | tee spack_install_2.4.0_pds4.log || true
+          echo "=== nep@2.4.0+pds4 installation attempt complete ==="
+
+      - name: Install NEP main with Spack (PDS4 variant)
+        run: |
+          echo "=== Installing nep@main+pds4 ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          spack install -v --fail-fast nep@main+pds4~docs~fortran 2>&1 | tee spack_install_main_pds4.log || true
+          echo "=== nep@main+pds4 installation attempt complete ==="
+
       - name: Show build logs (always runs)
         run: |
           echo "=== Showing build logs for manual review ==="
@@ -403,6 +431,10 @@ jobs:
           tail -200 spack_install_2.4.0_cdf.log || true
           echo "=== Spack install main cdf log (last 200 lines) ==="
           tail -200 spack_install_main_cdf.log || true
+          echo "=== Spack install 2.4.0 pds4 log (last 200 lines) ==="
+          tail -200 spack_install_2.4.0_pds4.log || true
+          echo "=== Spack install main pds4 log (last 200 lines) ==="
+          tail -200 spack_install_main_pds4.log || true
           echo "=== Finding build directories ==="
           find $HOME/spack/var/spack/stage -name '*.log' -o -name 'spack-build-out.txt' 2>/dev/null | head -10 || true
           echo "=== Showing any build output files ==="
