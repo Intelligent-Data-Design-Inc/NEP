@@ -60,11 +60,25 @@
 **GitHub Issue:** #272
 
 #### Sprint 4: PDS4 + Parallel + Remaining Variants
-- Add variants: `pds4`, `parallel`, `examples`, `benchmarks`.
-- Add deps: `libxml2` (pds4), `mpi` (parallel).
-- Pass all remaining `NEP_ENABLE_*` / `NEP_BUILD_*` flags in `cmake_args`.
-- When `+parallel`, adjust `hdf5` dep to `+mpi`.
-- **Testing**: Add `spack spec -I nep@2.4.0+pds4`, `spack spec -I nep@main+pds4`, `spack spec -I nep@2.4.0+parallel`, and `spack spec -I nep@main+parallel` to spec job; add `spack install -v nep@2.4.0+pds4~docs~fortran` and `spack install -v nep@main+pds4~docs~fortran` to install job. Parallel install-test optional (requires MPI).
+**Detailed Plan**: See `docs/plan/v2.5.0-sprint4-remaining-variants.md`
+
+- Add variants: `pds4` (default off), `parallel` (default off), `examples` (default off), `benchmarks` (default off).
+- Add deps: `depends_on("libxml2", when="+pds4")`, `depends_on("mpi", when="+parallel")`.
+- When `+parallel`, adjust `hdf5` dep to `+mpi` and `netcdf-c` dep to `+mpi` (parallel NEP requires both parallel HDF5 and parallel netcdf-c with `NC_HAS_PARALLEL4`).
+- Pass all remaining `NEP_ENABLE_*` / `NEP_BUILD_*` flags in `cmake_args`: `NEP_ENABLE_PDS4`, `NEP_ENABLE_PARALLEL_TESTS`, `NEP_BUILD_EXAMPLES`, `NEP_ENABLE_BENCHMARKS`.
+- Add `check_install` assertion for `libncpds4.so` when `+pds4`; add `libncfits.so` when `+fits` (missing from earlier sprints).
+- **Testing**: Add dedicated spec steps for `nep@2.4.0+pds4`, `nep@main+pds4`, `nep@2.4.0+parallel`, and `nep@main+parallel` to spec job. Add `spack install -v nep@2.4.0+pds4~docs~fortran` and `spack install -v nep@main+pds4~docs~fortran` to install job with `|| true` and log tailing. Parallel install-test skipped in CI (spec-only); MPI builds are slow and unreliable on GitHub runners.
+
+**Clarified decisions:**
+- `parallel` variant maps to `NEP_ENABLE_PARALLEL_TESTS` in `cmake_args`; parallel I/O itself is automatic when netcdf-c is built with MPI — the variant ensures the parallel stack is concretized and tests are enabled.
+- Split HDF5 dependency: base dep `depends_on("hdf5@1.12:+hl~mpi", when="~parallel")`, parallel dep `depends_on("hdf5@1.12:+hl+mpi", when="+parallel")`.
+- Add `depends_on("netcdf-c +mpi", when="+parallel")` so Spack concretizes with parallel netcdf-c.
+- `examples` and `benchmarks` default OFF, matching CMake defaults (`NEP_BUILD_EXAMPLES=OFF`, `NEP_ENABLE_BENCHMARKS=OFF`).
+- `check_install()` asserts `libncpds4.so` when `+pds4` (CMake target: `ncpds4`), consistent with all other format variant checks.
+- Also add missing `libncfits.so` check when `+fits` (CMake target: `ncfits`).
+- Parallel: spec-only in CI (no install step) due to MPI build complexity on runners.
+
+**GitHub Issue:** #274
 
 #### Sprint 5: Polish, CI, and Integration Testing
 - Add `conflicts()` for known incompatibilities.
