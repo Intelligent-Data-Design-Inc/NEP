@@ -151,6 +151,13 @@ jobs:
           . $HOME/spack/share/spack/setup-env.sh
           spack spec -I nep@develop+docs+fortran+lz4+bzip2
 
+      - name: Check package concretization (geotiff variant)
+        run: |
+          echo "=== Concretizing NEP with GeoTIFF variant ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          spack spec -I nep@2.4.0+geotiff
+          spack spec -I nep@develop+geotiff
+
   # Full install test - only runs on pushes to main
   install:
     name: Spack Install Test
@@ -317,11 +324,29 @@ jobs:
           spack install -v --fail-fast nep@2.3.0~docs~fortran 2>&1 | tee spack_install_2.3.0.log || true
           echo "=== nep@2.3.0 installation attempt complete ==="
 
+      - name: Install NEP 2.4.0 with Spack (GeoTIFF variant)
+        run: |
+          echo "=== Installing nep@2.4.0+geotiff ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          spack install -v --fail-fast nep@2.4.0+geotiff~docs~fortran 2>&1 | tee spack_install_2.4.0_geotiff.log || true
+          echo "=== nep@2.4.0+geotiff installation attempt complete ==="
+
+      - name: Install NEP develop with Spack (GeoTIFF variant)
+        run: |
+          echo "=== Installing nep@develop+geotiff ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          spack install -v --fail-fast nep@develop+geotiff~docs~fortran 2>&1 | tee spack_install_develop_geotiff.log || true
+          echo "=== nep@develop+geotiff installation attempt complete ==="
+
       - name: Show build logs (always runs)
         run: |
           echo "=== Showing build logs for manual review ==="
           echo "=== Spack install log (last 200 lines) ==="
           tail -200 spack_install.log || true
+          echo "=== Spack install 2.4.0 geotiff log (last 200 lines) ==="
+          tail -200 spack_install_2.4.0_geotiff.log || true
+          echo "=== Spack install develop geotiff log (last 200 lines) ==="
+          tail -200 spack_install_develop_geotiff.log || true
           echo "=== Finding build directories ==="
           find $HOME/spack/var/spack/stage -name '*.log' -o -name 'spack-build-out.txt' 2>/dev/null | head -10 || true
           echo "=== Showing any build output files ==="
