@@ -190,6 +190,13 @@ jobs:
           spack spec -I nep@2.4.0+parallel
           spack spec -I nep@main+parallel
 
+      - name: Check package concretization (all format variants)
+        run: |
+          echo "=== Concretizing NEP with all format variants ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          spack spec -I nep@2.4.0+geotiff+grib2+cdf+fits+pds4+fortran+docs
+          spack spec -I nep@main+geotiff+grib2+cdf+fits+pds4+fortran+docs
+
   # Full install test - only runs on pushes to main
   install:
     name: Spack Install Test
@@ -414,6 +421,20 @@ jobs:
           spack install -v --fail-fast nep@main+pds4~docs~fortran 2>&1 | tee spack_install_main_pds4.log || true
           echo "=== nep@main+pds4 installation attempt complete ==="
 
+      - name: Install NEP 2.4.0 with Spack (all format variants)
+        run: |
+          echo "=== Installing nep@2.4.0 with all format variants ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          spack install -v --fail-fast nep@2.4.0+geotiff+grib2+cdf+fits+pds4~docs~fortran 2>&1 | tee spack_install_2.4.0_all.log
+          echo "=== nep@2.4.0 all-format-variants installation complete ==="
+
+      - name: Install NEP main with Spack (all format variants)
+        run: |
+          echo "=== Installing nep@main with all format variants ==="
+          . $HOME/spack/share/spack/setup-env.sh
+          spack install -v --fail-fast nep@main+geotiff+grib2+cdf+fits+pds4~docs~fortran 2>&1 | tee spack_install_main_all.log
+          echo "=== nep@main all-format-variants installation complete ==="
+
       - name: Show build logs (always runs)
         run: |
           echo "=== Showing build logs for manual review ==="
@@ -435,6 +456,10 @@ jobs:
           tail -200 spack_install_2.4.0_pds4.log || true
           echo "=== Spack install main pds4 log (last 200 lines) ==="
           tail -200 spack_install_main_pds4.log || true
+          echo "=== Spack install 2.4.0 all-variants log (last 200 lines) ==="
+          tail -200 spack_install_2.4.0_all.log || true
+          echo "=== Spack install main all-variants log (last 200 lines) ==="
+          tail -200 spack_install_main_all.log || true
           echo "=== Finding build directories ==="
           find $HOME/spack/var/spack/stage -name '*.log' -o -name 'spack-build-out.txt' 2>/dev/null | head -10 || true
           echo "=== Showing any build output files ==="

@@ -199,6 +199,73 @@ LZ4 and BZIP2 compression are provided as HDF5 filter plugins. Simply set the `H
 export HDF5_PLUGIN_PATH=/usr/local/lib/plugin
 ```
 
+### Spack Installation
+
+NEP can be installed using the [Spack](https://spack.io) package manager.
+
+#### Default install
+
+```bash
+spack install nep
+```
+
+This builds NEP with LZ4, BZIP2, Fortran wrappers, and documentation — no format readers.
+
+#### Variant reference
+
+| Variant | Default | Description |
+|---------|---------|-------------|
+| `docs` | ON | Build Doxygen documentation (requires Doxygen) |
+| `lz4` | ON | LZ4 compression filter (requires liblz4) |
+| `bzip2` | ON | BZIP2 compression filter (requires libbz2) |
+| `fortran` | ON | Fortran wrappers and tests (requires NetCDF-Fortran) |
+| `fits` | OFF | FITS reader — HST, JWST, Chandra (requires CFITSIO) |
+| `geotiff` | OFF | GeoTIFF reader — CF-1.8 CRS metadata (requires libgeotiff) |
+| `grib2` | OFF | GRIB2 reader — NWP model output (requires NCEPLIBS-g2c) |
+| `cdf` | OFF | NASA CDF reader — space physics (requires local Spack repo, see below) |
+| `pds4` | OFF | PDS4 reader — planetary science (requires libxml2) |
+| `parallel` | OFF | Parallel I/O tests (requires MPI, HDF5+mpi, netcdf-c+mpi) |
+| `examples` | OFF | Example programs |
+| `benchmarks` | OFF | Performance benchmark programs |
+
+#### Common combinations
+
+```bash
+# GeoTIFF + GRIB2 (geospatial and NWP workflows)
+spack install nep+geotiff+grib2
+
+# All format readers
+spack install nep+geotiff+grib2+cdf+fits+pds4
+
+# Minimal build (no docs, no Fortran) for CI/containers
+spack install nep~docs~fortran
+
+# Parallel I/O (requires MPI stack)
+spack install nep+parallel
+```
+
+#### Installing the NASA CDF variant (`+cdf`)
+
+The NASA CDF library is not a Spack builtin. The in-repo `spack/cdf/package.py` recipe must be registered in a local Spack repository before concretizing `+cdf`:
+
+```bash
+# 1. Create a local Spack repository containing both NEP and CDF recipes
+mkdir -p $HOME/nep-repo/packages/nep
+mkdir -p $HOME/nep-repo/packages/cdf
+cp spack/NEP/package.py $HOME/nep-repo/packages/nep/
+cp spack/cdf/package.py $HOME/nep-repo/packages/cdf/
+cat > $HOME/nep-repo/repo.yaml << 'EOF'
+repo:
+  namespace: nep-local
+EOF
+
+# 2. Register the repository with Spack
+spack repo add $HOME/nep-repo
+
+# 3. Install with +cdf
+spack install nep+cdf
+```
+
 ---
 
 ## Documentation

@@ -81,11 +81,23 @@
 **GitHub Issue:** #274
 
 #### Sprint 5: Polish, CI, and Integration Testing
-- Add `conflicts()` for known incompatibilities.
-- Add spack CI smoke test or documentation.
-- Verify full `spack install nep +geotiff +grib2 +cdf +fits +pds4` resolves and builds.
-- Update `README.md` spack installation instructions.
-- **Testing**: All-variants spec check: `spack spec -I nep@2.4.0+geotiff+grib2+cdf+fits+pds4+fortran+docs` and `spack spec -I nep@main+geotiff+grib2+cdf+fits+pds4+fortran+docs`. Full install with all format variants enabled for both versions. Verify `spack spec` correctly rejects invalid combinations from `conflicts()` declarations.
+**Detailed Plan**: See `docs/plan/v2.5.0-sprint5-polish-ci.md`
+
+- No `conflicts()` declarations added — no CMake-level incompatibilities exist across format variants; Spack `depends_on` constraints already guard the parallel stack.
+- Update `README.md` with a comprehensive Spack installation section: full variant table with descriptions, common combination examples (e.g., `nep+geotiff+grib2`), and step-by-step local repo setup for `+cdf` (non-obvious requirement).
+- Add all-variants spec steps to `spack.yml` spec job: `spack spec -I nep@2.4.0+geotiff+grib2+cdf+fits+pds4+fortran+docs` and `spack spec -I nep@main+geotiff+grib2+cdf+fits+pds4+fortran+docs`. Keep `+parallel` in a dedicated separate spec step (mixing it into all-variants forces MPI on the entire tree).
+- Add all-variants install steps to `spack.yml` install job as **hard failures** (no `|| true`): `spack install -v --fail-fast nep@2.4.0+geotiff+grib2+cdf+fits+pds4~docs~fortran` and `nep@main+geotiff+grib2+cdf+fits+pds4~docs~fortran`. Sprint 5 is the integration milestone; hard failures surface real breakage.
+- No `spack test` method added — functional post-install testing deferred to a future sprint.
+- **Testing**: All-variants spec check (both `2.4.0` and `main`); all-variants install (hard fail); `+parallel` spec-only check retained from Sprint 4.
+
+**Clarified decisions:**
+- No `conflicts()` added: all format variants are independent at the CMake level; the parallel stack is guarded by conditional `depends_on` constraints already in place.
+- All-variants install uses hard `--fail-fast` without `|| true`; Sprint 5 is the final integration milestone for the Spack packaging work.
+- `+parallel` kept as a dedicated spec step; it is not combined with the all-format-variants spec because it requires `hdf5+mpi` and `netcdf-c+mpi` throughout, which inflates the dependency tree.
+- `README.md` Spack section is comprehensive: full variant table, common usage examples, and inline CDF local-repo setup steps.
+- No `spack test` / `test()` method — functional post-install testing is out of scope for this sprint.
+
+**GitHub Issue:** #276
 
 
 ### V2.4.0 Spack Improvements
