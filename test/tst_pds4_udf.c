@@ -42,6 +42,7 @@
 #define PDS4_LCS_9P_FILE "data/PDS4/lcs_9p/20050706_000.xml"
 #define PDS4_MAVEN_L1B_FILE "data/PDS4/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.xml"
 #define PDS4_MAVEN_L3_FILE "data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml"
+#define PDS4_MAVEN_IUVS_FILE "data/PDS4/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758.xml"
 
 /**
  * @internal Test Sprint 5 binary table metadata.
@@ -886,6 +887,177 @@ test_mission_maven_l3(void)
 }
 
 /**
+ * @internal Test MAVEN IUVS corona metadata (Group_Field_Binary support).
+ *
+ * Opens the IUVS FITS-backed PDS4 file and verifies:
+ * - A child group named after the FITS data file exists.
+ * - Total nvars = 116 (scalar + group fields from all 8 tables).
+ * - COLUMN is a 2D variable [record, COLUMN_rep] with trailing dim = 2.
+ * - V_TANGENT is a 2D variable with trailing dim = 3.
+ * - TANGENT_ALT is a 1D NC_FLOAT variable.
+ */
+static int
+test_mission_maven_iuvs_metadata(void)
+{
+    int ncid, grp_ncid, varid, retval;
+    int ndims, nvars, natts, unlimdimid;
+    nc_type xtype;
+    char name[NC_MAX_NAME + 1];
+    int var_ndims, var_dimids[NC_MAX_DIMS];
+    size_t dim_len;
+
+    printf("\n--- Mission: MAVEN IUVS Corona (FITS-backed PDS4) ---\n");
+
+    if ((retval = nc_open(PDS4_MAVEN_IUVS_FILE, NC_NOWRITE, &ncid)))
+        ERR(retval);
+
+    /* Verify child group exists with the FITS filename. */
+    if ((retval = nc_inq_ncid(ncid,
+            "mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758_v07_r01.fits",
+            &grp_ncid)))
+        ERR(retval);
+
+    /* Check total variable count (scalar fields + group fields). */
+    if ((retval = nc_inq(grp_ncid, &ndims, &nvars, &natts, &unlimdimid)))
+        ERR(retval);
+    if (nvars != 116)
+    {
+        fprintf(stderr, "Expected nvars=116, got %d\n", nvars);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: nvars=%d (scalar + group fields)\n", nvars);
+
+    /* Verify COLUMN is 2D with trailing dim = 2 (Group_Field_Binary, repetitions=2). */
+    if ((retval = nc_inq_varid(grp_ncid, "COLUMN", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, name, &xtype, &var_ndims, var_dimids, NULL)))
+        ERR(retval);
+    if (var_ndims != 2 || xtype != NC_FLOAT)
+    {
+        fprintf(stderr, "COLUMN: expected ndims=2 NC_FLOAT, got ndims=%d type=%d\n",
+                var_ndims, xtype);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((retval = nc_inq_dim(grp_ncid, var_dimids[1], name, &dim_len)))
+        ERR(retval);
+    if (dim_len != 2)
+    {
+        fprintf(stderr, "COLUMN trailing dim: expected len=2, got %zu\n", dim_len);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: COLUMN is 2D NC_FLOAT with trailing dim=2\n");
+
+    /* Verify V_TANGENT is 2D with trailing dim = 3 (repetitions=3). */
+    if ((retval = nc_inq_varid(grp_ncid, "V_TANGENT", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, name, &xtype, &var_ndims, var_dimids, NULL)))
+        ERR(retval);
+    if (var_ndims != 2)
+    {
+        fprintf(stderr, "V_TANGENT: expected ndims=2, got %d\n", var_ndims);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((retval = nc_inq_dim(grp_ncid, var_dimids[1], name, &dim_len)))
+        ERR(retval);
+    if (dim_len != 3)
+    {
+        fprintf(stderr, "V_TANGENT trailing dim: expected len=3, got %zu\n", dim_len);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: V_TANGENT is 2D with trailing dim=3\n");
+
+    /* Verify TANGENT_ALT is 1D NC_FLOAT. */
+    if ((retval = nc_inq_varid(grp_ncid, "TANGENT_ALT", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, name, &xtype, &var_ndims, NULL, NULL)))
+        ERR(retval);
+    if (var_ndims != 1 || xtype != NC_FLOAT)
+    {
+        fprintf(stderr, "TANGENT_ALT: expected 1D NC_FLOAT, got ndims=%d type=%d\n",
+                var_ndims, xtype);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: TANGENT_ALT is 1D NC_FLOAT\n");
+
+    if ((retval = nc_close(ncid)))
+        ERR(retval);
+    printf("PASS: MAVEN IUVS metadata tests PASSED.\n");
+    return 0;
+}
+
+/**
+ * @internal Test MAVEN IUVS corona data reading (Group_Field_Binary support).
+ *
+ * Reads scalar and group field data from the FITS-backed PDS4 file:
+ * - TANGENT_ALT[0] should be finite and > 0 (km altitude).
+ * - RADIANCE[50,0] should be finite and > 0 (emission feature radiance in kR).
+ */
+static int
+test_mission_maven_iuvs_data(void)
+{
+    int ncid, grp_ncid, varid, retval;
+    float tangent_alt;
+    float radiance_vals[2];
+    size_t start1[1] = {0};
+    size_t count1[1] = {1};
+    size_t start2[2] = {50, 0};
+    size_t count2[2] = {1, 2};
+
+    printf("\n--- Mission: MAVEN IUVS Corona (data reading) ---\n");
+
+    if ((retval = nc_open(PDS4_MAVEN_IUVS_FILE, NC_NOWRITE, &ncid)))
+        ERR(retval);
+
+    if ((retval = nc_inq_ncid(ncid,
+            "mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758_v07_r01.fits",
+            &grp_ncid)))
+        ERR(retval);
+
+    /* Read TANGENT_ALT[0] — scalar field, should be positive altitude in km. */
+    if ((retval = nc_inq_varid(grp_ncid, "TANGENT_ALT", &varid)))
+        ERR(retval);
+    if ((retval = nc_get_vara_float(grp_ncid, varid, start1, count1, &tangent_alt)))
+        ERR(retval);
+    if (!isfinite(tangent_alt) || tangent_alt <= 0)
+    {
+        fprintf(stderr, "TANGENT_ALT[0] = %f (expected finite > 0)\n", tangent_alt);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: TANGENT_ALT[0] = %.3f km\n", tangent_alt);
+
+    /* Read RADIANCE[50,0..1] — group field, should have non-zero radiance. */
+    if ((retval = nc_inq_varid(grp_ncid, "RADIANCE", &varid)))
+        ERR(retval);
+    if ((retval = nc_get_vara_float(grp_ncid, varid, start2, count2, radiance_vals)))
+        ERR(retval);
+    if (!isfinite(radiance_vals[0]) || radiance_vals[0] <= 0)
+    {
+        fprintf(stderr, "RADIANCE[50,0] = %e (expected finite > 0)\n", radiance_vals[0]);
+        nc_close(ncid);
+        return 1;
+    }
+    if (!isfinite(radiance_vals[1]))
+    {
+        fprintf(stderr, "RADIANCE[50,1] = %e (expected finite)\n", radiance_vals[1]);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: RADIANCE[50,0..1] = {%e, %e} kR\n", radiance_vals[0], radiance_vals[1]);
+
+    if ((retval = nc_close(ncid)))
+        ERR(retval);
+    printf("PASS: MAVEN IUVS data reading tests PASSED.\n");
+    return 0;
+}
+
+/**
  * @internal Test Sprint 6 character table data reading.
  *
  * Opens Table_Character_Example.xml and reads field data.
@@ -1146,6 +1318,10 @@ main(void)
     if (test_mission_maven_l1b())
         return 1;
     if (test_mission_maven_l3())
+        return 1;
+    if (test_mission_maven_iuvs_metadata())
+        return 1;
+    if (test_mission_maven_iuvs_data())
         return 1;
 
     printf("\nAll PDS4 UDF Sprint tests + Mission tests PASSED.\n");

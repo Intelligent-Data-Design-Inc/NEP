@@ -171,6 +171,14 @@ if(HAVE_PDS4)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.csv
                    ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.csv
                    COPYONLY)
+
+    # Maven IUVS corona mission data (FITS-backed PDS4)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758.xml
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758.xml
+                   COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758_v07_r01.fits
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758_v07_r01.fits
+                   COPYONLY)
 endif()
 
 # Configure run_tests.sh script with proper paths

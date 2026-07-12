@@ -47,6 +47,11 @@ typedef struct NC_PDS4_VAR_INFO
     int is_ascii;                 /**< 1 if ASCII text field (needs parsing), 0 if binary */
     int is_delimited;             /**< 1 if Table_Delimited (comma-separated); field_number used instead of field_offset */
     int field_number;             /**< 1-based column index for Table_Delimited fields */
+    int is_group_field;           /**< 1 if this field is inside a Group_Field_Binary */
+    size_t group_location;        /**< Byte offset of group start within record (0-based) */
+    size_t group_length;          /**< Byte size of one repetition block */
+    size_t repetitions;           /**< Number of group repetitions */
+    size_t inner_field_offset;    /**< Byte offset of field within one repetition (0-based) */
 } NC_PDS4_VAR_INFO_T;
 
 /** Per-file PDS4 state */

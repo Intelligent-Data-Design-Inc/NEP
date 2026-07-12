@@ -1,0 +1,228 @@
+# PDS4-to-NetCDF Mapping {#pds4_mapping}
+
+This page describes how the NEP PDS4 reader maps the Planetary Data System
+version 4 (PDS4) information model to the NetCDF-4 (enhanced) data model.
+
+## Overview
+
+A PDS4 `Product_Observational` label is an XML file that describes one or more
+data objects (arrays, tables) stored in companion binary or text data files.
+The NEP PDS4 UDF handler (`ncpds4`, registered as UDF5) parses the XML label
+and constructs a read-only, in-memory NetCDF-4 group/variable/attribute
+hierarchy that applications access through the standard `nc_open()` / 
+`nc_get_vara_*()` API.
+
+## Group Structure
+
+```
+root group (ncid)
+├── global attributes (from Identification_Area, Observation_Area)
+└── <data_file_name> group
+    ├── group attributes (table_name, etc.)
+    ├── dimensions (record, strlen, rep, array axes)
+    └── variables (one per field or array)
+```
+
+- **Root group**: Contains global string attributes extracted from
+  `Identification_Area` and `Observation_Area`.
+- **File group**: One child group per `File_Area_Observational`, named from
+  `<File><file_name>`. All arrays and tables within that file area share this
+  group.
+
+## Global Attributes
+
+Extracted from the PDS4 XML label and stored as `NC_CHAR` string attributes
+on the root group:
+
+| PDS4 Element | NetCDF Attribute Name |
+|---|---|
+| `Identification_Area/logical_identifier` | `logical_identifier` |
+| `Identification_Area/version_id` | `version_id` |
+| `Identification_Area/title` | `title` |
+| `Identification_Area/Citation_Information/author_list` | `author_list` |
+| `Identification_Area/Citation_Information/description` | `description` |
+| `Observation_Area/Target_Identification/name` | `target_name` |
+| `Observation_Area/Investigation_Area/name` | `investigation_name` |
+| `Observation_Area/Observing_System/name` | `observing_system` |
+| `Observation_Area/Time_Coordinates/start_date_time` | `start_date_time` |
+| `Observation_Area/Time_Coordinates/stop_date_time` | `stop_date_time` |
+
+Additional label-level metadata may also be captured depending on the
+label content.
+
+## Array Objects
+
+PDS4 array objects (`Array_2D_Image`, `Array_2D_Map`, `Array_1D`, etc.)
+are mapped as follows:
+
+| PDS4 | NetCDF |
+|---|---|
+| `<axes>` count | Number of dimensions |
+| Each `<Axis_Array>` → `<axis_name>`, `<elements>` | Named dimension with size `elements` |
+| `<Element_Array>/<data_type>` | Variable type (see Type Mapping below) |
+| `<offset>` | Internal byte offset for `fseek()` data reading |
+
+The variable is named from the array's `<name>` element, or defaults to
+`"data"` if no name is provided. Axis ordering in the NetCDF variable follows
+the order of `<Axis_Array>` elements in the label (outermost first).
+
+**Example**: A `Array_2D_Image` with `Line=512, Sample=256` becomes:
+```
+dimensions:
+  Line = 512 ;
+  Sample = 256 ;
+variables:
+  float data(Line, Sample) ;
+```
+
+## Table Objects
+
+Tables (`Table_Binary`, `Table_Character`, `Table_Delimited`) are all
+handled with a common pattern:
+
+| PDS4 | NetCDF |
+|---|---|
+| `<records>` | `record` dimension (one per table) |
+| Each `<Field_Binary>` / `<Field_Character>` / `<Field_Delimited>` | One variable |
+| `<name>` | Variable name (spaces → underscores) |
+| `<data_type>` | Variable type |
+| `<unit>` | `units` attribute on the variable |
+
+### Scalar Fields
+
+Each scalar (non-grouped) field becomes a **1D variable** dimensioned by
+`record`:
+
+```
+dimensions:
+  record = 100 ;
+variables:
+  float TANGENT_ALT(record) ;
+    TANGENT_ALT:units = "km" ;
+```
+
+### String Fields (NC_CHAR)
+
+Fields with character/string data types (e.g., `ASCII_String`,
+`ASCII_Date_Time`) become **2D variables** `[record, <name>_strlen]`:
+
+```
+dimensions:
+  record = 1 ;
+  PRODUCT_ID_strlen = 56 ;
+variables:
+  char PRODUCT_ID(record, PRODUCT_ID_strlen) ;
+```
+
+### Group Fields (Group_Field_Binary)
+
+`Group_Field_Binary` elements contain repeated (vector) fields. Each field
+inside a group becomes a **2D variable** `[record, <name>_rep]`:
+
+| PDS4 Group Element | NetCDF Mapping |
+|---|---|
+| `<repetitions>` | Trailing dimension size |
+| `<group_location>` | Internal byte offset of group within record |
+| `<group_length>` | Total byte length of all repetitions |
+| `<Field_Binary>/<name>` | Variable name |
+
+```
+dimensions:
+  record = 100 ;
+  COLUMN_rep = 2 ;
+  V_TANGENT_rep = 3 ;
+variables:
+  float COLUMN(record, COLUMN_rep) ;
+    COLUMN:units = "1/(cm**2)" ;
+  double V_TANGENT(record, V_TANGENT_rep) ;
+    V_TANGENT:units = "km/s" ;
+```
+
+The repetition dimension is named `<field_name>_rep` and is unique per
+grouped field. Data is read by computing the byte offset for each
+repetition within the record:
+
+```
+offset = table_offset + record_index * record_length
+       + group_location + rep_index * (group_length / repetitions)
+       + inner_field_offset
+```
+
+### Multiple Tables in One File Area
+
+When a single `File_Area_Observational` contains multiple tables (common in
+FITS-backed PDS4 products), all tables share the same file group. Each table
+adds its own `record` dimension (potentially with a different length) and its
+own set of variables. Dimension IDs are unique; variables from different tables
+may share the same name (NetCDF allows duplicate variable names as they have
+distinct varid values).
+
+## Data Type Mapping
+
+| PDS4 Data Type | NetCDF Type | Size | Notes |
+|---|---|---|---|
+| `IEEE754MSBSingle` | `NC_FLOAT` | 4 | Big-endian, byte-swapped on LE hosts |
+| `IEEE754LSBSingle` | `NC_FLOAT` | 4 | Little-endian |
+| `IEEE754MSBDouble` | `NC_DOUBLE` | 8 | Big-endian |
+| `IEEE754LSBDouble` | `NC_DOUBLE` | 8 | Little-endian |
+| `SignedMSB2` | `NC_SHORT` | 2 | Big-endian |
+| `SignedLSB2` | `NC_SHORT` | 2 | Little-endian |
+| `UnsignedMSB2` | `NC_USHORT` | 2 | Big-endian |
+| `UnsignedLSB2` | `NC_USHORT` | 2 | Little-endian |
+| `SignedMSB4` | `NC_INT` | 4 | Big-endian |
+| `SignedLSB4` | `NC_INT` | 4 | Little-endian |
+| `UnsignedMSB4` | `NC_UINT` | 4 | Big-endian |
+| `UnsignedLSB4` | `NC_UINT` | 4 | Little-endian |
+| `SignedMSB8` | `NC_INT64` | 8 | Big-endian |
+| `SignedLSB8` | `NC_INT64` | 8 | Little-endian |
+| `UnsignedMSB8` | `NC_UINT64` | 8 | Big-endian |
+| `UnsignedLSB8` | `NC_UINT64` | 8 | Little-endian |
+| `UnsignedByte` | `NC_UBYTE` | 1 | |
+| `ASCII_String`, `UTF8_String` | `NC_CHAR` | 1 | 2D: `[record, strlen]` |
+| `ASCII_Date_Time*` | `NC_CHAR` | 1 | All date/time variants → `NC_CHAR` |
+| `ASCII_Real` | `NC_DOUBLE` | — | Parsed from text (Table_Character/Delimited) |
+| `ASCII_Integer` | `NC_INT` | — | Parsed from text |
+| `ASCII_NonNegative_Integer` | `NC_INT64` | — | Parsed from text |
+
+Byte-swapping is performed automatically based on the endianness encoded in
+the PDS4 type name and the host platform's native byte order.
+
+## Data File Resolution
+
+The data file path is resolved relative to the XML label file's directory.
+The `<File><file_name>` element provides the filename, which is joined with
+the label's directory path. This supports:
+
+- Raw binary files (`.img`, `.dat`)
+- CSV text files (`.csv`, `.tab`)
+- FITS files (`.fits`) used as binary containers with absolute byte offsets
+
+The reader opens the data file with `fopen()` and uses `fseek()` to the
+byte offsets specified in the label. This means **any file format can serve
+as the data container** as long as the PDS4 label provides correct byte
+offsets.
+
+## Limitations
+
+- **Read-only**: The PDS4 handler does not support `nc_create()` or write
+  operations.
+- **No nested Group_Field**: Only `<groups>0</groups>` (non-nested) group
+  fields are supported. Nested groups are skipped.
+- **No packed data**: PDS4 `Packed_Data_Fields` are not supported.
+- **Single Product_Observational**: Only the first `Product_Observational`
+  in a label is processed.
+- **No schema validation**: The reader does not validate the XML against the
+  PDS4 schema; it trusts the label structure.
+
+## Tested Mission Data
+
+The following real mission datasets have been validated:
+
+| Mission | Instrument | Product | Data Container |
+|---|---|---|---|
+| Cassini-Huygens | HRD | Engineering on/off log | `.tab` (Table_Character) |
+| MESSENGER | NS | Mercury thermal neutron map | `.img` (Array_2D_Map) |
+| Deep Impact | LCS | Comet 9P photometry | `.tab` (Table_Character) |
+| MAVEN | NGIMS | L1B housekeeping | `.csv` (Table_Delimited, 324 fields) |
+| MAVEN | NGIMS | L3 science | `.csv` (Table_Delimited, 15 fields) |
+| MAVEN | IUVS | L2 corona (FUV) | `.fits` (Table_Binary, 8 tables, Group_Field_Binary) |
