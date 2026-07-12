@@ -43,6 +43,7 @@
 #define PDS4_MAVEN_L1B_FILE "data/PDS4/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.xml"
 #define PDS4_MAVEN_L3_FILE "data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml"
 #define PDS4_MAVEN_IUVS_FILE "data/PDS4/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758.xml"
+#define PDS4_MAVEN_PERIAPSE_FILE "data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108.xml"
 
 /**
  * @internal Test Sprint 5 binary table metadata.
@@ -1138,6 +1139,162 @@ test_table_character_data_read(void)
     return 0;
 }
 
+/**
+ * @internal Test MAVEN IUVS periapse metadata (nested Group_Field_Binary).
+ *
+ * Opens the periapse FITS-backed PDS4 label and verifies:
+ * - A child group named after the FITS data file exists.
+ * - The data_DENSITY table contributes 3D variables [record, outer_rep, inner_rep].
+ *   - ALT: 3D NC_FLOAT with outer_rep=19, inner_rep=3.
+ * - The data_TEMPERATURE table contributes scalar fields T0, T0_ALT, T0_RANDOM_UNC.
+ */
+static int
+test_mission_maven_periapse_metadata(void)
+{
+    int ncid, grp_ncid, varid, retval;
+    int ndims, nvars, natts, unlimdimid;
+    nc_type xtype;
+    char name[NC_MAX_NAME + 1];
+    int var_ndims, var_dimids[NC_MAX_DIMS];
+    size_t dim_len;
+
+    printf("\n--- Mission: MAVEN IUVS Periapse (nested Group_Field_Binary) ---\n");
+
+    if ((retval = nc_open(PDS4_MAVEN_PERIAPSE_FILE, NC_NOWRITE, &ncid)))
+        ERR(retval);
+
+    /* The file area group is named after the FITS data file. */
+    if ((retval = nc_inq_ncid(ncid,
+            "mvn_iuv_l2_periapse-orbit00124_20141021T132108_v13_r01.fits",
+            &grp_ncid)))
+        ERR(retval);
+    printf("PASS: found periapse file-area group\n");
+
+    /* Verify group has variables (scalar + 2D/3D group fields). */
+    if ((retval = nc_inq(grp_ncid, &ndims, &nvars, &natts, &unlimdimid)))
+        ERR(retval);
+    if (nvars <= 0)
+    {
+        fprintf(stderr, "Expected nvars > 0, got %d\n", nvars);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: nvars=%d\n", nvars);
+
+    /* ALT from data_DENSITY: 3D [record, outer_rep=19, inner_rep=3]. */
+    if ((retval = nc_inq_varid(grp_ncid, "ALT", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, name, &xtype, &var_ndims,
+                             var_dimids, NULL)))
+        ERR(retval);
+    if (var_ndims != 3 || xtype != NC_FLOAT)
+    {
+        fprintf(stderr, "ALT: expected ndims=3 NC_FLOAT, got ndims=%d type=%d\n",
+                var_ndims, xtype);
+        nc_close(ncid);
+        return 1;
+    }
+    /* Check outer rep dim = 19. */
+    if ((retval = nc_inq_dim(grp_ncid, var_dimids[1], name, &dim_len)))
+        ERR(retval);
+    if (dim_len != 19)
+    {
+        fprintf(stderr, "ALT outer_rep dim: expected 19, got %zu\n", dim_len);
+        nc_close(ncid);
+        return 1;
+    }
+    /* Check inner rep dim = 3. */
+    if ((retval = nc_inq_dim(grp_ncid, var_dimids[2], name, &dim_len)))
+        ERR(retval);
+    if (dim_len != 3)
+    {
+        fprintf(stderr, "ALT inner_rep dim: expected 3, got %zu\n", dim_len);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: ALT is 3D NC_FLOAT [record, outer_rep=19, inner_rep=3]\n");
+
+    /* T0 from data_TEMPERATURE: 1D NC_FLOAT scalar field. */
+    if ((retval = nc_inq_varid(grp_ncid, "T0", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, name, &xtype, &var_ndims,
+                             NULL, NULL)))
+        ERR(retval);
+    if (var_ndims != 1 || xtype != NC_FLOAT)
+    {
+        fprintf(stderr, "T0: expected 1D NC_FLOAT, got ndims=%d type=%d\n",
+                var_ndims, xtype);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: T0 is 1D NC_FLOAT scalar field\n");
+
+    if ((retval = nc_close(ncid)))
+        ERR(retval);
+    printf("PASS: MAVEN IUVS periapse metadata tests PASSED.\n");
+    return 0;
+}
+
+/**
+ * @internal Test MAVEN IUVS periapse data reading (depth-2 group fields).
+ *
+ * Reads scalar and 3D group field data from the FITS-backed PDS4 label:
+ * - T0[0]: upper boundary temperature, expected finite and > 0 K.
+ * - ALT[0, 0, 0]: altitude from first record/outer/inner, expected finite and > 0.
+ */
+static int
+test_mission_maven_periapse_data(void)
+{
+    int ncid, grp_ncid, varid, retval;
+    float t0;
+    float alt_val;
+    size_t start1[1] = {0};
+    size_t count1[1] = {1};
+    size_t start3[3] = {0, 0, 0};
+    size_t count3[3] = {1, 1, 1};
+
+    printf("\n--- Mission: MAVEN IUVS Periapse (data reading) ---\n");
+
+    if ((retval = nc_open(PDS4_MAVEN_PERIAPSE_FILE, NC_NOWRITE, &ncid)))
+        ERR(retval);
+
+    if ((retval = nc_inq_ncid(ncid,
+            "mvn_iuv_l2_periapse-orbit00124_20141021T132108_v13_r01.fits",
+            &grp_ncid)))
+        ERR(retval);
+
+    /* Read T0[0] — scalar field from data_TEMPERATURE table. */
+    if ((retval = nc_inq_varid(grp_ncid, "T0", &varid)))
+        ERR(retval);
+    if ((retval = nc_get_vara_float(grp_ncid, varid, start1, count1, &t0)))
+        ERR(retval);
+    if (!isfinite(t0) || t0 <= 0.0f)
+    {
+        fprintf(stderr, "T0[0] = %f (expected finite > 0)\n", t0);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: T0[0] = %.3f K\n", t0);
+
+    /* Read ALT[0,0,0] — depth-2 group field from data_DENSITY table. */
+    if ((retval = nc_inq_varid(grp_ncid, "ALT", &varid)))
+        ERR(retval);
+    if ((retval = nc_get_vara_float(grp_ncid, varid, start3, count3, &alt_val)))
+        ERR(retval);
+    if (!isfinite(alt_val) || alt_val <= 0.0f)
+    {
+        fprintf(stderr, "ALT[0,0,0] = %f (expected finite > 0)\n", alt_val);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: ALT[0,0,0] = %.3f km\n", alt_val);
+
+    if ((retval = nc_close(ncid)))
+        ERR(retval);
+    printf("PASS: MAVEN IUVS periapse data reading tests PASSED.\n");
+    return 0;
+}
+
 int
 main(void)
 {
@@ -1322,6 +1479,10 @@ main(void)
     if (test_mission_maven_iuvs_metadata())
         return 1;
     if (test_mission_maven_iuvs_data())
+        return 1;
+    if (test_mission_maven_periapse_metadata())
+        return 1;
+    if (test_mission_maven_periapse_data())
         return 1;
 
     printf("\nAll PDS4 UDF Sprint tests + Mission tests PASSED.\n");

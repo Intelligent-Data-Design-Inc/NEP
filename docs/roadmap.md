@@ -79,6 +79,56 @@ key test case for the new capability.
 
 **GitHub Issue:** #282
 
+#### Sprint 4: More Maven Data Testing — IUVS Periapse (Nested Groups)
+**Detailed Plan**: See `docs/plan/v2.6.0-sprint4-maven-periapse-testing.md`
+
+Test `mvn_iuv_l2_periapse-orbit00124_20141021T132108.xml` — a FITS-backed PDS4 label
+with 7 `Table_Binary` sections and **nested `Group_Field_Binary`** elements (groups
+within groups). This is the first periapse-orbit product and exercises deeper nesting
+than the corona file tested in Sprint 3.
+
+**File structure summary:**
+- `SPECIES` table: 1 scalar `ASCII_String` field, 3 records.
+- `DENSITY` table: 4 outer groups (reps=19, groups=1 each), each containing 1 inner group (reps=3, groups=0) with 1 `IEEE754MSBSingle` field. → 3D variables `[12, 19, 3]`.
+- `TEMPERATURE` table: 3 scalar `IEEE754MSBSingle` fields + 4 outer groups (reps=19, groups=0) with 1 field each. → scalar 1D fields + 2D group fields `[12, 19]`.
+- `GEOMETRY_RETRIEVAL` table: 11 scalar `IEEE754MSBDouble` fields (no groups), 12 records. Key test table.
+- `EMISSION_FEATURES` table: 2 scalar fields + 1 group (reps=256, groups=0) with 1 `IEEE754MSBDouble` field, 29 records.
+- `MODEL_RADIANCE` table: 2 scalar fields + nested groups (outer reps=65 containing inner reps=29). → 3D variables.
+- `GEOMETRY_RADIANCE` table: 12 groups (reps=65, groups=0), 12 records. → 2D variables `[12, 65]`.
+- `OBSERVATION` table: 13 scalar fields, 1 record.
+
+**Implementation tasks:**
+1. Extend `Group_Field_Binary` parsing in `pds4_read_table()` to support depth-2 nesting:
+   - Detect `<groups>` count inside a `Group_Field_Binary` element.
+   - If inner groups > 0 (depth-2 case): parse the inner `Group_Field_Binary` (must have groups=0; deeper nesting returns `NC_EINVAL`).
+   - For a depth-2 field, create a 3D variable `[record, outer_rep, inner_rep]`.
+   - Store outer_group_loc, outer_group_length, inner_group_loc, inner_group_length, inner_field_loc in `NC_PDS4_VAR_INFO_T`.
+2. Extend `pds4_get_vara()` to handle 3D group fields:
+   - `start/count` has 3 indices; per-element seek = `table_offset + rec*record_len + outer_group_loc-1 + outer_rep*outer_group_len + inner_group_loc-1 + inner_rep*inner_group_len + inner_field_loc-1`.
+3. Implement table-prefixed variable naming for conflict resolution:
+   - When multiple tables in one `File_Area_Observational` group share a field name, prefix each field with the table's `local_identifier` (e.g., `DENSITY_ALT`, `TEMPERATURE_ALT`).
+   - Detect conflicts by checking existing variable names before registration; apply prefix only to conflicting names, or apply uniformly to all fields from tables that have any conflict.
+4. Add both `.xml` and `.fits` to build system (`test/CMakeLists.txt`, `test/Makefile.am`).
+5. Add `test_mission_maven_periapse_metadata()` to `test/tst_pds4_udf.c`:
+   - Verify `nc_open()` succeeds.
+   - Navigate to file group `mvn_iuv_l2_periapse-orbit00124_20141021T132108_v13_r01.fits`.
+   - Verify `GEOMETRY_RETRIEVAL` has 11 variables, all `NC_DOUBLE`, `ndims=1`, dim length=12.
+   - Verify `DENSITY_ALT` has `ndims=3`, dims `[12, 19, 3]`.
+   - Verify `EMISSION_FEATURES_FIT_TEMPLATE` has `ndims=2`, dims `[29, 256]`.
+6. Add `test_mission_maven_periapse_data()` to `test/tst_pds4_udf.c`:
+   - Read `LAT[0]` from `GEOMETRY_RETRIEVAL` (scalar field) → finite double.
+   - Read `DENSITY_ALT[0,0,0]` (3D nested group field) → finite float > 0.
+7. Wire both test functions into `main()` after `test_mission_maven_iuvs_data()`.
+
+**Clarified decisions:**
+- Nested `Group_Field_Binary` (depth ≤ 2) fully supported; depth-3+ nesting returns `NC_EINVAL`.
+- 3D variable model for depth-2: `[record, outer_rep, inner_rep]`.
+- Conflicting field names prefixed with table `local_identifier` (e.g., `DENSITY_ALT` not `ALT`).
+- Both `.xml` and `.fits` copied to build directory unconditionally (CMake and Autotools).
+- Two test functions (`_metadata` and `_data`) following Sprint 3 pattern.
+
+**GitHub Issue:** #284
+
 ### V2.5.0 More Spack Improvements
 #### Sprint 1: GeoTIFF Variant
 **Detailed Plan**: See `docs/plan/v2.5.0-sprint1-geotiff-variant.md`

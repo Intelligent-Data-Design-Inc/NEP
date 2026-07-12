@@ -52,6 +52,15 @@ typedef struct NC_PDS4_VAR_INFO
     size_t group_length;          /**< Byte size of one repetition block */
     size_t repetitions;           /**< Number of group repetitions */
     size_t inner_field_offset;    /**< Byte offset of field within one repetition (0-based) */
+    /* Depth-2 nested Group_Field_Binary support (group_depth == 2). */
+    int group_depth;              /**< Nesting depth: 1 = flat group, 2 = group-in-group */
+    size_t outer_group_location;  /**< Byte offset of outer group start within record (0-based) */
+    size_t outer_group_length;    /**< Byte size of one outer repetition block */
+    size_t outer_repetitions;     /**< Number of outer repetitions */
+    size_t inner_group_location;  /**< Byte offset of inner group start within outer rep (0-based) */
+    size_t inner_group_length;    /**< Byte size of one inner repetition block */
+    size_t inner_repetitions;     /**< Number of inner repetitions */
+    size_t inner2_field_offset;   /**< Byte offset of field within one inner rep (0-based) */
 } NC_PDS4_VAR_INFO_T;
 
 /** Per-file PDS4 state */

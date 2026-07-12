@@ -116,8 +116,13 @@ variables:
 
 ### Group Fields (Group_Field_Binary)
 
-`Group_Field_Binary` elements contain repeated (vector) fields. Each field
-inside a group becomes a **2D variable** `[record, <name>_rep]`:
+`Group_Field_Binary` elements contain repeated (vector) fields. NEP supports
+nesting up to depth 2.
+
+#### Depth-1 (flat group)
+
+Each field inside a single-level `Group_Field_Binary` becomes a **2D variable**
+`[record, <name>_rep]`:
 
 | PDS4 Group Element | NetCDF Mapping |
 |---|---|
@@ -138,9 +143,8 @@ variables:
     V_TANGENT:units = "km/s" ;
 ```
 
-The repetition dimension is named `<field_name>_rep` and is unique per
-grouped field. Data is read by computing the byte offset for each
-repetition within the record:
+The repetition dimension is named `<field_name>_rep`. Data is read by
+computing the byte offset for each repetition within the record:
 
 ```
 offset = table_offset + record_index * record_length
@@ -148,14 +152,58 @@ offset = table_offset + record_index * record_length
        + inner_field_offset
 ```
 
+#### Depth-2 (nested group)
+
+When an outer `Group_Field_Binary` contains one or more inner
+`Group_Field_Binary` elements (indicated by `<groups>` > 0), each leaf field
+becomes a **3D variable** `[record, <name>_outer_rep, <name>_inner_rep]`:
+
+| PDS4 Element | NetCDF Mapping |
+|---|---|
+| Outer `<repetitions>` | Second dimension (outer repetitions) |
+| Inner `<repetitions>` | Third dimension (inner repetitions) |
+| `<Field_Binary>/<name>` | Variable name |
+
+```
+dimensions:
+  record = 12 ;
+  ALT_outer_rep = 19 ;
+  ALT_inner_rep = 3 ;
+variables:
+  float ALT(record, ALT_outer_rep, ALT_inner_rep) ;
+```
+
+The byte seek formula for depth-2 fields is:
+
+```
+offset = table_offset + record_index * record_length
+       + outer_group_location + outer_rep * outer_group_length
+       + inner_group_location + inner_rep * inner_group_length
+       + field_offset
+```
+
+Depth-3 and deeper nesting is not supported and fields at that level are
+skipped silently.
+
+#### Variable Name Collision Resolution
+
+When multiple tables in the same file group define fields with the same name
+(common in products with many tables), the second and subsequent occurrences
+are prefixed with the table's `<local_identifier>` to avoid collision:
+
+```
+first occurrence:  ALT            (from data_DENSITY)
+second occurrence: data_TEMPERATURE_ALT
+```
+
 ### Multiple Tables in One File Area
 
 When a single `File_Area_Observational` contains multiple tables (common in
 FITS-backed PDS4 products), all tables share the same file group. Each table
 adds its own `record` dimension (potentially with a different length) and its
-own set of variables. Dimension IDs are unique; variables from different tables
-may share the same name (NetCDF allows duplicate variable names as they have
-distinct varid values).
+own set of variables. When field names collide across tables, the duplicate
+is prefixed with the table's `<local_identifier>` (see Variable Name Collision
+Resolution above).
 
 ## Data Type Mapping
 
@@ -206,8 +254,9 @@ offsets.
 
 - **Read-only**: The PDS4 handler does not support `nc_create()` or write
   operations.
-- **No nested Group_Field**: Only `<groups>0</groups>` (non-nested) group
-  fields are supported. Nested groups are skipped.
+- **Nested Group_Field depth limit**: Nesting up to depth 2 is supported
+  (outer group containing inner groups). Depth-3 and deeper nested groups
+  are skipped silently.
 - **No packed data**: PDS4 `Packed_Data_Fields` are not supported.
 - **Single Product_Observational**: Only the first `Product_Observational`
   in a label is processed.
@@ -225,4 +274,5 @@ The following real mission datasets have been validated:
 | Deep Impact | LCS | Comet 9P photometry | `.tab` (Table_Character) |
 | MAVEN | NGIMS | L1B housekeeping | `.csv` (Table_Delimited, 324 fields) |
 | MAVEN | NGIMS | L3 science | `.csv` (Table_Delimited, 15 fields) |
-| MAVEN | IUVS | L2 corona (FUV) | `.fits` (Table_Binary, 8 tables, Group_Field_Binary) |
+| MAVEN | IUVS | L2 corona (FUV) | `.fits` (Table_Binary, 8 tables, depth-1 Group_Field_Binary) |
+| MAVEN | IUVS | L2 periapse | `.fits` (Table_Binary, multiple tables, depth-2 nested Group_Field_Binary) |

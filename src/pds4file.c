@@ -1082,6 +1082,10 @@ pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
 
         if (group_elem_name)
         {
+            /* Get the table local_identifier for collision-based prefixed naming. */
+            xmlNode *local_id_node = pds4_find_child(table, "local_identifier");
+            char *table_local_id = local_id_node ? pds4_get_text(local_id_node) : NULL;
+
             for (cur = record_node->children; cur; cur = cur->next)
             {
                 xmlNode *rep_node, *grp_loc_node, *grp_len_node;
@@ -1133,170 +1137,471 @@ pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
                     }
                 }
 
-                /* Iterate over Field_Binary children inside the group. */
-                for (grp_field_cur = cur->children; grp_field_cur; grp_field_cur = grp_field_cur->next)
+                /* Count the <groups> child element to determine nesting depth. */
                 {
-                    xmlNode *gf_name_node, *gf_type_node, *gf_loc_node, *gf_unit_node;
-                    char *gf_name = NULL, *gf_type_str = NULL, *gf_loc_str = NULL;
-                    char gf_type_name[NC_MAX_NAME + 1];
-                    nc_type gf_xtype;
-                    size_t gf_type_size, gf_field_location = 0;
-                    int gf_endianness;
-                    NC_VAR_INFO_T *gf_var;
-                    NC_TYPE_INFO_T *gf_type_info;
-                    NC_PDS4_VAR_INFO_T *gf_var_info;
-                    NC_DIM_INFO_T *rep_dim;
-                    char rep_dimname[NC_MAX_NAME + 1];
-
-                    if (grp_field_cur->type != XML_ELEMENT_NODE || !grp_field_cur->ns ||
-                        xmlStrcmp(grp_field_cur->ns->href, (const xmlChar *)PDS4_NS) != 0 ||
-                        xmlStrcmp(grp_field_cur->name, (const xmlChar *)field_child_name) != 0)
-                        continue;
-
-                    /* Get field name. */
-                    gf_name_node = pds4_find_child(grp_field_cur, "name");
-                    if (!gf_name_node)
-                        continue;
-                    gf_name = pds4_get_text(gf_name_node);
-                    if (!gf_name || !*gf_name)
+                    xmlNode *groups_count_node = pds4_find_child(cur, "groups");
+                    int outer_has_inner_groups = 0;
+                    if (groups_count_node)
                     {
-                        free(gf_name);
-                        continue;
-                    }
-                    /* Sanitize: replace spaces with underscores. */
-                    {
-                        char *p;
-                        for (p = gf_name; *p; p++)
-                            if (*p == ' ')
-                                *p = '_';
-                    }
-
-                    /* Get field data_type. */
-                    gf_type_node = pds4_find_child(grp_field_cur, "data_type");
-                    if (!gf_type_node)
-                    {
-                        free(gf_name);
-                        continue;
-                    }
-                    gf_type_str = pds4_get_text(gf_type_node);
-                    if (!gf_type_str)
-                    {
-                        free(gf_name);
-                        continue;
-                    }
-
-                    /* Map type. */
-                    retval = pds4_type_to_nc_type(gf_type_str, &gf_xtype, &gf_type_size,
-                                                  &gf_endianness, gf_type_name);
-                    if (retval)
-                    {
-                        free(gf_name);
-                        free(gf_type_str);
-                        continue;
-                    }
-
-                    /* Parse inner field_location (1-based, relative within one rep). */
-                    gf_loc_node = pds4_find_child(grp_field_cur, "field_location");
-                    if (gf_loc_node)
-                    {
-                        gf_loc_str = pds4_get_text(gf_loc_node);
-                        if (gf_loc_str)
+                        char *gc_str = pds4_get_text(groups_count_node);
+                        if (gc_str)
                         {
-                            gf_field_location = (size_t)atol(gf_loc_str);
-                            free(gf_loc_str);
+                            outer_has_inner_groups = (atoi(gc_str) > 0);
+                            free(gc_str);
                         }
                     }
 
-                    /* Create repetition dimension. */
-                    snprintf(rep_dimname, NC_MAX_NAME, "%s_rep", gf_name);
-                    if ((retval = nc4_dim_list_add(grp, rep_dimname, repetitions,
-                                                   -1, &rep_dim)))
+                    if (outer_has_inner_groups)
                     {
-                        free(gf_name);
-                        free(gf_type_str);
-                        return retval;
-                    }
-
-                    /* Create 2D variable [record, repetition]. */
-                    if ((retval = nc4_var_list_add(grp, gf_name, 2, &gf_var)))
-                    {
-                        free(gf_name);
-                        free(gf_type_str);
-                        return retval;
-                    }
-                    if ((retval = nc4_var_set_ndims(gf_var, 2)))
-                    {
-                        free(gf_name);
-                        free(gf_type_str);
-                        return retval;
-                    }
-                    gf_var->dimids[0] = record_dimid;
-                    gf_var->dimids[1] = rep_dim->hdr.id;
-
-                    /* Set variable type. */
-                    if ((retval = pds4_set_var_type(gf_xtype, gf_endianness, gf_type_size,
-                                                    gf_type_name, &gf_type_info)))
-                    {
-                        free(gf_name);
-                        free(gf_type_str);
-                        return retval;
-                    }
-                    gf_var->type_info = gf_type_info;
-                    gf_var->type_info->rc++;
-                    gf_var->endianness = gf_endianness;
-                    gf_var->created = NC_TRUE;
-                    gf_var->written_to = NC_TRUE;
-                    gf_var->atts_read = 1;
-                    gf_var->storage = NC_CONTIGUOUS;
-
-                    /* Store per-variable layout info for group field reading. */
-                    gf_var_info = calloc(1, sizeof(NC_PDS4_VAR_INFO_T));
-                    if (!gf_var_info)
-                    {
-                        free(gf_name);
-                        free(gf_type_str);
-                        return NC_ENOMEM;
-                    }
-                    gf_var_info->data_offset = table_offset;
-                    gf_var_info->record_length = record_length;
-                    gf_var_info->field_offset = (group_location > 0) ? group_location - 1 : 0;
-                    gf_var_info->field_length = gf_type_size;
-                    gf_var_info->is_table_field = 1;
-                    gf_var_info->is_ascii = 0;
-                    gf_var_info->is_delimited = 0;
-                    gf_var_info->is_group_field = 1;
-                    gf_var_info->group_location = (group_location > 0) ? group_location - 1 : 0;
-                    gf_var_info->group_length = group_length / repetitions;
-                    gf_var_info->repetitions = repetitions;
-                    gf_var_info->inner_field_offset = (gf_field_location > 0) ? gf_field_location - 1 : 0;
-                    gf_var->format_var_info = gf_var_info;
-
-                    /* Optional units attribute. */
-                    gf_unit_node = pds4_find_child(grp_field_cur, "unit");
-                    if (gf_unit_node)
-                    {
-                        char *gf_unit = pds4_get_text(gf_unit_node);
-                        if (gf_unit && *gf_unit)
+                        /* Depth-2: the outer group contains inner Group_Field_Binary elements. */
+                        for (grp_field_cur = cur->children; grp_field_cur;
+                             grp_field_cur = grp_field_cur->next)
                         {
-                            retval = pds4_add_att(gf_var->att, "units", gf_unit);
-                            free(gf_unit);
+                            xmlNode *inner_rep_node, *inner_loc_node, *inner_len_node;
+                            xmlNode *inner_field_cur;
+                            char *inner_rep_str = NULL, *inner_loc_str = NULL, *inner_len_str = NULL;
+                            size_t inner_reps = 0, inner_loc = 0, inner_len = 0;
+
+                            if (grp_field_cur->type != XML_ELEMENT_NODE || !grp_field_cur->ns ||
+                                xmlStrcmp(grp_field_cur->ns->href, (const xmlChar *)PDS4_NS) != 0 ||
+                                xmlStrcmp(grp_field_cur->name, (const xmlChar *)group_elem_name) != 0)
+                                continue;
+
+                            /* Check that this inner group has no further nesting (depth limit). */
+                            {
+                                xmlNode *inner_gc_node = pds4_find_child(grp_field_cur, "groups");
+                                if (inner_gc_node)
+                                {
+                                    char *igc_str = pds4_get_text(inner_gc_node);
+                                    int inner_has_groups = igc_str ? (atoi(igc_str) > 0) : 0;
+                                    free(igc_str);
+                                    if (inner_has_groups)
+                                    {
+                                        /* Depth-3+ not supported; skip. */
+                                        continue;
+                                    }
+                                }
+                            }
+
+                            /* Parse inner group geometry. */
+                            inner_rep_node = pds4_find_child(grp_field_cur, "repetitions");
+                            if (!inner_rep_node)
+                                continue;
+                            inner_rep_str = pds4_get_text(inner_rep_node);
+                            if (!inner_rep_str)
+                                continue;
+                            inner_reps = (size_t)atol(inner_rep_str);
+                            free(inner_rep_str);
+                            if (inner_reps == 0)
+                                continue;
+
+                            inner_loc_node = pds4_find_child(grp_field_cur, "group_location");
+                            if (inner_loc_node)
+                            {
+                                inner_loc_str = pds4_get_text(inner_loc_node);
+                                if (inner_loc_str)
+                                {
+                                    inner_loc = (size_t)atol(inner_loc_str);
+                                    free(inner_loc_str);
+                                }
+                            }
+
+                            inner_len_node = pds4_find_child(grp_field_cur, "group_length");
+                            if (inner_len_node)
+                            {
+                                inner_len_str = pds4_get_text(inner_len_node);
+                                if (inner_len_str)
+                                {
+                                    inner_len = (size_t)atol(inner_len_str);
+                                    free(inner_len_str);
+                                }
+                            }
+
+                            /* Iterate over Field_* children inside the inner group. */
+                            for (inner_field_cur = grp_field_cur->children; inner_field_cur;
+                                 inner_field_cur = inner_field_cur->next)
+                            {
+                                xmlNode *gf_name_node, *gf_type_node, *gf_loc_node, *gf_unit_node;
+                                char *gf_name = NULL, *gf_type_str = NULL, *gf_loc_str = NULL;
+                                char gf_type_name[NC_MAX_NAME + 1];
+                                char reg_name[NC_MAX_NAME + 1];
+                                nc_type gf_xtype;
+                                size_t gf_type_size, gf_field_location = 0;
+                                int gf_endianness;
+                                NC_VAR_INFO_T *gf_var;
+                                NC_TYPE_INFO_T *gf_type_info;
+                                NC_PDS4_VAR_INFO_T *gf_var_info;
+                                NC_DIM_INFO_T *outer_rep_dim, *inner_rep_dim;
+                                char outer_dimname[NC_MAX_NAME + 12];
+                                char inner_dimname[NC_MAX_NAME + 12];
+
+                                if (inner_field_cur->type != XML_ELEMENT_NODE || !inner_field_cur->ns ||
+                                    xmlStrcmp(inner_field_cur->ns->href, (const xmlChar *)PDS4_NS) != 0 ||
+                                    xmlStrcmp(inner_field_cur->name, (const xmlChar *)field_child_name) != 0)
+                                    continue;
+
+                                gf_name_node = pds4_find_child(inner_field_cur, "name");
+                                if (!gf_name_node)
+                                    continue;
+                                gf_name = pds4_get_text(gf_name_node);
+                                if (!gf_name || !*gf_name)
+                                {
+                                    free(gf_name);
+                                    continue;
+                                }
+                                {
+                                    char *p;
+                                    for (p = gf_name; *p; p++)
+                                        if (*p == ' ')
+                                            *p = '_';
+                                }
+
+                                gf_type_node = pds4_find_child(inner_field_cur, "data_type");
+                                if (!gf_type_node)
+                                {
+                                    free(gf_name);
+                                    continue;
+                                }
+                                gf_type_str = pds4_get_text(gf_type_node);
+                                if (!gf_type_str)
+                                {
+                                    free(gf_name);
+                                    continue;
+                                }
+
+                                retval = pds4_type_to_nc_type(gf_type_str, &gf_xtype, &gf_type_size,
+                                                              &gf_endianness, gf_type_name);
+                                if (retval)
+                                {
+                                    free(gf_name);
+                                    free(gf_type_str);
+                                    continue;
+                                }
+
+                                gf_loc_node = pds4_find_child(inner_field_cur, "field_location");
+                                if (gf_loc_node)
+                                {
+                                    gf_loc_str = pds4_get_text(gf_loc_node);
+                                    if (gf_loc_str)
+                                    {
+                                        gf_field_location = (size_t)atol(gf_loc_str);
+                                        free(gf_loc_str);
+                                    }
+                                }
+
+                                /* Determine variable registration name: prefix on collision. */
+                                {
+                                    NC_VAR_INFO_T *existing = NULL;
+                                    nc4_find_var(grp, gf_name, &existing);
+                                    if (existing && table_local_id && *table_local_id)
+                                        snprintf(reg_name, NC_MAX_NAME, "%s_%s",
+                                                 table_local_id, gf_name);
+                                    else
+                                        strncpy(reg_name, gf_name, NC_MAX_NAME);
+                                    reg_name[NC_MAX_NAME] = '\0';
+                                }
+
+                                /* Create outer rep dimension. */
+                                snprintf(outer_dimname, sizeof(outer_dimname), "%s_outer_rep", reg_name);
+                                if ((retval = nc4_dim_list_add(grp, outer_dimname, repetitions,
+                                                               -1, &outer_rep_dim)))
+                                {
+                                    free(gf_name);
+                                    free(gf_type_str);
+                                    free(table_local_id);
+                                    return retval;
+                                }
+
+                                /* Create inner rep dimension. */
+                                snprintf(inner_dimname, sizeof(inner_dimname), "%s_inner_rep", reg_name);
+                                if ((retval = nc4_dim_list_add(grp, inner_dimname, inner_reps,
+                                                               -1, &inner_rep_dim)))
+                                {
+                                    free(gf_name);
+                                    free(gf_type_str);
+                                    free(table_local_id);
+                                    return retval;
+                                }
+
+                                /* Create 3D variable [record, outer_rep, inner_rep]. */
+                                if ((retval = nc4_var_list_add(grp, reg_name, 3, &gf_var)))
+                                {
+                                    free(gf_name);
+                                    free(gf_type_str);
+                                    free(table_local_id);
+                                    return retval;
+                                }
+                                if ((retval = nc4_var_set_ndims(gf_var, 3)))
+                                {
+                                    free(gf_name);
+                                    free(gf_type_str);
+                                    free(table_local_id);
+                                    return retval;
+                                }
+                                gf_var->dimids[0] = record_dimid;
+                                gf_var->dimids[1] = outer_rep_dim->hdr.id;
+                                gf_var->dimids[2] = inner_rep_dim->hdr.id;
+
+                                if ((retval = pds4_set_var_type(gf_xtype, gf_endianness,
+                                                                gf_type_size, gf_type_name,
+                                                                &gf_type_info)))
+                                {
+                                    free(gf_name);
+                                    free(gf_type_str);
+                                    free(table_local_id);
+                                    return retval;
+                                }
+                                gf_var->type_info = gf_type_info;
+                                gf_var->type_info->rc++;
+                                gf_var->endianness = gf_endianness;
+                                gf_var->created = NC_TRUE;
+                                gf_var->written_to = NC_TRUE;
+                                gf_var->atts_read = 1;
+                                gf_var->storage = NC_CONTIGUOUS;
+
+                                gf_var_info = calloc(1, sizeof(NC_PDS4_VAR_INFO_T));
+                                if (!gf_var_info)
+                                {
+                                    free(gf_name);
+                                    free(gf_type_str);
+                                    free(table_local_id);
+                                    return NC_ENOMEM;
+                                }
+                                gf_var_info->data_offset = table_offset;
+                                gf_var_info->record_length = record_length;
+                                gf_var_info->is_table_field = 1;
+                                gf_var_info->is_ascii = 0;
+                                gf_var_info->is_delimited = 0;
+                                gf_var_info->is_group_field = 1;
+                                gf_var_info->group_depth = 2;
+                                gf_var_info->outer_group_location = (group_location > 0) ? group_location - 1 : 0;
+                                gf_var_info->outer_group_length = (repetitions > 0) ? group_length / repetitions : 0;
+                                gf_var_info->outer_repetitions = repetitions;
+                                gf_var_info->inner_group_location = (inner_loc > 0) ? inner_loc - 1 : 0;
+                                gf_var_info->inner_group_length = (inner_reps > 0) ? inner_len / inner_reps : 0;
+                                gf_var_info->inner_repetitions = inner_reps;
+                                gf_var_info->inner2_field_offset = (gf_field_location > 0) ? gf_field_location - 1 : 0;
+                                gf_var_info->field_length = gf_type_size;
+                                gf_var->format_var_info = gf_var_info;
+
+                                /* Optional units attribute. */
+                                gf_unit_node = pds4_find_child(inner_field_cur, "unit");
+                                if (gf_unit_node)
+                                {
+                                    char *gf_unit = pds4_get_text(gf_unit_node);
+                                    if (gf_unit && *gf_unit)
+                                    {
+                                        retval = pds4_add_att(gf_var->att, "units", gf_unit);
+                                        free(gf_unit);
+                                        if (retval)
+                                        {
+                                            free(gf_name);
+                                            free(gf_type_str);
+                                            free(table_local_id);
+                                            return retval;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        free(gf_unit);
+                                    }
+                                }
+
+                                free(gf_name);
+                                free(gf_type_str);
+                            } /* inner fields */
+                        } /* inner groups */
+                    }
+                    else
+                    {
+                        /* Depth-1: iterate directly over Field_* children inside this group. */
+                        for (grp_field_cur = cur->children; grp_field_cur;
+                             grp_field_cur = grp_field_cur->next)
+                        {
+                            xmlNode *gf_name_node, *gf_type_node, *gf_loc_node, *gf_unit_node;
+                            char *gf_name = NULL, *gf_type_str = NULL, *gf_loc_str = NULL;
+                            char gf_type_name[NC_MAX_NAME + 1];
+                            char reg_name[NC_MAX_NAME + 1];
+                            nc_type gf_xtype;
+                            size_t gf_type_size, gf_field_location = 0;
+                            int gf_endianness;
+                            NC_VAR_INFO_T *gf_var;
+                            NC_TYPE_INFO_T *gf_type_info;
+                            NC_PDS4_VAR_INFO_T *gf_var_info;
+                            NC_DIM_INFO_T *rep_dim;
+                            char rep_dimname[NC_MAX_NAME + 6];
+
+                            if (grp_field_cur->type != XML_ELEMENT_NODE || !grp_field_cur->ns ||
+                                xmlStrcmp(grp_field_cur->ns->href, (const xmlChar *)PDS4_NS) != 0 ||
+                                xmlStrcmp(grp_field_cur->name, (const xmlChar *)field_child_name) != 0)
+                                continue;
+
+                            /* Get field name. */
+                            gf_name_node = pds4_find_child(grp_field_cur, "name");
+                            if (!gf_name_node)
+                                continue;
+                            gf_name = pds4_get_text(gf_name_node);
+                            if (!gf_name || !*gf_name)
+                            {
+                                free(gf_name);
+                                continue;
+                            }
+                            /* Sanitize: replace spaces with underscores. */
+                            {
+                                char *p;
+                                for (p = gf_name; *p; p++)
+                                    if (*p == ' ')
+                                        *p = '_';
+                            }
+
+                            /* Get field data_type. */
+                            gf_type_node = pds4_find_child(grp_field_cur, "data_type");
+                            if (!gf_type_node)
+                            {
+                                free(gf_name);
+                                continue;
+                            }
+                            gf_type_str = pds4_get_text(gf_type_node);
+                            if (!gf_type_str)
+                            {
+                                free(gf_name);
+                                continue;
+                            }
+
+                            /* Map type. */
+                            retval = pds4_type_to_nc_type(gf_type_str, &gf_xtype, &gf_type_size,
+                                                          &gf_endianness, gf_type_name);
                             if (retval)
                             {
                                 free(gf_name);
                                 free(gf_type_str);
+                                continue;
+                            }
+
+                            /* Parse inner field_location (1-based, relative within one rep). */
+                            gf_loc_node = pds4_find_child(grp_field_cur, "field_location");
+                            if (gf_loc_node)
+                            {
+                                gf_loc_str = pds4_get_text(gf_loc_node);
+                                if (gf_loc_str)
+                                {
+                                    gf_field_location = (size_t)atol(gf_loc_str);
+                                    free(gf_loc_str);
+                                }
+                            }
+
+                            /* Determine variable registration name: prefix on collision. */
+                            {
+                                NC_VAR_INFO_T *existing = NULL;
+                                nc4_find_var(grp, gf_name, &existing);
+                                if (existing && table_local_id && *table_local_id)
+                                    snprintf(reg_name, NC_MAX_NAME, "%s_%s",
+                                             table_local_id, gf_name);
+                                else
+                                    strncpy(reg_name, gf_name, NC_MAX_NAME);
+                                reg_name[NC_MAX_NAME] = '\0';
+                            }
+
+                            /* Create repetition dimension. */
+                            snprintf(rep_dimname, sizeof(rep_dimname), "%s_rep", reg_name);
+                            if ((retval = nc4_dim_list_add(grp, rep_dimname, repetitions,
+                                                           -1, &rep_dim)))
+                            {
+                                free(gf_name);
+                                free(gf_type_str);
+                                free(table_local_id);
                                 return retval;
                             }
-                        }
-                        else
-                        {
-                            free(gf_unit);
-                        }
-                    }
 
-                    free(gf_name);
-                    free(gf_type_str);
-                }
-            }
+                            /* Create 2D variable [record, repetition]. */
+                            if ((retval = nc4_var_list_add(grp, reg_name, 2, &gf_var)))
+                            {
+                                free(gf_name);
+                                free(gf_type_str);
+                                free(table_local_id);
+                                return retval;
+                            }
+                            if ((retval = nc4_var_set_ndims(gf_var, 2)))
+                            {
+                                free(gf_name);
+                                free(gf_type_str);
+                                free(table_local_id);
+                                return retval;
+                            }
+                            gf_var->dimids[0] = record_dimid;
+                            gf_var->dimids[1] = rep_dim->hdr.id;
+
+                            /* Set variable type. */
+                            if ((retval = pds4_set_var_type(gf_xtype, gf_endianness, gf_type_size,
+                                                            gf_type_name, &gf_type_info)))
+                            {
+                                free(gf_name);
+                                free(gf_type_str);
+                                free(table_local_id);
+                                return retval;
+                            }
+                            gf_var->type_info = gf_type_info;
+                            gf_var->type_info->rc++;
+                            gf_var->endianness = gf_endianness;
+                            gf_var->created = NC_TRUE;
+                            gf_var->written_to = NC_TRUE;
+                            gf_var->atts_read = 1;
+                            gf_var->storage = NC_CONTIGUOUS;
+
+                            /* Store per-variable layout info for group field reading. */
+                            gf_var_info = calloc(1, sizeof(NC_PDS4_VAR_INFO_T));
+                            if (!gf_var_info)
+                            {
+                                free(gf_name);
+                                free(gf_type_str);
+                                free(table_local_id);
+                                return NC_ENOMEM;
+                            }
+                            gf_var_info->data_offset = table_offset;
+                            gf_var_info->record_length = record_length;
+                            gf_var_info->field_offset = (group_location > 0) ? group_location - 1 : 0;
+                            gf_var_info->field_length = gf_type_size;
+                            gf_var_info->is_table_field = 1;
+                            gf_var_info->is_ascii = 0;
+                            gf_var_info->is_delimited = 0;
+                            gf_var_info->is_group_field = 1;
+                            gf_var_info->group_depth = 1;
+                            gf_var_info->group_location = (group_location > 0) ? group_location - 1 : 0;
+                            gf_var_info->group_length = group_length / repetitions;
+                            gf_var_info->repetitions = repetitions;
+                            gf_var_info->inner_field_offset = (gf_field_location > 0) ? gf_field_location - 1 : 0;
+                            gf_var->format_var_info = gf_var_info;
+
+                            /* Optional units attribute. */
+                            gf_unit_node = pds4_find_child(grp_field_cur, "unit");
+                            if (gf_unit_node)
+                            {
+                                char *gf_unit = pds4_get_text(gf_unit_node);
+                                if (gf_unit && *gf_unit)
+                                {
+                                    retval = pds4_add_att(gf_var->att, "units", gf_unit);
+                                    free(gf_unit);
+                                    if (retval)
+                                    {
+                                        free(gf_name);
+                                        free(gf_type_str);
+                                        free(table_local_id);
+                                        return retval;
+                                    }
+                                }
+                                else
+                                {
+                                    free(gf_unit);
+                                }
+                            }
+
+                            free(gf_name);
+                            free(gf_type_str);
+                        } /* depth-1 fields */
+                    } /* else depth-1 */
+                } /* groups count check */
+            } /* outer group loop */
+            free(table_local_id);
         }
     }
 
@@ -2141,9 +2446,60 @@ NC_PDS4_get_vara(int ncid, int varid, const size_t *start, const size_t *count,
             }
             free(field_buf);
         }
+        else if (var_info->is_group_field && var_info->group_depth == 2)
+        {
+            /* Depth-2 group field: 3D variable [record, outer_rep, inner_rep].
+             * Byte offset formula:
+             *   data_offset
+             *   + rec * record_length
+             *   + outer_group_location + o * outer_group_length
+             *   + inner_group_location + i * inner_group_length
+             *   + inner2_field_offset */
+            size_t n_outer = count[1];
+            size_t start_outer = start[1];
+            size_t n_inner = count[2];
+            size_t start_inner = start[2];
+            size_t o, i;
+            size_t out_idx = 0;
+
+            for (r = 0; r < nrecords; r++)
+            {
+                for (o = 0; o < n_outer; o++)
+                {
+                    for (i = 0; i < n_inner; i++)
+                    {
+                        size_t seek_pos = var_info->data_offset +
+                            (start_record + r) * var_info->record_length +
+                            var_info->outer_group_location +
+                            (start_outer + o) * var_info->outer_group_length +
+                            var_info->inner_group_location +
+                            (start_inner + i) * var_info->inner_group_length +
+                            var_info->inner2_field_offset;
+
+                        if (fseek(fp, (long)seek_pos, SEEK_SET) != 0)
+                        {
+                            fclose(fp);
+                            return NC_EINVAL;
+                        }
+                        if (fread((unsigned char *)value + out_idx * elem_size,
+                                  1, elem_size, fp) != elem_size)
+                        {
+                            fclose(fp);
+                            return NC_EINVAL;
+                        }
+                        out_idx++;
+                    }
+                }
+            }
+
+            /* Byte-swap if needed. */
+            need_swap = pds4_needs_swap(var->endianness);
+            if (need_swap && elem_size > 1)
+                pds4_byte_swap(value, elem_size, out_idx);
+        }
         else if (var_info->is_group_field)
         {
-            /* Binary table group field: 2D variable [record, repetition].
+            /* Depth-1 group field: 2D variable [record, repetition].
              * Read each repetition element separately. */
             size_t nreps = count[1];
             size_t start_rep = start[1];
