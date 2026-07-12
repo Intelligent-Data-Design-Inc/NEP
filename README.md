@@ -300,6 +300,8 @@ make check
 | `test_mission_lcs_9p()` | Opens real comet photometry table; verifies 8 variables (`ASCII_Integer`, `ASCII_Real`) and first-record values | Deep Impact LCS, 9P/Tempel comet | `Table_Character` |
 | `test_mission_maven_l1b()` | Opens real L1B housekeeping table; verifies 324 variables, 26121 records, `TIME` is `NC_DOUBLE`, and `TIME[0..1] > 0` | MAVEN NGIMS, Mars atmosphere | `Table_Delimited` (324 fields, 9.3 MB CSV) |
 | `test_mission_maven_l3()` | Opens real L3 science table; verifies 15 variables, 2 records, `T_UTC` is `NC_CHAR` (`ASCII_Date_Time`), and known values for `T_UNIX[0]`, `SCALE_HEIGHT[0]`, `TEMPERATURE[0]` | MAVEN NGIMS, Mars atmosphere | `Table_Delimited` (15 fields, 446 B CSV) |
+| `test_mission_maven_iuvs_metadata()` | Opens FITS-backed PDS4 file; verifies 116 variables (scalar + `Group_Field_Binary`), `COLUMN` is 2D with trailing dim=2, `V_TANGENT` trailing dim=3, `TANGENT_ALT` is 1D `NC_FLOAT` | MAVEN IUVS, Mars corona | `Table_Binary` (8 tables, FITS container, `Group_Field_Binary`) |
+| `test_mission_maven_iuvs_data()` | Reads scalar field `TANGENT_ALT[0]` (finite > 0 km) and group field `RADIANCE[50,0..1]` (finite > 0 kR), confirming FITS-as-container I/O and 2D group field reading | MAVEN IUVS, Mars corona | `Table_Binary` (FITS container, 181 KB) |
 
 ---
 

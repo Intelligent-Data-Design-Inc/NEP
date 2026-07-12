@@ -46,6 +46,39 @@ Both Maven XML + CSV file pairs added to `test/CMakeLists.txt` copy rules and `t
 
 **GitHub Issue:** #280
 
+#### Sprint 3: More Maven Testing — IUVS Corona (FITS-backed PDS4)
+**Detailed Plan**: See `docs/plan/v2.6.0-sprint3-maven-iuvs-testing.md`
+
+Implement `Group_Field_Binary` support in the PDS4 reader and test with
+`mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758.xml` — a PDS4 label that
+uses a FITS file as its binary data container. The XML + FITS file pair is
+already in `test/data/PDS4/`.
+
+**Implementation tasks:**
+1. Add `Group_Field_Binary` parsing to `pds4_read_table()` in `src/pds4file.c`:
+   - Detect `Group_Field_Binary` elements alongside `Field_Binary` in the Record loop.
+   - Parse `<repetitions>`, `<group_location>`, `<group_length>`.
+   - For each `Field_Binary` inside the group, create a 2D variable `[record, repetition]` with a trailing dimension of size `repetitions`.
+   - Compute the correct per-repetition byte offset for data reading (group_location + rep × field_size + field_location - 1).
+2. Update the binary table data reading path in `pds4_get_vara()` to handle 2D group fields (stride by `group_length` for each repetition within a record).
+3. Add both `.xml` and `.fits` to build system (`test/CMakeLists.txt`, `test/Makefile.am`).
+4. Add two test functions to `test/tst_pds4_udf.c`:
+   - `test_mission_maven_iuvs_metadata()` — verifies group name, total nvars (scalar + group fields), confirms `COLUMN` has ndims=2 with trailing dim=2.
+   - `test_mission_maven_iuvs_data()` — reads `TANGENT_ALT[0]` (scalar, verify finite > 0) and `COLUMN[0,0]` (group field, verify finite).
+
+The label contains 8 `Table_Binary` sections with data types `IEEE754MSBSingle`,
+`IEEE754MSBDouble`, `ASCII_String`, `SignedMSB2`. The `outbound_above_limb` table
+has 14 scalar fields + 17 Group_Field_Binary (repetitions=2 or 3), making it the
+key test case for the new capability.
+
+**Clarified decisions:**
+- `Group_Field_Binary` fields become 2D variables `[record, repetition]` — simple, flat model.
+- Only handle `groups=0` (no nested groups) for now; nested groups return `NC_EINVAL`.
+- Both `.xml` and `.fits` copied to build directory unconditionally (CMake and Autotools).
+- Two test functions (`_metadata` and `_data`) to separate concerns.
+
+**GitHub Issue:** #282
+
 ### V2.5.0 More Spack Improvements
 #### Sprint 1: GeoTIFF Variant
 **Detailed Plan**: See `docs/plan/v2.5.0-sprint1-geotiff-variant.md`

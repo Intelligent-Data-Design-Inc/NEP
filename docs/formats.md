@@ -187,6 +187,8 @@ cmake -B build -DNEP_ENABLE_PDS4=ON   # CMake
 ```
 **Dependencies**: libxml2 ≥ 2.9 (`libxml2-dev` on Ubuntu/Debian; `libxml2-devel` on RHEL/Fedora).
 
+**Detailed mapping reference**: See [PDS4-to-NetCDF Mapping](pds4.md) for the full specification of how PDS4 structures are represented in the netCDF data model.
+
 **Resources**: [PDS4 Standards Documentation](https://pds.nasa.gov/data-standards/documentation/current-version.shtml) · [PDS4 Data Standards Handbook](https://pds.nasa.gov/data-standards/documents/im/current/index_1M00.shtml) · [PDS Tools and Services](https://pds.nasa.gov/tools/services/index.shtml)
 
 **Example:**
