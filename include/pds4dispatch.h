@@ -45,6 +45,8 @@ typedef struct NC_PDS4_VAR_INFO
     size_t field_length;          /**< Field byte length (tables only) */
     int is_table_field;           /**< 1 if this is a table field, 0 if array */
     int is_ascii;                 /**< 1 if ASCII text field (needs parsing), 0 if binary */
+    int is_delimited;             /**< 1 if Table_Delimited (comma-separated); field_number used instead of field_offset */
+    int field_number;             /**< 1-based column index for Table_Delimited fields */
 } NC_PDS4_VAR_INFO_T;
 
 /** Per-file PDS4 state */

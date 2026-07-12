@@ -157,6 +157,20 @@ if(HAVE_PDS4)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/lcs_9p/20050706_000.tab
                    ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/lcs_9p/20050706_000.tab
                    COPYONLY)
+
+    # Maven NGIMS mission data (L1B housekeeping and L3 science)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.xml
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.xml
+                   COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.csv
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.csv
+                   COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml
+                   COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.csv
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.csv
+                   COPYONLY)
 endif()
 
 # Configure run_tests.sh script with proper paths

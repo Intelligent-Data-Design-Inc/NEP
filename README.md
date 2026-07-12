@@ -272,6 +272,37 @@ spack install nep+cdf
 
 ---
 
+## Testing
+
+Run the test suite after building:
+
+```bash
+# CMake
+ctest --test-dir build
+
+# Autotools
+make check
+```
+
+### PDS4 Tests
+
+`test/tst_pds4_udf.c` contains all PDS4 tests. Requires `--enable-pds4` / `-DNEP_ENABLE_PDS4=ON`.
+
+| Test Name | Description | Mission / Source | Data Type |
+|---|---|---|---|
+| `test_table_binary()` | Verifies metadata for a synthetic binary table: 5-record dimension, three variables (`Timestamp`, `Detector_Counts`, `Temperature`) with units | Synthetic test data | `Table_Binary` |
+| `test_table_character()` | Verifies metadata for a fixed-width character table: 224-record dimension, three `NC_DOUBLE` variables (`Wavelength`, `Reflectance`, `Error`) | Synthetic test data | `Table_Character` |
+| `test_array_data_read()` | Reads a 4×4 float32 image array and verifies all 16 values and a sub-hyperslab `[1:2,1:2]` | Synthetic test data | Array (`Array_2D_Image`) |
+| `test_table_binary_data_read()` | Reads binary table field values: `Timestamp[0..4]`, `Detector_Counts[0..4]`, `Temperature[0..4]` | Synthetic test data | `Table_Binary` |
+| `test_table_character_data_read()` | Reads fixed-width character table values: `Wavelength[0..2]`, `Reflectance[0..2]`, `Error[0..2]` | Synthetic test data | `Table_Character` |
+| `test_mission_cassini_hrd()` | Opens real HRD engineering table; verifies 11 records, two `NC_CHAR` fields (`ON_OFF_TIME`, `ON_OFF_FLAG`) | Cassini-Huygens HRD dust detector | `Table_Character` |
+| `test_mission_messenger_tnmap()` | Opens real thermal neutron map; verifies 360×720 `NC_UBYTE` array and reads a hyperslab | MESSENGER Mercury orbiter | Binary array (`Array_2D_Map`) |
+| `test_mission_lcs_9p()` | Opens real comet photometry table; verifies 8 variables (`ASCII_Integer`, `ASCII_Real`) and first-record values | Deep Impact LCS, 9P/Tempel comet | `Table_Character` |
+| `test_mission_maven_l1b()` | Opens real L1B housekeeping table; verifies 324 variables, 26121 records, `TIME` is `NC_DOUBLE`, and `TIME[0..1] > 0` | MAVEN NGIMS, Mars atmosphere | `Table_Delimited` (324 fields, 9.3 MB CSV) |
+| `test_mission_maven_l3()` | Opens real L3 science table; verifies 15 variables, 2 records, `T_UTC` is `NC_CHAR` (`ASCII_Date_Time`), and known values for `T_UNIX[0]`, `SCALE_HEIGHT[0]`, `TEMPERATURE[0]` | MAVEN NGIMS, Mars atmosphere | `Table_Delimited` (15 fields, 446 B CSV) |
+
+---
+
 ## Documentation
 
 For more detailed information about the project:

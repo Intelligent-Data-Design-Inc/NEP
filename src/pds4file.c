@@ -305,6 +305,7 @@ pds4_type_to_nc_type(const char *pds4_type, nc_type *xtypep, size_t *type_sizep,
     { xtype = NC_UBYTE; type_size = 1; endianness = NC_ENDIAN_NATIVE; name = "ubyte"; }
     else if (strcmp(pds4_type, "ASCII_String") == 0 ||
              strcmp(pds4_type, "ASCII_Date") == 0 ||
+             strcmp(pds4_type, "ASCII_Date_Time") == 0 ||
              strcmp(pds4_type, "ASCII_Date_Time_YMD") == 0 ||
              strcmp(pds4_type, "ASCII_Date_Time_YMD_UTC") == 0 ||
              strcmp(pds4_type, "ASCII_Date_Time_DOY") == 0 ||
@@ -748,6 +749,7 @@ pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
     const char *field_child_name;
 
     /* Determine which Record_* and Field_* elements to look for. */
+    int is_delimited_table = 0;
     if (xmlStrcmp(table->name, (const xmlChar *)"Table_Binary") == 0)
     {
         record_child_name = "Record_Binary";
@@ -765,6 +767,7 @@ pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
         record_child_name = "Record_Delimited";
         field_child_name = "Field_Delimited";
         is_ascii_table = 1;
+        is_delimited_table = 1;
     }
     else
     {
@@ -847,16 +850,19 @@ pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
         xmlNode *field_unit_node;
         xmlNode *field_length_node;
         xmlNode *field_location_node;
+        xmlNode *field_number_node;
         char *field_name = NULL;
         char *field_type_str = NULL;
         char *field_unit = NULL;
         char *field_length_str = NULL;
         char *field_location_str = NULL;
+        char *field_number_str = NULL;
         char type_name[NC_MAX_NAME + 1];
         nc_type xtype;
         size_t type_size;
         size_t field_length = 0;
         size_t field_location = 0;
+        int field_num = 0;
         int endianness;
         NC_VAR_INFO_T *var;
         NC_TYPE_INFO_T *type_info;
@@ -910,7 +916,7 @@ pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
             continue; /* Skip unsupported types. */
         }
 
-        /* Parse field_location (1-based in PDS4). */
+        /* Parse field_location (1-based in PDS4, for fixed-width tables). */
         field_location_node = pds4_find_child(cur, "field_location");
         if (field_location_node)
         {
@@ -919,6 +925,18 @@ pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
             {
                 field_location = (size_t)atol(field_location_str);
                 free(field_location_str);
+            }
+        }
+
+        /* Parse field_number (1-based column index for Table_Delimited). */
+        field_number_node = pds4_find_child(cur, "field_number");
+        if (field_number_node)
+        {
+            field_number_str = pds4_get_text(field_number_node);
+            if (field_number_str)
+            {
+                field_num = atoi(field_number_str);
+                free(field_number_str);
             }
         }
 
@@ -1022,6 +1040,8 @@ pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
         var_info->field_length = field_length;
         var_info->is_table_field = 1;
         var_info->is_ascii = is_ascii_table;
+        var_info->is_delimited = is_delimited_table;
+        var_info->field_number = field_num;
         var->format_var_info = var_info;
 
         /* Optional units attribute. */
@@ -1730,9 +1750,110 @@ NC_PDS4_get_vara(int ncid, int varid, const size_t *start, const size_t *count,
         size_t elem_size = var->type_info->size;
         int need_swap;
 
-        if (var_info->is_ascii)
+        if (var_info->is_ascii && var_info->is_delimited)
         {
-            /* ASCII table: read text and parse. */
+            /* Table_Delimited: seek to data_offset, skip start_record lines,
+             * then for each requested record read a line and extract the
+             * Nth comma-delimited token (var_info->field_number, 1-based). */
+            char line_buf[65536];
+            size_t line_skip;
+
+            if (fseek(fp, (long)var_info->data_offset, SEEK_SET) != 0)
+            {
+                fclose(fp);
+                return NC_EINVAL;
+            }
+
+            /* Skip start_record full lines. */
+            for (line_skip = 0; line_skip < start_record; line_skip++)
+            {
+                if (!fgets(line_buf, sizeof(line_buf), fp))
+                {
+                    fclose(fp);
+                    return NC_EINVAL;
+                }
+            }
+
+            for (r = 0; r < nrecords; r++)
+            {
+                char *tok;
+                char *saveptr = NULL;
+                char *line_copy;
+                int col;
+                int target_col = var_info->field_number; /* 1-based */
+
+                if (!fgets(line_buf, sizeof(line_buf), fp))
+                {
+                    fclose(fp);
+                    return NC_EINVAL;
+                }
+
+                /* Strip trailing newline/CR. */
+                {
+                    size_t llen = strlen(line_buf);
+                    while (llen > 0 && (line_buf[llen-1] == '\n' || line_buf[llen-1] == '\r'))
+                        line_buf[--llen] = '\0';
+                }
+
+                /* Split on comma and pick the target column. */
+                line_copy = strdup(line_buf);
+                if (!line_copy)
+                {
+                    fclose(fp);
+                    return NC_ENOMEM;
+                }
+                tok = NULL;
+                for (col = 1, tok = strtok_r(line_copy, ",", &saveptr);
+                     tok && col < target_col;
+                     col++, tok = strtok_r(NULL, ",", &saveptr))
+                    ;
+
+                if (!tok)
+                    tok = (char *)""; /* missing/empty field */
+
+                /* Trim leading whitespace. */
+                while (*tok == ' ' || *tok == '\t')
+                    tok++;
+
+                /* Parse based on the netCDF type. */
+                switch (var->type_info->nc_type_class)
+                {
+                case NC_DOUBLE:
+                    ((double *)value)[r] = strtod(tok, NULL);
+                    break;
+                case NC_FLOAT:
+                    ((float *)value)[r] = (float)strtod(tok, NULL);
+                    break;
+                case NC_INT64:
+                    ((long long *)value)[r] = strtoll(tok, NULL, 10);
+                    break;
+                case NC_UINT64:
+                    ((unsigned long long *)value)[r] = strtoull(tok, NULL, 10);
+                    break;
+                case NC_INT:
+                    ((int *)value)[r] = (int)strtol(tok, NULL, 10);
+                    break;
+                case NC_CHAR:
+                {
+                    /* Copy text into the output; pad with spaces to field_length. */
+                    size_t tlen = strlen(tok);
+                    size_t copy_len = tlen < var_info->field_length ? tlen : var_info->field_length;
+                    char *out = (char *)value + r * var_info->field_length;
+                    memcpy(out, tok, copy_len);
+                    if (copy_len < var_info->field_length)
+                        memset(out + copy_len, ' ', var_info->field_length - copy_len);
+                    break;
+                }
+                default:
+                    ((double *)value)[r] = strtod(tok, NULL);
+                    break;
+                }
+                free(line_copy);
+            }
+        }
+        else if (var_info->is_ascii)
+        {
+            /* Fixed-width ASCII table (Table_Character): use byte offsets. */
             char *field_buf = malloc(var_info->field_length + 1);
             if (!field_buf)
             {
