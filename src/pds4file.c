@@ -1232,8 +1232,8 @@ pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
                                 NC_TYPE_INFO_T *gf_type_info;
                                 NC_PDS4_VAR_INFO_T *gf_var_info;
                                 NC_DIM_INFO_T *outer_rep_dim, *inner_rep_dim;
-                                char outer_dimname[NC_MAX_NAME + 1];
-                                char inner_dimname[NC_MAX_NAME + 1];
+                                char outer_dimname[NC_MAX_NAME + 12];
+                                char inner_dimname[NC_MAX_NAME + 12];
 
                                 if (inner_field_cur->type != XML_ELEMENT_NODE || !inner_field_cur->ns ||
                                     xmlStrcmp(inner_field_cur->ns->href, (const xmlChar *)PDS4_NS) != 0 ||
@@ -1302,7 +1302,7 @@ pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
                                 }
 
                                 /* Create outer rep dimension. */
-                                snprintf(outer_dimname, NC_MAX_NAME, "%s_outer_rep", reg_name);
+                                snprintf(outer_dimname, sizeof(outer_dimname), "%s_outer_rep", reg_name);
                                 if ((retval = nc4_dim_list_add(grp, outer_dimname, repetitions,
                                                                -1, &outer_rep_dim)))
                                 {
@@ -1313,7 +1313,7 @@ pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
                                 }
 
                                 /* Create inner rep dimension. */
-                                snprintf(inner_dimname, NC_MAX_NAME, "%s_inner_rep", reg_name);
+                                snprintf(inner_dimname, sizeof(inner_dimname), "%s_inner_rep", reg_name);
                                 if ((retval = nc4_dim_list_add(grp, inner_dimname, inner_reps,
                                                                -1, &inner_rep_dim)))
                                 {
@@ -1429,7 +1429,7 @@ pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
                             NC_TYPE_INFO_T *gf_type_info;
                             NC_PDS4_VAR_INFO_T *gf_var_info;
                             NC_DIM_INFO_T *rep_dim;
-                            char rep_dimname[NC_MAX_NAME + 1];
+                            char rep_dimname[NC_MAX_NAME + 6];
 
                             if (grp_field_cur->type != XML_ELEMENT_NODE || !grp_field_cur->ns ||
                                 xmlStrcmp(grp_field_cur->ns->href, (const xmlChar *)PDS4_NS) != 0 ||
@@ -1503,7 +1503,7 @@ pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
                             }
 
                             /* Create repetition dimension. */
-                            snprintf(rep_dimname, NC_MAX_NAME, "%s_rep", reg_name);
+                            snprintf(rep_dimname, sizeof(rep_dimname), "%s_rep", reg_name);
                             if ((retval = nc4_dim_list_add(grp, rep_dimname, repetitions,
                                                            -1, &rep_dim)))
                             {
