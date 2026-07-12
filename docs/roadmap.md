@@ -235,6 +235,51 @@ pass.
 
 **GitHub Issue:** #289
 
+#### Sprint 5: More PDS4 Testing — Perseverance Mastcam-Z
+**Detailed Plan**: See `docs/plan/v2.6.0-sprint5-perseverance-testing.md`
+
+Test `ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml` — a PDS4
+`Product_Observational` label from the Mars 2020 Perseverance rover's Mastcam-Z
+left camera (Sol 1738). The file area contains one `Array_3D_Image`
+(Band=3, Line=1200, Sample=1648, `SignedMSB2`, offset=52736 bytes) backed by
+a VICAR/ODL-prefixed binary `.IMG` file.
+
+**Implementation tasks:**
+1. Add `Array_3D_Image` to the dispatch list in `pds4_read_file_area()` in `src/pds4file.c`:
+   - Extend the `if` branch at the `Array_2D_Image` / `Array` check to also match
+     `Array_3D_Image` (and any other `Array_*` variants: `Array_1D`, `Array_3D`,
+     `Array_2D`). Pass the node to `pds4_read_array()` unchanged — the function
+     already handles N-axis arrays generically via `Axis_Array` children.
+2. Both `.xml` and `.IMG` files are already in `test/data/PDS4/`; add copy rules to
+   `test/CMakeLists.txt` and `test/Makefile.am` (`check-local` and `EXTRA_DIST`).
+3. Add `#define PDS4_PERSEVERANCE_FILE` path constant to `test/tst_pds4_udf.c`.
+4. Add `test_mission_perseverance_mastcamz_metadata()` to `test/tst_pds4_udf.c`:
+   - Verify `nc_open()` succeeds.
+   - Navigate to the file-area group named `ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.IMG`.
+   - Verify the variable named `data` exists (no `<name>` element in label → reader default).
+   - Verify it is `NC_SHORT`, `ndims=3`.
+   - Verify dim lengths: dim[0]=3 (Band), dim[1]=1200 (Line), dim[2]=1648 (Sample).
+   - Verify `scaling_factor` string attribute equals `"5.0e-06"` (raw label value, per answer 3b).
+5. Add `test_mission_perseverance_mastcamz_data()` to `test/tst_pds4_udf.c`:
+   - Read pixel `[0,0,0]` as `NC_SHORT` via `nc_get_vara_short()`.
+   - Verify the call returns `NC_NOERR` (data path works with the 52736-byte offset).
+   - Verify the returned value is within the valid `SignedMSB2` range (−32768–32767);
+     a zero value is acceptable (instrument may report zero for fill/invalid pixels).
+6. Wire both test functions into `main()` after `test_mission_maven_periapse_data()`.
+
+**Clarified decisions:**
+- `Array_3D_Image` fix: extend the existing `if`/`else if` dispatch in `pds4_read_file_area()`;
+  no changes to `pds4_read_array()` itself — it already handles arbitrary N-axis arrays.
+- Variable name defaults to `"data"` because `Array_3D_Image` has no `<name>` child element;
+  test asserts this exact name.
+- `scaling_factor` attribute verified as raw string `"5.0e-06"` (answer 3b); no CF
+  `scale_factor` mapping in this sprint.
+- Data read verified for pixel `[0,0,0]`; value just checked for NC_NOERR + range validity.
+- Both `.xml` and `.IMG` copied to build directory unconditionally (CMake and Autotools).
+- Two test functions (`_metadata` and `_data`) following Sprint 3/4 pattern.
+
+**GitHub Issue:** #287
+
 ### V2.5.0 More Spack Improvements
 #### Sprint 1: GeoTIFF Variant
 **Detailed Plan**: See `docs/plan/v2.5.0-sprint1-geotiff-variant.md`
