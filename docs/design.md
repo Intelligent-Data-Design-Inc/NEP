@@ -1,7 +1,7 @@
-# NEP – NetCDF Extension Pack v2.2.0
+# NEP – NetCDF Extension Pack v2.6.0
 ## Project Overview
 
-The NetCDF Extension Pack (NEP) v2.2.0 extends NetCDF-4 with high-performance compression filters and User Defined Format (UDF) handlers for accessing diverse scientific data formats through the standard NetCDF API. NEP provides flexible lossless compression with two complementary algorithms (LZ4 and BZIP2) and transparent access to GeoTIFF, GRIB2, FITS, NASA CDF, and NASA/ESA PDS4 files.
+The NetCDF Extension Pack (NEP) v2.6.0 extends NetCDF-4 with high-performance compression filters and User Defined Format (UDF) handlers for accessing diverse scientific data formats through the standard NetCDF API. NEP provides flexible lossless compression with two complementary algorithms (LZ4 and BZIP2) and transparent access to GeoTIFF, GRIB2, FITS, NASA CDF, and NASA/ESA PDS4 files.
 
 ## Architecture
 
@@ -41,7 +41,7 @@ NEP implements NetCDF's UDF system to provide transparent access to various scie
 
 1. **Core NetCDF API**: Standard API used by applications
 2. **NC_Dispatch Layer**: Format-specific function pointer tables
-3. **Format Handlers**: CDF, GeoTIFF, GRIB2, FITS, and (in v2.2.0) PDS4 UDF handlers
+3. **Format Handlers**: CDF, GeoTIFF, GRIB2, FITS, and PDS4 UDF handlers
 4. **Format Libraries**: Integration with libgeotiff, NASA CDF library, NCEPLIBS-g2c, CFITSIO, and libxml2
 5. **Multi-format Storage**: Access to NetCDF-4, CDF, GeoTIFF, GRIB2, FITS, and PDS4 files
 
@@ -1114,8 +1114,8 @@ Examples demonstrate:
 
 ## Release Information
 
-- **Version**: v2.2.0
-- **Status**: Production Release
+- **Version**: v2.6.0
+- **Status**: Release Preparation
 - **Release Date**: July 2026
 - **Features**:
   - LZ4 and BZIP2 compression for HDF5/NetCDF-4 files (C and Fortran APIs)
@@ -1123,12 +1123,12 @@ Examples demonstrate:
   - GRIB2 read support via UDF handler (UDF2)
   - FITS read support via UDF handler (UDF3)
   - NASA CDF read support via UDF handler (UDF4)
-  - NASA/ESA PDS4 read support via UDF handler (UDF5)
+  - NASA/ESA PDS4 read support via UDF handler (UDF5), including `Array_3D_Image`, `Group_Field_Binary`, delimited tables, and real mission test data
   - All five format readers can be enabled simultaneously
-  - Spack package manager support
+  - Spack package manager support with variants for every optional reader and utility
   - NcZarr, OPeNDAP, parallel I/O, and performance benchmark examples
   - Example programs as companion code for *The NetCDF Developer's Handbook, Second Edition*
 
 ---
 
-*Last Updated: July 2026*
+*Last Updated: July 2026 (v2.6.0 release preparation)*

@@ -286,16 +286,18 @@ nc_get_vara_float(grpid, varid, start, count, data);
 **A:** Yes. NEP v1.1.0 added Fortran 90 wrappers (module `nep`) for compression functions. Fortran applications can call `nf90_def_var_lz4`, `nf90_inq_var_lz4`, `nf90_def_var_bzip2`, and `nf90_inq_var_bzip2` to enable and query compression.
 
 #### Q: What is the current version?
-**A:** NEP v2.2.0 is the current release (July 2026), providing:
+**A:** NEP v2.5.0 is the current release (July 2026), providing:
 - LZ4 and BZIP2 compression for HDF5/NetCDF-4 files (C and Fortran APIs)
 - GeoTIFF geospatial raster support via UDF handler (UDF0/UDF1)
 - GRIB2 meteorological/oceanographic data support via UDF handler (UDF2)
 - FITS astronomical data support via UDF handler (UDF3)
 - NASA CDF space physics data support via UDF handler (UDF4)
-- **NASA/ESA PDS4 planetary science data support via UDF handler (UDF5)**
+- NASA/ESA PDS4 planetary science data support via UDF handler (UDF5)
 - All five format readers can be enabled simultaneously
-- Spack package manager support
+- Complete Spack variants for every optional reader and utility
 - Comprehensive documentation, CI testing, and example programs
+
+NEP v2.6.0 is in preparation and focuses on further PDS4 testing and robustness with real MAVEN and Perseverance mission data.
 
 #### Q: What formats does NEP support?
 **A:** NEP supports multiple scientific data formats through the NetCDF UDF system:
@@ -309,7 +311,8 @@ All formats accessible through the standard NetCDF API.
 
 #### Q: How stable is NEP?
 **A:** NEP is production-ready and thoroughly tested:
-- **v1.0.0-v2.2.0**: All releases maintain backward compatibility
+- **v1.0.0-v2.5.0**: All releases maintain backward compatibility
+- **v2.6.0** is in preparation; no breaking changes are planned
 - **Breaking change note**: v2.2.0 changed GeoTIFF, GRIB2, and FITS defaults from ON to OFF; explicit enable flags required for these formats
 - **Comprehensive testing**: Extensive test suites and CI validation (ci.yml, ci-fits.yml, ci-formats.yml, ci-parallel.yml)
 - **Real-world data**: Tested with NASA IMAP MAG, MODIS imagery, NOAA GDAS GRIB2, HST WFPC2 FITS, and PDS4 MRO CRISM data
@@ -370,7 +373,11 @@ For more information:
 - **v2.0.0** (Jun 2026): FITS read support via UDF handler (UDF3); CFITSIO integration; primary and extension HDU metadata and data I/O
 - **v2.1.0** (Jul 2026): Example programs updated as companion code for *The NetCDF Developer's Handbook, Second Edition*; Zstandard compression examples added
 - **v2.2.0** (Jul 2026): NASA/ESA PDS4 read support via UDF handler (UDF5); CDF moved to UDF4; all five readers can be enabled simultaneously; GeoTIFF/GRIB2/FITS default to OFF
+- **v2.3.0** (Jul 2026): PDS4 reader documentation and Doxygen integration; Cassini, MESSENGER, and LCS-9P mission test data; minimum NetCDF-C raised to 4.10.1
+- **v2.4.0** (Jul 2026): Spack release packaging for v2.3.0; all project-specific CMake options renamed with `NEP_` prefix; netcdf-c dependency aligned to >= 4.10.1 in Spack
+- **v2.5.0** (Jul 2026): Complete Spack variant coverage for all optional format readers (GeoTIFF, GRIB2, CDF, FITS, PDS4, parallel, examples, benchmarks); all-variants CI integration testing; comprehensive README Spack installation section
+- **v2.6.0** (Jul 2026): *In preparation* — further PDS4 reader testing with MAVEN NGIMS delimited tables, MAVEN IUVS `Group_Field_Binary` repeated fields (depth-2 nesting), Perseverance Mastcam-Z `Array_3D_Image` products (Sol 1738 and Sol 1737), and `scaling_factor`/`value_offset` attribute preservation
 
 ---
 
-*Last Updated: July 2026 (v2.2.0)*
+*Last Updated: July 2026 (v2.5.0, v2.6.0 release preparation)*

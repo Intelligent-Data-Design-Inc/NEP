@@ -302,3 +302,4 @@ The following real mission datasets have been validated:
 | MAVEN | IUVS | L2 corona (FUV) | `.fits` (Table_Binary, 8 tables, depth-1 Group_Field_Binary) |
 | MAVEN | IUVS | L2 periapse | `.fits` (Table_Binary, multiple tables, depth-2 nested Group_Field_Binary) |
 | Mars 2020 / Perseverance | Mastcam-Z (ZCAM) | Sol 1738 calibrated radiance image | `.IMG` (Array_3D_Image, Band=3 × Line=1200 × Sample=1648, `SignedMSB2`) |
+| Mars 2020 / Perseverance | Mastcam-Z (ZCAM) | Sol 1737 calibrated radiance image | `.IMG` (Array_3D_Image, Band=3 × Line=1200 × Sample=1648, `SignedMSB2`) |
