@@ -20,8 +20,31 @@
 
 **GitHub Issue:** #278
 
-#### Sprint 2: PDS4 Testing
-- What PDS4 data types have we not tested with?
+#### Sprint 2: PDS4 Testing with Maven Data
+**Detailed Plan**: See `docs/plan/v2.6.0-sprint2-maven-pds4-testing.md`
+
+Both Maven NGIMS data files are already present in `test/data/PDS4/`:
+- **L1B housekeeping** (`mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.xml`): `Table_Delimited`, 324 fields, 26121 records, large sparse CSV (9.3 MB). Tests open/parse and verify field count, record count, and a light read of the `TIME` field (first 2 records, value > 0).
+- **L3 science** (`mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml`): `Table_Delimited`, 15 fields, 2 records, compact CSV. Tests verify group name, field count, record count, and known data values for `T_UNIX`, `SCALE_HEIGHT`, and `TEMPERATURE`.
+
+Add a `test_mission_maven_l1b()` and `test_mission_maven_l3()` function to `test/tst_pds4_udf.c`, following the pattern of the existing `test_mission_cassini_hrd()`, `test_mission_messenger_tnmap()`, and `test_mission_lcs_9p()` functions.
+
+Resolve type-mapping gaps exposed by the Maven L3 label before writing tests:
+- `ASCII_NonNegative_Integer` → `NC_INT64` (add to type table in `src/pds4file.c`)
+- `ASCII_Date_Time` → `NC_STRING` (add to type table in `src/pds4file.c`)
+
+Determine empirically (build + run) whether field names containing hyphens (e.g., `EXO-ALT`) are preserved as-is or normalized to underscores (`EXO_ALT`) by the reader; update `tst_pds4_udf.c` with the actual name found at runtime.
+
+Both Maven XML + CSV file pairs added to `test/CMakeLists.txt` copy rules and `test/Makefile.am` `dist_check_DATA` lists, consistent with the existing PDS4 test data setup.
+
+**Clarified decisions:**
+- Both Maven files get test functions — L3 for tight value verification, L1B for large-file stress testing.
+- L1B data read is light: open + parse, read `TIME` for first 2 records, verify > 0; no full 26121-row read.
+- Field name normalization (hyphens) determined empirically before hardcoding test assertions.
+- `ASCII_NonNegative_Integer` → `NC_INT64` and `ASCII_Date_Time` → `NC_STRING` added to the type table as part of this sprint.
+- Both Maven file pairs copied to build directory (CMake and Autotools) following existing PDS4 data pattern.
+
+**GitHub Issue:** #280
 
 ### V2.5.0 More Spack Improvements
 #### Sprint 1: GeoTIFF Variant

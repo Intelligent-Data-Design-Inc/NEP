@@ -40,6 +40,8 @@
 #define PDS4_CASSINI_HRD_FILE "data/PDS4/cassini_hrd/hrd_2000_on_off.xml"
 #define PDS4_MESSENGER_TNMAP_FILE "data/PDS4/messenger_tnmap/thermal_neutron_map.xml"
 #define PDS4_LCS_9P_FILE "data/PDS4/lcs_9p/20050706_000.xml"
+#define PDS4_MAVEN_L1B_FILE "data/PDS4/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.xml"
+#define PDS4_MAVEN_L3_FILE "data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml"
 
 /**
  * @internal Test Sprint 5 binary table metadata.
@@ -674,6 +676,216 @@ test_mission_lcs_9p(void)
 }
 
 /**
+ * @internal Test MAVEN NGIMS L1B housekeeping table (large sparse delimited table).
+ *
+ * Opens the Maven L1B housekeeping label and verifies:
+ * - Child group named after the CSV data file exists.
+ * - 324 variables (one per field).
+ * - "record" dimension has length 26121.
+ * - TIME variable is NC_DOUBLE.
+ * - Light data read: TIME[0] and TIME[1] are both > 0.
+ */
+static int
+test_mission_maven_l1b(void)
+{
+    int ncid, grp_ncid, varid, retval;
+    int ndims, nvars, natts, unlimdimid;
+    size_t len;
+    nc_type xtype;
+    char name[NC_MAX_NAME + 1];
+    double time_vals[2];
+    size_t start[1] = {0};
+    size_t count[1] = {2};
+
+    printf("\n--- Mission: MAVEN NGIMS L1B Housekeeping ---\n");
+
+    if ((retval = nc_open(PDS4_MAVEN_L1B_FILE, NC_NOWRITE, &ncid)))
+        ERR(retval);
+
+    if ((retval = nc_inq_ncid(ncid, "mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.csv",
+                              &grp_ncid)))
+        ERR(retval);
+
+    if ((retval = nc_inq(grp_ncid, &ndims, &nvars, &natts, &unlimdimid)))
+        ERR(retval);
+    if (nvars != 324)
+    {
+        fprintf(stderr, "Expected 324 variables, got %d\n", nvars);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: nvars=%d\n", nvars);
+
+    if ((retval = nc_inq_dimid(grp_ncid, "record", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_dim(grp_ncid, varid, name, &len)))
+        ERR(retval);
+    if (len != 26121)
+    {
+        fprintf(stderr, "Expected 26121 records, got %zu\n", len);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: record dimension len=%zu\n", len);
+
+    if ((retval = nc_inq_varid(grp_ncid, "TIME", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, name, &xtype, &ndims, NULL, &natts)))
+        ERR(retval);
+    if (xtype != NC_DOUBLE || ndims != 1)
+    {
+        fprintf(stderr, "Expected TIME xtype=NC_DOUBLE ndims=1, got %d %d\n", xtype, ndims);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: TIME is NC_DOUBLE\n");
+
+    if ((retval = nc_get_vara_double(grp_ncid, varid, start, count, time_vals)))
+        ERR(retval);
+    if (time_vals[0] <= 0.0 || time_vals[1] <= 0.0)
+    {
+        fprintf(stderr, "Expected TIME > 0, got %f, %f\n", time_vals[0], time_vals[1]);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: TIME[0..1] = {%.3f, %.3f}\n", time_vals[0], time_vals[1]);
+
+    if ((retval = nc_close(ncid)))
+        ERR(retval);
+    printf("PASS: MAVEN L1B housekeeping table opens and reads.\n");
+    return 0;
+}
+
+/**
+ * @internal Test MAVEN NGIMS L3 science table (small delimited table with mixed types).
+ *
+ * Opens the Maven L3 science label and verifies:
+ * - Child group named after the CSV data file exists.
+ * - 15 variables (one per field), record dimension length 2.
+ * - T_UTC is NC_CHAR (ASCII_Date_Time type).
+ * - T_UNIX and TEMPERATURE are NC_DOUBLE.
+ * - Known data values verified for T_UNIX[0], SCALE_HEIGHT[0], TEMPERATURE[0].
+ */
+static int
+test_mission_maven_l3(void)
+{
+    int ncid, grp_ncid, varid, retval;
+    int ndims, nvars, natts, unlimdimid;
+    size_t len;
+    nc_type xtype;
+    char name[NC_MAX_NAME + 1];
+    double t_unix;
+    double scale_height;
+    double temperature;
+    size_t start[1] = {0};
+    size_t count[1] = {1};
+
+    printf("\n--- Mission: MAVEN NGIMS L3 Science ---\n");
+
+    if ((retval = nc_open(PDS4_MAVEN_L3_FILE, NC_NOWRITE, &ncid)))
+        ERR(retval);
+
+    if ((retval = nc_inq_ncid(ncid, "mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.csv",
+                              &grp_ncid)))
+        ERR(retval);
+
+    if ((retval = nc_inq(grp_ncid, &ndims, &nvars, &natts, &unlimdimid)))
+        ERR(retval);
+    if (nvars != 15)
+    {
+        fprintf(stderr, "Expected 15 variables, got %d\n", nvars);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: nvars=%d\n", nvars);
+
+    if ((retval = nc_inq_dimid(grp_ncid, "record", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_dim(grp_ncid, varid, name, &len)))
+        ERR(retval);
+    if (len != 2)
+    {
+        fprintf(stderr, "Expected 2 records, got %zu\n", len);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: record dimension len=%zu\n", len);
+
+    /* T_UTC: ASCII_Date_Time -> NC_CHAR 2D variable. */
+    if ((retval = nc_inq_varid(grp_ncid, "T_UTC", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, name, &xtype, &ndims, NULL, &natts)))
+        ERR(retval);
+    if (xtype != NC_CHAR)
+    {
+        fprintf(stderr, "Expected T_UTC xtype=NC_CHAR, got %d\n", xtype);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: T_UTC is NC_CHAR (ASCII_Date_Time)\n");
+
+    /* T_UNIX: ASCII_Real -> NC_DOUBLE. */
+    if ((retval = nc_inq_varid(grp_ncid, "T_UNIX", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, name, &xtype, &ndims, NULL, &natts)))
+        ERR(retval);
+    if (xtype != NC_DOUBLE)
+    {
+        fprintf(stderr, "Expected T_UNIX xtype=NC_DOUBLE, got %d\n", xtype);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((retval = nc_get_vara_double(grp_ncid, varid, start, count, &t_unix)))
+        ERR(retval);
+    if (fabs(t_unix - 1735698148.655328) > 0.01)
+    {
+        fprintf(stderr, "Unexpected T_UNIX[0]: %f\n", t_unix);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: T_UNIX[0] = %.3f\n", t_unix);
+
+    /* SCALE_HEIGHT: ASCII_Real -> NC_DOUBLE. */
+    if ((retval = nc_inq_varid(grp_ncid, "SCALE_HEIGHT", &varid)))
+        ERR(retval);
+    if ((retval = nc_get_vara_double(grp_ncid, varid, start, count, &scale_height)))
+        ERR(retval);
+    if (fabs(scale_height - 3.210464) > 0.001)
+    {
+        fprintf(stderr, "Unexpected SCALE_HEIGHT[0]: %f\n", scale_height);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: SCALE_HEIGHT[0] = %.6f\n", scale_height);
+
+    /* TEMPERATURE: ASCII_Real -> NC_DOUBLE. */
+    if ((retval = nc_inq_varid(grp_ncid, "TEMPERATURE", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, name, &xtype, &ndims, NULL, &natts)))
+        ERR(retval);
+    if (xtype != NC_DOUBLE)
+    {
+        fprintf(stderr, "Expected TEMPERATURE xtype=NC_DOUBLE, got %d\n", xtype);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((retval = nc_get_vara_double(grp_ncid, varid, start, count, &temperature)))
+        ERR(retval);
+    if (fabs(temperature - 51.332605) > 0.01)
+    {
+        fprintf(stderr, "Unexpected TEMPERATURE[0]: %f\n", temperature);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: TEMPERATURE[0] = %.6f\n", temperature);
+
+    if ((retval = nc_close(ncid)))
+        ERR(retval);
+    printf("PASS: MAVEN L3 science table opens and reads.\n");
+    return 0;
+}
+
+/**
  * @internal Test Sprint 6 character table data reading.
  *
  * Opens Table_Character_Example.xml and reads field data.
@@ -930,6 +1142,10 @@ main(void)
     if (test_mission_messenger_tnmap())
         return 1;
     if (test_mission_lcs_9p())
+        return 1;
+    if (test_mission_maven_l1b())
+        return 1;
+    if (test_mission_maven_l3())
         return 1;
 
     printf("\nAll PDS4 UDF Sprint tests + Mission tests PASSED.\n");

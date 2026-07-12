@@ -87,6 +87,10 @@ check-local:
 		$(MKDIR_P) $(builddir)/data/PDS4/lcs_9p; \
 		cp $(srcdir)/data/PDS4/lcs_9p/20050706_000.xml $(builddir)/data/PDS4/lcs_9p/ 2>/dev/null || true; \
 		cp $(srcdir)/data/PDS4/lcs_9p/20050706_000.tab $(builddir)/data/PDS4/lcs_9p/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.xml $(builddir)/data/PDS4/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.csv $(builddir)/data/PDS4/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml $(builddir)/data/PDS4/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.csv $(builddir)/data/PDS4/ 2>/dev/null || true; \
 	fi
 
 TESTS_ENVIRONMENT = LD_LIBRARY_PATH=@MY_LD_LIBRARY_PATH@:$$LD_LIBRARY_PATH
@@ -101,7 +105,9 @@ EXTRA_DIST = run_tests.sh.in data/imap_mag_l1b-calibration_20240229_v001.cdf dat
 data/PDS4/test_image.xml data/PDS4/test_image.img data/PDS4/test_table_binary.xml data/PDS4/test_table_binary.dat data/PDS4/Table_Character_Example.xml data/PDS4/Table_Character_Example.tab \
 data/PDS4/cassini_hrd/hrd_2000_on_off.xml data/PDS4/cassini_hrd/hrd_2000_on_off.tab \
 data/PDS4/messenger_tnmap/thermal_neutron_map.xml data/PDS4/messenger_tnmap/thermal_neutron_map.img \
-data/PDS4/lcs_9p/20050706_000.xml data/PDS4/lcs_9p/20050706_000.tab
+data/PDS4/lcs_9p/20050706_000.xml data/PDS4/lcs_9p/20050706_000.tab \
+data/PDS4/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.xml data/PDS4/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.csv \
+data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.csv
 
 DISTCLEANFILES = run_tests.sh
 
