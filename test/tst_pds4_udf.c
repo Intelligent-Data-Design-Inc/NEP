@@ -44,6 +44,8 @@
 #define PDS4_MAVEN_L3_FILE "data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml"
 #define PDS4_MAVEN_IUVS_FILE "data/PDS4/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758.xml"
 #define PDS4_MAVEN_PERIAPSE_FILE "data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108.xml"
+#define PDS4_PERSEVERANCE_FILE \
+    "data/PDS4/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml"
 
 /**
  * @internal Test Sprint 5 binary table metadata.
@@ -1295,6 +1297,164 @@ test_mission_maven_periapse_data(void)
     return 0;
 }
 
+/**
+ * @internal Test Perseverance Mastcam-Z Array_3D_Image metadata.
+ *
+ * Opens the Perseverance Mastcam-Z calibrated image PDS4 label and verifies:
+ * - File-area group named after the .IMG data file exists.
+ * - Variable "data" is NC_SHORT with ndims=3.
+ * - Dimension lengths: Band=3, Line=1200, Sample=1648.
+ * - "scaling_factor" string attribute equals "5.0e-06".
+ */
+static int
+test_mission_perseverance_mastcamz_metadata(void)
+{
+    int ncid, grp_ncid, varid, retval;
+    int ndims, nvars, natts, unlimdimid;
+    nc_type xtype;
+    char name[NC_MAX_NAME + 1];
+    int var_ndims, var_dimids[NC_MAX_DIMS];
+    size_t dim_len;
+    char att_buf[64];
+
+    printf("\n--- Mission: Perseverance Mastcam-Z (Array_3D_Image metadata) ---\n");
+
+    if ((retval = nc_open(PDS4_PERSEVERANCE_FILE, NC_NOWRITE, &ncid)))
+        ERR(retval);
+    printf("PASS: nc_open\n");
+
+    /* Navigate to the file-area group named after the .IMG file. */
+    if ((retval = nc_inq_ncid(ncid,
+            "ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.IMG",
+            &grp_ncid)))
+        ERR(retval);
+    printf("PASS: found perseverance file-area group\n");
+
+    /* Verify the group has at least one variable. */
+    if ((retval = nc_inq(grp_ncid, &ndims, &nvars, &natts, &unlimdimid)))
+        ERR(retval);
+    if (nvars <= 0)
+    {
+        fprintf(stderr, "Expected nvars > 0, got %d\n", nvars);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: nvars=%d\n", nvars);
+
+    /* Variable is named "data" (no <name> element in label -> reader default). */
+    if ((retval = nc_inq_varid(grp_ncid, "data", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, name, &xtype, &var_ndims,
+                             var_dimids, NULL)))
+        ERR(retval);
+    if (var_ndims != 3 || xtype != NC_SHORT)
+    {
+        fprintf(stderr, "data: expected ndims=3 NC_SHORT, got ndims=%d type=%d\n",
+                var_ndims, xtype);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: variable 'data' is NC_SHORT with ndims=3\n");
+
+    /* Band=3 (sequence_number 1, slowest-varying in C order). */
+    if ((retval = nc_inq_dim(grp_ncid, var_dimids[0], name, &dim_len)))
+        ERR(retval);
+    if (dim_len != 3)
+    {
+        fprintf(stderr, "Band dim: expected 3, got %zu\n", dim_len);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: dim[0] (Band) = %zu\n", dim_len);
+
+    /* Line=1200. */
+    if ((retval = nc_inq_dim(grp_ncid, var_dimids[1], name, &dim_len)))
+        ERR(retval);
+    if (dim_len != 1200)
+    {
+        fprintf(stderr, "Line dim: expected 1200, got %zu\n", dim_len);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: dim[1] (Line) = %zu\n", dim_len);
+
+    /* Sample=1648. */
+    if ((retval = nc_inq_dim(grp_ncid, var_dimids[2], name, &dim_len)))
+        ERR(retval);
+    if (dim_len != 1648)
+    {
+        fprintf(stderr, "Sample dim: expected 1648, got %zu\n", dim_len);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: dim[2] (Sample) = %zu\n", dim_len);
+
+    /* scaling_factor string attribute == "5.0e-06" (raw label value). */
+    memset(att_buf, 0, sizeof(att_buf));
+    if ((retval = nc_get_att_text(grp_ncid, varid, "scaling_factor", att_buf)))
+        ERR(retval);
+    if (strcmp(att_buf, "5.0e-06") != 0)
+    {
+        fprintf(stderr, "scaling_factor: expected \"5.0e-06\", got \"%s\"\n", att_buf);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: scaling_factor = \"%s\"\n", att_buf);
+
+    if ((retval = nc_close(ncid)))
+        ERR(retval);
+    printf("PASS: Perseverance Mastcam-Z metadata tests PASSED.\n");
+    return 0;
+}
+
+/**
+ * @internal Test Perseverance Mastcam-Z Array_3D_Image data reading.
+ *
+ * Reads pixel [0,0,0] as NC_SHORT and verifies:
+ * - nc_get_vara_short() returns NC_NOERR.
+ * - Value is within the valid SignedMSB2 range [-32768, 32767].
+ *   A zero value is acceptable (instrument fill/invalid pixel).
+ */
+static int
+test_mission_perseverance_mastcamz_data(void)
+{
+    int ncid, grp_ncid, varid, retval;
+    short pixel;
+    size_t start[3] = {0, 0, 0};
+    size_t count[3] = {1, 1, 1};
+
+    printf("\n--- Mission: Perseverance Mastcam-Z (Array_3D_Image data read) ---\n");
+
+    if ((retval = nc_open(PDS4_PERSEVERANCE_FILE, NC_NOWRITE, &ncid)))
+        ERR(retval);
+
+    if ((retval = nc_inq_ncid(ncid,
+            "ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.IMG",
+            &grp_ncid)))
+        ERR(retval);
+
+    if ((retval = nc_inq_varid(grp_ncid, "data", &varid)))
+        ERR(retval);
+
+    /* Read pixel [0,0,0] -- Band 0, Line 0, Sample 0. */
+    if ((retval = nc_get_vara_short(grp_ncid, varid, start, count, &pixel)))
+        ERR(retval);
+
+    /* Value must be in valid SignedMSB2 range; zero is acceptable. */
+    if (pixel < -32768 || pixel > 32767)
+    {
+        fprintf(stderr, "pixel[0,0,0] = %d (out of SignedMSB2 range)\n", (int)pixel);
+        nc_close(ncid);
+        return 1;
+    }
+    printf("PASS: pixel[0,0,0] = %d (valid SignedMSB2)\n", (int)pixel);
+
+    if ((retval = nc_close(ncid)))
+        ERR(retval);
+    printf("PASS: Perseverance Mastcam-Z data reading tests PASSED.\n");
+    return 0;
+}
+
 int
 main(void)
 {
@@ -1483,6 +1643,10 @@ main(void)
     if (test_mission_maven_periapse_metadata())
         return 1;
     if (test_mission_maven_periapse_data())
+        return 1;
+    if (test_mission_perseverance_mastcamz_metadata())
+        return 1;
+    if (test_mission_perseverance_mastcamz_data())
         return 1;
 
     printf("\nAll PDS4 UDF Sprint tests + Mission tests PASSED.\n");
