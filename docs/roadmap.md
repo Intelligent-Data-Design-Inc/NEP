@@ -174,6 +174,67 @@ a VICAR/ODL-prefixed binary `.IMG` file.
 
 **GitHub Issue:** #287
 
+#### Sprint 6: More Perseverance Testing
+**Detailed Plan**: See `docs/plan/v2.6.0-sprint6-more-perseverance-testing.md`
+
+Test the second Perseverance Mastcam-Z calibrated image product
+`ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.xml` (Sol 1737), which
+has the same `Array_3D_Image` structure as the Sprint 5 file: Band=3, Line=1200,
+Sample=1648, `SignedMSB2`, 52736-byte VICAR/ODL-prefixed `.IMG` offset, and
+`scaling_factor` of `5.0e-06`.
+
+No PDS4 reader changes are required; Sprint 5 already added `Array_3D_Image`
+dispatch and `scaling_factor`/`value_offset` attribute storage.
+
+**Implementation tasks:**
+1. Add a second Perseverance file constant and two test functions to
+   `test/tst_pds4_udf.c`:
+   - `test_mission_perseverance_mastcamz_1737_metadata()` — open the label,
+     find the file-area group, verify variable `data` is `NC_SHORT` with
+     `ndims=3`, dims `[3,1200,1648]`, and `scaling_factor="5.0e-06"`.
+   - `test_mission_perseverance_mastcamz_1737_data()` — read pixel `[0,0,0]`
+     via `nc_get_vara_short()`, verify `NC_NOERR` and a value in
+     `[-32768, 32767]` (zero allowed).
+2. Wire both new functions into `main()` after the existing Sprint 5
+   Perseverance calls.
+3. Add `configure_file` copy rules to `test/CMakeLists.txt` for the 1737 `.xml`
+   and `.IMG`.
+4. Add `cp` rules to `test/Makefile.am` `check-local` and `EXTRA_DIST` entries
+   for the 1737 files.
+
+**Clarified decisions:**
+- No reader changes; Sprint 5 (`#287`) is the dependency and is already merged.
+- New identifiers are distinct from the Sprint 5 names so both data sets remain
+  under test.
+- Data verification is lightweight: `NC_NOERR` plus signed 16-bit range check.
+- Build-system copy rules follow the explicit per-file pattern used for the
+  1738 files.
+
+**Acceptance Criteria:**
+- `nc_open()` on the 1737 XML label returns `NC_NOERR`.
+- File-area group named `ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.IMG`
+  exists.
+- Variable `data` is `NC_SHORT`, `ndims=3`, dims `[3, 1200, 1648]`.
+- `scaling_factor` string attribute equals `"5.0e-06"`.
+- `nc_get_vara_short([0,0,0])` returns `NC_NOERR` and a value in `[-32768, 32767]`.
+- Both `.xml` and `.IMG` are copied to the build directory under CMake and
+  Autotools.
+- All existing PDS4 tests continue to pass.
+
+**Testing:** `tst_pds4_udf` built with `-DNEP_ENABLE_PDS4=ON`; existing
+`ci-formats.yml` PDS4 job covers the new functions.
+
+**Build System Integration:** `test/CMakeLists.txt`, `test/Makefile.am`,
+`test/tst_pds4_udf.c`.
+
+**Dependencies:** Sprint 5 (`#287`) merged.
+
+**Definition of Done:** New `#define`, two test functions, `main()` wiring,
+copy rules, and issue link in `docs/roadmap.md` are in place; all PDS4 tests
+pass.
+
+**GitHub Issue:** #289
+
 ### V2.5.0 More Spack Improvements
 #### Sprint 1: GeoTIFF Variant
 **Detailed Plan**: See `docs/plan/v2.5.0-sprint1-geotiff-variant.md`
