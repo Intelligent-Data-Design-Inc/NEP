@@ -1,4 +1,4 @@
-# PDS4-to-NetCDF Mapping {#pds4_mapping}
+# PDS4-to-NetCDF Mapping
 
 This page describes how the NEP PDS4 reader maps the Planetary Data System
 version 4 (PDS4) information model to the NetCDF-4 (enhanced) data model.
