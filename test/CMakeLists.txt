@@ -179,6 +179,14 @@ if(HAVE_PDS4)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758_v07_r01.fits
                    ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758_v07_r01.fits
                    COPYONLY)
+
+    # Maven IUVS periapse mission data (nested Group_Field_Binary, FITS-backed PDS4)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108.xml
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108.xml
+                   COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108_v13_r01.fits
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108_v13_r01.fits
+                   COPYONLY)
 endif()
 
 # Configure run_tests.sh script with proper paths
