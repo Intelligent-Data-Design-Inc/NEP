@@ -530,6 +530,13 @@ and many others.
 - **UDF Registration**: PDS4 assigned to UDF slot 5 (`NC_UDF5`), permanently
   separate from all other NEP format slots
 - **Metadata Mapping**: Full label-to-netCDF model mapping (see §14.3)
+- **Array Support**: `Array`, `Array_1D`, `Array_2D`, `Array_2D_Image`,
+  `Array_3D`, and `Array_3D_Image` objects are dispatched to a generic N-axis
+  reader; `scaling_factor` and `value_offset` string attributes are preserved
+  from `Element_Array`
+- **Table Support**: `Table_Binary`, `Table_Character`, and `Table_Delimited`
+  tables are supported, including scalar fields, 2D string fields, and
+  `Group_Field_Binary` repeated fields up to depth-2 nesting
 - **Data Reading**: `NC_PDS4_get_vara()` reads array hyperslabs and table field
   values with automatic byte-order conversion for MSB/LSB binary types and text
   parsing for ASCII fields
@@ -544,12 +551,20 @@ The PDS4 XML label is mapped into the netCDF-4 in-memory model as follows:
   global string attributes
 - **Child groups**: Each `File_Area_Observational` becomes a child group named
   from `File/file_name`
-- **Array / Array_2D_Image**: Dimensions from `Axis_Array` entries (sorted by
+- **Array objects**: Dimensions from `Axis_Array` entries (sorted by
   `sequence_number`); `axis_name` → dimension name; `elements` → dimension length;
-  `Last Index Fastest` maps to C-order. Variable type from `Element_Array/data_type`
+  `Last Index Fastest` maps to C-order. Variable type from `Element_Array/data_type`;
+  variable name from `<name>` or defaults to `"data"`. `scaling_factor` and
+  `value_offset` are stored as raw string attributes when present.
 - **Table_Binary / Table_Character / Table_Delimited**: `record` dimension from
-  `<records>`; one netCDF variable per `Field_*` with name from `<name>`, type from
-  `<data_type>`, optional `units` attribute from `<unit>`
+  `<records>`; one netCDF variable per `Field_*` with name from `<name>` (spaces
+  replaced by underscores), type from `<data_type>`, optional `units` attribute
+  from `<unit>`
+- **Group_Field_Binary**: Repeated fields become additional trailing dimensions.
+  Depth-1 groups produce 2D variables `[record, <name>_rep]`; depth-2 nested
+  groups produce 3D variables `[record, <name>_outer_rep, <name>_inner_rep]`.
+  When multiple tables in the same file group define fields with the same name,
+  duplicates are prefixed with the table's `<local_identifier>`.
 
 ### 14.4 Public API
 
@@ -587,7 +602,7 @@ Stored in `var->format_var_info` for every PDS4 variable. Fields:
 ### 14.5 Build Configuration
 
 **CMake:**
-- `ENABLE_PDS4=ON/OFF` — Enable/disable PDS4 support (default: OFF)
+- `NEP_ENABLE_PDS4=ON/OFF` — Enable/disable PDS4 support (default: OFF)
 - Requires `find_package(LibXml2 REQUIRED)` when enabled
 
 **Autotools:**
@@ -611,13 +626,15 @@ PDS4 is assigned UDF slot 5 (`NC_FORMATX_UDF5`). Permanent slot map:
 | UDF4 | CDF |
 | UDF5 | PDS4 |
 
-### 14.8 Known Limitations (v2.2.0)
+### 14.8 Known Limitations
 
 - `nc_get_vars()` and `nc_get_varm()` rely on default dispatch fallbacks (no
   native strided reads)
 - Type conversion between `memtype` and the file type is not yet performed; the
   caller must request the native type
-- Grouped fields (`Group_Field_Binary`, etc.) and bit fields are not supported
+- `Group_Field_Binary` nesting is supported up to depth 2; deeper nesting is
+  skipped silently
+- `Packed_Data_Fields` are not supported
 - Only `Product_Observational` root element type is validated; other PDS4 product
   classes are not checked
 - Delimited table row count is derived from the label `<records>` element only
@@ -686,9 +703,10 @@ shape 10×45×90.
 - **v1.7.0** (March 2026): GRIB2 read support via UDF handler
 - **v1.9.0** (May 2026): Parallel I/O build system support and parallel test examples
 - **v2.5.0** (July 2026): Complete Spack variant coverage for all optional format readers (GeoTIFF, GRIB2, CDF, FITS, PDS4, parallel, examples, benchmarks); all-variants CI integration testing; comprehensive README Spack installation section
+- **v2.6.0** (July 2026): Further PDS4 reader testing and robustness — Maven NGIMS delimited-table support, `Group_Field_Binary` repeated fields up to depth-2 nesting, table field-name collision resolution, `Array_3D_Image` and generic `Array_*` dispatch, `scaling_factor`/`value_offset` attribute preservation; Spack package bumped to v2.5.0
 
 ---
 
-*Document Version: 2.5.0*  
+*Document Version: 2.6.0*  
 *Last Updated: July 2026*  
-*Status: Reflects released features through v2.5.0*
+*Status: Reflects features through v2.6.0 release preparation*

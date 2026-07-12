@@ -302,6 +302,12 @@ make check
 | `test_mission_maven_l3()` | Opens real L3 science table; verifies 15 variables, 2 records, `T_UTC` is `NC_CHAR` (`ASCII_Date_Time`), and known values for `T_UNIX[0]`, `SCALE_HEIGHT[0]`, `TEMPERATURE[0]` | MAVEN NGIMS, Mars atmosphere | `Table_Delimited` (15 fields, 446 B CSV) |
 | `test_mission_maven_iuvs_metadata()` | Opens FITS-backed PDS4 file; verifies 116 variables (scalar + `Group_Field_Binary`), `COLUMN` is 2D with trailing dim=2, `V_TANGENT` trailing dim=3, `TANGENT_ALT` is 1D `NC_FLOAT` | MAVEN IUVS, Mars corona | `Table_Binary` (8 tables, FITS container, `Group_Field_Binary`) |
 | `test_mission_maven_iuvs_data()` | Reads scalar field `TANGENT_ALT[0]` (finite > 0 km) and group field `RADIANCE[50,0..1]` (finite > 0 kR), confirming FITS-as-container I/O and 2D group field reading | MAVEN IUVS, Mars corona | `Table_Binary` (FITS container, 181 KB) |
+| `test_mission_maven_periapse_metadata()` | Opens FITS-backed PDS4 file; verifies nested `Group_Field_Binary` (depth-2), table-prefixed field names, `DENSITY_ALT` dims `[12,19,3]`, and `GEOMETRY_RETRIEVAL` scalar doubles | MAVEN IUVS, Mars periapse | `Table_Binary` (FITS container, nested groups) |
+| `test_mission_maven_periapse_data()` | Reads scalar `LAT[0]` from `GEOMETRY_RETRIEVAL` and 3D nested group field `DENSITY_ALT[0,0,0]` (finite > 0) | MAVEN IUVS, Mars periapse | `Table_Binary` (nested groups) |
+| `test_mission_perseverance_mastcamz_metadata()` | Opens Perseverance Sol 1738 `Array_3D_Image`; verifies `data` is `NC_SHORT`, dims `[3,1200,1648]`, and `scaling_factor="5.0e-06"` | Mars 2020 / Perseverance | `Array_3D_Image` (VICAR/ODL `.IMG`) |
+| `test_mission_perseverance_mastcamz_data()` | Reads pixel `[0,0,0]` as `NC_SHORT` and checks valid `SignedMSB2` range | Mars 2020 / Perseverance | `Array_3D_Image` |
+| `test_mission_perseverance_mastcamz_1737_metadata()` | Same metadata checks for the second Perseverance Sol 1737 `Array_3D_Image` product | Mars 2020 / Perseverance | `Array_3D_Image` |
+| `test_mission_perseverance_mastcamz_1737_data()` | Reads pixel `[0,0,0]` from Sol 1737 and checks valid `SignedMSB2` range | Mars 2020 / Perseverance | `Array_3D_Image` |
 
 ---
 
