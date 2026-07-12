@@ -187,6 +187,14 @@ if(HAVE_PDS4)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108_v13_r01.fits
                    ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108_v13_r01.fits
                    COPYONLY)
+
+    # Perseverance Mastcam-Z mission data (Array_3D_Image, VICAR-prefixed binary)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml
+                   COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.IMG
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.IMG
+                   COPYONLY)
 endif()
 
 # Configure run_tests.sh script with proper paths

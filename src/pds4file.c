@@ -701,6 +701,32 @@ pds4_read_array(NC_GRP_INFO_T *grp, xmlNode *array)
             goto cleanup;
     }
 
+    /* Optional scaling_factor and value_offset attributes (stored as raw strings). */
+    {
+        xmlNode *sf_node = pds4_find_child(element_array, "scaling_factor");
+        if (sf_node)
+        {
+            char *sf_str = pds4_get_text(sf_node);
+            if (sf_str && *sf_str)
+                retval = pds4_add_att(var->att, "scaling_factor", sf_str);
+            free(sf_str);
+            if (retval)
+                goto cleanup;
+        }
+    }
+    {
+        xmlNode *vo_node = pds4_find_child(element_array, "value_offset");
+        if (vo_node)
+        {
+            char *vo_str = pds4_get_text(vo_node);
+            if (vo_str && *vo_str)
+                retval = pds4_add_att(var->att, "value_offset", vo_str);
+            free(vo_str);
+            if (retval)
+                goto cleanup;
+        }
+    }
+
 cleanup:
     free(data_type_str);
     free(var_name);
@@ -1667,6 +1693,10 @@ pds4_read_file_area(NC_FILE_INFO_T *h5, NC_GRP_INFO_T *root_grp,
             continue;
 
         if (xmlStrcmp(cur->name, (const xmlChar *)"Array_2D_Image") == 0 ||
+            xmlStrcmp(cur->name, (const xmlChar *)"Array_3D_Image") == 0 ||
+            xmlStrcmp(cur->name, (const xmlChar *)"Array_3D") == 0 ||
+            xmlStrcmp(cur->name, (const xmlChar *)"Array_2D") == 0 ||
+            xmlStrcmp(cur->name, (const xmlChar *)"Array_1D") == 0 ||
             xmlStrcmp(cur->name, (const xmlChar *)"Array") == 0)
         {
             if ((retval = pds4_read_array(file_grp, cur)))

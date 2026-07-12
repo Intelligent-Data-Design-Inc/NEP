@@ -52,8 +52,9 @@ label content.
 
 ## Array Objects
 
-PDS4 array objects (`Array_2D_Image`, `Array_2D_Map`, `Array_1D`, etc.)
-are mapped as follows:
+PDS4 array objects (`Array`, `Array_1D`, `Array_2D`, `Array_2D_Image`,
+`Array_3D`, `Array_3D_Image`, etc.) are all dispatched to the same generic
+array reader, which handles any number of axes:
 
 | PDS4 | NetCDF |
 |---|---|
@@ -61,12 +62,15 @@ are mapped as follows:
 | Each `<Axis_Array>` → `<axis_name>`, `<elements>` | Named dimension with size `elements` |
 | `<Element_Array>/<data_type>` | Variable type (see Type Mapping below) |
 | `<offset>` | Internal byte offset for `fseek()` data reading |
+| `<Element_Array>/<scaling_factor>` | `scaling_factor` string attribute on variable |
+| `<Element_Array>/<value_offset>` | `value_offset` string attribute on variable |
 
 The variable is named from the array's `<name>` element, or defaults to
-`"data"` if no name is provided. Axis ordering in the NetCDF variable follows
-the order of `<Axis_Array>` elements in the label (outermost first).
+`"data"` if no `<name>` is provided. Axis ordering in the NetCDF variable
+follows the `<sequence_number>` order of `<Axis_Array>` elements (ascending),
+with sequence 1 as the slowest-varying (outermost) dimension in C order.
 
-**Example**: A `Array_2D_Image` with `Line=512, Sample=256` becomes:
+**Example**: An `Array_2D_Image` with `Line=512, Sample=256` becomes:
 ```
 dimensions:
   Line = 512 ;
@@ -74,6 +78,24 @@ dimensions:
 variables:
   float data(Line, Sample) ;
 ```
+
+**Example**: An `Array_3D_Image` with `Band=3, Line=1200, Sample=1648`,
+`SignedMSB2` type and `scaling_factor=5.0e-06` becomes:
+```
+dimensions:
+  Band = 3 ;
+  Line = 1200 ;
+  Sample = 1648 ;
+variables:
+  short data(Band, Line, Sample) ;
+    data:scaling_factor = "5.0e-06" ;
+    data:value_offset = "0.0" ;
+```
+
+Note: `scaling_factor` and `value_offset` are stored as raw `NC_CHAR` string
+attributes preserving the literal value from the label. They are not
+automatically applied during data reads (no CF `scale_factor` / `add_offset`
+conversion).
 
 ## Table Objects
 
@@ -241,9 +263,12 @@ The data file path is resolved relative to the XML label file's directory.
 The `<File><file_name>` element provides the filename, which is joined with
 the label's directory path. This supports:
 
-- Raw binary files (`.img`, `.dat`)
+- Raw binary files (`.img`, `.IMG`, `.dat`)
 - CSV text files (`.csv`, `.tab`)
 - FITS files (`.fits`) used as binary containers with absolute byte offsets
+- VICAR/ODL-prefixed binary files (`.IMG`) — the label's `<offset>` element
+  points past any embedded headers, so the reader seeks directly to the pixel
+  data without parsing the VICAR or ODL header content
 
 The reader opens the data file with `fopen()` and uses `fseek()` to the
 byte offsets specified in the label. This means **any file format can serve
@@ -276,3 +301,4 @@ The following real mission datasets have been validated:
 | MAVEN | NGIMS | L3 science | `.csv` (Table_Delimited, 15 fields) |
 | MAVEN | IUVS | L2 corona (FUV) | `.fits` (Table_Binary, 8 tables, depth-1 Group_Field_Binary) |
 | MAVEN | IUVS | L2 periapse | `.fits` (Table_Binary, multiple tables, depth-2 nested Group_Field_Binary) |
+| Mars 2020 / Perseverance | Mastcam-Z (ZCAM) | Sol 1738 calibrated radiance image | `.IMG` (Array_3D_Image, Band=3 × Line=1200 × Sample=1648, `SignedMSB2`) |
