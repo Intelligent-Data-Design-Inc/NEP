@@ -42,9 +42,11 @@ target_compile_definitions(tst_cdf_self_load PRIVATE
     NEP_CDF_LIB_PATH="$<TARGET_FILE:nccdf>")
 set_target_properties(tst_cdf_self_load PROPERTIES
     INSTALL_RPATH "${CDF_LIB_DIR}"
-    BUILD_RPATH "${CDF_LIB_DIR}")
+    BUILD_RPATH "${CDF_LIB_DIR}"
+    BUILD_RPATH_USE_LINK_PATH TRUE)
 add_test(NAME tst_cdf_self_load COMMAND tst_cdf_self_load)
-set_tests_properties(tst_cdf_self_load PROPERTIES 
+set_tests_properties(tst_cdf_self_load PROPERTIES
+    ENVIRONMENT "NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/src:${HDF5_LIBRARY_DIRS}:${NETCDF_LIBRARY_DIRS}:$ENV{LD_LIBRARY_PATH}"
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
 # Test for .ncrc autoloading via NETCDF_RC (issue #134)
@@ -59,7 +61,9 @@ target_compile_definitions(tst_cdf_ncrc_autoload PRIVATE
     NEP_CDF_LIB_PATH="$<TARGET_FILE:nccdf>")
 set_target_properties(tst_cdf_ncrc_autoload PROPERTIES
     INSTALL_RPATH "${CDF_LIB_DIR}"
-    BUILD_RPATH "${CDF_LIB_DIR}")
+    BUILD_RPATH "${CDF_LIB_DIR}"
+    BUILD_RPATH_USE_LINK_PATH TRUE)
 add_test(NAME tst_cdf_ncrc_autoload COMMAND tst_cdf_ncrc_autoload)
 set_tests_properties(tst_cdf_ncrc_autoload PROPERTIES
+    ENVIRONMENT "NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/src:${HDF5_LIBRARY_DIRS}:${NETCDF_LIBRARY_DIRS}:$ENV{LD_LIBRARY_PATH}"
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})

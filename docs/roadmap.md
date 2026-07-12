@@ -1,4 +1,10 @@
 # NEP Development Roadmap
+### V2.7.0 - Further Testing
+#### Sprint 1: Update Spack Package File
+- Update to include 2.6.0 release
+- Deprecate all previous releases in the spack package file
+- What is status of upstream spack update PR?
+
 ### V2.6.0 - Further Testing
 #### Sprint 1: Update Spack Package File
 **Detailed Plan**: See `docs/plan/v2.6.0-sprint1-spack-version-bump.md`

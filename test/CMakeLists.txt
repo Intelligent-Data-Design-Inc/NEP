@@ -43,25 +43,29 @@ if(HAVE_CDF)
     target_link_libraries(tst_cdf_udf PRIVATE nccdf nep ${NETCDF_LIBRARIES} hdf5 hdf5_hl ${CDF_LIBRARY})
     target_include_directories(tst_cdf_udf PRIVATE ${NETCDF_INCLUDE_DIRS} ${CDF_INCLUDE_DIR})
     
-    # Set rpath so the executable can find CDF library at runtime
+    # Set rpath so the executable can find CDF/HDF5/NetCDF libraries at runtime
     get_filename_component(CDF_LIB_DIR ${CDF_LIBRARY} DIRECTORY)
     set_target_properties(tst_cdf_udf PROPERTIES
         INSTALL_RPATH "${CDF_LIB_DIR}"
-        BUILD_RPATH "${CDF_LIB_DIR}")
-    
+        BUILD_RPATH "${CDF_LIB_DIR}"
+        BUILD_RPATH_USE_LINK_PATH TRUE)
+
     # Add test - creates its own CDF file
     add_test(NAME tst_cdf_udf COMMAND tst_cdf_udf)
-    
+    set_tests_properties(tst_cdf_udf PROPERTIES
+        ENVIRONMENT "NETCDF_RC=${CMAKE_BINARY_DIR}")
+
     # Build IMAP MAG CDF test
     add_executable(tst_imap_mag tst_imap_mag.c)
     target_link_directories(tst_imap_mag PRIVATE ${HDF5_LIB_DIR})
     target_link_libraries(tst_imap_mag PRIVATE nccdf nep ${NETCDF_LIBRARIES} hdf5 hdf5_hl ${CDF_LIBRARY})
     target_include_directories(tst_imap_mag PRIVATE ${NETCDF_INCLUDE_DIRS} ${CDF_INCLUDE_DIR})
-    
-    # Set rpath so the executable can find CDF library at runtime
+
+    # Set rpath so the executable can find CDF/HDF5/NetCDF libraries at runtime
     set_target_properties(tst_imap_mag PROPERTIES
         INSTALL_RPATH "${CDF_LIB_DIR}"
-        BUILD_RPATH "${CDF_LIB_DIR}")
+        BUILD_RPATH "${CDF_LIB_DIR}"
+        BUILD_RPATH_USE_LINK_PATH TRUE)
     
     # Copy test data file to build directory
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
@@ -207,7 +211,7 @@ endif()
 
 # Configure run_tests.sh script with proper paths
 # For CMake builds, point to the installed plugin location
-set(MY_HDF5_PLUGIN_PATH "${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin:${NETCDF_PREFIX}/hdf5/lib/plugin:${NETCDF_PREFIX}/lib/plugin:${NETCDF_PREFIX}/lib/hdf5/plugin")
+set(MY_HDF5_PLUGIN_PATH "${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin:${NETCDF_PREFIX}/hdf5/lib/plugin:${NETCDF_PREFIX}/lib/plugin:${NETCDF_PREFIX}/lib/hdf5/plugin:/usr/local/hdf5/lib/plugin")
 set(MY_LZ4_PLUGIN_PATH "${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin")
 
 # Provide a runtime library search path for the selected HDF5.
