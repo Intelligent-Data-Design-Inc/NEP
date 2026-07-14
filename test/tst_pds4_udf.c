@@ -1629,10 +1629,9 @@ main(void)
     char title[256] = {0};
     char lid[256] = {0};
 
-    /* Register the PDS4 UDF handler.
-     * Accept NC_EINVAL in case it was already registered by a previous test. */
-    if ((retval = NC_PDS4_initialize()) && retval != NC_EINVAL)
-        ERR(retval);
+    /* Register the PDS4 UDF handler. */
+    if (!NC_PDS4_initialize())
+        ERR(NC_EINVAL);
     printf("PASS: NC_PDS4_initialize\n");
 
     /* Open the PDS4 label file read-only. */

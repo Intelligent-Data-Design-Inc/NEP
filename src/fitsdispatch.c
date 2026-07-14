@@ -118,15 +118,17 @@ const NC_Dispatch *FITS_dispatch_table = NULL;
 /**
  * @internal Initialize FITS dispatch layer.
  *
- * @return NC_NOERR on success.
+ * Returns the FITS dispatch table pointer for self-registration
+ * (`HAVE_NETCDF_UDF_SELF_REGISTRATION` API).
+ *
+ * @return Pointer to FITS dispatch table.
  * @author Edward Hartnett
  */
-int
+NC_Dispatch*
 NC_FITS_initialize(void)
 {
     FITS_dispatch_table = &FITS_dispatcher;
-    return nc_def_user_format(NEP_UDF_FITS, (NC_Dispatch *)FITS_dispatch_table,
-                              NEP_MAGIC_FITS);
+    return (NC_Dispatch*)&FITS_dispatcher;
 }
 
 /**

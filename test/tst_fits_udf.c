@@ -49,8 +49,8 @@ main(void)
     int var_ndims, var_dimids[NC_MAX_VAR_DIMS], var_natts;
 
     /* Ensure the FITS UDF handler is registered. */
-    if ((retval = NC_FITS_initialize()) && retval != NC_EINVAL)
-        ERR(retval);
+    if (!NC_FITS_initialize())
+        ERR(NC_EINVAL);
 
     /* Open the FITS file read-only. */
     if ((retval = nc_open(FITS_TEST_FILE, NC_NOWRITE, &ncid)))
