@@ -118,15 +118,22 @@ const NC_Dispatch *FITS_dispatch_table = NULL;
 /**
  * @internal Initialize FITS dispatch layer.
  *
- * @return NC_NOERR on success.
+ * Registers the FITS handler via `nc_def_user_format()` for direct
+ * calls, and returns the dispatch table pointer for the self-registration
+ * (`HAVE_NETCDF_UDF_SELF_REGISTRATION`) path. Safe to call when the
+ * handler has already been registered via `.ncrc` autoload; in that
+ * case `NC_EINVAL` from `nc_def_user_format()` is silently ignored.
+ *
+ * @return Pointer to FITS dispatch table, or NULL on failure.
  * @author Edward Hartnett
  */
-int
+NC_Dispatch*
 NC_FITS_initialize(void)
 {
     FITS_dispatch_table = &FITS_dispatcher;
-    return nc_def_user_format(NEP_UDF_FITS, (NC_Dispatch *)FITS_dispatch_table,
-                              NEP_MAGIC_FITS);
+    nc_def_user_format(NEP_UDF_FITS, (NC_Dispatch *)FITS_dispatch_table,
+                       NEP_MAGIC_FITS);
+    return (NC_Dispatch*)&FITS_dispatcher;
 }
 
 /**

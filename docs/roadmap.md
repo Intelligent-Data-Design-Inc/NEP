@@ -1,4 +1,9 @@
 # NEP Development Roadmap
+### V2.6.1 - No More Worlds to Conquer
+#### Sprint 1: Fix Bugs in FITS/PDS4 ncrc Initialization
+- Fix bugs in UDF self-initialization of FITS/PDS4 data.
+
+
 ### V2.6.0 - Further Testing
 #### Sprint 1: Update Spack Package File
 **Detailed Plan**: See `docs/plan/v2.6.0-sprint1-spack-version-bump.md`

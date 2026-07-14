@@ -72,15 +72,15 @@ extern "C" {
     NC_FITS_get_vara(int ncid, int varid, const size_t *start, const size_t *count,
                      void *value, nc_type);
 
-    extern int
+    extern NC_Dispatch*
     NC_FITS_initialize(void);
 
     extern int
     NC_FITS_finalize(void);
 
-#define FITS_INIT_OK() (NC_FITS_initialize() == NC_NOERR)
+#define FITS_INIT_OK() (NC_FITS_initialize() != NULL)
 #define FITS_INIT_AND_ASSIGN(ret) do { \
-        (ret) = NC_FITS_initialize(); \
+        (ret) = (NC_FITS_initialize() != NULL) ? NC_NOERR : NC_EINVAL; \
     } while(0)
 
     extern const NC_Dispatch *FITS_dispatch_table;

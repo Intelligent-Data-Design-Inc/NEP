@@ -13,9 +13,9 @@ program ftst_fits_udf
   implicit none
 
   interface
-     function c_nc_fits_initialize() result(status) bind(c, name="NC_FITS_initialize")
+     function c_nc_fits_initialize() result(dispatch_ptr) bind(c, name="NC_FITS_initialize")
        use iso_c_binding
-       integer(c_int) :: status
+       type(c_ptr) :: dispatch_ptr
      end function c_nc_fits_initialize
   end interface
 
@@ -23,7 +23,7 @@ program ftst_fits_udf
   character (len = *), parameter :: FILE_NAME = "../test/data/WFPC2u5780205r_c0fx.fits"
   integer :: ncid
   integer :: retval
-  integer(c_int) :: init_status
+  type(c_ptr) :: init_status
   integer :: ndims, nvars, ngatts, unlimdimid
   integer :: grpid, grpid2
   character(len=NF90_MAX_NAME) :: dimname
@@ -37,8 +37,8 @@ program ftst_fits_udf
   ! Ensure the FITS UDF handler is registered (also covers builds where
   ! .ncrc autoload is not active).
   init_status = c_nc_fits_initialize()
-  if (init_status /= 0 .and. init_status /= -36) then
-     print *, "Error initializing FITS UDF handler: ", init_status
+  if (.not. c_associated(init_status)) then
+     print *, "Error initializing FITS UDF handler: NULL dispatch table"
      stop 1
   endif
 

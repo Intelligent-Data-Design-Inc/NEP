@@ -98,7 +98,7 @@ extern "C" {
     NC_PDS4_get_vara(int ncid, int varid, const size_t *start, const size_t *count,
                      void *value, nc_type);
 
-    extern int
+    extern NC_Dispatch*
     NC_PDS4_initialize(void);
 
     extern int
