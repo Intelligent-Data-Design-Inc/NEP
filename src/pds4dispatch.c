@@ -118,10 +118,13 @@ const NC_Dispatch *PDS4_dispatch_table = NULL;
 /**
  * Initialize the PDS4 dispatch layer.
  *
- * Returns the PDS4 dispatch table pointer for self-registration
- * (`HAVE_NETCDF_UDF_SELF_REGISTRATION` API).
+ * Registers the PDS4 handler via `nc_def_user_format()` for direct
+ * calls, and returns the dispatch table pointer for the self-registration
+ * (`HAVE_NETCDF_UDF_SELF_REGISTRATION`) path. Safe to call when the
+ * handler has already been registered via `.ncrc` autoload; in that
+ * case `NC_EINVAL` from `nc_def_user_format()` is silently ignored.
  *
- * @return Pointer to PDS4 dispatch table.
+ * @return Pointer to PDS4 dispatch table, or NULL on failure.
  * @author Edward Hartnett
  * @date 2026-07-08
  */
@@ -129,6 +132,8 @@ NC_Dispatch*
 NC_PDS4_initialize(void)
 {
     PDS4_dispatch_table = &PDS4_dispatcher;
+    nc_def_user_format(NEP_UDF_PDS4, (NC_Dispatch *)PDS4_dispatch_table,
+                       NEP_MAGIC_PDS4);
     return (NC_Dispatch*)&PDS4_dispatcher;
 }
 
