@@ -82,7 +82,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-c-install
-          key: netcdf-c-4.10.1-${{ runner.os }}-3
+          key: netcdf-c-4.10.1-hdf5-2.0.0-${{ runner.os }}-1
 
       - name: Download and build NetCDF-C
         if: steps.cache-netcdf-c.outputs.cache-hit != 'true'
@@ -317,7 +317,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-c-install
-          key: netcdf-c-4.10.1-${{ runner.os }}-3
+          key: netcdf-c-4.10.1-hdf5-2.0.0-${{ runner.os }}-1
 
       - name: Download and build NetCDF-C
         if: steps.cache-netcdf-c.outputs.cache-hit != 'true'
