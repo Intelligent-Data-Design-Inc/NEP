@@ -56,7 +56,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-2.0.0-${{ runner.os }}-geotiff-3
+          key: hdf5-2.0.0-${{ runner.os }}-geotiff-4
       
       - name: Download and build HDF5 2.0.0
         if: steps.cache-hdf5.outputs.cache-hit != 'true'
@@ -261,7 +261,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-2.0.0-${{ runner.os }}-geotiff-3
+          key: hdf5-2.0.0-${{ runner.os }}-geotiff-4
       
       - name: Download and build HDF5 2.0.0
         if: steps.cache-hdf5.outputs.cache-hit != 'true'
@@ -404,7 +404,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-2.0.0-${{ runner.os }}-geotiff-3
+          key: hdf5-2.0.0-${{ runner.os }}-geotiff-4
       
       - name: Download and build HDF5 2.0.0
         if: steps.cache-hdf5.outputs.cache-hit != 'true'

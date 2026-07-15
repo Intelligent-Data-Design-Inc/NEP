@@ -48,7 +48,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-2.0.0-${{ runner.os }}-3
+          key: hdf5-2.0.0-${{ runner.os }}-4
 
       - name: Download and build HDF5 2.0.0
         if: steps.cache-hdf5-grib2.outputs.cache-hit != 'true'
@@ -237,7 +237,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-2.0.0-asan-${{ runner.os }}-3
+          key: hdf5-2.0.0-asan-${{ runner.os }}-4
       
       - name: Download and build HDF5 with ASAN
         if: steps.cache-hdf5-asan.outputs.cache-hit != 'true'
@@ -387,7 +387,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-2.0.0-${{ runner.os }}-3
+          key: hdf5-2.0.0-${{ runner.os }}-4
       
       - name: Download and build HDF5 2.0.0
         if: steps.cache-hdf5.outputs.cache-hit != 'true'
