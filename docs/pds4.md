@@ -53,7 +53,7 @@ label content.
 ## Array Objects
 
 PDS4 array objects (`Array`, `Array_1D`, `Array_2D`, `Array_2D_Image`,
-`Array_3D`, `Array_3D_Image`, etc.) are all dispatched to the same generic
+`Array_2D_Spectrum`, `Array_3D`, `Array_3D_Image`, etc.) are all dispatched to the same generic
 array reader, which handles any number of axes:
 
 | PDS4 | NetCDF |
@@ -303,3 +303,4 @@ The following real mission datasets have been validated:
 | MAVEN | IUVS | L2 periapse | `.fits` (Table_Binary, multiple tables, depth-2 nested Group_Field_Binary) |
 | Mars 2020 / Perseverance | Mastcam-Z (ZCAM) | Sol 1738 calibrated radiance image | `.IMG` (Array_3D_Image, Band=3 × Line=1200 × Sample=1648, `SignedMSB2`) |
 | Mars 2020 / Perseverance | Mastcam-Z (ZCAM) | Sol 1737 calibrated radiance image | `.IMG` (Array_3D_Image, Band=3 × Line=1200 × Sample=1648, `SignedMSB2`) |
+| New Horizons | Alice ultraviolet imaging spectrograph | Jupiter encounter partially processed pixel-list product | `.lblx` label + `.fit` container (Array_2D_Spectrum and Table_Binary) |

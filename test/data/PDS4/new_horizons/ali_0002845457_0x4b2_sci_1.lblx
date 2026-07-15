@@ -1,0 +1,1602 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml-model href="https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1J00.sch" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<?xml-model href="https://pds.nasa.gov/pds4/geom/v1/PDS4_GEOM_1J00_1960.sch" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<?xml-model href="https://pds.nasa.gov/pds4/img/v1/PDS4_IMG_1J00_1870.sch" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<?xml-model href="https://pds.nasa.gov/pds4/disp/v1/PDS4_DISP_1J00_1510.sch" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<?xml-model href="https://pds.nasa.gov/pds4/sp/v1/PDS4_SP_1J00_1311.sch" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<?xml-model href="https://pds.nasa.gov/pds4/mission/nh/v1/PDS4_NH_1J00_1200.sch" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<?xml-model href="https://pds.nasa.gov/pds4/sb/v1/PDS4_SB_1J00_1100.sch" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<Product_Observational xmlns="http://pds.nasa.gov/pds4/pds/v1" 
+    xmlns:disp="http://pds.nasa.gov/pds4/disp/v1" 
+    xmlns:geom="http://pds.nasa.gov/pds4/geom/v1" 
+    xmlns:img="http://pds.nasa.gov/pds4/img/v1" 
+    xmlns:sp="http://pds.nasa.gov/pds4/sp/v1" 
+    xmlns:nh="http://pds.nasa.gov/pds4/mission/nh/v1" 
+    xmlns:sb="http://pds.nasa.gov/pds4/sb/v1" 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+    xsi:schemaLocation="http://pds.nasa.gov/pds4/pds/v1 https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1J00.xsd          
+    http://pds.nasa.gov/pds4/disp/v1 https://pds.nasa.gov/pds4/disp/v1/PDS4_DISP_1J00_1510.xsd          
+    http://pds.nasa.gov/pds4/geom/v1 https://pds.nasa.gov/pds4/geom/v1/PDS4_GEOM_1J00_1960.xsd          
+    http://pds.nasa.gov/pds4/img/v1  https://pds.nasa.gov/pds4/img/v1/PDS4_IMG_1J00_1870.xsd 
+    http://pds.nasa.gov/pds4/sp/v1  https://pds.nasa.gov/pds4/sp/v1/PDS4_SP_1J00_1311.xsd 
+    http://pds.nasa.gov/pds4/sb/v1   https://pds.nasa.gov/pds4/sb/v1/PDS4_SB_1J00_1100.xsd          
+    http://pds.nasa.gov/pds4/mission/nh/v1 https://pds.nasa.gov/pds4/mission/nh/v1/PDS4_NH_1J00_1200.xsd">       
+    <Identification_Area>
+        <logical_identifier>urn:nasa:pds:nh_alice:launch_cal:ali_0002845457_0x4b2_sci_1</logical_identifier>
+        <version_id>1.0</version_id>
+        <title>New Horizon Compressed Alice Histogram Data ali_0002845457_0x4b2_sci_1 (Partially Processed Data)</title>
+        <information_model_version>1.19.0.0</information_model_version>
+        <product_class>Product_Observational</product_class>
+        <Modification_History>
+      		<Modification_Detail>
+        		<modification_date>2026-05-13</modification_date>
+        		<version_id>1.0</version_id>
+        		<description>A. Gicquel: Migrated from PDS3 product nh-x-alice-3-launch-v2.0:ali_0002845457_0x4b2_sci_1</description>
+      		</Modification_Detail>
+    	</Modification_History>
+    </Identification_Area>
+    <Observation_Area>
+        <Time_Coordinates>
+            <start_date_time>2006-02-21T16:31:58.324Z</start_date_time> 
+            <stop_date_time>2006-02-21T16:32:18.324Z</stop_date_time>
+        </Time_Coordinates>
+		<Primary_Result_Summary>
+      		<purpose>Calibration</purpose>      		 	      		 		  		
+      		<processing_level>Partially Processed</processing_level>
+      		<Science_Facets>
+        		<wavelength_range>Ultraviolet</wavelength_range>
+        		<discipline_name>Spectroscopy</discipline_name>
+        		<facet1>Spectral Image</facet1>
+      		</Science_Facets>
+    	</Primary_Result_Summary>    	
+        <Investigation_Area>
+            <name>New Horizons</name>
+            <type>Mission</type>
+            <Internal_Reference>
+                <lid_reference>urn:nasa:pds:context:investigation:mission.new_horizons</lid_reference>
+                <reference_type>data_to_investigation</reference_type>
+            </Internal_Reference>
+        </Investigation_Area>
+        <Observing_System>
+        	<Observing_System_Component>
+        		<name>New Horizons</name>
+        		<type>Host</type>
+        		<Internal_Reference>
+        			<lid_reference>urn:nasa:pds:context:instrument_host:spacecraft.nh</lid_reference>
+        			<reference_type>is_instrument_host</reference_type>
+        		</Internal_Reference>
+        	</Observing_System_Component>        
+            <Observing_System_Component>
+                <name>Alice Ultraviolet Imaging Spectrograph</name>
+                <type>Instrument</type>
+                <description>The Alice instrument is an Ultraviolet (UV) imaging spectrograph that provides
+                moderate spatial and spectral resolution capabilities over the wavelength range 465-1880 Angstrom.
+                </description>
+                <Internal_Reference>
+                	<lid_reference>urn:nasa:pds:context:instrument:nh.alice</lid_reference>
+                	<reference_type>is_instrument</reference_type>
+                </Internal_Reference>
+            </Observing_System_Component>            
+        </Observing_System>        
+        <Target_Identification>    		 
+            <name>None</name>
+            <type>Calibration Field</type>
+        </Target_Identification>
+        <Mission_Area>
+            <nh:Mission_Parameters>
+                <nh:mission_phase_name>Post-Launch Checkout</nh:mission_phase_name>
+                <nh:Observation_Parameters>
+                   	<nh:telemetry_apid>0x4b2</nh:telemetry_apid>
+                    <nh:sequence_id>UNKNOWN</nh:sequence_id>
+                    <nh:observation_description>UNKNOWN</nh:observation_description>
+                   	<nh:Mission_Elapsed_Time>
+                       	<nh:clock_partition>1</nh:clock_partition>
+                       	<nh:start_clock_count>0002845436:00000</nh:start_clock_count>
+                       	<nh:stop_clock_count>0002845456:00000</nh:stop_clock_count>
+                   	</nh:Mission_Elapsed_Time>
+                   	<nh:Detector>
+                   		<nh:detector_name>Alice spectrograph</nh:detector_name>
+                   		<nh:detector_type>Microchannel plate</nh:detector_type>
+                   		<nh:Alice_Details>
+                   			<nh:aperture>Airglow</nh:aperture>
+                   		</nh:Alice_Details>
+                   	</nh:Detector>
+ 					<nh:Spacecraft_State>
+                       	<nh:thruster_x_enabled>false</nh:thruster_x_enabled>
+                   		<nh:thruster_y_enabled>false</nh:thruster_y_enabled>
+                   		<nh:thruster_z_enabled>false</nh:thruster_z_enabled>
+                    <nh:spacecraft_spin_state>3-Axis</nh:spacecraft_spin_state>
+                   	</nh:Spacecraft_State>                    
+				</nh:Observation_Parameters>		
+            </nh:Mission_Parameters>
+        </Mission_Area>       
+        <Discipline_Area>
+            <disp:Display_Settings>            
+               	<Local_Internal_Reference>
+                	<local_identifier_reference>ObsData</local_identifier_reference>	
+                	<local_identifier_reference>ErrorImage</local_identifier_reference>	
+                    <local_identifier_reference>WavelengthImage</local_identifier_reference>
+                    <local_identifier_reference>PHDImage</local_identifier_reference>
+                    <local_identifier_reference>CountRateImage</local_identifier_reference>
+                    <local_reference_type>display_settings_to_array</local_reference_type>
+                </Local_Internal_Reference>
+                <disp:Display_Direction>
+                    <disp:horizontal_display_axis>Sample</disp:horizontal_display_axis>
+                    <disp:horizontal_display_direction>Left to Right</disp:horizontal_display_direction>
+                    <disp:vertical_display_axis>Line</disp:vertical_display_axis>
+                    <disp:vertical_display_direction>Bottom to Top</disp:vertical_display_direction>
+                </disp:Display_Direction> 
+           	 </disp:Display_Settings>            
+            <img:Imaging>    
+                <Local_Internal_Reference>
+                    <local_identifier_reference>ObsData</local_identifier_reference>
+                    <local_identifier_reference>ErrorImage</local_identifier_reference>
+                    <local_identifier_reference>WavelengthImage</local_identifier_reference>
+                    <local_identifier_reference>PHDImage</local_identifier_reference>
+                    <local_identifier_reference>CountRateImage</local_identifier_reference>
+                    <local_reference_type>imaging_parameters_to_image_object</local_reference_type>
+                </Local_Internal_Reference>  
+                <img:Exposure>
+                    <img:exposure_duration unit="s">20.0</img:exposure_duration>
+                </img:Exposure>                  
+                <img:Onboard_Compression>
+            		<img:onboard_compression_class>Lossless</img:onboard_compression_class>
+            	</img:Onboard_Compression>  
+            </img:Imaging>
+            <sp:Spectral_Characteristics>
+                <Local_Internal_Reference>
+                    <local_identifier_reference>ObsData</local_identifier_reference>
+                    <local_reference_type>spectral_characteristics_to_array_object</local_reference_type>
+                </Local_Internal_Reference>
+                <sp:spectrum_format>2D</sp:spectrum_format>
+                <sp:spectral_bin_type>wavelength</sp:spectral_bin_type>
+                <sp:Field_of_View>
+                    <sp:description>Light can enter the telescope section through either a 40mm x 40mm entrance aperture (i.e. the airglow channel) or a stopped-down 1-mm diameter entrance aperture and flat relay mirror (i.e. the solar occultation channel) and is collected and focused by an off-axisparaboloidal (OAP) primary mirror onto the spectrograph entrance slit.</sp:description>
+                    <sp:Complex_FOV>
+                        <sp:width_angle unit="deg">2.0</sp:width_angle>
+                        <sp:width_angle unit="deg">0.1</sp:width_angle>
+                        <sp:length_angle unit="deg">2.0</sp:length_angle>
+                        <sp:length_angle unit="deg">4.0</sp:length_angle>
+                    </sp:Complex_FOV>
+                </sp:Field_of_View>
+                <sp:Bin_Description>
+					<sp:bin_profile_description>The active area starts at spectral pixel 130 and ends at pixel 910, which corresponds to a total wavelength passband between 465 and 1881 Angstrom. 
+                    The lookup file referenced below contains a 1D array of wavelengths (in Angstrom) associated with each of the 1024 pixel indices along the spectral axis in the data file. The provided bin width is an approximation. 
+                    The actual spectral PSF varies as a nonlinear function of wavelength and aperture, but FWHM values are generally between ~3 and ~4 Angstrom.
+                    </sp:bin_profile_description>
+                    <sp:Spectral_Lookup>                        
+                    	<sp:Bin_Center_Lookup>
+                            <Internal_Reference>
+                                <lid_reference>urn:nasa:pds:nh_alice:calibration_files:pa_wave_002</lid_reference>
+                                <reference_type>spectral_characteristics_to_bin_center_values</reference_type>
+                            </Internal_Reference>
+                        </sp:Bin_Center_Lookup>
+                        <sp:Bin_Width_Constant>
+                            <sp:bin_width_wavelength unit="Angstrom">3.5</sp:bin_width_wavelength>
+                        </sp:Bin_Width_Constant>
+                    </sp:Spectral_Lookup>
+                </sp:Bin_Description>
+            </sp:Spectral_Characteristics>            
+            <geom:Geometry>
+        		<geom:SPICE_Kernel_Files>
+          			<geom:SPICE_Kernel_Identification>
+            			<geom:kernel_type>MK</geom:kernel_type>
+            			<geom:spice_kernel_file_name>nh_v07.tm</geom:spice_kernel_file_name>    
+          			</geom:SPICE_Kernel_Identification>
+          			<geom:comment>
+          			Note that the geometry parameters in this label were calculated by the mission using an unpublished kernel set still in development at the time of archiving. These parameters are based on "predict geometry", which is generally not as accurate as metadata available at a later date.
+          			</geom:comment>
+            	</geom:SPICE_Kernel_Files>
+                <geom:Image_Display_Geometry>                    
+                    <Local_Internal_Reference>
+                        <local_identifier_reference>ObsData</local_identifier_reference>
+                        <local_identifier_reference>ErrorImage</local_identifier_reference>
+                    	<local_identifier_reference>WavelengthImage</local_identifier_reference>                    	
+                    	<local_identifier_reference>PHDImage</local_identifier_reference>
+                    	<local_identifier_reference>CountRateImage</local_identifier_reference>
+                        <local_reference_type>display_to_data_object</local_reference_type>
+                    </Local_Internal_Reference>
+                    <geom:Display_Direction>
+                        <geom:horizontal_display_axis>Sample</geom:horizontal_display_axis>
+                        <geom:horizontal_display_direction>Left to Right</geom:horizontal_display_direction>
+                        <geom:vertical_display_axis>Line</geom:vertical_display_axis>
+                        <geom:vertical_display_direction>Bottom to Top</geom:vertical_display_direction>
+                    </geom:Display_Direction>                    
+                    <geom:Geometry_Target_Identification>     
+            			<geom:name>None</geom:name>            			
+                    </geom:Geometry_Target_Identification>
+                    <geom:Object_Orientation_RA_Dec> 
+                    	<geom:reference_pixel_location>Center</geom:reference_pixel_location>                   	
+                        <geom:right_ascension_angle unit="deg">121.91568904654447</geom:right_ascension_angle>
+                        <geom:declination_angle unit="deg">21.31158228975359</geom:declination_angle>
+                        <geom:celestial_north_clock_angle unit="deg">281.9771267454714</geom:celestial_north_clock_angle>
+                        <geom:Reference_Frame_Identification>
+                        	<geom:name>EME J2000</geom:name>
+                        </geom:Reference_Frame_Identification>
+                    </geom:Object_Orientation_RA_Dec>                   
+          			<geom:Quaternion_Plus_To_From>
+            			<geom:qcos>0.8451328627613188</geom:qcos>
+            			<geom:qsin1>0.17891337346317987</geom:qsin1>
+            			<geom:qsin2>0.11100239374743402</geom:qsin2>
+            			<geom:qsin3>-0.4913439911703634</geom:qsin3>
+            			<geom:Rotate_From>
+              				<geom:name>Alice Instrument Frame</geom:name>
+            			</geom:Rotate_From>
+            			<geom:Rotate_To>
+              				<geom:name>EME J2000</geom:name>
+            			</geom:Rotate_To>
+          			</geom:Quaternion_Plus_To_From>
+                </geom:Image_Display_Geometry>                 
+                <geom:Geometry_Orbiter>
+                    <geom:geometry_reference_time_utc>2006-02-21T16:32:08.324Z</geom:geometry_reference_time_utc>
+                    <geom:geometry_reference_time_tdb unit="s">1.938115935091631E8</geom:geometry_reference_time_tdb>
+                    <geom:Orbiter_Identification>
+                    	<geom:Geometry_Target_Identification>             
+            				<geom:name>None</geom:name>            			
+                    	</geom:Geometry_Target_Identification>
+                	</geom:Orbiter_Identification>
+                	<geom:Pixel_Dimensions>
+                        <geom:pixel_field_of_view_method>Constant</geom:pixel_field_of_view_method>
+                        <geom:horizontal_pixel_field_of_view unit="mrad">5.2</geom:horizontal_pixel_field_of_view>
+                        <geom:vertical_pixel_field_of_view unit="mrad">1.7</geom:vertical_pixel_field_of_view>
+                    </geom:Pixel_Dimensions>   
+                    <geom:Distances>
+                        <geom:Distances_Specific>
+                            <geom:spacecraft_geocentric_distance unit="km">3.451622966114169E7</geom:spacecraft_geocentric_distance>
+              				<geom:spacecraft_heliocentric_distance unit="km">1.7014981908990657E8</geom:spacecraft_heliocentric_distance>
+                        </geom:Distances_Specific>                        
+                    </geom:Distances>
+                	<geom:Vectors>               	 
+                       	<geom:Vectors_Cartesian_Specific>
+                            <geom:Vector_Cartesian_Position_Sun_To_Spacecraft>
+                                <geom:x_position unit="km">-1.6213762994710505E8</geom:x_position>
+                                <geom:y_position unit="km">4.6619403492853284E7</geom:y_position>
+                                <geom:z_position unit="km">2.21129172529113E7</geom:z_position>
+                                <geom:light_time_correction_applied>Received_Light_Time_Stellar_Abb</geom:light_time_correction_applied>
+                            </geom:Vector_Cartesian_Position_Sun_To_Spacecraft>
+                            <geom:Vector_Cartesian_Velocity_Spacecraft_Relative_To_Sun>
+                				<geom:x_velocity unit="km/s">-25.2710382777015</geom:x_velocity>
+                				<geom:y_velocity unit="km/s">-28.499281258528605</geom:y_velocity>
+                				<geom:z_velocity unit="km/s">-11.738901085441922</geom:z_velocity>
+                				<geom:light_time_correction_applied>Received_Light_Time_Stellar_Abb</geom:light_time_correction_applied>
+              				</geom:Vector_Cartesian_Velocity_Spacecraft_Relative_To_Sun>
+                            <geom:Vector_Cartesian_Position_Earth_To_Spacecraft>
+                				<geom:x_position unit="km">-3.0518370725192487E7</geom:x_position>
+                				<geom:y_position unit="km">-1.5401028760864748E7</geom:y_position>
+                				<geom:z_position unit="km">-4775716.84749092</geom:z_position>
+                				<geom:light_time_correction_applied>Received_Light_Time_Stellar_Abb</geom:light_time_correction_applied>
+              				</geom:Vector_Cartesian_Position_Earth_To_Spacecraft>
+                            <geom:Vector_Cartesian_Velocity_Spacecraft_Relative_To_Earth>
+                                <geom:x_velocity unit="km/s">-11.167734568135385</geom:x_velocity>
+                                <geom:y_velocity unit="km/s">-4.088490190757767</geom:y_velocity>
+                                <geom:z_velocity unit="km/s">-1.1565032223125788</geom:z_velocity>
+                                <geom:light_time_correction_applied>Received_Light_Time_Stellar_Abb</geom:light_time_correction_applied>
+                            </geom:Vector_Cartesian_Velocity_Spacecraft_Relative_To_Earth>
+                        </geom:Vectors_Cartesian_Specific>
+                    </geom:Vectors>                
+                </geom:Geometry_Orbiter>
+            </geom:Geometry>                                          
+            <sb:SB_Metadata>																									
+                <sb:Observation_Parameters>																									
+                    <sb:Exposure>																									
+                        <sb:exposure_duration unit="s">20.0</sb:exposure_duration>																									
+                        <sb:exposure_description>
+                        The exposure duration is the amount of time that data was collected for each pixel in the array.
+                        </sb:exposure_description>																									
+                    </sb:Exposure>																									
+                    <sb:Timing>																									
+                        <sb:midobservation_time_UTC_YMD>2006-02-21T16:32:08.324Z</sb:midobservation_time_UTC_YMD>																								
+                        <sb:midobservation_time_UTC_JD unit="julian day">2453788.1889852</sb:midobservation_time_UTC_JD>																							
+                    </sb:Timing>																									
+                </sb:Observation_Parameters>	
+				<sb:Calibration_Information>
+                    <sb:Raw_Data_Product>
+                        <Internal_Reference>
+                            <lidvid_reference>urn:nasa:pds:nh_alice:launch_raw:ali_0002845457_0x4b2_eng_1::1.0</lidvid_reference>
+                            <reference_type>processed_data_to_raw_data</reference_type>
+                        </Internal_Reference>
+                    </sb:Raw_Data_Product>                    
+                    <sb:Calibration_Applied>
+                        <sb:comment>Units of the data are COUNTS S**-1</sb:comment>
+                        <sb:dead_time_correction>true</sb:dead_time_correction>
+						<sb:Calibration_Reference_Files>  
+                		</sb:Calibration_Reference_Files>
+					</sb:Calibration_Applied>
+                </sb:Calibration_Information>
+                <sb:Additional_Image_Metadata>																									
+                    <Local_Internal_Reference>																									
+                    	<local_identifier_reference>ObsData</local_identifier_reference>	
+                      	<local_reference_type>image_to_additional_metadata</local_reference_type>																									
+                    </Local_Internal_Reference>																									                    																											
+                    <sb:image_observation_type>Single Image</sb:image_observation_type>																	
+                    <sb:Additional_Geometry_Metadata>																									
+                       	<sb:comment>Note that the geometry parameters in this label were calculated by the mission using an unpublished kernel set still in development at the time of archiving. These parameters are based on "predict geometry", which is generally not as accurate as metadata available at a later date. The instrument position angles are calculated at the midpoint of the observing sequence.</sb:comment>																									
+                        <sb:Instrument_Position_Angles>																								
+                            <sb:y_axis_position_angle unit="deg">281.9771267454714</sb:y_axis_position_angle>																									
+                            <sb:z_axis_position_angle unit="deg">11.977126745471423</sb:z_axis_position_angle>																									
+                        </sb:Instrument_Position_Angles>	
+  						<sb:Geometry_Vector_Time>
+                        	<sb:position_velocity_vectors>Spacecraft_to_Target</sb:position_velocity_vectors>
+                        	<sb:time_at_target_UTC_JD unit="julian day">2453788.1889852</sb:time_at_target_UTC_JD>
+                        </sb:Geometry_Vector_Time>
+              		  	<sb:Geometry_Vector_Time>
+                            <sb:position_velocity_vectors>Earth_to_Target</sb:position_velocity_vectors>
+                            <sb:time_at_Earth_UTC_JD unit="julian day">2453788.1889852</sb:time_at_Earth_UTC_JD>
+                        </sb:Geometry_Vector_Time>
+                        <sb:Geometry_Vector_Time>
+                           	<sb:position_velocity_vectors>Sun_to_Spacecraft</sb:position_velocity_vectors>
+                            <sb:time_at_Sun_UTC_JD unit="julian day">2453788.1824159</sb:time_at_Sun_UTC_JD>
+                        </sb:Geometry_Vector_Time>
+                        <sb:Geometry_Vector_Time>
+                            <sb:position_velocity_vectors>Earth_to_Spacecraft</sb:position_velocity_vectors>
+                            <sb:time_at_Earth_UTC_JD unit="julian day">2453788.1876524</sb:time_at_Earth_UTC_JD>             
+                    	</sb:Geometry_Vector_Time>
+                    </sb:Additional_Geometry_Metadata>																								
+                </sb:Additional_Image_Metadata>	
+            </sb:SB_Metadata>
+        </Discipline_Area>      
+    </Observation_Area>	
+	<Reference_List>																									
+        <Internal_Reference>																									
+            <lid_reference>urn:nasa:pds:nh_documents:alice:alice_ssr</lid_reference>																									
+            <reference_type>data_to_document</reference_type>																									
+            <comment> This document from Space Science Reviews describes technical and operational details of the Alice instrument.</comment>																									
+        </Internal_Reference>																									
+	</Reference_List>	
+    <File_Area_Observational>
+        <File> 
+        	<file_name>ali_0002845457_0x4b2_sci_1.fit</file_name>
+        </File>              
+    	<Header>
+    		<name>Observational Header</name>	
+      		<offset unit="byte">0</offset>
+      		<object_length unit="byte">28800</object_length>
+      		<parsing_standard_id>FITS 3.0</parsing_standard_id>
+        	<description> FITS format defined in NASA/Science Office Standards Technology 100-1.0 </description>
+    	</Header>
+    	<Array_2D_Spectrum>
+    		<name>Observational Data</name>	
+        	<local_identifier>ObsData</local_identifier>
+        	<offset unit="byte">28800</offset>		
+            <axes>2</axes>
+        	<axis_index_order>Last Index Fastest</axis_index_order>
+        	<description> FITS PDU PDU  Primary Data Unit </description>
+        	<Element_Array>           
+				<data_type>IEEE754MSBSingle</data_type>
+            	<unit>COUNTS S**-1</unit>
+           	 	<scaling_factor>1.00000000000</scaling_factor>
+            	<value_offset>0.00000000000</value_offset>
+            </Element_Array>
+            <Axis_Array>
+            	<axis_name>Line</axis_name>
+            	<elements>32</elements>
+            	<sequence_number>1</sequence_number>
+            </Axis_Array>
+            <Axis_Array>
+            	<axis_name>Sample</axis_name>
+            	<elements>1024</elements>
+            	<sequence_number>2</sequence_number>
+            </Axis_Array>           
+    	</Array_2D_Spectrum>
+    	<Header>
+    		<name>Error Image Header</name>
+        	<offset unit="byte">161280</offset>	
+      		<object_length unit="byte">2880</object_length>
+      		<parsing_standard_id>FITS 3.0</parsing_standard_id>
+        	<description> This is the FITS header for FITS EDU number:  1 FITS EDU name: ERROR_IMAGE </description>
+    	</Header>
+    	<Array_2D_Spectrum>
+            <name>Error Image</name>	
+            <local_identifier>ErrorImage</local_identifier>
+            <offset unit="byte">164160</offset>		
+            <axes>2</axes>
+            <axis_index_order>Last Index Fastest</axis_index_order>
+            <description> FITS EDU number:  1 ERROR_IMAGE  This FITS EDU IMAGE has a limited description in this PDS label.  Refer to the SOC Instrument Interface Control Document (ICD) (/DOCUMENT/SOC_INST_ICD.*) for further details about this extension. </description>
+            <Element_Array>           
+				<data_type>IEEE754MSBSingle</data_type>
+            	<unit>COUNTS S**-1</unit>
+            </Element_Array>
+            <Axis_Array>
+                <axis_name>Line</axis_name>
+                <elements>32</elements>
+                <sequence_number>1</sequence_number>
+            </Axis_Array>
+            <Axis_Array>
+                <axis_name>Sample</axis_name>
+                <elements>1024</elements>
+                <sequence_number>2</sequence_number>
+            </Axis_Array>          
+        </Array_2D_Spectrum>
+    	<Header>
+    		<name>Wavelength Image Header</name>	
+        	<offset unit="byte">296640</offset>		
+      		<object_length unit="byte">2880</object_length>
+      		<parsing_standard_id>FITS 3.0</parsing_standard_id>
+            <description> This is the FITS header for FITS EDU number:  2 FITS EDU name: WAVELENGTH_IMAGE </description>
+    	</Header>
+        <Array_2D_Spectrum>
+        	<name>Wavelength Image</name>	
+            <local_identifier>WavelengthImage</local_identifier>
+            <offset unit="byte">299520</offset>		
+            <axes>2</axes>
+            <axis_index_order>Last Index Fastest</axis_index_order>
+            <description> FITS EDU number:  2 WAVELENGTH_IMAGE  This FITS EDU IMAGE has a limited description in this PDS label.  Refer to the SOC Instrument Interface Control Document (ICD) (/DOCUMENT/SOC_INST_ICD.*) for further details about this extension. </description>
+            <Element_Array>           
+				<data_type>IEEE754MSBSingle</data_type>
+                <unit>ANGSTROMS</unit>
+            </Element_Array>
+            <Axis_Array>
+                <axis_name>Line</axis_name>
+                <elements>32</elements>
+                <sequence_number>1</sequence_number>
+            </Axis_Array>
+            <Axis_Array>
+                <axis_name>Sample</axis_name>
+                <elements>1024</elements>
+                <sequence_number>2</sequence_number>
+            </Axis_Array>            
+        </Array_2D_Spectrum>
+    	<Header>
+    		<name>Pulse Height Distribution (PHD) Header</name>
+            <offset unit="byte">432000</offset>		
+      		<object_length unit="byte">2880</object_length>
+      		<parsing_standard_id>FITS 3.0</parsing_standard_id>
+            <description> This is the FITS header for FITS EDU number:  3 FITS EDU name: PULSE_HEIGHT_DISTRIBUTION </description>
+    	</Header>
+        <Array_2D_Spectrum>
+        	<name>Pulse Height Distribution (PHD) Image</name>	
+            <local_identifier>PHDImage</local_identifier>
+            <offset unit="byte">434880</offset>		
+            <axes>2</axes>
+            <axis_index_order>Last Index Fastest</axis_index_order>
+            <description> FITS EDU number:  3 PULSE_HEIGHT_DISTRIBUTION  This FITS EDU IMAGE has a limited description in this PDS label.  Refer to the SOC Instrument Interface Control Document (ICD) (/DOCUMENT/SOC_INST_ICD.*) for further details about this extension. </description>
+            <Element_Array>           
+                <data_type>SignedMSB4</data_type>
+            </Element_Array>
+            <Axis_Array>
+                <axis_name>Line</axis_name>
+                <elements>1</elements>
+                <sequence_number>1</sequence_number>
+            </Axis_Array>
+            <Axis_Array>
+                <axis_name>Sample</axis_name>
+                <elements>64</elements>
+                <sequence_number>2</sequence_number>
+            </Axis_Array>            
+        </Array_2D_Spectrum>
+    	<Header>
+    		<name>Count Rate Header</name>
+            <offset unit="byte">437760</offset>		
+      		<object_length unit="byte">2880</object_length>
+      		<parsing_standard_id>FITS 3.0</parsing_standard_id>
+            <description> This is the FITS header for FITS EDU number:  4 FITS EDU name: COUNT_RATE </description>
+    	</Header>
+        <Array_2D_Spectrum>
+        	<name>Count Rate Image</name>	
+            <local_identifier>CountRateImage</local_identifier>
+            <offset unit="byte">440640</offset>		
+            <axes>2</axes>
+            <axis_index_order>Last Index Fastest</axis_index_order>
+            <description> FITS EDU number:  4 COUNT_RATE  This FITS EDU IMAGE has a limited description in this PDS label.  Refer to the SOC Instrument Interface Control Document (ICD) (/DOCUMENT/SOC_INST_ICD.*) for further details about this extension. </description>
+            <Element_Array>           
+				<data_type>IEEE754MSBSingle</data_type>
+                <unit>COUNTS</unit>
+            </Element_Array>
+            <Axis_Array>
+                <axis_name>Line</axis_name>
+                <elements>1</elements>
+                <sequence_number>1</sequence_number>
+            </Axis_Array>
+            <Axis_Array>
+                <axis_name>Sample</axis_name>
+                <elements>21</elements>
+                <sequence_number>2</sequence_number>
+            </Axis_Array>            
+        </Array_2D_Spectrum>
+    	<Header>
+    		<name>Housekeeping Header</name>
+            <offset unit="byte">443520</offset>		
+      		<object_length unit="byte">23040</object_length>
+      		<parsing_standard_id>FITS 3.0</parsing_standard_id>
+            <description> This is the FITS header for FITS EDU number:  5 FITS EDU name: HOUSEKEEPING_TABLE </description>
+    	</Header>
+        <Table_Binary>
+        	<name>Housekeeping (HK) Table</name>
+            <offset unit="byte">466560</offset>		
+            <records>21</records>
+            <description> FITS EDU number:  5 FITS EDU name: HOUSEKEEPING_TABLE  )</description>
+            <Record_Binary>
+            	<fields>117</fields>
+        		<groups>0</groups>
+       			<record_length unit="byte">140</record_length>       			 
+        		<Field_Binary>
+          			<name>MET</name>
+          			<field_number>1</field_number>
+          			<field_location unit="byte">1</field_location>
+          			<data_type>SignedMSB4</data_type>
+          			<field_length unit="byte">4</field_length>        
+          			<unit>N/A</unit>
+          			<scaling_factor>1.00000000000</scaling_factor>
+          			<value_offset>2147483648.00</value_offset>
+          			<description> Mission Event Time Approximately equal to seconds past 19.January, 2006 18:08:02 UTC </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>SAFETY_ACTIVE</name>
+          			<field_number>2</field_number>
+          			<field_location unit="byte">5</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.SAFETY_ACTIVE  General Description: Safety timout active   Conversion:  STATES - [lo:hi]=state description: [0:0]=no safety timeout [1:1]=timeout pending  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  10 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>ACQUIRE_MODE</name>
+          			<field_number>3</field_number>
+          			<field_location unit="byte">6</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.ACQUIRE_MODE  General Description: Acquire mode   Conversion:  STATES - [lo:hi]=state description: [0:0]=pixel list [1:1]=histogram  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  10 Bit Offset within Byte of ApID packet:  1 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>OPERATING_STATE</name>
+          			<field_number>4</field_number>
+          			<field_location unit="byte">7</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.OPERATING_STATE  General Description: Operating state   Conversion:  STATES - [lo:hi]=state description: [0:0]=off [1:1]=checkout [2:2]=safe [3:3]=acquire  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  10 Bit Offset within Byte of ApID packet:  2 Bit Length within ApID packet:  2 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>RESTART_REQUEST</name>
+          			<field_number>5</field_number>
+          			<field_location unit="byte">8</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.RESTART_REQUEST  General Description: Instrument restart request   Conversion:  STATES - [lo:hi]=state description: [0:0]=no request [1:1]=request restart  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  10 Bit Offset within Byte of ApID packet:  4 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>WPA_DRIVEN</name>
+          			<field_number>6</field_number>
+          			<field_location unit="byte">9</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.WPA_DRIVEN  General Description: WPA (detector door) driven   Conversion:  STATES - [lo:hi]=state description: [0:0]=off [1:1]=on  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  10 Bit Offset within Byte of ApID packet:  5 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>MIRROR_HEATER_ST</name>
+          			<field_number>7</field_number>
+          			<field_location unit="byte">10</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.MIRROR_HEATER_ST  General Description: Mirror heaters (OAP and SOC)   Conversion:  STATES - [lo:hi]=state description: [0:0]=off [1:1]=on  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  10 Bit Offset within Byte of ApID packet:  6 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>GRATING_HEATER_ST</name>
+          			<field_number>8</field_number>
+          			<field_location unit="byte">11</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.GRATING_HEATER_ST  General Description: Grating heater   Conversion:  STATES - [lo:hi]=state description: [0:0]=off [1:1]=on  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  10 Bit Offset within Byte of ApID packet:  7 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>POWER_A_ST</name>
+          			<field_number>9</field_number>
+          			<field_location unit="byte">12</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.POWER_A_ST  General Description: Primary power status   Conversion:  STATES - [lo:hi]=state description: [0:0]=off [1:1]=on  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  11 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>POWER_B_ST</name>
+          			<field_number>10</field_number>
+          			<field_location unit="byte">13</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.POWER_B_ST  General Description: Secondary power status   Conversion:  STATES - [lo:hi]=state description: [0:0]=off [1:1]=on  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  11 Bit Offset within Byte of ApID packet:  1 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>TURNOFF_REQUEST</name>
+          			<field_number>11</field_number>
+          			<field_location unit="byte">14</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.TURNOFF_REQUEST  General Description: Instrument turn-off request   Conversion:  STATES - [lo:hi]=state description: [0:0]=no request [1:1]=turnoff request  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  11 Bit Offset within Byte of ApID packet:  2 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>HVPS1_SAFE_ST</name>
+          			<field_number>12</field_number>
+          			<field_location unit="byte">15</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.HVPS1_SAFE_ST  General Description: HV/20 for HVPS1   Conversion:  STATES - [lo:hi]=state description: [0:0]=hvps enabled [1:1]=hvps safe  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  11 Bit Offset within Byte of ApID packet:  4 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>HVPS2_SAFE_ST</name>
+          			<field_number>13</field_number>
+          			<field_location unit="byte">16</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.HVPS2_SAFE_ST  General Description: HV/20 for HVPS2   Conversion:  STATES - [lo:hi]=state description: [0:0]=hvps enabled [1:1]=hvps safe  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  11 Bit Offset within Byte of ApID packet:  5 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>ACTR1_SAFE_ST</name>
+          			<field_number>14</field_number>
+          			<field_location unit="byte">17</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.ACTR1_SAFE_ST  General Description: Primary actuator safety   Conversion:  STATES - [lo:hi]=state description: [0:0]=actr enable [1:1]=actr safe  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  11 Bit Offset within Byte of ApID packet:  6 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>ACTR2_SAFE_ST</name>
+          			<field_number>15</field_number>
+          			<field_location unit="byte">18</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.ACTR2_SAFE_ST  General Description: Secondary actuator safety   Conversion:  STATES - [lo:hi]=state description: [0:0]=actr enable [1:1]=actr safe  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  11 Bit Offset within Byte of ApID packet:  7 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>CMD_RECEIVED_ST</name>
+          			<field_number>16</field_number>
+          			<field_location unit="byte">19</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.CMD_RECEIVED_ST  General Description: Command received in last second   Conversion:  STATES - [lo:hi]=state description: [0:0]=no command [1:1]=command received  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  12 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>SYNC_MSG_RECEIVED_ST</name>
+          			<field_number>17</field_number>
+          			<field_location unit="byte">20</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.SYNC_MSG_RECEIVED_ST  General Description: Timesync message received in last second   Conversion:  STATES - [lo:hi]=state description: [0:0]=no sync message [1:1]=sync message received  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  12 Bit Offset within Byte of ApID packet:  1 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>SYNC_PLS_RECEIVED_ST</name>
+          			<field_number>18</field_number>
+          			<field_location unit="byte">21</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.SYNC_PLS_RECEIVED_ST  General Description: Timesync pulse received in last second   Conversion:  STATES - [lo:hi]=state description: [0:0]=no sync pulse [1:1]=sync pulse received  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  12 Bit Offset within Byte of ApID packet:  2 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>CRIT_CMD_PENDING_ST</name>
+          			<field_number>19</field_number>
+          			<field_location unit="byte">22</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.CRIT_CMD_PENDING_ST  General Description: Critical TC pending   Conversion:  STATES - [lo:hi]=state description: [0:0]=no pending [1:1]=critical pending  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  12 Bit Offset within Byte of ApID packet:  3 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>MEM_DUMP_ALLOWED_ST</name>
+          			<field_number>20</field_number>
+          			<field_location unit="byte">23</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.MEM_DUMP_ALLOWED_ST  General Description: Memory Dump allowed   Conversion:  STATES - [lo:hi]=state description: [0:0]=no memory dump [1:1]=memory allowed  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  12 Bit Offset within Byte of ApID packet:  4 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>TC_IF_STATUS</name>
+          			<field_number>21</field_number>
+          			<field_location unit="byte">24</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.TC_IF_STATUS  General Description: TC status   Conversion:  STATES - [lo:hi]=state description: [0:0]=illegal_0 [1:1]=wait either [2:2]=primary tc [3:3]=redundant tc [4:4]=wait primary [5:5]=wait redundant [6:6]=illegal_6 [7:7]=illegal_7  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  12 Bit Offset within Byte of ApID packet:  5 Bit Length within ApID packet:  3 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>CMDS_ACCEPTED</name>
+          			<field_number>22</field_number>
+          			<field_location unit="byte">25</field_location>
+          			<data_type>SignedMSB2</data_type>
+          			<field_length unit="byte">2</field_length>        
+          			<unit>N/A</unit>
+          			<scaling_factor>1.00000000000</scaling_factor>
+          			<value_offset>32768.0000000</value_offset>
+          			<description> Full Mnemonic: ALICE_HK.CMDS_ACCEPTED  General Description: Commands accepted (16 bit)   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  13 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  16 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>CMDS_REJECTED</name>
+          			<field_number>23</field_number>
+          			<field_location unit="byte">27</field_location>
+          			<data_type>SignedMSB2</data_type>
+          			<field_length unit="byte">2</field_length>        
+          			<unit>N/A</unit>
+          			<scaling_factor>1.00000000000</scaling_factor>
+          			<value_offset>32768.0000000</value_offset>
+          			<description> Full Mnemonic: ALICE_HK.CMDS_REJECTED  General Description: Commands rejected (16 bit)   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  15 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  16 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>CMDS_EXECUTED</name>
+          			<field_number>24</field_number>
+          			<field_location unit="byte">29</field_location>
+          			<data_type>SignedMSB2</data_type>
+          			<field_length unit="byte">2</field_length>        
+          			<unit>N/A</unit>
+          			<scaling_factor>1.00000000000</scaling_factor>
+          			<value_offset>32768.0000000</value_offset>
+          			<description> Full Mnemonic: ALICE_HK.CMDS_EXECUTED  General Description: Commands executed (16 bit)   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  17 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  16 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>LAST_CMD_ACCEPTED</name>
+          			<field_number>25</field_number>
+          			<field_location unit="byte">31</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.LAST_CMD_ACCEPTED  General Description: Last accepted command id   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  19 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>LAST_CMD_FAILED</name>
+          			<field_number>26</field_number>
+          			<field_location unit="byte">32</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.LAST_CMD_FAILED  General Description: Last failed command id   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  20 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>LAST_FAIL_CODE</name>
+          			<field_number>27</field_number>
+          			<field_location unit="byte">33</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.LAST_FAIL_CODE  General Description: Last failure code   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  21 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>LAST_FAIL_CODE_DUMMY</name>
+          			<field_number>28</field_number>
+          			<field_location unit="byte">34</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.LAST_FAIL_CODE_DUMMY  General Description: Last failure code dummy - used as limit switch point   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  21 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>CRIT_CMD_TIMEOUT</name>
+          			<field_number>29</field_number>
+          			<field_location unit="byte">35</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>second</unit>
+          			<description> Full Mnemonic: ALICE_HK.CRIT_CMD_TIMEOUT  General Description: Critical command timeout remaining   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  22 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  sec  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>HSTM_HEADER</name>
+          			<field_number>30</field_number>
+          			<field_location unit="byte">36</field_location>
+          			<data_type>SignedMSB2</data_type>
+          			<field_length unit="byte">2</field_length>        
+          			<unit>N/A</unit>
+          			<scaling_factor>1.00000000000</scaling_factor>
+          			<value_offset>32768.0000000</value_offset>
+          			<description> Full Mnemonic: ALICE_HK.HSTM_HEADER  General Description: Science packet header   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  23 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  16 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>DETDOOR_ST</name>
+          			<field_number>31</field_number>
+          			<field_location unit="byte">38</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.DETDOOR_ST  General Description: Detector door position   Conversion:  STATES - [lo:hi]=state description: [0:0]=open [1:1]=not open  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  25 Bit Offset within Byte of ApID packet:  1 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>APDOOR_ST</name>
+          			<field_number>32</field_number>
+          			<field_location unit="byte">39</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.APDOOR_ST  General Description: Aperture door position   Conversion:  STATES - [lo:hi]=state description: [0:0]=error [1:1]=closed [2:2]=open [3:3]=between  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  25 Bit Offset within Byte of ApID packet:  2 Bit Length within ApID packet:  2 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>WPA_SWITCH_ST</name>
+          			<field_number>33</field_number>
+          			<field_location unit="byte">40</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.WPA_SWITCH_ST  General Description: WPA (detector door) end switch   Conversion:  STATES - [lo:hi]=state description: [0:0]=inactive [1:1]=activated  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  25 Bit Offset within Byte of ApID packet:  5 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>HVPS1_CMD_ST</name>
+          			<field_number>34</field_number>
+          			<field_location unit="byte">41</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.HVPS1_CMD_ST  General Description: Hvon_1 commanded on   Conversion:  STATES - [lo:hi]=state description: [0:0]=commanded off [1:1]=commanded on  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  25 Bit Offset within Byte of ApID packet:  6 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>HVPS2_CMD_ST</name>
+          			<field_number>35</field_number>
+          			<field_location unit="byte">42</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.HVPS2_CMD_ST  General Description: Hvon_2 commanded on   Conversion:  STATES - [lo:hi]=state description: [0:0]=commanded off [1:1]=commanded on  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  25 Bit Offset within Byte of ApID packet:  7 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>HACKRATE_ST</name>
+          			<field_number>36</field_number>
+          			<field_location unit="byte">43</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.HACKRATE_ST  General Description: Current commanded hackrate   Conversion:  STATES - [lo:hi]=state description: [0:0]=4 ms [1:1]=8 ms [2:2]=16 ms [3:3]=32 ms [4:4]=64 ms [5:5]=128 ms [6:6]=256 ms [7:7]=512 ms  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  26 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  3 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>HSTM_OVFLW_ST</name>
+          			<field_number>37</field_number>
+          			<field_location unit="byte">44</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.HSTM_OVFLW_ST  General Description: Science overflow   Conversion:  STATES - [lo:hi]=state description: [0:0]=nominal [1:1]=overflow  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  26 Bit Offset within Byte of ApID packet:  3 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>HVPS1_REP_ST</name>
+          			<field_number>38</field_number>
+          			<field_location unit="byte">45</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.HVPS1_REP_ST  General Description: HVPS_1 reported command status   Conversion:  STATES - [lo:hi]=state description: [0:0]=reports off [1:1]=reports on  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  26 Bit Offset within Byte of ApID packet:  4 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>HVPS2_REP_ST</name>
+          			<field_number>39</field_number>
+          			<field_location unit="byte">46</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.HVPS2_REP_ST  General Description: HVPS_2 reported command status   Conversion:  STATES - [lo:hi]=state description: [0:0]=reports off [1:1]=reports on  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  26 Bit Offset within Byte of ApID packet:  5 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>CURRENT_ACQ_MEM</name>
+          			<field_number>40</field_number>
+          			<field_location unit="byte">47</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.CURRENT_ACQ_MEM  General Description: Acquisition Memory   Conversion:  STATES - [lo:hi]=state description: [0:0]=side A [1:1]=side B  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  26 Bit Offset within Byte of ApID packet:  6 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>PIXEL_STIM_ST</name>
+          			<field_number>41</field_number>
+          			<field_location unit="byte">48</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.PIXEL_STIM_ST  General Description: Detector STIM. On   Conversion:  STATES - [lo:hi]=state description: [0:0]=STIM off [1:1]=STIM on  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  26 Bit Offset within Byte of ApID packet:  7 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>COUNT_RATE</name>
+          			<field_number>42</field_number>
+          			<field_location unit="byte">49</field_location>
+          			<data_type>SignedMSB2</data_type>
+          			<field_length unit="byte">2</field_length>        
+          			<unit>hertz</unit>
+          			<scaling_factor>1.00000000000</scaling_factor>
+          			<value_offset>32768.0000000</value_offset>
+          			<description> Full Mnemonic: ALICE_HK.COUNT_RATE  General Description: Count rate   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  27 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  16 Type of value:  UNSIGNED Units:  Hz  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>EVENT_CNT</name>
+          			<field_number>43</field_number>
+          			<field_location unit="byte">51</field_location>
+          			<data_type>SignedMSB4</data_type>
+          			<field_length unit="byte">4</field_length>        
+          			<unit>N/A</unit>
+          			<scaling_factor>1.00000000000</scaling_factor>
+          			<value_offset>2147483648.00</value_offset>
+          			<description> Full Mnemonic: ALICE_HK.EVENT_CNT  General Description: Detector event counter   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  29 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  24 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>TIME_HACK_CNT</name>
+          			<field_number>44</field_number>
+          			<field_location unit="byte">55</field_location>
+          			<data_type>SignedMSB2</data_type>
+          			<field_length unit="byte">2</field_length>        
+          			<unit>N/A</unit>
+          			<scaling_factor>1.00000000000</scaling_factor>
+          			<value_offset>32768.0000000</value_offset>
+          			<description> Full Mnemonic: ALICE_HK.TIME_HACK_CNT  General Description: Time hack counter   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  32 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  16 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>PIXEL_LIST_CNT</name>
+          			<field_number>45</field_number>
+          			<field_location unit="byte">57</field_location>
+          			<data_type>SignedMSB2</data_type>
+          			<field_length unit="byte">2</field_length>        
+          			<unit>N/A</unit>
+          			<scaling_factor>1.00000000000</scaling_factor>
+          			<value_offset>32768.0000000</value_offset>
+          			<description> Full Mnemonic: ALICE_HK.PIXEL_LIST_CNT  General Description: Pixel list counter   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  34 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  16 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>EXPOSURE_TIMEOUT</name>
+          			<field_number>46</field_number>
+          			<field_location unit="byte">59</field_location>
+          			<data_type>SignedMSB2</data_type>
+          			<field_length unit="byte">2</field_length>        
+          			<unit>second</unit>
+          			<scaling_factor>1.00000000000</scaling_factor>
+          			<value_offset>32768.0000000</value_offset>
+          			<description> Full Mnemonic: ALICE_HK.EXPOSURE_TIMEOUT  General Description: Remaining histogram exposure time   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  36 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  16 Type of value:  UNSIGNED Units:  sec  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>LAST_ACQ_DONE_TIME</name>
+          			<field_number>47</field_number>
+          			<field_location unit="byte">61</field_location>
+          			<data_type>SignedMSB4</data_type>
+          			<field_length unit="byte">4</field_length>        
+          			<unit>N/A</unit>
+          			<scaling_factor>1.00000000000</scaling_factor>
+          			<value_offset>2147483648.00</value_offset>
+          			<description> Full Mnemonic: ALICE_HK.LAST_ACQ_DONE_TIME  General Description: Last Acquisition Completion Time   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  38 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  32 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>ACQ_TIMEOUT</name>
+          			<field_number>48</field_number>
+          			<field_location unit="byte">65</field_location>
+          			<data_type>SignedMSB2</data_type>
+          			<field_length unit="byte">2</field_length>        
+          			<unit>second</unit>
+          			<scaling_factor>1.00000000000</scaling_factor>
+          			<value_offset>32768.0000000</value_offset>
+          			<description> Full Mnemonic: ALICE_HK.ACQ_TIMEOUT  General Description: Remaining Acquisition Timeout   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  42 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  16 Type of value:  UNSIGNED Units:  sec  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>HVPS_SET_VOLT</name>
+          			<field_number>49</field_number>
+          			<field_location unit="byte">67</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>kilovolt</unit>
+          			<description> Full Mnemonic: ALICE_HK.HVPS_SET_VOLT  General Description: High voltage set point (control)   Conversion:  Linear interpolation - endpoints of segments: 0 (raw) =&gt; 0 (eng) 31 (raw) =&gt; -1.343 (eng) 255 (raw) =&gt; -6.943 (eng)  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  44 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  kV  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>MCP1_VOLT</name>
+          			<field_number>50</field_number>
+          			<field_location unit="byte">68</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>kilovolt</unit>
+          			<description> Full Mnemonic: ALICE_HK.MCP1_VOLT  General Description: Mcp_1 voltage (readback)   Conversion:  Linear interpolation - endpoints of segments: 0 (raw) =&gt; 0 (eng) 25 (raw) =&gt; -1.332 (eng) 255 (raw) =&gt; -7.881 (eng)  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  45 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  kV  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>ANODE1_VOLT</name>
+          			<field_number>51</field_number>
+          			<field_location unit="byte">69</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>volt</unit>
+          			<description> Full Mnemonic: ALICE_HK.ANODE1_VOLT  General Description: Anode_1 voltage (readback)   Conversion:  Linear interpolation - endpoints of segments: 0 (raw) =&gt; 0 (eng) 255 (raw) =&gt; -808 (eng)  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  46 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  V  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>STRIP1_CURR</name>
+          			<field_number>52</field_number>
+          			<field_location unit="byte">70</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>microampere</unit>
+          			<description> Full Mnemonic: ALICE_HK.STRIP1_CURR  General Description: Strip_1 current (readback)   Conversion:  Linear interpolation - endpoints of segments: 0 (raw) =&gt; 0 (eng) 1 (raw) =&gt; 2.36 (eng) 255 (raw) =&gt; 46.76 (eng)  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  47 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  uA  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>MCP2_VOLT</name>
+          			<field_number>53</field_number>
+          			<field_location unit="byte">71</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>kilovolt</unit>
+          			<description> Full Mnemonic: ALICE_HK.MCP2_VOLT  General Description: Mcp_2 voltage (readback)   Conversion:  Linear interpolation - endpoints of segments: 0 (raw) =&gt; 0 (eng) 25 (raw) =&gt; -1.332 (eng) 255 (raw) =&gt; -7.881 (eng)  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  48 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  kV  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>ANODE2_VOLT</name>
+          			<field_number>54</field_number>
+          			<field_location unit="byte">72</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>volt</unit>
+          			<description> Full Mnemonic: ALICE_HK.ANODE2_VOLT  General Description: Anode_2 voltage (readback)   Conversion:  Linear interpolation - endpoints of segments: 0 (raw) =&gt; 0 (eng) 255 (raw) =&gt; -808 (eng)  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  49 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  V  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>STRIP2_CURR</name>
+          			<field_number>55</field_number>
+          			<field_location unit="byte">73</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>microampere</unit>
+          			<description> Full Mnemonic: ALICE_HK.STRIP2_CURR  General Description: Strip_2 current (readback)   Conversion:  Linear interpolation - endpoints of segments: 0 (raw) =&gt; 0 (eng) 1 (raw) =&gt; 2.4 (eng) 255 (raw) =&gt; 45.42 (eng)  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  50 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  uA  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>MAX_MCP_VOLT</name>
+          			<field_number>56</field_number>
+          			<field_location unit="byte">74</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>kilovolt</unit>
+          			<description> Full Mnemonic: ALICE_HK.MAX_MCP_VOLT  General Description: Max Mcp voltage in last second   Conversion:  Linear interpolation - endpoints of segments: 0 (raw) =&gt; 0 (eng) 25 (raw) =&gt; -1.332 (eng) 255 (raw) =&gt; -7.881 (eng)  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  51 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  kV  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>MAX_STRIP_CURR</name>
+          			<field_number>57</field_number>
+          			<field_location unit="byte">75</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>microampere</unit>
+          			<description> Full Mnemonic: ALICE_HK.MAX_STRIP_CURR  General Description: MaxStrip current in last second   Conversion:  Linear interpolation - endpoints of segments: 0 (raw) =&gt; 0 (eng) 1 (raw) =&gt; 2.64 (eng) 255 (raw) =&gt; 27.56 (eng)  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  52 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  uA  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>DISCRIMINATOR_VOLT</name>
+          			<field_number>58</field_number>
+          			<field_location unit="byte">76</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>volt</unit>
+          			<description> Full Mnemonic: ALICE_HK.DISCRIMINATOR_VOLT  General Description: Discriminator read back   Conversion:  Linear interpolation - endpoints of segments: 0 (raw) =&gt; 0 (eng) 255 (raw) =&gt; 3 (eng)  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  53 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  V  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>MIRROR_SETPOINT_TEMP</name>
+          			<field_number>59</field_number>
+          			<field_location unit="byte">77</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>degree Celcius</unit>
+          			<description> Full Mnemonic: ALICE_HK.MIRROR_SETPOINT_TEMP  General Description: Mirror heater set point   Conversion:  polynomial coefficients: Order 0:  -78.03 Order 1:  2.385 Order 2:  -0.04087 Order 3:  0.0003752 Order 4:  -1.601e-06 Order 5:  2.594e-09  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  54 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  C  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>GRATING_SETPOINT_TEMP</name>
+          			<field_number>60</field_number>
+          			<field_location unit="byte">78</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>degree Celcius</unit>
+          			<description> Full Mnemonic: ALICE_HK.GRATING_SETPOINT_TEMP  General Description: Grating heater set point   Conversion:  polynomial coefficients: Order 0:  -78.03 Order 1:  2.385 Order 2:  -0.04087 Order 3:  0.0003752 Order 4:  -1.601e-06 Order 5:  2.594e-09  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  55 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  C  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>MIRROR_A_TEMP</name>
+          			<field_number>61</field_number>
+          			<field_location unit="byte">79</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>degree Celcius</unit>
+          			<description> Full Mnemonic: ALICE_HK.MIRROR_A_TEMP  General Description: Mirror temperature primary sensor   Conversion:  polynomial coefficients: Order 0:  -78.03 Order 1:  2.385 Order 2:  -0.04087 Order 3:  0.0003752 Order 4:  -1.601e-06 Order 5:  2.594e-09  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  56 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  C  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>MIRROR_B_TEMP</name>
+          			<field_number>62</field_number>
+          			<field_location unit="byte">80</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>degree Celcius</unit>
+          			<description> Full Mnemonic: ALICE_HK.MIRROR_B_TEMP  General Description: Mirror temperature secondary sensor   Conversion:  polynomial coefficients: Order 0:  -78.03 Order 1:  2.385 Order 2:  -0.04087 Order 3:  0.0003752 Order 4:  -1.601e-06 Order 5:  2.594e-09  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  57 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  C  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>GRATING_A_TEMP</name>
+          			<field_number>63</field_number>
+          			<field_location unit="byte">81</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>degree Celcius</unit>
+          			<description> Full Mnemonic: ALICE_HK.GRATING_A_TEMP  General Description: Grating temperature primary sensor   Conversion:  polynomial coefficients: Order 0:  -78.03 Order 1:  2.385 Order 2:  -0.04087 Order 3:  0.0003752 Order 4:  -1.601e-06 Order 5:  2.594e-09  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  58 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  C  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>GRATING_B_TEMP</name>
+          			<field_number>64</field_number>
+          			<field_location unit="byte">82</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>degree Celcius</unit>
+          			<description> Full Mnemonic: ALICE_HK.GRATING_B_TEMP  General Description: Grating temperature second sensor   Conversion:  polynomial coefficients: Order 0:  -78.03 Order 1:  2.385 Order 2:  -0.04087 Order 3:  0.0003752 Order 4:  -1.601e-06 Order 5:  2.594e-09  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  59 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  C  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>DET_ELEC_TEMP</name>
+          			<field_number>65</field_number>
+          			<field_location unit="byte">83</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>degree Celcius</unit>
+          			<description> Full Mnemonic: ALICE_HK.DET_ELEC_TEMP  General Description: Detector electronics temperature   Conversion:  polynomial coefficients: Order 0:  -78.03 Order 1:  2.385 Order 2:  -0.04087 Order 3:  0.0003752 Order 4:  -1.601e-06 Order 5:  2.594e-09  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  60 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  C  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>DET_HOUSE_TEMP</name>
+          			<field_number>66</field_number>
+          			<field_location unit="byte">84</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>degree Celcius</unit>
+          			<description> Full Mnemonic: ALICE_HK.DET_HOUSE_TEMP  General Description: Detector housing temperature   Conversion:  polynomial coefficients: Order 0:  -78.03 Order 1:  2.385 Order 2:  -0.04087 Order 3:  0.0003752 Order 4:  -1.601e-06 Order 5:  2.594e-09  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  61 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  C  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>CDH_TEMP</name>
+          			<field_number>67</field_number>
+          			<field_location unit="byte">85</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>degree Celcius</unit>
+          			<description> Full Mnemonic: ALICE_HK.CDH_TEMP  General Description: C&amp;DH electronics temperature   Conversion:  polynomial coefficients: Order 0:  -78.03 Order 1:  2.385 Order 2:  -0.04087 Order 3:  0.0003752 Order 4:  -1.601e-06 Order 5:  2.594e-09  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  62 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  C  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>SOC_TEMP</name>
+          			<field_number>68</field_number>
+          			<field_location unit="byte">86</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>degree Celcius</unit>
+          			<description> Full Mnemonic: ALICE_HK.SOC_TEMP  General Description: SOC mirror temperature   Conversion:  polynomial coefficients: Order 0:  -78.03 Order 1:  2.385 Order 2:  -0.04087 Order 3:  0.0003752 Order 4:  -1.601e-06 Order 5:  2.594e-09  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  63 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  C  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>SAFETY_TIMEOUT</name>
+          			<field_number>69</field_number>
+          			<field_location unit="byte">87</field_location>
+          			<data_type>SignedMSB2</data_type>
+          			<field_length unit="byte">2</field_length>        
+          			<unit>second</unit>
+          			<scaling_factor>1.00000000000</scaling_factor>
+          			<value_offset>32768.0000000</value_offset>
+          			<description> Full Mnemonic: ALICE_HK.SAFETY_TIMEOUT  General Description: Unsafe timer   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  64 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  16 Type of value:  UNSIGNED Units:  sec  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>LAST_SAFETY</name>
+          			<field_number>70</field_number>
+          			<field_location unit="byte">89</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.LAST_SAFETY  General Description: Last active safety   Conversion:  STATES - [lo:hi]=state description: [0:0]=no safety [1:1]=bright safety [2:2]=hv safety [3:3]=strip safety [4:4]=anode safety [5:5]=temp safety [6:6]=undefined safety 6 [7:7]=undefined safety 7  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  66 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  3 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>TEMP_SAFETY_ST</name>
+          			<field_number>71</field_number>
+          			<field_location unit="byte">90</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.TEMP_SAFETY_ST  General Description: Temperature safety   Conversion:  STATES - [lo:hi]=state description: [0:0]=no temp safety [1:1]=temp safety  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  66 Bit Offset within Byte of ApID packet:  3 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>ANODE_SAFETY_ST</name>
+          			<field_number>72</field_number>
+          			<field_location unit="byte">91</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.ANODE_SAFETY_ST  General Description: Anode safety   Conversion:  STATES - [lo:hi]=state description: [0:0]=no anode safety [1:1]=anode safety  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  66 Bit Offset within Byte of ApID packet:  4 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>STRIP_SAFETY_ST</name>
+          			<field_number>73</field_number>
+          			<field_location unit="byte">92</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.STRIP_SAFETY_ST  General Description: Strip safety   Conversion:  STATES - [lo:hi]=state description: [0:0]=no strip safety [1:1]=strip safety  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  66 Bit Offset within Byte of ApID packet:  5 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>HV_SAFETY_ST</name>
+          			<field_number>74</field_number>
+          			<field_location unit="byte">93</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.HV_SAFETY_ST  General Description: HV safety   Conversion:  STATES - [lo:hi]=state description: [0:0]=no hv safety [1:1]=hv safety  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  66 Bit Offset within Byte of ApID packet:  6 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>BRIGHT_SAFETY_ST</name>
+          			<field_number>75</field_number>
+          			<field_location unit="byte">94</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.BRIGHT_SAFETY_ST  General Description: bright safety   Conversion:  STATES - [lo:hi]=state description: [0:0]=no bright object [1:1]=brigh object safety  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  66 Bit Offset within Byte of ApID packet:  7 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>SAFETY_OVRD</name>
+          			<field_number>76</field_number>
+          			<field_location unit="byte">95</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.SAFETY_OVRD  General Description: Safety override flag   Conversion:  STATES - [lo:hi]=state description: [0:0]=all safety enabled [1:1]=safety overide  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  67 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>TEMP_SAFEMASK</name>
+          			<field_number>77</field_number>
+          			<field_location unit="byte">96</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.TEMP_SAFEMASK  General Description: Temperature safety mask   Conversion:  STATES - [lo:hi]=state description: [0:0]=safety enabled [1:1]=safety masked  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  67 Bit Offset within Byte of ApID packet:  3 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>ANODE_SAFEMASK</name>
+          			<field_number>78</field_number>
+          			<field_location unit="byte">97</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.ANODE_SAFEMASK  General Description: Anode Voltage safety mask   Conversion:  STATES - [lo:hi]=state description: [0:0]=safety enabled [1:1]=safety masked  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  67 Bit Offset within Byte of ApID packet:  4 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>STRIP_SAFEMASK</name>
+          			<field_number>79</field_number>
+          			<field_location unit="byte">98</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.STRIP_SAFEMASK  General Description: Strip Current safety mask   Conversion:  STATES - [lo:hi]=state description: [0:0]=safety enabled [1:1]=safety masked  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  67 Bit Offset within Byte of ApID packet:  5 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>HV_SAFEMASK</name>
+          			<field_number>80</field_number>
+          			<field_location unit="byte">99</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.HV_SAFEMASK  General Description: High Voltage (McpV) safety mask   Conversion:  STATES - [lo:hi]=state description: [0:0]=safety enabled [1:1]=safety masked  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  67 Bit Offset within Byte of ApID packet:  6 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>BRIGHT_SAFEMASK</name>
+          			<field_number>81</field_number>
+          			<field_location unit="byte">100</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.BRIGHT_SAFEMASK  General Description: Bright safety mask   Conversion:  STATES - [lo:hi]=state description: [0:0]=safety enabled [1:1]=safety masked  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  67 Bit Offset within Byte of ApID packet:  7 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>CODE_ST</name>
+          			<field_number>82</field_number>
+          			<field_location unit="byte">101</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.CODE_ST  General Description: EEProm Code executing   Conversion:  STATES - [lo:hi]=state description: [0:0]=unknown code 0 [1:1]=prom [2:2]=eeprom [3:3]=unknonw code 3  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  68 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  2 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>EEPROM_ST</name>
+          			<field_number>83</field_number>
+          			<field_location unit="byte">102</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.EEPROM_ST  General Description: EEProm Page executing   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  68 Bit Offset within Byte of ApID packet:  2 Bit Length within ApID packet:  2 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>HW_VERSION</name>
+          			<field_number>84</field_number>
+          			<field_location unit="byte">103</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.HW_VERSION  General Description: HW version   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  68 Bit Offset within Byte of ApID packet:  4 Bit Length within ApID packet:  4 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>SW_MAJOR</name>
+          			<field_number>85</field_number>
+          			<field_location unit="byte">104</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.SW_MAJOR  General Description: Software major version   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  69 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  4 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>SW_MINOR</name>
+          			<field_number>86</field_number>
+          			<field_location unit="byte">105</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.SW_MINOR  General Description: Software minor version   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  69 Bit Offset within Byte of ApID packet:  4 Bit Length within ApID packet:  4 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>RX_INT_A_OFF_ST</name>
+          			<field_number>87</field_number>
+          			<field_location unit="byte">106</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.RX_INT_A_OFF_ST  General Description: TC channel 1 int disabled   Conversion:  STATES - [lo:hi]=state description: [0:0]=int A enabled [1:1]=int A disabled  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  70 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>RX_INT_B_OFF_ST</name>
+          			<field_number>88</field_number>
+          			<field_location unit="byte">107</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.RX_INT_B_OFF_ST  General Description: TC channel 2 int disabled   Conversion:  STATES - [lo:hi]=state description: [0:0]=int B enabled [1:1]=int B disabled  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  70 Bit Offset within Byte of ApID packet:  1 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>SYNC_A_ST</name>
+          			<field_number>89</field_number>
+          			<field_location unit="byte">108</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.SYNC_A_ST  General Description: Sync status 1   Conversion:  STATES - [lo:hi]=state description: [0:0]=no sync A [1:1]=sync A  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  70 Bit Offset within Byte of ApID packet:  2 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>SYNC_B_ST</name>
+          			<field_number>90</field_number>
+          			<field_location unit="byte">109</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.SYNC_B_ST  General Description: Sync status 2   Conversion:  STATES - [lo:hi]=state description: [0:0]=no sync B [1:1]=sync B  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  70 Bit Offset within Byte of ApID packet:  3 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>FRAME_ERR_A</name>
+          			<field_number>91</field_number>
+          			<field_location unit="byte">110</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.FRAME_ERR_A  General Description: Frame error 1   Conversion:  STATES - [lo:hi]=state description: [0:0]=ok [1:1]=error  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  70 Bit Offset within Byte of ApID packet:  4 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>FRAME_ERR_B</name>
+          			<field_number>92</field_number>
+          			<field_location unit="byte">111</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.FRAME_ERR_B  General Description: Frame error 2   Conversion:  STATES - [lo:hi]=state description: [0:0]=ok [1:1]=error  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  70 Bit Offset within Byte of ApID packet:  5 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>TC_OVRUN_A</name>
+          			<field_number>93</field_number>
+          			<field_location unit="byte">112</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.TC_OVRUN_A  General Description: Overrun error 1   Conversion:  STATES - [lo:hi]=state description: [0:0]=ok [1:1]=error  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  70 Bit Offset within Byte of ApID packet:  6 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>TC_OVRUN_B</name>
+          			<field_number>94</field_number>
+          			<field_location unit="byte">113</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.TC_OVRUN_B  General Description: Overrun error 2   Conversion:  STATES - [lo:hi]=state description: [0:0]=ok [1:1]=error  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  70 Bit Offset within Byte of ApID packet:  7 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>MEM_CHECKSUM</name>
+          			<field_number>95</field_number>
+          			<field_location unit="byte">114</field_location>
+          			<data_type>SignedMSB2</data_type>
+          			<field_length unit="byte">2</field_length>        
+          			<unit>N/A</unit>
+          			<scaling_factor>1.00000000000</scaling_factor>
+          			<value_offset>32768.0000000</value_offset>
+          			<description> Full Mnemonic: ALICE_HK.MEM_CHECKSUM  General Description: Memory checksum   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  71 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  16 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>PROC_IDLE</name>
+          			<field_number>96</field_number>
+          			<field_location unit="byte">116</field_location>
+          			<data_type>SignedMSB2</data_type>
+          			<field_length unit="byte">2</field_length>        
+          			<unit>N/A</unit>
+          			<scaling_factor>1.00000000000</scaling_factor>
+          			<value_offset>32768.0000000</value_offset>
+          			<description> Full Mnemonic: ALICE_HK.PROC_IDLE  General Description: Rtx Idle time in last second   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  73 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  16 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>PROC_SCHED</name>
+          			<field_number>97</field_number>
+          			<field_location unit="byte">118</field_location>
+          			<data_type>SignedMSB2</data_type>
+          			<field_length unit="byte">2</field_length>        
+          			<unit>hertz</unit>
+          			<scaling_factor>1.00000000000</scaling_factor>
+          			<value_offset>32768.0000000</value_offset>
+          			<description> Full Mnemonic: ALICE_HK.PROC_SCHED  General Description: Rtx Scheduler calls in last second   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  75 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  16 Type of value:  UNSIGNED Units:  Hz  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>TEST_STATUS</name>
+          			<field_number>98</field_number>
+          			<field_location unit="byte">120</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.TEST_STATUS  General Description: Self test status   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  77 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>TASK_0_STACK</name>
+          			<field_number>99</field_number>
+          			<field_location unit="byte">121</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.TASK_0_STACK  General Description: TaskStack task 0   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  78 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>TASK_1_STACK</name>
+          			<field_number>100</field_number>
+          			<field_location unit="byte">122</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.TASK_1_STACK  General Description: TaskStack task 1   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  79 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>TASK_2_STACK</name>
+          			<field_number>101</field_number>
+          			<field_location unit="byte">123</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.TASK_2_STACK  General Description: TaskStack task 2   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  80 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>TASK_3_STACK</name>
+          			<field_number>102</field_number>
+          			<field_location unit="byte">124</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.TASK_3_STACK  General Description: TaskStack task 3   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  81 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>TASK_4_STACK</name>
+          			<field_number>103</field_number>
+          			<field_location unit="byte">125</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.TASK_4_STACK  General Description: TaskStack task 4   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  82 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>TASK_5_STACK</name>
+          			<field_number>104</field_number>
+          			<field_location unit="byte">126</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.TASK_5_STACK  General Description: TaskStack task 5   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  83 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>TASK_6_STACK</name>
+          			<field_number>105</field_number>
+          			<field_location unit="byte">127</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.TASK_6_STACK  General Description: TaskStack task 6   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  84 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>TASK_7_STACK</name>
+          			<field_number>106</field_number>
+          			<field_location unit="byte">128</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.TASK_7_STACK  General Description: TaskStack task 7   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  85 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>TASK_8_STACK</name>
+          			<field_number>107</field_number>
+          			<field_location unit="byte">129</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.TASK_8_STACK  General Description: TaskStack task 8   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  86 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>TASK_9_STACK</name>
+          			<field_number>108</field_number>
+          			<field_location unit="byte">130</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.TASK_9_STACK  General Description: TaskStack task 9   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  87 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>MIN_STACK</name>
+          			<field_number>109</field_number>
+          			<field_location unit="byte">131</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.MIN_STACK  General Description: Min Free Stack in last second   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  88 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>FIRST_DELETED</name>
+          			<field_number>110</field_number>
+          			<field_location unit="byte">132</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.FIRST_DELETED  General Description: First Deleted task   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  89 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>SLOW_TASK_STATE</name>
+          			<field_number>111</field_number>
+          			<field_location unit="byte">133</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.SLOW_TASK_STATE  General Description: Status of Slow task   Conversion:  STATES - [lo:hi]=state description: [0:0]=start [1:1]=idle [2:2]=memory check [3:3]=memory dump [4:4]=memory load [5:5]=histogram acquisition [6:6]=pixellist acquisition [7:7]=internal test  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  90 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  3 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>EX_MAXED_ST</name>
+          			<field_number>112</field_number>
+          			<field_location unit="byte">134</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.EX_MAXED_ST  General Description: Watchdog expiration count above 16   Conversion:  STATES - [lo:hi]=state description: [0:0]=below 16 [1:1]=above 15  Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  90 Bit Offset within Byte of ApID packet:  3 Bit Length within ApID packet:  1 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>EXPIRE_CNT</name>
+          			<field_number>113</field_number>
+          			<field_location unit="byte">135</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.EXPIRE_CNT  General Description: Watchdog expiration count   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  90 Bit Offset within Byte of ApID packet:  4 Bit Length within ApID packet:  4 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>FINE_RTC</name>
+          			<field_number>114</field_number>
+          			<field_location unit="byte">136</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.FINE_RTC  General Description: Fine real time clock register   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  91 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>PARAM_INDEX</name>
+          			<field_number>115</field_number>
+          			<field_location unit="byte">137</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.PARAM_INDEX  General Description: Parameter index   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  92 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>PARAM_VALUE</name>
+          			<field_number>116</field_number>
+          			<field_location unit="byte">138</field_location>
+          			<data_type>UnsignedByte</data_type>
+          			<field_length unit="byte">1</field_length>        
+          			<unit>N/A</unit>
+          			<description> Full Mnemonic: ALICE_HK.PARAM_VALUE  General Description: Parameter value   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  93 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  8 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        		<Field_Binary>
+          			<name>HK_CHECKSUM</name>
+          			<field_number>117</field_number>
+          			<field_location unit="byte">139</field_location>
+          			<data_type>SignedMSB2</data_type>
+          			<field_length unit="byte">2</field_length>        
+          			<unit>N/A</unit>
+          			<scaling_factor>1.00000000000</scaling_factor>
+          			<value_offset>32768.0000000</value_offset>
+          			<description> Full Mnemonic: ALICE_HK.HK_CHECKSUM  General Description: HK Packet checksum   Subsystem:  ALICE Packet ApID:  0X482 Byte Offset within ApID packet:  94 Bit Offset within Byte of ApID packet:  0 Bit Length within ApID packet:  16 Type of value:  UNSIGNED Units:  N/A  Additional information from science team: - Present for engineering and historical purposes - Neither useful for science analysis nor used for calibration </description>        
+        		</Field_Binary>
+        	</Record_Binary>
+        </Table_Binary>
+    </File_Area_Observational>
+</Product_Observational>

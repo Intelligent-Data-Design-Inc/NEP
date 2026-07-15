@@ -223,8 +223,9 @@ NEP's PDS4 reader is validated against a mix of small synthetic labels and real 
 | **Cassini-Huygens** | High Rate Detector (HRD) engineering on/off log | `cassini_hrd/hrd_2000_on_off.xml`, `hrd_2000_on_off.tab` | `Table_Character` | `ASCII_Date_Time_DOY`, `ASCII_String` |
 | **MESSENGER** | Mercury thermal neutron map (Peplowski et al., 2015) | `messenger_tnmap/thermal_neutron_map.xml`, `thermal_neutron_map.img` | `Array_2D_Image` | `UnsignedByte` |
 | **LCS-9P / McDonald Observatory** | Comet 9P/Tempel 1 CN photometry and column densities | `lcs_9p/20050706_000.xml`, `20050706_000.tab` | `Table_Character` | `ASCII_Integer`, `ASCII_Real` |
+| **New Horizons** | Alice Jupiter encounter pixel-list product | `new_horizons/ali_0030420276_0x4b0_sci_1.lblx`, `ali_0030420276_0x4b0_sci_1.fit` | `Array_2D_Spectrum`, `Table_Binary` | `IEEE754MSBSingle`, `SignedMSB2`, `IEEE754MSBDouble` |
 
-These mission products exercise data types and structures not covered by the synthetic tests, including unsigned byte images, date/time strings, integer ASCII fields, and real-world table layouts.
+These mission products exercise data types and structures not covered by the synthetic tests, including unsigned byte images, date/time strings, integer ASCII fields, real-world table layouts, spectrum arrays, and FITS-backed PDS4 payloads.
 
 ---
 

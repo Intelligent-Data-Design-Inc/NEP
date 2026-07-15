@@ -44,6 +44,8 @@
 #define PDS4_MAVEN_L3_FILE "data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml"
 #define PDS4_MAVEN_IUVS_FILE "data/PDS4/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758.xml"
 #define PDS4_MAVEN_PERIAPSE_FILE "data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108.xml"
+#define PDS4_NEW_HORIZONS_FILE \
+    "data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.lblx"
 #define PDS4_PERSEVERANCE_FILE \
     "data/PDS4/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml"
 #define PDS4_PERSEVERANCE_1737_FILE \
@@ -1616,6 +1618,90 @@ test_mission_perseverance_mastcamz_1737_data(void)
     return 0;
 }
 
+static int
+test_mission_new_horizons(void)
+{
+    int ncid, grp_ncid, varid, retval;
+    int ndims, dimids[NC_MAX_DIMS];
+    nc_type xtype;
+    size_t len;
+    float spectrum[4];
+    short x_index;
+    size_t array_start[2] = {0, 0};
+    size_t array_count[2] = {1, 4};
+    size_t table_start[1] = {0};
+    size_t table_count[1] = {1};
+
+    printf("\n--- Mission: New Horizons Alice ---\n");
+
+    if ((retval = nc_open(PDS4_NEW_HORIZONS_FILE, NC_NOWRITE, &ncid)))
+        ERR(retval);
+    if ((retval = nc_inq_ncid(ncid, "ali_0030420276_0x4b0_sci_1.fit", &grp_ncid)))
+        ERR(retval);
+
+    if ((retval = nc_inq_varid(grp_ncid, "Observational Data", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, NULL, &xtype, &ndims, dimids, NULL)))
+        ERR(retval);
+    if (xtype != NC_FLOAT || ndims != 2)
+    {
+        fprintf(stderr, "Observational Data: expected 2D NC_FLOAT, got ndims=%d type=%d\n",
+                ndims, xtype);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((retval = nc_inq_dim(grp_ncid, dimids[0], NULL, &len)))
+        ERR(retval);
+    if (len != 32)
+    {
+        fprintf(stderr, "Observational Data Line length: expected 32, got %zu\n", len);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((retval = nc_inq_dim(grp_ncid, dimids[1], NULL, &len)))
+        ERR(retval);
+    if (len != 1024)
+    {
+        fprintf(stderr, "Observational Data Sample length: expected 1024, got %zu\n", len);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((retval = nc_get_vara_float(grp_ncid, varid, array_start, array_count, spectrum)))
+        ERR(retval);
+    if (spectrum[0] != 0.0f || spectrum[1] != 0.0f ||
+        spectrum[2] != 0.0f || spectrum[3] != 0.0f)
+    {
+        fprintf(stderr, "Unexpected Observational Data[0,0:4]: %f %f %f %f\n",
+                spectrum[0], spectrum[1], spectrum[2], spectrum[3]);
+        nc_close(ncid);
+        return 1;
+    }
+
+    if ((retval = nc_inq_varid(grp_ncid, "X_INDEX", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, NULL, &xtype, &ndims, NULL, NULL)))
+        ERR(retval);
+    if (xtype != NC_SHORT || ndims != 1)
+    {
+        fprintf(stderr, "X_INDEX: expected 1D NC_SHORT, got ndims=%d type=%d\n", ndims, xtype);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((retval = nc_get_vara_short(grp_ncid, varid, table_start, table_count, &x_index)))
+        ERR(retval);
+    if (x_index != 1007)
+    {
+        fprintf(stderr, "Unexpected X_INDEX[0]: %d\n", (int)x_index);
+        nc_close(ncid);
+        return 1;
+    }
+
+    if ((retval = nc_close(ncid)))
+        ERR(retval);
+    printf("PASS: New Horizons Alice metadata and data reads.\n");
+    return 0;
+}
+
 int
 main(void)
 {
@@ -1786,6 +1872,8 @@ main(void)
     printf("\nAll PDS4 UDF Sprint 4 + Sprint 5 + Sprint 6 tests PASSED.\n");
 
     /* Mission data validation tests. */
+    if (test_mission_new_horizons())
+        return 1;
     if (test_mission_cassini_hrd())
         return 1;
     if (test_mission_messenger_tnmap())

@@ -61,6 +61,7 @@ if HAVE_PDS4
 check_PROGRAMS += tst_pds4_udf
 tst_pds4_udf_CFLAGS = $(XML2_CFLAGS)
 tst_pds4_udf_LDADD = ${top_builddir}/src/libncpds4.la ${top_builddir}/src/libnep.la
+check-TESTS: check-local
 TESTS += tst_pds4_udf
 endif
 
@@ -95,6 +96,9 @@ check-local:
 		cp $(srcdir)/data/PDS4/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758_v07_r01.fits $(builddir)/data/PDS4/ 2>/dev/null || true; \
 		cp $(srcdir)/data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108.xml $(builddir)/data/PDS4/ 2>/dev/null || true; \
 		cp $(srcdir)/data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108_v13_r01.fits $(builddir)/data/PDS4/ 2>/dev/null || true; \
+		$(MKDIR_P) $(builddir)/data/PDS4/new_horizons; \
+		cp $(srcdir)/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.lblx $(builddir)/data/PDS4/new_horizons/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.fit $(builddir)/data/PDS4/new_horizons/ 2>/dev/null || true; \
 		cp $(srcdir)/data/PDS4/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml $(builddir)/data/PDS4/ 2>/dev/null || true; \
 		cp $(srcdir)/data/PDS4/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.IMG $(builddir)/data/PDS4/ 2>/dev/null || true; \
 		cp $(srcdir)/data/PDS4/ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.xml $(builddir)/data/PDS4/ 2>/dev/null || true; \
@@ -118,6 +122,7 @@ data/PDS4/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.xml data/PDS4/mvn_ng
 data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.csv \
 data/PDS4/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758.xml data/PDS4/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758_v07_r01.fits \
 data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108.xml data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108_v13_r01.fits \
+data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.lblx data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.fit \
 data/PDS4/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml data/PDS4/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.IMG \
 data/PDS4/ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.xml data/PDS4/ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.IMG
 

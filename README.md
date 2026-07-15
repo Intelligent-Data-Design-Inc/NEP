@@ -83,7 +83,7 @@ NEP adds LZ4 and BZIP2 HDF5 filter plugins for NetCDF-4 files, enabled by defaul
 ### Build Requirements
 
 - **NetCDF-C >= 4.10.1** (required for UDF slots > 2, which NEP uses for FITS, CDF, and PDS4)
-- **HDF5 >= 1.10** (required by NetCDF-4)
+- **HDF5 >= 2.1.1** (required by NetCDF-4)
 - C compiler and, optionally, a Fortran 90+ compiler
 - Doxygen and Graphviz (only if building documentation)
 
@@ -112,10 +112,10 @@ cmake --build build --target uninstall
 cmake -B build -DHDF5_ROOT=/path/to/hdf5 -DCMAKE_INSTALL_PREFIX=/usr/local
 ```
 
-For example, if HDF5 is installed in `/usr/local/hdf5-1.14.6`:
+For example, if HDF5 2.1.1 is installed in `/usr/local/hdf5-2.1.1`:
 
 ```bash
-cmake -B build -DHDF5_ROOT=/usr/local/hdf5-1.14.6 -DCMAKE_INSTALL_PREFIX=/usr/local
+cmake -B build -DHDF5_ROOT=/usr/local/hdf5-2.1.1 -DCMAKE_INSTALL_PREFIX=/usr/local
 ```
 
 ### Autotools Build and Installation

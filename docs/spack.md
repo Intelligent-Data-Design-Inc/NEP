@@ -62,10 +62,10 @@ export HDF5_PLUGIN_PATH=$(spack location -i nep)/lib/plugin
 
 ```bash
 # Install with specific NetCDF version
-spack install nep ^netcdf-c@4.9.2
+spack install nep ^netcdf-c@4.10.1
 
 # Install with specific HDF5 version
-spack install nep ^hdf5@1.14.0
+spack install nep ^hdf5@2.1.1
 ```
 
 ## CDF Package

@@ -495,8 +495,8 @@ Parallel I/O builds are tested in a separate CI workflow (`ci-parallel.yml`) wit
 ## 13. Dependencies
 
 ### 13.1 Core Dependencies
-- NetCDF-C v4.9+ (required)
-- HDF5 v1.12+ (required)
+- NetCDF-C v4.10.1+ (required)
+- HDF5 v2.1.1+ (required)
 - CMake v3.9+ or Autotools (build)
 
 ### 13.2 Optional Dependencies
@@ -582,7 +582,7 @@ The PDS4 XML label is mapped into the netCDF-4 in-memory model as follows:
 - `NC_PDS4_inq_format()` — Returns `NC_FORMAT_NETCDF4`.
 - `NC_PDS4_inq_format_extended()` — Returns `NC_FORMATX_NC_PDS4`
   (`NC_FORMATX_UDF5`) and `NC_NOWRITE`.
-- `NC_PDS4_get_vara()` — Reads array hyperslabs or table field records from
+- `NC_PDS4_get_vara()` — Reads array hyperslabs, including `Array_2D_Spectrum`, or table field records from
   the referenced data file; byte-swaps binary types as needed; parses ASCII types
   via `strtod()`/`strtoll()`.
 

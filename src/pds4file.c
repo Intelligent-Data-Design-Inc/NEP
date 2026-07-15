@@ -1693,6 +1693,7 @@ pds4_read_file_area(NC_FILE_INFO_T *h5, NC_GRP_INFO_T *root_grp,
             continue;
 
         if (xmlStrcmp(cur->name, (const xmlChar *)"Array_2D_Image") == 0 ||
+            xmlStrcmp(cur->name, (const xmlChar *)"Array_2D_Spectrum") == 0 ||
             xmlStrcmp(cur->name, (const xmlChar *)"Array_3D_Image") == 0 ||
             xmlStrcmp(cur->name, (const xmlChar *)"Array_3D") == 0 ||
             xmlStrcmp(cur->name, (const xmlChar *)"Array_2D") == 0 ||

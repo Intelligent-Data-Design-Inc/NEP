@@ -1,0 +1,425 @@
+  /home/ed/Downloads:
+  -rw-rw-r--   1 ed ed        384 Jul 15  2026 acknowledgement.txt
+  -rw-rw-r--   1 ed ed        203 Jul 15  2026 info.txt
+  drwxr-xr-x  27 ed ed      36864 Jul 15 06:56 .
+  -rw-rw-r--   1 ed ed      38770 Jul 15 06:56 1.0.zip
+  -rw-rw-r--   1 ed ed     584640 Jul 15 05:40 ali_0030420276_0x4b0_sci_1.fit
+  drwxr-xr-x 108 ed ed      12288 Jul 15 05:27 ..
+  drwxrwxr-x  41 ed ed       4096 Jul 13 05:47 netcdf-c-4.10.1
+  drwxrwxr-x  18 ed ed       4096 Jul 10 07:49 hdf5-2.1.1
+  -rw-rw-r--   1 ed ed   25714348 Jul 10 07:30 netcdf-c-4.10.1 (1).tar.gz
+  -rw-rw-r--   1 ed ed   42074714 Jul 10 06:52 hdf5-2.1.1.tar.gz
+  -rw-rw-r--   1 ed ed   25714348 Jul  9 16:15 netcdf-c-4.10.1.tar.gz
+  -rw-rw-r--   1 ed ed 4734644799 Jul  9 15:12 gbo.ast.radar.arecibo.doppler_spectra_of_asteroids_v1.1.zip
+  drwxrwxr-x   8 ed ed       4096 Jul  9 14:37 PDS_examples
+  -rw-rw-r--   1 ed ed   18560747 Jul  9 14:35 dirss_0001.tgz
+  -rw-rw-r--   1 ed ed    1135609 Jul  6 06:19 compression_chapter.odt
+  -rw-rw-r--   1 ed ed    1230387 Jul  6 06:14 compression_chapter.pdf
+  -rw-rw-r--   1 ed ed    3341988 Jul  5 08:32 NetCDF_Developers_Handbook_hardcover_2_0.pdf
+  -rw-rw-r--   1 ed ed    3342023 Jul  5 07:35 NetCDF_Developers_Handbook_2_0.pdf
+  -rw-rw-r--   1 ed ed    2198896 Jul  5 07:35 NetCDF_Developers_Handbook_2_0.epub
+  -rw-rw-r--   1 ed ed    2650644 Jul  1 14:36 Proposal No. 25723.pdf
+  drwxr-xr-x  12 ed ed      12288 Jun 28 07:42 cfitsio-4.6.4
+  -rw-rw-r--   1 ed ed    3774657 Jun 28 07:38 cfitsio-4.6.4.tar.gz
+  -rw-rw-r--   1 ed ed     699840 Jun 27 13:34 WFPC2u5780205r_c0fx.fits
+  -rw-rw-r--   1 ed ed    3207985 Jun 23 05:57 NetCDF_Developers_Handbook.pdf
+  -rw-rw-r--   1 ed ed    3137066 Jun 22 16:07 ndh_1_20.pdf
+  -rw-rw-r--   1 ed ed    2042964 Jun 22 16:06 NetCDF_Developers_Handbook_1_20.epub
+  -rw-rw-r--   1 ed ed      16793 Jun 22 14:36 carriage_house_floorplan_down_5.pdf
+  -rw-rw-r--   1 ed ed    5736425 Jun 20 18:17 Gemini_Generated_Image_u1zj1mu1zj1mu1zj.png
+  -rw-rw-r--   1 ed ed    3134093 Jun 20 06:17 ndh_1_19.pdf
+  -rw-rw-r--   1 ed ed    2041796 Jun 20 06:17 NetCDF_Developers_Handbook_1_19.epub
+  -rw-rw-r--   1 ed ed     761630 Jun 19 13:25 NetCDF_Developers_Handbook_1_18.md
+  -rw-rw-r--   1 ed ed    3127022 Jun 19 06:52 ndh_1_18.pdf
+  -rw-rw-r--   1 ed ed    2040353 Jun 19 06:50 NetCDF_Developers_Handbook_1_18.epub
+  -rw-rw-r--   1 ed ed    5126671 Jun 19 06:44 IMG20260619063718.jpg
+  -rw-rw-r--   1 ed ed    3123186 Jun 18 05:31 ndh_1_17.pdf
+  -rw-rw-r--   1 ed ed    2037994 Jun 18 05:30 NetCDF_Developers_Handbook_1_17.epub
+  -rw-rw-r--   1 ed ed    2833719 Jun 17 06:54 ndh_1_16.pdf
+  -rw-rw-r--   1 ed ed    1638034 Jun 17 06:53 NetCDF_Developers_Handbook_1_16.epub
+  -rw-rw-r--   1 ed ed    2737160 Jun 16 05:24 ndh_1_15.pdf
+  -rw-rw-r--   1 ed ed    1539266 Jun 16 05:23 NetCDF_Developers_Handbook_1_15.epub
+  drwxrwxr-x  14 ed ed       4096 Jun 15 10:35 netcdf-fortran-4.6.3
+  -rw-rw-r--   1 ed ed    8107630 Jun 15 10:29 netcdf-fortran-4.6.3.tar.gz
+  -rw-rw-r--   1 ed ed    2608268 Jun 15 06:23 ndh_1_14.pdf
+  -rw-rw-r--   1 ed ed    1444385 Jun 15 06:09 NetCDF_Developers_Handbook_1_14.epub
+  -rw-rw-r--   1 ed ed     368437 Jun 14 04:30 ed_rocket_2.png
+  -rw-rw-r--   1 ed ed     663848 Jun 14 04:15 ed_rocket_park.jpg
+  -rw-rw-r--   1 ed ed    1764668 Jun 12 07:00 NetCDF_Developers_Handbook_1_13_compression.pdf
+  -rw-rw-r--   1 ed ed    3367597 Jun 12 06:40 ndh_1_13.pdf
+  -rw-rw-r--   1 ed ed    1831496 Jun 12 06:39 NetCDF_Developers_Handbook_1_13.epub
+  -rw-rw-r--   1 ed ed    3357402 Jun 11 08:54 NetCDF_Developers_Handbook_1_13b.pdf
+  -rw-rw-r--   1 ed ed    3675823 Jun 11 08:49 NetCDF_Developers_Handbook_1_13a.pdf
+  -rw-rw-r--   1 ed ed    3461720 Jun 11 08:37 NetCDF_Developers_Handbook_1_13.pdf
+  -rw-rw-r--   1 ed ed    1825005 Jun 11 08:18 NetCDF_Developers_Handbook_1_12.epub
+  -rw-rw-r--   1 ed ed    4756976 Jun 11 08:18 ndh_1_12.pdf
+  -rw-rw-r--   1 ed ed    4558437 Jun 10 17:10 ndh_1_11.pdf
+  -rw-rw-r--   1 ed ed    1615362 Jun 10 17:09 NetCDF_Developers_Handbook_1_11.epub
+  -rw-rw-r--   1 ed ed    4540031 Jun 10 08:43 ndh_1_10.pdf
+  -rw-rw-r--   1 ed ed    1611506 Jun 10 08:42 NetCDF_Developers_Handbook_1_10.epub
+  -rw-rw-r--   1 ed ed        572 Jun  9 14:45 calendar (1).ics
+  -rw-rw-r--   1 ed ed     636804 Jun  9 14:33 Scanned Document.pdf
+  -rw-rw-r--   1 ed ed    1231097 Jun  9 12:00 NetCDF_Developers_Handbook_1_9.epub
+  -rw-rw-r--   1 ed ed    3450156 Jun  9 11:59 ndh_1_9.pdf
+  drwxrwxr-x  41 ed ed       4096 Jun  8 15:31 netcdf-c-4.10.0
+  drwxr-xr-x  18 ed ed       4096 Jun  8 15:25 hdf5-2.1.0
+  -rw-rw-r--   1 ed ed     813113 Jun  8 13:39 NetCDF_Developers_Handbook_1_8.epub
+  -rw-rw-r--   1 ed ed    2409922 Jun  8 13:39 ndh_1_8.pdf
+  -rw-rw-r--   1 ed ed      23019 Jun  8 08:39 0330012026060810344896210000050240130101.pdf
+  -rw-rw-r--   1 ed ed     863125 Jun  7 10:55 NetCDF_Developers_Handbook_1_7.epub
+  -rw-rw-r--   1 ed ed    2550134 Jun  7 10:54 ndh_1_7.pdf
+  -rw-rw-r--   1 ed ed     424417 Jun  6 14:08 NetCDF_Developers_Handbook_1_6.epub
+  -rw-rw-r--   1 ed ed    1470915 Jun  6 14:07 ndh_1_6.pdf
+  -rw-rw-r--   1 ed ed     673104 Jun  6 11:59 Poster-IN31C-0673_BenchmarkingZstandardandQuantizeCompressioninNetCDF2 (1).pdf
+  -rw-rw-r--   1 ed ed    2439116 Jun  6 11:59 NetCDFTricksoftheJediMasters.pdf
+  -rw-rw-r--   1 ed ed     374056 Jun  3 11:02 NetCDF_Developers_Handbook_1_5.epub
+  -rw-rw-r--   1 ed ed    1250967 Jun  3 11:02 ndh_1_5.pdf
+  drwxrwxr-x  13 ed ed       4096 Jun  3 05:56 netcdf-fortran-4.6.2
+  -rw-rw-r--   1 ed ed     367553 Jun  2 09:04 NetCDF_Developers_Handbook_1_4.epub
+  -rw-rw-r--   1 ed ed    1230328 Jun  2 09:04 ndh_1_4.pdf
+  -rw-rw-r--   1 ed ed     328931 Jun  1 13:35 IMG-20260601-WA0000.jpg
+  -rw-rw-r--   1 ed ed     364416 May 30 15:05 NetCDF_Developers_Handbook_1_3.epub
+  -rw-rw-r--   1 ed ed    1222458 May 30 15:05 ndh_1_3.pdf
+  -rw-rw-r--   1 ed ed     354188 May 30 07:18 NetCDF_Developers_Handbook_1_2.epub
+  -rw-rw-r--   1 ed ed    1193313 May 30 07:17 ndh_1.2.pdf
+  -rw-rw-r--   1 ed ed  103988140 May 29 05:42 Zotero-9.0.4_linux-x86_64.tar.xz
+  -rw-rw-r--   1 ed ed     346873 May 28 16:31 ndh_1.1.epub
+  -rw-rw-r--   1 ed ed    1175804 May 28 16:30 ndh_1.1.pdf
+  -rw-rw-r--   1 ed ed     438042 May 27 13:06 AddingQuantizationtotheNetCDFCandFortranLibrariestoEnableLossyCompression (1).pdf
+  -rw-rw-r--   1 ed ed     391454 May 27 13:05 AdditionalNetCDFCompressionOptionswiththeCommunityCodecRepositoryCCR (3).pdf
+  -rw-rw-r--   1 ed ed     536679 May 27 13:04 Poster-ADDITIONALNETCDFCOMPRESSIONOPTIONSWITHTHECOMMUNITYCODECREPOSITORY (1).png
+  -rw-rw-r--   1 ed ed     391454 May 27 13:04 AdditionalNetCDFCompressionOptionswiththeCommunityCodecRepositoryCCR (2).pdf
+  -rw-rw-r--   1 ed ed     391454 May 27 13:04 AdditionalNetCDFCompressionOptionswiththeCommunityCodecRepositoryCCR (1).pdf
+  -rw-rw-r--   1 ed ed     736855 May 27 10:08 slideshow_compression_DOE.pdf
+  -rw-rw-r--   1 ed ed       7030 May 27 10:04 Addressing Gaps in Scientific Data Compression - LOI for DOE Dec 2025.md
+  -rw-rw-r--   1 ed ed     336997 May 12 08:46 NetCDF_Developers_Handbook.epub
+  -rw-rw-r--   1 ed ed      16034 May 11 10:12 carriage_house_floorplan_3.pdf
+  -rw-rw-r--   1 ed ed      78903 May 11 10:11 image.png
+  -rw-rw-r--   1 ed ed   44566982 May 10 13:15 2504.11171v4.pdf
+  -rw-rw-r--   1 ed ed      16624 May  7 17:25 carriage_house_floorplan_down_2.pdf
+  -rw-rw-r--   1 ed ed        183 May  4 08:47 run_zero_len_att_test (1).log
+  -rw-rw-r--   1 ed ed        183 May  4 08:47 run_zero_len_att_test.log
+  -rw-rw-r--   1 ed ed    4248461 Apr 29 12:55 Canal-du-Midi-region-guide1.pdf
+  -rw-rw-r--   1 ed ed   45521980 Apr 28 14:21 PP245.zip
+  -rw-rw-r--   1 ed ed    1155877 Apr 26 11:09 ndg.pdf
+  -rw-rw-r--   1 ed ed     830332 Apr 22 06:16 NASA+2026-2027+SBIR+STTR+BAA+Appendix+26B-I+STTR (1).pdf
+  -rw-rw-r--   1 ed ed     830332 Apr 22 06:16 NASA+2026-2027+SBIR+STTR+BAA+Appendix+26B-I+STTR.pdf
+  -rw-rw-r--   1 ed ed      97303 Apr 21 11:23 Sure_Secure_Principal_Software_Engineer_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed    1095849 Apr 20 14:17 ndh1.pdf
+  -rw-rw-r--   1 ed ed    1096803 Apr 20 14:13 ndh.pdf
+  -rw-rw-r--   1 ed ed      95162 Apr 18 08:13 Research_Software_Engineer_Resume_Edward_Hartnett.md (1).pdf
+  -rw-rw-r--   1 ed ed     965691 Apr 15 13:42 AI-PR-3355.pdf
+  -rw-rw-r--   1 ed ed      35368 Apr 15 13:42 AI-PR-3355 (1).md
+  -rw-rw-r--   1 ed ed      35368 Apr 15 13:42 AI-PR-3355.md
+  -rw-rw-r--   1 ed ed  125064328 Apr  8 10:16 google-chrome-stable_current_amd64 (1).deb
+  -rw-rw-r--   1 ed ed     717999 Apr  1 16:58 AI-PR-3330-REVIEW (1).pdf
+  -rw-rw-r--   1 ed ed     717999 Apr  1 16:58 AI-PR-3330-REVIEW.pdf
+  -rw-rw-r--   1 ed ed      19474 Apr  1 12:41 AI-PR-3330-REVIEW (1).md
+  -rw-rw-r--   1 ed ed      19474 Apr  1 12:41 AI-PR-3330-REVIEW.md
+  -rw-rw-r--   1 ed ed     100303 Mar 27 11:35 Silverton-Colorado-900x675.jpg
+  -rw-rw-r--   1 ed ed       8880 Mar 27 11:33 wild_west.jpeg
+  -rw-rw-r--   1 ed ed     330691 Mar 17 13:19 PXL_20260223_004349329.jpg
+  -rw-rw-r--   1 ed ed   42060825 Mar 16 06:06 hdf5.tar.gz
+  -rw-rw-r--   1 ed ed     256083 Mar 12 14:05 24ga Exposed Fastner.zip
+  -rw-rw-r--   1 ed ed     306093 Mar 12 09:49 image0 (1).jpeg
+  -rw-rw-r--   1 ed ed     306093 Mar 11 12:45 image0.jpeg
+  -rw-rw-r--   1 ed ed      67952 Mar 10 13:52 NetCDF Enhanced Data Model.png
+  -rw-rw-r--   1 ed ed      52478 Mar 10 13:51 NetCDF Classic Data Model.png
+  -rw-rw-r--   1 ed ed      37881 Mar  9 13:20 NetCDF C_Fortran Dependencies (1).png
+  -rw-rw-r--   1 ed ed      26079 Mar  9 13:05 NetCDF C_Fortran Dependencies.png
+  -rw-rw-r--   1 ed ed     900365 Mar  9 09:20 IMG20260309091735_BURST000_COVER (1).jpg
+  -rw-rw-r--   1 ed ed     900365 Mar  9 09:20 IMG20260309091735_BURST000_COVER.jpg
+  -rw-rw-r--   1 ed ed    6169161 Mar  9 09:20 IMG20260309091726.jpg
+  drwxrwxr-x  10 ed ed       4096 Mar  9 07:33 NCEPLIBS-g2c-2.3.0
+  -rw-rw-r--   1 ed ed    1293304 Mar  9 07:19 NCEPLIBS-g2c-2.3.0.tar.gz
+  -rw-rw-r--   1 ed ed    8087390 Mar  9 04:41 netcdf-fortran-4.6.2 (1).tar.gz
+  -rw-rw-r--   1 ed ed     195201 Mar  8 12:21 NetCDF C_Fortran Dependencies (1).xcf
+  -rw-rw-r--   1 ed ed      39801 Mar  8 12:13 NetCDF C_Fortran Dependencies (1).jpg
+  -rw-rw-r--   1 ed ed      39906 Mar  8 12:12 NetCDF C_Fortran Dependencies.jpg
+  -rw-rw-r--   1 ed ed      21043 Mar  6 12:56 logo_small.png
+  -rw-rw-r--   1 ed ed      14198 Mar  6 08:17 download.jpeg
+  -rw-rw-r--   1 ed ed    6543846 Mar  4 10:03 IMG20250129054703.jpg
+  -rw-rw-r--   1 ed ed    4654720 Feb 27 09:35 IMG20260227081410 (2).jpg
+  -rw-rw-r--   1 ed ed    4654720 Feb 27 09:35 IMG20260227081410 (1).jpg
+  -rw-rw-r--   1 ed ed    4654720 Feb 27 09:30 IMG20260227081410.jpg
+  -rw-rw-r--   1 ed ed   25665650 Feb 27 05:08 netcdf-c-4.10.0.tar.gz
+  drwxr-xr-x  17 ed ed       4096 Feb 25 05:29 hdf5-2.0.0
+  -rw-rw-r--   1 ed ed   42014805 Feb 25 05:25 hdf5-2.0.0.tar.gz
+  -rw-rw-r--   1 ed ed    2904875 Feb 19 14:17 PXL_20260219_210142136.jpg
+  -rw-rw-r--   1 ed ed      93825 Feb 19 13:42 Boulder_Software_Engineer_Resume_Edward_Hartnett.md (4).pdf
+  -rw-rw-r--   1 ed ed      93548 Feb 19 13:41 Boulder_Software_Engineer_Resume_Edward_Hartnett.md (3).pdf
+  -rw-rw-r--   1 ed ed      93208 Feb 19 13:18 Boulder_Software_Engineer_Resume_Edward_Hartnett.md (2).pdf
+  -rw-rw-r--   1 ed ed      91368 Feb 19 12:48 Boulder_Software_Engineer_Resume_Edward_Hartnett.md (1).pdf
+  -rw-rw-r--   1 ed ed      91368 Feb 19 12:47 Boulder_Software_Engineer_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed     814534 Feb 18 13:05 PYW225S_EE.pdf
+  -rw-rw-r--   1 ed ed       1560 Feb 13 13:53 Fidelity-Appointment.ics
+  -rw-rw-r--   1 ed ed     133489 Feb 12 15:00 724_lease_2026.doc.docx.pdf
+  -rw-rw-r--   1 ed ed   17828592 Feb 11 10:24 724 Fourmile Canyon Dr.zip
+  dr-xr-xr-x   6 ed ed       4096 Feb  9 14:05 724 Fourmile Canyon Dr
+  -rw-rw-r--   1 ed ed    2209401 Feb  7 11:34 12BY8shedplan.pdf
+  -rw-rw-r--   1 ed ed   11151789 Feb  6 15:02 Paperback NetCDF Developer's Handbook.odt
+  -rw-rw-r--   1 ed ed      50108 Feb  6 05:54 nnn.pdf
+  -rw-rw-r--   1 ed ed      77231 Feb  5 07:49 Infinite_Choice_AI_Platforms_Resume_Edward_Hartnett.md (2).pdf
+  -rw-rw-r--   1 ed ed      72302 Feb  5 07:44 Infinite_Choice_AI_Platforms_Resume_Edward_Hartnett.md (1).pdf
+  -rw-rw-r--   1 ed ed      72302 Feb  5 06:02 Infinite_Choice_AI_Platforms_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed    8843225 Feb  3 08:23 scan_maureen.bachmann_2026-02-03-07-10-15 (1).pdf
+  -rw-rw-r--   1 ed ed    8843225 Feb  3 08:23 scan_maureen.bachmann_2026-02-03-07-10-15.pdf
+  -rw-rw-r--   1 ed ed    5728197 Feb  3 08:23 scan_maureen.bachmann_2026-02-03-07-08-47.pdf
+  -rw-rw-r--   1 ed ed    7771322 Feb  3 08:23 scan_maureen.bachmann_2026-02-03-07-06-12 (1).pdf
+  -rw-rw-r--   1 ed ed    7771322 Feb  3 07:47 scan_maureen.bachmann_2026-02-03-07-06-12.pdf
+  -rw-rw-r--   1 ed ed      97525 Feb  2 15:01 AI_Startup_Senior_Data_Engineer_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed      82084 Feb  2 14:55 iO_Associates_Senior_Full_Stack_React_Python_Engineer_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed     417871 Feb  2 14:34 tiaa_budgeting worksheet (1).PDF
+  -rw-rw-r--   1 ed ed     417871 Feb  2 14:32 tiaa_budgeting worksheet.PDF
+  -rw-rw-r--   1 ed ed    7100359 Feb  2 10:34 netcdf-fortran-4.6.2.tar.gz
+  -rw-rw-r--   1 ed ed      80154 Feb  2 08:57 Seneca_AI_Engineer_Level_III_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed    8740734 Jan 31 12:20 b.pdf
+  -rw-rw-r--   1 ed ed    1615252 Jan 31 12:07 Paperback NetCDF Developer's Handbook 2.pdf
+  -rw-rw-r--   1 ed ed    3513516 Jan 31 11:42 Paperback NetCDF Developer's Handbook.pdf
+  -rw-rw-r--   1 ed ed    6745651 Jan 31 07:35 Paperback NetCDF Developer's Handbook - Google Docs.pdf
+  -rw-rw-r--   1 ed ed   11030945 Jan 31 07:10 Paperback NetCDF Developer's Handbook (2).pdf
+  drwxr-xr-x  18 ed ed       4096 Jan 30 13:41 hdf5-1.14.6
+  drwxrwxr-x   3 ed ed       4096 Jan 30 13:36 build114
+  drwxrwxr-x  27 ed ed       4096 Jan 30 13:27 coverage-report (4)
+  drwxrwxr-x  27 ed ed       4096 Jan 30 13:26 coverage-report (3)
+  drwxrwxr-x  27 ed ed       4096 Jan 30 13:26 coverage-report (2)
+  drwxrwxr-x  27 ed ed       4096 Jan 30 13:26 coverage-report
+  -rw-rw-r--   1 ed ed     303114 Jan 30 13:26 coverage-data.zip
+  -rw-rw-r--   1 ed ed    5526806 Jan 30 13:26 coverage-report.zip
+  -rw-rw-r--   1 ed ed   11061934 Jan 30 10:39 Paperback NetCDF Developer's Handbook (1).pdf
+  -rw-rw-r--   1 ed ed    6973530 Jan 30 09:24 Paperback NetCDF Developer's Handbook (1).docx
+  -rw-rw-r--   1 ed ed    6973559 Jan 30 09:22 Paperback NetCDF Developer's Handbook.docx
+  -rw-rw-r--   1 ed ed  118801336 Jan 30 05:43 google-chrome-stable_current_amd64.deb
+  -rw-rw-r--   1 ed ed    8348847 Jan 29 11:52 NetCDF Developer's Handbook (3).epub
+  -rw-rw-r--   1 ed ed        830 Jan 29 11:16 calendar.ics
+  -rw-rw-r--   1 ed ed  110836176 Jan 29 09:53 scribus-1.7.1.svn-snapshot-20251027.flatpak
+  -rw-rw-r--   1 ed ed    8339172 Jan 29 09:49 NetCDF Developer's Handbook (2).epub
+  -rw-rw-r--   1 ed ed    1730213 Jan 29 09:37 NetCDF Developer's Handbook.md
+  -rw-rw-r--   1 ed ed   10746827 Jan 29 09:26 NetCDF Developer's Handbook.pdf
+  -rw-rw-r--   1 ed ed    8339061 Jan 29 09:20 NetCDF Developer's Handbook (1).epub
+  -rw-rw-r--   1 ed ed     948277 Jan 28 14:42 social-security-statement (1).pdf
+  -rw-rw-r--   1 ed ed     948277 Jan 28 14:41 social-security-statement.pdf
+  -rw-rw-r--   1 ed ed         19 Jan 28 14:32 personal_key (1).txt
+  -rw-rw-r--   1 ed ed         19 Jan 28 14:32 personal_key.txt
+  -rw-rw-r--   1 ed ed    8337694 Jan 28 10:17 NetCDF Developer's Handbook.epub
+  -rw-rw-r--   1 ed ed    2613827 Jan 27 12:34 The Agentic Engineer.md
+  -rw-rw-r--   1 ed ed  216751409 Jan 24 15:13 LibreOffice_26.2.0.2_Linux_x86-64_deb.tar.gz
+  -rw-rw-r--   1 ed ed  250038306 Jan 24 14:44 LibreOffice_26.2.0.2_Linux_x86-64_rpm.tar.gz
+  -rw-rw-r--   1 ed ed    8314865 Jan 24 14:16 Writing NetCDF Programs (1).md (6).epub
+  -rw-rw-r--   1 ed ed    8308510 Jan 24 13:44 Writing NetCDF Programs (1).md (5).epub
+  -rw-rw-r--   1 ed ed    8290058 Jan 23 16:06 Writing NetCDF Programs (1).md (4).epub
+  -rw-rw-r--   1 ed ed     274515 Jan 23 14:13 Writing NetCDF Programs (1).md (3).epub
+  -rw-rw-r--   1 ed ed      84696 Jan 23 11:59 Writing NetCDF Programs (1).md (2).epub
+  -rw-rw-r--   1 ed ed      62816 Jan 23 08:30 Esri_Sr_Software_Development_Engineer_Cover_Letter_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed      91732 Jan 23 08:25 Esri_Sr_Software_Development_Engineer_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed      78614 Jan 23 07:40 NTT_DATA_AI_Development_Engineer_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed      81096 Jan 23 07:35 AI_Solution_Architect_GCP_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed      81941 Jan 23 07:18 AI_Engineer_Remote_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed      96405 Jan 23 07:07 Yahoo_IT_Architect_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed     104938 Jan 23 06:43 AHEAD_Principal_AI_Architect_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed     102045 Jan 23 06:29 Mid_Level_AI_Engineer_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed     100498 Jan 22 14:07 Code_Translation_AI_Engineer_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed      89279 Jan 22 13:52 Homebound_Senior_Staff_AI_Engineer_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed      78873 Jan 22 12:25 Lawn_Care_Startup_AI_Engineer_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed     106553 Jan 22 12:17 Atlassian_Senior_Principal_Software_Engineer_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed      82393 Jan 22 08:06 Writing NetCDF Programs (1).md (1).epub
+  -rw-rw-r--   1 ed ed   14591643 Jan 21 14:28 5424x5424.jpg
+  -rw-rw-r--   1 ed ed      81707 Jan 21 13:42 Writing NetCDF Programs (1).md.epub
+  -rw-rw-r--   1 ed ed      59701 Jan 21 11:34 Grafana_Labs_Senior_AI_Engineer_Cover_Letter_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed     109392 Jan 21 11:33 Grafana_Labs_Senior_AI_Engineer_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed      48810 Jan 21 11:27 KoBold_Metals_ML_Engineer_Cover_Letter_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed     111737 Jan 21 11:25 KoBold_Metals_ML_Engineer_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed     111259 Jan 21 11:13 Weather_AI_Staff_Engineer_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed      42769 Jan 21 11:00 Planet_ML_Engineer_Cover_Letter_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed      97755 Jan 21 10:58 Planet_ML_Engineer_Resume_Edward_Hartnett.md (1).pdf
+  -rw-rw-r--   1 ed ed     103963 Jan 21 10:53 Planet_ML_Engineer_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed      83042 Jan 21 10:33 GE_HealthCare_AI_Systems_Engineer_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed      92198 Jan 21 09:58 BioRender_Senior_AI_Engineer_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed     101269 Jan 21 09:46 AI_Architect_Resume_Edward_Hartnett.md (1).pdf
+  -rw-rw-r--   1 ed ed     111428 Jan 21 09:35 Lead_AI_Software_Engineer_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed      89467 Jan 21 09:25 AI_Systems_Engineer_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed      59916 Jan 21 08:41 Research_Software_Engineer_Cover_Letter_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed      97838 Jan 21 08:39 Research_Software_Engineer_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed      99710 Jan 21 07:39 Lead_AI_Engineer_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed      57168 Jan 21 06:42 Senior_Staff_AI_Tools_Cover_Letter_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed      88190 Jan 21 06:39 Senior_Staff_AI_Tools_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed      88816 Jan 21 06:35 Staff_AI_Engineer_Resume_Edward_Hartnett.md (1).pdf
+  -rw-rw-r--   1 ed ed      88816 Jan 21 06:31 Staff_AI_Engineer_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed      81194 Jan 20 15:29 AI_Engineer_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed     100816 Jan 20 15:05 AI_Architect_Resume_Edward_Hartnett.md.pdf
+  -rw-rw-r--   1 ed ed       3724 Jan 20 13:23 Edward Hartnett Resume.md
+  -rw-rw-r--   1 ed ed      15875 Jan 20 13:22 CV for Edward Hartnett.md
+  -rw-rw-r--   1 ed ed       3723 Jan 20 13:22 SPEDAS resume.md
+  -rw-rw-r--   1 ed ed       2189 Jan 20 13:22 Python Resume Edward Hartnett.md
+  -rw-rw-r--   1 ed ed       2330 Jan 20 13:22 project manager resume Edward Hartnett.md
+  -rw-rw-r--   1 ed ed    3308736 Jan 15 15:25 The Agentic Engineer (1).epub
+  -rw-rw-r--   1 ed ed    3307798 Jan 15 14:54 The Agentic Engineer.epub
+  -rw-rw-r--   1 ed ed    3677153 Jan 15 14:50 The Agentic Engineer.pdf
+  -rw-rw-r--   1 ed ed      32634 Jan 15 14:09 Untitled document (1).pdf
+  -rw-rw-r--   1 ed ed    3677158 Jan 15 09:27 Vibe Coding with WindSurf (14).pdf
+  -rw-rw-r--   1 ed ed    3308071 Jan 15 09:21 Vibe Coding with WindSurf (14).epub
+  -rw-rw-r--   1 ed ed    3307808 Jan 15 09:21 Vibe Coding with WindSurf (13).epub
+  drwxr-xr-x   4 ed ed       4096 Jan 15 09:04 LibreOffice_26.2.0.2_Linux_x86-64_rpm
+  -rw-rw-r--   1 ed ed    3664125 Jan 15 08:58 Vibe Coding with WindSurf (13).pdf
+  -rw-rw-r--   1 ed ed    3633851 Jan 15 07:29 Vibe Coding with WindSurf (12).pdf
+  -rw-rw-r--   1 ed ed  145174388 Jan 14 13:46 cursor_2.3.35_amd64.deb
+  -rw-rw-r--   1 ed ed    3304591 Jan 14 10:17 Vibe Coding with WindSurf (12).epub
+  -rw-rw-r--   1 ed ed    3628659 Jan 14 10:07 Vibe Coding with WindSurf (11).pdf
+  -rw-rw-r--   1 ed ed    3612705 Jan 14 09:44 Vibe Coding with WindSurf (10).pdf
+  -rw-rw-r--   1 ed ed    3781843 Jan 14 08:06 cov2.png
+  -rw-rw-r--   1 ed ed    7777136 Jan 14 07:28 Gemini_Generated_Image_88n87288n87288n8.png
+  -rw-rw-r--   1 ed ed    3589992 Jan 14 06:51 Vibe Coding with WindSurf (9).pdf
+  -rw-rw-r--   1 ed ed     102651 Jan 13 15:24 conduct.jpg
+  -rw-rw-r--   1 ed ed    3558225 Jan 13  2026 Vibe Coding with WindSurf (8).pdf
+  -rw-rw-r--   1 ed ed    3213859 Jan 13  2026 Vibe Coding with WindSurf (11).epub
+  -rw-rw-r--   1 ed ed    3213700 Jan 13  2026 Vibe Coding with WindSurf (10).epub
+  -rw-rw-r--   1 ed ed    3556945 Jan 13  2026 Vibe Coding with WindSurf (7).pdf
+  -rw-rw-r--   1 ed ed    3213990 Jan 13  2026 Vibe Coding with WindSurf (9).epub
+  -rw-rw-r--   1 ed ed    3604236 Jan 12  2026 Vibe Coding with WindSurf (6).pdf
+  -rw-rw-r--   1 ed ed    3537720 Jan 12  2026 Vibe Coding with WindSurf (5).pdf
+  -rw-rw-r--   1 ed ed    3591399 Jan 12  2026 Vibe Coding with WindSurf (4).pdf
+  -rw-rw-r--   1 ed ed    3297732 Jan 12  2026 Vibe Coding with WindSurf (8).epub
+  -rw-rw-r--   1 ed ed    2498266 Jan  9  2026 Vibe Coding with WindSurf (7).epub
+  -rw-rw-r--   1 ed ed    1630629 Jan  8  2026 Vibe Coding with WindSurf (6).epub
+  -rw-rw-r--   1 ed ed    1483952 Jan  7  2026 Vibe Coding with WindSurf (3).pdf
+  -rw-rw-r--   1 ed ed    1014740 Jan  7  2026 Vibe Coding with WindSurf (5).epub
+  -rw-rw-r--   1 ed ed    1470597 Jan  7  2026 Vibe Coding with WindSurf (2).pdf
+  -rw-rw-r--   1 ed ed    1013807 Jan  7  2026 Vibe Coding with WindSurf (4).epub
+  -rw-rw-r--   1 ed ed    1013805 Jan  7  2026 Vibe Coding with WindSurf (3).epub
+  -rw-rw-r--   1 ed ed     799877 Jan  6  2026 Vibe Coding with WindSurf (2).epub
+  -rw-rw-r--   1 ed ed     130727 Jan  6  2026 ed1.jpg
+  -rw-rw-r--   1 ed ed     429751 Jan  6  2026 PXL_20250924_130831870.jpg
+  -rw-rw-r--   1 ed ed      15298 Jan  6  2026 ed.jpeg
+  -rw-rw-r--   1 ed ed    1194840 Jan  5  2026 Vibe Coding with WindSurf (1).pdf
+  -rw-rw-r--   1 ed ed     788700 Jan  5  2026 Vibe Coding with WindSurf (1).epub
+  -rw-rw-r--   1 ed ed     705823 Jan  5  2026 wr.png
+  -rw-rw-r--   1 ed ed     666875 Jan  5  2026 Vibe Coding with WindSurf.pdf
+  -rw-rw-r--   1 ed ed    6209587 Jan  4  2026 Gemini_Generated_Image_ww8zftww8zftww8z.png
+  -rw-rw-r--   1 ed ed      23476 Jan  4  2026 Vibe Coding with WindSurf.epub
+  drwxr-xr-x  12 ed ed       4096 Dec 31  2025 hdf-4.3.1
+  -rw-rw-r--   1 ed ed    9366549 Dec 31  2025 hdf4.3.1.tar.gz
+  -rw-rw-r--   1 ed ed    5584063 Dec 30  2025 ABBA_2022_C61_HNL.tif
+  -rw-rw-r--   1 ed ed     902623 Dec 30  2025 NetCDF-4_Performance_2018.pdf
+  -rw-rw-r--   1 ed ed    2217634 Dec 29  2025 Talking+to+Humans.pdf
+  -rw-rw-r--   1 ed ed    2661710 Dec 29  2025 Value Proposition Design PDF.pdf
+  -rw-rw-r--   1 ed ed   18849228 Dec 29  2025 The_Startup_Owner s_Manual-A step by step guide for building a great company.pdf
+  -rw-rw-r--   1 ed ed  121140000 Dec 22  2025 3843103-uhd_3840_2160_30fps.mp4
+  -rw-rw-r--   1 ed ed   42233100 Dec 22  2025 4651619-uhd_3840_2160_30fps.mp4
+  -rw-rw-r--   1 ed ed   41035376 Dec 22  2025 855614-uhd_3840_2160_25fps.mp4
+  -rw-rw-r--   1 ed ed   38876623 Dec 22  2025 6108100-hd_1920_1080_25fps.mp4
+  -rw-rw-r--   1 ed ed   25860841 Dec 22  2025 6040646-hd_1920_1080_30fps.mp4
+  -rw-rw-r--   1 ed ed   21126533 Dec 22  2025 14939524_2160_3840_30fps.mp4
+  -rw-rw-r--   1 ed ed   10729205 Dec 22  2025 7895580-hd_1920_1080_30fps.mp4
+  -rw-rw-r--   1 ed ed   18839446 Dec 22  2025 2018959-hd_1920_1080_30fps.mp4
+  -rw-rw-r--   1 ed ed   21073864 Dec 22  2025 856429-uhd_3840_2160_30fps.mp4
+  -rw-rw-r--   1 ed ed    8739346 Dec 22  2025 14952817_1920_1080_30fps.mp4
+  -rw-rw-r--   1 ed ed    7868779 Dec 22  2025 14958920_1920_1080_30fps.mp4
+  -rw-rw-r--   1 ed ed    3841666 Dec 22  2025 5908584-hd_1920_1080_25fps.mp4
+  -rw-rw-r--   1 ed ed    6691552 Dec 22  2025 853829-hd_1920_1080_25fps.mp4
+  -rw-rw-r--   1 ed ed    6965180 Dec 22  2025 Your NOAA forecast files looking like gibberish 🤯 (1).mp4
+  -rw-rw-r--   1 ed ed    6963367 Dec 22  2025 Your NOAA forecast files looking like gibberish 🤯.mp4
+  -rw-rw-r--   1 ed ed      26451 Dec 22  2025 lightning-grand-canyon.jpg
+  -rw-rw-r--   1 ed ed   19253110 Dec 22  2025 933704-uhd_3840_2160_30fps.mp4
+  -rw-rw-r--   1 ed ed    8075360 Dec 22  2025 1405527-hd_1920_1080_30fps.mp4
+  -rw-rw-r--   1 ed ed    8065453 Dec 22  2025 1826710-hd_1920_1080_24fps.mp4
+  -rw-rw-r--   1 ed ed    8412074 Dec 22  2025 857021-hd_1920_1080_30fps.mp4
+  -rw-rw-r--   1 ed ed    3052484 Dec 22  2025 2657691-hd_1920_1080_30fps.mp4
+  -rw-rw-r--   1 ed ed    1559282 Dec 17  2025 DE-FOA-0003600-000001.pdf
+  -rw-rw-r--   1 ed ed    1254491 Dec 17  2025 NetCDFCompressionImprovementsSENAWorkshop.pdf
+  -rw-rw-r--   1 ed ed      56229 Dec 17  2025 NetCDFCompressionImprovementsSENAWorkshopBoulderCOJune2023.pdf
+  -rw-rw-r--   1 ed ed    1290740 Dec 17  2025 NetCDFCompressionImprovements.pdf
+  -rw-rw-r--   1 ed ed     518173 Dec 17  2025 NSF_CSSI.pdf
+  -rw-rw-r--   1 ed ed     632119 Dec 17  2025 EGU22-13259AddingQuantizationtotheNetCDFCandFortranLibrariestoEnableLossyCompression1.pdf
+  -rw-rw-r--   1 ed ed     438042 Dec 17  2025 AddingQuantizationtotheNetCDFCandFortranLibrariestoEnableLossyCompression.pdf
+  -rw-rw-r--   1 ed ed     867738 Dec 17  2025 QuantizationandNext-GenerationZlibCompressionforFullyBackward-CompatibleFasterandMoreEffectiveDataCompressioninNetCDFFiles3 (1).pdf
+  -rw-rw-r--   1 ed ed    1167916 Dec 17  2025 QuantizationandNext-GenerationZlibCompressionforFullyBackward-CompatibleFasterandMoreEffectiveDataCompressioninNetCDFFiles2.pdf
+  -rw-rw-r--   1 ed ed    1188505 Dec 17  2025 QuantizationandCompressionofNetCDFDataintheUFS.pdf
+  -rw-rw-r--   1 ed ed     536679 Dec 17  2025 Poster-ADDITIONALNETCDFCOMPRESSIONOPTIONSWITHTHECOMMUNITYCODECREPOSITORY.png
+  -rw-rw-r--   1 ed ed     727356 Dec 17  2025 Poster-THEPARALLELIOPIOC_FORTRANLIBRARIESFORSCALABLEHPCPERFORMANCE1.pdf
+  -rw-rw-r--   1 ed ed    1363940 Dec 17  2025 TheParallelIOPIOLibraryforScalableHPCPerformance1.pdf
+  -rw-rw-r--   1 ed ed     391454 Dec 17  2025 AdditionalNetCDFCompressionOptionswiththeCommunityCodecRepositoryCCR.pdf
+  -rw-rw-r--   1 ed ed     674688 Dec 17  2025 Poster-PIOandNetCDFIntegration.png
+  -rw-rw-r--   1 ed ed    3111489 Dec 17  2025 Advances_in_the_NetCDF_Data_Model_Format_and_Softw.pdf
+  -rw-rw-r--   1 ed ed     322589 Dec 17  2025 104931.pdf
+  -rw-rw-r--   1 ed ed     232342 Dec 17  2025 135122.pdf
+  -rw-rw-r--   1 ed ed    4574536 Dec 17  2025 NetCDFCompressionImprovements-HDF5UserMeetingHamburg2023.pptx
+  -rw-rw-r--   1 ed ed      68138 Dec 16  2025 carte_reseau_autocar_bus.png
+  -rw-rw-r--   1 ed ed     934716 Dec 16  2025 nomandie-carte_region.pdf
+  -rw-r--r--   1 ed ed       5172 Dec 16  2025 image001 (1)
+  -rw-rw-r--   1 ed ed       1163 Dec 16  2025 image001 (1).emz
+  -rw-rw-r--   1 ed ed      91916 Dec 16  2025 uk.pdf
+  -rw-rw-r--   1 ed ed      13461 Dec 16  2025 KDP_Dashboard-d137371d-d8b7-4724-a0a0-4b475b14e604.xlsx
+  -rw-rw-r--   1 ed ed     117432 Dec 15  2025 Addressing Gaps in Scientific Data Compression - LOI for DOE Dec 2025 (2).pdf
+  -rw-rw-r--   1 ed ed     207887 Dec 15  2025 Addressing Gaps in Scientific Data Compression - LOI for DOE Dec 2025 (1).pdf
+  -rw-rw-r--   1 ed ed     207887 Dec 15  2025 Addressing Gaps in Scientific Data Compression - LOI for DOE Dec 2025.pdf
+  -rw-r--r--   1 ed ed       5172 Dec 15  2025 image001
+  -rw-rw-r--   1 ed ed       1163 Dec 15  2025 image001.emz
+  drwxrwxr-x  37 ed ed       4096 Dec 13  2025 netcdf-c-4.9.3
+  -rw-rw-r--   1 ed ed   39289609 Dec 13  2025 hdf5-1.14.6.tar.gz
+  -rw-rw-r--   1 ed ed    2541742 Dec 13  2025 download.pdf
+  -rw-rw-r--   1 ed ed     867738 Dec 12  2025 QuantizationandNext-GenerationZlibCompressionforFullyBackward-CompatibleFasterandMoreEffectiveDataCompressioninNetCDFFiles3.pdf
+  -rw-rw-r--   1 ed ed     673104 Dec 12  2025 Poster-IN31C-0673_BenchmarkingZstandardandQuantizeCompressioninNetCDF2.pdf
+  -rw-rw-r--   1 ed ed       8699 Dec  9  2025 KDP_Prior_Month_Royalties-2025-11-01-6a655b0a-a2d4-421d-b20a-015e37da3e93.xlsx
+  -rw-rw-r--   1 ed ed    1071948 Dec  5  2025 Poster-IN51B-0416_NCEPLIBSGRIBandBUFRLibraries_MaintainingandModernizingNOAAsLibrariesforWMODataFormats.pdf
+  -rw-rw-r--   1 ed ed     118968 Dec  5  2025 grib2-struct.jpg
+  -rw-rw-r--   1 ed ed      22138 Dec  5  2025 weather1.jpeg
+  -rw-rw-r--   1 ed ed      62660 Dec  2  2025 sar1.jpg
+  -rw-rw-r--   1 ed ed       6294 Dec  2  2025 earth.jpeg
+  -rw-rw-r--   1 ed ed     132350 Dec  2  2025 Earth Logo with Data Points and Beams.png
+  -rw-rw-r--   1 ed ed  157891003 Nov 28  2025 Miniconda3-latest-Linux-x86_64.sh
+  -rw-rw-r--   1 ed ed     109148 Nov 28  2025 d2abfb6b-91ef-487c-a302-58a6b13b32f6.jpeg
+  -rw-rw-r--   1 ed ed       3269 Nov 26  2025 imap_mag_l1b-calibration_20240229_v001.cdf
+  drwxrwxr-x   4 ed ed       4096 Nov 25  2025 head
+  -rw-rw-r--   1 ed ed 5702520832 Nov 21  2025 ubuntu-25.10-desktop-amd64.iso
+  -rw-rw-r--   1 ed ed    4535651 Nov 20  2025 NetCDF The Extended Universe.pdf
+  -rw-rw-r--   1 ed ed    1440832 Nov 20  2025 school_of_netcdf_small.png
+  -rw-rw-r--   1 ed ed    1937534 Nov 20  2025 Gemini_Generated_Image_fv4c1nfv4c1nfv4c.png
+  -rw-rw-r--   1 ed ed 1034808323 Nov 19  2025 LM-Studio-0.3.32-2-x64.AppImage
+  -rw-rw-r--   1 ed ed    1593815 Nov 18  2025 ChatGPT Image Nov 18, 2025, 02_31_33 PM.png
+  -rw-rw-r--   1 ed ed     784828 Nov 18  2025 ChatGPT Image Nov 18, 2025, 02_20_44 PM.png
+  -rw-rw-r--   1 ed ed   11255205 Nov 10  2025 x99a_ii.pdf
+  -rw-rw-r--   1 ed ed    7711552 Nov 10  2025 IMG20251110095402.jpg
+  -rw-rw-r--   1 ed ed    6502344 Nov 10  2025 IMG20251110091829.jpg
+  drwxrwxr-x   2 ed ed       4096 Oct 28  2025 files
+  drwxrwxr-x   2 ed ed       4096 Oct 28  2025 images
+  -rw-rw-r--   1 ed ed       3957 Oct 24  2025 imap.jpeg
+  -rw-rw-r--   1 ed ed       1847 Oct 19  2025 photo.png
+  drwxrwxr-x   2 ed ed       4096 Oct 16  2025 PAPERBACK_8.500x11.000_52_BW_WHITE_en_US
+  -rw-rw-r--   1 ed ed     292631 Oct 16  2025 PAPERBACK_8.500x11.000_52_BW_WHITE_en_US.zip
+  drwxrwxr-x   3 ed ed       4096 Oct 14  2025 Paperback_Manuscript_Templates
+  -rw-rw-r--   1 ed ed    4790874 Oct 14  2025 KDP_Paperback_Manuscript_Templates_Sample_Content (1).zip
+  -rw-rw-r--   1 ed ed    4790874 Oct 14  2025 KDP_Paperback_Manuscript_Templates_Sample_Content.zip
+  -rw-rw-r--   1 ed ed      30788 Oct 14  2025 frontpage (2).pdf
+  -rw-rw-r--   1 ed ed      31259 Oct 14  2025 frontpage (1).pdf
+  -rw-rw-r--   1 ed ed      34527 Oct 14  2025 frontpage.pdf
+  -rw-rw-r--   1 ed ed      40498 Oct  2  2025 10336_Full_Proposal_Cover_Letter_Template.docx
+  -rw-rw-r--   1 ed ed     145483 Oct  1  2025 caron.pdf
+  -rw-rw-r--   1 ed ed      28453 Oct  1  2025 Non-Compete-Agreement.docx
+  -rw-rw-r--   1 ed ed      71694 Sep 27  2025 Basic-Non-Disclosure-Agreement.pdf
+  -rw-rw-r--   1 ed ed    5790059 Sep 27  2025 agronomy-14-01975.pdf
+  -rw-rw-r--   1 ed ed    2604882 Sep 20  2025 Bare_surface_soil_moisture_and_surface_roughness_e.pdf
+  -rw-rw-r--   1 ed ed    4952103 Sep 19  2025 EIB-248.pdf
+  -rw-rw-r--   1 ed ed    3016761 Sep 19  2025 fenvs-03-00052.pdf
+  -rw-rw-r--   1 ed ed      93147 Sep 19  2025 Companies House.pdf
+  -rw-rw-r--   1 ed ed      12153 Sep 19  2025 New registered email address for EARTH DATA SYSTEMS LTD (16722500).eml
+  -rw-rw-r--   1 ed ed      78948 Sep 19  2025 CERTIFICATE (1).pdf
+  -rw-rw-r--   1 ed ed      78948 Sep 19  2025 CERTIFICATE.pdf
+  -rw-rw-r--   1 ed ed    3627798 Sep 18  2025 selection-abstract-archive-sbir-2025-i (1).pdf
+  -rw-rw-r--   1 ed ed    3627798 Sep 18  2025 selection-abstract-archive-sbir-2025-i.pdf
+  -rw-rw-r--   1 ed ed   21820739 Sep 17  2025 NISAR.pdf
+  -rw-rw-r--   1 ed ed     533080 Sep 17  2025 S0034425723002183 (1).html
+  -rw-rw-r--   1 ed ed     533080 Sep 17  2025 S0034425723002183.html
+  -rw-rw-r--   1 ed ed    7683601 Sep 16  2025 remotesensing-16-01394-v2.pdf
+  -rw-rw-r--   1 ed ed    6773140 Sep 15  2025 IMG20250915145403.jpg
+  -rw-rw-r--   1 ed ed  657568912 Sep 14  2025 EPSSG_MWS_L1B_L2_TestDataV3.tar.gz
+  -rw-rw-r--   1 ed ed      89914 Sep 11  2025 Edward Hartnett science result short (2).pdf
+  -rw-rw-r--   1 ed ed      91211 Sep 11  2025 Edward Hartnett science result short (1).pdf
+  -rw-rw-r--   1 ed ed     101140 Sep 11  2025 Edward Hartnett Resume (1).pdf
+  -rw-rw-r--   1 ed ed      90136 Sep 11  2025 Edward Hartnett science result short.pdf
+  -rw-rw-r--   1 ed ed      89852 Sep 11  2025 Untitled document.pdf
+  -rw-rw-r--   1 ed ed     103683 Sep 11  2025 Edward Hartnett Resume.pdf
+  -rw-rw-r--   1 ed ed     628300 Sep 10  2025 2020US IHartnett_ Bachm.1040  V1_TaxReturn-efileAuthorization.pdf
+  -rw-rw-r--   1 ed ed     157718 Sep 10  2025 Intelligent_data_design_art_incorp.pdf
+  -rw-rw-r--   1 ed ed     338029 Sep 10  2025 ccr-1_3_0.tar.gz
+  -rw-rw-r--   1 ed ed      26554 Apr 11  2024 LPHAAVG0_1HR_2004001_01.xml
+  -rw-rw-r--   1 ed ed      95384 Feb 24  2013 LPHAAVG0_1HR_2004001_01.CSV
