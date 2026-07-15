@@ -31,15 +31,15 @@ AC_DEFINE([USE_HDF5], [yes], [Always needed])
 # and is added conditionally in the GRIB2 detection block below.
 LIBS="-lhdf5_hl -lhdf5 $LIBS"
 
-AC_MSG_CHECKING([whether HDF5 headers are >= 2.1.1])
+AC_MSG_CHECKING([whether HDF5 headers are >= 2.0])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <hdf5.h>]],
-[[#if H5_VERS_MAJOR < 2 || (H5_VERS_MAJOR == 2 && H5_VERS_MINOR < 1) || (H5_VERS_MAJOR == 2 && H5_VERS_MINOR == 1 && H5_VERS_RELEASE < 1)
-#error HDF5 >= 2.1.1 is required
+[[#if H5_VERS_MAJOR < 2
+#error HDF5 >= 2.0 is required
 #endif
 ]])], [hdf5_headers_ok=yes], [hdf5_headers_ok=no])
 AC_MSG_RESULT([$hdf5_headers_ok])
 if test "x$hdf5_headers_ok" = xno; then
-   AC_MSG_ERROR([HDF5 >= 2.1.1 is required.])
+   AC_MSG_ERROR([HDF5 >= 2.0 is required.])
 fi
 
 AC_ARG_WITH([hdf5-plugin-path],
