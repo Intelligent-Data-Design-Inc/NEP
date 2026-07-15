@@ -59,7 +59,7 @@ endif()
 
 # Find HDF5 (skip if documentation-only build)
 if(NOT DOCS_ONLY)
-    find_package(HDF5 1.10 REQUIRED COMPONENTS C)
+    find_package(HDF5 2.0 REQUIRED COMPONENTS C)
     link_directories (${HDF5_LIBRARY_DIRS})
     include_directories (${HDF5_INCLUDE_DIR})
     set (LINK_LIBS ${LINK_LIBS} ${HDF5_C_${LIB_TYPE}_LIBRARY})

@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1B00.sch"
+    schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<?xml-model href="https://pds.nasa.gov/pds4/disp/v1/PDS4_DISP_1B00.sch"
+    schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<?xml-model href="https://pds.nasa.gov/pds4/mission/cassini/v1/PDS4_CASSINI_1B00_1300.sch"
+    schematypens="http://purl.oclc.org/dsdl/schematron"?>
+
+<Product_Observational
+  xmlns="http://pds.nasa.gov/pds4/pds/v1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:disp="http://pds.nasa.gov/pds4/disp/v1"
+  xmlns:cassini="http://pds.nasa.gov/pds4/mission/cassini/v1"
+
+  xsi:schemaLocation="
+  http://pds.nasa.gov/pds4/pds/v1 https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1B00.xsd
+  http://pds.nasa.gov/pds4/disp/v1 https://pds.nasa.gov/pds4/disp/v1/PDS4_DISP_1B00.xsd
+  http://pds.nasa.gov/pds4/mission/cassini/v1 https://pds.nasa.gov/pds4/mission/cassini/v1/PDS4_CASSINI_1B00_1300.xsd">
+
+    <Identification_Area>
+        <logical_identifier>urn:nasa:pds:cassini_iss_saturn:data_raw:1454725799n</logical_identifier>
+        <version_id>1.0</version_id>
+        <title>Cassini ISS Image 1454725799n.img</title>
+        <information_model_version>1.11.0.0</information_model_version>
+        <product_class>Product_Observational</product_class>
+        <Modification_History>
+            <Modification_Detail>
+                <modification_date>2020-03-31</modification_date>
+                <version_id>1.0</version_id>
+                <description>Initial PDS4 Version. Migrated from the PDS3 data product.</description>
+            </Modification_Detail>
+        </Modification_History>
+    </Identification_Area>
+    <Observation_Area>
+        <comment>
+            This data file was migrated from the original PDS3 file:
+                COISS_2001/data/1454725799_1455008789/N1454725799_1.IMG
+            The content of this data file was reorganized in order to make it PDS4
+            compliant. Specifically, prefix bytes were removed from each line of
+            the image and appended at the end. The resulting data file remains
+            compatible with the VICAR standard. Values for instrument attributes
+            have been derived from the corresponding values in the original PDS3
+            label.
+        </comment>
+        <Time_Coordinates>
+            <start_date_time>2004-02-06T02:07:06.418Z</start_date_time>
+            <stop_date_time>2004-02-06T02:07:06.498Z</stop_date_time>
+        </Time_Coordinates>
+        <Primary_Result_Summary>
+            <purpose>Navigation</purpose>
+            <processing_level>Raw</processing_level>
+            <Science_Facets>
+                <wavelength_range>Visible</wavelength_range>
+                <discipline_name>Ring-Moon Systems</discipline_name>
+            </Science_Facets>
+        </Primary_Result_Summary>
+        <Investigation_Area>
+            <name>Cassini-Huygens</name>
+            <type>Mission</type>
+            <Internal_Reference>
+                <lid_reference>urn:nasa:pds:context:investigation:mission.cassini-huygens</lid_reference>
+                <reference_type>data_to_investigation</reference_type>
+            </Internal_Reference>
+        </Investigation_Area>
+        <Observing_System>
+            <name>Cassini Orbiter Imaging Science Subsystem</name>
+            <Observing_System_Component>
+                <name>Cassini Orbiter</name>
+                <type>Spacecraft</type>
+                <Internal_Reference>
+                    <lid_reference>urn:nasa:pds:context:instrument_host:spacecraft.co</lid_reference>
+                    <reference_type>is_instrument_host</reference_type>
+                </Internal_Reference>
+            </Observing_System_Component>
+            <Observing_System_Component>
+                <name>Cassini Orbiter Imaging Science Subsystem - Narrow Angle Camera</name>
+                <type>Instrument</type>
+                <description>ISSNA</description>
+                <Internal_Reference>
+                    <lid_reference>urn:nasa:pds:context:instrument:issna.co</lid_reference>
+                    <reference_type>is_instrument</reference_type>
+                </Internal_Reference>
+            </Observing_System_Component>
+        </Observing_System>
+        <Target_Identification>
+            <name>Rhea</name>
+            <alternate_designation>Saturn V (Rhea)</alternate_designation>
+            <alternate_designation>NAIF ID 605</alternate_designation>
+            <type>Satellite</type>
+            <description>
+                NAIF ID: 605;
+                Center of motion: Saturn;
+                LID of central body: urn:nasa:pds:context:target:planet.saturn;
+                NAIF ID of central body: 699.
+            </description>
+            <Internal_Reference>
+                <lid_reference>urn:nasa:pds:context:target:satellite.saturn.rhea</lid_reference>
+                <reference_type>data_to_target</reference_type>
+            </Internal_Reference>
+        </Target_Identification>
+        <Mission_Area>
+            <cassini:Cassini>
+                <cassini:ISS_Specific_Attributes>
+                    <cassini:mission_phase_name>APPROACH SCIENCE</cassini:mission_phase_name>
+                    <cassini:spacecraft_clock_count_partition>1</cassini:spacecraft_clock_count_partition>
+                    <cassini:spacecraft_clock_start_count>1454725799.102</cassini:spacecraft_clock_start_count>
+                    <cassini:spacecraft_clock_stop_count>1454725799.122</cassini:spacecraft_clock_stop_count>
+                    <cassini:limitations>N/A</cassini:limitations>
+                    <cassini:antiblooming_state_flag>OFF</cassini:antiblooming_state_flag>
+                    <cassini:bias_strip_mean>14.869863</cassini:bias_strip_mean>
+                    <cassini:calibration_lamp_state_flag>N/A</cassini:calibration_lamp_state_flag>
+                    <cassini:command_file_name>OPNAV_848_3.ioi</cassini:command_file_name>
+                    <cassini:command_sequence_number>8</cassini:command_sequence_number>
+                    <cassini:dark_strip_mean>0.</cassini:dark_strip_mean>
+                    <cassini:data_conversion_type>12BIT</cassini:data_conversion_type>
+                    <cassini:delayed_readout_flag>NO</cassini:delayed_readout_flag>
+                    <cassini:detector_temperature unit="degC">-89.243546</cassini:detector_temperature>
+                    <cassini:electronics_bias>112</cassini:electronics_bias>
+                    <cassini:earth_received_start_time>2004-039T01:35:53.622</cassini:earth_received_start_time>
+                    <cassini:earth_received_stop_time>2004-039T01:36:55.067</cassini:earth_received_stop_time>
+                    <cassini:expected_maximum_full_well>50.</cassini:expected_maximum_full_well>
+                    <cassini:expected_maximum_DN_sat>75.</cassini:expected_maximum_DN_sat>
+                    <cassini:expected_packets>1143</cassini:expected_packets>
+                    <cassini:exposure_duration unit="ms">80.</cassini:exposure_duration>
+                    <cassini:filter_name_1>CL1</cassini:filter_name_1>
+                    <cassini:filter_name_2>CL2</cassini:filter_name_2>
+                    <cassini:filter_temperature unit="degC">-0.468354</cassini:filter_temperature>
+                    <cassini:flight_software_version_id>1.3</cassini:flight_software_version_id>
+                    <cassini:gain_mode_id unit="electron/DN">29</cassini:gain_mode_id>
+                    <cassini:ground_software_version_id>ISS 9.00 05-22-2003</cassini:ground_software_version_id>
+                    <cassini:image_mid_time>2004-037T02:07:06.498</cassini:image_mid_time>
+                    <cassini:image_number>1454725799</cassini:image_number>
+                    <cassini:image_time>2004-037T02:07:06.498</cassini:image_time>
+                    <cassini:image_observation_type>OPNAV</cassini:image_observation_type>
+                    <cassini:instrument_data_rate>365.567993</cassini:instrument_data_rate>
+                    <cassini:instrument_mode_id>FULL</cassini:instrument_mode_id>
+                    <cassini:inst_cmprs_type>LOSSLESS</cassini:inst_cmprs_type>
+                    <cassini:inst_cmprs_param_malgo>999</cassini:inst_cmprs_param_malgo>  <!-- Not applicable -->
+                    <cassini:inst_cmprs_param_tb>999</cassini:inst_cmprs_param_tb>  <!-- Not applicable -->
+                    <cassini:inst_cmprs_param_blocks>999</cassini:inst_cmprs_param_blocks>  <!-- Not applicable -->
+                    <cassini:inst_cmprs_param_quant>999</cassini:inst_cmprs_param_quant>  <!-- Not applicable -->
+                    <cassini:inst_cmprs_rate_expected_bits>6.</cassini:inst_cmprs_rate_expected_bits>
+                    <cassini:inst_cmprs_rate_actual_bits>2.116882</cassini:inst_cmprs_rate_actual_bits>
+                    <cassini:inst_cmprs_ratio>7.558285</cassini:inst_cmprs_ratio>
+                    <cassini:light_flood_state_flag>ON</cassini:light_flood_state_flag>
+                    <cassini:method_description>OPNAV MAN.</cassini:method_description>
+                    <cassini:missing_lines>0</cassini:missing_lines>
+                    <cassini:missing_packet_flag>NO</cassini:missing_packet_flag>
+                    <cassini:observation_id>NAV_C42SK_OPNAV371_PRIME</cassini:observation_id>
+                    <cassini:optics_temperature_front unit="degC">0.712693</cassini:optics_temperature_front>
+                    <cassini:optics_temperature_back unit="degC">1.820474</cassini:optics_temperature_back>
+                    <cassini:order_number>0</cassini:order_number>
+                    <cassini:parallel_clock_voltage_index>9</cassini:parallel_clock_voltage_index>
+                    <cassini:pds3_product_creation_time>2004-038T19:26:35.000</cassini:pds3_product_creation_time>
+                    <cassini:pds3_product_version_type>FINAL</cassini:pds3_product_version_type>
+                    <cassini:pds3_target_desc>RHEA</cassini:pds3_target_desc>
+                    <cassini:pds3_target_list>N/A</cassini:pds3_target_list>
+                    <cassini:pds3_target_name>SKY</cassini:pds3_target_name>
+                    <cassini:pre-pds_version_number>1</cassini:pre-pds_version_number>
+                    <cassini:prepare_cycle_index>3</cassini:prepare_cycle_index>
+                    <cassini:readout_cycle_index>5</cassini:readout_cycle_index>
+                    <cassini:received_packets>309</cassini:received_packets>
+                    <cassini:sensor_head_electronics_temperature unit="degC">1.633024</cassini:sensor_head_electronics_temperature>
+                    <cassini:sequence_id>C42</cassini:sequence_id>
+                    <cassini:sequence_number>1</cassini:sequence_number>
+                    <cassini:sequence_title>--</cassini:sequence_title>
+                    <cassini:shutter_mode_id>NACONLY</cassini:shutter_mode_id>
+                    <cassini:shutter_state_id>ENABLED</cassini:shutter_state_id>
+                    <cassini:start_time_doy>2004-037T02:07:06.418</cassini:start_time_doy>
+                    <cassini:stop_time_doy>2004-037T02:07:06.498</cassini:stop_time_doy>
+                    <cassini:telemetry_format_id>Information not provided</cassini:telemetry_format_id>
+                    <cassini:valid_maximum_full_well>4095</cassini:valid_maximum_full_well>
+                    <cassini:valid_maximum_DN_sat>4095</cassini:valid_maximum_DN_sat>
+                </cassini:ISS_Specific_Attributes>
+            </cassini:Cassini>
+        </Mission_Area>
+        <Discipline_Area>
+            <disp:Display_Settings>
+                <Local_Internal_Reference>
+                    <local_identifier_reference>image</local_identifier_reference>
+                    <local_reference_type>display_settings_to_array</local_reference_type>
+                </Local_Internal_Reference>
+                <disp:Display_Direction>
+                    <disp:horizontal_display_axis>Sample</disp:horizontal_display_axis>
+                    <disp:horizontal_display_direction>Left to Right</disp:horizontal_display_direction>
+                    <disp:vertical_display_axis>Line</disp:vertical_display_axis>
+                    <disp:vertical_display_direction>Top to Bottom</disp:vertical_display_direction>
+                </disp:Display_Direction>
+            </disp:Display_Settings>
+        </Discipline_Area>
+    </Observation_Area>
+
+    <Reference_List>
+        <Internal_Reference>
+            <lid_reference>urn:nasa:pds:cassini_iss_saturn:data_raw:index</lid_reference>
+            <reference_type>data_to_resource</reference_type>
+            <comment>The index table of basic parameters associated with each observation.</comment>
+        </Internal_Reference>
+        <Internal_Reference>
+            <lid_reference>urn:nasa:pds:cassini_iss_saturn:data_raw:body-geometry</lid_reference>
+            <reference_type>data_to_resource</reference_type>
+            <comment>The index table of body surface geometry information associated with each observation.</comment>
+        </Internal_Reference>
+        <Internal_Reference>
+            <lid_reference>urn:nasa:pds:cassini_iss_saturn:body-inventory</lid_reference>
+            <reference_type>data_to_resource</reference_type>
+            <comment>An index listing every Saturn system body expected to fall within each field of view.</comment>
+        </Internal_Reference>
+        <Internal_Reference>
+            <lid_reference>urn:nasa:pds:cassini_iss_saturn:ring-geometry</lid_reference>
+            <reference_type>data_to_resource</reference_type>
+            <comment>The index table of ring geometry information associated with each observation.</comment>
+        </Internal_Reference>
+        <Internal_Reference>
+            <lid_reference>urn:nasa:pds:cassini_iss_saturn:document:iss-data-user-guide</lid_reference>
+            <reference_type>data_to_document</reference_type>
+            <comment>The ISS Data User's Guide</comment>
+        </Internal_Reference>
+        <Internal_Reference>
+            <lid_reference>urn:nasa:pds:cassini_iss_saturn:browse_raw:1454725799n-full</lid_reference>
+            <reference_type>data_to_browse</reference_type>
+            <comment>
+                The browse image in JPEG format that illustrates the scientific content
+                of this image.
+            </comment>
+        </Internal_Reference>
+        <Source_Product_External>
+            <external_source_product_identifier>
+                CO-S-ISSNA/ISSWA-2-EDR-V1.0:COISS_2001:data/1454725799_1455008789:N1454725799_1.IMG
+            </external_source_product_identifier>
+            <reference_type>data_to_raw_source_product</reference_type>
+            <curating_facility>PDS RMS Node</curating_facility>
+            <description>
+                The original PDS3 version of this product. The form of the reference is
+                dataset_id:volume_id:directory_path:file_name.
+            </description>
+        </Source_Product_External>
+    </Reference_List>
+
+    <File_Area_Observational>
+        <File>
+            <file_name>1454725799n.img</file_name>
+            <creation_date_time>2019-06-06T13:16:39Z</creation_date_time>
+            <md5_checksum>e03c631bf5c0f11921fee9cb802d5200</md5_checksum>
+        </File>
+
+<!-- The internal VICAR header -->
+
+        <Header>
+            <offset unit="byte">0</offset>
+            <object_length unit="byte">6144</object_length>
+            <parsing_standard_id>VICAR2</parsing_standard_id>
+        </Header>
+
+<!-- Telemetry Table -->
+
+        <Array>
+            <local_identifier>telemetry-table</local_identifier>
+            <offset unit="byte">6144</offset>
+            <axes>1</axes>
+            <axis_index_order>Last Index Fastest</axis_index_order>
+            <Element_Array>
+                <data_type>UnsignedByte</data_type>
+            </Element_Array>
+            <Axis_Array>
+                <axis_name>telemetry</axis_name>
+                <elements>2</elements>
+                <sequence_number>1</sequence_number>
+            </Axis_Array>
+        </Array>
+
+<!-- The image -->
+
+        <Array_2D_Image>
+            <local_identifier>image</local_identifier>
+            <offset unit="byte">10240</offset>
+            <axes>2</axes>
+            <axis_index_order>Last Index Fastest</axis_index_order>
+            <Element_Array>
+                <data_type>UnsignedMSB2</data_type>
+                <unit>DN</unit>
+            </Element_Array>
+            <Axis_Array>
+                <axis_name>Line</axis_name>
+                <elements>1024</elements>
+                <sequence_number>1</sequence_number>
+            </Axis_Array>
+            <Axis_Array>
+                <axis_name>Sample</axis_name>
+                <elements>1024</elements>
+                <sequence_number>2</sequence_number>
+            </Axis_Array>
+        </Array_2D_Image>
+
+<!-- Line prefix bytes -->
+
+        <Array_2D>
+            <offset unit="byte">2107392</offset>
+            <axes>2</axes>
+            <axis_index_order>Last Index Fastest</axis_index_order>
+            <Element_Array>
+                <data_type>UnsignedByte</data_type>
+            </Element_Array>
+            <Axis_Array>
+                <axis_name>Line</axis_name>
+                <elements>1024</elements>
+                <sequence_number>1</sequence_number>
+            </Axis_Array>
+            <Axis_Array>
+                <axis_name>prefix-sample</axis_name>
+                <elements>24</elements>
+                <sequence_number>2</sequence_number>
+            </Axis_Array>
+        </Array_2D>
+    </File_Area_Observational>
+</Product_Observational>

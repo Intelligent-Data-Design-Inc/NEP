@@ -229,8 +229,8 @@ cmake -DBUILD_DOCUMENTATION=ON
 
 | Component | Required Library | Version | Source | Detection Method |
 |-----------|------------------|---------|--------|------------------|
-| Core | NetCDF-C | v4.9+ | Unidata | pkg-config, FindNetCDF.cmake |
-| Core | HDF5 | v1.12+ | HDF Group | pkg-config, FindHDF5.cmake |
+| Core | NetCDF-C | v4.10.1+ | Unidata | pkg-config, FindNetCDF.cmake |
+| Core | HDF5 | v2.1.1+ | HDF Group | pkg-config, FindHDF5.cmake |
 | LZ4 Filter | LZ4 | Latest | https://github.com/lz4/lz4 | pkg-config, FindLZ4.cmake |
 | BZIP2 Filter | BZIP2 | Latest | System library | FindBZip2.cmake |
 | Docs | Doxygen | Latest | Optional | find_package(Doxygen) |
@@ -389,8 +389,8 @@ Coordinate reference system (CRS) and georeferencing information stored followin
 | Component | Library | Version | Purpose |
 |-----------|---------|---------|---------|
 | GeoTIFF Handler | libgeotiff | Latest stable | GeoTIFF file operations and metadata |
-| Core | NetCDF-C | v4.9+ | NetCDF API |
-| Core | HDF5 | v1.12+ | HDF5 backend |
+| Core | NetCDF-C | v4.10.1+ | NetCDF API |
+| Core | HDF5 | v2.1.1+ | HDF5 backend |
 
 **Note**: PROJ library support is out of scope for v1.6.0. Coordinate transformations will be addressed in future releases if needed.
 
@@ -581,8 +581,8 @@ The GRIB2 UDF handler follows the same NC_Dispatch pattern used for CDF and GeoT
 |-----------|---------|---------|---------|
 | GRIB2 Handler | NOAA NCEPLIBS-g2c | ≥ 2.1.0 | GRIB2 file operations and data unpacking |
 | GRIB2 Handler | libjasper | ≥ 3.0.0 | JPEG2000 compression (transitive dep of g2c) |
-| Core | NetCDF-C | v4.9+ | NetCDF API |
-| Core | HDF5 | v1.12+ | HDF5 backend |
+| Core | NetCDF-C | v4.10.1+ | NetCDF API |
+| Core | HDF5 | v2.1.1+ | HDF5 backend |
 
 ### Build System Integration
 
@@ -678,8 +678,8 @@ NEP v2.0.0 adds support for FITS (Flexible Image Transport System) files through
 | Component | Library | Version | Purpose |
 |-----------|---------|---------|---------|
 | FITS Handler | CFITSIO | ≥ 3.0 | FITS file I/O and HDU navigation |
-| Core | NetCDF-C | v4.9+ | NetCDF API |
-| Core | HDF5 | v1.12+ | HDF5 backend |
+| Core | NetCDF-C | v4.10.1+ | NetCDF API |
+| Core | HDF5 | v2.1.1+ | HDF5 backend |
 
 ### Build System Integration
 
@@ -750,7 +750,7 @@ NEP v2.2.0 adds support for NASA/ESA Planetary Data System version 4 (PDS4) XML-
 | `Identification_Area` fields | Global string attributes on root group |
 | `Observation_Area` fields | Global string attributes on root group |
 | `File_Area_Observational` | Child group named from `File/file_name` |
-| `Array` / `Array_2D_Image` | netCDF dimensions (from `Axis_Array` sorted by `sequence_number`) + variable (from `Element_Array/data_type`) |
+| `Array` / `Array_2D_Image` / `Array_2D_Spectrum` | netCDF dimensions (from `Axis_Array` sorted by `sequence_number`) + variable (from `Element_Array/data_type`) |
 | `Table_Binary` / `Table_Character` / `Table_Delimited` | `record` dimension from `<records>`; one variable per `Field_*` with type and optional `units` attribute |
 
 #### Data Reading (`NC_PDS4_get_vara`)
@@ -779,8 +779,8 @@ NEP v2.2.0 adds support for NASA/ESA Planetary Data System version 4 (PDS4) XML-
 | Component | Library | Version | Purpose |
 |-----------|---------|---------|---------|
 | PDS4 Handler | libxml2 | ≥ 2.9 (`libxml2-dev`) | XML label parsing |
-| Core | NetCDF-C | v4.9+ | NetCDF API |
-| Core | HDF5 | v1.12+ | HDF5 backend |
+| Core | NetCDF-C | v4.10.1+ | NetCDF API |
+| Core | HDF5 | v2.1.1+ | HDF5 backend |
 
 ### Build System Integration
 

@@ -8,15 +8,15 @@ Use these paths for **local development builds on Ed's machine**.
 For CI/GitHub Actions, different paths are used (see `.github/workflows/`).
 
 ## Machine-Specific Dependency Paths
-- **HDF5**: `/usr/local/hdf5-1.14.6/`
-- **NetCDF-C**: `/usr/local/netcdf-c/`
+- **HDF5**: `/usr/local/hdf5-2.1.1/`
+- **NetCDF-C**: `/usr/local/netcdf-c-4.10.1/`
 - **NetCDF-Fortran**: `/usr/local/netcdf-fortran/` (if Fortran enabled)
 - **CDF**: `/usr/local/cdf-3.9.1/` (if CDF enabled)
 
 ## Runtime Environment
 Before running tests or executables:
 ```bash
-export LD_LIBRARY_PATH=/usr/local/hdf5-1.14.6/lib:/usr/local/netcdf-c/lib:/usr/local/netcdf-fortran/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/usr/local/hdf5-2.1.1/lib:/usr/local/netcdf-c-4.10.1/lib:/usr/local/netcdf-fortran/lib:$LD_LIBRARY_PATH
 ```
 
 ## Build System Options
@@ -36,8 +36,8 @@ Working directory: `/home/ed/NEP`
 ```bash
 autoreconf -i && \
 CFLAGS="-g -O0" \
-CPPFLAGS="-I/usr/local/hdf5-1.14.6/include -I/usr/local/netcdf-c/include" \
-LDFLAGS="-L/usr/local/hdf5-1.14.6/lib -L/usr/local/netcdf-c/lib" \
+CPPFLAGS="-I/usr/local/hdf5-2.1.1/include -I/usr/local/netcdf-c-4.10.1/include" \
+LDFLAGS="-L/usr/local/hdf5-2.1.1/lib -L/usr/local/netcdf-c-4.10.1/lib" \
 ./configure --enable-geotiff --enable-cdf --disable-fortran --disable-shared --disable-bzip2 --disable-lz4 && \
 make clean && make -j$(nproc) && make check
 ```
@@ -50,7 +50,7 @@ Working directory: `/home/ed/NEP`
 ```bash
 mkdir -p build && cd build
 cmake .. \
-  -DCMAKE_PREFIX_PATH="/usr/local/hdf5-1.14.6;/usr/local/netcdf-c" \
+  -DCMAKE_PREFIX_PATH="/usr/local/hdf5-2.1.1;/usr/local/netcdf-c-4.10.1" \
   -DCMAKE_BUILD_TYPE=Debug \
   -DNEP_ENABLE_GEOTIFF=ON \
   -DNEP_ENABLE_CDF=ON \

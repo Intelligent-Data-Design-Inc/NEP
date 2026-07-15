@@ -1,8 +1,53 @@
 # NEP Development Roadmap
+
+### V2.7.0 - More PDS4 Testing - New Horizons Data
+- In this release we will test on a bunch of data from the New Horizons mission.
+
+#### Sprint 1: New Horizons Alice PDS4 Product
+**Detailed Plan**: See `docs/plan/v2.7.0-sprint1-new-horizons-pds4.md`
+
+Test `test/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.lblx`, a New Horizons Alice PDS4 `Product_Observational` label paired with the FITS container `ali_0030420276_0x4b0_sci_1.fit`. The label contains four `Array_2D_Spectrum` objects and two `Table_Binary` objects.
+
+**Implementation scope:**
+- Extend the PDS4 file-area dispatch so `Array_2D_Spectrum` is handled by the existing generic N-axis array reader.
+- Retain the PDS4 label as the authority for the NetCDF model and read the FITS payload through the existing PDS4 byte-offset and byte-order-conversion path. FITS-UDF delegation is out of scope.
+- Add the `.lblx` / `.fit` pair to the CMake and Autotools out-of-tree test-data copy and distribution rules.
+- Add a New Horizons mission test to `test/tst_pds4_udf.c` that checks the file-area group, representative array/table metadata, one array hyperslab read, and one binary-table-field read.
+- Audit `tst_pds4_udf.c` so every PDS4 label used by the executable has at least one successful `nc_get_vara_*()` assertion.
+- Update `docs/pds4.md` for `Array_2D_Spectrum` and the New Horizons test product; update `docs/formats.md` mission-test inventory.
+
+**Clarified decisions:**
+- `.lblx` is accepted as a PDS4 XML label through the existing XML magic and namespace validation; no extension-specific format detection is needed.
+- `Array_2D_Spectrum` reuses generic PDS4-array handling rather than creating a specialized reader.
+- PDS4 continues to access the FITS container as a byte-addressable payload described by label offsets; no CFITSIO dependency or PDS4-to-FITS-UDF delegation is added.
+- Every PDS4 label tested by `tst_pds4_udf` must have at least one data-read assertion.
+- The New Horizons regression covers both relevant structure classes: at least one `Array_2D_Spectrum` hyperslab and one `Table_Binary` field read.
+
+**Acceptance Criteria:**
+- `nc_open()` opens the `.lblx` label and exposes the `ali_0030420276_0x4b0_sci_1.fit` file-area group.
+- `Array_2D_Spectrum` objects have label-defined dimensions, native type, units, raw scaling attributes when present, and successful hyperslab reads.
+- A representative `Table_Binary` field reads successfully.
+- The `.lblx` / `.fit` pair is available in CMake and Autotools out-of-tree builds and source distributions.
+- All PDS4 labels exercised by `tst_pds4_udf` have a successful data-read assertion.
+- Existing PDS4 tests continue to pass.
+
+**Testing:** Run `tst_pds4_udf` with PDS4 enabled under CMake and Autotools; run the existing PDS4 CI configuration.
+
+**Build System Integration:** `test/CMakeLists.txt` and `test/Makefile.am`; no new dependencies or configuration options.
+
+**Definition of Done:** Generic `Array_2D_Spectrum` support, New Horizons metadata and data-read coverage, the per-label data-read invariant, build-system data staging, documentation updates, and passing PDS4 tests are in place.
+
+**GitHub Issue:** #293
+
+#### Sprint 2: Build Test around: ali_0400644769_0x4b2_sci.lblx
+
+#### Sprint 3: Build Test around: ali_0284461348_0x4b2_eng.lblx
+
+#### Sprint 4: Build Test around: ali_0002845457_0x4b2_sci_1.lblx
+
 ### V2.6.1 - No More Worlds to Conquer
 #### Sprint 1: Fix Bugs in FITS/PDS4 ncrc Initialization
 - Fix bugs in UDF self-initialization of FITS/PDS4 data.
-
 
 ### V2.6.0 - Further Testing
 #### Sprint 1: Update Spack Package File

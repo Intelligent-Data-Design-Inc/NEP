@@ -4,7 +4,7 @@
 #
 # This workflow builds NEP with NEP_ENABLE_FITS=ON using:
 # - HDF5 2.1.1 (built from source, cached)
-# - NetCDF-C (built from main branch, cached)
+# - NetCDF-C 4.10.1 (built from source, cached)
 # - NetCDF-Fortran (built from main branch, cached)
 # - CFITSIO (installed via apt-get)
 #
@@ -44,7 +44,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-2.1.1-fits-${{ runner.os }}-1
+          key: hdf5-2.1.1-fits-${{ runner.os }}-refresh-1
 
       - name: Download and build HDF5 2.1.1
         if: steps.cache-hdf5-fits.outputs.cache-hit != 'true'
@@ -62,14 +62,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-c-install
-          key: netcdf-c-main-fits-${{ runner.os }}-2
+          key: netcdf-c-4.10.1-hdf5-2.1.1-fits-${{ runner.os }}-refresh-1
 
-      - name: Clone and build NetCDF-C (main branch)
+      - name: Download and build NetCDF-C 4.10.1
         if: steps.cache-netcdf-c-fits.outputs.cache-hit != 'true'
         run: |
-          git clone --depth 1 https://github.com/Unidata/netcdf-c.git netcdf-c-main
-          cd netcdf-c-main
-          autoreconf -if
+          wget -q https://github.com/Unidata/netcdf-c/archive/v4.10.1.tar.gz -O netcdf-c-4.10.1.tar.gz
+          tar -xzf netcdf-c-4.10.1.tar.gz
+          cd netcdf-c-4.10.1
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib"
@@ -83,7 +83,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-fortran-install
-          key: netcdf-fortran-main-fits-${{ runner.os }}-2
+          key: netcdf-fortran-main-hdf5-2.1.1-netcdf-c-4.10.1-fits-${{ runner.os }}-refresh-1
 
       - name: Clone and build NetCDF-Fortran (main branch)
         if: steps.cache-netcdf-fortran-fits.outputs.cache-hit != 'true'
@@ -181,6 +181,6 @@ jobs:
           echo "=== FITS CI Build Summary ==="
           echo "Build System: ${{ matrix.build_system }}"
           echo "HDF5: 2.1.1"
-          echo "NetCDF-C: main"
+          echo "NetCDF-C: 4.10.1"
           echo "NetCDF-Fortran: main"
           echo "CFITSIO: apt"

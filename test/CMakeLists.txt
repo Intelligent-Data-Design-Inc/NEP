@@ -180,6 +180,14 @@ if(HAVE_PDS4)
                    ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758_v07_r01.fits
                    COPYONLY)
 
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/new_horizons)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.lblx
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.lblx
+                   COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.fit
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.fit
+                   COPYONLY)
+
     # Maven IUVS periapse mission data (nested Group_Field_Binary, FITS-backed PDS4)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108.xml
                    ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108.xml
