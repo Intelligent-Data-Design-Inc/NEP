@@ -521,7 +521,7 @@ PDS4 (Planetary Data System version 4) support via UDF handler enables transpare
 access to NASA/ESA Planetary Data System 4 label files through the standard NetCDF
 API. PDS4 is used to archive and distribute planetary science data from missions
 such as Mars Reconnaissance Orbiter, Curiosity, Perseverance, Cassini, OSIRIS-REx,
-and many others.
+New Horizons, and many others.
 
 ### 14.2 Features
 
@@ -704,9 +704,10 @@ shape 10×45×90.
 - **v1.9.0** (May 2026): Parallel I/O build system support and parallel test examples
 - **v2.5.0** (July 2026): Complete Spack variant coverage for all optional format readers (GeoTIFF, GRIB2, CDF, FITS, PDS4, parallel, examples, benchmarks); all-variants CI integration testing; comprehensive README Spack installation section
 - **v2.6.0** (July 2026): Further PDS4 reader testing and robustness — Maven NGIMS delimited-table support, `Group_Field_Binary` repeated fields up to depth-2 nesting, table field-name collision resolution, `Array_3D_Image` and generic `Array_*` dispatch, `scaling_factor`/`value_offset` attribute preservation; Spack package bumped to v2.5.0
+- **v2.7.1** (July 2026): Documentation cleanup — per-format reference pages extracted from `docs/formats.md`, README PDS4 Tests section moved to `docs/pds4.md`, and design/prd/prfaq updated with New Horizons and v2.7.1 metadata
 
 ---
 
-*Document Version: 2.6.0*  
+*Document Version: 2.7.1*
 *Last Updated: July 2026*  
-*Status: Reflects features through v2.6.0 release preparation*
+*Status: Reflects features through v2.7.1 release preparation*

@@ -1,7 +1,7 @@
-# NEP – NetCDF Extension Pack v2.6.0
+# NEP – NetCDF Extension Pack v2.7.1
 ## Project Overview
 
-The NetCDF Extension Pack (NEP) v2.6.0 extends NetCDF-4 with high-performance compression filters and User Defined Format (UDF) handlers for accessing diverse scientific data formats through the standard NetCDF API. NEP provides flexible lossless compression with two complementary algorithms (LZ4 and BZIP2) and transparent access to GeoTIFF, GRIB2, FITS, NASA CDF, and NASA/ESA PDS4 files.
+The NetCDF Extension Pack (NEP) v2.7.1 extends NetCDF-4 with high-performance compression filters and User Defined Format (UDF) handlers for accessing diverse scientific data formats through the standard NetCDF API. NEP provides flexible lossless compression with two complementary algorithms (LZ4 and BZIP2) and transparent access to GeoTIFF, GRIB2, FITS, NASA CDF, and NASA/ESA PDS4 files.
 
 ## Architecture
 
@@ -805,6 +805,8 @@ Located in `test/data/PDS4/`:
 - `test_table_binary.xml` / `test_table_binary.dat` — Table_Binary product (3 fields × 5 records)
 - `Table_Character_Example.xml` / `Table_Character_Example.tab` — Table_Character product (3 fields × 3 records)
 
+Real mission test products also include MAVEN NGIMS/IUVS, Mars 2020 Perseverance Mastcam-Z, and New Horizons Alice `.lblx` / `.fit` pairs.
+
 ### Known Limitations
 - Write support not implemented; `nc_create()` returns `NC_EPERM`
 - `nc_get_vars()` / `nc_get_varm()` use default dispatch fallbacks (no strided native reads)
@@ -1114,7 +1116,7 @@ Examples demonstrate:
 
 ## Release Information
 
-- **Version**: v2.6.0
+- **Version**: v2.7.1
 - **Status**: Release Preparation
 - **Release Date**: July 2026
 - **Features**:
@@ -1123,7 +1125,7 @@ Examples demonstrate:
   - GRIB2 read support via UDF handler (UDF2)
   - FITS read support via UDF handler (UDF3)
   - NASA CDF read support via UDF handler (UDF4)
-  - NASA/ESA PDS4 read support via UDF handler (UDF5), including `Array_3D_Image`, `Group_Field_Binary`, delimited tables, and real mission test data
+  - NASA/ESA PDS4 read support via UDF handler (UDF5), including `Array_3D_Image`, `Group_Field_Binary`, delimited tables, and real mission test data (MAVEN, Perseverance, New Horizons)
   - All five format readers can be enabled simultaneously
   - Spack package manager support with variants for every optional reader and utility
   - NcZarr, OPeNDAP, parallel I/O, and performance benchmark examples
@@ -1131,4 +1133,4 @@ Examples demonstrate:
 
 ---
 
-*Last Updated: July 2026 (v2.6.0 release preparation)*
+*Last Updated: July 2026 (v2.7.1 release preparation)*

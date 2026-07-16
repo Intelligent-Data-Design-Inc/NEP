@@ -284,31 +284,6 @@ ctest --test-dir build
 make check
 ```
 
-### PDS4 Tests
-
-`test/tst_pds4_udf.c` contains all PDS4 tests. Requires `--enable-pds4` / `-DNEP_ENABLE_PDS4=ON`.
-
-| Test Name | Description | Mission / Source | Data Type |
-|---|---|---|---|
-| `test_table_binary()` | Verifies metadata for a synthetic binary table: 5-record dimension, three variables (`Timestamp`, `Detector_Counts`, `Temperature`) with units | Synthetic test data | `Table_Binary` |
-| `test_table_character()` | Verifies metadata for a fixed-width character table: 224-record dimension, three `NC_DOUBLE` variables (`Wavelength`, `Reflectance`, `Error`) | Synthetic test data | `Table_Character` |
-| `test_array_data_read()` | Reads a 4×4 float32 image array and verifies all 16 values and a sub-hyperslab `[1:2,1:2]` | Synthetic test data | Array (`Array_2D_Image`) |
-| `test_table_binary_data_read()` | Reads binary table field values: `Timestamp[0..4]`, `Detector_Counts[0..4]`, `Temperature[0..4]` | Synthetic test data | `Table_Binary` |
-| `test_table_character_data_read()` | Reads fixed-width character table values: `Wavelength[0..2]`, `Reflectance[0..2]`, `Error[0..2]` | Synthetic test data | `Table_Character` |
-| `test_mission_cassini_hrd()` | Opens real HRD engineering table; verifies 11 records, two `NC_CHAR` fields (`ON_OFF_TIME`, `ON_OFF_FLAG`) | Cassini-Huygens HRD dust detector | `Table_Character` |
-| `test_mission_messenger_tnmap()` | Opens real thermal neutron map; verifies 360×720 `NC_UBYTE` array and reads a hyperslab | MESSENGER Mercury orbiter | Binary array (`Array_2D_Map`) |
-| `test_mission_lcs_9p()` | Opens real comet photometry table; verifies 8 variables (`ASCII_Integer`, `ASCII_Real`) and first-record values | Deep Impact LCS, 9P/Tempel comet | `Table_Character` |
-| `test_mission_maven_l1b()` | Opens real L1B housekeeping table; verifies 324 variables, 26121 records, `TIME` is `NC_DOUBLE`, and `TIME[0..1] > 0` | MAVEN NGIMS, Mars atmosphere | `Table_Delimited` (324 fields, 9.3 MB CSV) |
-| `test_mission_maven_l3()` | Opens real L3 science table; verifies 15 variables, 2 records, `T_UTC` is `NC_CHAR` (`ASCII_Date_Time`), and known values for `T_UNIX[0]`, `SCALE_HEIGHT[0]`, `TEMPERATURE[0]` | MAVEN NGIMS, Mars atmosphere | `Table_Delimited` (15 fields, 446 B CSV) |
-| `test_mission_maven_iuvs_metadata()` | Opens FITS-backed PDS4 file; verifies 116 variables (scalar + `Group_Field_Binary`), `COLUMN` is 2D with trailing dim=2, `V_TANGENT` trailing dim=3, `TANGENT_ALT` is 1D `NC_FLOAT` | MAVEN IUVS, Mars corona | `Table_Binary` (8 tables, FITS container, `Group_Field_Binary`) |
-| `test_mission_maven_iuvs_data()` | Reads scalar field `TANGENT_ALT[0]` (finite > 0 km) and group field `RADIANCE[50,0..1]` (finite > 0 kR), confirming FITS-as-container I/O and 2D group field reading | MAVEN IUVS, Mars corona | `Table_Binary` (FITS container, 181 KB) |
-| `test_mission_maven_periapse_metadata()` | Opens FITS-backed PDS4 file; verifies nested `Group_Field_Binary` (depth-2), table-prefixed field names, `DENSITY_ALT` dims `[12,19,3]`, and `GEOMETRY_RETRIEVAL` scalar doubles | MAVEN IUVS, Mars periapse | `Table_Binary` (FITS container, nested groups) |
-| `test_mission_maven_periapse_data()` | Reads scalar `LAT[0]` from `GEOMETRY_RETRIEVAL` and 3D nested group field `DENSITY_ALT[0,0,0]` (finite > 0) | MAVEN IUVS, Mars periapse | `Table_Binary` (nested groups) |
-| `test_mission_perseverance_mastcamz_metadata()` | Opens Perseverance Sol 1738 `Array_3D_Image`; verifies `data` is `NC_SHORT`, dims `[3,1200,1648]`, and `scaling_factor="5.0e-06"` | Mars 2020 / Perseverance | `Array_3D_Image` (VICAR/ODL `.IMG`) |
-| `test_mission_perseverance_mastcamz_data()` | Reads pixel `[0,0,0]` as `NC_SHORT` and checks valid `SignedMSB2` range | Mars 2020 / Perseverance | `Array_3D_Image` |
-| `test_mission_perseverance_mastcamz_1737_metadata()` | Same metadata checks for the second Perseverance Sol 1737 `Array_3D_Image` product | Mars 2020 / Perseverance | `Array_3D_Image` |
-| `test_mission_perseverance_mastcamz_1737_data()` | Reads pixel `[0,0,0]` from Sol 1737 and checks valid `SignedMSB2` range | Mars 2020 / Perseverance | `Array_3D_Image` |
-
 ---
 
 ## Documentation
