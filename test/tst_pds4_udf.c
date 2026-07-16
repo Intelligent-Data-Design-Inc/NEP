@@ -46,6 +46,8 @@
 #define PDS4_MAVEN_PERIAPSE_FILE "data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108.xml"
 #define PDS4_NEW_HORIZONS_FILE \
     "data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.lblx"
+#define PDS4_NEW_HORIZONS_0400644769_FILE \
+    "data/PDS4/new_horizons/ali_0400644769_0x4b2_sci.lblx"
 #define PDS4_PERSEVERANCE_FILE \
     "data/PDS4/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml"
 #define PDS4_PERSEVERANCE_1737_FILE \
@@ -1702,6 +1704,300 @@ test_mission_new_horizons(void)
     return 0;
 }
 
+/**
+ * @internal Test New Horizons Alice ali_0400644769_0x4b2_sci metadata.
+ *
+ * Opens the PDS4 label and verifies:
+ * - File-area group "ali_0400644769_0x4b2_sci.fit" exists.
+ * - One "record" dimension of length 102 for the Table_Binary.
+ * - Three Array_2D_Spectrum variables: Observational Data, Histogram
+ *   Uncertainties, Wavelength Image (all NC_FLOAT, [32, 1024], correct units).
+ * - Observational Data has raw scaling_factor="1.00000000000" and
+ *   value_offset="0.00000000000".
+ * - One Array_1D variable: Pulse Height Distribution (PHD) (NC_INT, [64],
+ *   units="COUNT").
+ * - One representative Table_Binary field: SAFETY_ACTIVE (NC_UBYTE, 1D).
+ */
+static int
+test_mission_new_horizons_0400644769_metadata(void)
+{
+    int ncid, grp_ncid, varid, retval;
+    int ndims, nvars, dimids[NC_MAX_DIMS];
+    nc_type xtype;
+    size_t len;
+    char att_buf[128];
+
+    printf("\n--- Mission: New Horizons Alice ali_0400644769 metadata ---\n");
+
+    if ((retval = nc_open(PDS4_NEW_HORIZONS_0400644769_FILE, NC_NOWRITE, &ncid)))
+        ERR(retval);
+    if ((retval = nc_inq_ncid(ncid, "ali_0400644769_0x4b2_sci.fit", &grp_ncid)))
+        ERR(retval);
+
+    if ((retval = nc_inq(grp_ncid, &ndims, &nvars, NULL, NULL)))
+        ERR(retval);
+    if (ndims != 8)
+    {
+        fprintf(stderr, "Expected 8 group dimensions, got %d\n", ndims);
+        nc_close(ncid);
+        return 1;
+    }
+    if (nvars != 121)
+    {
+        fprintf(stderr, "Expected 121 group variables, got %d\n", nvars);
+        nc_close(ncid);
+        return 1;
+    }
+
+    if ((retval = nc_inq_dimid(grp_ncid, "record", dimids)))
+        ERR(retval);
+    if ((retval = nc_inq_dim(grp_ncid, dimids[0], NULL, &len)))
+        ERR(retval);
+    if (len != 102)
+    {
+        fprintf(stderr, "Expected record length 102, got %zu\n", len);
+        nc_close(ncid);
+        return 1;
+    }
+
+    /* Observational Data: Array_2D_Spectrum. */
+    if ((retval = nc_inq_varid(grp_ncid, "Observational Data", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, NULL, &xtype, &ndims, dimids, NULL)))
+        ERR(retval);
+    if (xtype != NC_FLOAT || ndims != 2)
+    {
+        fprintf(stderr, "Observational Data: expected 2D NC_FLOAT, got ndims=%d type=%d\n",
+                ndims, xtype);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((retval = nc_inq_dim(grp_ncid, dimids[0], NULL, &len)) || len != 32)
+    {
+        fprintf(stderr, "Observational Data Line length: expected 32, got %zu\n", len);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((retval = nc_inq_dim(grp_ncid, dimids[1], NULL, &len)) || len != 1024)
+    {
+        fprintf(stderr, "Observational Data Sample length: expected 1024, got %zu\n", len);
+        nc_close(ncid);
+        return 1;
+    }
+    memset(att_buf, 0, sizeof(att_buf));
+    if ((retval = nc_get_att_text(grp_ncid, varid, "units", att_buf)))
+        ERR(retval);
+    if (strcmp(att_buf, "PHOTON CM**-2 S**-1") != 0)
+    {
+        fprintf(stderr, "Observational Data units: expected 'PHOTON CM**-2 S**-1', got '%s'\n",
+                att_buf);
+        nc_close(ncid);
+        return 1;
+    }
+    memset(att_buf, 0, sizeof(att_buf));
+    if ((retval = nc_get_att_text(grp_ncid, varid, "scaling_factor", att_buf)))
+        ERR(retval);
+    if (strcmp(att_buf, "1.00000000000") != 0)
+    {
+        fprintf(stderr, "Observational Data scaling_factor mismatch: '%s'\n", att_buf);
+        nc_close(ncid);
+        return 1;
+    }
+    memset(att_buf, 0, sizeof(att_buf));
+    if ((retval = nc_get_att_text(grp_ncid, varid, "value_offset", att_buf)))
+        ERR(retval);
+    if (strcmp(att_buf, "0.00000000000") != 0)
+    {
+        fprintf(stderr, "Observational Data value_offset mismatch: '%s'\n", att_buf);
+        nc_close(ncid);
+        return 1;
+    }
+
+    /* Histogram Uncertainties: Array_2D_Spectrum. */
+    if ((retval = nc_inq_varid(grp_ncid, "Histogram Uncertainties", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, NULL, &xtype, &ndims, dimids, NULL)))
+        ERR(retval);
+    if (xtype != NC_FLOAT || ndims != 2)
+    {
+        fprintf(stderr, "Histogram Uncertainties: expected 2D NC_FLOAT, got ndims=%d type=%d\n",
+                ndims, xtype);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((retval = nc_inq_dim(grp_ncid, dimids[0], NULL, &len)) || len != 32)
+    {
+        fprintf(stderr, "Histogram Uncertainties Line length: expected 32, got %zu\n", len);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((retval = nc_inq_dim(grp_ncid, dimids[1], NULL, &len)) || len != 1024)
+    {
+        fprintf(stderr, "Histogram Uncertainties Sample length: expected 1024, got %zu\n", len);
+        nc_close(ncid);
+        return 1;
+    }
+    memset(att_buf, 0, sizeof(att_buf));
+    if ((retval = nc_get_att_text(grp_ncid, varid, "units", att_buf)))
+        ERR(retval);
+    if (strcmp(att_buf, "PHOTON CM**-2 S**-1") != 0)
+    {
+        fprintf(stderr, "Histogram Uncertainties units mismatch: '%s'\n", att_buf);
+        nc_close(ncid);
+        return 1;
+    }
+
+    /* Wavelength Image: Array_2D_Spectrum. */
+    if ((retval = nc_inq_varid(grp_ncid, "Wavelength Image", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, NULL, &xtype, &ndims, dimids, NULL)))
+        ERR(retval);
+    if (xtype != NC_FLOAT || ndims != 2)
+    {
+        fprintf(stderr, "Wavelength Image: expected 2D NC_FLOAT, got ndims=%d type=%d\n",
+                ndims, xtype);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((retval = nc_inq_dim(grp_ncid, dimids[0], NULL, &len)) || len != 32)
+    {
+        fprintf(stderr, "Wavelength Image Line length: expected 32, got %zu\n", len);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((retval = nc_inq_dim(grp_ncid, dimids[1], NULL, &len)) || len != 1024)
+    {
+        fprintf(stderr, "Wavelength Image Sample length: expected 1024, got %zu\n", len);
+        nc_close(ncid);
+        return 1;
+    }
+    memset(att_buf, 0, sizeof(att_buf));
+    if ((retval = nc_get_att_text(grp_ncid, varid, "units", att_buf)))
+        ERR(retval);
+    if (strcmp(att_buf, "ANGSTROM") != 0)
+    {
+        fprintf(stderr, "Wavelength Image units mismatch: '%s'\n", att_buf);
+        nc_close(ncid);
+        return 1;
+    }
+
+    /* Pulse Height Distribution (PHD): Array_1D. */
+    if ((retval = nc_inq_varid(grp_ncid, "Pulse Height Distribution (PHD)", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, NULL, &xtype, &ndims, dimids, NULL)))
+        ERR(retval);
+    if (xtype != NC_INT || ndims != 1)
+    {
+        fprintf(stderr, "Pulse Height Distribution (PHD): expected 1D NC_INT, got ndims=%d type=%d\n",
+                ndims, xtype);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((retval = nc_inq_dim(grp_ncid, dimids[0], NULL, &len)) || len != 64)
+    {
+        fprintf(stderr, "Pulse Height Distribution (PHD) length: expected 64, got %zu\n", len);
+        nc_close(ncid);
+        return 1;
+    }
+    memset(att_buf, 0, sizeof(att_buf));
+    if ((retval = nc_get_att_text(grp_ncid, varid, "units", att_buf)))
+        ERR(retval);
+    if (strcmp(att_buf, "COUNT") != 0)
+    {
+        fprintf(stderr, "Pulse Height Distribution (PHD) units mismatch: '%s'\n", att_buf);
+        nc_close(ncid);
+        return 1;
+    }
+
+    /* SAFETY_ACTIVE: representative Table_Binary field. */
+    if ((retval = nc_inq_varid(grp_ncid, "SAFETY_ACTIVE", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, NULL, &xtype, &ndims, NULL, NULL)))
+        ERR(retval);
+    if (xtype != NC_UBYTE || ndims != 1)
+    {
+        fprintf(stderr, "SAFETY_ACTIVE: expected 1D NC_UBYTE, got ndims=%d type=%d\n",
+                ndims, xtype);
+        nc_close(ncid);
+        return 1;
+    }
+
+    if ((retval = nc_close(ncid)))
+        ERR(retval);
+    printf("PASS: New Horizons Alice ali_0400644769 metadata tests PASSED.\n");
+    return 0;
+}
+
+/**
+ * @internal Test New Horizons Alice ali_0400644769_0x4b2_sci data reads.
+ *
+ * Reads:
+ * - Observational Data[0, 0:4] as NC_FLOAT (verify finite values).
+ * - Pulse Height Distribution (PHD)[0] as NC_INT (verify non-negative).
+ * - SAFETY_ACTIVE[0] as NC_UBYTE (verify 0 or 1).
+ */
+static int
+test_mission_new_horizons_0400644769_data(void)
+{
+    int ncid, grp_ncid, varid, retval;
+    float spectrum[4];
+    int phd;
+    unsigned char safety;
+    size_t array_start[2] = {0, 0};
+    size_t array_count[2] = {1, 4};
+    size_t start[1] = {0};
+    size_t count[1] = {1};
+    int i;
+
+    printf("\n--- Mission: New Horizons Alice ali_0400644769 data reads ---\n");
+
+    if ((retval = nc_open(PDS4_NEW_HORIZONS_0400644769_FILE, NC_NOWRITE, &ncid)))
+        ERR(retval);
+    if ((retval = nc_inq_ncid(ncid, "ali_0400644769_0x4b2_sci.fit", &grp_ncid)))
+        ERR(retval);
+
+    if ((retval = nc_inq_varid(grp_ncid, "Observational Data", &varid)))
+        ERR(retval);
+    if ((retval = nc_get_vara_float(grp_ncid, varid, array_start, array_count, spectrum)))
+        ERR(retval);
+    for (i = 0; i < 4; i++)
+    {
+        if (!isfinite(spectrum[i]))
+        {
+            fprintf(stderr, "Observational Data[0,%d] is not finite: %f\n", i, spectrum[i]);
+            nc_close(ncid);
+            return 1;
+        }
+    }
+
+    if ((retval = nc_inq_varid(grp_ncid, "Pulse Height Distribution (PHD)", &varid)))
+        ERR(retval);
+    if ((retval = nc_get_vara_int(grp_ncid, varid, start, count, &phd)))
+        ERR(retval);
+    if (phd < 0)
+    {
+        fprintf(stderr, "Pulse Height Distribution (PHD)[0] negative: %d\n", phd);
+        nc_close(ncid);
+        return 1;
+    }
+
+    if ((retval = nc_inq_varid(grp_ncid, "SAFETY_ACTIVE", &varid)))
+        ERR(retval);
+    if ((retval = nc_get_vara_uchar(grp_ncid, varid, start, count, &safety)))
+        ERR(retval);
+    if (safety > 1)
+    {
+        fprintf(stderr, "SAFETY_ACTIVE[0] out of expected range: %u\n", (unsigned)safety);
+        nc_close(ncid);
+        return 1;
+    }
+
+    if ((retval = nc_close(ncid)))
+        ERR(retval);
+    printf("PASS: New Horizons Alice ali_0400644769 data reads PASSED.\n");
+    return 0;
+}
+
 int
 main(void)
 {
@@ -1873,6 +2169,10 @@ main(void)
 
     /* Mission data validation tests. */
     if (test_mission_new_horizons())
+        return 1;
+    if (test_mission_new_horizons_0400644769_metadata())
+        return 1;
+    if (test_mission_new_horizons_0400644769_data())
         return 1;
     if (test_mission_cassini_hrd())
         return 1;

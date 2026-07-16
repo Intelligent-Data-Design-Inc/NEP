@@ -304,3 +304,4 @@ The following real mission datasets have been validated:
 | Mars 2020 / Perseverance | Mastcam-Z (ZCAM) | Sol 1738 calibrated radiance image | `.IMG` (Array_3D_Image, Band=3 × Line=1200 × Sample=1648, `SignedMSB2`) |
 | Mars 2020 / Perseverance | Mastcam-Z (ZCAM) | Sol 1737 calibrated radiance image | `.IMG` (Array_3D_Image, Band=3 × Line=1200 × Sample=1648, `SignedMSB2`) |
 | New Horizons | Alice ultraviolet imaging spectrograph | Jupiter encounter partially processed pixel-list product | `.lblx` label + `.fit` container (Array_2D_Spectrum and Table_Binary) |
+| New Horizons | Alice ultraviolet imaging spectrograph | KEM1 calibrated histogram/PHD/housekeeping product | `.lblx` label + `.fit` container (Array_2D_Spectrum, Array_1D, and Table_Binary) |
