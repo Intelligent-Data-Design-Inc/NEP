@@ -199,6 +199,12 @@ if(HAVE_PDS4)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/new_horizons/ali_0284461348_0x4b2_eng.fit
                    ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/new_horizons/ali_0284461348_0x4b2_eng.fit
                    COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/new_horizons/ali_0002845457_0x4b2_sci_1.lblx
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/new_horizons/ali_0002845457_0x4b2_sci_1.lblx
+                   COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/new_horizons/ali_0002845457_0x4b2_sci_1.fit
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/new_horizons/ali_0002845457_0x4b2_sci_1.fit
+                   COPYONLY)
 
     # Maven IUVS periapse mission data (nested Group_Field_Binary, FITS-backed PDS4)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108.xml

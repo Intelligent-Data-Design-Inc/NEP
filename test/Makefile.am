@@ -103,6 +103,8 @@ check-local:
 		cp $(srcdir)/data/PDS4/new_horizons/ali_0400644769_0x4b2_sci.fit $(builddir)/data/PDS4/new_horizons/ 2>/dev/null || true; \
 		cp $(srcdir)/data/PDS4/new_horizons/ali_0284461348_0x4b2_eng.lblx $(builddir)/data/PDS4/new_horizons/ 2>/dev/null || true; \
 		cp $(srcdir)/data/PDS4/new_horizons/ali_0284461348_0x4b2_eng.fit $(builddir)/data/PDS4/new_horizons/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/new_horizons/ali_0002845457_0x4b2_sci_1.lblx $(builddir)/data/PDS4/new_horizons/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/new_horizons/ali_0002845457_0x4b2_sci_1.fit $(builddir)/data/PDS4/new_horizons/ 2>/dev/null || true; \
 		cp $(srcdir)/data/PDS4/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml $(builddir)/data/PDS4/ 2>/dev/null || true; \
 		cp $(srcdir)/data/PDS4/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.IMG $(builddir)/data/PDS4/ 2>/dev/null || true; \
 		cp $(srcdir)/data/PDS4/ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.xml $(builddir)/data/PDS4/ 2>/dev/null || true; \
@@ -129,6 +131,7 @@ data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108.xml data/PDS4/mvn_iuv_l
 data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.lblx data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.fit \
 data/PDS4/new_horizons/ali_0400644769_0x4b2_sci.lblx data/PDS4/new_horizons/ali_0400644769_0x4b2_sci.fit \
 data/PDS4/new_horizons/ali_0284461348_0x4b2_eng.lblx data/PDS4/new_horizons/ali_0284461348_0x4b2_eng.fit \
+data/PDS4/new_horizons/ali_0002845457_0x4b2_sci_1.lblx data/PDS4/new_horizons/ali_0002845457_0x4b2_sci_1.fit \
 data/PDS4/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml data/PDS4/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.IMG \
 data/PDS4/ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.xml data/PDS4/ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.IMG
 

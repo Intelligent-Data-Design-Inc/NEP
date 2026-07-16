@@ -306,3 +306,4 @@ The following real mission datasets have been validated:
 | New Horizons | Alice ultraviolet imaging spectrograph | Jupiter encounter partially processed pixel-list product | `.lblx` label + `.fit` container (Array_2D_Spectrum and Table_Binary) |
 | New Horizons | Alice ultraviolet imaging spectrograph | KEM1 calibrated histogram/PHD/housekeeping product | `.lblx` label + `.fit` container (Array_2D_Spectrum, Array_1D, and Table_Binary) |
 | New Horizons | Alice ultraviolet imaging spectrograph | Pluto encounter compressed histogram/PHD/housekeeping product | `.lblx` label + `.fit` container (Array_2D_Spectrum, Array_1D, and Table_Binary) |
+| New Horizons | Alice ultraviolet imaging spectrograph | Launch/partially processed histogram/PHD/wavelength/count-rate/housekeeping product | `.lblx` label + `.fit` container (Array_2D_Spectrum and Table_Binary) |

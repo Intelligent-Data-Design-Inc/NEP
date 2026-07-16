@@ -1092,6 +1092,48 @@ pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
             }
         }
 
+        /* Optional scaling_factor attribute (stored as raw string). */
+        {
+            xmlNode *sf_node = pds4_find_child(cur, "scaling_factor");
+            if (sf_node)
+            {
+                char *sf_str = pds4_get_text(sf_node);
+                if (sf_str && *sf_str)
+                {
+                    retval = pds4_add_att(var->att, "scaling_factor", sf_str);
+                    if (retval)
+                    {
+                        free(field_name);
+                        free(field_type_str);
+                        free(sf_str);
+                        return retval;
+                    }
+                }
+                free(sf_str);
+            }
+        }
+
+        /* Optional value_offset attribute (stored as raw string). */
+        {
+            xmlNode *vo_node = pds4_find_child(cur, "value_offset");
+            if (vo_node)
+            {
+                char *vo_str = pds4_get_text(vo_node);
+                if (vo_str && *vo_str)
+                {
+                    retval = pds4_add_att(var->att, "value_offset", vo_str);
+                    if (retval)
+                    {
+                        free(field_name);
+                        free(field_type_str);
+                        free(vo_str);
+                        return retval;
+                    }
+                }
+                free(vo_str);
+            }
+        }
+
         free(field_name);
         free(field_type_str);
     }
