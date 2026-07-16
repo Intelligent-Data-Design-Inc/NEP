@@ -77,6 +77,47 @@ Test `test/data/PDS4/new_horizons/ali_0400644769_0x4b2_sci.lblx`, a New Horizons
 **GitHub Issue:** #295
 
 #### Sprint 3: Build Test around: ali_0284461348_0x4b2_eng.lblx
+**Detailed Plan**: See `docs/plan/v2.7.0-sprint3-new-horizons-ali-0284461348.md`
+
+Test `test/data/PDS4/new_horizons/ali_0284461348_0x4b2_eng.lblx`, a New Horizons Alice PDS4 `Product_Observational` label paired with the FITS container `ali_0284461348_0x4b2_eng.fit`. The label contains one `Array_2D_Spectrum` object, one `Array_1D` object, and one `Table_Binary` object with 31 records and 117 fields.
+
+**Implementation scope:**
+- Confirm the existing generic PDS4 array reader and flat `Table_Binary` reader handle this label; apply minimal reader fixes if the build exposes a gap.
+- Add the `.lblx` / `.fit` pair to the CMake and Autotools out-of-tree test-data copy and distribution rules.
+- Add `test_mission_new_horizons_0284461348_metadata()` and `test_mission_new_horizons_0284461348_data()` to `test/tst_pds4_udf.c`, following the Sprint 2 split-function pattern.
+- Metadata test: verify the file-area group, the `Array_2D_Spectrum` variable `Observational Data` (`NC_INT`, dims `[32, 1024]`, units `"COUNT"`, raw `scaling_factor`/`value_offset` attributes), the `Array_1D` variable `Pulse Height Distribution (PHD) Array` (`NC_INT`, dim `64`), and a representative `Table_Binary` field such as `SAFETY_ACTIVE` (`NC_UBYTE`, `ndims=1`).
+- Data test: read `Observational Data[0,0:4]`, `Pulse Height Distribution (PHD) Array[0]`, and `SAFETY_ACTIVE[0]`; assert successful reads and label-consistent value invariants.
+- Update `docs/pds4.md` for the third New Horizons product and `docs/formats.md` mission-test inventory.
+
+**Clarified decisions:**
+- Reader fixes are allowed if the build reveals a gap, but the starting assumption is that the existing generic array and flat `Table_Binary` readers are sufficient.
+- Test functions are split into `_metadata()` and `_data()` following the Sprint 2 / Maven/Perseverance pattern.
+- `Observational Data` is `SignedMSB4` → `NC_INT`; `Pulse Height Distribution (PHD) Array` is `SignedMSB4` → `NC_INT`.
+- The `Array_1D` variable name is asserted exactly as it appears in the label: `Pulse Height Distribution (PHD) Array`.
+- Every structure class in this label gets a data-read assertion: one `Array_2D_Spectrum` hyperslab, the `Array_1D` element, and one `Table_Binary` field.
+- Specific data reads: `Observational Data[0,0:4]`, `Pulse Height Distribution (PHD) Array[0]`, and `SAFETY_ACTIVE[0]`.
+- Data-read assertions verify `NC_NOERR` plus lightweight invariants; exact known values are not required.
+- The per-label data-read invariant is enforced: every PDS4 label used by `tst_pds4_udf` must have at least one successful data-read assertion.
+- FITS `Header` elements remain outside the NetCDF model and are not exposed as variables or attributes.
+- Copy rules are per-file in CMake/Autotools to match the existing explicit pattern.
+- Documentation updates for `docs/pds4.md` and `docs/formats.md` are in scope.
+
+**Acceptance Criteria:**
+- `nc_open()` opens the `.lblx` label and exposes the `ali_0284461348_0x4b2_eng.fit` file-area group.
+- `Array_2D_Spectrum` object has label-defined dimensions, native type (`NC_INT`), units, and raw scaling attributes when present.
+- `Array_1D` object has label-defined dimension, native type, and units.
+- A representative `Table_Binary` field reads successfully.
+- The `.lblx` / `.fit` pair is available in CMake and Autotools out-of-tree builds and source distributions.
+- Every PDS4 label exercised by `tst_pds4_udf` has at least one successful data-read assertion.
+- Existing PDS4 tests continue to pass.
+
+**Testing:** Run `tst_pds4_udf` with PDS4 enabled under CMake and Autotools; run the existing PDS4 CI configuration.
+
+**Build System Integration:** `test/CMakeLists.txt` and `test/Makefile.am`; no new dependencies or configuration options.
+
+**Definition of Done:** Reader verified/fixed as needed, New Horizons metadata and data-read coverage for all structure classes, build-system data staging, the per-label data-read invariant maintained, documentation updates, and passing PDS4 tests are in place.
+
+**GitHub Issue:** #297
 
 #### Sprint 4: Build Test around: ali_0002845457_0x4b2_sci_1.lblx
 
