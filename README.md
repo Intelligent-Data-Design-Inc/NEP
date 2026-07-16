@@ -270,6 +270,22 @@ spack repo add $HOME/nep-repo
 spack install nep+cdf
 ```
 
+### Conda Installation
+
+NEP includes a [Conda](https://docs.conda.io/) recipe for local builds:
+
+```bash
+# Build from the in-repo recipe
+conda build conda/
+
+# Install the locally built package
+conda install --use-local nep
+```
+
+The recipe enables LZ4, BZIP2, Fortran wrappers, and three format readers
+(GeoTIFF, FITS, PDS4). GRIB2 and CDF are excluded because their dependencies
+are not yet available on conda-forge.
+
 ---
 
 ## Testing

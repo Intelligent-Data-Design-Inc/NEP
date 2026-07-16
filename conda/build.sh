@@ -1,0 +1,22 @@
+#!/bin/bash
+set -ex
+
+cmake -B build \
+  -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DNEP_BUILD_LZ4=ON \
+  -DNEP_BUILD_BZIP2=ON \
+  -DNEP_ENABLE_FORTRAN=ON \
+  -DNEP_ENABLE_GEOTIFF=ON \
+  -DNEP_ENABLE_GRIB2=OFF \
+  -DNEP_ENABLE_FITS=ON \
+  -DNEP_ENABLE_PDS4=ON \
+  -DNEP_ENABLE_CDF=OFF \
+  -DNEP_BUILD_DOCUMENTATION=OFF \
+  -DNEP_BUILD_EXAMPLES=OFF \
+  -DNEP_ENABLE_BENCHMARKS=OFF \
+  -DNEP_ENABLE_PARALLEL_TESTS=OFF
+
+cmake --build build -- -j${CPU_COUNT}
+ctest --test-dir build --output-on-failure || true
+cmake --install build
