@@ -286,18 +286,18 @@ nc_get_vara_float(grpid, varid, start, count, data);
 **A:** Yes. NEP v1.1.0 added Fortran 90 wrappers (module `nep`) for compression functions. Fortran applications can call `nf90_def_var_lz4`, `nf90_inq_var_lz4`, `nf90_def_var_bzip2`, and `nf90_inq_var_bzip2` to enable and query compression.
 
 #### Q: What is the current version?
-**A:** NEP v2.5.0 is the current release (July 2026), providing:
+**A:** NEP v2.6.0 is the current release (July 2026), providing:
 - LZ4 and BZIP2 compression for HDF5/NetCDF-4 files (C and Fortran APIs)
 - GeoTIFF geospatial raster support via UDF handler (UDF0/UDF1)
 - GRIB2 meteorological/oceanographic data support via UDF handler (UDF2)
 - FITS astronomical data support via UDF handler (UDF3)
 - NASA CDF space physics data support via UDF handler (UDF4)
-- NASA/ESA PDS4 planetary science data support via UDF handler (UDF5)
+- NASA/ESA PDS4 planetary science data support via UDF handler (UDF5), including New Horizons Alice mission data
 - All five format readers can be enabled simultaneously
 - Complete Spack variants for every optional reader and utility
 - Comprehensive documentation, CI testing, and example programs
 
-NEP v2.6.0 is in preparation and focuses on further PDS4 testing and robustness with real MAVEN and Perseverance mission data.
+NEP v2.7.1 is in preparation and focuses on documentation cleanup and reorganization.
 
 #### Q: What formats does NEP support?
 **A:** NEP supports multiple scientific data formats through the NetCDF UDF system:
@@ -329,7 +329,7 @@ All formats accessible through the standard NetCDF API.
 - **Ocean modeling**: Direct access to NOAA GDAS wave forecast GRIB2 files (e.g., `gdaswave.t00z.wcoast.0p16.f000.grib2`)
 - **Operational meteorology**: Read NWP model output (GFS, NAM, HRRR) in GRIB2 format through the NetCDF API
 - **Astronomical data analysis**: Read HST, Chandra, and JWST FITS files with standard NetCDF API; no CFITSIO application code required
-- **Planetary science**: Access NASA/ESA PDS4 planetary data archives (e.g., MRO CRISM, Cassini, Voyager) through the NetCDF API
+- **Planetary science**: Access NASA/ESA PDS4 planetary data archives (e.g., MRO CRISM, Cassini, New Horizons, Voyager) through the NetCDF API
 - **HPC workflows**: Improve I/O performance with fast LZ4 compression
 - **Data archival**: Maximize storage efficiency with BZIP2 compression
 - **Multi-format analysis**: Unified NetCDF API for NetCDF-4, CDF, GeoTIFF, GRIB2, FITS, and PDS4 data
@@ -377,7 +377,8 @@ For more information:
 - **v2.4.0** (Jul 2026): Spack release packaging for v2.3.0; all project-specific CMake options renamed with `NEP_` prefix; netcdf-c dependency aligned to >= 4.10.1 in Spack
 - **v2.5.0** (Jul 2026): Complete Spack variant coverage for all optional format readers (GeoTIFF, GRIB2, CDF, FITS, PDS4, parallel, examples, benchmarks); all-variants CI integration testing; comprehensive README Spack installation section
 - **v2.6.0** (Jul 2026): *In preparation* — further PDS4 reader testing with MAVEN NGIMS delimited tables, MAVEN IUVS `Group_Field_Binary` repeated fields (depth-2 nesting), Perseverance Mastcam-Z `Array_3D_Image` products (Sol 1738 and Sol 1737), and `scaling_factor`/`value_offset` attribute preservation
+- **v2.7.1** (Jul 2026): Documentation cleanup — per-format reference pages extracted from `docs/formats.md`, README PDS4 Tests section moved to `docs/pds4.md`, and design/prd/prfaq updated with New Horizons and v2.7.1 metadata
 
 ---
 
-*Last Updated: July 2026 (v2.5.0, v2.6.0 release preparation)*
+*Last Updated: July 2026 (v2.6.0, v2.7.1 release preparation)*

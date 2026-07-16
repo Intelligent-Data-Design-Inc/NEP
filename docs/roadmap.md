@@ -1,5 +1,46 @@
 # NEP Development Roadmap
 
+### V2.7.1 - Tidying Up
+#### Sprint 1: Fix Docs
+**Detailed Plan**: See `docs/plan/v2.7.1-sprint1-fix-docs.md`
+
+This documentation sprint reorganizes format-specific content and removes duplicated PDS4 test details from the README.
+
+**Implementation scope:**
+- Remove the `### PDS4 Tests` section and its table from `README.md`.
+- Create dedicated format pages (`docs/cdf.md`, `docs/geotiff.md`, `docs/grib2.md`, `docs/fits.md`) from the detailed content currently in `docs/formats.md`; keep the existing `docs/pds4.md` and `docs/compression.md` unchanged except as noted below.
+- Rewrite `docs/formats.md` as an overview page that links to each per-format page.
+- Add the detailed PDS4 test-function inventory from the old README section to a new `PDS4 Tests` section in `docs/pds4.md`.
+- Verify that New Horizons appears in the `docs/pds4.md` tested-missions coverage.
+- Make minimal PDS4 updates to `docs/design.md`, `docs/prd.md`, and `docs/prfaq.md`: add New Horizons to tested-mission references and update version/date metadata to v2.7.1.
+
+**Clarified decisions:**
+- New per-format pages are created only for CDF, GeoTIFF, GRIB2, and FITS (the readers whose details currently live in `docs/formats.md`). PDS4 already has a dedicated page; compression docs remain separate.
+- The README `PDS4 Tests` table is removed entirely; its contents move to `docs/pds4.md`.
+- Updates to `design.md`, `prd.md`, and `prfaq.md` are minimal: verify existing PDS4 capability text, add New Horizons where missing, and refresh version/date footers. No source code or build system changes are in scope.
+
+**Acceptance Criteria:**
+- `README.md` no longer contains a `PDS4 Tests` section.
+- `docs/formats.md` contains only introductory text and links to per-format pages.
+- `docs/cdf.md`, `docs/geotiff.md`, `docs/grib2.md`, and `docs/fits.md` exist and contain the detailed content previously in `docs/formats.md`.
+- `docs/pds4.md` contains a `PDS4 Tests` section with the full test-function inventory from the old README section.
+- New Horizons appears in `docs/pds4.md` tested-mission coverage.
+- `docs/design.md`, `docs/prd.md`, and `docs/prfaq.md` mention New Horizons in PDS4 context and show v2.7.1 version/date metadata.
+- No broken internal documentation links.
+
+**Testing:** No code changes. Verify all internal markdown links and rendered formatting.
+
+**Build System Integration:** None.
+
+**Definition of Done:** README PDS4 Tests section removed, per-format pages created and linked from `docs/formats.md`, `docs/pds4.md` contains the full PDS4 test inventory including New Horizons, and design/prd/prfaq files are versioned for v2.7.1 with current PDS4/New Horizons references.
+
+**GitHub Issue:** #301
+
+#### Sprint 2: Move Some PDS4 Test Files
+- Move (in the repo) the files mvn* files into new subdirectory test/data/PDS4/maven. Adjust CMake and autotools build systems, and tests, to find data in the new location.
+- Also move test/data/PDS4/ZLF* files into test/data/PDS4/perserverance, adjust build systems and tests
+- Move the test/data/PDS4/Table* and test/data/PDS4/test_* files to test/data/PDS4/general, adjust build systems and tests.
+
 ### V2.7.0 - More PDS4 Testing - New Horizons Data
 - In this release we will test on a bunch of data from the New Horizons mission.
 "You cannot swim for new horizons until you have courage to lose sight of the shore." — William Faulkner
