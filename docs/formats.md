@@ -226,6 +226,7 @@ NEP's PDS4 reader is validated against a mix of small synthetic labels and real 
 | **New Horizons** | Alice Jupiter encounter pixel-list product | `new_horizons/ali_0030420276_0x4b0_sci_1.lblx`, `ali_0030420276_0x4b0_sci_1.fit` | `Array_2D_Spectrum`, `Table_Binary` | `IEEE754MSBSingle`, `SignedMSB2`, `IEEE754MSBDouble` |
 | **New Horizons** | Alice KEM1 calibrated histogram product | `new_horizons/ali_0400644769_0x4b2_sci.lblx`, `ali_0400644769_0x4b2_sci.fit` | `Array_2D_Spectrum`, `Array_1D`, `Table_Binary` | `IEEE754MSBSingle`, `SignedMSB4`, `UnsignedByte` |
 | **New Horizons** | Alice Pluto encounter compressed histogram product | `new_horizons/ali_0284461348_0x4b2_eng.lblx`, `ali_0284461348_0x4b2_eng.fit` | `Array_2D_Spectrum`, `Array_1D`, `Table_Binary` | `SignedMSB4`, `UnsignedByte` |
+| **New Horizons** | Alice launch partially processed histogram product | `new_horizons/ali_0002845457_0x4b2_sci_1.lblx`, `ali_0002845457_0x4b2_sci_1.fit` | `Array_2D_Spectrum`, `Table_Binary` | `IEEE754MSBSingle`, `SignedMSB4`, `UnsignedByte` |
 
 These mission products exercise data types and structures not covered by the synthetic tests, including unsigned byte images, date/time strings, integer ASCII fields, real-world table layouts, spectrum arrays, 1D spectra, housekeeping tables, and FITS-backed PDS4 payloads.
 

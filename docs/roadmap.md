@@ -120,6 +120,46 @@ Test `test/data/PDS4/new_horizons/ali_0284461348_0x4b2_eng.lblx`, a New Horizons
 **GitHub Issue:** #297
 
 #### Sprint 4: Build Test around: ali_0002845457_0x4b2_sci_1.lblx
+**Detailed Plan**: See `docs/plan/v2.7.0-sprint4-new-horizons-ali-0002845457.md`
+
+Test `test/data/PDS4/new_horizons/ali_0002845457_0x4b2_sci_1.lblx`, a New Horizons Alice PDS4 `Product_Observational` label paired with the FITS container `ali_0002845457_0x4b2_sci_1.fit`. The label contains five `Array_2D_Spectrum` objects (`Observational Data`, `Error Image`, `Wavelength Image`, `Pulse Height Distribution (PHD) Image`, `Count Rate Image`) and one `Table_Binary` object (`Housekeeping (HK) Table`) with 21 records and 117 fields.
+
+**Implementation scope:**
+- Confirm the existing generic PDS4 array reader and flat `Table_Binary` reader handle this label; apply minimal reader fixes if the build exposes a gap.
+- Add the `.lblx` / `.fit` pair to the CMake and Autotools out-of-tree test-data copy and distribution rules.
+- Add `test_mission_new_horizons_0002845457_metadata()` and `test_mission_new_horizons_0002845457_data()` to `test/tst_pds4_udf.c`, following the Sprint 3 split-function pattern.
+- Metadata test: verify the file-area group, all five `Array_2D_Spectrum` variables (`NC_FLOAT` for `IEEE754MSBSingle`, `NC_INT` for `SignedMSB4`), dimensions, units, and raw `scaling_factor`/`value_offset` attributes where present, plus representative `Table_Binary` fields `MET` (`NC_INT`) and `SAFETY_ACTIVE` (`NC_UBYTE`).
+- Data test: read representative hyperslabs/elements from every array (`Observational Data[0,0:4]`, `Error Image[0,0:4]`, `Wavelength Image[0,0:4]`, `Pulse Height Distribution (PHD) Image[0,0:4]`, `Count Rate Image[0,0:4]`) and from `MET[0]` and `SAFETY_ACTIVE[0]`; assert successful reads and label-consistent value invariants.
+- Update `docs/pds4.md` for the fourth New Horizons product and `docs/formats.md` mission-test inventory.
+
+**Clarified decisions:**
+- Reader fixes are allowed if the build reveals a gap, but the starting assumption is that the existing generic array and flat `Table_Binary` readers are sufficient.
+- Test functions are split into `_metadata()` and `_data()` following the Sprint 3 pattern.
+- All five `Array_2D_Spectrum` objects are asserted in metadata; data reads cover every array plus two representative table fields to maintain the per-label data-read invariant.
+- `IEEE754MSBSingle` → `NC_FLOAT`; `SignedMSB4` → `NC_INT`; `UnsignedByte` → `NC_UBYTE`.
+- `Pulse Height Distribution (PHD) Image` is asserted as a 2D `NC_INT` variable with dims `[1, 64]` because the label declares `Array_2D_Spectrum`.
+- Variable names are asserted exactly as they appear in the label, including `Pulse Height Distribution (PHD) Image`.
+- Data-read assertions verify `NC_NOERR` plus lightweight invariants (finite floats, non-negative integer counts, `SAFETY_ACTIVE <= 1`); exact known values are not required.
+- The per-label data-read invariant is enforced: every PDS4 label used by `tst_pds4_udf` must have at least one successful data-read assertion.
+- FITS `Header` elements remain outside the NetCDF model and are not exposed as variables or attributes.
+- Copy rules are per-file in CMake/Autotools to match the existing explicit pattern.
+- Documentation updates for `docs/pds4.md` and `docs/formats.md` are in scope.
+
+**Acceptance Criteria:**
+- `nc_open()` opens the `.lblx` label and exposes the `ali_0002845457_0x4b2_sci_1.fit` file-area group.
+- Each `Array_2D_Spectrum` object has label-defined dimensions, native NetCDF type, units, and raw scaling attributes when present.
+- The `Table_Binary` `record` dimension has length 21 and representative fields read successfully.
+- The `.lblx` / `.fit` pair is available in CMake and Autotools out-of-tree builds and source distributions.
+- Every PDS4 label exercised by `tst_pds4_udf` has at least one successful data-read assertion.
+- Existing PDS4 tests continue to pass.
+
+**Testing:** Run `tst_pds4_udf` with PDS4 enabled under CMake and Autotools; run the existing PDS4 CI configuration.
+
+**Build System Integration:** `test/CMakeLists.txt` and `test/Makefile.am`; no new dependencies or configuration options.
+
+**Definition of Done:** Reader verified/fixed as needed, New Horizons metadata and data-read coverage for all structure classes, build-system data staging, the per-label data-read invariant maintained, documentation updates, and passing PDS4 tests are in place.
+
+**GitHub Issue:** #299
 
 ### V2.6.1 - No More Worlds to Conquer
 #### Sprint 1: Fix Bugs in FITS/PDS4 ncrc Initialization

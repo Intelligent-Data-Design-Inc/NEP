@@ -50,6 +50,8 @@
     "data/PDS4/new_horizons/ali_0400644769_0x4b2_sci.lblx"
 #define PDS4_NEW_HORIZONS_0284461348_FILE \
     "data/PDS4/new_horizons/ali_0284461348_0x4b2_eng.lblx"
+#define PDS4_NEW_HORIZONS_0002845457_FILE \
+    "data/PDS4/new_horizons/ali_0002845457_0x4b2_sci_1.lblx"
 #define PDS4_PERSEVERANCE_FILE \
     "data/PDS4/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml"
 #define PDS4_PERSEVERANCE_1737_FILE \
@@ -2222,6 +2224,413 @@ test_mission_new_horizons_0284461348_data(void)
     return 0;
 }
 
+/**
+ * @internal Test New Horizons Alice ali_0002845457_0x4b2_sci_1 metadata.
+ *
+ * Opens the PDS4 label and verifies:
+ * - File-area group "ali_0002845457_0x4b2_sci_1.fit" exists.
+ * - Five Array_2D_Spectrum variables with expected types, dims, units, and
+ *   scaling_factor/value_offset attributes where present.
+ * - Table_Binary record dimension length 21.
+ * - Representative Table_Binary fields MET and SAFETY_ACTIVE.
+ */
+static int
+test_mission_new_horizons_0002845457_metadata(void)
+{
+    int ncid, grp_ncid, varid, retval;
+    int ndims, nvars, dimids[NC_MAX_DIMS];
+    nc_type xtype;
+    size_t len;
+    char att_buf[128];
+
+    printf("\n--- Mission: New Horizons Alice ali_0002845457 metadata ---\n");
+
+    if ((retval = nc_open(PDS4_NEW_HORIZONS_0002845457_FILE, NC_NOWRITE, &ncid)))
+        ERR(retval);
+    if ((retval = nc_inq_ncid(ncid, "ali_0002845457_0x4b2_sci_1.fit", &grp_ncid)))
+        ERR(retval);
+
+    if ((retval = nc_inq(grp_ncid, &ndims, &nvars, NULL, NULL)))
+        ERR(retval);
+    if (ndims != 11)
+    {
+        fprintf(stderr, "Expected 11 group dimensions, got %d\n", ndims);
+        nc_close(ncid);
+        return 1;
+    }
+    if (nvars != 122)
+    {
+        fprintf(stderr, "Expected 122 group variables, got %d\n", nvars);
+        nc_close(ncid);
+        return 1;
+    }
+
+    if ((retval = nc_inq_dimid(grp_ncid, "record", dimids)))
+        ERR(retval);
+    if ((retval = nc_inq_dim(grp_ncid, dimids[0], NULL, &len)))
+        ERR(retval);
+    if (len != 21)
+    {
+        fprintf(stderr, "Expected record length 21, got %zu\n", len);
+        nc_close(ncid);
+        return 1;
+    }
+
+    /* Observational Data: Array_2D_Spectrum. */
+    if ((retval = nc_inq_varid(grp_ncid, "Observational Data", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, NULL, &xtype, &ndims, dimids, NULL)))
+        ERR(retval);
+    if (xtype != NC_FLOAT || ndims != 2)
+    {
+        fprintf(stderr, "Observational Data: expected 2D NC_FLOAT, got ndims=%d type=%d\n",
+                ndims, xtype);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((retval = nc_inq_dim(grp_ncid, dimids[0], NULL, &len)) || len != 32)
+    {
+        fprintf(stderr, "Observational Data Line length: expected 32, got %zu\n", len);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((retval = nc_inq_dim(grp_ncid, dimids[1], NULL, &len)) || len != 1024)
+    {
+        fprintf(stderr, "Observational Data Sample length: expected 1024, got %zu\n", len);
+        nc_close(ncid);
+        return 1;
+    }
+    memset(att_buf, 0, sizeof(att_buf));
+    if ((retval = nc_get_att_text(grp_ncid, varid, "units", att_buf)))
+        ERR(retval);
+    if (strcmp(att_buf, "COUNTS S**-1") != 0)
+    {
+        fprintf(stderr, "Observational Data units: expected 'COUNTS S**-1', got '%s'\n", att_buf);
+        nc_close(ncid);
+        return 1;
+    }
+    memset(att_buf, 0, sizeof(att_buf));
+    if ((retval = nc_get_att_text(grp_ncid, varid, "scaling_factor", att_buf)))
+        ERR(retval);
+    if (strcmp(att_buf, "1.00000000000") != 0)
+    {
+        fprintf(stderr, "Observational Data scaling_factor mismatch: '%s'\n", att_buf);
+        nc_close(ncid);
+        return 1;
+    }
+    memset(att_buf, 0, sizeof(att_buf));
+    if ((retval = nc_get_att_text(grp_ncid, varid, "value_offset", att_buf)))
+        ERR(retval);
+    if (strcmp(att_buf, "0.00000000000") != 0)
+    {
+        fprintf(stderr, "Observational Data value_offset mismatch: '%s'\n", att_buf);
+        nc_close(ncid);
+        return 1;
+    }
+
+    /* Error Image: Array_2D_Spectrum. */
+    if ((retval = nc_inq_varid(grp_ncid, "Error Image", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, NULL, &xtype, &ndims, dimids, NULL)))
+        ERR(retval);
+    if (xtype != NC_FLOAT || ndims != 2)
+    {
+        fprintf(stderr, "Error Image: expected 2D NC_FLOAT, got ndims=%d type=%d\n",
+                ndims, xtype);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((retval = nc_inq_dim(grp_ncid, dimids[0], NULL, &len)) || len != 32)
+    {
+        fprintf(stderr, "Error Image Line length: expected 32, got %zu\n", len);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((retval = nc_inq_dim(grp_ncid, dimids[1], NULL, &len)) || len != 1024)
+    {
+        fprintf(stderr, "Error Image Sample length: expected 1024, got %zu\n", len);
+        nc_close(ncid);
+        return 1;
+    }
+    memset(att_buf, 0, sizeof(att_buf));
+    if ((retval = nc_get_att_text(grp_ncid, varid, "units", att_buf)))
+        ERR(retval);
+    if (strcmp(att_buf, "COUNTS S**-1") != 0)
+    {
+        fprintf(stderr, "Error Image units mismatch: '%s'\n", att_buf);
+        nc_close(ncid);
+        return 1;
+    }
+
+    /* Wavelength Image: Array_2D_Spectrum. */
+    if ((retval = nc_inq_varid(grp_ncid, "Wavelength Image", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, NULL, &xtype, &ndims, dimids, NULL)))
+        ERR(retval);
+    if (xtype != NC_FLOAT || ndims != 2)
+    {
+        fprintf(stderr, "Wavelength Image: expected 2D NC_FLOAT, got ndims=%d type=%d\n",
+                ndims, xtype);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((retval = nc_inq_dim(grp_ncid, dimids[0], NULL, &len)) || len != 32)
+    {
+        fprintf(stderr, "Wavelength Image Line length: expected 32, got %zu\n", len);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((retval = nc_inq_dim(grp_ncid, dimids[1], NULL, &len)) || len != 1024)
+    {
+        fprintf(stderr, "Wavelength Image Sample length: expected 1024, got %zu\n", len);
+        nc_close(ncid);
+        return 1;
+    }
+    memset(att_buf, 0, sizeof(att_buf));
+    if ((retval = nc_get_att_text(grp_ncid, varid, "units", att_buf)))
+        ERR(retval);
+    if (strcmp(att_buf, "ANGSTROMS") != 0)
+    {
+        fprintf(stderr, "Wavelength Image units mismatch: '%s'\n", att_buf);
+        nc_close(ncid);
+        return 1;
+    }
+
+    /* Pulse Height Distribution (PHD) Image: Array_2D_Spectrum. */
+    if ((retval = nc_inq_varid(grp_ncid, "Pulse Height Distribution (PHD) Image", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, NULL, &xtype, &ndims, dimids, NULL)))
+        ERR(retval);
+    if (xtype != NC_INT || ndims != 2)
+    {
+        fprintf(stderr, "Pulse Height Distribution (PHD) Image: expected 2D NC_INT, got ndims=%d type=%d\n",
+                ndims, xtype);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((retval = nc_inq_dim(grp_ncid, dimids[0], NULL, &len)) || len != 1)
+    {
+        fprintf(stderr, "Pulse Height Distribution (PHD) Image Line length: expected 1, got %zu\n", len);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((retval = nc_inq_dim(grp_ncid, dimids[1], NULL, &len)) || len != 64)
+    {
+        fprintf(stderr, "Pulse Height Distribution (PHD) Image Sample length: expected 64, got %zu\n", len);
+        nc_close(ncid);
+        return 1;
+    }
+
+    /* Count Rate Image: Array_2D_Spectrum. */
+    if ((retval = nc_inq_varid(grp_ncid, "Count Rate Image", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, NULL, &xtype, &ndims, dimids, NULL)))
+        ERR(retval);
+    if (xtype != NC_FLOAT || ndims != 2)
+    {
+        fprintf(stderr, "Count Rate Image: expected 2D NC_FLOAT, got ndims=%d type=%d\n",
+                ndims, xtype);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((retval = nc_inq_dim(grp_ncid, dimids[0], NULL, &len)) || len != 1)
+    {
+        fprintf(stderr, "Count Rate Image Line length: expected 1, got %zu\n", len);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((retval = nc_inq_dim(grp_ncid, dimids[1], NULL, &len)) || len != 21)
+    {
+        fprintf(stderr, "Count Rate Image Sample length: expected 21, got %zu\n", len);
+        nc_close(ncid);
+        return 1;
+    }
+    memset(att_buf, 0, sizeof(att_buf));
+    if ((retval = nc_get_att_text(grp_ncid, varid, "units", att_buf)))
+        ERR(retval);
+    if (strcmp(att_buf, "COUNTS") != 0)
+    {
+        fprintf(stderr, "Count Rate Image units mismatch: '%s'\n", att_buf);
+        nc_close(ncid);
+        return 1;
+    }
+
+    /* MET: representative Table_Binary field with scaling. */
+    if ((retval = nc_inq_varid(grp_ncid, "MET", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, NULL, &xtype, &ndims, NULL, NULL)))
+        ERR(retval);
+    if (xtype != NC_INT || ndims != 1)
+    {
+        fprintf(stderr, "MET: expected 1D NC_INT, got ndims=%d type=%d\n",
+                ndims, xtype);
+        nc_close(ncid);
+        return 1;
+    }
+    memset(att_buf, 0, sizeof(att_buf));
+    if ((retval = nc_get_att_text(grp_ncid, varid, "scaling_factor", att_buf)))
+        ERR(retval);
+    if (strcmp(att_buf, "1.00000000000") != 0)
+    {
+        fprintf(stderr, "MET scaling_factor mismatch: '%s'\n", att_buf);
+        nc_close(ncid);
+        return 1;
+    }
+    memset(att_buf, 0, sizeof(att_buf));
+    if ((retval = nc_get_att_text(grp_ncid, varid, "value_offset", att_buf)))
+        ERR(retval);
+    if (strcmp(att_buf, "2147483648.00") != 0)
+    {
+        fprintf(stderr, "MET value_offset mismatch: '%s'\n", att_buf);
+        nc_close(ncid);
+        return 1;
+    }
+
+    /* SAFETY_ACTIVE: representative Table_Binary field. */
+    if ((retval = nc_inq_varid(grp_ncid, "SAFETY_ACTIVE", &varid)))
+        ERR(retval);
+    if ((retval = nc_inq_var(grp_ncid, varid, NULL, &xtype, &ndims, NULL, NULL)))
+        ERR(retval);
+    if (xtype != NC_UBYTE || ndims != 1)
+    {
+        fprintf(stderr, "SAFETY_ACTIVE: expected 1D NC_UBYTE, got ndims=%d type=%d\n",
+                ndims, xtype);
+        nc_close(ncid);
+        return 1;
+    }
+
+    if ((retval = nc_close(ncid)))
+        ERR(retval);
+    printf("PASS: New Horizons Alice ali_0002845457 metadata tests PASSED.\n");
+    return 0;
+}
+
+/**
+ * @internal Test New Horizons Alice ali_0002845457_0x4b2_sci_1 data reads.
+ *
+ * Reads representative hyperslabs/elements from each Array_2D_Spectrum and
+ * from representative Table_Binary fields.
+ */
+static int
+test_mission_new_horizons_0002845457_data(void)
+{
+    int ncid, grp_ncid, varid, retval;
+    float fvals[4];
+    int ivals[4];
+    int met;
+    unsigned char safety;
+    size_t array_start[2] = {0, 0};
+    size_t array_count[2] = {1, 4};
+    size_t start[1] = {0};
+    size_t count[1] = {1};
+    int i;
+
+    printf("\n--- Mission: New Horizons Alice ali_0002845457 data reads ---\n");
+
+    if ((retval = nc_open(PDS4_NEW_HORIZONS_0002845457_FILE, NC_NOWRITE, &ncid)))
+        ERR(retval);
+    if ((retval = nc_inq_ncid(ncid, "ali_0002845457_0x4b2_sci_1.fit", &grp_ncid)))
+        ERR(retval);
+
+    /* Observational Data. */
+    if ((retval = nc_inq_varid(grp_ncid, "Observational Data", &varid)))
+        ERR(retval);
+    if ((retval = nc_get_vara_float(grp_ncid, varid, array_start, array_count, fvals)))
+        ERR(retval);
+    for (i = 0; i < 4; i++)
+    {
+        if (!isfinite(fvals[i]))
+        {
+            fprintf(stderr, "Observational Data[0,%d] is not finite: %f\n", i, fvals[i]);
+            nc_close(ncid);
+            return 1;
+        }
+    }
+
+    /* Error Image. */
+    if ((retval = nc_inq_varid(grp_ncid, "Error Image", &varid)))
+        ERR(retval);
+    if ((retval = nc_get_vara_float(grp_ncid, varid, array_start, array_count, fvals)))
+        ERR(retval);
+    for (i = 0; i < 4; i++)
+    {
+        if (!isfinite(fvals[i]))
+        {
+            fprintf(stderr, "Error Image[0,%d] is not finite: %f\n", i, fvals[i]);
+            nc_close(ncid);
+            return 1;
+        }
+    }
+
+    /* Wavelength Image. */
+    if ((retval = nc_inq_varid(grp_ncid, "Wavelength Image", &varid)))
+        ERR(retval);
+    if ((retval = nc_get_vara_float(grp_ncid, varid, array_start, array_count, fvals)))
+        ERR(retval);
+    for (i = 0; i < 4; i++)
+    {
+        if (!isfinite(fvals[i]))
+        {
+            fprintf(stderr, "Wavelength Image[0,%d] is not finite: %f\n", i, fvals[i]);
+            nc_close(ncid);
+            return 1;
+        }
+    }
+
+    /* Pulse Height Distribution (PHD) Image. */
+    if ((retval = nc_inq_varid(grp_ncid, "Pulse Height Distribution (PHD) Image", &varid)))
+        ERR(retval);
+    if ((retval = nc_get_vara_int(grp_ncid, varid, array_start, array_count, ivals)))
+        ERR(retval);
+    for (i = 0; i < 4; i++)
+    {
+        if (ivals[i] < 0)
+        {
+            fprintf(stderr, "Pulse Height Distribution (PHD) Image[0,%d] negative: %d\n", i, ivals[i]);
+            nc_close(ncid);
+            return 1;
+        }
+    }
+
+    /* Count Rate Image. */
+    if ((retval = nc_inq_varid(grp_ncid, "Count Rate Image", &varid)))
+        ERR(retval);
+    if ((retval = nc_get_vara_float(grp_ncid, varid, array_start, array_count, fvals)))
+        ERR(retval);
+    for (i = 0; i < 4; i++)
+    {
+        if (!isfinite(fvals[i]))
+        {
+            fprintf(stderr, "Count Rate Image[0,%d] is not finite: %f\n", i, fvals[i]);
+            nc_close(ncid);
+            return 1;
+        }
+    }
+
+    /* MET. */
+    if ((retval = nc_inq_varid(grp_ncid, "MET", &varid)))
+        ERR(retval);
+    if ((retval = nc_get_vara_int(grp_ncid, varid, start, count, &met)))
+        ERR(retval);
+
+    /* SAFETY_ACTIVE. */
+    if ((retval = nc_inq_varid(grp_ncid, "SAFETY_ACTIVE", &varid)))
+        ERR(retval);
+    if ((retval = nc_get_vara_uchar(grp_ncid, varid, start, count, &safety)))
+        ERR(retval);
+    if (safety > 1)
+    {
+        fprintf(stderr, "SAFETY_ACTIVE[0] out of expected range: %u\n", (unsigned)safety);
+        nc_close(ncid);
+        return 1;
+    }
+
+    if ((retval = nc_close(ncid)))
+        ERR(retval);
+    printf("PASS: New Horizons Alice ali_0002845457 data reads PASSED.\n");
+    return 0;
+}
+
 int
 main(void)
 {
@@ -2401,6 +2810,10 @@ main(void)
     if (test_mission_new_horizons_0284461348_metadata())
         return 1;
     if (test_mission_new_horizons_0284461348_data())
+        return 1;
+    if (test_mission_new_horizons_0002845457_metadata())
+        return 1;
+    if (test_mission_new_horizons_0002845457_data())
         return 1;
     if (test_mission_cassini_hrd())
         return 1;
