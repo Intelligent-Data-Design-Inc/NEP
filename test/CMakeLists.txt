@@ -114,23 +114,26 @@ if(HAVE_PDS4)
 
     # Copy PDS4 test data to build directory
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/test_image.xml
-                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/test_image.xml
+
+    # Generic PDS4 test data
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/general)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/general/test_image.xml
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/general/test_image.xml
                    COPYONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/test_image.img
-                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/test_image.img
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/general/test_image.img
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/general/test_image.img
                    COPYONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/test_table_binary.xml
-                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/test_table_binary.xml
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/general/test_table_binary.xml
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/general/test_table_binary.xml
                    COPYONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/test_table_binary.dat
-                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/test_table_binary.dat
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/general/test_table_binary.dat
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/general/test_table_binary.dat
                    COPYONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/Table_Character_Example.xml
-                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/Table_Character_Example.xml
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/general/Table_Character_Example.xml
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/general/Table_Character_Example.xml
                    COPYONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/Table_Character_Example.tab
-                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/Table_Character_Example.tab
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/general/Table_Character_Example.tab
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/general/Table_Character_Example.tab
                    COPYONLY)
 
     # Mission PDS4 test data
@@ -158,26 +161,25 @@ if(HAVE_PDS4)
                    ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/lcs_9p/20050706_000.tab
                    COPYONLY)
 
-    # Maven NGIMS mission data (L1B housekeeping and L3 science)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.xml
-                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.xml
+    # Maven mission data (NGIMS and IUVS)
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/maven)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/maven/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.xml
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/maven/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.xml
                    COPYONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.csv
-                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.csv
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/maven/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.csv
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/maven/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.csv
                    COPYONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml
-                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/maven/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/maven/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml
                    COPYONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.csv
-                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.csv
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/maven/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.csv
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/maven/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.csv
                    COPYONLY)
-
-    # Maven IUVS corona mission data (FITS-backed PDS4)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758.xml
-                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758.xml
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/maven/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758.xml
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/maven/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758.xml
                    COPYONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758_v07_r01.fits
-                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758_v07_r01.fits
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/maven/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758_v07_r01.fits
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/maven/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758_v07_r01.fits
                    COPYONLY)
 
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/new_horizons)
@@ -206,28 +208,26 @@ if(HAVE_PDS4)
                    ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/new_horizons/ali_0002845457_0x4b2_sci_1.fit
                    COPYONLY)
 
-    # Maven IUVS periapse mission data (nested Group_Field_Binary, FITS-backed PDS4)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108.xml
-                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108.xml
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/maven/mvn_iuv_l2_periapse-orbit00124_20141021T132108.xml
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/maven/mvn_iuv_l2_periapse-orbit00124_20141021T132108.xml
                    COPYONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108_v13_r01.fits
-                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108_v13_r01.fits
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/maven/mvn_iuv_l2_periapse-orbit00124_20141021T132108_v13_r01.fits
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/maven/mvn_iuv_l2_periapse-orbit00124_20141021T132108_v13_r01.fits
                    COPYONLY)
 
     # Perseverance Mastcam-Z mission data (Array_3D_Image, VICAR-prefixed binary)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml
-                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/perseverance)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/perseverance/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/perseverance/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml
                    COPYONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.IMG
-                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.IMG
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/perseverance/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.IMG
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/perseverance/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.IMG
                    COPYONLY)
-
-    # Perseverance Mastcam-Z mission data (Sol 1737, Array_3D_Image, VICAR-prefixed binary)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.xml
-                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.xml
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/perseverance/ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.xml
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/perseverance/ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.xml
                    COPYONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.IMG
-                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.IMG
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDS4/perseverance/ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.IMG
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDS4/perseverance/ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.IMG
                    COPYONLY)
 endif()
 
