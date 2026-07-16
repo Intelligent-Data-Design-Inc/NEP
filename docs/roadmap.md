@@ -40,6 +40,41 @@ Test `test/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.lblx`, a New Horizo
 **GitHub Issue:** #293
 
 #### Sprint 2: Build Test around: ali_0400644769_0x4b2_sci.lblx
+**Detailed Plan**: See `docs/plan/v2.7.0-sprint2-new-horizons-ali-0400644769.md`
+
+Test `test/data/PDS4/new_horizons/ali_0400644769_0x4b2_sci.lblx`, a New Horizons Alice PDS4 `Product_Observational` label paired with the FITS container `ali_0400644769_0x4b2_sci.fit`. The label contains three `Array_2D_Spectrum` objects, one `Array_1D` object, and one `Table_Binary` object with 102 records and 117 fields.
+
+**Implementation scope:**
+- Confirm the existing generic PDS4 array reader and flat `Table_Binary` reader handle this label; apply minimal reader fixes if the build exposes a gap.
+- Add the `.lblx` / `.fit` pair to the CMake and Autotools out-of-tree test-data copy and distribution rules.
+- Add `test_mission_new_horizons_0400644769_metadata()` and `test_mission_new_horizons_0400644769_data()` to `test/tst_pds4_udf.c`, following the Maven/Perseverance split-function pattern.
+- Metadata test: verify the file-area group, the three `Array_2D_Spectrum` variables (NC_FLOAT, dims `[32, 1024]`, units, raw scaling attributes), the `Array_1D` variable (NC_INT, dim 64), and a representative `Table_Binary` field.
+- Data test: read `Observational Data[0,0:4]`, `Pulse Height Distribution (PHD)[0]`, and `SAFETY_ACTIVE[0]`; assert successful reads and label-consistent values.
+- Update `docs/pds4.md` for the second New Horizons product and `docs/formats.md` mission-test inventory.
+
+**Clarified decisions:**
+- Reader fixes are allowed if the build reveals a gap, but the starting assumption is that the existing generic array and flat `Table_Binary` readers are sufficient.
+- Test functions are split into `_metadata()` and `_data()` following the Maven/Perseverance pattern.
+- Every structure class in this label gets a data-read assertion: one `Array_2D_Spectrum` hyperslab, the `Array_1D` element, and one `Table_Binary` field.
+- Specific data reads: `Observational Data[0,0:4]`, `Pulse Height Distribution (PHD)[0]`, and `SAFETY_ACTIVE[0]`.
+- Copy rules are per-file in CMake/Autotools to match the existing explicit pattern.
+- Documentation updates for `docs/pds4.md` and `docs/formats.md` are in scope.
+
+**Acceptance Criteria:**
+- `nc_open()` opens the `.lblx` label and exposes the `ali_0400644769_0x4b2_sci.fit` file-area group.
+- `Array_2D_Spectrum` objects have label-defined dimensions, native type, units, raw scaling attributes when present, and successful hyperslab reads.
+- The `Array_1D` object has label-defined dimensions, native type, units, and a successful element read.
+- A representative `Table_Binary` field reads successfully.
+- The `.lblx` / `.fit` pair is available in CMake and Autotools out-of-tree builds and source distributions.
+- Existing PDS4 tests continue to pass.
+
+**Testing:** Run `tst_pds4_udf` with PDS4 enabled under CMake and Autotools; run the existing PDS4 CI configuration.
+
+**Build System Integration:** `test/CMakeLists.txt` and `test/Makefile.am`; no new dependencies or configuration options.
+
+**Definition of Done:** Reader verified/fixed as needed, New Horizons metadata and data-read coverage for all structure classes, build-system data staging, documentation updates, and passing PDS4 tests are in place.
+
+**GitHub Issue:** #295
 
 #### Sprint 3: Build Test around: ali_0284461348_0x4b2_eng.lblx
 
