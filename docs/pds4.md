@@ -332,3 +332,14 @@ The PDS4 reader tests are in `test/tst_pds4_udf.c` and run when PDS4 support is 
 | `test_mission_perseverance_mastcamz_data()` | Reads pixel `[0,0,0]` as `NC_SHORT` and checks valid `SignedMSB2` range | Mars 2020 / Perseverance | `Array_3D_Image` |
 | `test_mission_perseverance_mastcamz_1737_metadata()` | Same metadata checks for the second Perseverance Sol 1737 `Array_3D_Image` product | Mars 2020 / Perseverance | `Array_3D_Image` |
 | `test_mission_perseverance_mastcamz_1737_data()` | Reads pixel `[0,0,0]` from Sol 1737 and checks valid `SignedMSB2` range | Mars 2020 / Perseverance | `Array_3D_Image` |
+
+## Test Data Layout
+
+PDS4 regression data in `test/data/PDS4/` are grouped by mission or purpose:
+
+- `general/` — synthetic and example files used by the base reader tests (`test_image.*`, `test_table_binary.*`, `Table_Character_Example.*`).
+- `maven/` — MAVEN NGIMS and IUVS mission products.
+- `perseverance/` — Mars 2020 / Perseverance Mastcam-Z products.
+- `cassini_hrd/`, `lcs_9p/`, `messenger_tnmap/`, `new_horizons/` — additional mission-specific datasets.
+
+The test build systems copy these subdirectories to the build tree so `tst_pds4_udf` can open them with the relative paths defined in `test/tst_pds4_udf.c`.

@@ -34,16 +34,16 @@
 } while(0)
 
 /** Path to the PDS4 test data file (relative to test build directory). */
-#define PDS4_TEST_FILE "data/PDS4/test_image.xml"
-#define PDS4_TABLE_BINARY_FILE "data/PDS4/test_table_binary.xml"
-#define PDS4_TABLE_CHAR_FILE "data/PDS4/Table_Character_Example.xml"
+#define PDS4_TEST_FILE "data/PDS4/general/test_image.xml"
+#define PDS4_TABLE_BINARY_FILE "data/PDS4/general/test_table_binary.xml"
+#define PDS4_TABLE_CHAR_FILE "data/PDS4/general/Table_Character_Example.xml"
 #define PDS4_CASSINI_HRD_FILE "data/PDS4/cassini_hrd/hrd_2000_on_off.xml"
 #define PDS4_MESSENGER_TNMAP_FILE "data/PDS4/messenger_tnmap/thermal_neutron_map.xml"
 #define PDS4_LCS_9P_FILE "data/PDS4/lcs_9p/20050706_000.xml"
-#define PDS4_MAVEN_L1B_FILE "data/PDS4/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.xml"
-#define PDS4_MAVEN_L3_FILE "data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml"
-#define PDS4_MAVEN_IUVS_FILE "data/PDS4/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758.xml"
-#define PDS4_MAVEN_PERIAPSE_FILE "data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108.xml"
+#define PDS4_MAVEN_L1B_FILE "data/PDS4/maven/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.xml"
+#define PDS4_MAVEN_L3_FILE "data/PDS4/maven/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml"
+#define PDS4_MAVEN_IUVS_FILE "data/PDS4/maven/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758.xml"
+#define PDS4_MAVEN_PERIAPSE_FILE "data/PDS4/maven/mvn_iuv_l2_periapse-orbit00124_20141021T132108.xml"
 #define PDS4_NEW_HORIZONS_FILE \
     "data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.lblx"
 #define PDS4_NEW_HORIZONS_0400644769_FILE \
@@ -53,9 +53,9 @@
 #define PDS4_NEW_HORIZONS_0002845457_FILE \
     "data/PDS4/new_horizons/ali_0002845457_0x4b2_sci_1.lblx"
 #define PDS4_PERSEVERANCE_FILE \
-    "data/PDS4/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml"
+    "data/PDS4/perseverance/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml"
 #define PDS4_PERSEVERANCE_1737_FILE \
-    "data/PDS4/ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.xml"
+    "data/PDS4/perseverance/ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.xml"
 
 /**
  * @internal Test Sprint 5 binary table metadata.

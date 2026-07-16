@@ -37,9 +37,48 @@ This documentation sprint reorganizes format-specific content and removes duplic
 **GitHub Issue:** #301
 
 #### Sprint 2: Move Some PDS4 Test Files
-- Move (in the repo) the files mvn* files into new subdirectory test/data/PDS4/maven. Adjust CMake and autotools build systems, and tests, to find data in the new location.
-- Also move test/data/PDS4/ZLF* files into test/data/PDS4/perserverance, adjust build systems and tests
-- Move the test/data/PDS4/Table* and test/data/PDS4/test_* files to test/data/PDS4/general, adjust build systems and tests.
+**Detailed Plan**: See `docs/plan/v2.7.1-sprint2-move-pds4-test-files.md`
+
+Reorganize the PDS4 test-data tree so mission-specific and generic test files live in clearly named subdirectories, and update the build systems and tests to find the files in their new locations.
+
+**Implementation scope:**
+- Move all `mvn_*` files from `test/data/PDS4/` into `test/data/PDS4/maven/`.
+- Move all `ZLF_*` files from `test/data/PDS4/` into `test/data/PDS4/perseverance/`.
+- Move all `Table_*` and `test_*` files from `test/data/PDS4/` into `test/data/PDS4/general/`.
+- Leave existing subdirectories `cassini_hrd/`, `lcs_9p/`, `messenger_tnmap/`, and `new_horizons/` unchanged.
+- Update `test/CMakeLists.txt` copy rules for the new source and destination paths.
+- Update `test/Makefile.am` `check-local` copy commands and `EXTRA_DIST` paths.
+- Update the affected `#define PDS4_*_FILE` path constants in `test/tst_pds4_udf.c`.
+- Add a brief directory-layout note to `docs/pds4.md`.
+
+**Clarified decisions:**
+- New directories are named exactly `maven/`, `perseverance/`, and `general/` to match the roadmap wording.
+- Existing mission subdirectories (`cassini_hrd/`, `lcs_9p/`, `messenger_tnmap/`, `new_horizons/`) are out of scope and remain in place.
+- All Maven files (NGIMS and IUVS) share a flat `maven/` directory; no per-instrument split.
+- The general directory receives both `Table_Character_Example.*` and the `test_image.*` / `test_table_binary.*` files.
+- No PDS4 reader or source-code changes are in scope; this is a build/test data reorganization only.
+
+**Acceptance Criteria:**
+- All listed files exist only in their new subdirectory locations in the source tree.
+- CMake and Autotools out-of-tree builds copy all moved PDS4 files to the correct build-tree subdirectories.
+- `test/tst_pds4_udf.c` opens every moved label using the updated path constants.
+- `tst_pds4_udf` passes with PDS4 enabled under CMake and Autotools.
+- `docs/pds4.md` mentions the new `maven/`, `perseverance/`, and `general/` layout.
+- No source code or reader behavior changes are introduced.
+
+**Testing:** Run `tst_pds4_udf` with PDS4 enabled under CMake and Autotools out-of-tree builds.
+
+**Build System Integration:** `test/CMakeLists.txt` and `test/Makefile.am`; no new dependencies or configuration options.
+
+**Definition of Done:** Files reorganized, build systems and tests updated, all PDS4 tests pass, and documentation reflects the new layout.
+
+**GitHub Issue:** #303
+
+#### Sprint 3: Add Conda
+- See https://github.com/Intelligent-Data-Design-Inc/NEP/issues/120
+
+#### Sprint 4: Update Spack Package File with Latest Releases of NEP
+- Also the upstream one at the spack main package repo.
 
 ### V2.7.0 - More PDS4 Testing - New Horizons Data
 - In this release we will test on a bunch of data from the New Horizons mission.

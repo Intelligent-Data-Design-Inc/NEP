@@ -73,12 +73,13 @@ check-local:
 		cp $(srcdir)/data/imap_mag_l1b-calibration_20240229_v001.cdf $(builddir)/data/ 2>/dev/null || true; \
 		cp $(srcdir)/data/WFPC2u5780205r_c0fx.fits $(builddir)/data/ 2>/dev/null || true; \
 		$(MKDIR_P) $(builddir)/data/PDS4; \
-		cp $(srcdir)/data/PDS4/test_image.xml $(builddir)/data/PDS4/ 2>/dev/null || true; \
-		cp $(srcdir)/data/PDS4/test_image.img $(builddir)/data/PDS4/ 2>/dev/null || true; \
-		cp $(srcdir)/data/PDS4/test_table_binary.xml $(builddir)/data/PDS4/ 2>/dev/null || true; \
-		cp $(srcdir)/data/PDS4/test_table_binary.dat $(builddir)/data/PDS4/ 2>/dev/null || true; \
-		cp $(srcdir)/data/PDS4/Table_Character_Example.xml $(builddir)/data/PDS4/ 2>/dev/null || true; \
-		cp $(srcdir)/data/PDS4/Table_Character_Example.tab $(builddir)/data/PDS4/ 2>/dev/null || true; \
+		$(MKDIR_P) $(builddir)/data/PDS4/general; \
+		cp $(srcdir)/data/PDS4/general/test_image.xml $(builddir)/data/PDS4/general/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/general/test_image.img $(builddir)/data/PDS4/general/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/general/test_table_binary.xml $(builddir)/data/PDS4/general/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/general/test_table_binary.dat $(builddir)/data/PDS4/general/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/general/Table_Character_Example.xml $(builddir)/data/PDS4/general/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/general/Table_Character_Example.tab $(builddir)/data/PDS4/general/ 2>/dev/null || true; \
 		$(MKDIR_P) $(builddir)/data/PDS4/cassini_hrd; \
 		cp $(srcdir)/data/PDS4/cassini_hrd/hrd_2000_on_off.xml $(builddir)/data/PDS4/cassini_hrd/ 2>/dev/null || true; \
 		cp $(srcdir)/data/PDS4/cassini_hrd/hrd_2000_on_off.tab $(builddir)/data/PDS4/cassini_hrd/ 2>/dev/null || true; \
@@ -88,14 +89,15 @@ check-local:
 		$(MKDIR_P) $(builddir)/data/PDS4/lcs_9p; \
 		cp $(srcdir)/data/PDS4/lcs_9p/20050706_000.xml $(builddir)/data/PDS4/lcs_9p/ 2>/dev/null || true; \
 		cp $(srcdir)/data/PDS4/lcs_9p/20050706_000.tab $(builddir)/data/PDS4/lcs_9p/ 2>/dev/null || true; \
-		cp $(srcdir)/data/PDS4/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.xml $(builddir)/data/PDS4/ 2>/dev/null || true; \
-		cp $(srcdir)/data/PDS4/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.csv $(builddir)/data/PDS4/ 2>/dev/null || true; \
-		cp $(srcdir)/data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml $(builddir)/data/PDS4/ 2>/dev/null || true; \
-		cp $(srcdir)/data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.csv $(builddir)/data/PDS4/ 2>/dev/null || true; \
-		cp $(srcdir)/data/PDS4/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758.xml $(builddir)/data/PDS4/ 2>/dev/null || true; \
-		cp $(srcdir)/data/PDS4/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758_v07_r01.fits $(builddir)/data/PDS4/ 2>/dev/null || true; \
-		cp $(srcdir)/data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108.xml $(builddir)/data/PDS4/ 2>/dev/null || true; \
-		cp $(srcdir)/data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108_v13_r01.fits $(builddir)/data/PDS4/ 2>/dev/null || true; \
+		$(MKDIR_P) $(builddir)/data/PDS4/maven; \
+		cp $(srcdir)/data/PDS4/maven/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.xml $(builddir)/data/PDS4/maven/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/maven/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.csv $(builddir)/data/PDS4/maven/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/maven/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml $(builddir)/data/PDS4/maven/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/maven/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.csv $(builddir)/data/PDS4/maven/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/maven/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758.xml $(builddir)/data/PDS4/maven/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/maven/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758_v07_r01.fits $(builddir)/data/PDS4/maven/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/maven/mvn_iuv_l2_periapse-orbit00124_20141021T132108.xml $(builddir)/data/PDS4/maven/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/maven/mvn_iuv_l2_periapse-orbit00124_20141021T132108_v13_r01.fits $(builddir)/data/PDS4/maven/ 2>/dev/null || true; \
 		$(MKDIR_P) $(builddir)/data/PDS4/new_horizons; \
 		cp $(srcdir)/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.lblx $(builddir)/data/PDS4/new_horizons/ 2>/dev/null || true; \
 		cp $(srcdir)/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.fit $(builddir)/data/PDS4/new_horizons/ 2>/dev/null || true; \
@@ -105,10 +107,11 @@ check-local:
 		cp $(srcdir)/data/PDS4/new_horizons/ali_0284461348_0x4b2_eng.fit $(builddir)/data/PDS4/new_horizons/ 2>/dev/null || true; \
 		cp $(srcdir)/data/PDS4/new_horizons/ali_0002845457_0x4b2_sci_1.lblx $(builddir)/data/PDS4/new_horizons/ 2>/dev/null || true; \
 		cp $(srcdir)/data/PDS4/new_horizons/ali_0002845457_0x4b2_sci_1.fit $(builddir)/data/PDS4/new_horizons/ 2>/dev/null || true; \
-		cp $(srcdir)/data/PDS4/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml $(builddir)/data/PDS4/ 2>/dev/null || true; \
-		cp $(srcdir)/data/PDS4/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.IMG $(builddir)/data/PDS4/ 2>/dev/null || true; \
-		cp $(srcdir)/data/PDS4/ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.xml $(builddir)/data/PDS4/ 2>/dev/null || true; \
-		cp $(srcdir)/data/PDS4/ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.IMG $(builddir)/data/PDS4/ 2>/dev/null || true; \
+		$(MKDIR_P) $(builddir)/data/PDS4/perseverance; \
+		cp $(srcdir)/data/PDS4/perseverance/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml $(builddir)/data/PDS4/perseverance/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/perseverance/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.IMG $(builddir)/data/PDS4/perseverance/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/perseverance/ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.xml $(builddir)/data/PDS4/perseverance/ 2>/dev/null || true; \
+		cp $(srcdir)/data/PDS4/perseverance/ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.IMG $(builddir)/data/PDS4/perseverance/ 2>/dev/null || true; \
 	fi
 
 TESTS_ENVIRONMENT = LD_LIBRARY_PATH=@MY_LD_LIBRARY_PATH@:$$LD_LIBRARY_PATH
@@ -120,20 +123,20 @@ TESTS += run_tests.sh
 CLEANFILES = tst_*.nc
 
 EXTRA_DIST = run_tests.sh.in data/imap_mag_l1b-calibration_20240229_v001.cdf data/gdaswave.t00z.wcoast.0p16.f000.grib2 data/WFPC2u5780205r_c0fx.fits \
-data/PDS4/test_image.xml data/PDS4/test_image.img data/PDS4/test_table_binary.xml data/PDS4/test_table_binary.dat data/PDS4/Table_Character_Example.xml data/PDS4/Table_Character_Example.tab \
+data/PDS4/general/test_image.xml data/PDS4/general/test_image.img data/PDS4/general/test_table_binary.xml data/PDS4/general/test_table_binary.dat data/PDS4/general/Table_Character_Example.xml data/PDS4/general/Table_Character_Example.tab \
 data/PDS4/cassini_hrd/hrd_2000_on_off.xml data/PDS4/cassini_hrd/hrd_2000_on_off.tab \
 data/PDS4/messenger_tnmap/thermal_neutron_map.xml data/PDS4/messenger_tnmap/thermal_neutron_map.img \
 data/PDS4/lcs_9p/20050706_000.xml data/PDS4/lcs_9p/20050706_000.tab \
-data/PDS4/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.xml data/PDS4/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.csv \
-data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml data/PDS4/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.csv \
-data/PDS4/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758.xml data/PDS4/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758_v07_r01.fits \
-data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108.xml data/PDS4/mvn_iuv_l2_periapse-orbit00124_20141021T132108_v13_r01.fits \
+data/PDS4/maven/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.xml data/PDS4/maven/mvn_ngi_l1b_cal-hk-058943_20250101T023235_v01_r02.csv \
+data/PDS4/maven/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml data/PDS4/maven/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.csv \
+data/PDS4/maven/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758.xml data/PDS4/maven/mvn_iuv_l2_corona-orbit00407-fuv_20141214T192758_v07_r01.fits \
+data/PDS4/maven/mvn_iuv_l2_periapse-orbit00124_20141021T132108.xml data/PDS4/maven/mvn_iuv_l2_periapse-orbit00124_20141021T132108_v13_r01.fits \
 data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.lblx data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.fit \
 data/PDS4/new_horizons/ali_0400644769_0x4b2_sci.lblx data/PDS4/new_horizons/ali_0400644769_0x4b2_sci.fit \
 data/PDS4/new_horizons/ali_0284461348_0x4b2_eng.lblx data/PDS4/new_horizons/ali_0284461348_0x4b2_eng.fit \
 data/PDS4/new_horizons/ali_0002845457_0x4b2_sci_1.lblx data/PDS4/new_horizons/ali_0002845457_0x4b2_sci_1.fit \
-data/PDS4/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml data/PDS4/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.IMG \
-data/PDS4/ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.xml data/PDS4/ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.IMG
+data/PDS4/perseverance/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml data/PDS4/perseverance/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.IMG \
+data/PDS4/perseverance/ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.xml data/PDS4/perseverance/ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.IMG
 
 DISTCLEANFILES = run_tests.sh
 
