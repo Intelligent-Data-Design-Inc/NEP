@@ -2,6 +2,7 @@
 
 ### V2.7.0 - More PDS4 Testing - New Horizons Data
 - In this release we will test on a bunch of data from the New Horizons mission.
+"You cannot swim for new horizons until you have courage to lose sight of the shore." — William Faulkner
 
 #### Sprint 1: New Horizons Alice PDS4 Product
 **Detailed Plan**: See `docs/plan/v2.7.0-sprint1-new-horizons-pds4.md`
