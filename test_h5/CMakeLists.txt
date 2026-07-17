@@ -22,7 +22,7 @@ endif()
 
 if(NEP_BUILD_BZIP2)
     add_executable(tst_h_bzip2 tst_h_bzip2.c)
-    target_link_libraries(tst_h_bzip2 PRIVATE ${HDF5_C_${LIB_TYPE}_LIBRARY} m)
+    target_link_libraries(tst_h_bzip2 PRIVATE ${HDF5_LIBRARIES} m)
 
     add_test(NAME tst_h_bzip2 COMMAND tst_h_bzip2)
 

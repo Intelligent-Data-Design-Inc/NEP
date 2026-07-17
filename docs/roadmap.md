@@ -75,7 +75,44 @@ Reorganize the PDS4 test-data tree so mission-specific and generic test files li
 **GitHub Issue:** #303
 
 #### Sprint 3: Add Conda
-- See https://github.com/Intelligent-Data-Design-Inc/NEP/issues/120
+**Detailed Plan**: See `docs/plan/v2.7.1-sprint3-add-conda.md`
+
+Create a conda-build `meta.yaml` recipe so NEP can be installed via `conda install`. The recipe targets conda-forge conventions and enables all format readers whose dependencies are available on conda-forge. A CI workflow validates the recipe on every PR.
+
+**Implementation scope:**
+- Create `conda/meta.yaml` using conda-build format, targeting conda-forge conventions.
+- Enable LZ4, BZIP2, Fortran wrappers, and three format readers: GeoTIFF, FITS, PDS4. CDF and GRIB2 are excluded because their dependencies (NASA CDF library, NCEPLIBS-g2c) are not packaged on conda-forge.
+- Build with CMake, mirroring the Spack recipe's `cmake_args()` option mapping.
+- Host dependencies: `hdf5`, `libnetcdf >=4.10.1`, `netcdf-fortran`, `lz4-c`, `bzip2`, `geotiff`, `libtiff`, `cfitsio`, `libxml2`.
+- Run dependencies: `hdf5`, `netcdf-c`, `netcdf-fortran`.
+- Add `conda/build.sh` build script.
+- Add `ci-conda.yml` GitHub Actions workflow: install Miniconda, run `conda build conda/` on PRs and pushes to main.
+- Add a `### Conda Installation` section to `README.md` after the Spack section.
+- Update `docs/prd.md` to mention Conda packaging capability.
+
+**Clarified decisions:**
+- Recipe uses `meta.yaml` (conda-build) format for conda-forge compatibility; `recipe.yaml` (rattler-build) is not yet required by conda-forge.
+- All readers except CDF and GRIB2 are enabled by default. CDF omitted because no conda-forge package exists for the NASA CDF library; GRIB2 omitted because NCEPLIBS-g2c is not on conda-forge.
+- Fortran wrappers are included (requires `netcdf-fortran` and `gfortran`, both available on conda-forge).
+- This sprint creates the in-repo recipe and CI only. Upstream submission to `conda-forge/staged-recipes` is a separate follow-up task.
+- The CI workflow uses `conda-build` and validates that the package builds; it does not publish to any channel.
+
+**Acceptance Criteria:**
+- `conda/meta.yaml` exists and is valid conda-build syntax.
+- `conda/build.sh` configures NEP with CMake and the correct option mapping.
+- `conda build conda/` succeeds on Ubuntu with all enabled readers.
+- `.github/workflows/ci-conda.yml` runs on PRs and pushes to main.
+- `README.md` contains Conda installation instructions.
+- `docs/prd.md` mentions Conda packaging.
+- No existing tests or build configurations are broken.
+
+**Testing:** CI workflow runs `conda build conda/` end-to-end. The built package's tests (CTest) execute as part of the conda build.
+
+**Build System Integration:** No changes to CMake or Autotools. The `conda/build.sh` script invokes CMake directly.
+
+**Definition of Done:** In-repo `conda/meta.yaml` and `conda/build.sh` created, CI workflow validates the recipe, README and PRD updated with Conda instructions.
+
+**GitHub Issue:** #305
 
 #### Sprint 4: Update Spack Package File with Latest Releases of NEP
 - Also the upstream one at the spack main package repo.

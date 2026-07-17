@@ -62,7 +62,7 @@ if(NOT DOCS_ONLY)
     find_package(HDF5 2.0 REQUIRED COMPONENTS C)
     link_directories (${HDF5_LIBRARY_DIRS})
     include_directories (${HDF5_INCLUDE_DIR})
-    set (LINK_LIBS ${LINK_LIBS} ${HDF5_C_${LIB_TYPE}_LIBRARY})
+    set (LINK_LIBS ${LINK_LIBS} ${HDF5_LIBRARIES})
 
     # Find NetCDF-C (requires 4.10.1+ for UDF slots > 2)
     find_package(PkgConfig REQUIRED)
@@ -358,7 +358,6 @@ if(NOT DOCS_ONLY)
         )
         target_link_libraries(nep_h5lz4 PRIVATE
             ${LZ4_LIBRARIES}
-            ${HDF5_C_${LIB_TYPE}_LIBRARY}
             m
         )
 

@@ -1,0 +1,57 @@
+# Conda CI workflow for NEP package validation
+#
+# This workflow validates the NEP Conda recipe by building the package
+# using conda-build on Ubuntu.
+#
+# Edward Hartnett, Intelligent Data Design, Inc.
+
+name: Conda CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  conda-build:
+    name: Conda Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+      - name: Checkout NEP
+        uses: actions/checkout@v4
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          channels: conda-forge,defaults
+          channel-priority: strict
+
+      - name: Install conda-build
+        run: |
+          conda install -y conda-build
+          conda-build --version
+
+      - name: Build NEP Conda package
+        run: |
+          conda-build conda/ --no-anaconda-upload 2>&1 | tee conda_build.log
+
+      - name: Verify package was built
+        run: |
+          echo "=== Built packages ==="
+          conda-build conda/ --output
+          PKG_PATH=$(conda-build conda/ --output)
+          echo "Package: $PKG_PATH"
+          test -f "$PKG_PATH" && echo "SUCCESS: Package exists" || echo "FAILURE: Package not found"
+
+      - name: Show build log on failure
+        if: failure()
+        run: |
+          echo "=== Last 200 lines of conda build log ==="
+          tail -200 conda_build.log || true
