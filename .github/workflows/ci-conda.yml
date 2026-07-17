@@ -36,16 +36,17 @@ jobs:
       - name: Install conda-build
         run: |
           conda install -y conda-build
+          conda-build --version
 
       - name: Build NEP Conda package
         run: |
-          conda build conda/ --no-anaconda-upload 2>&1 | tee conda_build.log
+          conda-build conda/ --no-anaconda-upload 2>&1 | tee conda_build.log
 
       - name: Verify package was built
         run: |
           echo "=== Built packages ==="
-          conda build conda/ --output
-          PKG_PATH=$(conda build conda/ --output)
+          conda-build conda/ --output
+          PKG_PATH=$(conda-build conda/ --output)
           echo "Package: $PKG_PATH"
           test -f "$PKG_PATH" && echo "SUCCESS: Package exists" || echo "FAILURE: Package not found"
 
