@@ -30,13 +30,12 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
-          python-version: "3.12"
           channels: conda-forge,defaults
           channel-priority: strict
 
       - name: Install conda-build
         run: |
-          conda install -y conda-build conda-verify
+          conda install -y conda-build
 
       - name: Build NEP Conda package
         run: |
