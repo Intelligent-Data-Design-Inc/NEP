@@ -3,6 +3,7 @@ set -ex
 
 cmake -B build \
   -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
+  -DCMAKE_PREFIX_PATH="${PREFIX}" \
   -DCMAKE_BUILD_TYPE=Release \
   -DNEP_BUILD_LZ4=ON \
   -DNEP_BUILD_BZIP2=ON \
