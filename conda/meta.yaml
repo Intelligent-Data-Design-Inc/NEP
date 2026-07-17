@@ -9,7 +9,6 @@ source:
 
 build:
   number: 0
-  script: bash ${RECIPE_DIR}/build.sh
   run_exports:
     - {{ pin_subpackage('nep', max_pin='x.x') }}
 
