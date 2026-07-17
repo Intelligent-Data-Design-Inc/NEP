@@ -25,8 +25,6 @@ requirements:
     - netcdf-fortran
     - lz4-c
     - bzip2
-    - cfitsio
-    - libxml2
   run:
     - hdf5
     - libnetcdf
@@ -35,24 +33,18 @@ requirements:
 test:
   commands:
     - test -f $PREFIX/lib/plugin/libh5lz4.so           # [linux]
-    - test -f $PREFIX/lib/libncfits.so                 # [linux]
-    - test -f $PREFIX/lib/libncpds4.so                 # [linux]
     - test -f $PREFIX/lib/plugin/libh5lz4.dylib        # [osx]
-    - test -f $PREFIX/lib/libncfits.dylib              # [osx]
-    - test -f $PREFIX/lib/libncpds4.dylib              # [osx]
 
 about:
   home: https://github.com/Intelligent-Data-Design-Inc/NEP
   license: Apache-2.0
   license_file: LICENSE.txt
   summary: >
-    NEP extends NetCDF-4 with LZ4/BZIP2 compression and transparent read
-    access to FITS and PDS4 scientific data formats.
+    NEP extends NetCDF-4 with LZ4/BZIP2 compression filters.
   description: >
     NEP (NetCDF Expansion Pack) provides high-performance LZ4 and BZIP2
-    compression filters for HDF5/NetCDF-4 files and transparent read access
-    to scientific data formats (FITS, PDS4) through the standard
-    NetCDF API via User Defined Format handlers.
+    compression filters for HDF5/NetCDF-4 files through the standard
+    NetCDF API.
   dev_url: https://github.com/Intelligent-Data-Design-Inc/NEP
 
 extra:

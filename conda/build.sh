@@ -8,14 +8,12 @@ echo "SRC_DIR=${SRC_DIR}"
 echo "CPU_COUNT=${CPU_COUNT}"
 echo ""
 echo "=== Checking for key libraries ==="
-ls -la ${PREFIX}/lib/libcfitsio* 2>/dev/null || echo "libcfitsio NOT found in PREFIX/lib"
-ls -la ${PREFIX}/lib/libxml2* 2>/dev/null || echo "libxml2 NOT found in PREFIX/lib"
 ls -la ${PREFIX}/lib/liblz4* 2>/dev/null || echo "liblz4 NOT found in PREFIX/lib"
 ls -la ${PREFIX}/lib/libbz2* 2>/dev/null || echo "libbz2 NOT found in PREFIX/lib"
 echo ""
 echo "=== Checking for key headers ==="
-find ${PREFIX}/include -name "fitsio.h" 2>/dev/null || echo "fitsio.h NOT found"
-find ${PREFIX}/include -name "libxml*" -type d 2>/dev/null || echo "libxml dir NOT found"
+find ${PREFIX}/include -name "lz4.h" 2>/dev/null || echo "lz4.h NOT found"
+find ${PREFIX}/include -name "bzlib.h" 2>/dev/null || echo "bzlib.h NOT found"
 echo ""
 
 cmake -B build \
@@ -28,8 +26,8 @@ cmake -B build \
   -DNEP_ENABLE_FORTRAN=ON \
   -DNEP_ENABLE_GEOTIFF=OFF \
   -DNEP_ENABLE_GRIB2=OFF \
-  -DNEP_ENABLE_FITS=ON \
-  -DNEP_ENABLE_PDS4=ON \
+  -DNEP_ENABLE_FITS=OFF \
+  -DNEP_ENABLE_PDS4=OFF \
   -DNEP_ENABLE_CDF=OFF \
   -DNEP_BUILD_DOCUMENTATION=OFF \
   -DNEP_BUILD_EXAMPLES=OFF \
