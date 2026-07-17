@@ -22,9 +22,25 @@ find ${PREFIX}/include -name "fitsio.h" 2>/dev/null || echo "fitsio.h NOT found"
 find ${PREFIX}/include -name "libxml*" -type d 2>/dev/null || echo "libxml dir NOT found"
 echo ""
 
+# conda-forge's geotiff package installs headers flat in $PREFIX/include, but NEP
+# source and CMake expect them under $PREFIX/include/geotiff/. Build a temporary
+# shim prefix so the existing find_path/geotiff/... logic works without touching
+# the host env's $PREFIX.
+GEOTIFF_INC_FIX="${SRC_DIR}/geotiff_include_fix"
+rm -rf "${GEOTIFF_INC_FIX}"
+mkdir -p "${GEOTIFF_INC_FIX}/include/geotiff"
+for h in geotiff.h geo_normalize.h geotiffio.h xtiffio.h; do
+    if [ -f "${PREFIX}/include/${h}" ]; then
+        ln -s "${PREFIX}/include/${h}" "${GEOTIFF_INC_FIX}/include/geotiff/${h}"
+    fi
+done
+echo "=== GeoTIFF include shim ==="
+ls -la "${GEOTIFF_INC_FIX}/include/geotiff"
+echo ""
+
 cmake -B build \
   -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
-  -DCMAKE_PREFIX_PATH="${PREFIX}" \
+  -DCMAKE_PREFIX_PATH="${PREFIX};${GEOTIFF_INC_FIX}" \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_FIND_DEBUG_MODE=ON \
   -DNEP_BUILD_LZ4=ON \
