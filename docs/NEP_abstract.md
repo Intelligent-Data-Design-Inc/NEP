@@ -1,6 +1,6 @@
 # The NetCDF Expansion Pack (NEP) - Extending the Capabilities of NetCDF
 
-Edward Hartnett, Intelligent Data Design
+Edward Hartnett, Intelligent Data Design, Inc.
 2026-07-17
 
 # Abstract
@@ -34,6 +34,8 @@ LZ4 is a lossless compression algorithm from the LZ77 family that trades maximum
 
 For best results on multi-byte data, the shuffle filter should be enabled separately with `nc_def_var_deflate(ncid, varid, 1, 0, 0)` before calling `nc_def_var_lz4()`. This reorders bytes so that the most-significant bytes of adjacent values are compressed together, typically improving the compression ratio for slowly varying floating-point data.
 
+k
+
 ## BZIP2 - Slow but Compressive
 
 BZIP2 uses the Burrows-Wheeler block-sorting algorithm to achieve higher compression ratios than LZ4, Zstandard, or ZLIB, but at the cost of much lower compression speed. NEP exposes it via `nc_def_var_bzip2(ncid, varid, level)` and `nc_inq_var_bzip2()`, with Fortran equivalents `nf90_def_var_bzip2` and `nf90_inq_var_bzip2`. Levels range from 1 to 9 and control the block size; decompression speed is largely independent of the level.
@@ -53,6 +55,8 @@ The following table compares write time, read time, file size, and compression r
 | bzip2 | 22.14 | 22.39 | 5.90 | 6.7× | 0.01× | 0.02× |
 
 LZ4 adds minimal overhead while roughly halving file size; Zstandard (now in netCDF-C) offers a strong ratio-speed balance; BZIP2 yields the highest compression ratio but is an order of magnitude slower and is therefore best suited to archival use.
+
+![Compression performance comparison for LZ4, Zstandard, zlib, and BZIP2 on a 150 MB float dataset](images/compression_performance_fast.svg)
 
 # Reading Other Formats with Existing NetCDF Applications
 
@@ -158,6 +162,155 @@ Each GRIB2 product maps to a separate `NC_FLOAT` netCDF variable. All variables 
 
 Variable attributes record the GRIB2 discipline, category, and parameter number, and a `_FillValue` marks missing grid points. Global attributes identify the file as GRIB2 edition 2. Data are read by expanding each GRIB2 message into a full grid; bitmap-masked points are replaced with `_FillValue`, and `start`/`count` slices select the requested region.
 
+For example, `ncdump -hs` for `gdaswave.t00z.wcoast.0p16.f000.grib2` produces:
+
+```
+netcdf gdaswave.t00z.wcoast.0p16.f000 {
+dimensions:
+	x = 151 ;
+	y = 241 ;
+variables:
+	float WIND(y, x) ;
+		WIND:GRIB2_discipline = 0 ;
+		WIND:GRIB2_category = 2 ;
+		WIND:GRIB2_param_number = 1 ;
+		WIND:long_name = "WIND" ;
+		WIND:_FillValue = 9.999e+20f ;
+		WIND:_Storage = "contiguous" ;
+	float WDIR(y, x) ;
+		WDIR:GRIB2_discipline = 0 ;
+		WDIR:GRIB2_category = 2 ;
+		WDIR:GRIB2_param_number = 0 ;
+		WDIR:long_name = "WDIR" ;
+		WDIR:_FillValue = 9.999e+20f ;
+		WDIR:_Storage = "contiguous" ;
+	float UGRD(y, x) ;
+		UGRD:GRIB2_discipline = 0 ;
+		UGRD:GRIB2_category = 2 ;
+		UGRD:GRIB2_param_number = 2 ;
+		UGRD:long_name = "UGRD" ;
+		UGRD:_FillValue = 9.999e+20f ;
+		UGRD:_Storage = "contiguous" ;
+	float VGRD(y, x) ;
+		VGRD:GRIB2_discipline = 0 ;
+		VGRD:GRIB2_category = 2 ;
+		VGRD:GRIB2_param_number = 3 ;
+		VGRD:long_name = "VGRD" ;
+		VGRD:_FillValue = 9.999e+20f ;
+		VGRD:_Storage = "contiguous" ;
+	float HTSGW(y, x) ;
+		HTSGW:GRIB2_discipline = 10 ;
+		HTSGW:GRIB2_category = 0 ;
+		HTSGW:GRIB2_param_number = 3 ;
+		HTSGW:long_name = "HTSGW" ;
+		HTSGW:_FillValue = 9.999e+20f ;
+		HTSGW:_Storage = "contiguous" ;
+	float PERPW(y, x) ;
+		PERPW:GRIB2_discipline = 10 ;
+		PERPW:GRIB2_category = 0 ;
+		PERPW:GRIB2_param_number = 11 ;
+		PERPW:long_name = "PERPW" ;
+		PERPW:_FillValue = 9.999e+20f ;
+		PERPW:_Storage = "contiguous" ;
+	float DIRPW(y, x) ;
+		DIRPW:GRIB2_discipline = 10 ;
+		DIRPW:GRIB2_category = 0 ;
+		DIRPW:GRIB2_param_number = 10 ;
+		DIRPW:long_name = "DIRPW" ;
+		DIRPW:_FillValue = 9.999e+20f ;
+		DIRPW:_Storage = "contiguous" ;
+	float WVHGT(y, x) ;
+		WVHGT:GRIB2_discipline = 10 ;
+		WVHGT:GRIB2_category = 0 ;
+		WVHGT:GRIB2_param_number = 5 ;
+		WVHGT:long_name = "WVHGT" ;
+		WVHGT:_FillValue = 9.999e+20f ;
+		WVHGT:_Storage = "contiguous" ;
+	float SWELL(y, x) ;
+		SWELL:GRIB2_discipline = 10 ;
+		SWELL:GRIB2_category = 0 ;
+		SWELL:GRIB2_param_number = 8 ;
+		SWELL:long_name = "SWELL" ;
+		SWELL:_FillValue = 9.999e+20f ;
+		SWELL:_Storage = "contiguous" ;
+	float SWELL_2(y, x) ;
+		SWELL_2:GRIB2_discipline = 10 ;
+		SWELL_2:GRIB2_category = 0 ;
+		SWELL_2:GRIB2_param_number = 8 ;
+		SWELL_2:long_name = "SWELL" ;
+		SWELL_2:_FillValue = 9.999e+20f ;
+		SWELL_2:_Storage = "contiguous" ;
+	float SWELL_3(y, x) ;
+		SWELL_3:GRIB2_discipline = 10 ;
+		SWELL_3:GRIB2_category = 0 ;
+		SWELL_3:GRIB2_param_number = 8 ;
+		SWELL_3:long_name = "SWELL" ;
+		SWELL_3:_FillValue = 9.999e+20f ;
+		SWELL_3:_Storage = "contiguous" ;
+	float WVPER(y, x) ;
+		WVPER:GRIB2_discipline = 10 ;
+		WVPER:GRIB2_category = 0 ;
+		WVPER:GRIB2_param_number = 6 ;
+		WVPER:long_name = "WVPER" ;
+		WVPER:_FillValue = 9.999e+20f ;
+		WVPER:_Storage = "contiguous" ;
+	float SWPER(y, x) ;
+		SWPER:GRIB2_discipline = 10 ;
+		SWPER:GRIB2_category = 0 ;
+		SWPER:GRIB2_param_number = 9 ;
+		SWPER:long_name = "SWPER" ;
+		SWPER:_FillValue = 9.999e+20f ;
+		SWPER:_Storage = "contiguous" ;
+	float SWPER_2(y, x) ;
+		SWPER_2:GRIB2_discipline = 10 ;
+		SWPER_2:GRIB2_category = 0 ;
+		SWPER_2:GRIB2_param_number = 9 ;
+		SWPER_2:long_name = "SWPER" ;
+		SWPER_2:_FillValue = 9.999e+20f ;
+		SWPER_2:_Storage = "contiguous" ;
+	float SWPER_3(y, x) ;
+		SWPER_3:GRIB2_discipline = 10 ;
+		SWPER_3:GRIB2_category = 0 ;
+		SWPER_3:GRIB2_param_number = 9 ;
+		SWPER_3:long_name = "SWPER" ;
+		SWPER_3:_FillValue = 9.999e+20f ;
+		SWPER_3:_Storage = "contiguous" ;
+	float WVDIR(y, x) ;
+		WVDIR:GRIB2_discipline = 10 ;
+		WVDIR:GRIB2_category = 0 ;
+		WVDIR:GRIB2_param_number = 4 ;
+		WVDIR:long_name = "WVDIR" ;
+		WVDIR:_FillValue = 9.999e+20f ;
+		WVDIR:_Storage = "contiguous" ;
+	float SWDIR(y, x) ;
+		SWDIR:GRIB2_discipline = 10 ;
+		SWDIR:GRIB2_category = 0 ;
+		SWDIR:GRIB2_param_number = 7 ;
+		SWDIR:long_name = "SWDIR" ;
+		SWDIR:_FillValue = 9.999e+20f ;
+		SWDIR:_Storage = "contiguous" ;
+	float SWDIR_2(y, x) ;
+		SWDIR_2:GRIB2_discipline = 10 ;
+		SWDIR_2:GRIB2_category = 0 ;
+		SWDIR_2:GRIB2_param_number = 7 ;
+		SWDIR_2:long_name = "SWDIR" ;
+		SWDIR_2:_FillValue = 9.999e+20f ;
+		SWDIR_2:_Storage = "contiguous" ;
+	float SWDIR_3(y, x) ;
+		SWDIR_3:GRIB2_discipline = 10 ;
+		SWDIR_3:GRIB2_category = 0 ;
+		SWDIR_3:GRIB2_param_number = 7 ;
+		SWDIR_3:long_name = "SWDIR" ;
+		SWDIR_3:_FillValue = 9.999e+20f ;
+		SWDIR_3:_Storage = "contiguous" ;
+
+// global attributes:
+		:Conventions = "GRIB2" ;
+		:GRIB2_edition = 2 ;
+		:_Format = "netCDF-4" ;
+}
+```
+
 ## GeoTIFF
 
 The GeoTIFF UDF handler reads standard TIFF and BigTIFF files through libgeotiff and libtiff. Image bands, rows, and columns map to netCDF dimensions; raster data are exposed as netCDF variables. Georeferencing information is converted to CF-1.8 `grid_mapping` attributes. The handler is read-only.
@@ -201,9 +354,49 @@ The following real mission datasets have been used to validate the PDS4 reader:
 | Mars 2020 / Perseverance | Mastcam-Z Sol 1737/1738 calibrated radiance images | `Array_3D_Image` in VICAR/ODL `.IMG`; verifies `NC_SHORT` `[3,1200,1648]` arrays and `SignedMSB2` pixel values |
 | New Horizons | Alice ultraviolet spectrograph histogram/PHD/housekeeping products | `.lblx` labels with `.fit` containers; exercises `Array_2D_Spectrum`, `Array_1D`, and `Table_Binary` |
 
+For example, `ncdump` output for the MESSENGER Mercury thermal-neutron map begins:
+
+```
+netcdf thermal_neutron_map {
+
+// global attributes:
+		:logical_identifier = "urn:nasa:pds:izenberg_pdart14_meap:data_tnmap:thermal_neutron_map" ;
+		:version_id = "1.0" ;
+		:title = "Mercury Thermal Neutron Map" ;
+		:information_model_version = "1.11.0.0" ;
+		:product_class = "Product_Observational" ;
+		:Modification_History = "2017-02-09\n                1.0\n                Peer reviewed version of the Izenberg PDART 2014 MEAP Thermal Neutron Map Product" ;
+		:start_date_time = "2004-08-13Z" ;
+		:stop_date_time = "2015-04-30Z" ;
+		:purpose = "Science" ;
+		:processing_level = "Derived" ;
+		:description = "MESSENGER Gamma-Ray Spectrometer (GRS) Anti-Coincidence Shield (ACS) data\n            have been used to map variations in thermal neutron absorbing elements across\n            Mercury\'s surface." ;
+		:name = "MESSENGER" ;
+		:type = "Mission" ;
+		:lid_reference = "urn:nasa:pds:context:investigation:mission.messenger" ;
+		:reference_type = "data_to_investigation" ;
+		:Discipline_Area = "Image_Object\n                    display_settings_to_array\n                \n                \n                    Sample\n                    Left to Right\n                    Line\n                    Top to Bottom\n                \n            \n            \n            \n                \n                    \n                        -180.0\n                        180.0\n                        90.0\n                        -90.0\n                    \n                \n                \n                    \n                        \n                            \n                                Equirectangular\n                                \n                                    0.0\n                                    0.0\n                                \n                            \n                            \n                                Coordinate Pair\n                                \n                                    21\n                                    21\n                                    2\n                                    2\n                                \n                            \n                            \n                                -7560\n                                -3780\n                            \n                        \n                        \n                            planetocentric\n                            Mercury\n                            2440.\n                            2440.\n                            2440.\n                            Positive East" ;
+		:_Format = "netCDF-4" ;
+
+group: thermal_neutron_map.img {
+  dimensions:
+  	Line = 360 ;
+  	Sample = 720 ;
+  variables:
+  	ubyte Mercury\ Thermal\ Neutron\ Map(Line, Sample) ;
+  		Mercury\ Thermal\ Neutron\ Map:units = "10**-4 cm**2/g" ;
+  		Mercury\ Thermal\ Neutron\ Map:scaling_factor = "0.222860" ;
+  		Mercury\ Thermal\ Neutron\ Map:value_offset = "0" ;
+  		Mercury\ Thermal\ Neutron\ Map:_Storage = "contiguous" ;
+
+  // group attributes:
+  } // group thermal_neutron_map.img
+}
+```
+
 # NetCDF Example Programs
 
-NEP includes C and Fortran examples for classic netCDF, NetCDF-4, NcZarr, OPeNDAP, and parallel I/O. These programs are companion code for *The NetCDF Developer's Handbook: The Authoritative Guide to Writing High-Performance Programs for Scientific Data Management, Second Edition* — available on [Amazon](https://www.amazon.com/dp/B0H7Q1Z75L). Performance benchmarks compare compression filters, chunking strategies, and cache tuning. All examples build and run as tests.
+NEP includes C and Fortran examples for classic netCDF, NetCDF-4, NcZarr, OPeNDAP, and parallel I/O. These programs are companion code for *The NetCDF Developer's Handbook: The Authoritative Guide to Writing High-Performance Programs for Scientific Data Management, Second Edition*. Performance benchmarks compare compression filters, chunking strategies, and cache tuning. All examples build and run as tests.
 
 ## Classic NetCDF Examples
 
