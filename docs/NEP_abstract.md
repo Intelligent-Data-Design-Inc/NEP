@@ -20,11 +20,11 @@ The NEP is free and open source, maintained by the author at Intelligent Data De
 
 The current version of the NetCDF Expansion Pack is 2.7.1 (July, 2026). It requires the most recently released netcdf-c (4.10.1) and any recent netcdf-fortran.
 
-The NEP supports Cmake and autotools builds, and provides spack and conda builds for user convenience. Complete and up-to-date instructions for building from source can be found in the README.
+The NEP supports CMake and autotools builds, and provides Spack and Conda builds for user convenience. Complete and up-to-date instructions for building from source can be found in the README.
 
 # Compression
 
-The high data volumes of modern instruments and models presents an ever-increasing challenge for researchers.
+The high data volumes of modern instruments and models present an ever-increasing challenge for researchers.
 
 Recent improvements to compression in the netcdf-c library include support for Zstandard, and lossy compression with the quantize feature. The NEP provides two additional lossless HDF5 filter plugins: LZ4 and BZIP2. Both are exposed through a standard `nc_def_var_*` API and require chunked variables; HDF5 loads them automatically when `HDF5_PLUGIN_PATH` points to the NEP plugin directory.
 
@@ -71,6 +71,43 @@ The NetCDF Expansion Pack uses this feature to provide netCDF readers for severa
 
 In all cases the native metadata is converted to netCDF attributes, preferably attributes compliant with the CF convention.
 
+## Using the netcdf-c Dispatch Layer
+
+The dispatch layer is built around an `NC_Dispatch` structure that holds one function pointer for each netCDF API entry point. When `nc_open()` reads a file, netCDF-C compares the file's leading bytes against the magic numbers registered for each UDF slot and then uses the matching dispatch table for all subsequent calls. Functions that are meaningful for the format are implemented—open, close, variable inquiry, `nc_get_vara`, attribute inquiry, and dimension inquiry—while operations that do not make sense are replaced by stub functions such as `NC_RO_def_var` or `NC_RO_put_att`, which return an error because NEP's handlers are read-only.
+
+![NetCDF-C library architecture showing the dispatch layer, NEP UDF handlers for GeoTIFF/GRIB2/FITS/CDF/PDS4, and HDF5 filter plugins for LZ4/BZIP2 compression](images/netcdf_c_library_architecture_expanded.png)
+
+A NEP handler registers itself by filling an `NC_Dispatch` table and calling `nc_def_user_format()`. For example, the NASA CDF handler contains:
+
+```c
+#include "nep.h"
+#include "cdfdispatch.h"
+
+static const NC_Dispatch CDF_dispatcher = {
+    NC_FORMATX_NC_CDF,
+    NC_DISPATCH_VERSION,
+    NC_RO_create,      /* read-only: no create */
+    NC_CDF_open,
+    NC_RO_redef,       /* read-only */
+    ...
+    NC_CDF_get_vara,
+    NC_RO_put_vara,    /* read-only */
+    ...
+};
+```
+
+This dispatch layer causes NC_RO_create() to be called when the user attempts to create a file in NASA CDF format. This will fail, as the CDF format reader is read-only. A call to nc_open() on a CDF file will call NC_CDF_open(), which uses the NASA CDF library to open the file, and then sets up internal netCDF metadata for the file, allowing other netCDF functions to work. The combination of internal metadata and custom functions such as NC_CDF_open allow the netcdf-c library to read CDF files as if they were netCDF.
+
+The dispatch layer has to be initialized before attempting to open a CDF file. This can be done explicitly with a call to nc_def_user_format(), or it can be done with the .ncrc file.
+
+```c
+int NC_CDF_initialize(void) {
+    return nc_def_user_format(NEP_UDF_CDF, &CDF_dispatcher, NEP_MAGIC_CDF);
+}
+```
+
+Once `NC_CDF_initialize()` (or the equivalent `.ncrc` autoload entry) has run, any later `nc_open()` call on a CDF file routes through this dispatch table instead of the native netCDF-4 reader.
+
 ## Initialization File .ncrc
 
 NetCDF-C supports a run-time configuration file named `.ncrc` that can set defaults and register User Defined Format (UDF) handlers automatically. When `nc_open()` encounters a file whose magic number matches a UDF entry, netCDF-C loads the specified shared library and calls the registered initializer, then dispatches the file to that handler.
@@ -80,6 +117,36 @@ The `.ncrc` file is searched for in the user's home directory (`~/.ncrc`) or in 
 Each UDF handler is registered in `.ncrc` with three entries per slot: `NETCDF.UDFx.MAGIC`, `NETCDF.UDFx.LIBRARY`, and `NETCDF.UDFx.INIT`, where `x` is the UDF slot number and `INIT` names the handler's initialize function (for example, `NC_GRIB2_initialize`). 
 
 If an initialization file is not used, the same initialize functions can be called explicitly before `nc_open()`.
+
+For example, a `/home/ed/.ncrc` file that enables all NEP UDF handlers would contain:
+
+```ini
+NETCDF.UDF0.LIBRARY=/usr/local/lib/libncgeotiff.so
+NETCDF.UDF0.INIT=NC_GEOTIFF_initialize
+NETCDF.UDF0.MAGIC=II+
+
+NETCDF.UDF1.LIBRARY=/usr/local/lib/libncgeotiff.so
+NETCDF.UDF1.INIT=NC_GEOTIFF_initialize
+NETCDF.UDF1.MAGIC=II*
+
+NETCDF.UDF2.LIBRARY=/usr/local/lib/libncgrib2.so
+NETCDF.UDF2.INIT=NC_GRIB2_initialize
+NETCDF.UDF2.MAGIC=GRIB
+
+NETCDF.UDF3.LIBRARY=/usr/local/lib/libncfits.so
+NETCDF.UDF3.INIT=NC_FITS_initialize
+NETCDF.UDF3.MAGIC=SIMPLE
+
+NETCDF.UDF4.LIBRARY=/usr/local/lib/libnccdf.so
+NETCDF.UDF4.INIT=NC_CDF_initialize
+NETCDF.UDF4.MAGIC=\xCD\xF3\x00\x01
+
+NETCDF.UDF5.LIBRARY=/usr/local/lib/libncpds4.so
+NETCDF.UDF5.INIT=NC_PDS4_initialize
+NETCDF.UDF5.MAGIC=<?xml
+```
+
+With this file in place and `NETCDF_RC=/home/ed` exported, `nc_open()` will autoload the appropriate handler based on the file's leading magic bytes.
 
 ## GRIB2
 
@@ -123,9 +190,20 @@ Each `File_Area_Observational` in the PDS4 label becomes a netCDF child group na
 
 Table objects map to variables over a `record` dimension sized by the table's `<records>` element; each `Field_*` becomes a variable named from its `<name>`, with type from `<data_type>` and optional `units` from `<unit>`. Repeated fields in `Group_Field_Binary` introduce additional trailing dimensions. Global attributes capture `Identification_Area` and `Observation_Area` metadata.
 
+The following real mission datasets have been used to validate the PDS4 reader:
+
+| Mission | Data Description | Test Notes |
+|---|---|---|
+| Cassini-Huygens | HRD dust-detector engineering on/off log | `Table_Character` in `.tab`; verifies 11 records and two `NC_CHAR` fields |
+| MESSENGER | Mercury thermal-neutron map | `Array_2D_Map` in `.img`; verifies 360×720 `NC_UBYTE` array and hyperslab reads |
+| Deep Impact | Comet 9P/Tempel photometry table | `Table_Character` in `.tab`; verifies 8 `ASCII_Integer`/`ASCII_Real` variables and first-record values |
+| MAVEN | NGIMS L1B housekeeping (324 fields) and L3 science (15 fields) tables; IUVS L2 corona and periapse FITS-backed tables | Exercises `Table_Delimited`, `Table_Binary` with `Group_Field_Binary` depth-1 and depth-2 nested groups |
+| Mars 2020 / Perseverance | Mastcam-Z Sol 1737/1738 calibrated radiance images | `Array_3D_Image` in VICAR/ODL `.IMG`; verifies `NC_SHORT` `[3,1200,1648]` arrays and `SignedMSB2` pixel values |
+| New Horizons | Alice ultraviolet spectrograph histogram/PHD/housekeeping products | `.lblx` labels with `.fit` containers; exercises `Array_2D_Spectrum`, `Array_1D`, and `Table_Binary` |
+
 # NetCDF Example Programs
 
-NEP includes C and Fortran examples for classic netCDF, NetCDF-4, NcZarr, OPeNDAP, and parallel I/O. Performance benchmarks compare compression filters, chunking strategies, and cache tuning. All examples build and run as tests.
+NEP includes C and Fortran examples for classic netCDF, NetCDF-4, NcZarr, OPeNDAP, and parallel I/O. These programs are companion code for *The NetCDF Developer's Handbook: The Authoritative Guide to Writing High-Performance Programs for Scientific Data Management, Second Edition* — available on [Amazon](https://www.amazon.com/dp/B0H7Q1Z75L). Performance benchmarks compare compression filters, chunking strategies, and cache tuning. All examples build and run as tests.
 
 ## Classic NetCDF Examples
 
@@ -198,4 +276,14 @@ Future work includes additional UDF format readers, extended GRIB2 support for t
 
 # Summary
 
-NEP extends netCDF-4 with high-speed and high-ratio compression filters and transparent read access to major scientific data formats, without requiring changes to existing netCDF applications.
+NEP extends netCDF-4 with:
+* High-speed and high-ratio compression filters
+* Transparent read access to major scientific data formats (without requiring changes to existing netCDF applications)
+* Comprehensive netCDF example programs in C/Fortran, demonstrating advanced lossy and lossless compression, ncZarr cloud format, and OPeNDAP remote data access.
+
+# References
+
+- Hartnett, E. *The NetCDF Developer's Handbook: The Authoritative Guide to Writing High-Performance Programs for Scientific Data Management, Second Edition*. Intelligent Data Design, 2026. https://www.amazon.com/dp/B0H7Q1Z75L
+- Unidata/UCAR. *NetCDF-C*. https://www.unidata.ucar.edu/software/netcdf/
+- Eaton, B., et al. *CF Metadata Conventions*. http://cfconventions.org/
+- HDF Group. *HDF5 Filter Plugins*. https://support.hdfgroup.org/HDF5/doc/Advanced/DynamicallyLoadedFilters/
