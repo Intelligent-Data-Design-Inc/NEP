@@ -1,6 +1,6 @@
 # The NetCDF Expansion Pack (NEP) - Extending the Capabilities of NetCDF
 
-Edward Hartnett, Intelligent Data Design
+Edward Hartnett, Intelligent Data Design, Inc.
 2026-07-17
 
 # Abstract
