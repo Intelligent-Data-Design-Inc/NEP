@@ -5,7 +5,7 @@ Edward Hartnett, Intelligent Data Design, Inc.
 
 # Abstract
 
-The NetCDF Expansion Pack (NEP) extends the netCDF-4 scientific-data library with additional lossless compression filters and read-only User Defined Format (UDF) handlers for common scientific binary formats. NEP uses two existing extension points in netCDF-C: HDF5 filter plugins for per-variable compression, and the NC_Dispatch layer for format-specific readers. The package adds LZ4 compression for speed-critical workflows and BZIP2 compression for archival storage; both are exposed through the standard `nc_def_var_*` API and loaded transparently by HDF5 at runtime. For multi-format access, NEP registers UDF dispatch tables that map GeoTIFF, GRIB2, FITS, NASA CDF, and NASA/ESA PDS4 files into the netCDF in-memory model. Existing netCDF applications can open these files with `nc_open()` and read them with `nc_get_vara()` without modification or recompilation. Native metadata are translated to netCDF attributes, preferably following the CF convention. NEP also includes C and Fortran example programs and performance benchmarks. It builds with CMake or Autotools, installs through Spack or Conda, and is released as open source.
+The NetCDF Expansion Pack (NEP) extends the netCDF scientific-data library with additional lossless compression filters, read-only User Defined Format (UDF) handlers for common scientific binary formats, and comprehensive examples of advanced netCDF programming in C and Fortran. NEP uses two existing extension points in netCDF-C: HDF5 filter plugins for per-variable compression, and the NC_Dispatch layer for format-specific readers. The package adds LZ4 compression for speed-critical workflows and BZIP2 compression for archival storage; both are exposed through the standard `nc_def_var_*` API and loaded transparently by HDF5 at runtime. For multi-format access, NEP registers UDF dispatch tables that map GeoTIFF, GRIB2, FITS, NASA CDF, and NASA/ESA PDS4 files into the netCDF in-memory model. Existing netCDF applications can open these files with `nc_open()` and read them with `nc_get_vara()` without modification or recompilation. Native metadata are translated to netCDF attributes, preferably following the CF convention. NEP builds with CMake or Autotools, installs through Spack or Conda, and is released as open source.
 
 # Introduction
 
@@ -400,6 +400,8 @@ NEP includes C and Fortran examples for classic netCDF, NetCDF-4, NcZarr, OPeNDA
 
 ## Classic NetCDF Examples
 
+The classic examples show common netCDF usage with the classic netCDF data model - that is, the orginal netCDF data model.
+
 | Example | C File | Fortran File | Description |
 |---|---|---|---|
 | Simple 2D Array | `simple_2D.c` | `f_simple_2D.f90` | Creates and writes a basic 2D array. |
@@ -412,6 +414,8 @@ NEP includes C and Fortran examples for classic netCDF, NetCDF-4, NcZarr, OPeNDA
 | Dump Metadata | `dump_classic_metadata.c` | `f_dump_classic_metadata.f90` | Prints classic-file metadata. |
 
 ## NetCDF-4 Examples
+
+The netCDF-4 examples all display aspects of the enhanced data mode, introduced with netcdf-c-4.0 in 2008.
 
 | Example | C File | Fortran File | Description |
 |---|---|---|---|
@@ -426,6 +430,8 @@ NEP includes C and Fortran examples for classic netCDF, NetCDF-4, NcZarr, OPeNDA
 
 ## NcZarr Examples
 
+The NcZarr examples demonstrate using the netCDF API to read and wrire Zarr archives. For these examples a local store (i.e. on the test machine, not the cloud).
+
 | Example | C File | Fortran File | Description |
 |---|---|---|---|
 | Simple NcZarr | `nczarr_simple.c` | `f_nczarr_simple.f90` | Create, write, and read a local NcZarr dataset. |
@@ -435,6 +441,8 @@ NEP includes C and Fortran examples for classic netCDF, NetCDF-4, NcZarr, OPeNDA
 
 ## OPeNDAP Examples
 
+The OPeNDAP examples demonstrate remote access to data on servers. Data files on OPeNDAP servers can be opened as if they were local files. NASA uses OPeNDAP extensively to distribute Earth observation data to the science community.
+
 | Example | C File | Fortran File | Description |
 |---|---|---|---|
 | Simple OPeNDAP | `opendap_simple.c` | `f_opendap_simple.f90` | Basic remote data access. |
@@ -443,11 +451,15 @@ NEP includes C and Fortran examples for classic netCDF, NetCDF-4, NcZarr, OPeNDA
 
 ## Parallel I/O Examples
 
+The parallel I/O examples demonstrate how to write netCDF programs that run on 4 processors, decomposing a data arrray between the processors.
+
 | Example | C File | Fortran File | Description |
 |---|---|---|---|
 | Square 16 Parallel | `square16_par.c` | `f_square16_par.f90` | Collective parallel write/read with MPI. |
 
 ## Performance Benchmarks
+
+Performance example demonstrate the way the choices in cacha, chunking, and compression settings impact data reading and writing.
 
 | Example | C File | Description |
 |---|---|---|
@@ -463,10 +475,6 @@ NEP includes C and Fortran examples for classic netCDF, NetCDF-4, NcZarr, OPeNDA
 | LZ4 | `lz4.c` | LZ4 level sweep. |
 | BZIP2 | `bzip2.c` | BZIP2 level sweep. |
 
-# Future Plans
-
-Future work includes additional UDF format readers, extended GRIB2 support for time, level, and ensemble dimensions, and continued alignment with NetCDF-C and HDF5 releases.
-
 # Summary
 
 NEP extends netCDF-4 with:
@@ -477,6 +485,33 @@ NEP extends netCDF-4 with:
 # References
 
 - Hartnett, E. *The NetCDF Developer's Handbook: The Authoritative Guide to Writing High-Performance Programs for Scientific Data Management, Second Edition*. Intelligent Data Design, 2026. https://www.amazon.com/dp/B0H7Q1Z75L
+- NEP: NetCDF Expansion Pack. GitHub repository. https://github.com/Intelligent-Data-Design-Inc/NEP
 - Unidata/UCAR. *NetCDF-C*. https://www.unidata.ucar.edu/software/netcdf/
+- Unidata/UCAR. *NetCDF Zarr (ncZarr)*. https://www.unidata.ucar.edu/software/netcdf/nczarr/
 - Eaton, B., et al. *CF Metadata Conventions*. http://cfconventions.org/
+- HDF Group. *HDF5*. https://www.hdfgroup.org/solutions/hdf5/
 - HDF Group. *HDF5 Filter Plugins*. https://support.hdfgroup.org/HDF5/doc/Advanced/DynamicallyLoadedFilters/
+- WMO. *FM 92 GRIB Edition 2 (GRIB2)*. https://community.wmo.int/activity-areas/wis/manual-codes
+- NOAA/EMC. *NCEPLIBS-g2c*. https://github.com/NOAA-EMC/NCEPLIBS-g2c
+- NASA/GSFC. *Common Data Format (CDF)*. https://cdf.gsfc.nasa.gov/
+- NASA/ESA. *Planetary Data System (PDS4)*. https://pds.nasa.gov/
+- NASA/HEASARC. *CFITSIO*. https://heasarc.gsfc.nasa.gov/fitsio/
+- OGC. *GeoTIFF*. https://www.ogc.org/standards/geotiff
+- OPeNDAP. *OPeNDAP Data Access Protocol*. https://www.opendap.org/
+- lz4. *lz4/lz4*. C. March 25, 2014, released June 8, 2026. https://github.com/lz4/lz4
+- “Bzip2: Home.” Accessed June 8, 2026. https://sourceware.org/bzip2/
+- Collet, Yann, and Murray Kucherawy. *Zstandard Compression and the “application/Zstd” Media Type*. RFC 8878. Internet Engineering Task Force, 2021. https://doi.org/10.17487/RFC8878
+- Deutsch, L. Peter, and Jean-loup Gailly. *ZLIB Compressed Data Format Specification Version 3.3*. RFC 1950. Internet Engineering Task Force, 1996. https://doi.org/10.17487/RFC1950
+- Gallagher, James, Russ Rew, R. McQueary, D. Heimbigner, and Edward Hartnett. “Merging the Data Models of NetCDF and DAP: Design Choices and Benefits.” *AGU Fall Meeting Abstracts*, January 1, 2008.
+- Hartnett, Edward, Charles Zender, Ward Fisher, et al. “Quantization and Next-Generation Zlib Compression for Fully Backward-Compatible, Faster, and More Effective Data Compression in NetCDF Files.” Paper presented at AGU, New Orleans, LA, December 13, 2021.
+- Hartnett, Edward, and Charlie Zender. “Adding Quantization to the NetCDF C and Fortran Libraries to Enable Lossy Compression.” Paper presented at EGU, May 24, 2022.
+- “NetCDF: Documentation.” Accessed May 30, 2026. https://docs.unidata.ucar.edu/netcdf-c/current/
+- OPeNDAP. *OPENDAP/BES*. C++. November 7, 2014, released June 15, 2026. https://github.com/OPENDAP/bes
+- “NCO Homepage.” Accessed July 5, 2026. https://nco.sourceforge.net/
+- GitHub. “libaec/INSTALL.md at main · Deutsches-Klimarechenzentrum/libaec.” Accessed June 8, 2026. https://github.com/Deutsches-Klimarechenzentrum/libaec/blob/main/INSTALL.md
+- GitLab. “DKRZ-SW / libaec · GitLab.” May 19, 2026. https://gitlab.dkrz.de/dkrz-sw/libaec
+- “Szip Homepage.” Accessed June 8, 2026. http://www.compressconsult.com/szip/
+- “PIO: Parallel I/O Libraries (PIO).” Accessed May 30, 2026. https://ncar.github.io/ParallelIO/
+- “PnetCDF.” Accessed May 30, 2026. https://parallel-netcdf.github.io/
+- Zarr. “Zarr.” Accessed May 30, 2026. https://zarr.dev/
+- “UDUNITS | NSF Unidata.” Accessed May 30, 2026. https://www.unidata.ucar.edu/software/udunits
