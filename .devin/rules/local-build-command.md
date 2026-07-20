@@ -9,7 +9,7 @@ For CI/GitHub Actions, different paths are used (see `.github/workflows/`).
 
 ## Machine-Specific Dependency Paths
 - **HDF5**: `/usr/local/hdf5-2.1.1/`
-- **NetCDF-C**: `/usr/local/netcdf-c-4.10.1/`
+- **NetCDF-C**: `/usr/local/netcdf-c/`
 - **NetCDF-Fortran**: `/usr/local/netcdf-fortran/` (if Fortran enabled)
 - **CDF**: `/usr/local/cdf-3.9.1/` (if CDF enabled)
 - **GeoTIFF**: System packages (`libgeotiff-dev`, `libtiff-dev`)
@@ -18,7 +18,7 @@ For CI/GitHub Actions, different paths are used (see `.github/workflows/`).
 ## Runtime Environment
 Before running tests or executables:
 ```bash
-export LD_LIBRARY_PATH=/usr/local/hdf5-2.1.1/lib:/usr/local/netcdf-c-4.10.1/lib:/usr/local/netcdf-fortran/lib:/usr/local/cdf-3.9.1/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/usr/local/hdf5-2.1.1/lib:/usr/local/netcdf-c/lib:/usr/local/netcdf-fortran/lib:/usr/local/cdf-3.9.1/lib:$LD_LIBRARY_PATH
 ```
 
 ## Build System Options
@@ -38,8 +38,8 @@ Working directory: `/home/ed/NEP`
 ```bash
 autoreconf -i && \
 CFLAGS="-g -O0" \
-CPPFLAGS="-I/usr/local/hdf5-2.1.1/include -I/usr/local/netcdf-c-4.10.1/include -I/usr/local/netcdf-fortran/include -I/usr/local/cdf-3.9.1/include" \
-LDFLAGS="-L/usr/local/hdf5-2.1.1/lib -L/usr/local/netcdf-c-4.10.1/lib -L/usr/local/netcdf-fortran/lib -L/usr/local/cdf-3.9.1/lib -Wl,-rpath,/usr/local/hdf5-2.1.1/lib -Wl,-rpath,/usr/local/netcdf-c-4.10.1/lib -Wl,-rpath,/usr/local/netcdf-fortran/lib" \
+CPPFLAGS="-I/usr/local/hdf5-2.1.1/include -I/usr/local/netcdf-c/include -I/usr/local/netcdf-fortran/include -I/usr/local/cdf-3.9.1/include" \
+LDFLAGS="-L/usr/local/hdf5-2.1.1/lib -L/usr/local/netcdf-c/lib -L/usr/local/netcdf-fortran/lib -L/usr/local/cdf-3.9.1/lib -Wl,-rpath,/usr/local/hdf5-2.1.1/lib -Wl,-rpath,/usr/local/netcdf-c/lib -Wl,-rpath,/usr/local/netcdf-fortran/lib" \
 ./configure --enable-geotiff --enable-cdf --disable-fortran --disable-shared --disable-bzip2 --disable-lz4 && \
 make clean && make -j$(nproc) && make check
 ```
@@ -51,7 +51,7 @@ Working directory: `/home/ed/NEP`
 
 ```bash
 cmake -S . -B build \
-  -DCMAKE_PREFIX_PATH="/usr/local/hdf5-2.1.1;/usr/local/netcdf-c-4.10.1;/usr/local/cdf-3.9.1;/usr/local/NCEPLIBS-g2c-2.3.0;/usr/local/jasper-3.0.3" \
+  -DCMAKE_PREFIX_PATH="/usr/local/hdf5-2.1.1;/usr/local/netcdf-c;/usr/local/cdf-3.9.1;/usr/local/NCEPLIBS-g2c-2.3.0;/usr/local/jasper-3.0.3" \
   -DHDF5_ROOT=/usr/local/hdf5-2.1.1 \
   -DCMAKE_POLICY_DEFAULT_CMP0074=NEW \
   -DCMAKE_BUILD_TYPE=Debug \
@@ -59,7 +59,7 @@ cmake -S . -B build \
   -DNEP_ENABLE_CDF=ON \
   -DNEP_ENABLE_GRIB2=OFF \
   -DNEP_ENABLE_FORTRAN=OFF \
-  -DCMAKE_EXE_LINKER_FLAGS="-Wl,-rpath,/usr/local/hdf5-2.1.1/lib -Wl,-rpath,/usr/local/netcdf-c-4.10.1/lib"
+  -DCMAKE_EXE_LINKER_FLAGS="-Wl,-rpath,/usr/local/hdf5-2.1.1/lib -Wl,-rpath,/usr/local/netcdf-c/lib"
 make -j$(nproc) -C build && ctest --test-dir build
 ```
 
@@ -76,14 +76,14 @@ Add `-DNEP_ENABLE_BENCHMARKS=ON -DNEP_BUILD_EXAMPLES=ON` to also build and run t
 
 **Running performance benchmarks** (after building with NEP_ENABLE_BENCHMARKS=ON):
 ```bash
-LD_LIBRARY_PATH=/home/ed/NEP/build/src:/usr/local/hdf5-2.1.1/lib:/usr/local/netcdf-c-4.10.1/lib:/usr/local/jasper-3.0.3/lib:$LD_LIBRARY_PATH \
+LD_LIBRARY_PATH=/home/ed/NEP/build/src:/usr/local/hdf5-2.1.1/lib:/usr/local/netcdf-c/lib:/usr/local/jasper-3.0.3/lib:$LD_LIBRARY_PATH \
 HDF5_PLUGIN_PATH=/usr/local/hdf5/lib/plugin \
 ./build/examples/performance/<example>
 ```
 
 **Runtime environment for tests** (if rpath not embedded):
 ```bash
-export LD_LIBRARY_PATH=/usr/local/hdf5-2.1.1/lib:/usr/local/netcdf-c-4.10.1/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/usr/local/hdf5-2.1.1/lib:/usr/local/netcdf-c/lib:$LD_LIBRARY_PATH
 ```
 
 **Never create CMake build artifacts outside the `build` directory** to avoid cluttering the repository with untracked files.
