@@ -11,7 +11,7 @@ from spack.package import *
 
 
 class Nep(CMakePackage):
-    """NEP (NetCDF Extension Pack) provides high-performance LZ4 and BZIP2
+    """NEP (NetCDF Expansion Pack) provides high-performance LZ4 and BZIP2
     compression filters for HDF5/NetCDF-4 files and transparent read access
     to scientific data formats (GeoTIFF, GRIB2, FITS, NASA CDF, PDS4)
     through the standard NetCDF API via User Defined Format handlers."""

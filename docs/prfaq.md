@@ -1,14 +1,14 @@
-# NEP (NetCDF Extension Pack) - Press Release / FAQ
+# NEP (NetCDF Expansion Pack) - Press Release / FAQ
 
 ## Press Release
 
 **FOR IMMEDIATE RELEASE**
 
-### NetCDF Extension Pack (NEP) v2.2.0 Adds NASA/ESA PDS4 Planetary Data Support
+### NetCDF Expansion Pack (NEP) v2.2.0 Adds NASA/ESA PDS4 Planetary Data Support
 
 *Open-source framework now provides high-performance compression (LZ4/BZIP2) and transparent access to six scientific data formats — GeoTIFF, GRIB2, FITS, NASA CDF, and NASA/ESA PDS4 — through the standard NetCDF API*
 
-**July 2026** - The scientific computing community gains powerful new capabilities with NEP (NetCDF Extension Pack) v2.2.0, an open-source framework that extends NetCDF-4 with high-performance compression and seamless access to multiple scientific data formats — now including NASA/ESA Planetary Data System version 4 (PDS4) planetary science data.
+**July 2026** - The scientific computing community gains powerful new capabilities with NEP (NetCDF Expansion Pack) v2.2.0, an open-source framework that extends NetCDF-4 with high-performance compression and seamless access to multiple scientific data formats — now including NASA/ESA Planetary Data System version 4 (PDS4) planetary science data.
 
 #### The Challenge
 
@@ -85,7 +85,7 @@ NEP v2.2.0 is available now as open-source software. Installation options includ
 ### General Questions
 
 #### Q: What is NEP?
-**A:** NEP (NetCDF Extension Pack) is an open-source framework that extends NetCDF-4 with:
+**A:** NEP (NetCDF Expansion Pack) is an open-source framework that extends NetCDF-4 with:
 - High-performance compression (LZ4 and BZIP2) for HDF5/NetCDF-4 files
 - User Defined Format (UDF) handlers for GeoTIFF, GRIB2, FITS, NASA CDF, and NASA/ESA PDS4 files
 - C and Fortran APIs for all features

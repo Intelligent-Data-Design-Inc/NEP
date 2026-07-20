@@ -1,8 +1,8 @@
-# NEP (NetCDF Extension Pack)
+# NEP (NetCDF Expansion Pack)
 
 ## Overview
 
-NEP (NetCDF Extension Pack) extends NetCDF-4 with high-performance compression and multi-format data access.
+NEP (NetCDF Expansion Pack) extends NetCDF-4 with high-performance compression and multi-format data access.
 
 ### Compression Filters
 
