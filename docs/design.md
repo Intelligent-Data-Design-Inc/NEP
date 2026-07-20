@@ -1,7 +1,7 @@
-# NEP – NetCDF Extension Pack v2.7.1
+# NEP – NetCDF Expansion Pack v2.7.1
 ## Project Overview
 
-The NetCDF Extension Pack (NEP) v2.7.1 extends NetCDF-4 with high-performance compression filters and User Defined Format (UDF) handlers for accessing diverse scientific data formats through the standard NetCDF API. NEP provides flexible lossless compression with two complementary algorithms (LZ4 and BZIP2) and transparent access to GeoTIFF, GRIB2, FITS, NASA CDF, and NASA/ESA PDS4 files.
+The NetCDF Expansion Pack (NEP) v2.7.1 extends NetCDF-4 with high-performance compression filters and User Defined Format (UDF) handlers for accessing diverse scientific data formats through the standard NetCDF API. NEP provides flexible lossless compression with two complementary algorithms (LZ4 and BZIP2) and transparent access to GeoTIFF, GRIB2, FITS, NASA CDF, and NASA/ESA PDS4 files.
 
 ## Architecture
 

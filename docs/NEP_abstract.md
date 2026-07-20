@@ -81,6 +81,8 @@ The dispatch layer is built around an `NC_Dispatch` structure that holds one fun
 
 ![NetCDF-C library architecture showing the dispatch layer, NEP UDF handlers for GeoTIFF/GRIB2/FITS/CDF/PDS4, and HDF5 filter plugins for LZ4/BZIP2 compression](images/netcdf_c_library_architecture_expanded.png)
 
+**Figure 1.** Architecture of the NetCDF-C library with NEP extensions. The `NC_Dispatch` layer routes API calls to either the native netCDF-4/HDF5 backend or to NEP read-only UDF handlers for GeoTIFF, GRIB2, FITS, NASA CDF, and PDS4. NEP compression filters LZ4 and BZIP2 are loaded as HDF5 filter plugins and applied per variable.
+
 A NEP handler registers itself by filling an `NC_Dispatch` table and calling `nc_def_user_format()`. For example, the NASA CDF handler contains:
 
 ```c

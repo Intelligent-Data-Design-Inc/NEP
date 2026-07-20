@@ -1281,7 +1281,7 @@ NetCDF-C now supports self-loading UDFs via RC file configuration. This version 
 #### Sprint 1: Documentation Fixes
 - Fix GitHub Pages documentation deployment so that docs are deployed from the `main` branch (not from release tags), keeping the existing environment protection rules intact.
 - Ensure the docs deployment workflow always uses the project version from `version.txt` (currently `1.2.0`) as the single source of truth for displayed version numbers.
-- Update the top-level docs and Doxygen main page so the product title no longer refers to "NetCDF4/HDF5 Format Extension Pack"; HDF5 may be mentioned only in technical sections, not in the main product tagline.
+- Update the top-level docs and Doxygen main page to use the canonical NEP name and current product positioning; HDF5 may be mentioned only in technical sections, not in the main product tagline.
 - Remove all references to HDF5 VOL or VOLs from the documentation set, reflecting that VOLs are no longer used.
 - Fix all visible version strings on the main page so they match the current release version (e.g., v1.2.0) and do not show stale versions like 0.1.1 or 1.0.0.
 - Remove the "future releases" section entirely from the published documentation; no promises are made beyond the most recent release.

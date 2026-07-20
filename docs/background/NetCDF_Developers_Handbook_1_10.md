@@ -22273,7 +22273,7 @@ The NetCDF Expansion Pack (NEP), which I released in 2025, extends netcdf-c with
 
 Testing remains central to the NetCDF project. The netcdf-c test suite runs thousands of tests across all supported formats and features. Continuous integration builds and tests every commit on multiple platforms. The Fortran, Java, and PnetCDF libraries each maintain their own test suites as well.
 
-NetCDF today is not a single library but an ecosystem: a C library, Fortran and C++ bindings, a Java implementation, parallel I/O libraries, remote access protocols, command-line operators, an extension pack, and a metadata convention. These components are developed by different teams at different institutions, but they all read and write the same file formats and follow the same data models. That interoperability is the defining feature of netCDF.
+NetCDF today is not a single library but an ecosystem: a C library, Fortran and C++ bindings, a Java implementation, parallel I/O libraries, remote access protocols, command-line operators, the NetCDF Expansion Pack, and a metadata convention. These components are developed by different teams at different institutions, but they all read and write the same file formats and follow the same data models. That interoperability is the defining feature of netCDF.
 
 ## The Future
 

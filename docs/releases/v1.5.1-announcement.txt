@@ -2,7 +2,7 @@ Subject: [ANN] NEP v1.5.1 Released - NetCDF Example Programs
 
 Dear NetCDF Community,
 
-We are pleased to announce the release of NEP (NetCDF Extension Pack) version 1.5.1, which adds comprehensive NetCDF example programs to help users learn and master the NetCDF API.
+We are pleased to announce the release of NEP (NetCDF Expansion Pack) version 1.5.1, which adds comprehensive NetCDF example programs to help users learn and master the NetCDF API.
 
 ## What's New in v1.5.1
 
@@ -56,7 +56,7 @@ Fortran examples require NetCDF-Fortran library and are automatically skipped if
 
 ## About NEP
 
-NEP (NetCDF Extension Pack) extends NetCDF-4 with:
+NEP (NetCDF Expansion Pack) extends NetCDF-4 with:
 - High-performance compression (LZ4, BZIP2)
 - CDF file reader (NASA Common Data Format)
 - GeoTIFF file reader (geospatial raster data)

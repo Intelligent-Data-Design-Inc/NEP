@@ -4,6 +4,8 @@
 
 **[📚 Full Documentation](https://intelligent-data-design-inc.github.io/NEP/)**
 
+**[📄 NEP Abstract](docs/NEP_abstract.md)**
+
 ---
 
 ## Summary

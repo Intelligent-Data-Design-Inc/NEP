@@ -1,7 +1,7 @@
 # This is the build file for the root directory of the NEP project.
 # Edward Hartnett 8/27/25
 cmake_minimum_required(VERSION 3.9)
-project (NEP VERSION 0.1.1 DESCRIPTION "NetCDF4/HDF5 Format Extension Pack" LANGUAGES C)
+project (NEP VERSION 0.1.1 DESCRIPTION "NetCDF Expansion Pack" LANGUAGES C)
 
 # Read documentation/package version from version.txt so that documentation
 # and installed package metadata reflect the release version configured there.

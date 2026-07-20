@@ -1,4 +1,4 @@
-# NEP (NetCDF Extension Pack) - Product Requirements Document
+# NEP (NetCDF Expansion Pack) - Product Requirements Document
 
 ## 1. Executive Summary
 

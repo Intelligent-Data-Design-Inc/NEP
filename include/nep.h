@@ -1,6 +1,6 @@
 /**
  * @file nep.h
- * @brief NetCDF Extension Pack (NEP) - Public API
+ * @brief NetCDF Expansion Pack (NEP) - Public API
  *
  * Defines compression filter IDs and API, and the centralized mapping of
  * file formats to NetCDF User-Defined Format (UDF) slot numbers.
