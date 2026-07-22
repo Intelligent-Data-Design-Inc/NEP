@@ -1,5 +1,185 @@
 # NEP Development Roadmap
 
+### V2.8.0 - Visualization
+
+Add command-line Python visualization examples to NEP that read FITS, CDF, GeoTIFF, GRIB2, and PDS4 files through the NetCDF API and the NEP UDF dispatch layer, then generate static PNG plots with Matplotlib. The Python `netCDF4` library opens UDF files directly with `.ncrc` autoload; there are no CSV intermediates and no C extractors. Plots are black and white for book publication.
+
+#### Sprint 1: Visualization Infrastructure
+**Detailed Plan**: See `docs/plan/v2.8.0-sprint1-visualization-infrastructure.md`
+
+Establish disabled-by-default Python visualization infrastructure for NEP, including common PNG and metadata output handling, strict dependency validation, equivalent CMake and Autotools integration, and a FITS smoke test proving that `netCDF4.Dataset` can open a NEP UDF file through build-tree `.ncrc` autoload.
+
+**Implementation scope:**
+- Create `examples/viz/` with `README.md`, `CMakeLists.txt`, `Makefile.am`, common plotting support, and infrastructure smoke tests.
+- Add CMake option `NEP_ENABLE_VIZ_EXAMPLES` and Autotools option `--enable-viz-examples`, both defaulting to disabled.
+- Require normal examples and at least one enabled UDF reader when visualization examples are enabled.
+- Require the source-root `.venv` and detect Python 3, `netCDF4`, Matplotlib, and NumPy at configuration time; explicit visualization enablement fails with a clear diagnostic when the venv or a dependency is missing.
+- Implement `plot_common.py` with `save_with_metadata()` to write a 150-DPI PNG and companion `_metadata.txt` containing `title`, `caption`, and `alt_text`, while enforcing the 8-inch width and 6.1-inch height limits.
+- Set `NCRCENV_RC`, `NETCDF_RC`, and `LD_LIBRARY_PATH` for CMake and Autotools visualization tests so Python uses only the generated build-tree `.ncrc` and UDF libraries.
+- Add a dummy plotting-helper test and a FITS UDF-open smoke test using `test/data/WFPC2u5780205r_c0fx.fits`.
+- Keep generated PNG and metadata artifacts in the build tree for inspection; do not install them or write them into the source tree.
+- Defer all CDF registration, conversion fallback, and visualization work to Sprint 2.
+
+**Clarified decisions:**
+- FITS is the only Sprint 1 UDF smoke-test format; CDF is explicitly out of scope.
+- No CSV intermediate files and no C extractor programs.
+- Plots are black and white; captions live in `_metadata.txt`, not inside PNGs.
+- Python dependencies are installed from `requirements.txt` into the source-root `.venv`; `netCDF4` is built from source and must use the same `libnetcdf` installation as NEP.
+- A missing project `.venv`, Python 3, `netCDF4`, Matplotlib, or NumPy is a configuration error when visualization examples are explicitly enabled.
+- Visualization requires normal examples and at least one enabled UDF reader; tests are registered only for enabled readers.
+- Successful test artifacts remain in the build tree and are not installed.
+
+**Acceptance Criteria:**
+- `examples/viz/` is present and conditionally included by both build systems.
+- Both visualization options default to disabled and enforce equivalent prerequisites and dependency diagnostics.
+- `plot_common.py` saves a size-compliant dummy PNG and companion metadata file with all required fields.
+- CMake and Autotools tests provide build-tree `NCRCENV_RC`, `NETCDF_RC`, and `LD_LIBRARY_PATH` settings.
+- With FITS enabled, `netCDF4.Dataset` opens and closes the existing WFPC2 FITS file without an explicit NEP initializer call.
+- `ctest -R viz` and the Autotools visualization test subset pass in out-of-tree builds.
+- Existing builds remain unchanged when visualization examples are disabled, and no CDF source or fallback changes are made.
+
+**Testing:** Validate missing-dependency diagnostics; run out-of-tree CMake and Autotools builds with examples, visualization, and FITS enabled; run the visualization test subsets; verify PNG dimensions, metadata fields, build-tree artifact locations, and FITS `.ncrc` autoload; run existing tests with visualization disabled.
+
+**Build System Integration:** Top-level `CMakeLists.txt` and `configure.ac`; conditional additions in `examples/CMakeLists.txt` and `examples/Makefile.am`; new `examples/viz/CMakeLists.txt` and `examples/viz/Makefile.am`; equivalent dependency checks, runtime environment, and test selection in both systems.
+
+**Definition of Done:** Both build systems provide optional visualization infrastructure, Python dependencies are validated, the common helper produces a build-tree PNG and metadata file, FITS opens through Python `netCDF4.Dataset` and `.ncrc` autoload, visualization tests pass, CDF remains deferred, and the sprint documentation is complete.
+
+**GitHub Issue:** #312
+
+#### Sprint 2: FITS and CDF Examples
+**Detailed Plan**: See `docs/viz_plan.md`, Sprint 2.
+
+Create the first two example plot scripts: a gray-scale FITS image plot and a CDF time-series line plot. Both use `netCDF4.Dataset` directly.
+
+**Implementation scope:**
+- `plot_fits_image.py`: open `test/data/WFPC2u5780205r_c0fx.fits`, read `image[0, :, :]`, write `fits_wfpc2_image.png` + `_metadata.txt`.
+- `plot_cdf_var.py`: open `test/data/tst_cdf_simple.cdf`, read `temperature`, write `cdf_temperature.png` + `_metadata.txt`.
+- If `.ncrc` autoload does not yet support CDF, implement the temporary NetCDF-4 conversion fallback.
+
+**Clarified decisions:**
+- FITS `image` is `NC_FLOAT` and 200 x 200; use `imshow` with a gray colormap.
+- CDF `temperature` is a 1-D variable; use a simple line plot.
+
+**Acceptance Criteria:**
+- Both scripts produce PNG + `_metadata.txt`.
+- `ctest -R viz` or `make check` runs both examples successfully.
+
+**Testing:** Run `plot_fits_image.py` and `plot_cdf_var.py` with `NETCDF_RC` set; visually inspect output PNGs.
+
+**Build System Integration:** Add the two scripts to `examples/viz/CMakeLists.txt` and `Makefile.am` as test targets.
+
+**Definition of Done:** FITS and CDF example PNGs are generated automatically and pass in CI.
+
+**GitHub Issue:** TBD
+
+#### Sprint 3: GeoTIFF and GRIB2 Examples
+**Detailed Plan**: See `docs/viz_plan.md`, Sprint 3.
+
+Add GeoTIFF and GRIB2 example plots, reading the georeferenced grid and the first GRIB2 product variable through `netCDF4.Dataset`.
+
+**Implementation scope:**
+- `plot_geotiff_subset.py`: open `test/data/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif`, read `data`, write `geotiff_modis_flood.png` + `_metadata.txt`.
+- `plot_grib2_grid.py`: open `test/data/gdaswave.t00z.wcoast.0p16.f000.grib2`, read the first product variable, mask `_FillValue`, write `grib2_wave.png` + `_metadata.txt`.
+
+**Clarified decisions:**
+- Large grids may be downsampled with NumPy slicing.
+- GRIB2 first product may be all fill; select a product with data or mask fill values.
+
+**Acceptance Criteria:**
+- GeoTIFF and GRIB2 PNGs are generated.
+- Tests are added to `examples/viz/CMakeLists.txt` and `Makefile.am`.
+
+**Testing:** Run both scripts under `ctest -R viz` or `make check` and inspect outputs.
+
+**Build System Integration:** Extend `examples/viz/CMakeLists.txt` and `Makefile.am` with the new script tests.
+
+**Definition of Done:** GeoTIFF and GRIB2 examples produce PNG + metadata and run in CI.
+
+**GitHub Issue:** TBD
+
+#### Sprint 4: PDS4 Synthetic Examples
+**Detailed Plan**: See `docs/viz_plan.md`, Sprint 4.
+
+Add synthetic PDS4 examples that navigate groups and read a small image array and a binary table through `netCDF4`.
+
+**Implementation scope:**
+- `plot_pds4_image.py`: open `test/data/PDS4/general/test_image.xml`, enter group `test_image.img`, read the 4 x 4 `data` variable, write `pds4_test_image.png` + `_metadata.txt`.
+- `plot_pds4_table.py`: open `test/data/PDS4/general/test_table_binary.xml`, enter group `test_table_binary.dat`, read `Timestamp` and `Temperature`, write `pds4_table_binary.png` + `_metadata.txt`.
+
+**Clarified decisions:**
+- Group navigation is done through `netCDF4` group objects.
+- PDS4 synthetic image uses annotated pixel values; table uses a scatter plot.
+
+**Acceptance Criteria:**
+- Synthetic PDS4 image and table PNGs are generated.
+- PDS4 group navigation and variable slicing through `netCDF4` are solid.
+
+**Testing:** Run the two scripts and verify group paths, variable shapes, and output PNGs.
+
+**Build System Integration:** Add scripts to `examples/viz/CMakeLists.txt` and `Makefile.am`.
+
+**Definition of Done:** Synthetic PDS4 image and table examples produce PNG + metadata and pass in CI.
+
+**GitHub Issue:** TBD
+
+#### Sprint 5: PDS4 Mission Examples
+**Detailed Plan**: See `docs/viz_plan.md`, Sprint 5.
+
+Create example plots for four PDS4 mission products: MESSENGER TN map, Perseverance Mastcam-Z, MAVEN NGIMS L1B, and New Horizons Alice.
+
+**Implementation scope:**
+- `plot_pds4_messenger.py`: MESSENGER thermal neutron map (`NC_UBYTE` 360 x 720).
+- `plot_pds4_perseverance.py`: Mastcam-Z 3-D image, band 0, apply `scaling_factor` string, downsample, plot radiance.
+- `plot_pds4_maven_l1b.py`: MAVEN NGIMS L1B `TIME` vs one other 1-D numeric column.
+- `plot_pds4_new_horizons.py`: New Horizons Alice 2-D spectrum or table column.
+
+**Clarified decisions:**
+- `scaling_factor` is parsed from the string attribute at runtime.
+- Large arrays are downsampled with NumPy slicing before plotting.
+- MAVEN L1B has 324 columns; the plotted column is chosen during this sprint.
+
+**Acceptance Criteria:**
+- All four mission PNGs are generated.
+- Scripts handle group navigation, `NC_SHORT` scaling, and large-array downsampling.
+
+**Testing:** Run all four mission scripts and inspect output PNGs and `_metadata.txt` files.
+
+**Build System Integration:** Add the four scripts to `examples/viz/CMakeLists.txt` and `Makefile.am`.
+
+**Definition of Done:** All PDS4 mission examples produce PNG + metadata and pass in CI.
+
+**GitHub Issue:** TBD
+
+#### Sprint 6: Documentation, CI, and Polish
+**Detailed Plan**: See `docs/viz_plan.md`, Sprint 6.
+
+Document the visualization examples, wire them into CI, verify metadata files, and add module-level docstrings.
+
+**Implementation scope:**
+- Update `docs/examples.md` with a "Visualization Examples" section.
+- Update `examples/viz/README.md` with run instructions.
+- Add `python3-netcdf4` and `python3-matplotlib` to the relevant CI workflow.
+- Run viz examples as a CI step when `NEP_ENABLE_VIZ_EXAMPLES=ON`.
+- Verify every generated PNG has a companion `_metadata.txt`.
+- Add module-level docstrings to all Python scripts.
+
+**Clarified decisions:**
+- CI `netCDF4` must be built against the same NetCDF-C as NEP; avoid PyPI wheels.
+- Plots remain black and white, and captions remain in `_metadata.txt`.
+
+**Acceptance Criteria:**
+- Docs updated.
+- CI installs `netCDF4` and Matplotlib and generates all PNGs.
+- Every PNG has a `_metadata.txt`; no captions inside PNGs.
+
+**Testing:** Run the full viz CI job and visually spot-check generated PNGs and metadata files.
+
+**Build System Integration:** Update `.github/workflows/ci-*.yml` or add `ci-viz.yml`.
+
+**Definition of Done:** Documentation, CI, and metadata verification are in place; all visualization examples run end-to-end.
+
+**GitHub Issue:** TBD
+
 ### V2.7.1 - Tidying Up
 #### Sprint 1: Fix Docs
 **Detailed Plan**: See `docs/plan/v2.7.1-sprint1-fix-docs.md`

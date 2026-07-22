@@ -1,9 +1,12 @@
 # Prerequisites
 *.d
 
-# Python bytecode caches
+# Python virtual environment and caches
+.venv/
 __pycache__/
 **/__pycache__/
+.matplotlib/
+**/.matplotlib/
 
 # Object files
 *.o

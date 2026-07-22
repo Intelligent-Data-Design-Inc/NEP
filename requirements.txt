@@ -1,0 +1,4 @@
+--no-binary=netCDF4
+numpy>=2.0
+matplotlib>=3.9
+netCDF4>=1.7.2

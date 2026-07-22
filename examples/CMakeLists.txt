@@ -6,6 +6,10 @@ add_subdirectory(classic)
 add_subdirectory(netcdf-4)
 add_subdirectory(performance)
 
+if(NEP_ENABLE_VIZ_EXAMPLES)
+    add_subdirectory(viz)
+endif()
+
 # Fortran examples only built when Fortran is enabled and NetCDF-Fortran is found
 if(NEP_ENABLE_FORTRAN)
     if(NetCDF_Fortran_FOUND)
