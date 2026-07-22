@@ -38,9 +38,9 @@ int
 NC_CDF_inq_format(int ncid, int *formatp)
 {
     (void)ncid;
-    /* CDF is the format. */
+    /* CDF files are presented through the NetCDF-4 dispatch model. */
     if (formatp)
-        *formatp = NC_FORMATX_NC_CDF;
+        *formatp = NC_FORMAT_NETCDF4;
 
     return NC_NOERR;
 }

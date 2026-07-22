@@ -2,6 +2,8 @@ set(_viz_python_files
     plot_common.py
     test_plot_common.py
     test_udf_open.py
+    plot_fits_image.py
+    plot_cdf_var.py
 )
 
 foreach(_viz_file ${_viz_python_files})
@@ -37,6 +39,28 @@ if(HAVE_FITS)
                 "${CMAKE_BINARY_DIR}/test/data/WFPC2u5780205r_c0fx.fits"
     )
     set_tests_properties(viz_fits_udf_open PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+        ENVIRONMENT "${_viz_environment}"
+    )
+
+    add_test(
+        NAME viz_fits_image
+        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/plot_fits_image.py"
+                "${CMAKE_BINARY_DIR}/test/data/WFPC2u5780205r_c0fx.fits"
+    )
+    set_tests_properties(viz_fits_image PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+        ENVIRONMENT "${_viz_environment}"
+    )
+endif()
+
+if(HAVE_CDF)
+    add_test(
+        NAME viz_cdf_temperature
+        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/plot_cdf_var.py"
+                "${CMAKE_BINARY_DIR}/test/data/tst_cdf_simple.cdf"
+    )
+    set_tests_properties(viz_cdf_temperature PROPERTIES
         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
         ENVIRONMENT "${_viz_environment}"
     )

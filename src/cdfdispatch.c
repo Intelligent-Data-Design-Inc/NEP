@@ -118,6 +118,12 @@ const NC_Dispatch *CDF_dispatch_table = NULL;
 /**
  * @internal Initialize CDF dispatch layer.
  *
+ * Registers the CDF handler via nc_def_user_format() for direct
+ * calls, and returns the dispatch table pointer for the self-loading
+ * path. Safe to call when the handler has already been registered via
+ * .ncrc autoload; in that case NC_EINVAL from nc_def_user_format() is
+ * silently ignored.
+ *
  * @return Dispatch table pointer for self-loading, or NC_NOERR for manual registration.
  * @author Ed Hartnett
  */
@@ -125,6 +131,7 @@ NC_Dispatch*
 NC_CDF_initialize(void)
 {
     CDF_dispatch_table = &CDF_dispatcher;
+    nc_def_user_format(NEP_UDF_CDF, (NC_Dispatch *)CDF_dispatch_table, NEP_MAGIC_CDF);
     return (NC_Dispatch*)&CDF_dispatcher;
 }
 

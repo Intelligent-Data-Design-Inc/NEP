@@ -93,8 +93,8 @@ static int test_with_rc_file(void)
     int ncid, varid, ret;
     int ndims, nvars, ngatts, unlimdimid;
     float data[10];
-    size_t start[1] = {0};
-    size_t count[1] = {10};
+    size_t start[2] = {0, 0};
+    size_t count[2] = {1, 10};
     FILE *rc;
     const char *lib_path;
     int i;

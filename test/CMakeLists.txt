@@ -63,10 +63,13 @@ if(HAVE_CDF)
         INSTALL_RPATH "${CDF_LIB_DIR}"
         BUILD_RPATH "${CDF_LIB_DIR}")
     
-    # Copy test data file to build directory
+    # Copy test data files to build directory
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/imap_mag_l1b-calibration_20240229_v001.cdf
                    ${CMAKE_CURRENT_BINARY_DIR}/data/imap_mag_l1b-calibration_20240229_v001.cdf
+                   COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/tst_cdf_simple.cdf
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/tst_cdf_simple.cdf
                    COPYONLY)
     
     # Add test - uses existing IMAP MAG CDF file
