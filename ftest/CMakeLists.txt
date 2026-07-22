@@ -35,7 +35,7 @@ endif()
 # Build the FITS Fortran test if FITS is enabled.
 if(HAVE_FITS)
     add_executable(ftst_fits_udf ftst_fits_udf.F90)
-    target_link_libraries(ftst_fits_udf PRIVATE ncfits nepf nep ${NetCDF_Fortran_LIBRARIES})
+    target_link_libraries(ftst_fits_udf PRIVATE ncfits nepf nep ${NetCDF_Fortran_LIBRARIES} ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
     target_include_directories(ftst_fits_udf PRIVATE ${NetCDF_Fortran_INCLUDE_DIRS} ${CFITSIO_INCLUDE_DIR})
     add_dependencies(ftst_fits_udf ncfits)
     add_test(NAME ftst_fits_udf COMMAND ftst_fits_udf)
