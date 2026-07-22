@@ -413,6 +413,45 @@ AC_MSG_RESULT([$enable_examples])
 AM_CONDITIONAL([BUILD_EXAMPLES], [test "x$enable_examples" = xyes])
 AC_SUBST([BUILD_EXAMPLES], [$enable_examples])
 
+AC_MSG_CHECKING([whether Python visualization examples should be enabled])
+AC_ARG_ENABLE([viz-examples],
+              [AS_HELP_STRING([--enable-viz-examples],
+                              [Enable Python visualization examples (default: disabled)])])
+test "x$enable_viz_examples" = xyes || enable_viz_examples=no
+AC_MSG_RESULT([$enable_viz_examples])
+
+if test "x$enable_viz_examples" = xyes; then
+    if test "x$enable_examples" != xyes; then
+        AC_MSG_ERROR([--enable-viz-examples requires --enable-examples])
+    fi
+    if test "x$HAVE_GEOTIFF" != xyes && test "x$HAVE_CDF" != xyes && test "x$HAVE_GRIB2" != xyes && test "x$HAVE_FITS" != xyes && test "x$HAVE_PDS4" != xyes; then
+        AC_MSG_ERROR([--enable-viz-examples requires at least one enabled UDF reader])
+    fi
+    nep_srcdir_abs=`cd "$srcdir" && pwd`
+    PYTHON3="$nep_srcdir_abs/.venv/bin/python3"
+    if test ! -x "$PYTHON3"; then
+        AC_MSG_ERROR([--enable-viz-examples requires the project virtual environment at $nep_srcdir_abs/.venv])
+    fi
+    AC_MSG_CHECKING([whether $PYTHON3 uses a virtual environment])
+    if "$PYTHON3" -c "import sys; raise SystemExit(0 if sys.prefix != sys.base_prefix else 1)"; then
+        AC_MSG_RESULT([yes])
+    else
+        AC_MSG_RESULT([no])
+        AC_MSG_ERROR([--enable-viz-examples requires a Python virtual environment])
+    fi
+    for nep_python_module in netCDF4 matplotlib numpy; do
+        AC_MSG_CHECKING([for Python module $nep_python_module])
+        if "$PYTHON3" -c "import $nep_python_module" >/dev/null 2>&1; then
+            AC_MSG_RESULT([yes])
+        else
+            AC_MSG_RESULT([no])
+            AC_MSG_ERROR([--enable-viz-examples requires Python module $nep_python_module])
+        fi
+    done
+fi
+AM_CONDITIONAL([ENABLE_VIZ_EXAMPLES], [test "x$enable_viz_examples" = xyes])
+AC_SUBST([PYTHON3])
+
 # Check for netCDF Fortran library when Fortran support is enabled.
 if test "x$enable_fortran" = xyes; then
    AC_LANG_PUSH(Fortran)
@@ -795,6 +834,7 @@ AC_CONFIG_FILES([Makefile
                  examples/f_netcdf-4/Makefile
                  examples/parallelIO/Makefile
                  examples/performance/Makefile
+                 examples/viz/Makefile
                  docs/Doxyfile])
 
 AC_OUTPUT

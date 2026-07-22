@@ -37,6 +37,7 @@ option(BUILD_TESTING "Build tests" ON)
 # Examples option - disabled by default in CMake due to complex HDF5 linking (v1.5.1)
 # Autotools build handles examples correctly; use that for example builds
 option(NEP_BUILD_EXAMPLES "Build example programs" OFF)
+option(NEP_ENABLE_VIZ_EXAMPLES "Enable Python visualization examples" OFF)
 
 # Set compiler flags based on DEBUG option
 if(DEBUG)
@@ -248,8 +249,41 @@ if(NOT DOCS_ONLY)
     endif()
 endif()
 
+if(NEP_ENABLE_VIZ_EXAMPLES)
+    if(NOT NEP_BUILD_EXAMPLES)
+        message(FATAL_ERROR "NEP_ENABLE_VIZ_EXAMPLES requires NEP_BUILD_EXAMPLES=ON")
+    endif()
+    if(NOT (HAVE_GEOTIFF OR HAVE_CDF OR HAVE_GRIB2 OR HAVE_FITS OR HAVE_PDS4))
+        message(FATAL_ERROR "NEP_ENABLE_VIZ_EXAMPLES requires at least one enabled UDF reader")
+    endif()
+    set(PYTHON_EXECUTABLE "${CMAKE_SOURCE_DIR}/.venv/bin/python3")
+    if(NOT EXISTS "${PYTHON_EXECUTABLE}")
+        message(FATAL_ERROR "NEP_ENABLE_VIZ_EXAMPLES requires the project virtual environment at ${CMAKE_SOURCE_DIR}/.venv")
+    endif()
+    execute_process(
+        COMMAND ${PYTHON_EXECUTABLE} -c "import sys; raise SystemExit(0 if sys.prefix != sys.base_prefix else 1)"
+        RESULT_VARIABLE _nep_viz_venv_result
+    )
+    if(NOT _nep_viz_venv_result EQUAL 0)
+        message(FATAL_ERROR "NEP_ENABLE_VIZ_EXAMPLES requires a Python virtual environment")
+    endif()
+    foreach(_nep_viz_module netCDF4 matplotlib numpy)
+        execute_process(
+            COMMAND ${PYTHON_EXECUTABLE} -c "import ${_nep_viz_module}"
+            RESULT_VARIABLE _nep_viz_python_result
+            ERROR_VARIABLE _nep_viz_python_error
+            OUTPUT_QUIET
+            ERROR_STRIP_TRAILING_WHITESPACE
+        )
+        if(NOT _nep_viz_python_result EQUAL 0)
+            message(FATAL_ERROR "NEP_ENABLE_VIZ_EXAMPLES requires Python module ${_nep_viz_module}: ${_nep_viz_python_error}")
+        endif()
+    endforeach()
+endif()
+
 message(STATUS "Performance benchmarks: ${NEP_ENABLE_BENCHMARKS}")
 message(STATUS "OPeNDAP examples: ${NEP_ENABLE_OPENDAP_EXAMPLES}")
+message(STATUS "Visualization examples: ${NEP_ENABLE_VIZ_EXAMPLES}")
 
 # It's really easy to pick up the wrong HDF5 library if you set the path
 # wrong. Turn this on for added confirmation that you got it right.
