@@ -114,9 +114,6 @@ Create a conda-build `meta.yaml` recipe so NEP can be installed via `conda insta
 
 **GitHub Issue:** #305
 
-#### Sprint 4: Update Spack Package File with Latest Releases of NEP
-- Also the upstream one at the spack main package repo.
-
 ### V2.7.0 - More PDS4 Testing - New Horizons Data
 - In this release we will test on a bunch of data from the New Horizons mission.
 "You cannot swim for new horizons until you have courage to lose sight of the shore." — William Faulkner
