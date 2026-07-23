@@ -141,6 +141,7 @@ tst_grib2_udf
 tst_*.nc
 tst_*.h5
 tst_*.cdf
+!test/data/tst_cdf_simple.cdf
 run_tests.sh
 run_par_examples.sh
 *.lai

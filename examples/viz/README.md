@@ -3,7 +3,7 @@
 The visualization examples use Python `netCDF4` to open NEP UDF files and
 Matplotlib to write static PNG plots. They are optional and disabled by default.
 Sprint 1 provides the common plotting helper and a FITS `.ncrc` autoload smoke
-test. CDF registration and plotting are deferred to Sprint 2.
+test. Sprint 2 adds a FITS image plot and a CDF line plot.
 
 ## Requirements
 
@@ -39,13 +39,14 @@ companion `_metadata.txt` file containing exactly `title`, `caption`, and
 
 ## CMake
 
-Configure with examples, visualization, and FITS enabled:
+Configure with examples, visualization, FITS, and CDF enabled:
 
 ```bash
 cmake -S . -B build \
   -DNEP_BUILD_EXAMPLES=ON \
   -DNEP_ENABLE_VIZ_EXAMPLES=ON \
-  -DNEP_ENABLE_FITS=ON
+  -DNEP_ENABLE_FITS=ON \
+  -DENABLE_CDF=ON
 cmake --build build
 ctest --test-dir build -R viz --output-on-failure
 ```
@@ -56,12 +57,12 @@ visualization test.
 
 ## Autotools
 
-Configure with examples, visualization, and FITS enabled:
+Configure with examples, visualization, FITS, and CDF enabled:
 
 ```bash
-./configure --enable-examples --enable-viz-examples --enable-fits
+./configure --enable-examples --enable-viz-examples --enable-fits --enable-cdf
 make
-make check TESTS='test_plot_common.py test_udf_open.py'
+make check TESTS='test_plot_common.py test_udf_open.py plot_fits_image.py plot_cdf_var.py'
 ```
 
 Automake sets `NCRCENV_RC`, `NETCDF_RC`, `LD_LIBRARY_PATH`, and the FITS
@@ -79,7 +80,20 @@ export LD_LIBRARY_PATH=/path/to/nep/build/src:$LD_LIBRARY_PATH
 python3 /path/to/nep/build/examples/viz/test_plot_common.py
 python3 /path/to/nep/build/examples/viz/test_udf_open.py \
   /path/to/nep/build/test/data/WFPC2u5780205r_c0fx.fits
+python3 /path/to/nep/build/examples/viz/plot_fits_image.py \
+  /path/to/nep/build/test/data/WFPC2u5780205r_c0fx.fits
+python3 /path/to/nep/build/examples/viz/plot_cdf_var.py \
+  /path/to/nep/build/test/data/tst_cdf_simple.cdf
 ```
+
+## Scripts
+
+- `test_plot_common.py` — validates `plot_common.py` and the `_metadata.txt` format.
+- `test_udf_open.py` — smoke test that opens a UDF file through `netCDF4.Dataset`.
+- `plot_fits_image.py` — opens `test/data/WFPC2u5780205r_c0fx.fits`, reads the first
+  `image` plane, and writes `fits_wfpc2_image.png` + `fits_wfpc2_image_metadata.txt`.
+- `plot_cdf_var.py` — opens `test/data/tst_cdf_simple.cdf`, reads the `temperature`
+  zVariable, and writes `cdf_temperature.png` + `cdf_temperature_metadata.txt`.
 
 Generated PNG and metadata files remain in the visualization build directory
 for inspection. They are not installed and are not written to the source tree.

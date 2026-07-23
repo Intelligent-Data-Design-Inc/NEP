@@ -47,30 +47,41 @@ Establish disabled-by-default Python visualization infrastructure for NEP, inclu
 **GitHub Issue:** #312
 
 #### Sprint 2: FITS and CDF Examples
-**Detailed Plan**: See `docs/viz_plan.md`, Sprint 2.
+**Detailed Plan**: See `docs/plan/v2.8.0-sprint2-fits-cdf-examples.md`
 
-Create the first two example plot scripts: a gray-scale FITS image plot and a CDF time-series line plot. Both use `netCDF4.Dataset` directly.
+Create the first two format-specific Python visualization examples for NEP: a grey-scale FITS image plot and a CDF 1-D time-series line plot. Both scripts use `netCDF4.Dataset` directly and write a black-and-white PNG plus a companion `_metadata.txt` through `plot_common.py`.
 
 **Implementation scope:**
 - `plot_fits_image.py`: open `test/data/WFPC2u5780205r_c0fx.fits`, read `image[0, :, :]`, write `fits_wfpc2_image.png` + `_metadata.txt`.
 - `plot_cdf_var.py`: open `test/data/tst_cdf_simple.cdf`, read `temperature`, write `cdf_temperature.png` + `_metadata.txt`.
-- If `.ncrc` autoload does not yet support CDF, implement the temporary NetCDF-4 conversion fallback.
+- Fix CDF UDF registration in `src/cdfdispatch.c` by adding the `nc_def_user_format()` call inside `NC_CDF_initialize()`, mirroring `NC_FITS_initialize()` and `NC_PDS4_initialize()`.
+- Update `.ncrc-cdf.in` with the CDF magic line (hex-escaped or in the form NetCDF-C supports). If NetCDF-C cannot parse the binary magic from `.ncrc`, the explicit `nc_def_user_format()` call still registers the handler after `libnccdf` is loaded.
+- Copy `test/tst_cdf_simple.cdf` to `test/data/tst_cdf_simple.cdf` and wire both build systems to copy it to the build tree.
+- Add the two scripts as `viz_*` test targets in `examples/viz/CMakeLists.txt` and `Makefile.am`, conditionally on `HAVE_FITS` and `HAVE_CDF`.
 
 **Clarified decisions:**
-- FITS `image` is `NC_FLOAT` and 200 x 200; use `imshow` with a gray colormap.
-- CDF `temperature` is a 1-D variable; use a simple line plot.
+- FITS `image` is `NC_FLOAT` and 200 x 200; use `imshow` with the existing gray colormap.
+- CDF `temperature` is a 1-D `NC_FLOAT` variable with 10 values (20.0–24.5); plot it against array index with a simple black line.
+- CDF registration is fixed now; no temporary NetCDF-4 conversion fallback is used.
+- The new scripts are black-and-white, keep captions outside the PNG, and stay within the 8 x 6.1 inch size limit.
+- Existing visualization build options (`NEP_ENABLE_VIZ_EXAMPLES` / `--enable-viz-examples`) remain unchanged.
 
 **Acceptance Criteria:**
-- Both scripts produce PNG + `_metadata.txt`.
-- `ctest -R viz` or `make check` runs both examples successfully.
+- `NC_CDF_initialize()` registers the CDF dispatch table and ignores an already-registered `NC_EINVAL`.
+- `.ncrc-cdf.in` contains the CDF magic reference.
+- `test/data/tst_cdf_simple.cdf` reaches the build tree for out-of-tree builds.
+- `plot_fits_image.py` and `plot_cdf_var.py` each produce a PNG and a `_metadata.txt`.
+- `ctest -R viz` and `make check` run the two new tests successfully.
+- PNGs are black and white, size-compliant, and have companion metadata files.
+- No CSV intermediates or C extractor programs are introduced.
 
-**Testing:** Run `plot_fits_image.py` and `plot_cdf_var.py` with `NETCDF_RC` set; visually inspect output PNGs.
+**Testing:** Run `plot_fits_image.py` and `plot_cdf_var.py` with `NETCDF_RC` set; visually inspect output PNGs and metadata files. Run `ctest -R viz --output-on-failure` and the Autotools visualization subset. Verify disabled-by-default builds remain unchanged.
 
-**Build System Integration:** Add the two scripts to `examples/viz/CMakeLists.txt` and `Makefile.am` as test targets.
+**Build System Integration:** Extend `examples/viz/CMakeLists.txt` and `examples/viz/Makefile.am` to stage `plot_fits_image.py` and `plot_cdf_var.py` and register `viz_fits_image` and `viz_cdf_temperature` tests with the existing `NCRCENV_RC`, `NETCDF_RC`, `LD_LIBRARY_PATH`, and `MPLCONFIGDIR` environment. Update `test/CMakeLists.txt` and `test/Makefile.am` to copy the CDF test data to the build tree.
 
-**Definition of Done:** FITS and CDF example PNGs are generated automatically and pass in CI.
+**Definition of Done:** FITS and CDF example PNGs are generated automatically, both pass in CI, CDF UDF registration is fixed, the CDF test data is available in `test/data/`, documentation is updated, and the sprint issue is linked.
 
-**GitHub Issue:** TBD
+**GitHub Issue:** #314
 
 #### Sprint 3: GeoTIFF and GRIB2 Examples
 **Detailed Plan**: See `docs/viz_plan.md`, Sprint 3.

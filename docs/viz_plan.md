@@ -128,7 +128,7 @@ Test data already lives in `test/data/` and is copied to `build/test/data/` by t
   - `ds = netCDF4.Dataset('test/data/tst_cdf_simple.cdf', mode='r')`.
   - Read `ds.variables['temperature'][:]`.
   - Line plot; output `cdf_temperature.png` + `_metadata.txt`.
-  - If `.ncrc` autoload does not yet support CDF, use a temporary NetCDF-4 conversion and read the converted file.
+  - CDF UDF registration is fixed in this sprint so `.ncrc` autoload opens the file; no temporary NetCDF-4 conversion fallback is used.
 
 **Definition of Done:**
 - Both scripts produce PNG + metadata.
