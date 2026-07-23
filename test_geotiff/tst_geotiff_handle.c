@@ -478,7 +478,7 @@ test_format_inquiry(void)
         printf("FAILED - inq_format returned %s\n", nc_strerror(ret));
         return 1;
     }
-    if (format != NC_FORMATX_NC_GEOTIFF)
+    if (format != NC_FORMAT_NETCDF4)
     {
         printf("FAILED - wrong format value %d\n", format);
         return 1;
@@ -490,7 +490,7 @@ test_format_inquiry(void)
         printf("FAILED - inq_format_extended returned %s\n", nc_strerror(ret));
         return 1;
     }
-    if (format != NC_FORMATX_NC_GEOTIFF || mode != NC_FORMATX_NC_GEOTIFF)
+    if (format != NC_FORMATX_NC_GEOTIFF || mode != NC_NOWRITE)
     {
         printf("FAILED - wrong format/mode values %d/%d\n", format, mode);
         return 1;

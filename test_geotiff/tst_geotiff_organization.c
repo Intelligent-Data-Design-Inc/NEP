@@ -86,9 +86,9 @@ main(int argc, char **argv)
         nc_close(ncid);
         return 1;
     }
-    if (format != NC_FORMATX_UDF1)
+    if (format != NC_FORMAT_NETCDF4)
     {
-        printf("FAILED: Expected NC_FORMATX_UDF1, got %d\n", format);
+        printf("FAILED: Expected NC_FORMAT_NETCDF4, got %d\n", format);
         nc_close(ncid);
         return 1;
     }

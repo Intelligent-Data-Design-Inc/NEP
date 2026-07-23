@@ -84,29 +84,44 @@ Create the first two format-specific Python visualization examples for NEP: a gr
 **GitHub Issue:** #314
 
 #### Sprint 3: GeoTIFF and GRIB2 Examples
-**Detailed Plan**: See `docs/viz_plan.md`, Sprint 3.
+**Detailed Plan**: See `docs/plan/v2.8.0-sprint3-geotiff-grib2-examples.md`
 
-Add GeoTIFF and GRIB2 example plots, reading the georeferenced grid and the first GRIB2 product variable through `netCDF4.Dataset`.
+Add GeoTIFF and GRIB2 Python visualization examples that open existing test files directly through `netCDF4.Dataset` and the NEP UDF autoload configuration. Each example produces a black-and-white PNG and companion `_metadata.txt` in the build tree without CSV intermediates or extractor programs.
 
 **Implementation scope:**
-- `plot_geotiff_subset.py`: open `test/data/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif`, read `data`, write `geotiff_modis_flood.png` + `_metadata.txt`.
-- `plot_grib2_grid.py`: open `test/data/gdaswave.t00z.wcoast.0p16.f000.grib2`, read the first product variable, mask `_FillValue`, write `grib2_wave.png` + `_metadata.txt`.
+- Create `plot_geotiff_subset.py` to open `test/data/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif`, read the root `data` raster, dynamically downsample the full grid to at most approximately 1,000 samples per axis, and write `geotiff_modis_flood.png` plus metadata.
+- Use GeoTIFF `lon` and `lat` coordinate variables for the image extent when available; fall back to pixel indices when coordinate metadata is unavailable.
+- Create `plot_grib2_grid.py` to open `test/data/gdaswave.t00z.wcoast.0p16.f000.grib2`, select the known `WIND` variable, preserve the shared `[y, x]` orientation, and write `grib2_wave.png` plus metadata.
+- Respect masks returned by `netCDF4`, additionally mask values equal to the GRIB2 `_FillValue`, and fail clearly if no valid grid cells remain.
+- Stage both scripts and required GeoTIFF/GRIB2 data for CMake and Autotools out-of-tree builds, then register conditional visualization tests under `HAVE_GEOTIFF` and `HAVE_GRIB2`.
+- Reuse the existing visualization runtime environment and `plot_common.py`; keep generated artifacts in the build tree and leave user-facing visualization documentation for Sprint 6.
 
 **Clarified decisions:**
-- Large grids may be downsampled with NumPy slicing.
-- GRIB2 first product may be all fill; select a product with data or mask fill values.
+- The GeoTIFF plot shows the full raster rather than a fixed central subset; a stride computed from the raster dimensions limits each plotted axis to approximately 1,000 samples.
+- GeoTIFF axes use `lon`/`lat` coordinates when present and pixel indices otherwise.
+- The GRIB2 example selects `WIND` explicitly rather than relying on variable order or scanning for an arbitrary populated product.
+- GRIB2 missing data remains masked; fill values are not replaced with zero or plotted as valid observations.
+- Scripts reject missing variables, unsupported dimensionality, and all-masked data with clear errors.
+- The planned `h00v02` MODIS tile contains only fill value 255, so the visualization uses the companion populated `h00v03` tile and retains the all-masked-data rejection requirement.
+- GeoTIFF standard format inquiry reports `NC_FORMAT_NETCDF4`, matching the existing FITS and GRIB2 handlers so Python `netCDF4.Dataset` accepts the UDF; extended inquiry continues to identify UDF1.
+- Sprint 3 documentation changes are limited to the roadmap, detailed plan, and planning record; user-facing visualization documentation remains in Sprint 6.
 
 **Acceptance Criteria:**
-- GeoTIFF and GRIB2 PNGs are generated.
-- Tests are added to `examples/viz/CMakeLists.txt` and `Makefile.am`.
+- Both scripts open their source files through `netCDF4.Dataset` with build-tree `.ncrc` autoload and no explicit NEP initializer call.
+- `plot_geotiff_subset.py` produces a size-compliant black-and-white `geotiff_modis_flood.png` and metadata file from the downsampled full raster, using geographic axes when available.
+- `plot_grib2_grid.py` produces a size-compliant black-and-white `grib2_wave.png` and metadata file from valid `WIND` cells with `_FillValue` cells masked.
+- CMake and Autotools stage the scripts and input data and register tests only when the corresponding reader is enabled.
+- `ctest -R viz` and the Autotools visualization test subset pass in out-of-tree builds with GeoTIFF and GRIB2 enabled.
+- Existing FITS, CDF, helper, and UDF-open visualization tests continue to pass; visualization remains disabled by default.
+- No CSV intermediates, extractor programs, source-tree output artifacts, or GeoTIFF raster/metadata behavior changes are introduced beyond the format-inquiry compatibility correction.
 
-**Testing:** Run both scripts under `ctest -R viz` or `make check` and inspect outputs.
+**Testing:** Run separate and combined out-of-tree CMake and Autotools configurations with visualization plus GeoTIFF and/or GRIB2 enabled; run the visualization test subsets; verify source data autoload, variable shapes, downsampling bounds, coordinate fallback, masked fill handling, nonempty valid data, PNG size and grayscale presentation, metadata fields, and build-tree artifact locations; run existing visualization tests for regression coverage.
 
-**Build System Integration:** Extend `examples/viz/CMakeLists.txt` and `Makefile.am` with the new script tests.
+**Build System Integration:** Extend `examples/viz/CMakeLists.txt` and `examples/viz/Makefile.am` to stage both scripts, make the required input files available under `build/test/data`, pass the existing `NCRCENV_RC`, `NETCDF_RC`, `LD_LIBRARY_PATH`, and `MPLCONFIGDIR` environment, and conditionally register `viz_geotiff_modis_flood` and `viz_grib2_wave` tests under `HAVE_GEOTIFF` and `HAVE_GRIB2`.
 
-**Definition of Done:** GeoTIFF and GRIB2 examples produce PNG + metadata and run in CI.
+**Definition of Done:** GeoTIFF and GRIB2 files open through Python and NEP UDF autoload, both scripts generate compliant build-tree PNG and metadata artifacts with approved downsampling, coordinate, product-selection, and missing-data behavior, both build systems provide equivalent conditional tests and data staging, regressions pass, and sprint planning documentation is complete.
 
-**GitHub Issue:** TBD
+**GitHub Issue:** #316
 
 #### Sprint 4: PDS4 Synthetic Examples
 **Detailed Plan**: See `docs/viz_plan.md`, Sprint 4.

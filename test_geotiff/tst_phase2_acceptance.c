@@ -221,7 +221,7 @@ int test_ac6_nc_inq_functions(void)
     /* Test nc_inq_format() */
     ret = nc_inq_format(ncid, &format);
     ERR_CHECK(ret);
-    if (format != NC_FORMATX_UDF1) {
+    if (format != NC_FORMAT_NETCDF4) {
         printf("FAILED - wrong format %d\n", format);
         nc_close(ncid);
         return 1;

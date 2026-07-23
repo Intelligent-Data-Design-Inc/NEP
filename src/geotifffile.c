@@ -787,7 +787,7 @@ NC_GEOTIFF_inq_format(int ncid, int *formatp)
 {
     (void)ncid;
     if (formatp)
-        *formatp = NC_FORMATX_NC_GEOTIFF;
+        *formatp = NC_FORMAT_NETCDF4;
     return NC_NOERR;
 }
 
@@ -809,7 +809,7 @@ NC_GEOTIFF_inq_format_extended(int ncid, int *formatp, int *modep)
     if (formatp)
         *formatp = NC_FORMATX_NC_GEOTIFF;
     if (modep)
-        *modep = NC_UDF1;
+        *modep = NC_NOWRITE;
     return NC_NOERR;
 }
 
