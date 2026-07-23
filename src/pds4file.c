@@ -487,6 +487,92 @@ pds4_axis_cmp(const void *a, const void *b)
 }
 
 /**
+ * @internal Add a dimension to a group, reusing an existing dimension when
+ * the same name and length already exist, or creating a uniquely-suffixed
+ * name when a dimension with the same name but a different length exists.
+ *
+ * NetCDF-4 dimensions must be unique within a group. Some PDS4 labels
+ * contain multiple arrays or tables that repeat axis names (e.g., Line,
+ * Sample, record) with different lengths; this helper prevents invalid
+ * duplicate dimension names and keeps tools such as netCDF4-python able
+ * to enumerate the group.
+ *
+ * @param grp Group that will contain the dimension.
+ * @param name Proposed dimension name.
+ * @param len Dimension length.
+ * @param dimidp Optional output dimension ID.
+ * @param dim_out Optional output dimension pointer.
+ *
+ * @return NC_NOERR on success.
+ * @author Edward Hartnett
+ * @date 2026-07-08
+ */
+static int
+pds4_dim_list_add_unique(NC_GRP_INFO_T *grp, const char *name, size_t len,
+                         int *dimidp, NC_DIM_INFO_T **dim_out)
+{
+    NC_DIM_INFO_T *dim;
+    NC_OBJ *obj;
+    char uniq_name[NC_MAX_NAME + 1];
+    int suffix;
+    int retval;
+
+    if (dimidp)
+        *dimidp = -1;
+    if (dim_out)
+        *dim_out = NULL;
+
+    /* If a dimension with the same name and length already exists, reuse it. */
+    obj = ncindexlookup(grp->dim, name);
+    if (obj)
+    {
+        dim = (NC_DIM_INFO_T *)obj;
+        if (dim->len == len)
+        {
+            if (dimidp)
+                *dimidp = dim->hdr.id;
+            if (dim_out)
+                *dim_out = dim;
+            return NC_NOERR;
+        }
+
+        /* Same name with a different length: find a unique suffixed name. */
+        suffix = 1;
+        for (;;)
+        {
+            snprintf(uniq_name, NC_MAX_NAME + 1, "%s_%d", name, suffix++);
+            obj = ncindexlookup(grp->dim, uniq_name);
+            if (!obj)
+                break;
+            dim = (NC_DIM_INFO_T *)obj;
+            if (dim->len == len)
+            {
+                if (dimidp)
+                    *dimidp = dim->hdr.id;
+                if (dim_out)
+                    *dim_out = dim;
+                return NC_NOERR;
+            }
+        }
+    }
+    else
+    {
+        /* No existing dimension with this name: use it as-is. */
+        strncpy(uniq_name, name, NC_MAX_NAME);
+        uniq_name[NC_MAX_NAME] = '\0';
+    }
+
+    retval = nc4_dim_list_add(grp, uniq_name, len, -1, &dim);
+    if (retval)
+        return retval;
+    if (dimidp)
+        *dimidp = dim->hdr.id;
+    if (dim_out)
+        *dim_out = dim;
+    return NC_NOERR;
+}
+
+/**
  * @internal Read an `Array` or `Array_2D_Image` element and create the
  * corresponding netCDF dimensions and variable inside a file-area group.
  *
@@ -637,10 +723,9 @@ pds4_read_array(NC_GRP_INFO_T *grp, xmlNode *array)
     for (d = 0; d < naxes; d++)
     {
         NC_DIM_INFO_T *dim;
-        if ((retval = nc4_dim_list_add(grp, axes[d].name, axes[d].len,
-                                       -1, &dim)))
+        if ((retval = pds4_dim_list_add_unique(grp, axes[d].name, axes[d].len,
+                                                 &dimids[d], &dim)))
             goto cleanup;
-        dimids[d] = dim->hdr.id;
     }
 
     /* Create the variable. */
@@ -847,9 +932,9 @@ pds4_read_table(NC_GRP_INFO_T *grp, xmlNode *table)
     free(table_name);
 
     /* Create the record dimension. */
-    if ((retval = nc4_dim_list_add(grp, "record", nrecords, -1, &record_dim)))
+    if ((retval = pds4_dim_list_add_unique(grp, "record", nrecords,
+                                            &record_dimid, &record_dim)))
         return retval;
-    record_dimid = record_dim->hdr.id;
 
     /* Find the Record_* child. */
     record_node = pds4_find_child(table, record_child_name);

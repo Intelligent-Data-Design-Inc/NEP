@@ -1713,7 +1713,9 @@ test_mission_new_horizons(void)
  *
  * Opens the PDS4 label and verifies:
  * - File-area group "ali_0400644769_0x4b2_sci.fit" exists.
- * - One "record" dimension of length 102 for the Table_Binary.
+ * - Shared "Line" (32) and "Sample" (1024) dimensions for the three
+ *   Array_2D_Spectrum variables, one "DISTRIBUTION_BIN" dimension (64) for
+ *   the PHD, and one "record" dimension (102) for the Table_Binary.
  * - Three Array_2D_Spectrum variables: Observational Data, Histogram
  *   Uncertainties, Wavelength Image (all NC_FLOAT, [32, 1024], correct units).
  * - Observational Data has raw scaling_factor="1.00000000000" and
@@ -1740,9 +1742,9 @@ test_mission_new_horizons_0400644769_metadata(void)
 
     if ((retval = nc_inq(grp_ncid, &ndims, &nvars, NULL, NULL)))
         ERR(retval);
-    if (ndims != 8)
+    if (ndims != 4)
     {
-        fprintf(stderr, "Expected 8 group dimensions, got %d\n", ndims);
+        fprintf(stderr, "Expected 4 group dimensions, got %d\n", ndims);
         nc_close(ncid);
         return 1;
     }
@@ -2229,6 +2231,9 @@ test_mission_new_horizons_0284461348_data(void)
  *
  * Opens the PDS4 label and verifies:
  * - File-area group "ali_0002845457_0x4b2_sci_1.fit" exists.
+ * - Shared "Line" (32) and "Sample" (1024) dimensions for the matching
+ *   Array_2D_Spectrum variables; unique suffixed dimensions for arrays with
+ *   different extents and one "record" dimension (21) for the Table_Binary.
  * - Five Array_2D_Spectrum variables with expected types, dims, units, and
  *   scaling_factor/value_offset attributes where present.
  * - Table_Binary record dimension length 21.
@@ -2252,9 +2257,9 @@ test_mission_new_horizons_0002845457_metadata(void)
 
     if ((retval = nc_inq(grp_ncid, &ndims, &nvars, NULL, NULL)))
         ERR(retval);
-    if (ndims != 11)
+    if (ndims != 6)
     {
-        fprintf(stderr, "Expected 11 group dimensions, got %d\n", ndims);
+        fprintf(stderr, "Expected 6 group dimensions, got %d\n", ndims);
         nc_close(ncid);
         return 1;
     }

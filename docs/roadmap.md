@@ -123,60 +123,49 @@ Add GeoTIFF and GRIB2 Python visualization examples that open existing test file
 
 **GitHub Issue:** #316
 
-#### Sprint 4: PDS4 Synthetic Examples
-**Detailed Plan**: See `docs/viz_plan.md`, Sprint 4.
 
-Add synthetic PDS4 examples that navigate groups and read a small image array and a binary table through `netCDF4`.
+#### Sprint 4: PDS4 Mission Examples
+**Detailed Plan**: See `docs/plan/v2.8.0-sprint4-pds4-mission-examples.md`
 
-**Implementation scope:**
-- `plot_pds4_image.py`: open `test/data/PDS4/general/test_image.xml`, enter group `test_image.img`, read the 4 x 4 `data` variable, write `pds4_test_image.png` + `_metadata.txt`.
-- `plot_pds4_table.py`: open `test/data/PDS4/general/test_table_binary.xml`, enter group `test_table_binary.dat`, read `Timestamp` and `Temperature`, write `pds4_table_binary.png` + `_metadata.txt`.
-
-**Clarified decisions:**
-- Group navigation is done through `netCDF4` group objects.
-- PDS4 synthetic image uses annotated pixel values; table uses a scatter plot.
-
-**Acceptance Criteria:**
-- Synthetic PDS4 image and table PNGs are generated.
-- PDS4 group navigation and variable slicing through `netCDF4` are solid.
-
-**Testing:** Run the two scripts and verify group paths, variable shapes, and output PNGs.
-
-**Build System Integration:** Add scripts to `examples/viz/CMakeLists.txt` and `Makefile.am`.
-
-**Definition of Done:** Synthetic PDS4 image and table examples produce PNG + metadata and pass in CI.
-
-**GitHub Issue:** TBD
-
-#### Sprint 5: PDS4 Mission Examples
-**Detailed Plan**: See `docs/viz_plan.md`, Sprint 5.
-
-Create example plots for four PDS4 mission products: MESSENGER TN map, Perseverance Mastcam-Z, MAVEN NGIMS L1B, and New Horizons Alice.
+Add four PDS4 mission-specific Python visualization examples that open existing PDS4 labels directly through `netCDF4.Dataset` and NEP's build-tree UDF autoload configuration. Each example produces a publication-ready black-and-white PNG and companion `_metadata.txt` in the build tree without CSV intermediates or extractor programs.
 
 **Implementation scope:**
-- `plot_pds4_messenger.py`: MESSENGER thermal neutron map (`NC_UBYTE` 360 x 720).
-- `plot_pds4_perseverance.py`: Mastcam-Z 3-D image, band 0, apply `scaling_factor` string, downsample, plot radiance.
-- `plot_pds4_maven_l1b.py`: MAVEN NGIMS L1B `TIME` vs one other 1-D numeric column.
-- `plot_pds4_new_horizons.py`: New Horizons Alice 2-D spectrum or table column.
+- `plot_pds4_messenger.py`: open `test/data/PDS4/messenger_tnmap/thermal_neutron_map.xml`, enter the `thermal_neutron_map.img` group, read the `data` variable (`NC_UBYTE` 360 x 720), and write `pds4_messenger_tnmap.png` + `_metadata.txt`.
+- `plot_pds4_perseverance.py`: open `test/data/PDS4/perseverance/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml`, enter the matching `.IMG` group, read band 0 of the `data` variable (`NC_SHORT` Band x Line x Sample), apply the `scaling_factor` string attribute, downsample to fit the figure limit, and write `pds4_perseverance_mastcamz.png` + `_metadata.txt`.
+- `plot_pds4_maven_l3.py`: open `test/data/PDS4/maven/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml`, enter the matching `.csv` table group, read `T_UNIX` and the `TEMPERATURE` column, and write `pds4_maven_ngims_l3.png` + `_metadata.txt`.
+- `plot_pds4_new_horizons.py`: open `test/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.lblx`, enter the matching `.fit` file-area group, read the 2-D `Observational Data` spectrum array, downsample, and write `pds4_new_horizons_alice.png` + `_metadata.txt`.
+- Stage all four scripts and required PDS4 label/data files for CMake and Autotools out-of-tree builds, then register conditional visualization tests under `HAVE_PDS4`.
+- Reuse the visualization infrastructure, Python environment, `.ncrc` autoload settings, and `plot_common.py` output helper delivered by Sprints 1-3.
+- Defer user-facing visualization documentation and CI wiring to Sprint 5.
 
 **Clarified decisions:**
-- `scaling_factor` is parsed from the string attribute at runtime.
-- Large arrays are downsampled with NumPy slicing before plotting.
-- MAVEN L1B has 324 columns; the plotted column is chosen during this sprint.
+- The MESSENGER 360 x 720 array is plotted at full resolution because it already fits within the 8 x 6.1 inch figure limit.
+- Perseverance band 0 is read, converted to radiance with `float(var.scaling_factor)`, then downsampled with a NumPy stride computed from a target of approximately 1,000 samples per axis (matching the GeoTIFF heuristic).
+- MAVEN NGIMS L3 plots `TEMPERATURE` versus the `T_UNIX` column from the L3 science table.
+- New Horizons uses `ali_0030420276_0x4b0_sci_1.lblx` and plots the 2-D spectrum array rather than a table column.
+- Group names are hard-coded to match the expected labels, with clear diagnostics if a group or variable is missing.
+- Each script is registered as a separate test target so failures are isolated.
+- Generated artifacts remain in the build tree and are not installed.
 
 **Acceptance Criteria:**
-- All four mission PNGs are generated.
-- Scripts handle group navigation, `NC_SHORT` scaling, and large-array downsampling.
+- All four scripts open their source files through `netCDF4.Dataset` with build-tree `.ncrc` autoload and no explicit NEP initializer call.
+- Each script produces a size-compliant black-and-white PNG and a companion `_metadata.txt` with `title`, `caption`, and `alt_text`.
+- MESSENGER, Perseverance, and New Horizons plots handle 2-D array navigation and downsampling; the Perseverance plot correctly applies `scaling_factor`.
+- The MAVEN L3 plot handles group entry and reads `T_UNIX` and `TEMPERATURE` as 1-D variables.
+- CMake and Autotools stage scripts and PDS4 input data and register `viz_pds4_messenger`, `viz_pds4_perseverance`, `viz_pds4_maven_l3`, and `viz_pds4_new_horizons` tests only when PDS4 is enabled.
+- `ctest -R viz` and the Autotools visualization test subset pass in out-of-tree builds with PDS4 and visualization enabled.
+- Existing FITS, CDF, GeoTIFF, GRIB2, helper, and UDF-open visualization tests continue to pass; visualization remains disabled by default.
+- No CSV intermediates, extractor programs, source-tree output artifacts, or color plots are introduced.
 
-**Testing:** Run all four mission scripts and inspect output PNGs and `_metadata.txt` files.
+**Testing:** Run separate and combined out-of-tree CMake and Autotools configurations with visualization and PDS4 enabled; run `ctest -R viz --output-on-failure` and the Autotools visualization subset; verify source data autoload, group navigation, variable shapes, downsampling bounds, scaling-factor application, PNG size and grayscale presentation, metadata fields, and build-tree artifact locations; run existing visualization tests for regression coverage.
 
-**Build System Integration:** Add the four scripts to `examples/viz/CMakeLists.txt` and `Makefile.am`.
+**Build System Integration:** Extend `examples/viz/CMakeLists.txt` and `examples/viz/Makefile.am` to stage the four scripts, copy required PDS4 label/data files to `build/test/data/PDS4/`, pass the existing `NCRCENV_RC`, `NETCDF_RC`, `LD_LIBRARY_PATH`, and `MPLCONFIGDIR` environment, and conditionally register `viz_pds4_messenger`, `viz_pds4_perseverance`, `viz_pds4_maven_l3`, and `viz_pds4_new_horizons` tests under `HAVE_PDS4`.
 
-**Definition of Done:** All PDS4 mission examples produce PNG + metadata and pass in CI.
+**Definition of Done:** All four PDS4 mission labels open through Python `netCDF4.Dataset` and NEP UDF autoload; each script generates compliant build-tree PNG and metadata artifacts with approved downsampling, scaling, group-navigation, and column-selection behavior; both build systems provide equivalent conditional tests and data staging; regressions pass; and the sprint planning documentation is complete.
 
-**GitHub Issue:** TBD
+**GitHub Issue:** #318
 
-#### Sprint 6: Documentation, CI, and Polish
+#### Sprint 5: Documentation, CI, and Polish
 **Detailed Plan**: See `docs/viz_plan.md`, Sprint 6.
 
 Document the visualization examples, wire them into CI, verify metadata files, and add module-level docstrings.

@@ -1,0 +1,3 @@
+title: Perseverance Mastcam-Z Radiance
+caption: Grayscale radiance image of Perseverance Mastcam-Z band 0 opened through the NetCDF PDS4 UDF interface, scaled by the label's scaling_factor and downsampled for publication.
+alt_text: Grayscale image of Perseverance Mastcam-Z radiance with masked zero values, downsampled to approximately 1000 pixels per axis.

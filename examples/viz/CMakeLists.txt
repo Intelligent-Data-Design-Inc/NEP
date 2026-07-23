@@ -6,6 +6,10 @@ set(_viz_python_files
     plot_cdf_var.py
     plot_geotiff_subset.py
     plot_grib2_grid.py
+    plot_pds4_messenger.py
+    plot_pds4_perseverance.py
+    plot_pds4_maven_l3.py
+    plot_pds4_new_horizons.py
 )
 
 foreach(_viz_file ${_viz_python_files})
@@ -105,6 +109,92 @@ if(HAVE_GRIB2)
                 "${CMAKE_BINARY_DIR}/test/data/gdaswave.t00z.wcoast.0p16.f000.grib2"
     )
     set_tests_properties(viz_grib2_wave PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+        ENVIRONMENT "${_viz_environment}"
+    )
+endif()
+
+if(HAVE_PDS4)
+    file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/test/data/PDS4/messenger_tnmap")
+    configure_file(
+        "${CMAKE_SOURCE_DIR}/test/data/PDS4/messenger_tnmap/thermal_neutron_map.xml"
+        "${CMAKE_BINARY_DIR}/test/data/PDS4/messenger_tnmap/thermal_neutron_map.xml"
+        COPYONLY
+    )
+    configure_file(
+        "${CMAKE_SOURCE_DIR}/test/data/PDS4/messenger_tnmap/thermal_neutron_map.img"
+        "${CMAKE_BINARY_DIR}/test/data/PDS4/messenger_tnmap/thermal_neutron_map.img"
+        COPYONLY
+    )
+    add_test(
+        NAME viz_pds4_messenger
+        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/plot_pds4_messenger.py"
+                "${CMAKE_BINARY_DIR}/test/data/PDS4/messenger_tnmap/thermal_neutron_map.xml"
+    )
+    set_tests_properties(viz_pds4_messenger PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+        ENVIRONMENT "${_viz_environment}"
+    )
+
+    file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/test/data/PDS4/perseverance")
+    configure_file(
+        "${CMAKE_SOURCE_DIR}/test/data/PDS4/perseverance/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml"
+        "${CMAKE_BINARY_DIR}/test/data/PDS4/perseverance/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml"
+        COPYONLY
+    )
+    configure_file(
+        "${CMAKE_SOURCE_DIR}/test/data/PDS4/perseverance/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.IMG"
+        "${CMAKE_BINARY_DIR}/test/data/PDS4/perseverance/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.IMG"
+        COPYONLY
+    )
+    add_test(
+        NAME viz_pds4_perseverance
+        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/plot_pds4_perseverance.py"
+                "${CMAKE_BINARY_DIR}/test/data/PDS4/perseverance/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml"
+    )
+    set_tests_properties(viz_pds4_perseverance PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+        ENVIRONMENT "${_viz_environment}"
+    )
+
+    file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/test/data/PDS4/maven")
+    configure_file(
+        "${CMAKE_SOURCE_DIR}/test/data/PDS4/maven/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml"
+        "${CMAKE_BINARY_DIR}/test/data/PDS4/maven/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml"
+        COPYONLY
+    )
+    configure_file(
+        "${CMAKE_SOURCE_DIR}/test/data/PDS4/maven/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.csv"
+        "${CMAKE_BINARY_DIR}/test/data/PDS4/maven/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.csv"
+        COPYONLY
+    )
+    add_test(
+        NAME viz_pds4_maven_l3
+        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/plot_pds4_maven_l3.py"
+                "${CMAKE_BINARY_DIR}/test/data/PDS4/maven/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml"
+    )
+    set_tests_properties(viz_pds4_maven_l3 PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+        ENVIRONMENT "${_viz_environment}"
+    )
+
+    file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/test/data/PDS4/new_horizons")
+    configure_file(
+        "${CMAKE_SOURCE_DIR}/test/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.lblx"
+        "${CMAKE_BINARY_DIR}/test/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.lblx"
+        COPYONLY
+    )
+    configure_file(
+        "${CMAKE_SOURCE_DIR}/test/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.fit"
+        "${CMAKE_BINARY_DIR}/test/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.fit"
+        COPYONLY
+    )
+    add_test(
+        NAME viz_pds4_new_horizons
+        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/plot_pds4_new_horizons.py"
+                "${CMAKE_BINARY_DIR}/test/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.lblx"
+    )
+    set_tests_properties(viz_pds4_new_horizons PROPERTIES
         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
         ENVIRONMENT "${_viz_environment}"
     )
