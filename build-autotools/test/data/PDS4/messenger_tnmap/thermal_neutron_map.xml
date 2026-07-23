@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1B00.sch" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<?xml-model href="http://pds.nasa.gov/pds4/disp/v1/PDS4_DISP_1700.sch" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<?xml-model href="https://pds.nasa.gov/pds4/sp/v1/PDS4_SP_1100.sch" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<?xml-model href="http://pds.nasa.gov/pds4/cart/v1/PDS4_CART_1700.sch" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+
+<Product_Observational xmlns="http://pds.nasa.gov/pds4/pds/v1"
+    xmlns:pds="http://pds.nasa.gov/pds4/pds/v1"
+    xmlns:disp="http://pds.nasa.gov/pds4/disp/v1"
+    xmlns:sp="http://pds.nasa.gov/pds4/sp/v1"
+    xmlns:cart="http://pds.nasa.gov/pds4/cart/v1"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+    http://pds.nasa.gov/pds4/pds/v1 https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1B00.xsd
+    http://pds.nasa.gov/pds4/disp/v1 https://pds.nasa.gov/pds4/disp/v1/PDS4_DISP_1700.xsd
+    http://pds.nasa.gov/pds4/sp/v1 https://pds.nasa.gov/pds4/sp/v1/PDS4_SP_1100.xsd
+    http://pds.nasa.gov/pds4/cart/v1 http://pds.nasa.gov/pds4/cart/v1/PDS4_CART_1700.xsd">
+    <Identification_Area>
+        <logical_identifier>urn:nasa:pds:izenberg_pdart14_meap:data_tnmap:thermal_neutron_map</logical_identifier>
+        <version_id>1.0</version_id>
+        <title>Mercury Thermal Neutron Map</title>
+        <information_model_version>1.11.0.0</information_model_version>
+        <product_class>Product_Observational</product_class>
+        <Modification_History>
+            <Modification_Detail>
+                <modification_date>2017-02-09</modification_date>
+                <version_id>1.0</version_id>
+                <description>Peer reviewed version of the Izenberg PDART 2014 MEAP Thermal Neutron Map Product</description>
+            </Modification_Detail>
+        </Modification_History>
+    </Identification_Area>
+    <Observation_Area>
+        <Time_Coordinates>
+            <start_date_time>2004-08-13Z</start_date_time>
+            <stop_date_time>2015-04-30Z</stop_date_time>
+        </Time_Coordinates>
+        <Primary_Result_Summary>
+            <purpose>Science</purpose>
+            <processing_level>Derived</processing_level>
+            <description>MESSENGER Gamma-Ray Spectrometer (GRS) Anti-Coincidence Shield (ACS) data
+            have been used to map variations in thermal neutron absorbing elements across
+            Mercury's surface.</description>
+        </Primary_Result_Summary>
+        <Investigation_Area>
+            <name>MESSENGER</name>
+            <type>Mission</type>
+            <Internal_Reference>
+                <lid_reference>urn:nasa:pds:context:investigation:mission.messenger</lid_reference>
+                <reference_type>data_to_investigation</reference_type>
+            </Internal_Reference>
+        </Investigation_Area>
+        <Observing_System>
+            <name>MESSENGER GRS</name>
+            <Observing_System_Component>
+                <name>MESSENGER</name>
+                <type>Spacecraft</type>
+                <Internal_Reference>
+                    <lid_reference>urn:nasa:pds:context:instrument_host:spacecraft.mess</lid_reference>
+                    <reference_type>is_instrument_host</reference_type>
+                </Internal_Reference>
+            </Observing_System_Component>
+            <Observing_System_Component>
+                <name>GRS</name>
+                <type>Instrument</type>
+                <Internal_Reference>
+                    <lid_reference>urn:nasa:pds:context:instrument:grs.mess</lid_reference>
+                    <reference_type>is_instrument</reference_type>
+                </Internal_Reference>
+            </Observing_System_Component>
+        </Observing_System>
+        <Target_Identification>
+            <name>Mercury</name>
+            <type>Planet</type>
+            <Internal_Reference>
+                <lid_reference>urn:nasa:pds:context:target:planet.mercury</lid_reference>
+                <reference_type>collection_to_target</reference_type>
+            </Internal_Reference>
+        </Target_Identification>
+        
+        <Discipline_Area>
+            <disp:Display_Settings>
+                <pds:Local_Internal_Reference>
+                    <local_identifier_reference>Image_Object</local_identifier_reference>
+                    <local_reference_type>display_settings_to_array</local_reference_type>
+                </pds:Local_Internal_Reference>
+                <disp:Display_Direction>
+                    <disp:horizontal_display_axis>Sample</disp:horizontal_display_axis>
+                    <disp:horizontal_display_direction>Left to Right</disp:horizontal_display_direction>
+                    <disp:vertical_display_axis>Line</disp:vertical_display_axis>
+                    <disp:vertical_display_direction>Top to Bottom</disp:vertical_display_direction>
+                </disp:Display_Direction>
+            </disp:Display_Settings>
+            
+            <cart:Cartography>
+                <cart:Spatial_Domain>
+                    <cart:Bounding_Coordinates>
+                        <cart:west_bounding_coordinate unit="deg">-180.0</cart:west_bounding_coordinate>
+                        <cart:east_bounding_coordinate unit="deg">180.0</cart:east_bounding_coordinate>
+                        <cart:north_bounding_coordinate unit="deg">90.0</cart:north_bounding_coordinate>
+                        <cart:south_bounding_coordinate unit="deg">-90.0</cart:south_bounding_coordinate>
+                    </cart:Bounding_Coordinates>
+                </cart:Spatial_Domain>
+                <cart:Spatial_Reference_Information>
+                    <cart:Horizontal_Coordinate_System_Definition>
+                        <cart:Planar>
+                            <cart:Map_Projection>
+                                <cart:map_projection_name>Equirectangular</cart:map_projection_name>
+                                <cart:Equirectangular>
+                                    <cart:longitude_of_central_meridian unit="deg">0.0</cart:longitude_of_central_meridian>
+                                    <cart:latitude_of_projection_origin unit="deg">0.0</cart:latitude_of_projection_origin>
+                                </cart:Equirectangular>
+                            </cart:Map_Projection>
+                            <cart:Planar_Coordinate_Information>
+                                <cart:planar_coordinate_encoding_method>Coordinate Pair</cart:planar_coordinate_encoding_method>
+                                <cart:Coordinate_Representation>
+                                    <cart:pixel_resolution_x unit="km/pixel">21</cart:pixel_resolution_x>
+                                    <cart:pixel_resolution_y unit="km/pixel">21</cart:pixel_resolution_y>
+                                    <cart:pixel_scale_x unit="pixel/deg">2</cart:pixel_scale_x>
+                                    <cart:pixel_scale_y unit="pixel/deg">2</cart:pixel_scale_y>
+                                </cart:Coordinate_Representation>
+                            </cart:Planar_Coordinate_Information>
+                            <cart:Geo_Transformation>
+                                <cart:upperleft_corner_x unit="km">-7560</cart:upperleft_corner_x>
+                                <cart:upperleft_corner_y unit="km">-3780</cart:upperleft_corner_y>
+                            </cart:Geo_Transformation>
+                        </cart:Planar>
+                        <cart:Geodetic_Model>
+                            <cart:latitude_type>planetocentric</cart:latitude_type>
+                            <cart:spheroid_name>Mercury</cart:spheroid_name>
+                            <cart:semi_major_radius unit="km">2440.</cart:semi_major_radius>
+                            <cart:semi_minor_radius unit="km">2440.</cart:semi_minor_radius>
+                            <cart:polar_radius unit="km">2440.</cart:polar_radius>
+                            <cart:longitude_direction>Positive East</cart:longitude_direction>
+                        </cart:Geodetic_Model>
+                    </cart:Horizontal_Coordinate_System_Definition>
+                </cart:Spatial_Reference_Information>
+            </cart:Cartography>
+                        
+        </Discipline_Area>
+    </Observation_Area>
+    <Reference_List>
+        <External_Reference>
+            <doi>10.1016/j.icarus.2015.02.002</doi>
+            <reference_text>Peplowski et al., 2015, Geochemical terranes of Mercury's
+              northern hemisphere as revealed by MESSENGER neutron measurements, Icarus,
+              253, 346-363.</reference_text>
+        </External_Reference>
+    </Reference_List>
+    
+    <File_Area_Observational>
+        <File>
+            <file_name>thermal_neutron_map.img</file_name>
+            <creation_date_time>2016-03-18T17:32Z</creation_date_time>
+            <file_size unit="byte">259200</file_size>
+            <comment>Image file in standard PDS4 IMG format</comment>
+        </File>
+        <Array_2D_Image>
+            <name>Mercury Thermal Neutron Map</name>
+            <local_identifier>Image_Object</local_identifier>            
+            <offset unit="byte">0</offset>
+            <axes>2</axes>
+            <axis_index_order>Last Index Fastest</axis_index_order>
+            <description>
+                The file has 259200 elements, which correspond to a 
+                720 x 360 degree map (0.5 degree wide pixels in east 
+                longitude, latitude). The elements are arranged from 
+                the top (90 lat, -180 lon) across, then down (last 
+                entry is -90, 180). Each element is a byte. Pixel 
+                values range from 0 to 255; converting them to
+                physical units (10^-4 cm2/g) requires multiplying the 
+                pixel value by 0.222860. Pixel values of zero are 
+                unmapped, and this corresponds to all latitudes less 
+                than (south of) 20 deg N.
+            </description>
+            <Element_Array>
+                <data_type>UnsignedByte</data_type>
+                <unit>10**-4 cm**2/g</unit>
+                <scaling_factor>0.222860</scaling_factor>
+                <value_offset>0</value_offset>
+            </Element_Array>
+            <Axis_Array>
+                <axis_name>Line</axis_name>
+                <elements>360</elements>
+                <sequence_number>1</sequence_number>
+            </Axis_Array>
+            <Axis_Array>
+                <axis_name>Sample</axis_name>
+                <elements>720</elements>
+                <sequence_number>2</sequence_number>
+            </Axis_Array>
+         </Array_2D_Image>
+    </File_Area_Observational>
+    <File_Area_Observational_Supplemental>
+        <File>
+            <file_name>thermal_neutron_map.jp2</file_name>
+            <comment>Image file in JPEG2000 format</comment>
+        </File>
+        <Encoded_Image>
+            <offset unit="byte">0</offset>
+            <encoding_standard_id>J2C</encoding_standard_id>
+        </Encoded_Image>
+    </File_Area_Observational_Supplemental>
+</Product_Observational>

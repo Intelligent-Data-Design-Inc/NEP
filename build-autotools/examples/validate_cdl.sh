@@ -1,0 +1,71 @@
+#!/bin/bash
+# Validate NetCDF output against expected CDL
+# Edward Hartnett 1/26/26
+
+# Ensure shared libraries are found at runtime
+if [[ -n "${LD_LIBRARY_PATH:-}" ]]; then
+    export LD_LIBRARY_PATH=/home/ed/NEP/build-autotools/src/.libs:/usr/local/hdf5-2.1.1/lib:/usr/local/netcdf-c/lib:/usr/local/netcdf-fortran-4.6.2/lib:$LD_LIBRARY_PATH
+else
+    export LD_LIBRARY_PATH=/home/ed/NEP/build-autotools/src/.libs:/usr/local/hdf5-2.1.1/lib:/usr/local/netcdf-c/lib:/usr/local/netcdf-fortran-4.6.2/lib
+fi
+
+EXAMPLE_NAME=$1
+OUTPUT_FILE=$2
+EXPECTED_CDL=$3
+
+if [ $# -ne 3 ]; then
+    echo "Usage: $0 <example_name> <output_file> <expected_cdl>"
+    exit 1
+fi
+
+# ncdump path determined at configure time
+NCDUMP="/usr/local/netcdf-c/bin/ncdump"
+
+# Handle NcZarr file:// URLs: keep the full URL for ncdump, but check the
+# filesystem path and use a safe name for the temporary CDL file.
+if [[ "$OUTPUT_FILE" == file://* ]]; then
+    NCDUMP_URL="$OUTPUT_FILE"
+    OUTPUT_PATH="${OUTPUT_FILE#file://}"
+    OUTPUT_PATH="${OUTPUT_PATH%%#*}"
+    if [ ! -e "$OUTPUT_PATH" ]; then
+        echo "ERROR: NcZarr output path not found: $OUTPUT_PATH"
+        exit 1
+    fi
+    CDL_FILE="${OUTPUT_PATH}.cdl"
+else
+    NCDUMP_URL="$OUTPUT_FILE"
+    CDL_FILE="${OUTPUT_FILE}.cdl"
+    if [ ! -f "$OUTPUT_FILE" ]; then
+        echo "ERROR: Output file not found: $OUTPUT_FILE"
+        exit 1
+    fi
+fi
+
+if [ ! -f "$EXPECTED_CDL" ]; then
+    echo "ERROR: Expected CDL file not found: $EXPECTED_CDL"
+    exit 1
+fi
+
+echo "Using ncdump: $NCDUMP"
+"$NCDUMP" -h 2>&1 | head -1 || echo "ncdump version check failed"
+
+# Run ncdump on generated file
+"$NCDUMP" "$NCDUMP_URL" > "$CDL_FILE" 2>/dev/null
+if [ $? -ne 0 ]; then
+    echo "ERROR: ncdump failed on $NCDUMP_URL"
+    cat "$CDL_FILE"
+    exit 1
+fi
+
+# Compare with expected CDL
+diff -u "$EXPECTED_CDL" "$CDL_FILE"
+if [ $? -ne 0 ]; then
+    echo "ERROR: Output differs from expected for $EXAMPLE_NAME"
+    echo "Expected: $EXPECTED_CDL"
+    echo "Generated: $CDL_FILE"
+    exit 1
+fi
+
+echo "PASS: $EXAMPLE_NAME output matches expected CDL"
+rm -f "$CDL_FILE"
+exit 0
