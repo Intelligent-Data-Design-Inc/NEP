@@ -2,6 +2,7 @@ set(_viz_python_files
     plot_common.py
     test_plot_common.py
     test_udf_open.py
+    verify_viz_artifacts.py
     plot_fits_image.py
     plot_cdf_var.py
     plot_geotiff_subset.py
@@ -25,6 +26,8 @@ configure_file(
     COPYONLY
 )
 
+set(_viz_artifacts viz_plot_common_test)
+
 set(_viz_ld_path "${_nep_test_ld_path}")
 if(HAVE_GRIB2)
     get_filename_component(_viz_g2c_library_dir "${G2C_LIBRARY}" DIRECTORY)
@@ -42,6 +45,7 @@ add_test(
 set_tests_properties(viz_plot_common PROPERTIES
     WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
     ENVIRONMENT "${_viz_environment}"
+    FIXTURES_SETUP viz_artifacts
 )
 
 if(HAVE_FITS)
@@ -53,6 +57,7 @@ if(HAVE_FITS)
     set_tests_properties(viz_fits_udf_open PROPERTIES
         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
         ENVIRONMENT "${_viz_environment}"
+        FIXTURES_SETUP viz_artifacts
     )
 
     add_test(
@@ -63,7 +68,9 @@ if(HAVE_FITS)
     set_tests_properties(viz_fits_image PROPERTIES
         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
         ENVIRONMENT "${_viz_environment}"
+        FIXTURES_SETUP viz_artifacts
     )
+    list(APPEND _viz_artifacts fits_wfpc2_image)
 endif()
 
 if(HAVE_CDF)
@@ -75,7 +82,9 @@ if(HAVE_CDF)
     set_tests_properties(viz_cdf_temperature PROPERTIES
         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
         ENVIRONMENT "${_viz_environment}"
+        FIXTURES_SETUP viz_artifacts
     )
+    list(APPEND _viz_artifacts cdf_temperature)
 endif()
 
 if(HAVE_GEOTIFF)
@@ -93,7 +102,9 @@ if(HAVE_GEOTIFF)
     set_tests_properties(viz_geotiff_modis_flood PROPERTIES
         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
         ENVIRONMENT "${_viz_environment}"
+        FIXTURES_SETUP viz_artifacts
     )
+    list(APPEND _viz_artifacts geotiff_modis_flood)
 endif()
 
 if(HAVE_GRIB2)
@@ -111,7 +122,9 @@ if(HAVE_GRIB2)
     set_tests_properties(viz_grib2_wave PROPERTIES
         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
         ENVIRONMENT "${_viz_environment}"
+        FIXTURES_SETUP viz_artifacts
     )
+    list(APPEND _viz_artifacts grib2_wave)
 endif()
 
 if(HAVE_PDS4)
@@ -134,6 +147,7 @@ if(HAVE_PDS4)
     set_tests_properties(viz_pds4_messenger PROPERTIES
         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
         ENVIRONMENT "${_viz_environment}"
+        FIXTURES_SETUP viz_artifacts
     )
 
     file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/test/data/PDS4/perseverance")
@@ -155,6 +169,7 @@ if(HAVE_PDS4)
     set_tests_properties(viz_pds4_perseverance PROPERTIES
         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
         ENVIRONMENT "${_viz_environment}"
+        FIXTURES_SETUP viz_artifacts
     )
 
     file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/test/data/PDS4/maven")
@@ -176,6 +191,7 @@ if(HAVE_PDS4)
     set_tests_properties(viz_pds4_maven_l3 PROPERTIES
         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
         ENVIRONMENT "${_viz_environment}"
+        FIXTURES_SETUP viz_artifacts
     )
 
     file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/test/data/PDS4/new_horizons")
@@ -197,5 +213,23 @@ if(HAVE_PDS4)
     set_tests_properties(viz_pds4_new_horizons PROPERTIES
         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
         ENVIRONMENT "${_viz_environment}"
+        FIXTURES_SETUP viz_artifacts
+    )
+    list(APPEND _viz_artifacts
+        pds4_messenger_tnmap
+        pds4_perseverance_mastcamz
+        pds4_maven_ngims_l3
+        pds4_new_horizons_alice
     )
 endif()
+
+add_test(
+    NAME viz_artifacts
+    COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/verify_viz_artifacts.py"
+            "${CMAKE_CURRENT_BINARY_DIR}" ${_viz_artifacts}
+)
+set_tests_properties(viz_artifacts PROPERTIES
+    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+    ENVIRONMENT "${_viz_environment}"
+    FIXTURES_REQUIRED viz_artifacts
+)

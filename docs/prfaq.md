@@ -157,6 +157,9 @@ All features integrate seamlessly with the standard NetCDF API.
 - **Built and tested**: Examples build with NEP and run as tests
 - **Location**: All examples in the `examples/` directory with detailed README
 
+#### Q: Does NEP provide visualization examples?
+**A:** Yes. Optional Python examples in `examples/viz/` open enabled FITS, CDF, GeoTIFF, GRIB2, and PDS4 UDF files directly through `netCDF4.Dataset` and create static grayscale PNG plots with companion metadata files. Enable them with `-DNEP_ENABLE_VIZ_EXAMPLES=ON` or `--enable-viz-examples`. Their source-root `.venv` must build `netCDF4` from source against the same NetCDF-C library as NEP; bundled-libnetcdf wheels cannot load the NEP UDF handlers. Tests use the build-tree `.ncrc` configuration and validate output metadata, grayscale pixels, and publication size limits. The plots and metadata remain in the build tree and are not installed.
+
 ### Installation and Usage
 
 #### Q: What are the system requirements?

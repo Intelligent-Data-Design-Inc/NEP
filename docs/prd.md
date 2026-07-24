@@ -331,20 +331,27 @@ Located in `examples/nczarr/`:
 
 **Note**: NcZarr examples are only built when NetCDF-C reports NcZarr support (`NC_HAS_NCZARR` in `netcdf_meta.h`) and examples are enabled. The Fortran examples additionally require `--enable-fortran` (Autotools) or `ENABLE_FORTRAN=ON` (CMake). Each example writes to a distinct Zarr directory store to allow safe parallel test execution.
 
+#### Visualization Examples (v2.7.0)
+
+Located in `examples/viz/`, optional Python visualization examples open enabled NEP UDF formats through `netCDF4.Dataset` and build-tree `.ncrc` autoload. They generate black-and-white, 150-DPI PNG plots with required companion `_metadata.txt` files for FITS, CDF, GeoTIFF, GRIB2, and PDS4 mission products. Outputs remain in the build tree and are not installed. `netCDF4` must be built from source against the same NetCDF-C installation used by NEP; bundled-library wheels are unsupported.
+
 ### 8.4 Build Configuration
 **CMake:**
 - `BUILD_EXAMPLES=ON/OFF` - Enable/disable example programs (default: ON)
 - `ENABLE_BENCHMARKS=ON/OFF` - Enable/disable performance benchmark programs (default: OFF)
+- `NEP_ENABLE_VIZ_EXAMPLES=ON/OFF` - Enable/disable Python visualization examples (default: OFF)
 
 **Autotools:**
 - `--enable-examples/--disable-examples` - Example programs (default: enabled)
 - `--enable-benchmarks` - Enable performance benchmark programs (default: disabled)
+- `--enable-viz-examples` - Python visualization examples (default: disabled)
 
 ### 8.5 Dependencies
 - NetCDF-C library (required for C examples)
 - NetCDF-Fortran library (required for Fortran examples)
 - C99 compiler
 - Fortran 90+ compiler (for Fortran examples)
+- Python 3 virtual environment with NumPy, Matplotlib, and source-built `netCDF4` (for visualization examples)
 
 ### 8.6 Usage
 Examples are automatically built and run as tests:
@@ -483,6 +490,7 @@ Parallel I/O builds are tested in a separate CI workflow (`ci-parallel.yml`) wit
 - **CDF Tests**: Basic file operations and IMAP MAG L1B calibration data
 - **GeoTIFF Tests**: 10 comprehensive test programs covering edge cases, errors, performance
 - **Example Programs**: All examples run as tests to validate correctness
+- **Visualization Examples**: CMake and Autotools validate generated PNG/metadata pairs, grayscale pixels, size limits, and metadata schema; dedicated CI builds source-linked `netCDF4` before exercising enabled UDF readers
 - **CI Integration**: GitHub Actions with multiple build configurations
 
 ### 12.2 CI Matrix

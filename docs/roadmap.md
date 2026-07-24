@@ -471,6 +471,44 @@ Test `test/data/PDS4/new_horizons/ali_0002845457_0x4b2_sci_1.lblx`, a New Horizo
 
 **GitHub Issue:** #299
 
+#### Sprint 5: Visualization Documentation, CI, and Polish
+**Detailed Plan**: See `docs/plan/v2.7.0-sprint5-visualization-polish-ci.md` (Sprint 6 in `docs/viz_plan.md`).
+
+Complete the existing Python visualization examples with end-user documentation, source-linked Python dependency coverage in CI, and automated validation of every generated publication artifact. The work applies to the FITS, CDF, GeoTIFF, GRIB2, and PDS4 examples already implemented under `examples/viz/`; it does not add new plots or change UDF reader behavior.
+
+**Implementation scope:**
+- Add a `Visualization Examples` section to `docs/examples.md`, fully refresh `examples/viz/README.md`, and add concise capability/configuration information to `docs/prd.md`, `docs/design.md`, and `docs/prfaq.md`.
+- Create a dedicated `.github/workflows/ci-viz.yml` CMake/Autotools matrix that enables visualization and all supported UDF readers, builds Python `netCDF4` from source against the exact NetCDF-C used by NEP, runs the visualization tests, validates artifacts, and uploads the resulting PNG/metadata files.
+- Add one reusable artifact verifier and register it in both visualization build systems after the conditional plotting tests.
+- Require the verifier to reject absent PNG/metadata pairs, malformed or empty metadata fields, captions exceeding 75 words, oversized output, and non-grayscale PNG pixels.
+- Add module-level docstrings to all Python modules in `examples/viz/`.
+- Keep visualization disabled by default; retain build-tree-only artifacts, black-and-white plots, external captions, and the prohibition on CSV intermediates and C extractors.
+
+**Clarified decisions:**
+- This is v2.7.0 Sprint 5, though it is called Sprint 6 in `docs/viz_plan.md`.
+- A dedicated `ci-viz.yml` workflow provides the required end-to-end coverage rather than extending existing format workflows.
+- CI must build `netCDF4` from source against the workflow's NetCDF-C installation; PyPI wheels or system packages that bundle or link another NetCDF-C are not acceptable.
+- Artifact validation covers presence, metadata schema/content, 75-word caption limit, 8.0 x 6.1 inch size limit at 150 DPI, and grayscale pixel values.
+- Documentation covers `docs/examples.md`, `examples/viz/README.md`, `docs/prd.md`, `docs/design.md`, and `docs/prfaq.md`.
+
+**Acceptance Criteria:**
+- User, requirements, architecture, and FAQ documentation accurately describe the optional visualization workflow, shared-NetCDF-C requirement, configuration, runtime environment, and output constraints.
+- Every Python module in `examples/viz/` has a module-level docstring.
+- CMake and Autotools both run a verifier over every enabled visualization artifact after the plotting tests.
+- The verifier fails clearly for missing pairs, malformed metadata, captions over 75 words, oversized images, and non-grayscale pixels.
+- `ci-viz.yml` runs CMake and Autotools visualization configurations with all supported readers, source-built `netCDF4`, artifact verification, and artifact upload.
+- Visualization remains disabled by default, generated files remain outside the source/install trees, and existing non-visualization builds remain unchanged.
+
+**Testing:** Run all-reader CMake and Autotools visualization configurations and their visualization test subsets; test negative artifact-verifier cases; verify Python `netCDF4` links to the workflow NetCDF-C; run default visualization-disabled configurations; and inspect uploaded PNG/metadata artifacts.
+
+**Build System Integration:** Extend `examples/viz/CMakeLists.txt` and `examples/viz/Makefile.am` with the conditional artifact verifier. Add `.github/workflows/ci-viz.yml`; no new configuration option is introduced.
+
+**Dependencies:** Existing visualization scripts and UDF readers; their external libraries; source-root `.venv` with NumPy, Matplotlib, and source-built `netCDF4`; generated build-tree `.ncrc` and UDF libraries.
+
+**Definition of Done:** Documentation is complete, every Python module is documented, both build systems automatically validate every enabled artifact, dedicated CI runs all examples against source-linked `netCDF4` and uploads artifacts, publication constraints are enforced, and default builds remain unchanged.
+
+**GitHub Issue:** #319
+
 ### V2.6.1 - No More Worlds to Conquer
 #### Sprint 1: Fix Bugs in FITS/PDS4 ncrc Initialization
 - Fix bugs in UDF self-initialization of FITS/PDS4 data.

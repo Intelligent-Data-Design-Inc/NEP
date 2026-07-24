@@ -1,21 +1,27 @@
-AUTOMAKE_OPTIONS = parallel-tests
-
 TESTS = test_plot_common.py
+viz_artifacts = viz_plot_common_test
+
 if HAVE_FITS
 TESTS += test_udf_open.py plot_fits_image.py
+viz_artifacts += fits_wfpc2_image
 endif
 if HAVE_CDF
 TESTS += plot_cdf_var.py
+viz_artifacts += cdf_temperature
 endif
 if HAVE_GEOTIFF
 TESTS += plot_geotiff_subset.py
+viz_artifacts += geotiff_modis_flood
 endif
 if HAVE_GRIB2
 TESTS += plot_grib2_grid.py
+viz_artifacts += grib2_wave
 endif
 if HAVE_PDS4
 TESTS += plot_pds4_messenger.py plot_pds4_perseverance.py plot_pds4_maven_l3.py plot_pds4_new_horizons.py
+viz_artifacts += pds4_messenger_tnmap pds4_perseverance_mastcamz pds4_maven_ngims_l3 pds4_new_horizons_alice
 endif
+TESTS += verify_viz_artifacts.py
 
 LOG_COMPILER = $(PYTHON3)
 AM_TESTS_ENVIRONMENT = NCRCENV_RC="$(abs_top_builddir)/.ncrc" \
@@ -30,7 +36,9 @@ AM_TESTS_ENVIRONMENT = NCRCENV_RC="$(abs_top_builddir)/.ncrc" \
 	NEP_VIZ_PDS4_MESSENGER_FILE="$(abs_top_builddir)/test/data/PDS4/messenger_tnmap/thermal_neutron_map.xml" \
 	NEP_VIZ_PDS4_PERSEVERANCE_FILE="$(abs_top_builddir)/test/data/PDS4/perseverance/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml" \
 	NEP_VIZ_PDS4_MAVEN_L3_FILE="$(abs_top_builddir)/test/data/PDS4/maven/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml" \
-	NEP_VIZ_PDS4_NEW_HORIZONS_FILE="$(abs_top_builddir)/test/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.lblx"
+	NEP_VIZ_PDS4_NEW_HORIZONS_FILE="$(abs_top_builddir)/test/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.lblx" \
+	NEP_VIZ_ARTIFACT_DIR="$(abs_builddir)" \
+	NEP_VIZ_ARTIFACTS="$(viz_artifacts)"
 
 viz_test_data =
 if HAVE_FITS
@@ -106,4 +114,4 @@ $(abs_top_builddir)/test/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.fit: 
 
 $(TESTS): $(viz_test_data)
 
-EXTRA_DIST = README.md plot_common.py test_plot_common.py test_udf_open.py plot_fits_image.py plot_cdf_var.py plot_geotiff_subset.py plot_grib2_grid.py plot_pds4_messenger.py plot_pds4_perseverance.py plot_pds4_maven_l3.py plot_pds4_new_horizons.py
+EXTRA_DIST = README.md plot_common.py test_plot_common.py test_udf_open.py verify_viz_artifacts.py plot_fits_image.py plot_cdf_var.py plot_geotiff_subset.py plot_grib2_grid.py plot_pds4_messenger.py plot_pds4_perseverance.py plot_pds4_maven_l3.py plot_pds4_new_horizons.py

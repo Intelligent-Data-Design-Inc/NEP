@@ -49,6 +49,16 @@ Both C and Fortran versions provided for all programs.
 - `opendap_subset.c` / `f_opendap_subset.f90` — Read a hyperslab from a remote variable
 - `opendap_constraint.c` / `f_opendap_constraint.f90` — Apply constraint expressions to filter remote data
 
+## Visualization Examples (`examples/viz/`)
+
+Python visualization examples open NEP UDF files directly with `netCDF4.Dataset` and write static Matplotlib PNGs. They are optional and disabled by default. The examples cover FITS images, CDF temperature data, GeoTIFF rasters, GRIB2 wind grids, and PDS4 MESSENGER, Perseverance, MAVEN, and New Horizons products.
+
+Enable visualizations with `-DNEP_ENABLE_VIZ_EXAMPLES=ON` for CMake or `--enable-viz-examples` for Autotools. Normal examples and at least one UDF reader must also be enabled. A source-root `.venv` must provide NumPy, Matplotlib, and `netCDF4` built from source against the exact NetCDF-C installation used by NEP; wheels or system packages using another `libnetcdf` cannot load NEP UDF handlers.
+
+Tests use the generated build-tree `.ncrc`: `NCRCENV_RC` selects the file, `NETCDF_RC` points to its directory, and `LD_LIBRARY_PATH` includes the NEP UDF libraries. Generated PNGs and `<basename>_metadata.txt` files remain in the visualization build directory and are neither installed nor written to the source tree. Each plot is grayscale, no caption appears inside its PNG, figures are limited to 8.0 by 6.1 inches at 150 DPI, and metadata contains ordered non-empty `title`, `caption`, and `alt_text` fields; captions are limited to 75 words.
+
+See `examples/viz/README.md` for setup, build, test, and direct-execution instructions.
+
 ## Performance and Compression Benchmarking (`examples/performance/`)
 
 C only. Built with `-DENABLE_BENCHMARKS=ON` (CMake) or `--enable-benchmarks` (Autotools).

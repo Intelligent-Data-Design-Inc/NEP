@@ -1,3 +1,9 @@
+"""Provide common black-and-white PNG and metadata output helpers.
+
+Companion code for "The NetCDF Developer's Handbook: The Authoritative Guide to
+Writing High-Performance Programs for Scientific Data Management, Second Edition"
+(https://www.amazon.com/dp/B0H7Q1Z75L).
+"""
 from pathlib import Path
 
 import matplotlib
