@@ -327,8 +327,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       HDF5_PLUGIN_PATH: ${{ github.workspace }}/netcdf-c-install/hdf5/lib/plugin
-      LD_LIBRARY_PATH: $GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH
-      PKG_CONFIG_PATH: ${{ github.workspace }}/netcdf-c-install/lib/pkgconfig:${{ github.workspace }}/hdf5-install/lib/pkgconfig
+      LD_LIBRARY_PATH: $GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$GITHUB_WORKSPACE/libdicom-install/lib:$LD_LIBRARY_PATH
+      PKG_CONFIG_PATH: ${{ github.workspace }}/netcdf-c-install/lib/pkgconfig:${{ github.workspace }}/hdf5-install/lib/pkgconfig:${{ github.workspace }}/libdicom-install/lib/pkgconfig:${{ github.workspace }}/libdicom-install/lib/x86_64-linux-gnu/pkgconfig
     strategy:
       fail-fast: false
       matrix:
@@ -341,7 +341,7 @@ jobs:
 
       - name: Install base dependencies
         run: |
-          sudo apt-get install -y cmake make wget zlib1g-dev libjpeg-dev liblz4-dev libbz2-dev liblzf-dev libzstd-dev
+          sudo apt-get install -y cmake make wget zlib1g-dev libjpeg-dev libjpeg-turbo8-dev liblz4-dev libbz2-dev liblzf-dev libzstd-dev meson ninja-build
 
       - name: Install documentation dependencies
         if: matrix.fortran == 'on' && matrix.compression == 'all'
@@ -467,6 +467,24 @@ jobs:
           make -j$(nproc)
           make install
 
+      # Cache libdicom install for DICOM-enabled builds
+      - name: Cache libdicom install
+        if: matrix.fortran == 'on' && matrix.compression == 'all'
+        id: cache-libdicom
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/libdicom-install
+          key: libdicom-main-ci-${{ runner.os }}-refresh-1
+
+      - name: Clone and build libdicom
+        if: matrix.fortran == 'on' && matrix.compression == 'all' && steps.cache-libdicom.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 https://github.com/ImagingDataCommons/libdicom.git libdicom-main
+          cd libdicom-main
+          meson setup build --prefix=$GITHUB_WORKSPACE/libdicom-install
+          meson compile -C build
+          meson install -C build
+
             # --- CMake build ---------------------------------------------------
       - name: Create build directory (CMake)
         if: matrix.build_system == 'cmake'
@@ -489,8 +507,12 @@ jobs:
           if [ "${{ matrix.fortran }}" = "on" ]; then
             CDF_FLAG="-DNEP_ENABLE_CDF=ON"
           fi
+          DICOM_FLAG="-DNEP_ENABLE_DICOM=OFF"
+          if [ "${{ matrix.fortran }}" = "on" ] && [ "${{ matrix.compression }}" = "all" ]; then
+            DICOM_FLAG="-DNEP_ENABLE_DICOM=ON"
+          fi
           export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
-          cmake .. -DCMAKE_C_FLAGS="-Wall -Werror" -DCMAKE_Fortran_FLAGS="-Wall -Werror" -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install;$GITHUB_WORKSPACE/cdf-install;/usr/include/liblzf" -DBUILD_TESTING=ON -DNEP_BUILD_EXAMPLES=ON $DOC_FLAG $FORTRAN_FLAG $CDF_FLAG -DNEP_ENABLE_FITS=OFF -DNEP_ENABLE_GEOTIFF=OFF -DNEP_ENABLE_GRIB2=OFF
+          cmake .. -DCMAKE_C_FLAGS="-Wall -Werror" -DCMAKE_Fortran_FLAGS="-Wall -Werror" -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install;$GITHUB_WORKSPACE/cdf-install;$GITHUB_WORKSPACE/libdicom-install;/usr/include/liblzf" -DBUILD_TESTING=ON -DNEP_BUILD_EXAMPLES=ON $DOC_FLAG $FORTRAN_FLAG $CDF_FLAG $DICOM_FLAG -DNEP_ENABLE_FITS=OFF -DNEP_ENABLE_GEOTIFF=OFF -DNEP_ENABLE_GRIB2=OFF
 
       - name: Build (CMake)
         if: matrix.build_system == 'cmake'
@@ -556,9 +578,9 @@ jobs:
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
           export HDF5_PLUGIN_PATH="$GITHUB_WORKSPACE/netcdf-c-install/hdf5/lib/plugin"
           export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include -I$GITHUB_WORKSPACE/cdf-install/include -I/usr/include/liblzf"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib"
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include -I$GITHUB_WORKSPACE/cdf-install/include -I$GITHUB_WORKSPACE/libdicom-install/include -I/usr/include/liblzf"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib -L$GITHUB_WORKSPACE/libdicom-install/lib"
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$GITHUB_WORKSPACE/libdicom-install/lib:$LD_LIBRARY_PATH"
           export CFLAGS="-Wall"
           export FCFLAGS="-Wall -Wno-error=missing-include-dirs -I$GITHUB_WORKSPACE/netcdf-fortran-install/include"
           ls -l $GITHUB_WORKSPACE/hdf5-install/lib
@@ -587,7 +609,12 @@ jobs:
             CDF_FLAG="--enable-cdf"
           fi
 
-          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc $LZ4_FLAG $BZIP2_FLAG $DOCS_FLAG $FORTRAN_FLAG $CDF_FLAG --disable-geotiff --disable-grib2 --disable-fits --enable-examples || (echo "Configure failed. Printing config.log:"; cat config.log; echo "hdf5_plugins/config.log:"; cat hdf5_plugins/config.log; exit 1)
+          DICOM_FLAG="--disable-dicom"
+          if [ "${{ matrix.fortran }}" = "on" ] && [ "${{ matrix.compression }}" = "all" ]; then
+            DICOM_FLAG="--enable-dicom"
+          fi
+
+          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc $LZ4_FLAG $BZIP2_FLAG $DOCS_FLAG $FORTRAN_FLAG $CDF_FLAG $DICOM_FLAG --disable-geotiff --disable-grib2 --disable-fits --enable-examples || (echo "Configure failed. Printing config.log:"; cat config.log; echo "hdf5_plugins/config.log:"; cat hdf5_plugins/config.log; exit 1)
 
       - name: Build (Autotools)
         if: matrix.build_system == 'autotools'

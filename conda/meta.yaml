@@ -25,6 +25,8 @@ requirements:
     - netcdf-fortran
     - lz4-c
     - bzip2
+    - libdicom
+    - libjpeg-turbo
   run:
     - hdf5
     - libnetcdf

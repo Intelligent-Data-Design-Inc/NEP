@@ -32,3 +32,8 @@ if test "@BUILD_FITS@" = "yes"; then
     ./ftst_fits_udf
 fi
 
+# If DICOM is enabled, run the DICOM UDF test.
+if test "@BUILD_DICOM@" = "yes"; then
+    ./ftst_dicom_udf
+fi
+

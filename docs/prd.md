@@ -658,7 +658,54 @@ PDS4 is assigned UDF slot 5 (`NC_FORMATX_UDF5`). Permanent slot map:
 
 ---
 
-## 15. Performance Examples (v1.10.0)
+## 15. DICOM Format Support (v3.0.0)
+
+### 15.1 Overview
+
+DICOM (Digital Imaging and Communications in Medicine) support via a UDF handler enables transparent access to single-frame and multi-frame medical imaging objects through the standard NetCDF API.
+
+### 15.2 Features
+
+- **File Operations**: `NC_DICOM_open()` and `NC_DICOM_close()` with proper resource management
+- **Format Detection**: Explicit `NC_UDF6` mode; autoload registration via `.ncrc` once NetCDF-C supports magic offsets
+- **Metadata Mapping**: DICOM tags mapped to NetCDF dimensions, variables, and attributes
+- **Data Reading**: `NC_DICOM_get_vara()` reads uncompressed and encapsulated JPEG Baseline pixel data
+- **Multi-frame Support**: Frame, row, column, and sample dimensions expose multi-frame images
+- **Type Mapping**: `BitsAllocated` and `PixelRepresentation` determine the NetCDF type
+
+### 15.3 Data Organization
+
+- **Dimensions**: `frame`, `row`, `column`, and optional `sample`
+- **Variable**: `pixel_data`
+- **Global Attributes**: `PatientName`, `PatientID`, `Modality`, `PhotometricInterpretation`, `TransferSyntaxUID`, `StudyInstanceUID`, `SeriesInstanceUID`, `SOPClassUID`, `SOPInstanceUID`
+- **Variable Attributes**: `NumberOfFrames`, `SamplesPerPixel`, `BitsAllocated`, `BitsStored`, `HighBit`, `PixelRepresentation`, `PlanarConfiguration`
+
+### 15.4 Build Configuration
+
+**CMake:**
+- `-DNEP_ENABLE_DICOM=ON/OFF` - Enable/disable DICOM support (default: OFF)
+
+**Autotools:**
+- `--enable-dicom/--disable-dicom` - DICOM support (default: disabled)
+
+### 15.5 Dependencies
+
+- libdicom (https://github.com/ImagingLib/libdicom)
+- libjpeg or libjpeg-turbo
+
+### 15.6 UDF Slot
+
+DICOM is assigned UDF slot 6 (`NC_UDF6`).
+
+### 15.7 Known Limitations
+
+- Read-only access (`NC_NOWRITE` mode only)
+- Supported transfer syntaxes are limited to uncompressed Explicit VR Little Endian, Implicit VR Little Endian, and encapsulated JPEG Baseline
+- Other transfer syntaxes may be rejected cleanly
+
+---
+
+## 16. Performance Examples (v1.10.0)
 
 Performance benchmark programs gated by `ENABLE_BENCHMARKS` (CMake) or
 `--enable-benchmarks` (Autotools). Not run in regular CI. Dataset for all
@@ -707,7 +754,7 @@ shape 10×45×90.
 
 ---
 
-## 16. Release History
+## 17. Release History
 
 - **v0.1.3** (Nov 2025): Architecture shift from HDF5 VOL to NetCDF UDF, Doxygen documentation
 - **v1.0.0**: LZ4 and BZIP2 compression filters

@@ -53,6 +53,7 @@ class Nep(CMakePackage):
     variant("grib2", default=False, description="Enable GRIB2 reader support via NCEPLIBS-g2c")
     variant("cdf", default=False, description="Enable NASA CDF reader support")
     variant("pds4", default=False, description="Enable PDS4 reader support via libxml2")
+    variant("dicom", default=False, description="Enable DICOM reader support via libdicom")
     variant(
         "parallel",
         default=False,
@@ -77,6 +78,8 @@ class Nep(CMakePackage):
     # cdf: NASA CDF library; not a Spack builtin. Register spack/cdf/package.py
     # from the NEP repo in a local Spack repository before using +cdf.
     depends_on("libxml2", when="+pds4", type=("build", "link"))
+    depends_on("libdicom", when="+dicom", type=("build", "link"))
+    depends_on("libjpeg-turbo", when="+dicom", type=("build", "link"))
     depends_on("mpi", when="+parallel", type=("build", "link", "run"))
     depends_on("libtiff", when="+geotiff", type=("build", "link"))
     depends_on("doxygen", when="+docs", type="build")
@@ -92,6 +95,7 @@ class Nep(CMakePackage):
             self.define_from_variant("NEP_ENABLE_GRIB2", "grib2"),
             self.define_from_variant("NEP_ENABLE_CDF", "cdf"),
             self.define_from_variant("NEP_ENABLE_PDS4", "pds4"),
+            self.define_from_variant("NEP_ENABLE_DICOM", "dicom"),
             self.define_from_variant("NEP_ENABLE_PARALLEL_TESTS", "parallel"),
             self.define_from_variant("NEP_BUILD_EXAMPLES", "examples"),
             self.define_from_variant("NEP_ENABLE_BENCHMARKS", "benchmarks"),
@@ -117,5 +121,7 @@ class Nep(CMakePackage):
             assert os.path.exists(join_path(self.prefix.lib, "libnccdf.so"))
         if "+pds4" in self.spec:
             assert os.path.exists(join_path(self.prefix.lib, "libncpds4.so"))
+        if "+dicom" in self.spec:
+            assert os.path.exists(join_path(self.prefix.lib, "libncdicom.so"))
         if "+fits" in self.spec:
             assert os.path.exists(join_path(self.prefix.lib, "libncfits.so"))
