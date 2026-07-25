@@ -124,6 +124,9 @@ if(HAVE_DICOM)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/DICOM/tst_dicom_uncompressed.dcm
                    ${CMAKE_CURRENT_BINARY_DIR}/data/DICOM/tst_dicom_uncompressed.dcm
                    COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/DICOM/MRBRAIN.DCM
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/DICOM/MRBRAIN.DCM
+                   COPYONLY)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/DICOM/0003.DCM
                    ${CMAKE_CURRENT_BINARY_DIR}/data/DICOM/0003.DCM
                    COPYONLY)

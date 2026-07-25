@@ -1146,6 +1146,124 @@ NC_DICOM_inq_format_extended(int ncid, int *formatp, int *modep)
 }
 
 #ifdef HAVE_DICOM
+
+/**
+ * @internal Return true for integer netCDF atomic types.
+ */
+static int
+dicom_type_is_int(nc_type xtype)
+{
+    return (xtype == NC_BYTE || xtype == NC_UBYTE ||
+            xtype == NC_SHORT || xtype == NC_USHORT ||
+            xtype == NC_INT || xtype == NC_UINT ||
+            xtype == NC_INT64 || xtype == NC_UINT64);
+}
+
+/**
+ * @internal Return true for unsigned integer netCDF atomic types.
+ */
+static int
+dicom_type_is_unsigned(nc_type xtype)
+{
+    return (xtype == NC_UBYTE || xtype == NC_USHORT ||
+            xtype == NC_UINT || xtype == NC_UINT64);
+}
+
+/**
+ * @internal Convert a single DICOM pixel value from the file type to the
+ * requested memory type.  The conversion is done via the widest integer
+ * types so that widening/narrowing between signed and unsigned integer
+ * types behaves the same as a C cast.
+ */
+static int
+dicom_convert_pixel(void *dst, size_t dst_size, nc_type dst_type,
+                    const void *src, size_t src_size, nc_type src_type)
+{
+    unsigned long long uval = 0;
+    long long sval = 0;
+    int src_is_unsigned = dicom_type_is_unsigned(src_type);
+    int dst_is_unsigned = dicom_type_is_unsigned(dst_type);
+
+    if (!dicom_type_is_int(src_type) || !dicom_type_is_int(dst_type))
+        return NC_EBADTYPE;
+
+    /* Read the source value as the widest signed/unsigned integer. */
+    if (src_is_unsigned)
+    {
+        switch (src_size)
+        {
+        case 1: uval = *(const unsigned char *)src; break;
+        case 2: uval = *(const unsigned short *)src; break;
+        case 4: uval = *(const unsigned int *)src; break;
+        case 8: uval = *(const unsigned long long *)src; break;
+        default: return NC_EBADTYPE;
+        }
+    }
+    else
+    {
+        switch (src_size)
+        {
+        case 1: sval = *(const signed char *)src; break;
+        case 2: sval = *(const short *)src; break;
+        case 4: sval = *(const int *)src; break;
+        case 8: sval = *(const long long *)src; break;
+        default: return NC_EBADTYPE;
+        }
+    }
+
+    /* Write the destination using C cast semantics. */
+    if (src_is_unsigned && !dst_is_unsigned)
+    {
+        long long v = (long long)uval;
+        switch (dst_size)
+        {
+        case 1: *(signed char *)dst = (signed char)v; break;
+        case 2: *(short *)dst = (short)v; break;
+        case 4: *(int *)dst = (int)v; break;
+        case 8: *(long long *)dst = v; break;
+        default: return NC_EBADTYPE;
+        }
+    }
+    else if (!src_is_unsigned && dst_is_unsigned)
+    {
+        unsigned long long v = (unsigned long long)sval;
+        switch (dst_size)
+        {
+        case 1: *(unsigned char *)dst = (unsigned char)v; break;
+        case 2: *(unsigned short *)dst = (unsigned short)v; break;
+        case 4: *(unsigned int *)dst = (unsigned int)v; break;
+        case 8: *(unsigned long long *)dst = v; break;
+        default: return NC_EBADTYPE;
+        }
+    }
+    else if (src_is_unsigned)
+    {
+        unsigned long long v = uval;
+        switch (dst_size)
+        {
+        case 1: *(unsigned char *)dst = (unsigned char)v; break;
+        case 2: *(unsigned short *)dst = (unsigned short)v; break;
+        case 4: *(unsigned int *)dst = (unsigned int)v; break;
+        case 8: *(unsigned long long *)dst = v; break;
+        default: return NC_EBADTYPE;
+        }
+    }
+    else
+    {
+        long long v = sval;
+        switch (dst_size)
+        {
+        case 1: *(signed char *)dst = (signed char)v; break;
+        case 2: *(short *)dst = (short)v; break;
+        case 4: *(int *)dst = (int)v; break;
+        case 8: *(long long *)dst = v; break;
+        default: return NC_EBADTYPE;
+        }
+    }
+
+    return NC_NOERR;
+}
+
 /**
  * @internal Read a hyperslab of data from the DICOM pixel_data variable.
  *
@@ -1182,6 +1300,8 @@ NC_DICOM_get_vara(int ncid, int varid, const size_t *start,
     size_t frame_start, row_start, col_start, sample_start;
     size_t nframes_req, row_count, col_count, sample_count;
     size_t f, r, c, s;
+    nc_type src_type;
+    size_t src_size, dst_size;
 
     if (!start || !count || !value)
         return NC_EINVAL;
@@ -1193,11 +1313,18 @@ NC_DICOM_get_vara(int ncid, int varid, const size_t *start,
 
     dicom_file = (NC_DICOM_FILE_INFO_T *)h5->format_file_info;
 
+    src_type = (nc_type)var->type_info->hdr.id;
+    src_size = dicom_file->type_size;
+
     /* Use variable's own type if caller did not specify. */
     if (memtype == NC_NAT)
-        memtype = (nc_type)var->type_info->hdr.id;
+        memtype = src_type;
 
-    if (memtype != (nc_type)var->type_info->hdr.id)
+    /* Reject unsupported memory types, but allow integer conversions. */
+    if (nc_inq_type(ncid, memtype, NULL, &dst_size))
+        return NC_EBADTYPE;
+    if (memtype != src_type &&
+        (!dicom_type_is_int(src_type) || !dicom_type_is_int(memtype)))
         return NC_EBADTYPE;
 
     ndims = var->ndims;
@@ -1263,9 +1390,25 @@ NC_DICOM_get_vara(int ncid, int varid, const size_t *start,
                     dst_idx = ((f * row_count + r) * col_count + c) *
                         sample_count + s;
 
-                    memcpy((char *)value + dst_idx * dicom_file->type_size,
-                           (char *)frame_buf + src_idx * dicom_file->type_size,
-                           dicom_file->type_size);
+                    if (memtype == src_type)
+                    {
+                        memcpy((char *)value + dst_idx * src_size,
+                               (char *)frame_buf + src_idx * src_size,
+                               src_size);
+                    }
+                    else
+                    {
+                        retval = dicom_convert_pixel(
+                            (char *)value + dst_idx * dst_size,
+                            dst_size, memtype,
+                            (char *)frame_buf + src_idx * src_size,
+                            src_size, src_type);
+                        if (retval)
+                        {
+                            free(frame_buf);
+                            return retval;
+                        }
+                    }
                 }
             }
         }

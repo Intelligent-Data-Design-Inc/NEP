@@ -12,8 +12,9 @@ NEP implements five NetCDF User Defined Format (UDF) handlers that allow externa
 | UDF3 | FITS | `SIMPLE` | v2.0.0 |
 | UDF4 | NASA CDF | `\xCD\xF3\x00\x01` | v1.3.0 |
 | UDF5 | NASA/ESA PDS4 | XML root `Product_Observational` | v2.2.0 |
+| UDF6 | DICOM | `DICM` at byte offset 128 | v3.0.0 |
 
-All five readers can be enabled simultaneously — there are no mutual-exclusivity restrictions as of v2.2.0.
+All readers can be enabled simultaneously — there are no mutual-exclusivity restrictions.
 
 ## Format Reference Pages
 
@@ -27,6 +28,7 @@ dependencies, resources, and examples:
 | FITS | UDF3 | [FITS](fits.md) |
 | NASA CDF | UDF4 | [NASA CDF](cdf.md) |
 | NASA/ESA PDS4 | UDF5 | [PDS4-to-NetCDF Mapping](pds4.md) |
+| DICOM | UDF6 | [DICOM](dicom.md) |
 
 See also the native NetCDF-4 compression documentation:
 [LZ4/BZIP2 HDF5 filters](compression.md).
@@ -57,6 +59,7 @@ nc_open("satellite_image.tif",                  NC_NOWRITE, &ncid);  /* GeoTIFF 
 nc_open("data.cdf",                             NC_NOWRITE, &ncid);  /* CDF */
 nc_open("gdaswave.t00z.wcoast.0p16.f000.grib2", NC_NOWRITE, &ncid);  /* GRIB2 */
 nc_open("image.fits",                           NC_NOWRITE, &ncid);  /* FITS */
+nc_open("image.dcm",                            NC_UDF6,    &ncid);  /* DICOM */
 ```
 
 **Install path**:

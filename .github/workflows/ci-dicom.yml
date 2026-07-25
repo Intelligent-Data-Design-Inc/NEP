@@ -111,7 +111,7 @@ jobs:
             -DNEP_BUILD_LZ4=OFF \
             -DNEP_BUILD_BZIP2=OFF \
             -DNEP_BUILD_DOCUMENTATION=OFF \
-            -DNEP_BUILD_EXAMPLES=OFF \
+            -DNEP_BUILD_EXAMPLES=ON \
             -DBUILD_TESTING=ON
           echo "=== Checking config.h for HAVE_DICOM ==="
           grep "define HAVE_DICOM" config.h && echo "SUCCESS: HAVE_DICOM is defined" || (echo "FAILURE: HAVE_DICOM not defined"; exit 1)

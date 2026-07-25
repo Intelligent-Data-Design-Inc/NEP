@@ -81,14 +81,13 @@ Extend the reader to decompress encapsulated JPEG pixel data and support multi-f
 
 **GitHub Issue:** TBD
 
-#### Sprint 3: Functional Groups, Fortran Bindings, Documentation, and CI
-**Detailed Plan**: See `docs/plan/v3.0.0-sprint3-dicom-functional-groups-ci.md`
+#### Sprint 3: Test Expansion, C/Fortran Examples, Documentation, Packaging, and CI
+**Detailed Plan**: See `docs/plan/v3.0.0-sprint3-dicom-tests-examples-ci.md`
 
-Complete the DICOM reader by exposing Shared and Per-frame Functional Groups, add a Fortran smoke test, create a C example program, update all user-facing documentation, and wire DICOM into the existing CI matrix and packaging recipes.
+Use the new DICOM test files (`MRBRAIN.DCM`, `0003.DCM`, and the existing uncompressed sample) to expand regression coverage, add a Fortran smoke test, create a C example program, update all user-facing documentation, and wire DICOM support into the existing CI matrix and packaging recipes.
 
 **Implementation scope:**
-- Parse Shared Functional Groups Sequence `(5200,9229)` and Per-frame Functional Groups Sequence `(5200,9230)`.
-- Expose `image_position_patient`, `image_orientation_patient`, `pixel_spacing`, and `slice_thickness` as NetCDF variables over the `frame` dimension or as global attributes when shared.
+- Expand `test/tst_dicom_udf.c` to exercise all three sample files, including the 16-bit uncompressed MR image and the 17-frame JPEG Baseline XA image.
 - Add `ftest/ftst_dicom_udf.F90` and update Fortran build rules.
 - Add `examples/dicom/dicom_read.c` with compact output and the NetCDF Developer's Handbook Second Edition reference.
 - Create `docs/dicom.md` and update `docs/formats.md`, `docs/design.md`, `docs/prd.md`, and `README.md`.
@@ -96,14 +95,13 @@ Complete the DICOM reader by exposing Shared and Per-frame Functional Groups, ad
 - Integrate DICOM into `.github/workflows/ci.yml` in addition to the focused `ci-dicom.yml`.
 
 **Clarified decisions:**
-- Functional-group variables are created only when the corresponding sequences are present.
-- Shared values become scalar global attributes; per-frame values become `[frame]` variables.
 - The Fortran test calls `NC_DICOM_initialize()` and opens the uncompressed sample, matching the FITS Fortran test pattern.
 - DICOM remains disabled by default in CMake, Autotools, Spack, and Conda.
 - Example output follows the NEP compact style (`ERR(retval)`, `Done.`).
+- The three current sample files do not contain Shared/Per-frame Functional Groups; functional-group metadata is deferred to Sprint 4.
 
 **Acceptance Criteria:**
-- Multi-frame enhanced DICOM files expose functional-group metadata variables when present.
+- `test/tst_dicom_udf.c` passes for all three sample files under both build systems.
 - `ftest/ftst_dicom_udf.F90` compiles and passes under both build systems.
 - `examples/dicom/dicom_read.c` builds, runs, and prints compact metadata ending with `Done.`.
 - All user-facing documentation describes DICOM support accurately.
@@ -111,11 +109,38 @@ Complete the DICOM reader by exposing Shared and Per-frame Functional Groups, ad
 - `ci.yml` builds and tests DICOM in at least one job.
 - All DICOM tests pass with DICOM enabled; existing tests pass with DICOM disabled.
 
-**Testing:** Run `ctest -R dicom --output-on-failure`, `make check`, `ftst_dicom_udf`, and `dicom_read`; test a multi-frame enhanced sample for functional groups; verify the DICOM-enabled `ci.yml` job and `ci-dicom.yml` both pass.
+**Testing:** Run `ctest -R dicom --output-on-failure`, `make check`, `ftst_dicom_udf`, and `dicom_read`; verify the DICOM-enabled `ci.yml` job and `ci-dicom.yml` both pass.
 
 **Build System Integration:** `examples/CMakeLists.txt` and `examples/Makefile.am`; `ftest/CMakeLists.txt` and `ftest/Makefile.am`; `spack/NEP/package.py`; `conda/meta.yaml` and `conda/build.sh`; `.github/workflows/ci.yml`.
 
-**Definition of Done:** The DICOM reader supports functional-group metadata, has Fortran and C examples, is documented across all user-facing docs and packaging recipes, is wired into CI, and the full test suite passes with DICOM enabled while remaining regression-free with DICOM disabled.
+**Definition of Done:** The DICOM reader has expanded regression coverage over all available sample files, a C example and Fortran smoke test, user-facing documentation, optional packaging support, and a CI matrix job, and the full test suite passes with DICOM enabled while remaining regression-free with DICOM disabled.
+
+**GitHub Issue:** TBD
+
+#### Sprint 4: Functional Groups and Enhanced Multi-frame Metadata
+**Detailed Plan**: See `docs/plan/v3.0.0-sprint4-dicom-functional-groups.md`
+
+Expose Shared and Per-frame Functional Group metadata from enhanced multi-frame DICOM objects as NetCDF variables or global attributes once a suitable enhanced multi-frame sample is available.
+
+**Implementation scope:**
+- Parse Shared Functional Groups Sequence `(5200,9229)` and Per-frame Functional Groups Sequence `(5200,9230)`.
+- Expose `image_position_patient`, `image_orientation_patient`, `pixel_spacing`, and `slice_thickness` as NetCDF variables over the `frame` dimension or as global attributes when shared.
+- Acquire a multi-frame enhanced DICOM sample containing functional groups for testing.
+
+**Clarified decisions:**
+- Functional-group variables are created only when the corresponding sequences are present.
+- Shared values become scalar global attributes; per-frame values become `[frame]` variables.
+
+**Acceptance Criteria:**
+- Multi-frame enhanced DICOM files expose functional-group metadata variables when present.
+- All DICOM tests pass with DICOM enabled; existing tests continue to pass with DICOM disabled.
+- Unsupported Transfer Syntaxes and malformed files fail cleanly.
+
+**Testing:** Run `ctest -R dicom --output-on-failure` and `make check` against a multi-frame enhanced sample containing functional groups; run the full suite with DICOM disabled to confirm no regressions.
+
+**Build System Integration:** None beyond existing `HAVE_DICOM` conditionals.
+
+**Definition of Done:** The DICOM reader exposes shared and per-frame functional-group metadata for enhanced multi-frame objects, and the full test suite passes with DICOM enabled while remaining regression-free with DICOM disabled.
 
 **GitHub Issue:** TBD
 

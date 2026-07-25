@@ -41,9 +41,9 @@ NEP implements NetCDF's UDF system to provide transparent access to various scie
 
 1. **Core NetCDF API**: Standard API used by applications
 2. **NC_Dispatch Layer**: Format-specific function pointer tables
-3. **Format Handlers**: CDF, GeoTIFF, GRIB2, FITS, and PDS4 UDF handlers
-4. **Format Libraries**: Integration with libgeotiff, NASA CDF library, NCEPLIBS-g2c, CFITSIO, and libxml2
-5. **Multi-format Storage**: Access to NetCDF-4, CDF, GeoTIFF, GRIB2, FITS, and PDS4 files
+3. **Format Handlers**: CDF, GeoTIFF, GRIB2, FITS, PDS4, and DICOM UDF handlers
+4. **Format Libraries**: Integration with libgeotiff, NASA CDF library, NCEPLIBS-g2c, CFITSIO, libxml2, and libdicom/libjpeg
+5. **Multi-format Storage**: Access to NetCDF-4, CDF, GeoTIFF, GRIB2, FITS, PDS4, and DICOM files
 
 ```
 [Application Layer]
@@ -75,8 +75,9 @@ NetCDF-C exposes ten UDF slots (0–9). NEP assigns each format handler a perman
 | FITS | 3 | `NC_UDF3` | Astronomical images and tables (v2.0.0) |
 | CDF | 4 | `NC_UDF4` | NASA CDF; moved from UDF2 in v2.2.0 Sprint 2 |
 | PDS4 | 5 | `NC_UDF5` | NASA/ESA planetary data labels (v2.2.0 Sprint 3) |
+| DICOM | 6 | `NC_UDF6` | DICOM medical imaging (v3.0.0 Sprint 3) |
 
-Before v2.2.0, CDF and GRIB2 shared UDF slot 2 and were mutually exclusive. v2.2.0 Sprint 2 removes that restriction by moving CDF to its own slot.
+Before v2.2.0, CDF and GRIB2 shared UDF slot 2 and were mutually exclusive. v2.2.0 Sprint 2 removes that restriction by moving CDF to its own slot. DICOM uses UDF slot 6.
 
 ## Project Structure
 
@@ -239,6 +240,7 @@ cmake -DBUILD_DOCUMENTATION=ON
 | Core | HDF5 | v2.1.1+ | HDF Group | pkg-config, FindHDF5.cmake |
 | LZ4 Filter | LZ4 | Latest | https://github.com/lz4/lz4 | pkg-config, FindLZ4.cmake |
 | BZIP2 Filter | BZIP2 | Latest | System library | FindBZip2.cmake |
+| DICOM Reader | libdicom + libjpeg | Latest | https://github.com/ImagingLib/libdicom + system | CMake find_library, AC_CHECK_LIB |
 | Docs | Doxygen | Latest | Optional | find_package(Doxygen) |
 
 #### Dependency Detection
