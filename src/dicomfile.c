@@ -3,20 +3,19 @@
  * @brief DICOM User-Defined Format (UDF) dispatch layer.
  *
  * Implements the NEP DICOM reader, which maps DICOM image SOP Instances
- * to the netCDF-4 data model via libdicom. This Sprint 1 implementation
- * supports native (uncompressed), single-frame, grayscale and RGB images
- * only; encapsulated (compressed) transfer syntaxes and multi-frame
- * objects are explicitly rejected.
+ * to the netCDF-4 data model via libdicom. This Sprint 2 implementation
+ * supports native (uncompressed) and encapsulated JPEG Baseline images,
+ * including multi-frame objects. Other transfer syntaxes may be rejected.
  *
  * - Primary image: exposed as a `pixel_data` variable in the root group
- *   with dimensions derived from Rows, Columns, SamplesPerPixel, and
- *   PlanarConfiguration.
+ *   with dimensions derived from NumberOfFrames, Rows, Columns,
+ *   SamplesPerPixel, and PlanarConfiguration.
  * - Pixel type is derived from BitsAllocated and PixelRepresentation.
  * - Patient/Study/Series/Image Pixel module tags are mapped to global
  *   and variable attributes.
- * - Data reading: NC_DICOM_get_vara() reads the requested frame via
+ * - Data reading: NC_DICOM_get_vara() reads the requested frames via
  *   libdicom's dcm_filehandle_read_frame() and copies the hyperslab
- *   into the user buffer.
+ *   into the user buffer. JPEG frames are decompressed with libjpeg.
  *
  * @author Edward Hartnett
  * @date 2026-07-25
@@ -30,9 +29,11 @@
 #include "nep_nc4.h"
 #include "dicomdispatch.h"
 
-/* Include libdicom header if available */
+/* Include libdicom and libjpeg headers if available */
 #ifdef HAVE_DICOM
 #include <dicom/dicom.h>
+#include <jpeglib.h>
+#include <setjmp.h>
 #endif
 
 extern int nc4_var_list_add(NC_GRP_INFO_T *grp, const char *name, int ndims,
@@ -256,6 +257,10 @@ dicom_get_string_tag(DcmError **error, const DcmDataSet *dataset,
 /**
  * @internal Get a numeric DICOM tag from a Data Set.
  *
+ * Integer-valued tags (US, SS, UL, SL, etc.) are read directly. String
+ * numeric tags (IS, DS) are parsed into int64_t so that values such as
+ * NumberOfFrames are available.
+ *
  * @param error libdicom error object.
  * @param dataset Data Set to search.
  * @param keyword DICOM keyword for the tag.
@@ -269,6 +274,7 @@ dicom_get_int_tag(DcmError **error, const DcmDataSet *dataset,
 {
     uint32_t tag;
     DcmElement *element;
+    DcmVR vr;
 
     tag = dcm_dict_tag_from_keyword(keyword);
     if (tag == 0)
@@ -277,6 +283,36 @@ dicom_get_int_tag(DcmError **error, const DcmDataSet *dataset,
     element = dcm_dataset_get(error, dataset, tag);
     if (element == NULL)
         return 0;
+
+    vr = dcm_element_get_vr(element);
+    if (vr == DCM_VR_IS || vr == DCM_VR_DS)
+    {
+        const char *str = NULL;
+        char *endptr = NULL;
+        double dval;
+        long long ival;
+
+        if (!dcm_element_get_value_string(error, element, 0, &str))
+            return 0;
+        if (!str)
+            return 0;
+
+        if (vr == DCM_VR_IS)
+        {
+            ival = strtoll(str, &endptr, 10);
+            if (endptr == str || *endptr != '\0')
+                return 0;
+            *valuep = (int64_t)ival;
+        }
+        else
+        {
+            dval = strtod(str, &endptr);
+            if (endptr == str || *endptr != '\0')
+                return 0;
+            *valuep = (int64_t)(dval >= 0.0 ? dval + 0.5 : dval - 0.5);
+        }
+        return 1;
+    }
 
     return dcm_element_get_value_integer(error, element, 0, valuep);
 }
@@ -363,6 +399,223 @@ dicom_add_var_int_att(NC_VAR_INFO_T *var, const char *name, long long value)
     return dicom_add_var_att(var, name, buf);
 }
 
+#ifdef HAVE_DICOM
+
+/**
+ * @internal libjpeg error handler that uses longjmp instead of exit().
+ */
+struct dicom_jpeg_error_mgr
+{
+    struct jpeg_error_mgr pub;
+    jmp_buf setjmp_buffer;
+};
+
+/**
+ * @internal libjpeg error_exit replacement.
+ */
+static void
+dicom_jpeg_error_exit(j_common_ptr cinfo)
+{
+    struct dicom_jpeg_error_mgr *myerr =
+        (struct dicom_jpeg_error_mgr *)cinfo->err;
+    (*cinfo->err->output_message)(cinfo);
+    longjmp(myerr->setjmp_buffer, 1);
+}
+
+/**
+ * @internal Decompress a JPEG Baseline encapsulated DICOM frame.
+ *
+ * @param dicom_file DICOM file state (rows, columns, samples, type size).
+ * @param src JPEG encoded frame bytes.
+ * @param src_len Length of JPEG input.
+ * @param bufp Receives malloc'd decompressed frame buffer.
+ * @param buf_lenp Receives length of decompressed buffer.
+ *
+ * @return NC_NOERR on success.
+ * @return NC_ENOMEM or NC_EIO on failure.
+ */
+static int
+dicom_decompress_jpeg(NC_DICOM_FILE_INFO_T *dicom_file,
+                      const void *src, size_t src_len,
+                      void **bufp, size_t *buf_lenp)
+{
+    struct jpeg_decompress_struct cinfo;
+    struct dicom_jpeg_error_mgr jerr;
+    JSAMPARRAY scanline_buffer = NULL;
+    size_t samples_per_pixel;
+    size_t row_stride;
+    size_t out_size;
+    unsigned char *out = NULL;
+    unsigned char *out_ptr;
+    int retval = NC_NOERR;
+
+    *bufp = NULL;
+    *buf_lenp = 0;
+
+    cinfo.err = jpeg_std_error(&jerr.pub);
+    jerr.pub.error_exit = dicom_jpeg_error_exit;
+
+    if (setjmp(jerr.setjmp_buffer))
+    {
+        retval = NC_EIO;
+        goto cleanup;
+    }
+
+    jpeg_create_decompress(&cinfo);
+    jpeg_mem_src(&cinfo, (const unsigned char *)src, (unsigned long)src_len);
+    jpeg_read_header(&cinfo, TRUE);
+
+    if (dicom_file->samples_per_pixel == 3)
+        cinfo.out_color_space = JCS_RGB;
+    else
+        cinfo.out_color_space = JCS_GRAYSCALE;
+
+    jpeg_start_decompress(&cinfo);
+
+    samples_per_pixel = (size_t)cinfo.output_components;
+
+    if (samples_per_pixel != (size_t)dicom_file->samples_per_pixel)
+    {
+        retval = NC_EINVAL;
+        goto cleanup;
+    }
+    if ((size_t)cinfo.output_width != dicom_file->columns ||
+        (size_t)cinfo.output_height != dicom_file->rows)
+    {
+        retval = NC_EINVAL;
+        goto cleanup;
+    }
+
+    row_stride = (size_t)cinfo.output_width * samples_per_pixel *
+        dicom_file->type_size;
+    out_size = row_stride * (size_t)cinfo.output_height;
+
+    if (!(out = malloc(out_size)))
+    {
+        retval = NC_ENOMEM;
+        goto cleanup;
+    }
+
+    scanline_buffer = (*cinfo.mem->alloc_sarray)
+        ((j_common_ptr)&cinfo, JPOOL_IMAGE, row_stride, 1);
+    if (!scanline_buffer)
+    {
+        retval = NC_ENOMEM;
+        goto cleanup;
+    }
+
+    out_ptr = out;
+    while (cinfo.output_scanline < cinfo.output_height)
+    {
+        jpeg_read_scanlines(&cinfo, scanline_buffer, 1);
+        memcpy(out_ptr, scanline_buffer[0], row_stride);
+        out_ptr += row_stride;
+    }
+
+    jpeg_finish_decompress(&cinfo);
+
+cleanup:
+    jpeg_destroy_decompress(&cinfo);
+    if (retval != NC_NOERR)
+    {
+        free(out);
+        return retval;
+    }
+
+    *bufp = out;
+    *buf_lenp = out_size;
+    return NC_NOERR;
+}
+
+/**
+ * @internal Read or decompress one DICOM frame into a malloc'd buffer.
+ *
+ * The returned buffer must be freed by the caller.
+ *
+ * @param dicom_file DICOM file state.
+ * @param frame_number One-based frame number (libdicom convention).
+ * @param bufp Receives malloc'd frame buffer.
+ * @param buf_lenp Receives length of buffer in bytes.
+ *
+ * @return NC_NOERR on success.
+ */
+static int
+dicom_read_frame_buffer(NC_DICOM_FILE_INFO_T *dicom_file,
+                        uint32_t frame_number,
+                        void **bufp, size_t *buf_lenp)
+{
+    DcmError *error = NULL;
+    DcmFrame *frame = NULL;
+    const char *frame_data = NULL;
+    uint32_t frame_length = 0;
+    void *buf = NULL;
+    size_t expected_len;
+    size_t copy_len;
+    int ret;
+
+    *bufp = NULL;
+    *buf_lenp = 0;
+
+    if (!dcm_filehandle_prepare_read_frame(&error, dicom_file->filehandle))
+    {
+        if (error)
+        {
+            dcm_error_log(error);
+            dcm_error_clear(&error);
+        }
+        return NC_EIO;
+    }
+
+    frame = dcm_filehandle_read_frame(&error, dicom_file->filehandle,
+                                      frame_number);
+    if (frame == NULL)
+    {
+        if (error)
+        {
+            dcm_error_log(error);
+            dcm_error_clear(&error);
+        }
+        return NC_EIO;
+    }
+
+    frame_data = dcm_frame_get_value(frame);
+    frame_length = dcm_frame_get_length(frame);
+    if (!frame_data || frame_length == 0)
+    {
+        dcm_frame_destroy(frame);
+        return NC_EIO;
+    }
+
+    if (dicom_file->encapsulated)
+    {
+        ret = dicom_decompress_jpeg(dicom_file, frame_data, frame_length,
+                                    bufp, buf_lenp);
+        dcm_frame_destroy(frame);
+        return ret;
+    }
+
+    expected_len = dicom_file->type_size * dicom_file->rows *
+        dicom_file->columns * (size_t)dicom_file->samples_per_pixel;
+    copy_len = (size_t)frame_length < expected_len ? (size_t)frame_length :
+        expected_len;
+
+    if (!(buf = malloc(expected_len)))
+    {
+        dcm_frame_destroy(frame);
+        return NC_ENOMEM;
+    }
+    memcpy(buf, frame_data, copy_len);
+    if (copy_len < expected_len)
+        memset((char *)buf + copy_len, 0, expected_len - copy_len);
+
+    dcm_frame_destroy(frame);
+    *bufp = buf;
+    *buf_lenp = expected_len;
+    return NC_NOERR;
+}
+
+#endif /* HAVE_DICOM */
+
 /**
  * @internal Determine whether the given Transfer Syntax UID is one of the
  * native (uncompressed) transfer syntaxes supported by this sprint.
@@ -380,6 +633,23 @@ dicom_is_native_transfer_syntax(const char *uid)
     return (strcmp(uid, "1.2.840.10008.1.2") == 0 ||      /* Implicit VR LE */
             strcmp(uid, "1.2.840.10008.1.2.1") == 0 ||    /* Explicit VR LE */
             strcmp(uid, "1.2.840.10008.1.2.2") == 0);     /* Explicit VR BE */
+}
+
+/**
+ * @internal Determine whether the given Transfer Syntax UID is the JPEG
+ * Baseline transfer syntax supported by this sprint.
+ *
+ * @param uid Transfer Syntax UID string.
+ *
+ * @return Non-zero if JPEG Baseline.
+ */
+static int
+dicom_is_jpeg_baseline_transfer_syntax(const char *uid)
+{
+    if (!uid)
+        return 0;
+
+    return (strcmp(uid, "1.2.840.10008.1.2.4.50") == 0);   /* JPEG Baseline */
 }
 
 /**
@@ -455,12 +725,12 @@ dicom_read_image_metadata(NC_FILE_INFO_T *h5)
     if (!(dicom_file->transfer_syntax_uid = strdup(transfer_syntax_uid)))
         return NC_ENOMEM;
 
-    if (!dicom_is_native_transfer_syntax(transfer_syntax_uid))
-    {
-        dicom_file->encapsulated = 1;
-        return NC_EINVAL;  /* Compressed; not supported in Sprint 1 */
-    }
-    dicom_file->encapsulated = 0;
+    dicom_file->encapsulated = !dicom_is_native_transfer_syntax(transfer_syntax_uid);
+
+    /* Sprint 2 only supports native syntaxes and JPEG Baseline. */
+    if (dicom_file->encapsulated &&
+        !dicom_is_jpeg_baseline_transfer_syntax(transfer_syntax_uid))
+        return NC_EINVAL;
 
     /* Required image pixel module tags. */
     if (!dicom_get_int_tag(&error, dicom_file->metadata, "Rows", &rows) ||
@@ -490,14 +760,13 @@ dicom_read_image_metadata(NC_FILE_INFO_T *h5)
 
     if (samples_per_pixel < 1)
         samples_per_pixel = 1;
+    if (nframes < 1)
+        nframes = 1;
     if (bits_stored == 0)
         bits_stored = bits_allocated;
     if (high_bit == 0 && bits_stored > 0)
         high_bit = bits_stored - 1;
 
-    /* Multi-frame is out of scope for Sprint 1. */
-    if (nframes > 1)
-        return NC_EINVAL;
     dicom_file->nframes = (int)nframes;
 
     dicom_file->rows = (size_t)rows;
@@ -508,7 +777,11 @@ dicom_read_image_metadata(NC_FILE_INFO_T *h5)
     dicom_file->high_bit = (int)high_bit;
     dicom_file->pixel_representation = (int)pixel_representation;
     dicom_file->planar_configuration = (int)planar_configuration;
-    dicom_file->color_dim_index = -1;
+    dicom_file->frame_dim_index = 0;
+    dicom_file->row_dim_index = 1;
+    dicom_file->col_dim_index = 2;
+    dicom_file->sample_dim_index = (samples_per_pixel > 1) ? 3 : -1;
+    dicom_file->color_dim_index = dicom_file->sample_dim_index;
 
     if ((retval = dicom_bits_to_nc_type((int)bits_allocated,
                                         (int)pixel_representation,
@@ -519,13 +792,18 @@ dicom_read_image_metadata(NC_FILE_INFO_T *h5)
     dicom_file->xtype = xtype;
     dicom_file->type_size = type_size;
 
-    /* Create dimensions in the same order as the native pixel data layout:
-     *   - Grayscale: [row, column]
-     *   - RGB planar=0 (interleaved): [row, column, sample]
-     *   - RGB planar=1 (planar): [sample, row, column]
+    /* Create dimensions in a uniform NetCDF layout:
+     *   [frame][row][column] for grayscale, and
+     *   [frame][row][column][sample] for color.
+     * Native planar data is re-ordered during reads.
      */
     {
         NC_DIM_INFO_T *dim;
+
+        if ((retval = nc4_dim_list_add(grp, "frame", (size_t)nframes, -1,
+                                        &dim)))
+            return retval;
+        dimids[ndims++] = dim->hdr.id;
 
         if ((retval = nc4_dim_list_add(grp, "row", dicom_file->rows, -1, &dim)))
             return retval;
@@ -538,35 +816,11 @@ dicom_read_image_metadata(NC_FILE_INFO_T *h5)
 
         if (samples_per_pixel > 1)
         {
-            if (planar_configuration == 1)
-            {
-                /* Insert sample dimension before rows for planar layout. */
-                int i;
-                int sample_dimid;
-
-                if ((retval = nc4_dim_list_add(grp, "sample",
-                                                (size_t)samples_per_pixel,
-                                                -1, &dim)))
-                    return retval;
-                sample_dimid = dim->hdr.id;
-
-                /* Shift row/column dimids down and place sample first. */
-                for (i = ndims; i > 0; i--)
-                    dimids[i] = dimids[i - 1];
-                dimids[0] = sample_dimid;
-                ndims++;
-                dicom_file->color_dim_index = 0;
-            }
-            else
-            {
-                /* Append sample dimension for interleaved color-by-pixel. */
-                if ((retval = nc4_dim_list_add(grp, "sample",
-                                                (size_t)samples_per_pixel,
-                                                -1, &dim)))
-                    return retval;
-                dimids[ndims++] = dim->hdr.id;
-                dicom_file->color_dim_index = ndims - 1;
-            }
+            if ((retval = nc4_dim_list_add(grp, "sample",
+                                            (size_t)samples_per_pixel,
+                                            -1, &dim)))
+                return retval;
+            dimids[ndims++] = dim->hdr.id;
         }
     }
 
@@ -634,6 +888,8 @@ dicom_read_image_metadata(NC_FILE_INFO_T *h5)
         return retval;
     if ((retval = dicom_add_att(grp, "SOPInstanceUID", sop_instance_uid)))
         return retval;
+    if ((retval = dicom_add_var_int_att(var, "NumberOfFrames", nframes)))
+        return retval;
 
     /* Variable attributes on pixel_data. */
     if ((retval = dicom_add_var_int_att(var, "SamplesPerPixel",
@@ -655,69 +911,6 @@ dicom_read_image_metadata(NC_FILE_INFO_T *h5)
     return NC_NOERR;
 }
 
-/**
- * @internal Copy a DICOM frame buffer hyperslab into the user buffer.
- *
- * Both source and destination use the same row-major dimension order.
- * The source is indexed with start[] offsets; the destination is indexed
- * from zero over count[].
- *
- * @param src Source frame buffer.
- * @param dst Destination user buffer.
- * @param elem_size Size in bytes of one element.
- * @param ndims Number of dimensions.
- * @param dims Full dimension lengths.
- * @param start Start indices in source.
- * @param count Counts to copy along each dimension.
- *
- * @return NC_NOERR No error.
- */
-static int
-dicom_copy_slab(const void *src, void *dst, size_t elem_size,
-                int ndims, const size_t dims[],
-                const size_t start[], const size_t count[])
-{
-    size_t indices[NC_MAX_VAR_DIMS] = {0};
-    size_t total = 1;
-    size_t n;
-
-    for (int d = 0; d < ndims; d++)
-        total *= count[d];
-
-    for (n = 0; n < total; n++)
-    {
-        size_t src_offset = 0;
-        size_t dst_offset = 0;
-        size_t src_stride = 1;
-        size_t dst_stride = 1;
-
-        for (int d = ndims - 1; d >= 0; d--)
-        {
-            size_t src_idx = start[d] + indices[d];
-            size_t dst_idx = indices[d];
-
-            src_offset += src_idx * src_stride;
-            dst_offset += dst_idx * dst_stride;
-            src_stride *= dims[d];
-            dst_stride *= count[d];
-        }
-
-        memcpy((char *)dst + dst_offset * elem_size,
-               (const char *)src + src_offset * elem_size,
-               elem_size);
-
-        /* Increment indices, innermost first. */
-        for (int d = ndims - 1; d >= 0; d--)
-        {
-            indices[d]++;
-            if (indices[d] < count[d])
-                break;
-            indices[d] = 0;
-        }
-    }
-
-    return NC_NOERR;
-}
 #endif /* HAVE_DICOM */
 
 /**
@@ -956,9 +1149,10 @@ NC_DICOM_inq_format_extended(int ncid, int *formatp, int *modep)
 /**
  * @internal Read a hyperslab of data from the DICOM pixel_data variable.
  *
- * Reads the single frame via libdicom and copies the requested subset
- * into the user buffer. The frame buffer and the NetCDF variable share
- * the same row-major dimension order.
+ * Reads the requested frames via libdicom (and libjpeg for encapsulated
+ * JPEG Baseline frames) and copies the requested subset into the user
+ * buffer. The NetCDF variable uses a uniform [frame][row][column][sample]
+ * layout; native source data is re-ordered if PlanarConfiguration requires.
  *
  * @param ncid NetCDF ID.
  * @param varid Variable ID.
@@ -981,14 +1175,13 @@ NC_DICOM_get_vara(int ncid, int varid, const size_t *start,
     NC_GRP_INFO_T *grp;
     NC_VAR_INFO_T *var;
     NC_DICOM_FILE_INFO_T *dicom_file;
-    NC_DICOM_VAR_INFO_T *dicom_var;
-    DcmError *error = NULL;
-    DcmFrame *frame = NULL;
-    const char *frame_data = NULL;
-    uint32_t frame_length = 0;
     size_t dims[NC_MAX_VAR_DIMS];
     int ndims;
     int retval;
+    int frame_dim, row_dim, col_dim, sample_dim;
+    size_t frame_start, row_start, col_start, sample_start;
+    size_t nframes_req, row_count, col_count, sample_count;
+    size_t f, r, c, s;
 
     if (!start || !count || !value)
         return NC_EINVAL;
@@ -999,10 +1192,6 @@ NC_DICOM_get_vara(int ncid, int varid, const size_t *start,
         return NC_EBADID;
 
     dicom_file = (NC_DICOM_FILE_INFO_T *)h5->format_file_info;
-    dicom_var = (NC_DICOM_VAR_INFO_T *)var->format_var_info;
-
-    if (dicom_file->encapsulated)
-        return NC_EINVAL;  /* Compressed pixel data not supported yet */
 
     /* Use variable's own type if caller did not specify. */
     if (memtype == NC_NAT)
@@ -1021,57 +1210,70 @@ NC_DICOM_get_vara(int ncid, int varid, const size_t *start,
             return NC_EINVAL;
     }
 
-    /* Prepare to read frames and read the requested frame. */
-    if (!dcm_filehandle_prepare_read_frame(&error, dicom_file->filehandle))
+    frame_dim = dicom_file->frame_dim_index;
+    row_dim = dicom_file->row_dim_index;
+    col_dim = dicom_file->col_dim_index;
+    sample_dim = dicom_file->sample_dim_index;
+
+    if (frame_dim >= ndims || row_dim >= ndims || col_dim >= ndims)
+        return NC_EINVAL;
+    if (sample_dim >= 0 && sample_dim >= ndims)
+        return NC_EINVAL;
+
+    frame_start = start[frame_dim];
+    nframes_req = count[frame_dim];
+    row_start = start[row_dim];
+    row_count = count[row_dim];
+    col_start = start[col_dim];
+    col_count = count[col_dim];
+    sample_start = (sample_dim >= 0) ? start[sample_dim] : 0;
+    sample_count = (sample_dim >= 0) ? count[sample_dim] : 1;
+
+    /* Read each requested frame and copy the requested sub-slab. */
+    for (f = 0; f < nframes_req; f++)
     {
-        if (error)
+        uint32_t frame_number = (uint32_t)(frame_start + f + 1);
+        void *frame_buf = NULL;
+        size_t frame_buf_len = 0;
+
+        if ((retval = dicom_read_frame_buffer(dicom_file, frame_number,
+                                                &frame_buf, &frame_buf_len)))
+            return retval;
+
+        for (r = 0; r < row_count; r++)
         {
-            dcm_error_log(error);
-            dcm_error_clear(&error);
+            size_t src_r = row_start + r;
+            for (c = 0; c < col_count; c++)
+            {
+                size_t src_c = col_start + c;
+                for (s = 0; s < sample_count; s++)
+                {
+                    size_t src_s = sample_start + s;
+                    size_t src_idx;
+                    size_t dst_idx;
+
+                    if (dicom_file->planar_configuration == 1 &&
+                        dicom_file->samples_per_pixel > 1)
+                        src_idx = (src_s * dicom_file->rows + src_r) *
+                            dicom_file->columns + src_c;
+                    else
+                        src_idx = (src_r * dicom_file->columns + src_c) *
+                            (size_t)dicom_file->samples_per_pixel + src_s;
+
+                    dst_idx = ((f * row_count + r) * col_count + c) *
+                        sample_count + s;
+
+                    memcpy((char *)value + dst_idx * dicom_file->type_size,
+                           (char *)frame_buf + src_idx * dicom_file->type_size,
+                           dicom_file->type_size);
+                }
+            }
         }
-        return NC_EIO;
+
+        free(frame_buf);
     }
 
-    frame = dcm_filehandle_read_frame(&error, dicom_file->filehandle,
-                                      (uint32_t)dicom_var->frame_index);
-    if (frame == NULL)
-    {
-        if (error)
-        {
-            dcm_error_log(error);
-            dcm_error_clear(&error);
-        }
-        return NC_EIO;
-    }
-
-    frame_data = dcm_frame_get_value(frame);
-    frame_length = dcm_frame_get_length(frame);
-    if (!frame_data || frame_length == 0)
-    {
-        /* libdicom owns frame memory; destroy frame before returning. */
-        dcm_frame_destroy(frame);
-        return NC_EIO;
-    }
-
-    /* Defensive: ensure the frame is large enough for the full image. */
-    {
-        size_t expected = dicom_file->type_size;
-        for (int d = 0; d < ndims; d++)
-            expected *= dims[d];
-
-        if (frame_length < expected)
-        {
-            dcm_frame_destroy(frame);
-            return NC_EIO;
-        }
-    }
-
-    /* Copy the requested hyperslab into the user buffer. */
-    retval = dicom_copy_slab(frame_data, value, dicom_file->type_size,
-                               ndims, dims, start, count);
-
-    dcm_frame_destroy(frame);
-    return retval;
+    return NC_NOERR;
 }
 #else /* !HAVE_DICOM */
 int

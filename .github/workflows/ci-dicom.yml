@@ -1,11 +1,13 @@
 # GitHub Actions CI workflow for building and testing NEP with DICOM reader support.
 #
-# V3.0.0 Sprint 1: DICOM dispatch layer and native single-frame tests.
+# V3.0.0 Sprint 2: DICOM dispatch layer with encapsulated JPEG Baseline
+# decompression and multi-frame support.
 #
 # This workflow builds NEP with NEP_ENABLE_DICOM=ON using:
 # - HDF5 2.1.1 (built from source, cached)
 # - NetCDF-C 4.10.1 (built from source, cached)
 # - libdicom (built from source, main branch)
+# - libjpeg (system package)
 #
 # Edward Hartnett, Intelligent Data Design, Inc.
 name: ci_dicom
@@ -34,7 +36,7 @@ jobs:
       - name: Install base dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake make wget zlib1g-dev autoconf automake libtool pkg-config gfortran libzstd-dev meson ninja-build
+          sudo apt-get install -y cmake make wget zlib1g-dev autoconf automake libtool pkg-config gfortran libzstd-dev meson ninja-build libjpeg-dev
 
       - name: Cache HDF5 install
         id: cache-hdf5-dicom

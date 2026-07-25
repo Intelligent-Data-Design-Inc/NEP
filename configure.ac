@@ -310,12 +310,16 @@ if test "x$enable_dicom" = "xyes"; then
     AC_CHECK_HEADERS([dicom/dicom.h], [dicom_header=yes], [dicom_header=no])
     AC_CHECK_LIB([dicom], [dcm_filehandle_create_from_file],
                  [dicom_lib=yes; DICOM_LIBS="-ldicom"], [dicom_lib=no])
+    AC_CHECK_HEADERS([jpeglib.h], [jpeg_header=yes], [jpeg_header=no])
+    AC_CHECK_LIB([jpeg], [jpeg_std_error],
+                 [jpeg_lib=yes; DICOM_LIBS="$DICOM_LIBS -ljpeg"], [jpeg_lib=no])
 
-    if test "x$dicom_header" = "xyes" && test "x$dicom_lib" = "xyes"; then
+    if test "x$dicom_header" = "xyes" && test "x$dicom_lib" = "xyes" && \
+       test "x$jpeg_header" = "xyes" && test "x$jpeg_lib" = "xyes"; then
         HAVE_DICOM=yes
         AC_DEFINE([HAVE_DICOM], [1], [Define if libdicom library is found])
         DICOM_LDFLAGS=""
-        # Embed rpath so libncdicom.so finds libdicom at runtime.
+        # Embed rpath so libncdicom.so finds libdicom and libjpeg at runtime.
         for flag in $LDFLAGS; do
             case $flag in
                 -L*)
@@ -323,15 +327,19 @@ if test "x$enable_dicom" = "xyes"; then
                     if test -f "$_ld_dir/libdicom.so" || test -f "$_ld_dir/libdicom.a"; then
                         DICOM_LDFLAGS="$DICOM_LDFLAGS -R$_ld_dir"
                     fi
+                    if test -f "$_ld_dir/libjpeg.so" || test -f "$_ld_dir/libjpeg.a"; then
+                        DICOM_LDFLAGS="$DICOM_LDFLAGS -R$_ld_dir"
+                    fi
                     ;;
             esac
         done
         AC_MSG_NOTICE([DICOM reader enabled])
     else
-        AC_MSG_ERROR([libdicom is required for the DICOM reader. Install libdicom or use --disable-dicom])
+        AC_MSG_ERROR([libdicom and libjpeg are required for the DICOM reader. Install libdicom/libjpeg or use --disable-dicom])
     fi
 fi
 AC_SUBST([DICOM_LIBS])
+AC_SUBST([JPEG_LIBS], [-ljpeg])
 AC_SUBST([DICOM_LDFLAGS])
 AC_SUBST([BUILD_DICOM], [$enable_dicom])
 

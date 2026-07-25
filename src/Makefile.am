@@ -69,5 +69,5 @@ if HAVE_DICOM
 lib_LTLIBRARIES += libncdicom.la
 libncdicom_la_LDFLAGS = -version-info 1:0:0 $(DICOM_LDFLAGS)
 libncdicom_la_SOURCES = dicomdispatch.c dicomfile.c
-libncdicom_la_LIBADD = $(HDF5_LIBS) $(NETCDF_LIBS) $(DICOM_LIBS)
+libncdicom_la_LIBADD = $(HDF5_LIBS) $(NETCDF_LIBS) $(DICOM_LIBS) $(JPEG_LIBS)
 endif
