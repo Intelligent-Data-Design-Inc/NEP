@@ -31,6 +31,10 @@
 /* Define if libxml2 library is found */
 #cmakedefine HAVE_PDS4
 
+/* DICOM reader support (v3.0.0) */
+/* Define if libdicom library is found */
+#cmakedefine HAVE_DICOM
+
 /* Defined if you have HDF5 support */
 #cmakedefine HAVE_HDF5
 

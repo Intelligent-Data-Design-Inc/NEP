@@ -15,6 +15,12 @@
 /* Define to 1 if you have the <cdf.h> header file. */
 #undef HAVE_CDF_H
 
+/* Define if libdicom library is found */
+#undef HAVE_DICOM
+
+/* Define to 1 if you have the <dicom/dicom.h> header file. */
+#undef HAVE_DICOM_DICOM_H
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 

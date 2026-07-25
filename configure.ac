@@ -151,6 +151,7 @@ HAVE_GEOTIFF=no
 HAVE_GRIB2=no
 HAVE_FITS=no
 HAVE_PDS4=no
+HAVE_DICOM=no
 HAVE_DOXYGEN=no
 
 # CDF library detection (v1.3.0) - library detection only, no UDF implementation yet
@@ -295,6 +296,44 @@ if test "x$enable_pds4" = "xyes"; then
 fi
 AC_SUBST([XML_LIBS])
 AC_SUBST([XML2_CFLAGS])
+
+# DICOM reader support (v3.0.0) - default OFF; enable with --enable-dicom
+AC_MSG_CHECKING([whether DICOM reader should be enabled])
+AC_ARG_ENABLE([dicom],
+              [AS_HELP_STRING([--enable-dicom],
+                              [Enable DICOM reader support (default: disabled)])])
+test "x$enable_dicom" = xyes || enable_dicom=no
+AC_MSG_RESULT([$enable_dicom])
+
+# DICOM (libdicom) library detection (v3.0.0)
+if test "x$enable_dicom" = "xyes"; then
+    AC_CHECK_HEADERS([dicom/dicom.h], [dicom_header=yes], [dicom_header=no])
+    AC_CHECK_LIB([dicom], [dcm_filehandle_create_from_file],
+                 [dicom_lib=yes; DICOM_LIBS="-ldicom"], [dicom_lib=no])
+
+    if test "x$dicom_header" = "xyes" && test "x$dicom_lib" = "xyes"; then
+        HAVE_DICOM=yes
+        AC_DEFINE([HAVE_DICOM], [1], [Define if libdicom library is found])
+        DICOM_LDFLAGS=""
+        # Embed rpath so libncdicom.so finds libdicom at runtime.
+        for flag in $LDFLAGS; do
+            case $flag in
+                -L*)
+                    _ld_dir=`echo $flag | sed 's/^-L//'`
+                    if test -f "$_ld_dir/libdicom.so" || test -f "$_ld_dir/libdicom.a"; then
+                        DICOM_LDFLAGS="$DICOM_LDFLAGS -R$_ld_dir"
+                    fi
+                    ;;
+            esac
+        done
+        AC_MSG_NOTICE([DICOM reader enabled])
+    else
+        AC_MSG_ERROR([libdicom is required for the DICOM reader. Install libdicom or use --disable-dicom])
+    fi
+fi
+AC_SUBST([DICOM_LIBS])
+AC_SUBST([DICOM_LDFLAGS])
+AC_SUBST([BUILD_DICOM], [$enable_dicom])
 
 # GRIB2 library detection (v1.7.0) - default OFF; enable with --enable-grib2
 AC_MSG_CHECKING([whether GRIB2 library detection should be enabled])
@@ -472,7 +511,8 @@ AM_CONDITIONAL([HAVE_GEOTIFF], [test "x$HAVE_GEOTIFF" = "xyes"])
 AM_CONDITIONAL([HAVE_GRIB2], [test "x$HAVE_GRIB2" = "xyes"])
 AM_CONDITIONAL([HAVE_FITS], [test "x$HAVE_FITS" = "xyes"])
 AM_CONDITIONAL([HAVE_PDS4], [test "x$HAVE_PDS4" = "xyes"])
-AM_CONDITIONAL([BUILD_NCRC], [test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes" || test "x$HAVE_GRIB2" = "xyes" || test "x$HAVE_FITS" = "xyes" || test "x$HAVE_PDS4" = "xyes"])
+AM_CONDITIONAL([HAVE_DICOM], [test "x$HAVE_DICOM" = "xyes"])
+AM_CONDITIONAL([BUILD_NCRC], [test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes" || test "x$HAVE_GRIB2" = "xyes" || test "x$HAVE_FITS" = "xyes" || test "x$HAVE_PDS4" = "xyes" || test "x$HAVE_DICOM" = "xyes"])
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$HAVE_DOXYGEN" = "xyes"])
 
 # Initialize Automake
@@ -753,7 +793,7 @@ AC_ARG_WITH([ncrc-dir],
     [NEP_NCRC_DIR="\${datarootdir}"])
 AC_SUBST([NEP_NCRC_DIR])
 
-if test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes" || test "x$HAVE_GRIB2" = "xyes" || test "x$HAVE_FITS" = "xyes" || test "x$HAVE_PDS4" = "xyes"; then
+if test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes" || test "x$HAVE_GRIB2" = "xyes" || test "x$HAVE_FITS" = "xyes" || test "x$HAVE_PDS4" = "xyes" || test "x$HAVE_DICOM" = "xyes"; then
     # Expand libdir now so AC_CONFIG_COMMANDS receives a concrete path
     nep_expanded_prefix=$prefix
     test "x$nep_expanded_prefix" = xNONE && nep_expanded_prefix=$ac_default_prefix
@@ -780,6 +820,9 @@ if test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes" || test "x$HAVE_
             if test "x$nep_have_pds4" = "xyes"; then
                 sed "s|@NEP_LIBDIR@|${nep_build_libdir}|g" "${srcdir}/.ncrc-pds4.in" >> .ncrc
             fi
+            if test "x$nep_have_dicom" = "xyes"; then
+                sed "s|@NEP_LIBDIR@|${nep_build_libdir}|g" "${srcdir}/.ncrc-dicom.in" >> .ncrc
+            fi
             # Install-tree .ncrc uses the configured install libdir.
             cat "${srcdir}/.ncrc.in" > .ncrc-install
             if test "x$nep_have_geotiff" = "xyes"; then
@@ -797,6 +840,9 @@ if test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes" || test "x$HAVE_
             if test "x$nep_have_pds4" = "xyes"; then
                 sed "s|@NEP_LIBDIR@|${nep_libdir}|g" "${srcdir}/.ncrc-pds4.in" >> .ncrc-install
             fi
+            if test "x$nep_have_dicom" = "xyes"; then
+                sed "s|@NEP_LIBDIR@|${nep_libdir}|g" "${srcdir}/.ncrc-dicom.in" >> .ncrc-install
+            fi
         ],
         [
             nep_have_geotiff="$HAVE_GEOTIFF"
@@ -804,6 +850,7 @@ if test "x$HAVE_GEOTIFF" = "xyes" || test "x$HAVE_CDF" = "xyes" || test "x$HAVE_
             nep_have_grib2="$HAVE_GRIB2"
             nep_have_fits="$HAVE_FITS"
             nep_have_pds4="$HAVE_PDS4"
+            nep_have_dicom="$HAVE_DICOM"
             nep_libdir="$nep_expanded_libdir"
         ])
 fi

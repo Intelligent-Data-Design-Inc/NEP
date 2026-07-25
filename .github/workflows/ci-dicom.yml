@@ -1,0 +1,178 @@
+# GitHub Actions CI workflow for building and testing NEP with DICOM reader support.
+#
+# V3.0.0 Sprint 1: DICOM dispatch layer and native single-frame tests.
+#
+# This workflow builds NEP with NEP_ENABLE_DICOM=ON using:
+# - HDF5 2.1.1 (built from source, cached)
+# - NetCDF-C 4.10.1 (built from source, cached)
+# - libdicom (built from source, main branch)
+#
+# Edward Hartnett, Intelligent Data Design, Inc.
+name: ci_dicom
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  dicom-build:
+    name: DICOM Build (${{ matrix.build_system }})
+    runs-on: ubuntu-latest
+    env:
+      LD_LIBRARY_PATH: ${{ github.workspace }}/hdf5-install/lib:${{ github.workspace }}/netcdf-c-install/lib:${{ github.workspace }}/libdicom-install/lib
+      PKG_CONFIG_PATH: ${{ github.workspace }}/netcdf-c-install/lib/pkgconfig:${{ github.workspace }}/hdf5-install/lib/pkgconfig:${{ github.workspace }}/libdicom-install/lib/pkgconfig
+    strategy:
+      fail-fast: false
+      matrix:
+        build_system: [cmake, autotools]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install base dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake make wget zlib1g-dev autoconf automake libtool pkg-config gfortran libzstd-dev meson ninja-build
+
+      - name: Cache HDF5 install
+        id: cache-hdf5-dicom
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/hdf5-install
+          key: hdf5-2.1.1-dicom-${{ runner.os }}-refresh-1
+
+      - name: Download and build HDF5 2.1.1
+        if: steps.cache-hdf5-dicom.outputs.cache-hit != 'true'
+        run: |
+          wget -q https://github.com/HDFGroup/hdf5/archive/refs/tags/2.1.1.tar.gz -O hdf5-2.1.1.tar.gz
+          tar -xzf hdf5-2.1.1.tar.gz
+          cd hdf5-2.1.1
+          mkdir build && cd build
+          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DHDF5_ENABLE_ZLIB_SUPPORT=ON ..
+          make -j$(nproc)
+          make install
+
+      - name: Cache NetCDF-C install
+        id: cache-netcdf-c-dicom
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/netcdf-c-install
+          key: netcdf-c-4.10.1-hdf5-2.1.1-dicom-${{ runner.os }}-refresh-1
+
+      - name: Download and build NetCDF-C 4.10.1
+        if: steps.cache-netcdf-c-dicom.outputs.cache-hit != 'true'
+        run: |
+          wget -q https://github.com/Unidata/netcdf-c/archive/v4.10.1.tar.gz -O netcdf-c-4.10.1.tar.gz
+          tar -xzf netcdf-c-4.10.1.tar.gz
+          cd netcdf-c-4.10.1
+          export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib"
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$LD_LIBRARY_PATH"
+          ./configure --prefix=$GITHUB_WORKSPACE/netcdf-c-install --enable-netcdf-4 --enable-shared --disable-dap
+          make -j$(nproc)
+          make install
+
+      - name: Cache libdicom install
+        id: cache-libdicom-dicom
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/libdicom-install
+          key: libdicom-main-dicom-${{ runner.os }}-refresh-1
+
+      - name: Clone and build libdicom (main branch)
+        if: steps.cache-libdicom-dicom.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 https://github.com/ImagingDataCommons/libdicom.git libdicom-main
+          cd libdicom-main
+          meson setup build --prefix=$GITHUB_WORKSPACE/libdicom-install
+          meson compile -C build
+          meson install -C build
+
+      # --- CMake build ---
+      - name: Configure with CMake and DICOM enabled
+        if: matrix.build_system == 'cmake'
+        run: |
+          mkdir -p build && cd build
+          export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:$GITHUB_WORKSPACE/libdicom-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
+          cmake .. \
+            -DCMAKE_C_FLAGS="-Wall -Werror" \
+            -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/libdicom-install" \
+            -DNEP_ENABLE_DICOM=ON \
+            -DNEP_ENABLE_FORTRAN=OFF \
+            -DNEP_ENABLE_FITS=OFF \
+            -DNEP_ENABLE_GRIB2=OFF \
+            -DNEP_ENABLE_CDF=OFF \
+            -DNEP_ENABLE_GEOTIFF=OFF \
+            -DNEP_BUILD_LZ4=OFF \
+            -DNEP_BUILD_BZIP2=OFF \
+            -DNEP_BUILD_DOCUMENTATION=OFF \
+            -DNEP_BUILD_EXAMPLES=OFF \
+            -DBUILD_TESTING=ON
+          echo "=== Checking config.h for HAVE_DICOM ==="
+          grep "define HAVE_DICOM" config.h && echo "SUCCESS: HAVE_DICOM is defined" || (echo "FAILURE: HAVE_DICOM not defined"; exit 1)
+
+      - name: Build (CMake)
+        if: matrix.build_system == 'cmake'
+        working-directory: build
+        run: |
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/libdicom-install/lib:$LD_LIBRARY_PATH"
+          make -j$(nproc)
+
+      - name: Test (CMake)
+        if: matrix.build_system == 'cmake'
+        working-directory: build
+        run: |
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/libdicom-install/lib:$LD_LIBRARY_PATH"
+          ctest --verbose
+
+      # --- Autotools build ---
+      - name: Bootstrap (Autotools)
+        if: matrix.build_system == 'autotools'
+        run: autoreconf -fiv
+
+      - name: Configure with Autotools and DICOM enabled
+        if: matrix.build_system == 'autotools'
+        run: |
+          export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
+          export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:$GITHUB_WORKSPACE/libdicom-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
+          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/libdicom-install/include"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/libdicom-install/lib"
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/libdicom-install/lib:$LD_LIBRARY_PATH"
+          ./configure \
+            --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc \
+            --enable-dicom \
+            --disable-fortran \
+            --disable-fits \
+            --disable-grib2 \
+            --disable-cdf \
+            --disable-geotiff \
+            --disable-lz4 \
+            --disable-bzip2 \
+            --disable-docs \
+            || (echo "Configure failed:"; cat config.log; exit 1)
+          echo "=== Checking config.h for HAVE_DICOM ==="
+          grep "define HAVE_DICOM" config.h && echo "SUCCESS: HAVE_DICOM is defined" || (echo "FAILURE: HAVE_DICOM not defined"; exit 1)
+
+      - name: Build (Autotools)
+        if: matrix.build_system == 'autotools'
+        run: |
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/libdicom-install/lib:$LD_LIBRARY_PATH"
+          make -j$(nproc)
+
+      - name: Test (Autotools)
+        if: matrix.build_system == 'autotools'
+        run: |
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/libdicom-install/lib:$LD_LIBRARY_PATH"
+          make check || (echo "Tests failed:"; cat test/test-suite.log; exit 1)
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "=== DICOM CI Build Summary ==="
+          echo "Build System: ${{ matrix.build_system }}"
+          echo "HDF5: 2.1.1"
+          echo "NetCDF-C: 4.10.1"
+          echo "libdicom: main"

@@ -1,0 +1,4 @@
+# DICOM medical imaging data (UDF slot 6)
+NETCDF.UDF6.LIBRARY=@NEP_LIBDIR@/libncdicom.so
+NETCDF.UDF6.INIT=NC_DICOM_initialize
+NETCDF.UDF6.MAGIC=DICM
