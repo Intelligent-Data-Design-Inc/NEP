@@ -55,7 +55,11 @@ typedef struct NC_DICOM_FILE_INFO
     int planar_configuration;   /**< 0 = color-by-pixel, 1 = color-by-plane */
     nc_type xtype;                /**< NetCDF type for pixel data */
     size_t type_size;             /**< Size in bytes of one pixel sample */
-    int color_dim_index;          /**< Index of sample dimension, or -1 */
+    int frame_dim_index;          /**< Index of frame dimension (always 0) */
+    int row_dim_index;            /**< Index of row dimension */
+    int col_dim_index;            /**< Index of column dimension */
+    int sample_dim_index;         /**< Index of sample dimension, or -1 */
+    int color_dim_index;          /**< Deprecated; kept for compatibility */
 } NC_DICOM_FILE_INFO_T;
 
 #if defined(__cplusplus)
