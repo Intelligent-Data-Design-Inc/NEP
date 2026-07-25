@@ -27,7 +27,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y autoconf automake cmake gfortran libcfitsio-dev libgeotiff-dev libtiff-dev libtool libxml2-dev make pkg-config python3 python3-venv wget zlib1g-dev
+          sudo apt-get install -y autoconf automake cmake gfortran libcfitsio-dev libgeotiff-dev libpng-dev libtiff-dev libtool libxml2-dev make pkg-config python3 python3-venv wget zlib1g-dev
 
       - name: Build HDF5
         run: |
