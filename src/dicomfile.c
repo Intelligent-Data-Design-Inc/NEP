@@ -321,27 +321,6 @@ dicom_add_att(NC_GRP_INFO_T *grp, const char *name, const char *value)
 }
 
 /**
- * @internal Add an integer-valued string global attribute to a group.
- *
- * The integer is formatted with snprintf into a temporary buffer and
- * stored as an NC_CHAR attribute.
- *
- * @param grp Group receiving the attribute.
- * @param name Attribute name.
- * @param value Integer value.
- *
- * @return NC_NOERR No error.
- * @return NC_ENOMEM Out of memory.
- */
-static int
-dicom_add_int_att(NC_GRP_INFO_T *grp, const char *name, long long value)
-{
-    char buf[32];
-    snprintf(buf, sizeof(buf), "%lld", value);
-    return dicom_add_att(grp, name, buf);
-}
-
-/**
  * @internal Add a string variable attribute.
  */
 static int
