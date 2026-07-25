@@ -30,6 +30,7 @@ __pycache__/
 b/
 build/
 build_*/
+build-autotools/
 build-fortran/
 build-pds4-cmake/
 build_test/

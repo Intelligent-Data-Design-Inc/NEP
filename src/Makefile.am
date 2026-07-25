@@ -62,3 +62,12 @@ libncpds4_la_LDFLAGS = -version-info 1:0:0
 libncpds4_la_SOURCES = pds4dispatch.c pds4file.c
 libncpds4_la_LIBADD = $(HDF5_LIBS) $(NETCDF_LIBS) $(XML_LIBS)
 endif
+
+# DICOM UDF Handler - v3.0.0 Sprint 1
+# DICOM library (netCDF UDF support)
+if HAVE_DICOM
+lib_LTLIBRARIES += libncdicom.la
+libncdicom_la_LDFLAGS = -version-info 1:0:0 $(DICOM_LDFLAGS)
+libncdicom_la_SOURCES = dicomdispatch.c dicomfile.c
+libncdicom_la_LIBADD = $(HDF5_LIBS) $(NETCDF_LIBS) $(DICOM_LIBS)
+endif

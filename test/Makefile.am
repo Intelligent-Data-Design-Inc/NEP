@@ -56,6 +56,14 @@ tst_fits_udf_LDADD = ${top_builddir}/src/libncfits.la ${top_builddir}/src/libnep
 TESTS += tst_fits_udf
 endif
 
+# Build DICOM UDF test, if DICOM is enabled.
+if HAVE_DICOM
+check_PROGRAMS += tst_dicom_udf
+tst_dicom_udf_LDFLAGS = $(DICOM_LDFLAGS)
+tst_dicom_udf_LDADD = ${top_builddir}/src/libncdicom.la ${top_builddir}/src/libnep.la -ldicom
+TESTS += tst_dicom_udf
+endif
+
 # Build PDS4 UDF test, if PDS4 is enabled.
 if HAVE_PDS4
 check_PROGRAMS += tst_pds4_udf
@@ -73,6 +81,9 @@ check-local:
 		cp $(srcdir)/data/imap_mag_l1b-calibration_20240229_v001.cdf $(builddir)/data/ 2>/dev/null || true; \
 		cp $(srcdir)/data/tst_cdf_simple.cdf $(builddir)/data/ 2>/dev/null || true; \
 		cp $(srcdir)/data/WFPC2u5780205r_c0fx.fits $(builddir)/data/ 2>/dev/null || true; \
+		$(MKDIR_P) $(builddir)/data/DICOM; \
+		cp $(srcdir)/data/DICOM/tst_dicom_uncompressed.dcm $(builddir)/data/DICOM/ 2>/dev/null || true; \
+		cp $(srcdir)/data/DICOM/0003.DCM $(builddir)/data/DICOM/ 2>/dev/null || true; \
 		$(MKDIR_P) $(builddir)/data/PDS4; \
 		$(MKDIR_P) $(builddir)/data/PDS4/general; \
 		cp $(srcdir)/data/PDS4/general/test_image.xml $(builddir)/data/PDS4/general/ 2>/dev/null || true; \
@@ -124,6 +135,7 @@ TESTS += run_tests.sh
 CLEANFILES = tst_*.nc
 
 EXTRA_DIST = run_tests.sh.in data/imap_mag_l1b-calibration_20240229_v001.cdf data/tst_cdf_simple.cdf data/gdaswave.t00z.wcoast.0p16.f000.grib2 data/WFPC2u5780205r_c0fx.fits \
+data/DICOM/tst_dicom_uncompressed.dcm data/DICOM/0003.DCM \
 data/PDS4/general/test_image.xml data/PDS4/general/test_image.img data/PDS4/general/test_table_binary.xml data/PDS4/general/test_table_binary.dat data/PDS4/general/Table_Character_Example.xml data/PDS4/general/Table_Character_Example.tab \
 data/PDS4/cassini_hrd/hrd_2000_on_off.xml data/PDS4/cassini_hrd/hrd_2000_on_off.tab \
 data/PDS4/messenger_tnmap/thermal_neutron_map.xml data/PDS4/messenger_tnmap/thermal_neutron_map.img \

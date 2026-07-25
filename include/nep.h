@@ -14,7 +14,8 @@
  * - UDF3: FITS astronomical data (magic: "SIMPLE")
  * - UDF4: NASA CDF format (magic: 0xCDF30001)
  * - UDF5: PDS4 planetary data system (magic: "<?xml")
- * - UDF6-UDF9: Reserved for future use
+ * - UDF6: DICOM medical imaging data (magic: "DICM")
+ * - UDF7-UDF9: Reserved for future use
  *
  * @author Edward Hartnett
  * @date Nov 13, 2025
@@ -69,12 +70,13 @@ extern "C" {
  * | UDF3  | NEP_UDF_FITS               | FITS astronomical        | `SIMPLE`    |
  * | UDF4  | NEP_UDF_CDF                | NASA CDF space physics   | `0xCDF30001`|
  * | UDF5  | NEP_UDF_PDS4               | NASA/ESA PDS4 planetary  | `<?xml`     |
- * | UDF6–9| —                          | Reserved                 | —           |
+ * | UDF6  | NEP_UDF_DICOM              | DICOM medical imaging    | `DICM`      |
+ * | UDF7–9| —                          | Reserved                 | —           |
  *
  * Call `NC_GEOTIFF_initialize()`, `NC_GRIB2_initialize()`, `NC_FITS_initialize()`,
- * `NC_CDF_initialize()`, or `NC_PDS4_initialize()` to register the corresponding
- * handler before calling `nc_open()`. With `.ncrc` autoload (NetCDF-C main branch)
- * no explicit call is needed.
+ * `NC_CDF_initialize()`, `NC_PDS4_initialize()`, or `NC_DICOM_initialize()` to
+ * register the corresponding handler before calling `nc_open()`. With `.ncrc`
+ * autoload (NetCDF-C main branch) no explicit call is needed.
  */
 
 /** GeoTIFF BigTIFF format uses UDF0 slot */
@@ -94,6 +96,9 @@ extern "C" {
 
 /** PDS4 planetary data system format uses UDF5 slot */
 #define NEP_UDF_PDS4 NC_UDF5
+
+/** DICOM medical imaging data format uses UDF6 slot */
+#define NEP_UDF_DICOM NC_UDF6
 
 /** @} */
 
@@ -116,6 +121,7 @@ extern "C" {
  * | NEP_MAGIC_FITS              | `"SIMPLE"`     | FITS                   | First 6 bytes of every FITS file   |
  * | NEP_MAGIC_CDF               | `\xCD\xF3\x00\x01` | NASA CDF          | 4-byte binary signature            |
  * | NEP_MAGIC_PDS4              | `"<?xml"`      | PDS4                   | XML declaration; namespace checked |
+ * | NEP_MAGIC_DICOM             | `"DICM"`       | DICOM                  | 4-byte prefix at byte offset 128   |
  */
 
 /** GeoTIFF standard TIFF magic number: "II*" */
@@ -136,6 +142,9 @@ extern "C" {
 /** PDS4 magic number: XML label files begin with "<?xml" */
 #define NEP_MAGIC_PDS4 "<?xml"
 
+/** DICOM magic number: "DICM" prefix at byte offset 128 */
+#define NEP_MAGIC_DICOM "DICM"
+
 /** @} */
 
 /**
@@ -154,6 +163,7 @@ extern "C" {
  * | NEP_FORMAT_NAME_FITS     | `"FITS"`      | FITS astronomical       |
  * | NEP_FORMAT_NAME_CDF      | `"NASA CDF"`  | NASA CDF space physics  |
  * | NEP_FORMAT_NAME_PDS4     | `"PDS4"`      | NASA/ESA PDS4 planetary |
+ * | NEP_FORMAT_NAME_DICOM    | `"DICOM"`     | DICOM medical imaging   |
  */
 
 /** GeoTIFF format display name */
@@ -170,6 +180,9 @@ extern "C" {
 
 /** PDS4 format display name */
 #define NEP_FORMAT_NAME_PDS4 "PDS4"
+
+/** DICOM format display name */
+#define NEP_FORMAT_NAME_DICOM "DICOM"
 
 /** @} */
 

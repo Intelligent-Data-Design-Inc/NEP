@@ -128,6 +128,9 @@ option(NEP_ENABLE_FITS "Enable FITS reader support via CFITSIO" OFF)
 # PDS4 reader support (v2.2.0) - default OFF; enable with -DNEP_ENABLE_PDS4=ON
 option(NEP_ENABLE_PDS4 "Enable PDS4 reader support via libxml2" OFF)
 
+# DICOM reader support (v3.0.0) - default OFF; enable with -DNEP_ENABLE_DICOM=ON
+option(NEP_ENABLE_DICOM "Enable DICOM reader support via libdicom" OFF)
+
 # GRIB2 library detection (v1.7.0) - default OFF; enable with -DNEP_ENABLE_GRIB2=ON
 option(NEP_ENABLE_GRIB2 "Enable GRIB2 support" OFF)
 
@@ -220,6 +223,22 @@ if(NOT DOCS_ONLY)
             set(HAVE_PDS4 TRUE)
         else()
             message(FATAL_ERROR "libxml2 is required for the PDS4 reader. Install libxml2-dev or use -DNEP_ENABLE_PDS4=OFF")
+        endif()
+    endif()
+
+    # DICOM (libdicom) library detection (v3.0.0)
+    if(NEP_ENABLE_DICOM)
+        find_library(DICOM_LIBRARY NAMES dicom)
+        find_path(DICOM_INCLUDE_DIR dicom/dicom.h)
+
+        if(DICOM_LIBRARY AND DICOM_INCLUDE_DIR)
+            get_filename_component(DICOM_LIBRARY_DIR "${DICOM_LIBRARY}" DIRECTORY)
+            message(STATUS "Found libdicom: ${DICOM_LIBRARY}")
+            message(STATUS "Found libdicom headers: ${DICOM_INCLUDE_DIR}")
+            include_directories(${DICOM_INCLUDE_DIR})
+            set(HAVE_DICOM TRUE)
+        else()
+            message(FATAL_ERROR "libdicom is required for the DICOM reader. Install libdicom or use -DNEP_ENABLE_DICOM=OFF")
         endif()
     endif()
 
@@ -335,6 +354,13 @@ if(NOT DOCS_ONLY)
     # This ensures all CTest tests find shared libraries without needing
     # LD_LIBRARY_PATH to be set in the shell.
     set(_nep_test_lib_dirs "")
+    if(HDF5_LIBRARY_DIRS)
+        list(APPEND _nep_test_lib_dirs ${HDF5_LIBRARY_DIRS})
+    elseif(HDF5_DIR)
+        # HDF5 found via CMake config package; derive lib dir from config dir.
+        get_filename_component(_hdf5_root "${HDF5_DIR}" DIRECTORY)
+        list(APPEND _nep_test_lib_dirs "${_hdf5_root}/lib")
+    endif()
     foreach(_lib ${HDF5_LIBRARIES})
         if(IS_ABSOLUTE "${_lib}")
             get_filename_component(_d "${_lib}" DIRECTORY)
@@ -353,6 +379,9 @@ if(NOT DOCS_ONLY)
     if(HAVE_PDS4 AND LIBXML2_LIBRARIES)
         get_filename_component(_xml2_lib_dir "${LIBXML2_LIBRARIES}" DIRECTORY)
         list(APPEND _nep_test_lib_dirs "${_xml2_lib_dir}")
+    endif()
+    if(HAVE_DICOM AND DICOM_LIBRARY_DIR)
+        list(APPEND _nep_test_lib_dirs "${DICOM_LIBRARY_DIR}")
     endif()
     if(NEP_ENABLE_FORTRAN AND NetCDF_Fortran_LIBRARY_DIRS)
         list(APPEND _nep_test_lib_dirs ${NetCDF_Fortran_LIBRARY_DIRS})

@@ -158,3 +158,32 @@ if(HAVE_PDS4)
     message(STATUS "Building PDS4 UDF library: ${PDS4_LIB_NAME}")
     message(STATUS "  libxml2: ${LIBXML2_LIBRARIES}")
 endif()
+
+# DICOM UDF Handler - v3.0.0 Sprint 1
+# Build DICOM library if enabled (netCDF UDF support)
+if(HAVE_DICOM)
+    get_filename_component(DICOM_LIBRARY_DIR "${DICOM_LIBRARY}" DIRECTORY)
+
+    set(DICOM_LIB_NAME ncdicom)
+    add_library(${DICOM_LIB_NAME} SHARED
+        dicomdispatch.c dicomfile.c)
+    target_include_directories(${DICOM_LIB_NAME} PRIVATE ${DICOM_INCLUDE_DIR})
+    target_link_libraries(${DICOM_LIB_NAME} PRIVATE
+        ${HDF5_LIBRARIES} ${NETCDF_LIBRARIES} ${DICOM_LIBRARY})
+    set_target_properties(${DICOM_LIB_NAME} PROPERTIES
+        VERSION ${PROJECT_VERSION}
+        SOVERSION 1
+        INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR};${DICOM_LIBRARY_DIR}"
+        INSTALL_RPATH_USE_LINK_PATH TRUE
+        BUILD_RPATH "${DICOM_LIBRARY_DIR}"
+    )
+    install(TARGETS ${DICOM_LIB_NAME}
+        EXPORT NEPTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
+    install(FILES "${CMAKE_SOURCE_DIR}/include/dicomdispatch.h"
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+    message(STATUS "Building DICOM UDF library: ${DICOM_LIB_NAME}")
+    message(STATUS "  libdicom: ${DICOM_LIBRARY}")
+endif()

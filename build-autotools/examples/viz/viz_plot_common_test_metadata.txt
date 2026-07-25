@@ -1,3 +1,0 @@
-title: Visualization helper test
-caption: Synthetic black line data verify PNG and companion metadata generation.
-alt_text: A black line rises from zero to one and returns to zero.

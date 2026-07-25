@@ -106,6 +106,29 @@ if(HAVE_FITS)
                    COPYONLY)
 endif()
 
+# Build DICOM UDF test if DICOM is enabled
+if(HAVE_DICOM)
+    # Provide an empty .ncrc so NetCDF-C does not fall back to ~/.ncrc
+    # and attempt to dlopen UDF handlers that are not built.
+    file(TOUCH ${CMAKE_BINARY_DIR}/.ncrc)
+
+    add_executable(tst_dicom_udf tst_dicom_udf.c)
+    target_link_libraries(tst_dicom_udf PRIVATE ncdicom nep ${NETCDF_LIBRARIES})
+    target_include_directories(tst_dicom_udf PRIVATE ${NETCDF_INCLUDE_DIRS} ${DICOM_INCLUDE_DIR})
+    add_test(NAME tst_dicom_udf COMMAND tst_dicom_udf)
+    set_tests_properties(tst_dicom_udf PROPERTIES
+        ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+
+    # Copy DICOM test data to build directory
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data/DICOM)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/DICOM/tst_dicom_uncompressed.dcm
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/DICOM/tst_dicom_uncompressed.dcm
+                   COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/DICOM/0003.DCM
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/DICOM/0003.DCM
+                   COPYONLY)
+endif()
+
 # Build PDS4 UDF test if PDS4 is enabled
 if(HAVE_PDS4)
     add_executable(tst_pds4_udf tst_pds4_udf.c)
@@ -301,6 +324,9 @@ if(HAVE_GRIB2)
 endif()
 if(HAVE_FITS)
     list(APPEND _test_exe_deps tst_fits_udf)
+endif()
+if(HAVE_DICOM)
+    list(APPEND _test_exe_deps tst_dicom_udf)
 endif()
 if(HAVE_PDS4)
     list(APPEND _test_exe_deps tst_pds4_udf)

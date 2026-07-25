@@ -1,5 +1,124 @@
 # NEP Development Roadmap
 
+### V3.0.0 - DICOM Reader
+
+Add the ability to read files in DICOM format through a new NetCDF UDF handler that uses the `libdicom` C library. The reader exposes DICOM image pixel data and key metadata as NetCDF variables and attributes, supports native uncompressed single-frame images first, then encapsulated JPEG compressed and multi-frame images, and finally functional-group metadata, Fortran bindings, documentation, and CI.
+
+#### Sprint 1: DICOM Reader Infrastructure
+**Detailed Plan**: See `docs/plan/v3.0.0-sprint1-dicom-infrastructure.md`
+
+Integrate `libdicom` into both build systems, assign DICOM to UDF slot 6, implement the dispatch skeleton, and read native uncompressed single-frame DICOM files through the NetCDF API.
+
+**Implementation scope:**
+- Add `NEP_UDF_DICOM`, `NEP_MAGIC_DICOM`, and `NEP_FORMAT_NAME_DICOM` to `include/nep.h`.
+- Add `-DNEP_ENABLE_DICOM` / `--enable-dicom` build options (default OFF) and detect `libdicom`.
+- Create `src/dicomdispatch.c`, `src/dicomfile.c`, and `include/dicomdispatch.h` following the FITS handler pattern.
+- Implement `NC_DICOM_initialize()`, `NC_DICOM_open()`, `NC_DICOM_close()`, `NC_DICOM_abort()`, and format inquiry functions.
+- Map DICOM Patient/Study/Series/Image Pixel module tags to NetCDF dimensions, variables, and attributes.
+- Implement `NC_DICOM_get_vara()` for native (uncompressed) pixel data.
+- Add `test/tst_dicom_udf.c` and a small uncompressed DICOM sample.
+- Create `ci-dicom.yml` to validate the build and the new test.
+
+**Clarified decisions:**
+- DICOM occupies UDF slot 6 (`NC_UDF6`); UDF0-UDF5 are already assigned.
+- The DICOM magic string is `DICM` at byte offset 128; NetCDF-C magic detection may need an offset-aware check or the file can be opened explicitly with the UDF mode flag.
+- Compressed Transfer Syntaxes (including the existing `test/data/DICOM/0003.DCM`, which is JPEG Baseline) are explicitly rejected in Sprint 1.
+- Pixel data type is derived from `BitsAllocated` and `PixelRepresentation`.
+- `PlanarConfiguration` and `SamplesPerPixel` determine whether a `sample` dimension is created.
+
+**Acceptance Criteria:**
+- `include/nep.h` defines the new UDF slot, magic, and format-name macros.
+- CMake and Autotools detect `libdicom`, define `HAVE_DICOM`, and link `-ldicom`.
+- `NC_DICOM_initialize()` registers the UDF6 dispatch table.
+- `nc_open()` succeeds on an uncompressed single-frame DICOM file after the handler is registered.
+- Dimensions, variable type, and global attributes match the DICOM metadata.
+- `nc_get_vara()` reads a subset of `pixel_data` correctly.
+- `test/tst_dicom_udf.c` passes under CMake and Autotools.
+- `ci-dicom.yml` passes for both build systems.
+- Compressed DICOM files fail cleanly with a clear error.
+
+**Testing:** Run `tst_dicom_udf` directly and via `ctest -R dicom` / `make check`; verify the uncompressed sample; verify that `test/data/DICOM/0003.DCM` is rejected rather than crashing.
+
+**Build System Integration:** Top-level `CMakeLists.txt` and `configure.ac`; `src/CMakeLists.txt` and `src/Makefile.am`; `test/CMakeLists.txt` and `test/Makefile.am`; new `.github/workflows/ci-dicom.yml`.
+
+**Definition of Done:** `libdicom` is integrated, the UDF6 dispatch skeleton works, uncompressed single-frame DICOM files open and expose metadata, pixel data is readable, the C smoke test passes, CI is green, and the sprint documentation is complete.
+
+**GitHub Issue:** TBD
+
+#### Sprint 2: Compressed Pixel Data and Multi-Frame Support
+**Detailed Plan**: See `docs/plan/v3.0.0-sprint2-dicom-compressed-multiframe.md`
+
+Extend the reader to decompress encapsulated JPEG pixel data and support multi-frame images. Use the existing `test/data/DICOM/0003.DCM` JPEG Baseline sample as the primary compressed test case.
+
+**Implementation scope:**
+- Detect encapsulated Transfer Syntaxes from `(0002,0010)`.
+- Add `libjpeg`/`libjpeg-turbo` detection and decompression for JPEG Baseline frames.
+- Use `libdicom` frame-level read functions (`dcm_filehandle_read_frame`) to obtain raw encapsulated fragments.
+- Decompress each requested frame on demand inside `NC_DICOM_get_vara()`.
+- Add a `frame` dimension for `NumberOfFrames > 1`.
+- Support grayscale and RGB 8-bit decompressed output.
+- Update `test/tst_dicom_udf.c` to verify the compressed sample.
+
+**Clarified decisions:**
+- Only JPEG Baseline (`1.2.840.10008.1.2.4.50`) is required for this sprint; other Transfer Syntaxes may be recognized and rejected or supported if straightforward.
+- Decompressed frames are cached for the duration of a single `nc_get_vara()` call.
+- JPEG decompression output is exposed as `NC_UBYTE`; 12-bit JPEG values are stored in 16-bit unsigned samples.
+- `PlanarConfiguration` is normalized to interleaved RGB in the NetCDF view for JPEG color images.
+
+**Acceptance Criteria:**
+- `test/data/DICOM/0003.DCM` opens and exposes correct Rows, Columns, SamplesPerPixel, and PhotometricInterpretation.
+- `nc_get_vara()` reads decompressed pixel values from the JPEG sample.
+- Single-frame and multi-frame uncompressed images continue to work (Sprint 1 regression coverage).
+- CMake and Autotools both link `libjpeg` when DICOM is enabled.
+- `ci-dicom.yml` passes with DICOM + JPEG support.
+- Unsupported Transfer Syntaxes produce a clear error.
+
+**Testing:** Run `tst_dicom_udf` against the compressed sample; run the Sprint 1 uncompressed sample for regression; run `ctest -R dicom --output-on-failure` and `make check`.
+
+**Build System Integration:** Add `find_package(JPEG)` (CMake) and `AC_CHECK_LIB([jpeg], ...)` (Autotools); link `JPEG_LIBRARIES` into the DICOM reader objects.
+
+**Definition of Done:** JPEG Baseline encapsulated DICOM files open, decompress, and expose readable pixel data; multi-frame layout works; the compressed sample test passes; CI is green; and the sprint documentation is complete.
+
+**GitHub Issue:** TBD
+
+#### Sprint 3: Functional Groups, Fortran Bindings, Documentation, and CI
+**Detailed Plan**: See `docs/plan/v3.0.0-sprint3-dicom-functional-groups-ci.md`
+
+Complete the DICOM reader by exposing Shared and Per-frame Functional Groups, add a Fortran smoke test, create a C example program, update all user-facing documentation, and wire DICOM into the existing CI matrix and packaging recipes.
+
+**Implementation scope:**
+- Parse Shared Functional Groups Sequence `(5200,9229)` and Per-frame Functional Groups Sequence `(5200,9230)`.
+- Expose `image_position_patient`, `image_orientation_patient`, `pixel_spacing`, and `slice_thickness` as NetCDF variables over the `frame` dimension or as global attributes when shared.
+- Add `ftest/ftst_dicom_udf.F90` and update Fortran build rules.
+- Add `examples/dicom/dicom_read.c` with compact output and the NetCDF Developer's Handbook Second Edition reference.
+- Create `docs/dicom.md` and update `docs/formats.md`, `docs/design.md`, `docs/prd.md`, and `README.md`.
+- Update Spack and Conda recipes with optional DICOM support.
+- Integrate DICOM into `.github/workflows/ci.yml` in addition to the focused `ci-dicom.yml`.
+
+**Clarified decisions:**
+- Functional-group variables are created only when the corresponding sequences are present.
+- Shared values become scalar global attributes; per-frame values become `[frame]` variables.
+- The Fortran test calls `NC_DICOM_initialize()` and opens the uncompressed sample, matching the FITS Fortran test pattern.
+- DICOM remains disabled by default in CMake, Autotools, Spack, and Conda.
+- Example output follows the NEP compact style (`ERR(retval)`, `Done.`).
+
+**Acceptance Criteria:**
+- Multi-frame enhanced DICOM files expose functional-group metadata variables when present.
+- `ftest/ftst_dicom_udf.F90` compiles and passes under both build systems.
+- `examples/dicom/dicom_read.c` builds, runs, and prints compact metadata ending with `Done.`.
+- All user-facing documentation describes DICOM support accurately.
+- Spack and Conda recipes include optional DICOM support.
+- `ci.yml` builds and tests DICOM in at least one job.
+- All DICOM tests pass with DICOM enabled; existing tests pass with DICOM disabled.
+
+**Testing:** Run `ctest -R dicom --output-on-failure`, `make check`, `ftst_dicom_udf`, and `dicom_read`; test a multi-frame enhanced sample for functional groups; verify the DICOM-enabled `ci.yml` job and `ci-dicom.yml` both pass.
+
+**Build System Integration:** `examples/CMakeLists.txt` and `examples/Makefile.am`; `ftest/CMakeLists.txt` and `ftest/Makefile.am`; `spack/NEP/package.py`; `conda/meta.yaml` and `conda/build.sh`; `.github/workflows/ci.yml`.
+
+**Definition of Done:** The DICOM reader supports functional-group metadata, has Fortran and C examples, is documented across all user-facing docs and packaging recipes, is wired into CI, and the full test suite passes with DICOM enabled while remaining regression-free with DICOM disabled.
+
+**GitHub Issue:** TBD
+
 ### V2.8.0 - Visualization
 
 Add command-line Python visualization examples to NEP that read FITS, CDF, GeoTIFF, GRIB2, and PDS4 files through the NetCDF API and the NEP UDF dispatch layer, then generate static PNG plots with Matplotlib. The Python `netCDF4` library opens UDF files directly with `.ncrc` autoload; there are no CSV intermediates and no C extractors. Plots are black and white for book publication.
