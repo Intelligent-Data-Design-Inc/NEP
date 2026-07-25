@@ -21,8 +21,8 @@ jobs:
     name: DICOM Build (${{ matrix.build_system }})
     runs-on: ubuntu-latest
     env:
-      LD_LIBRARY_PATH: ${{ github.workspace }}/hdf5-install/lib:${{ github.workspace }}/netcdf-c-install/lib:${{ github.workspace }}/libdicom-install/lib
-      PKG_CONFIG_PATH: ${{ github.workspace }}/netcdf-c-install/lib/pkgconfig:${{ github.workspace }}/hdf5-install/lib/pkgconfig:${{ github.workspace }}/libdicom-install/lib/pkgconfig
+      LD_LIBRARY_PATH: ${{ github.workspace }}/hdf5-install/lib:${{ github.workspace }}/netcdf-c-install/lib:${{ github.workspace }}/libdicom-install/lib/x86_64-linux-gnu:${{ github.workspace }}/libdicom-install/lib
+      PKG_CONFIG_PATH: ${{ github.workspace }}/netcdf-c-install/lib/pkgconfig:${{ github.workspace }}/hdf5-install/lib/pkgconfig:${{ github.workspace }}/libdicom-install/lib/x86_64-linux-gnu/pkgconfig:${{ github.workspace }}/libdicom-install/lib/pkgconfig
     strategy:
       fail-fast: false
       matrix:
@@ -137,10 +137,16 @@ jobs:
         if: matrix.build_system == 'autotools'
         run: |
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
-          export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:$GITHUB_WORKSPACE/libdicom-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
+          # libdicom's meson install may place libraries under a multiarch
+          # libdir on some runners; prefer that when it exists.
+          LIBDICOM_LIBDIR="$GITHUB_WORKSPACE/libdicom-install/lib"
+          if [ -d "$GITHUB_WORKSPACE/libdicom-install/lib/x86_64-linux-gnu" ]; then
+            LIBDICOM_LIBDIR="$GITHUB_WORKSPACE/libdicom-install/lib/x86_64-linux-gnu"
+          fi
+          export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:$LIBDICOM_LIBDIR/pkgconfig:${PKG_CONFIG_PATH}"
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/libdicom-install/include"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/libdicom-install/lib"
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/libdicom-install/lib:$LD_LIBRARY_PATH"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$LIBDICOM_LIBDIR"
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LIBDICOM_LIBDIR:$LD_LIBRARY_PATH"
           ./configure \
             --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc \
             --enable-dicom \
