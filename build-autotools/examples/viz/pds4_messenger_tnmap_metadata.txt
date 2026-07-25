@@ -1,0 +1,3 @@
+title: MESSENGER Mercury Thermal Neutron Map
+caption: Grayscale map of the MESSENGER thermal neutron map opened through the NetCDF PDS4 UDF interface.
+alt_text: Grayscale image of Mercury's thermal neutron absorption from the MESSENGER GRS ACS data.

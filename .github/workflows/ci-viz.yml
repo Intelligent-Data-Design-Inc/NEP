@@ -1,0 +1,121 @@
+name: ci_viz
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  visualization:
+    name: Visualization (${{ matrix.build_system }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        build_system: [cmake, autotools]
+    env:
+      HDF5_ROOT: ${{ github.workspace }}/hdf5-install
+      NETCDF4_DIR: ${{ github.workspace }}/netcdf-c-install
+      HDF5_DIR: ${{ github.workspace }}/hdf5-install
+      LD_LIBRARY_PATH: ${{ github.workspace }}/hdf5-install/lib:${{ github.workspace }}/netcdf-c-install/lib:${{ github.workspace }}/cdf-install/lib:${{ github.workspace }}/g2c-install/lib:${{ github.workspace }}/jasper-install/lib
+      PKG_CONFIG_PATH: ${{ github.workspace }}/netcdf-c-install/lib/pkgconfig:${{ github.workspace }}/hdf5-install/lib/pkgconfig
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y autoconf automake cmake gfortran libcfitsio-dev libgeotiff-dev libpng-dev libtiff-dev libtool libxml2-dev make pkg-config python3 python3-venv wget zlib1g-dev
+
+      - name: Build HDF5
+        run: |
+          wget -q https://github.com/HDFGroup/hdf5/archive/refs/tags/2.1.1.tar.gz -O hdf5.tar.gz
+          tar -xzf hdf5.tar.gz
+          cmake -S hdf5-2.1.1 -B hdf5-build -DCMAKE_INSTALL_PREFIX="$HDF5_ROOT" -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DHDF5_ENABLE_ZLIB_SUPPORT=ON
+          cmake --build hdf5-build -j"$(nproc)"
+          cmake --install hdf5-build
+
+      - name: Build NetCDF-C
+        run: |
+          git clone --depth 1 https://github.com/Unidata/netcdf-c.git
+          cmake -S netcdf-c -B netcdf-c-build -DCMAKE_INSTALL_PREFIX="$NETCDF4_DIR" -DCMAKE_PREFIX_PATH="$HDF5_ROOT" -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DENABLE_DAP=OFF
+          cmake --build netcdf-c-build -j"$(nproc)"
+          cmake --install netcdf-c-build
+
+      - name: Build NASA CDF
+        run: |
+          wget -q https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/cdf39_1/cdf39_1-dist-cdf.tar.gz
+          tar -xzf cdf39_1-dist-cdf.tar.gz
+          make -C cdf39_1-dist OS=linux ENV=gnu all
+          make -C cdf39_1-dist INSTALLDIR="$GITHUB_WORKSPACE/cdf-install" install
+
+      - name: Build Jasper and g2c
+        run: |
+          wget -q https://github.com/jasper-software/jasper/archive/refs/tags/version-4.2.4.tar.gz -O jasper.tar.gz
+          tar -xzf jasper.tar.gz
+          cmake -S jasper-version-4.2.4 -B jasper-build -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/jasper-install" -DBUILD_SHARED_LIBS=ON -DJAS_ENABLE_DOC=OFF -DJAS_ENABLE_PROGRAMS=OFF
+          cmake --build jasper-build -j"$(nproc)"
+          cmake --install jasper-build
+          wget -q https://github.com/NOAA-EMC/NCEPLIBS-g2c/archive/refs/tags/v2.3.0.tar.gz -O g2c.tar.gz
+          tar -xzf g2c.tar.gz
+          cmake -S NCEPLIBS-g2c-2.3.0 -B g2c-build -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/g2c-install" -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/jasper-install" -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DBUILD_DOCS=OFF
+          cmake --build g2c-build -j"$(nproc)"
+          cmake --install g2c-build
+
+      - name: Create source-linked Python environment
+        run: |
+          python3 -m venv .venv
+          CPPFLAGS="-I$NETCDF4_DIR/include -I$HDF5_ROOT/include" \
+          LDFLAGS="-L$NETCDF4_DIR/lib -L$HDF5_ROOT/lib" \
+          .venv/bin/python -m pip install --upgrade pip
+          CPPFLAGS="-I$NETCDF4_DIR/include -I$HDF5_ROOT/include" \
+          LDFLAGS="-L$NETCDF4_DIR/lib -L$HDF5_ROOT/lib" \
+          .venv/bin/python -m pip install -r requirements.txt
+          .venv/bin/python -c 'import netCDF4; print(netCDF4.__file__)'
+          ldd "$(.venv/bin/python -c 'import netCDF4; print(netCDF4._netCDF4.__file__)')" | grep "$NETCDF4_DIR/lib/libnetcdf"
+
+      - name: Configure CMake visualization build
+        if: matrix.build_system == 'cmake'
+        run: |
+          cmake -S . -B build \
+            -DCMAKE_PREFIX_PATH="$HDF5_ROOT;$NETCDF4_DIR;$GITHUB_WORKSPACE/cdf-install;$GITHUB_WORKSPACE/g2c-install;$GITHUB_WORKSPACE/jasper-install" \
+            -DHDF5_ROOT="$HDF5_ROOT" \
+            -DNEP_BUILD_EXAMPLES=ON \
+            -DNEP_ENABLE_VIZ_EXAMPLES=ON \
+            -DNEP_ENABLE_CDF=ON \
+            -DNEP_ENABLE_GEOTIFF=ON \
+            -DNEP_ENABLE_GRIB2=ON \
+            -DNEP_ENABLE_FITS=ON \
+            -DNEP_ENABLE_PDS4=ON \
+            -DNEP_ENABLE_FORTRAN=OFF \
+            -DNEP_BUILD_LZ4=OFF \
+            -DNEP_BUILD_BZIP2=OFF \
+            -DNEP_BUILD_DOCUMENTATION=OFF
+          cmake --build build -j"$(nproc)"
+          ctest --test-dir build -R '^viz_' --output-on-failure
+
+      - name: Configure Autotools visualization build
+        if: matrix.build_system == 'autotools'
+        run: |
+          autoreconf -fiv
+          mkdir autotools-build
+          cd autotools-build
+          CPPFLAGS="-I$HDF5_ROOT/include -I$NETCDF4_DIR/include -I$GITHUB_WORKSPACE/cdf-install/include -I$GITHUB_WORKSPACE/g2c-install/include" \
+          LDFLAGS="-L$HDF5_ROOT/lib -L$NETCDF4_DIR/lib -L$GITHUB_WORKSPACE/cdf-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib -L$GITHUB_WORKSPACE/jasper-install/lib" \
+          ../configure --with-hdf5="$HDF5_ROOT/bin/h5cc" --enable-examples --enable-viz-examples --enable-cdf --enable-geotiff --enable-grib2 --enable-fits --enable-pds4 --disable-fortran --disable-lz4 --disable-bzip2 --disable-docs
+          make -j"$(nproc)"
+          make -C examples/viz check
+
+      - name: Upload visualization artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visualization-${{ matrix.build_system }}
+          path: |
+            build/examples/viz/*.png
+            build/examples/viz/*_metadata.txt
+            autotools-build/examples/viz/*.png
+            autotools-build/examples/viz/*_metadata.txt
+          if-no-files-found: warn

@@ -1,3 +1,9 @@
+"""Smoke-test opening a NEP UDF file through Python netCDF4.
+
+Companion code for "The NetCDF Developer's Handbook: The Authoritative Guide to
+Writing High-Performance Programs for Scientific Data Management, Second Edition"
+(https://www.amazon.com/dp/B0H7Q1Z75L).
+"""
 import argparse
 import os
 from pathlib import Path

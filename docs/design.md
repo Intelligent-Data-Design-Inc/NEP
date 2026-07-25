@@ -136,6 +136,12 @@ The project is structured as follows:
 - Automatic discovery via HDF5_PLUGIN_PATH
 - Lossless compression guarantee
 
+## Visualization Example Architecture
+
+Optional Python visualization examples in `examples/viz/` demonstrate direct use of `netCDF4.Dataset` with NEP UDF files. The build-tree `.ncrc` file autoloads enabled UDF dispatch libraries through `NCRCENV_RC`; `NETCDF_RC` identifies its containing directory and `LD_LIBRARY_PATH` provides NEP and format-library dependencies. The Python `netCDF4` extension must be built from source against the same NetCDF-C installation as NEP, because a wheel with another `libnetcdf` cannot load the in-process UDF handlers.
+
+Each script writes a 150-DPI grayscale PNG and companion metadata file to the build tree through `plot_common.py`. The shared verifier runs after the conditional format scripts in CMake and Autotools, requiring a PNG/metadata pair per enabled plot, ordered non-empty `title`, `caption`, and `alt_text` fields, captions of at most 75 words, dimensions no larger than 8.0 by 6.1 inches, and equal RGB channels. Artifacts are test outputs only and are not installed.
+
 ## Continuous Integration and Documentation
 
 The project uses GitHub Actions for CI/CD with comprehensive documentation integration:

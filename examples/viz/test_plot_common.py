@@ -1,9 +1,18 @@
+"""Test common visualization output constraints and metadata generation.
+
+Companion code for "The NetCDF Developer's Handbook: The Authoritative Guide to
+Writing High-Performance Programs for Scientific Data Management, Second Edition"
+(https://www.amazon.com/dp/B0H7Q1Z75L).
+"""
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
+import numpy as np
 
 from plot_common import save_with_metadata
+from verify_viz_artifacts import validate_artifacts
 
 
 def main():
@@ -67,6 +76,39 @@ def main():
             raise RuntimeError(f"invalid helper input was accepted: case {index}")
         finally:
             plt.close(invalid_fig)
+
+    with TemporaryDirectory() as temporary_directory:
+        artifact_dir = Path(temporary_directory)
+        negative_cases = {
+            "missing_metadata": lambda: (artifact_dir / "missing_metadata_metadata.txt").unlink(),
+            "malformed_metadata": lambda: (artifact_dir / "malformed_metadata_metadata.txt").write_text(
+                "caption: invalid order\ntitle: invalid order\nalt_text: invalid order\n",
+                encoding="utf-8",
+            ),
+            "long_caption": lambda: (artifact_dir / "long_caption_metadata.txt").write_text(
+                f"title: title\ncaption: {'word ' * 76}\nalt_text: alt text\n",
+                encoding="utf-8",
+            ),
+            "oversized": lambda: plt.imsave(
+                artifact_dir / "oversized.png", np.zeros((916, 1201)), cmap="gray"
+            ),
+            "color": lambda: plt.imsave(
+                artifact_dir / "color.png", np.array([[[1.0, 0.0, 0.0]]])
+            ),
+        }
+        for basename, corrupt in negative_cases.items():
+            fig = plt.figure(figsize=(1.0, 1.0))
+            try:
+                save_with_metadata(fig, artifact_dir / basename, "title", "caption", "alt text")
+            finally:
+                plt.close(fig)
+            corrupt()
+            try:
+                validate_artifacts(artifact_dir, [basename])
+            except RuntimeError:
+                pass
+            else:
+                raise RuntimeError(f"artifact verifier accepted invalid case: {basename}")
 
 
 if __name__ == "__main__":

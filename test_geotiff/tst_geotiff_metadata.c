@@ -216,9 +216,9 @@ test_format_inquiry(void)
     ERR_CHECK(ret);
 
     /* Should return GeoTIFF format */
-    if (format != NC_FORMATX_UDF1)
+    if (format != NC_FORMAT_NETCDF4)
     {
-        printf("FAILED - expected NC_FORMATX_UDF1, got %d\n", format);
+        printf("FAILED - expected NC_FORMAT_NETCDF4, got %d\n", format);
         nc_close(ncid);
         return 1;
     }

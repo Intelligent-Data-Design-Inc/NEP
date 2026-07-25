@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<?xml-model href="http://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1B00.sch" schemtatypens="http://purl.oclc.org/dsdl/schematron"?>
+<Product_Observational xmlns="http://pds.nasa.gov/pds4/pds/v1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pds.nasa.gov/pds4/pds/v1 http://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1B00.xsd">
+  <Identification_Area>
+    <logical_identifier>urn:nasa:pds:gbo-mcdonald:lcs-9p:cn_20050706_000_tab</logical_identifier>
+    <version_id>1.0</version_id>
+    <title>CN, Observed 2005-07-06 at Position Angle 0 Degrees</title>
+    <information_model_version>1.11.0.0</information_model_version>
+    <product_class>Product_Observational</product_class>
+
+    <Citation_Information>
+      <author_list>Cochran, A. L.; Barker, E. S.; Caballero, M. D.; Gyorgey-Ries, J.</author_list>
+      <publication_year>2019</publication_year>
+      <description>These files contain integrated band fluxes and column densities of comet 9P/Tempel 1 at a variety of positions along a long slit.  Separate files exist for each molecule, each night and each slit position angle.  The molecules which may have been observed are OH, NH, CN, C3, CH, and C2 (two band complexes - the delta v=0 and 1).</description>
+    </Citation_Information>
+
+    <Modification_History>
+      <Modification_Detail>
+        <modification_date>2019-03-15</modification_date>
+        <version_id>1.0</version_id>
+        <description>Migration from PDS3</description>
+      </Modification_Detail>
+    </Modification_History>
+  </Identification_Area>
+
+  <Observation_Area>
+    <Time_Coordinates>
+      <start_date_time>2005-07-06T04:20Z</start_date_time>
+      <stop_date_time>2005-07-06T04:50Z</stop_date_time>
+    </Time_Coordinates>
+
+    <Primary_Result_Summary>
+      <purpose>Science</purpose>
+      <processing_level>Derived</processing_level>
+
+      <Science_Facets>
+        <wavelength_range>Visible</wavelength_range>
+        <discipline_name>Flux Measurements</discipline_name>
+      </Science_Facets>
+    </Primary_Result_Summary>
+
+    <Investigation_Area>
+      <name>None</name>
+      <type>Other Investigation</type>
+
+      <Internal_Reference>
+        <lid_reference>urn:nasa:pds:context:investigation:individual.none</lid_reference>
+        <reference_type>data_to_investigation</reference_type>
+      </Internal_Reference>
+    </Investigation_Area>
+
+    <Observing_System>
+      <Observing_System_Component>
+        <name>McDonald Observatory</name>
+        <type>Observatory</type>
+
+        <Internal_Reference>
+          <lid_reference>urn:nasa:pds:context:facility:observatory.mcdonald</lid_reference>
+          <reference_type>is_facility</reference_type>
+        </Internal_Reference>
+      </Observing_System_Component>
+
+      <Observing_System_Component>
+        <name>2.7m Telescope</name>
+        <type>Telescope</type>
+
+        <Internal_Reference>
+          <lid_reference>urn:nasa:pds:context:telescope:mcdonald.smith2m7</lid_reference>
+          <reference_type>is_telescope</reference_type>
+        </Internal_Reference>
+      </Observing_System_Component>
+
+      <Observing_System_Component>
+        <name>Large Cassegrain Spectrometer</name>
+        <type>Instrument</type>
+      </Observing_System_Component>
+    </Observing_System>
+
+    <Target_Identification>
+      <name>9P/1867 G1 (Tempel 1)</name>
+      <type>Comet</type>
+
+      <Internal_Reference>
+        <lid_reference>urn:nasa:pds:context:target:comet.9p_tempel_1</lid_reference>
+        <reference_type>data_to_target</reference_type>
+      </Internal_Reference>
+    </Target_Identification>
+  </Observation_Area>
+
+  <File_Area_Observational>
+    <File>
+      <file_name>20050706_000.tab</file_name>
+      <file_size unit="byte">12980</file_size>
+      <records>118</records>
+    </File>
+
+    <Table_Character>
+      <offset unit="byte">0</offset>
+      <records>118</records>
+      <description>These files contain integrated band fluxes and column densities of comet 9P/Tempel 1 at a variety of positions along a long slit.  Separate files exist for each molecule, each night and each slit position angle.  The molecules which may have been observed are OH, NH, CN, C3, CH, and C2 (two band complexes - the delta v=0 and 1).</description>
+      <record_delimiter>Carriage-Return Line-Feed</record_delimiter>
+
+      <Record_Character>
+        <fields>8</fields>
+        <groups>0</groups>
+        <record_length unit="byte">110</record_length>
+
+        <Field_Character>
+          <name>Spec Num</name>
+          <field_number>1</field_number>
+          <field_location unit="byte">9</field_location>
+          <data_type>ASCII_Integer</data_type>
+          <field_length unit="byte">3</field_length>
+          <field_format>%3d</field_format>
+          <description>A running sequence number for spatial position along the slit.  There may be missing numbers when data were removed because of contamination from a star or radiation event.  The sequence runs from 1 to the last pixel along the slit but may then start over at 1 if there are more than 1 spectra obtained of the same position angle of the slit.</description>
+        </Field_Character>
+
+        <Field_Character>
+          <name>HA Pos</name>
+          <field_number>2</field_number>
+          <field_location unit="byte">18</field_location>
+          <data_type>ASCII_Real</data_type>
+          <field_length unit="byte">10</field_length>
+          <field_format>%10.3e</field_format>
+          <unit>km</unit>
+          <description>The HA offset of the data from the optocenter of the comet.  This value is negative for positions to the east of the optocenter and positive for positions to the west of the optocenter.</description>
+        </Field_Character>
+
+        <Field_Character>
+          <name>Dec Pos</name>
+          <field_number>3</field_number>
+          <field_location unit="byte">30</field_location>
+          <data_type>ASCII_Real</data_type>
+          <field_length unit="byte">10</field_length>
+          <field_format>%10.3e</field_format>
+          <unit>km</unit>
+          <description>The Dec offset of the data from the optocenter of the comet.  This value is negative for positions to the south of the optocenter and positive for positions to the north of the optocenter.</description>
+        </Field_Character>
+
+        <Field_Character>
+          <name>Radial Pos</name>
+          <field_number>4</field_number>
+          <field_location unit="byte">42</field_location>
+          <data_type>ASCII_Real</data_type>
+          <field_length unit="byte">10</field_length>
+          <field_format>%10.3e</field_format>
+          <unit>km</unit>
+          <description>The radial position of the observation from the optocenter.  This column is sqrt(HA Pos^2 + Dec Pos^2).</description>
+        </Field_Character>
+
+        <Field_Character>
+          <name>Log(Pos)</name>
+          <field_number>5</field_number>
+          <field_location unit="byte">58</field_location>
+          <data_type>ASCII_Real</data_type>
+          <field_length unit="byte">6</field_length>
+          <field_format>%6.3f</field_format>
+          <unit>Log(km)</unit>
+          <description>The base 10 log of the radial position</description>
+        </Field_Character>
+
+        <Field_Character>
+          <name>Intensity</name>
+          <field_number>6</field_number>
+          <field_location unit="byte">68</field_location>
+          <data_type>ASCII_Real</data_type>
+          <field_length unit="byte">9</field_length>
+          <field_format>%9.2e</field_format>
+          <unit>ergs/cm**2/sec</unit>
+          <description>The integrated band intensity for this molecule and position</description>
+        </Field_Character>
+
+        <Field_Character>
+          <name>Col Dens</name>
+          <field_number>7</field_number>
+          <field_location unit="byte">83</field_location>
+          <data_type>ASCII_Real</data_type>
+          <field_length unit="byte">9</field_length>
+          <field_format>%9.2e</field_format>
+          <unit>molecules/cm**2</unit>
+          <description>The column density for the molecule and position</description>
+        </Field_Character>
+
+        <Field_Character>
+          <name>Log(Coldens)</name>
+          <field_number>8</field_number>
+          <field_location unit="byte">101</field_location>
+          <data_type>ASCII_Real</data_type>
+          <field_length unit="byte">6</field_length>
+          <field_format>%6.3f</field_format>
+          <unit>Log(molecules/cm**2)</unit>
+          <description>Base 10 log of the column density for this molecule and position</description>
+        </Field_Character>
+      </Record_Character>
+    </Table_Character>
+  </File_Area_Observational>
+</Product_Observational>

@@ -1,0 +1,3 @@
+title: MAVEN NGIMS L3 Temperature
+caption: Line plot of MAVEN NGIMS L3 derived temperature versus Unix time, opened through the NetCDF PDS4 UDF interface.
+alt_text: A black line plots MAVEN NGIMS L3 temperature in Kelvin against Unix epoch seconds.

@@ -1,0 +1,3 @@
+title: New Horizons Alice Spectrum
+caption: Grayscale image of a New Horizons Alice 2-D spectrum opened through the NetCDF PDS4 UDF interface and downsampled for publication.
+alt_text: Grayscale plot of a New Horizons Alice ultraviolet spectrum array, downsampled to approximately 1000 samples per axis.
