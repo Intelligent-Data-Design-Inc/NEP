@@ -114,6 +114,7 @@ python3 /path/to/nep/build/examples/viz/verify_viz_artifacts.py \
 - `plot_pds4_new_horizons.py` — plots a New Horizons Alice spectrum array.
 - `plot_dicom_mrbrain.py` — plots the single-frame 16-bit MRBRAIN.DCM image.
 - `plot_dicom_xa_montage.py` — plots a montage of all frames from 0003.DCM.
+- `plot_dicom_ct_brain.py` — plots the single-frame 16-bit CT-MONO2-16-brain.dcm image.
 - `verify_viz_artifacts.py` — verifies all expected PNG/metadata pairs, metadata
   schema, caption length, and publication dimensions.
 

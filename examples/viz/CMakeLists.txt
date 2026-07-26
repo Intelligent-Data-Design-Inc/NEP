@@ -14,6 +14,7 @@ set(_viz_python_files
     _dicom_udf.py
     plot_dicom_mrbrain.py
     plot_dicom_xa_montage.py
+    plot_dicom_ct_brain.py
 )
 
 foreach(_viz_file ${_viz_python_files})
@@ -249,7 +250,18 @@ if(HAVE_DICOM)
         FIXTURES_SETUP viz_artifacts
     )
 
-    list(APPEND _viz_artifacts dicom_mrbrain_image dicom_xa_frame_montage)
+    add_test(
+        NAME viz_dicom_ct_brain
+        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/plot_dicom_ct_brain.py"
+                "${CMAKE_BINARY_DIR}/test/data/DICOM/CT-MONO2-16-brain.dcm"
+    )
+    set_tests_properties(viz_dicom_ct_brain PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+        ENVIRONMENT "${_viz_environment}"
+        FIXTURES_SETUP viz_artifacts
+    )
+
+    list(APPEND _viz_artifacts dicom_mrbrain_image dicom_xa_frame_montage dicom_ct_brain_image)
 endif()
 
 add_test(

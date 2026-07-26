@@ -113,7 +113,7 @@ if(HAVE_DICOM)
     file(TOUCH ${CMAKE_BINARY_DIR}/.ncrc)
 
     add_executable(tst_dicom_udf tst_dicom_udf.c)
-    target_link_libraries(tst_dicom_udf PRIVATE ncdicom nep ${NETCDF_LIBRARIES})
+    target_link_libraries(tst_dicom_udf PRIVATE ncdicom nep ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
     target_include_directories(tst_dicom_udf PRIVATE ${NETCDF_INCLUDE_DIRS} ${DICOM_INCLUDE_DIR})
     add_test(NAME tst_dicom_udf COMMAND tst_dicom_udf)
     set_tests_properties(tst_dicom_udf PROPERTIES
