@@ -40,17 +40,17 @@ jobs:
 
       - name: Render and validate Conda recipe
         run: |
-          conda render conda/
-          conda build --check conda/
+          conda-build --output conda/
+          conda-build --check conda/
 
       - name: Build NEP Conda package
         run: |
           set -o pipefail
-          conda build conda/ --no-anaconda-upload 2>&1 | tee conda_build.log
+          conda-build conda/ --no-anaconda-upload 2>&1 | tee conda_build.log
 
       - name: Verify and smoke-test package
         run: |
-          PKG_PATH=$(conda build conda/ --output)
+          PKG_PATH=$(conda-build conda/ --output)
           echo "Package: $PKG_PATH"
           test -f "$PKG_PATH"
           conda create -y -p "$RUNNER_TEMP/nep-smoke" "$PKG_PATH"
