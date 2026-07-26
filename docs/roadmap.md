@@ -1,5 +1,48 @@
 # NEP Development Roadmap
 
+### V3.1.0 - DICOM Visualizations
+
+#### Sprint 1: Add Visualization of DICOM Test File
+**Detailed Plan**: See `docs/plan/v3.1.0-sprint1-dicom-visualizations.md`
+
+Add the first DICOM visualization examples to `examples/viz/`, generate two publication-ready grayscale PNG artifacts from the existing `MRBRAIN.DCM` and `0003.DCM` samples, and acquire 3–5 additional public-domain DICOM samples to broaden visual content and regression coverage.
+
+**Implementation scope:**
+- Add `examples/viz/plot_dicom_mrbrain.py` to open `test/data/DICOM/MRBRAIN.DCM` through the NetCDF UDF interface, read `pixel_data[0, :, :]`, normalize the 16-bit signed/unsigned samples to grayscale, and write `dicom_mrbrain_image.png` + `dicom_mrbrain_image_metadata.txt`.
+- Add `examples/viz/plot_dicom_xa_montage.py` to open `test/data/DICOM/0003.DCM`, read all 17 encapsulated JPEG Baseline frames, build a compact grayscale montage, and write `dicom_xa_frame_montage.png` + `dicom_xa_frame_montage_metadata.txt`.
+- Update `examples/viz/CMakeLists.txt` and `examples/viz/Makefile.am` to copy the new scripts, conditionally run them under `HAVE_DICOM`, and append the two artifact basenames to the visualization artifact list.
+- Update `examples/viz/README.md` with DICOM visualization instructions and script descriptions.
+- Add `HAVE_DICOM` to the `NEP_ENABLE_VIZ_EXAMPLES` UDF-reader guard in top-level `CMakeLists.txt` and `configure.ac`.
+- Add a Visualization section to `docs/dicom.md` describing the new plots and required environment variables.
+- Acquire 3–5 additional public-domain DICOM samples (e.g., CT, CR, or US images) for `test/data/DICOM/`, documenting their provenance, license, and any clinically sensitive content considerations.
+- Update `.github/workflows/ci-dicom.yml` to enable visualization examples (`NEP_ENABLE_VIZ_EXAMPLES=ON` / `--enable-viz-examples`), install Python dependencies in the project virtual environment, and run the visualization tests.
+
+**Clarified decisions:**
+- Two visualization artifacts are produced in Sprint 1: `dicom_mrbrain_image` (single-frame 16-bit MR) and `dicom_xa_frame_montage` (17-frame XA montage).
+- DICOM visualization output uses an external `_metadata.txt` with exactly `title`, `caption`, and `alt_text`, a caption of at most 75 words, and a figure size at most 8.0 by 6.1 inches.
+- `MRBRAIN.DCM` is plotted by normalizing the 16-bit `pixel_data` range to 8-bit grayscale; signed `NC_SHORT` values are offset before scaling.
+- `0003.DCM` frames are arranged in a rectangular montage; if any frame has color photometric interpretation, it is converted to luminance before tiling.
+- Additional test files are read-only data; they do not change existing test logic unless they exercise a new supported Transfer Syntax, in which case the change is limited to a new regression case.
+- New samples must be public-domain or CC-licensed and must not contain real patient identifiers.
+
+**Acceptance Criteria:**
+- `plot_dicom_mrbrain.py` and `plot_dicom_xa_montage.py` are present in `examples/viz/` and copied to the build tree by both build systems.
+- CMake and Autotools configure successfully with `-DNEP_ENABLE_DICOM=ON -DNEP_ENABLE_VIZ_EXAMPLES=ON` and `--enable-dicom --enable-viz-examples`, respectively.
+- `ctest -R viz --output-on-failure` and `make check` generate both PNG/metadata pairs and `verify_viz_artifacts.py` passes.
+- Both PNGs are within the 8.0 by 6.1 inch / 150 DPI limits and have valid `_metadata.txt` files.
+- `docs/dicom.md` and `examples/viz/README.md` describe the new visualization scripts.
+- At least 3 new public-domain DICOM samples are added under `test/data/DICOM/` with provenance documented in the sprint plan.
+- `.github/workflows/ci-dicom.yml` passes with visualization enabled.
+- Existing DICOM tests (`tst_dicom_udf`) continue to pass with DICOM enabled; the full suite remains regression-free with DICOM disabled.
+
+**Testing:** Run `ctest -R viz --output-on-failure` and `make check` in a DICOM-enabled build, inspect the generated `dicom_mrbrain_image.png` and `dicom_xa_frame_montage.png` artifacts, run `tst_dicom_udf` for regression coverage, and verify the DICOM-enabled `ci-dicom.yml` job is green.
+
+**Build System Integration:** `examples/viz/CMakeLists.txt`, `examples/viz/Makefile.am`, top-level `CMakeLists.txt`, `configure.ac`, `examples/viz/README.md`, `docs/dicom.md`, `.github/workflows/ci-dicom.yml`.
+
+**Definition of Done:** Two DICOM visualization scripts generate validated, publication-ready artifacts under both CMake and Autotools; the visualization guard conditions recognize DICOM; user-facing documentation describes the plots; 3–5 new public-domain DICOM samples are added with documented provenance; `ci-dicom.yml` passes with visualization enabled; existing tests remain green.
+
+**GitHub Issue:** #330
+
 ### V3.0.0 - DICOM Reader
 
 Add the ability to read files in DICOM format through a new NetCDF UDF handler that uses the `libdicom` C library. The reader exposes DICOM image pixel data and key metadata as NetCDF variables and attributes, supports native uncompressed single-frame images first, then encapsulated JPEG compressed and multi-frame images, and finally functional-group metadata, Fortran bindings, documentation, and CI.

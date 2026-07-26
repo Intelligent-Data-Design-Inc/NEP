@@ -2,8 +2,8 @@
 
 The visualization examples use Python `netCDF4` to open NEP UDF files and
 Matplotlib to write static PNG plots. They are optional and disabled by default.
-The scripts cover FITS, CDF, GeoTIFF, GRIB2, and PDS4 MESSENGER,
-Perseverance, MAVEN, and New Horizons products. They use the generated
+The scripts cover FITS, CDF, GeoTIFF, GRIB2, PDS4 MESSENGER,
+Perseverance, MAVEN, New Horizons, and DICOM products. They use the generated
 build-tree `.ncrc` to autoload enabled NEP UDF libraries.
 
 ## Requirements
@@ -50,7 +50,8 @@ cmake -S . -B build \
   -DNEP_ENABLE_CDF=ON \
   -DNEP_ENABLE_GEOTIFF=ON \
   -DNEP_ENABLE_GRIB2=ON \
-  -DNEP_ENABLE_PDS4=ON
+  -DNEP_ENABLE_PDS4=ON \
+  -DNEP_ENABLE_DICOM=ON
 cmake --build build
 ctest --test-dir build -R viz --output-on-failure
 ```
@@ -65,7 +66,7 @@ Configure with examples, visualization, and all supported UDF readers enabled:
 
 ```bash
 ./configure --enable-examples --enable-viz-examples --enable-fits --enable-cdf \
-  --enable-geotiff --enable-grib2 --enable-pds4
+  --enable-geotiff --enable-grib2 --enable-pds4 --enable-dicom
 make
 make check
 ```
@@ -101,11 +102,15 @@ python3 /path/to/nep/build/examples/viz/plot_pds4_maven_l3.py \
   /path/to/nep/build/test/data/PDS4/maven/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml
 python3 /path/to/nep/build/examples/viz/plot_pds4_new_horizons.py \
   /path/to/nep/build/test/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.lblx
+python3 /path/to/nep/build/examples/viz/plot_dicom_mrbrain.py \
+  /path/to/nep/build/test/data/DICOM/MRBRAIN.DCM
+python3 /path/to/nep/build/examples/viz/plot_dicom_xa_montage.py \
+  /path/to/nep/build/test/data/DICOM/0003.DCM
 python3 /path/to/nep/build/examples/viz/verify_viz_artifacts.py \
   /path/to/nep/build/examples/viz \
   viz_plot_common_test fits_wfpc2_image cdf_temperature geotiff_modis_flood \
   grib2_wave pds4_messenger_tnmap pds4_perseverance_mastcamz \
-  pds4_maven_ngims_l3 pds4_new_horizons_alice
+  pds4_maven_ngims_l3 pds4_new_horizons_alice dicom_mrbrain_image dicom_xa_frame_montage
 ```
 
 ## Scripts
@@ -122,11 +127,11 @@ python3 /path/to/nep/build/examples/viz/verify_viz_artifacts.py \
 - `plot_pds4_perseverance.py` — plots scaled Perseverance Mastcam-Z band 0 data.
 - `plot_pds4_maven_l3.py` — plots MAVEN NGIMS L3 temperature against Unix time.
 - `plot_pds4_new_horizons.py` — plots a New Horizons Alice spectrum array.
+- `plot_dicom_mrbrain.py` — plots the single-frame 16-bit MRBRAIN.DCM image.
+- `plot_dicom_xa_montage.py` — plots a montage of all frames from 0003.DCM.
 - `verify_viz_artifacts.py` — verifies all expected PNG/metadata pairs, metadata
-  schema, caption length, publication dimensions, and grayscale pixels.
+  schema, caption length, and publication dimensions.
 
 Generated PNG and metadata files remain in the visualization build directory
 for inspection. They are not installed and are not written to the source tree.
-Each plot is grayscale, no caption appears inside the PNG, figures are limited
-to 8.0 by 6.1 inches at 150 DPI, and metadata fields are ordered `title`,
-`caption`, and `alt_text` with a 75-word caption limit.
+No caption appears inside the PNG, figures are limited to 8.0 by 6.1 inches at 150 DPI, and metadata fields are ordered `title`, `caption`, and `alt_text` with a 75-word caption limit.

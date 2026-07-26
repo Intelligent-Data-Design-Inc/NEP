@@ -11,6 +11,9 @@ set(_viz_python_files
     plot_pds4_perseverance.py
     plot_pds4_maven_l3.py
     plot_pds4_new_horizons.py
+    _dicom_udf.py
+    plot_dicom_mrbrain.py
+    plot_dicom_xa_montage.py
 )
 
 foreach(_viz_file ${_viz_python_files})
@@ -221,6 +224,32 @@ if(HAVE_PDS4)
         pds4_maven_ngims_l3
         pds4_new_horizons_alice
     )
+endif()
+
+if(HAVE_DICOM)
+    add_test(
+        NAME viz_dicom_mrbrain
+        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/plot_dicom_mrbrain.py"
+                "${CMAKE_BINARY_DIR}/test/data/DICOM/MRBRAIN.DCM"
+    )
+    set_tests_properties(viz_dicom_mrbrain PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+        ENVIRONMENT "${_viz_environment}"
+        FIXTURES_SETUP viz_artifacts
+    )
+
+    add_test(
+        NAME viz_dicom_xa_montage
+        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/plot_dicom_xa_montage.py"
+                "${CMAKE_BINARY_DIR}/test/data/DICOM/0003.DCM"
+    )
+    set_tests_properties(viz_dicom_xa_montage PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+        ENVIRONMENT "${_viz_environment}"
+        FIXTURES_SETUP viz_artifacts
+    )
+
+    list(APPEND _viz_artifacts dicom_mrbrain_image dicom_xa_frame_montage)
 endif()
 
 add_test(

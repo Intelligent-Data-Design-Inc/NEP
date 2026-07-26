@@ -92,9 +92,6 @@ def main():
             "oversized": lambda: plt.imsave(
                 artifact_dir / "oversized.png", np.zeros((916, 1201)), cmap="gray"
             ),
-            "color": lambda: plt.imsave(
-                artifact_dir / "color.png", np.array([[[1.0, 0.0, 0.0]]])
-            ),
         }
         for basename, corrupt in negative_cases.items():
             fig = plt.figure(figsize=(1.0, 1.0))

@@ -85,6 +85,11 @@ check-local:
 		cp $(srcdir)/data/DICOM/tst_dicom_uncompressed.dcm $(builddir)/data/DICOM/ 2>/dev/null || true; \
 		cp $(srcdir)/data/DICOM/MRBRAIN.DCM $(builddir)/data/DICOM/ 2>/dev/null || true; \
 		cp $(srcdir)/data/DICOM/0003.DCM $(builddir)/data/DICOM/ 2>/dev/null || true; \
+		cp $(srcdir)/data/DICOM/CT-MONO2-16-chest.dcm $(builddir)/data/DICOM/ 2>/dev/null || true; \
+		cp $(srcdir)/data/DICOM/CT-MONO2-16-brain.dcm $(builddir)/data/DICOM/ 2>/dev/null || true; \
+		cp $(srcdir)/data/DICOM/MR-MONO2-16-head.dcm $(builddir)/data/DICOM/ 2>/dev/null || true; \
+		cp $(srcdir)/data/DICOM/CR-MONO1-10-chest.dcm $(builddir)/data/DICOM/ 2>/dev/null || true; \
+		cp $(srcdir)/data/DICOM/MR-MONO2-12-shoulder.dcm $(builddir)/data/DICOM/ 2>/dev/null || true; \
 		$(MKDIR_P) $(builddir)/data/PDS4; \
 		$(MKDIR_P) $(builddir)/data/PDS4/general; \
 		cp $(srcdir)/data/PDS4/general/test_image.xml $(builddir)/data/PDS4/general/ 2>/dev/null || true; \
@@ -127,6 +132,17 @@ check-local:
 		cp $(srcdir)/data/PDS4/perseverance/ZLF_1737_0821123689_910RAD_N0830000ZCAM00091_1100LMJ01.IMG $(builddir)/data/PDS4/perseverance/ 2>/dev/null || true; \
 	fi
 
+dicom_test_data_stamp = data/.dicom_copied
+
+$(dicom_test_data_stamp): $(srcdir)/data/DICOM/tst_dicom_uncompressed.dcm $(srcdir)/data/DICOM/MRBRAIN.DCM $(srcdir)/data/DICOM/0003.DCM
+	$(MKDIR_P) data/DICOM
+	cp $(srcdir)/data/DICOM/tst_dicom_uncompressed.dcm data/DICOM/
+	cp $(srcdir)/data/DICOM/MRBRAIN.DCM data/DICOM/
+	cp $(srcdir)/data/DICOM/0003.DCM data/DICOM/
+	touch $@
+
+$(TESTS): $(dicom_test_data_stamp)
+
 TESTS_ENVIRONMENT = LD_LIBRARY_PATH=@MY_LD_LIBRARY_PATH@:$$LD_LIBRARY_PATH
 
 # Run all the appropriate tests in this script.
@@ -137,6 +153,7 @@ CLEANFILES = tst_*.nc
 
 EXTRA_DIST = run_tests.sh.in data/imap_mag_l1b-calibration_20240229_v001.cdf data/tst_cdf_simple.cdf data/gdaswave.t00z.wcoast.0p16.f000.grib2 data/WFPC2u5780205r_c0fx.fits \
 data/DICOM/tst_dicom_uncompressed.dcm data/DICOM/MRBRAIN.DCM data/DICOM/0003.DCM \
+data/DICOM/CT-MONO2-16-chest.dcm data/DICOM/CT-MONO2-16-brain.dcm data/DICOM/MR-MONO2-16-head.dcm data/DICOM/CR-MONO1-10-chest.dcm data/DICOM/MR-MONO2-12-shoulder.dcm \
 data/PDS4/general/test_image.xml data/PDS4/general/test_image.img data/PDS4/general/test_table_binary.xml data/PDS4/general/test_table_binary.dat data/PDS4/general/Table_Character_Example.xml data/PDS4/general/Table_Character_Example.tab \
 data/PDS4/cassini_hrd/hrd_2000_on_off.xml data/PDS4/cassini_hrd/hrd_2000_on_off.tab \
 data/PDS4/messenger_tnmap/thermal_neutron_map.xml data/PDS4/messenger_tnmap/thermal_neutron_map.img \

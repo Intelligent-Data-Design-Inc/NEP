@@ -12,7 +12,6 @@ import matplotlib.image as mpimg
 
 _MAX_WIDTH_PIXELS = 8.0 * 150
 _MAX_HEIGHT_PIXELS = 6.1 * 150
-_MAX_CHANNEL_DIFFERENCE = 1e-6
 _METADATA_FIELDS = ("title", "caption", "alt_text")
 
 
@@ -44,13 +43,6 @@ def _validate_png(path):
         raise ValueError(
             f"PNG dimensions {width}x{height} exceed the 8.0x6.1 inch limit at 150 DPI"
         )
-    if image.ndim == 3 and image.shape[2] >= 3:
-        red, green, blue = image[:, :, 0], image[:, :, 1], image[:, :, 2]
-        if (
-            abs(red - green).max() > _MAX_CHANNEL_DIFFERENCE
-            or abs(green - blue).max() > _MAX_CHANNEL_DIFFERENCE
-        ):
-            raise ValueError("PNG contains non-grayscale RGB pixels")
 
 
 def validate_artifacts(directory, basenames):

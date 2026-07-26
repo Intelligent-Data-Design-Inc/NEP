@@ -21,6 +21,10 @@ if HAVE_PDS4
 TESTS += plot_pds4_messenger.py plot_pds4_perseverance.py plot_pds4_maven_l3.py plot_pds4_new_horizons.py
 viz_artifacts += pds4_messenger_tnmap pds4_perseverance_mastcamz pds4_maven_ngims_l3 pds4_new_horizons_alice
 endif
+if HAVE_DICOM
+TESTS += plot_dicom_mrbrain.py plot_dicom_xa_montage.py
+viz_artifacts += dicom_mrbrain_image dicom_xa_frame_montage
+endif
 TESTS += verify_viz_artifacts.py
 
 LOG_COMPILER = $(PYTHON3)
@@ -37,6 +41,8 @@ AM_TESTS_ENVIRONMENT = NCRCENV_RC="$(abs_top_builddir)/.ncrc" \
 	NEP_VIZ_PDS4_PERSEVERANCE_FILE="$(abs_top_builddir)/test/data/PDS4/perseverance/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml" \
 	NEP_VIZ_PDS4_MAVEN_L3_FILE="$(abs_top_builddir)/test/data/PDS4/maven/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml" \
 	NEP_VIZ_PDS4_NEW_HORIZONS_FILE="$(abs_top_builddir)/test/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.lblx" \
+	NEP_VIZ_DICOM_MRBRAIN_FILE="$(abs_top_builddir)/test/data/DICOM/MRBRAIN.DCM" \
+	NEP_VIZ_DICOM_XA_FILE="$(abs_top_builddir)/test/data/DICOM/0003.DCM" \
 	NEP_VIZ_ARTIFACT_DIR="$(abs_builddir)" \
 	NEP_VIZ_ARTIFACTS="$(viz_artifacts)"
 
@@ -62,6 +68,10 @@ viz_test_data += $(abs_top_builddir)/test/data/PDS4/maven/mvn_ngi_l3_res-sht-589
 viz_test_data += $(abs_top_builddir)/test/data/PDS4/maven/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.csv
 viz_test_data += $(abs_top_builddir)/test/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.lblx
 viz_test_data += $(abs_top_builddir)/test/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.fit
+endif
+if HAVE_DICOM
+viz_test_data += $(abs_top_builddir)/test/data/DICOM/MRBRAIN.DCM
+viz_test_data += $(abs_top_builddir)/test/data/DICOM/0003.DCM
 endif
 
 $(abs_top_builddir)/test/data/WFPC2u5780205r_c0fx.fits: $(abs_top_srcdir)/test/data/WFPC2u5780205r_c0fx.fits
@@ -112,6 +122,14 @@ $(abs_top_builddir)/test/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.fit: 
 	$(MKDIR_P) $(abs_top_builddir)/test/data/PDS4/new_horizons
 	cp $< $@
 
+$(abs_top_builddir)/test/data/DICOM/MRBRAIN.DCM: $(abs_top_srcdir)/test/data/DICOM/MRBRAIN.DCM
+	$(MKDIR_P) $(abs_top_builddir)/test/data/DICOM
+	cp $< $@
+
+$(abs_top_builddir)/test/data/DICOM/0003.DCM: $(abs_top_srcdir)/test/data/DICOM/0003.DCM
+	$(MKDIR_P) $(abs_top_builddir)/test/data/DICOM
+	cp $< $@
+
 $(TESTS): $(viz_test_data)
 
-EXTRA_DIST = README.md plot_common.py test_plot_common.py test_udf_open.py verify_viz_artifacts.py plot_fits_image.py plot_cdf_var.py plot_geotiff_subset.py plot_grib2_grid.py plot_pds4_messenger.py plot_pds4_perseverance.py plot_pds4_maven_l3.py plot_pds4_new_horizons.py
+EXTRA_DIST = README.md plot_common.py test_plot_common.py test_udf_open.py verify_viz_artifacts.py plot_fits_image.py plot_cdf_var.py plot_geotiff_subset.py plot_grib2_grid.py plot_pds4_messenger.py plot_pds4_perseverance.py plot_pds4_maven_l3.py plot_pds4_new_horizons.py _dicom_udf.py plot_dicom_mrbrain.py plot_dicom_xa_montage.py

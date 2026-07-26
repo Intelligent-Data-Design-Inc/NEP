@@ -473,7 +473,7 @@ if test "x$enable_viz_examples" = xyes; then
     if test "x$enable_examples" != xyes; then
         AC_MSG_ERROR([--enable-viz-examples requires --enable-examples])
     fi
-    if test "x$HAVE_GEOTIFF" != xyes && test "x$HAVE_CDF" != xyes && test "x$HAVE_GRIB2" != xyes && test "x$HAVE_FITS" != xyes && test "x$HAVE_PDS4" != xyes; then
+    if test "x$HAVE_GEOTIFF" != xyes && test "x$HAVE_CDF" != xyes && test "x$HAVE_GRIB2" != xyes && test "x$HAVE_FITS" != xyes && test "x$HAVE_PDS4" != xyes && test "x$HAVE_DICOM" != xyes; then
         AC_MSG_ERROR([--enable-viz-examples requires at least one enabled UDF reader])
     fi
     nep_srcdir_abs=`cd "$srcdir" && pwd`

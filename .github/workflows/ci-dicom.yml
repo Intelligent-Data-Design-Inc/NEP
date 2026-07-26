@@ -36,7 +36,7 @@ jobs:
       - name: Install base dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake make wget zlib1g-dev autoconf automake libtool pkg-config gfortran libzstd-dev meson ninja-build libjpeg-dev
+          sudo apt-get install -y cmake make wget zlib1g-dev autoconf automake libtool pkg-config gfortran libzstd-dev meson ninja-build libjpeg-dev python3-venv python3-pip
 
       - name: Cache HDF5 install
         id: cache-hdf5-dicom
@@ -93,6 +93,13 @@ jobs:
           meson compile -C build
           meson install -C build
 
+      - name: Set up Python virtual environment for visualization tests
+        run: |
+          python3 -m venv .venv
+          NETCDF4_DIR="$GITHUB_WORKSPACE/netcdf-c-install" \
+          HDF5_DIR="$GITHUB_WORKSPACE/hdf5-install" \
+            .venv/bin/python -m pip install -r requirements.txt
+
       # --- CMake build ---
       - name: Configure with CMake and DICOM enabled
         if: matrix.build_system == 'cmake'
@@ -112,6 +119,7 @@ jobs:
             -DNEP_BUILD_BZIP2=OFF \
             -DNEP_BUILD_DOCUMENTATION=OFF \
             -DNEP_BUILD_EXAMPLES=ON \
+            -DNEP_ENABLE_VIZ_EXAMPLES=ON \
             -DBUILD_TESTING=ON
           echo "=== Checking config.h for HAVE_DICOM ==="
           grep "define HAVE_DICOM" config.h && echo "SUCCESS: HAVE_DICOM is defined" || (echo "FAILURE: HAVE_DICOM not defined"; exit 1)
@@ -152,6 +160,7 @@ jobs:
           ./configure \
             --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc \
             --enable-dicom \
+            --enable-viz-examples \
             --disable-fortran \
             --disable-fits \
             --disable-grib2 \
