@@ -524,7 +524,7 @@ jobs:
           echo "Building with CMake..."
           export PATH=$GITHUB_WORKSPACE/hdf5-install/bin:$PATH
           export HDF5_PLUGIN_PATH=$GITHUB_WORKSPACE/netcdf-c-install/hdf5/lib/plugin
-          export LD_LIBRARY_PATH=$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH
+          export LD_LIBRARY_PATH=$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$GITHUB_WORKSPACE/libdicom-install/lib:$LD_LIBRARY_PATH
           make -j$(nproc)
 
       - name: Build Documentation (CMake)
@@ -551,7 +551,7 @@ jobs:
           export HDF5_PLUGIN_PATH="$GITHUB_WORKSPACE/netcdf-c-install/hdf5/lib/plugin"
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include -I$GITHUB_WORKSPACE/cdf-install/include -I/usr/include/liblzf"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib"
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH"
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$GITHUB_WORKSPACE/libdicom-install/lib:$LD_LIBRARY_PATH"
           ctest --verbose
           sudo make install
 
@@ -578,9 +578,13 @@ jobs:
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
           export HDF5_PLUGIN_PATH="$GITHUB_WORKSPACE/netcdf-c-install/hdf5/lib/plugin"
           export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
+          LIBDICOM_LIBDIR="$GITHUB_WORKSPACE/libdicom-install/lib"
+          if [ -d "$GITHUB_WORKSPACE/libdicom-install/lib/x86_64-linux-gnu" ]; then
+            LIBDICOM_LIBDIR="$GITHUB_WORKSPACE/libdicom-install/lib/x86_64-linux-gnu"
+          fi
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include -I$GITHUB_WORKSPACE/cdf-install/include -I$GITHUB_WORKSPACE/libdicom-install/include -I/usr/include/liblzf"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib -L$GITHUB_WORKSPACE/libdicom-install/lib"
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$GITHUB_WORKSPACE/libdicom-install/lib:$LD_LIBRARY_PATH"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib -L$LIBDICOM_LIBDIR"
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LIBDICOM_LIBDIR:$LD_LIBRARY_PATH"
           export CFLAGS="-Wall"
           export FCFLAGS="-Wall -Wno-error=missing-include-dirs -I$GITHUB_WORKSPACE/netcdf-fortran-install/include"
           ls -l $GITHUB_WORKSPACE/hdf5-install/lib
@@ -642,7 +646,11 @@ jobs:
           export HDF5_PLUGIN_PATH="$GITHUB_WORKSPACE/netcdf-c-install/hdf5/lib/plugin"
           export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include -I$GITHUB_WORKSPACE/cdf-install/include -I/usr/include/liblzf"
           export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib"
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LD_LIBRARY_PATH"
+          LIBDICOM_LIBDIR="$GITHUB_WORKSPACE/libdicom-install/lib"
+          if [ -d "$GITHUB_WORKSPACE/libdicom-install/lib/x86_64-linux-gnu" ]; then
+            LIBDICOM_LIBDIR="$GITHUB_WORKSPACE/libdicom-install/lib/x86_64-linux-gnu"
+          fi
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LIBDICOM_LIBDIR:$LD_LIBRARY_PATH"
           ls -l "${HDF5_PLUGIN_PATH}"
           make VERBOSE=1 check || (echo "Tests failed. Printing test logs:"; cat test/test-suite.log; cat test/run_tests.sh.log; if [ -f test_cdf/test-suite.log ]; then cat test_cdf/test-suite.log; fi; exit 1)
           echo "Tests passed. Showing test output:"

@@ -28,11 +28,15 @@ execute_process(
     OUTPUT_VARIABLE NC_LIBS
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
+execute_process(
+    COMMAND ${NC_CONFIG} --libdir
+    OUTPUT_VARIABLE NC_LIBDIR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
 
 separate_arguments(NC_CFLAGS_LIST UNIX_COMMAND "${NC_CFLAGS}")
 separate_arguments(NC_LIBS_LIST UNIX_COMMAND "${NC_LIBS}")
 
-include_directories(${CMAKE_BINARY_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 add_executable(dicom_read dicom_read.c)
@@ -48,7 +52,7 @@ set_target_properties(dicom_read PROPERTIES
 
 if(BUILD_TESTING)
     add_test(NAME dicom_read
-             COMMAND dicom_read
+             COMMAND dicom_read ${CMAKE_SOURCE_DIR}/test/data/DICOM/tst_dicom_uncompressed.dcm
              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     set_tests_properties(dicom_read PROPERTIES
         ENVIRONMENT "NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")

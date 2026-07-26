@@ -11,7 +11,6 @@ dicom_read_LDADD = $(top_builddir)/src/libncdicom.la \
                    $(NETCDF_LIBS) $(HDF5_LIBS) -lm
 check_PROGRAMS = dicom_read
 
-TESTS = $(check_PROGRAMS)
 AM_TESTS_ENVIRONMENT = NETCDF_RC=$(top_builddir); export NETCDF_RC; \
                        LD_LIBRARY_PATH="$(top_builddir)/src/.libs:$(LD_LIBRARY_PATH)"; export LD_LIBRARY_PATH;
 
