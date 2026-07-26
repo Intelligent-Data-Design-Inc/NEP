@@ -79,6 +79,10 @@ Make CMake the sole supported NEP build system beginning with v3.1.0. Remove the
 
 **GitHub Issue:** #332
 
+#### Sprint 3: More DICOM Visualizations
+- There are additional DICOM files in test/data/DICOM.
+- Let's get some visualizations!
+
 ### V3.0.0 - DICOM Reader
 
 Add the ability to read files in DICOM format through a new NetCDF UDF handler that uses the `libdicom` C library. The reader exposes DICOM image pixel data and key metadata as NetCDF variables and attributes, supports native uncompressed single-frame images first, then encapsulated JPEG compressed and multi-frame images, and finally functional-group metadata, Fortran bindings, documentation, and CI.

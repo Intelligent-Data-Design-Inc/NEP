@@ -47,6 +47,7 @@ NEP includes Python visualization examples in `examples/viz/` that open DICOM fi
 
 - `plot_dicom_mrbrain.py` — plots the single-frame 512×512 MR image from `test/data/DICOM/MRBRAIN.DCM`, normalizing the 16-bit `pixel_data` to 8-bit grayscale.
 - `plot_dicom_xa_montage.py` — plots a compact montage of all 17 frames from the encapsulated JPEG Baseline file `test/data/DICOM/0003.DCM`.
+- `plot_dicom_ct_brain.py` — plots the single-frame 512×512 CT image from `test/data/DICOM/CT-MONO2-16-brain.dcm`.
 
 Enable the examples with:
 
