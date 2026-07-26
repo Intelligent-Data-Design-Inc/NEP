@@ -22,4 +22,4 @@ cmake -B build \
 cmake --build build -- -j${CPU_COUNT}
 ctest --test-dir build --output-on-failure
 cmake --install build
-install -Dm644 build/fsrc/nep.mod "${PREFIX}/include/nep.mod"
+install -m 644 build/fsrc/nep.mod "${PREFIX}/include/nep.mod"
