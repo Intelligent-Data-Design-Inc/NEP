@@ -1,6 +1,6 @@
 # NEP Development Roadmap
 
-### V3.1.0 - DICOM Visualizations
+### V3.1.0 - DICOM Visualizations, CMake Only Builds
 
 #### Sprint 1: Add Visualization of DICOM Test File
 **Detailed Plan**: See `docs/plan/v3.1.0-sprint1-dicom-visualizations.md`
@@ -42,6 +42,42 @@ Add the first DICOM visualization examples to `examples/viz/`, generate two publ
 **Definition of Done:** Two DICOM visualization scripts generate validated, publication-ready artifacts under both CMake and Autotools; the visualization guard conditions recognize DICOM; user-facing documentation describes the plots; 3–5 new public-domain DICOM samples are added with documented provenance; `ci-dicom.yml` passes with visualization enabled; existing tests remain green.
 
 **GitHub Issue:** #330
+
+#### Sprint 2: CMake-Only Build Migration
+**Detailed Plan**: See `docs/plan/v3.1.0-sprint2-cmake-only-build.md`
+
+Make CMake the sole supported NEP build system beginning with v3.1.0. Remove the complete Autotools implementation and generated artifacts, convert all CI workflows to retain equivalent CMake coverage, and remove current user-facing Autotools guidance.
+
+**Implementation scope:**
+- Delete root and nested Autotools inputs, generated artifacts, helper scripts, macros, and Autotools-only test runners, including `configure.ac`, `configure`, `Makefile.am`, `Makefile.in`, `aclocal.m4`, `config.h.in`, `autogen.sh`, `m4/`, and Autotools build material under `hdf5_plugins/`.
+- Preserve shared C/C++/Fortran sources, test data, CMake files, CMake-generated configuration, and CMake test execution.
+- Remove Autotools matrix entries, bootstrap/configure/build/test steps, variables, and wording from all GitHub Actions workflows; retain or add equivalent CMake coverage for every active configuration.
+- Update `README.md`, active product/design documentation, Doxygen configuration and generated-documentation guidance, packaging guidance, and the v3.1.0 release notes to identify CMake as the only supported build path.
+- Remove references to `./configure`, `autoreconf`, `make check`, and Autotools-only options from active user-facing documentation; do not rewrite frozen historical roadmap, plan, issue, or release documents.
+- Retain the current CMake minimum version unless the implementation audit identifies an existing incompatibility.
+
+**Clarified decisions:**
+- CMake is the sole supported build system from v3.1.0 onward; no `./configure` compatibility wrapper or legacy directory will be retained.
+- The removal includes generated Autotools files and Autotools-specific test runners, not only their authored inputs.
+- All repository CI is CMake-only. Existing configuration breadth remains: default/minimal/compression, Fortran on/off, enabled format readers, DICOM, parallel I/O, visualization, documentation, Conda, and Spack coverage where applicable.
+- CMake 3.9 remains the declared minimum version for this sprint.
+- Active documentation and packaging guidance must remove Autotools instructions; historical records remain unchanged.
+
+**Acceptance Criteria:**
+- No Autotools inputs, generated files, macros, helper scripts, `Makefile.am`, `Makefile.in`, or Autotools-only test runners remain in the repository.
+- A repository search finds no active CI or user-facing references to `./configure`, `autoreconf`, `autogen.sh`, `make check`, or Autotools.
+- Every GitHub Actions workflow uses CMake only, with no Autotools job, matrix value, bootstrap, configure, build, or test step.
+- The CMake default, minimal, DICOM-enabled, format-enabled, Fortran on/off, documentation, examples, visualization, and parallel configurations continue to configure, build, and test successfully as applicable.
+- `README.md`, active Doxygen documentation, design/requirements/FAQ documentation, and packaging guidance describe CMake-only installation and testing accurately.
+- Existing public CMake options, install behavior, UDF reader behavior, compression filters, and source compatibility remain unchanged.
+
+**Testing:** Run clean CMake configure/build/CTest validation for the retained CI configurations, build Doxygen documentation without warnings, and search the tracked repository for removed Autotools files and active references. Confirm CMake installation and package-consumer checks where covered by CI.
+
+**Build System Integration:** Root and nested CMake files, CMake test registration, `.github/workflows/`, `README.md`, `docs/Doxyfile.in`, active design/requirements/FAQ documentation, release notes, Conda recipe/build script, and Spack package guidance.
+
+**Definition of Done:** The repository has one supported build path (CMake), all active CI coverage is CMake-based, user and package documentation provides only CMake instructions, all retained configurations pass their CMake validation, and no unsupported Autotools artifacts or active references remain.
+
+**GitHub Issue:** #332
 
 ### V3.0.0 - DICOM Reader
 

@@ -67,7 +67,6 @@ nc_open("image.dcm",                            NC_UDF6,    &ncid);  /* DICOM */
 | Build system | Default | Override |
 |---|---|---|
 | CMake | `${prefix}/share/nep/.ncrc` | `-DNEP_NCRC_INSTALL_DIR=<path>` |
-| Autotools | `${datarootdir}/nep/.ncrc` | `--with-ncrc-dir=<path>` |
 
 **Note**: `.ncrc` autoload requires NetCDF-C built from the main branch. With NetCDF-C 4.10.0, call `NC_*_initialize()` explicitly before `nc_open()`.
 

@@ -37,6 +37,3 @@ fi
 # Always run the performance test.
 echo "$HDF5_PLUGIN_PATH"
 ./tst_perf
-
-
-

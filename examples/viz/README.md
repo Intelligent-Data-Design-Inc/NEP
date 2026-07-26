@@ -29,9 +29,8 @@ LDFLAGS="-L/usr/local/netcdf-c/lib -L/usr/local/hdf5-2.1.1/lib" \
 The requirements file forces `netCDF4` to build from source. Python `netCDF4`
 must link to the same NetCDF-C installation used to build NEP. PyPI wheels that
 bundle another NetCDF-C library cannot load NEP's build-tree UDF handlers and
-are not supported for these tests. Both build systems reject visualization
-configuration unless the source-root `.venv` exists and contains all required
-modules.
+are not supported for these tests. CMake rejects visualization configuration
+unless the source-root `.venv` exists and contains all required modules.
 
 Plots follow the project diagram rules: black and white output, maximum width of
 8 inches, maximum height of 6.1 inches, no caption inside the PNG, and a
@@ -59,20 +58,6 @@ ctest --test-dir build -R viz --output-on-failure
 CMake sets `NCRCENV_RC` to the generated build-tree `.ncrc`, sets `NETCDF_RC`
 to the top-level build directory, and extends `LD_LIBRARY_PATH` for each
 visualization test.
-
-## Autotools
-
-Configure with examples, visualization, and all supported UDF readers enabled:
-
-```bash
-./configure --enable-examples --enable-viz-examples --enable-fits --enable-cdf \
-  --enable-geotiff --enable-grib2 --enable-pds4 --enable-dicom
-make
-make check
-```
-
-Automake sets `NCRCENV_RC`, `NETCDF_RC`, `LD_LIBRARY_PATH`, and the FITS
-smoke-test path in the test environment.
 
 ## Manual Runtime Environment
 

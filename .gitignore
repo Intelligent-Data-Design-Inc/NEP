@@ -30,7 +30,6 @@ __pycache__/
 b/
 build/
 build_*/
-build-autotools/
 build-fortran/
 build-pds4-cmake/
 build_test/
@@ -72,47 +71,11 @@ dkms.conf
 # debug information files
 *.dwo
 
-# Autotools generated files
 .ncrc
 .ncrc-install
-Makefile
-Makefile.in
-aclocal.m4
-autom4te.cache/
 config.h
-config.h.in~
-config.log
-config.status
-configure
-libtool
-stamp-h1
-.deps/
 .libs/
-
-# Autoreconf generated directories and files
-bin/
-m4/libtool.m4
-m4/ltoptions.m4
-m4/ltsugar.m4
-m4/ltversion.m4
-m4/lt~obsolete.m4
-**/m4/libtool.m4
-**/m4/ltoptions.m4
-**/m4/ltsugar.m4
-**/m4/ltversion.m4
-**/m4/lt~obsolete.m4
-
-# Additional autotools artifacts
-compile
-config.guess
-config.sub
-depcomp
-install-sh
-ltmain.sh
-missing
-test-driver
 *_config.h
-**/aclocal.m4
 
 # Test artifacts
 test_vol_plugin.sh

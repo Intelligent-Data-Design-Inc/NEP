@@ -154,14 +154,6 @@ add_test(NAME quickstart_cdl
          COMMAND bash test_quickstart.sh)
 ```
 
-### Autotools
-
-CDL validation is part of `make check`:
-
-```makefile
-TESTS = test_quickstart.sh test_simple_2D.sh ...
-```
-
 ## References
 
 - NetCDF CDL documentation: https://docs.unidata.ucar.edu/netcdf-c/current/netcdf_utilities_guide.html

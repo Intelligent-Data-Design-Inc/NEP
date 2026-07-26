@@ -80,23 +80,16 @@ CDF library integration validated successfully.
 - **Test registration**: Registered with CTest
 - **Run test**: `ctest --verbose` (shows full output)
 
-### Autotools
-- **Conditional build**: Only builds when `--enable-cdf` configured
-- **Test registration**: Registered with `make check`
-- **Run test**: `make check` (output in test-suite.log)
-
 ## CI Integration
 
 The test runs automatically in CI when CDF is enabled (fortran=on, compression=all configuration).
 
 ### CI Output
 - **CMake**: Full test output shown via `ctest --verbose`
-- **Autotools**: Test log shown via `test_cdf/test-suite.log`
 
 ## Files
 - `tst_cdf_basic.c`: Self-contained test program (creates, reads, validates, cleans up)
 - `CMakeLists.txt`: CMake build configuration
-- `Makefile.am`: Autotools build configuration
 - `README.md`: This file
 
 ## Scope

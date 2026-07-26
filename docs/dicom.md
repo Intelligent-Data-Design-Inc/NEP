@@ -26,8 +26,7 @@ DICOM (Digital Imaging and Communications in Medicine) is the standard format fo
 
 **Enabling:**
 ```bash
-cmake -B build -DNEP_ENABLE_DICOM=ON   # CMake
-./configure --enable-dicom             # Autotools
+cmake -S . -B build -DNEP_ENABLE_DICOM=ON
 ```
 
 **Dependencies**: libdicom, libjpeg or libjpeg-turbo.
@@ -52,14 +51,10 @@ NEP includes Python visualization examples in `examples/viz/` that open DICOM fi
 Enable the examples with:
 
 ```bash
-# CMake
-cmake -B build -DNEP_BUILD_EXAMPLES=ON -DNEP_ENABLE_VIZ_EXAMPLES=ON -DNEP_ENABLE_DICOM=ON
-
-# Autotools
-./configure --enable-examples --enable-viz-examples --enable-dicom
+cmake -S . -B build -DNEP_BUILD_EXAMPLES=ON -DNEP_ENABLE_VIZ_EXAMPLES=ON -DNEP_ENABLE_DICOM=ON
 ```
 
-Run only the DICOM visualizations with `ctest -R viz_dicom --output-on-failure` (CMake) or `make check` (Autotools). Generated artifacts are `dicom_mrbrain_image.png` + `_metadata.txt` and `dicom_xa_frame_montage.png` + `_metadata.txt` in the visualization build directory.
+Run only the DICOM visualizations with `ctest --test-dir build -R viz_dicom --output-on-failure`. Generated artifacts are `dicom_mrbrain_image.png` + `_metadata.txt` and `dicom_xa_frame_montage.png` + `_metadata.txt` in the visualization build directory.
 
 Because DICOM magic is at byte offset 128, `netCDF4.Dataset` cannot pass the `NC_UDF6` mode flag required for direct open. The scripts load `libncdicom.so` and call `NC_DICOM_initialize()` via `examples/viz/_dicom_udf.py`, then read `pixel_data` through the NetCDF-C UDF API. Make sure `LD_LIBRARY_PATH` includes the directory containing `libncdicom.so` (the build systems set this automatically).
 

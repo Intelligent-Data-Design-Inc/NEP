@@ -23,28 +23,7 @@ export LD_LIBRARY_PATH=/usr/local/hdf5-2.1.1/lib:/usr/local/netcdf-c/lib:/usr/lo
 
 ## Build System Options
 
-### Autotools (Primary)
-Working directory: `/home/ed/NEP`
-
-**Common configure flags:**
-- `--enable-geotiff` - Enable GeoTIFF reader
-- `--enable-cdf` - Enable NASA CDF reader
-- `--disable-lz4` - Disable LZ4 compression
-- `--disable-bzip2` - Disable bzip2 compression
-- `--disable-fortran` - Disable Fortran wrapper library
-- `--disable-shared` - Build static libraries only
-
-**Full build command:**
-```bash
-autoreconf -i && \
-CFLAGS="-g -O0" \
-CPPFLAGS="-I/usr/local/hdf5-2.1.1/include -I/usr/local/netcdf-c/include -I/usr/local/netcdf-fortran/include -I/usr/local/cdf-3.9.1/include" \
-LDFLAGS="-L/usr/local/hdf5-2.1.1/lib -L/usr/local/netcdf-c/lib -L/usr/local/netcdf-fortran/lib -L/usr/local/cdf-3.9.1/lib -Wl,-rpath,/usr/local/hdf5-2.1.1/lib -Wl,-rpath,/usr/local/netcdf-c/lib -Wl,-rpath,/usr/local/netcdf-fortran/lib" \
-./configure --enable-geotiff --enable-cdf --disable-fortran --disable-shared --disable-bzip2 --disable-lz4 && \
-make clean && make -j$(nproc) && make check
-```
-
-### CMake (Alternative)
+### CMake
 **IMPORTANT**: All CMake builds must use the `build` directory, which is git-ignored.
 
 Working directory: `/home/ed/NEP`
@@ -103,17 +82,6 @@ Use these paths for local parallel I/O builds with MPICH and `--enable-parallel-
 export LD_LIBRARY_PATH=$HDF5_ROOT/lib:$NETCDF_C_ROOT/lib:$NETCDF_FORTRAN_ROOT/lib:$LD_LIBRARY_PATH
 ```
 
-**Autotools parallel build command:**
-```bash
-autoreconf -i && \
-CFLAGS="-g -O0" \
-CPPFLAGS="-I$HDF5_ROOT/include -I$NETCDF_C_ROOT/include -I$NETCDF_FORTRAN_ROOT/include" \
-LDFLAGS="-L$HDF5_ROOT/lib -L$NETCDF_C_ROOT/lib -L$NETCDF_FORTRAN_ROOT/lib -Wl,-rpath,$HDF5_ROOT/lib -Wl,-rpath,$NETCDF_C_ROOT/lib -Wl,-rpath,$NETCDF_FORTRAN_ROOT/lib" \
-CC=mpicc FC=mpif90 \
-./configure --enable-fortran --enable-parallel-tests --disable-geotiff --disable-cdf --disable-grib2 --disable-shared --disable-bzip2 --disable-lz4 && \
-make clean && make -j$(nproc) && make check
-```
-
 **CMake parallel build command:**
 ```bash
 cmake -S . -B build \
@@ -137,4 +105,4 @@ make -j$(nproc) -C build && ctest --test-dir build --verbose
 - **"library not found" errors**: Check `LD_LIBRARY_PATH` is set
 - **"header not found" errors**: Verify `CPPFLAGS` includes correct paths
 - **Link errors**: Ensure `LDFLAGS` includes all dependency lib directories
-- **Test failures**: Run `make check VERBOSE=1` for detailed output
+- **Test failures**: Run `ctest --test-dir build --output-on-failure` for detailed output
