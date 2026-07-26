@@ -179,6 +179,7 @@ All features integrate seamlessly with the standard NetCDF API.
 #### Q: How do I install NEP?
 **A:** Multiple installation methods:
 - **Spack** (recommended for HPC): `spack install nep`
+- **Conda**: `conda install -c conda-forge nep` installs the minimal LZ4 and Fortran-wrapper package; BZIP2 and UDF readers require a source build
 - **CMake**: `cmake -B build && cmake --build build && cmake --install build`
 - **Autotools**: `./configure && make && make install`
 See the README for detailed instructions.

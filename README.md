@@ -257,19 +257,16 @@ spack install nep+parallel
 
 ### Conda Installation
 
-NEP includes a [Conda](https://docs.conda.io/) recipe for local builds:
+Install the minimal v3.0.0 package from conda-forge:
 
 ```bash
-# Build from the in-repo recipe
-conda build conda/
-
-# Install the locally built package
-conda install --use-local nep
+conda install -c conda-forge nep
 ```
 
-The recipe enables LZ4, BZIP2, Fortran wrappers, and three format readers
-(GeoTIFF, FITS, PDS4). GRIB2 and CDF are excluded because their dependencies
-are not yet available on conda-forge.
+This first Conda package includes the LZ4 HDF5 compression filter and Fortran
+wrappers. BZIP2 compression and all UDF format readers are disabled; use a
+source build when those features are required. The in-repository recipe remains
+available for local validation with `conda build conda/`.
 
 ---
 

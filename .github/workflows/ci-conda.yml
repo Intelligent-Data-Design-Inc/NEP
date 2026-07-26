@@ -38,17 +38,24 @@ jobs:
           conda install -y conda-build
           conda-build --version
 
+      - name: Render and validate Conda recipe
+        run: |
+          conda render conda/
+          conda build --check conda/
+
       - name: Build NEP Conda package
         run: |
-          conda-build conda/ --no-anaconda-upload 2>&1 | tee conda_build.log
+          set -o pipefail
+          conda build conda/ --no-anaconda-upload 2>&1 | tee conda_build.log
 
-      - name: Verify package was built
+      - name: Verify and smoke-test package
         run: |
-          echo "=== Built packages ==="
-          conda-build conda/ --output
-          PKG_PATH=$(conda-build conda/ --output)
+          PKG_PATH=$(conda build conda/ --output)
           echo "Package: $PKG_PATH"
-          test -f "$PKG_PATH" && echo "SUCCESS: Package exists" || echo "FAILURE: Package not found"
+          test -f "$PKG_PATH"
+          conda create -y -p "$RUNNER_TEMP/nep-smoke" "$PKG_PATH"
+          test -f "$RUNNER_TEMP/nep-smoke/lib/plugin/libh5lz4.so"
+          test -f "$RUNNER_TEMP/nep-smoke/include/nep.mod"
 
       - name: Show build log on failure
         if: failure()

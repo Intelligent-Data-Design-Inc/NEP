@@ -136,13 +136,13 @@ spack install cdf
 - Style validation with `spack style` and `spack audit`
 - Installation testing with verbose logging
 
-### 5.5 Conda Package (v2.7.1)
-- **In-repo recipe**: `conda/meta.yaml` (conda-build format) targets conda-forge conventions
-- **Build script**: `conda/build.sh` invokes CMake with format readers enabled
-- **Enabled features**: LZ4, BZIP2, Fortran, GeoTIFF, FITS, PDS4
-- **Excluded**: GRIB2 (g2c not on conda-forge), CDF (NASA CDF not on conda-forge)
-- **CI workflow**: `.github/workflows/ci-conda.yml` validates the recipe on every PR
-- **Future**: Upstream submission to `conda-forge/staged-recipes` planned as follow-up
+### 5.5 Conda Package (v3.0.1)
+- **In-repo recipe**: `conda/meta.yaml` (conda-build format) packages the v3.0.0 source tag for conda-forge
+- **Build script**: `conda/build.sh` passes existing CMake options only for the Conda package; local CMake and Autotools builds are unchanged
+- **Enabled features**: LZ4 and Fortran wrappers
+- **Excluded**: BZIP2 and all UDF readers, including CDF, GeoTIFF, GRIB2, FITS, PDS4, and DICOM
+- **CI workflow**: `.github/workflows/ci-conda.yml` renders, validates, builds, and clean-environment-tests the package on every PR
+- **Publication**: Initial submission uses `conda-forge/staged-recipes`; reader support may be added in future Conda updates
 
 ---
 
