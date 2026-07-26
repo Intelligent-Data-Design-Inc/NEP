@@ -181,6 +181,41 @@ Bring the in-repository NEP Spack recipe, Spack CI, user documentation, and the 
 **GitHub Issue:** #325
 
 #### Sprint 2: Conda
-- Bring conda file up to date.
-- Release it on condaforge.
-- Release it on condaforge.
+**Detailed Plan**: See `docs/plan/v3.0.1-sprint2-conda.md`
+
+Update the NEP Conda recipe for the existing v3.0.0 release, establish a reliable minimal LZ4 compression package with Fortran wrappers, and submit it to conda-forge through staged-recipes.
+
+**Implementation scope:**
+- Update `conda/meta.yaml` from v2.7.1 to the v3.0.0 tag tarball with its verified checksum.
+- Build LZ4 compression and Fortran wrappers only; disable BZIP2 because NEP does not provide a BZIP2 HDF5 plugin without changing local build behavior.
+- Disable every UDF reader, including DICOM, and remove all reader-only dependencies from the recipe.
+- Simplify `conda/build.sh` to pass existing compression-enable and reader-disable options for the Conda recipe only; do not modify CMake, Autotools, or their defaults.
+- Validate recipe rendering/linting, build and installed artifacts, then install the built package into a clean Conda environment for a plugin smoke test.
+- Submit the initial `nep` recipe to `conda-forge/staged-recipes` and address review through feedstock creation.
+- Update installation and release-status documentation to describe the intentionally minimal feature set.
+
+**Clarified decisions:**
+- The first conda-forge release packages the existing v3.0.0 source release; no new NEP release is created.
+- The initial upstream submission uses `conda-forge/staged-recipes`.
+- Only LZ4 and Fortran compression wrappers are enabled. BZIP2 and all format readers, including DICOM, remain disabled.
+- Core HDF5, NetCDF-C, NetCDF-Fortran, and LZ4 dependencies remain; BZIP2 and reader-specific dependencies are excluded. This selection applies only to the Conda recipe.
+- CI requires recipe render/lint, an unmasked package build, installed-artifact checks, and a clean-environment install smoke test.
+- Future Conda sprints may add reader support after the minimal package is established.
+
+**Acceptance Criteria:**
+- `conda/meta.yaml` packages v3.0.0 using the verified immutable source tag tarball.
+- The recipe and build script enable LZ4 and Fortran only, with BZIP2 and all UDF readers disabled.
+- The recipe contains no BZIP2 or reader-only dependency, including `libdicom` and `libjpeg-turbo`.
+- The built package contains and tests the LZ4 HDF5 plugin and the Fortran module.
+- Conda CI renders/lints, builds, tests, and clean-environment-installs the package without ignored failures.
+- An initial conda-forge staged-recipes PR for `nep` is opened and passes its required checks.
+- Documentation accurately states the minimal Conda feature set and future reader-expansion path.
+- No NEP CMake or Autotools source/default file changes are made, and local source builds remain unchanged.
+
+**Testing:** Run recipe render/lint validation, `conda build conda/ --no-anaconda-upload`, plugin and Fortran-module artifact checks, and a clean-environment install/smoke test. Confirm the Conda CI workflow, staged-recipes validation, and the generated feedstock build pass.
+
+**Build System Integration:** No NEP CMake or Autotools source/default changes. `conda/build.sh` alone invokes CMake with existing `NEP_*` options for the Conda package; local source builds remain unchanged.
+
+**Definition of Done:** A minimal v3.0.0 NEP Conda package with LZ4 and Fortran support is validated end to end and submitted through conda-forge's staged-recipes process. Documentation states that BZIP2 and format readers are deferred until they can be added without changing local builds. No NEP CMake, Autotools, runtime, or local-build behavior changes are made.
+
+**GitHub Issue:** #327
