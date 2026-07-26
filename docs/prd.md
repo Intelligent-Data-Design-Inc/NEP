@@ -768,9 +768,11 @@ shape 10×45×90.
 - **v2.5.0** (July 2026): Complete Spack variant coverage for all optional format readers (GeoTIFF, GRIB2, CDF, FITS, PDS4, parallel, examples, benchmarks); all-variants CI integration testing; comprehensive README Spack installation section
 - **v2.6.0** (July 2026): Further PDS4 reader testing and robustness — Maven NGIMS delimited-table support, `Group_Field_Binary` repeated fields up to depth-2 nesting, table field-name collision resolution, `Array_3D_Image` and generic `Array_*` dispatch, `scaling_factor`/`value_offset` attribute preservation; Spack package bumped to v2.5.0
 - **v2.7.1** (July 2026): Documentation cleanup — per-format reference pages extracted from `docs/formats.md`, README PDS4 Tests section moved to `docs/pds4.md`, and design/prd/prfaq updated with New Horizons and v2.7.1 metadata
+- **v2.8.0** (July 2026): Optional Python visualization examples for enabled NEP readers, producing validated grayscale PNG and metadata outputs
+- **v3.0.0** (July 2026): DICOM reader via UDF6 with uncompressed single-frame, JPEG Baseline, and multi-frame pixel-data support
 
 ---
 
-*Document Version: 2.7.1*
+*Document Version: 3.0.0*
 *Last Updated: July 2026*  
-*Status: Reflects features through v2.7.1 release preparation*
+*Status: Reflects features through v3.0.0*

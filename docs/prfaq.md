@@ -289,18 +289,17 @@ nc_get_vara_float(grpid, varid, start, count, data);
 **A:** Yes. NEP v1.1.0 added Fortran 90 wrappers (module `nep`) for compression functions. Fortran applications can call `nf90_def_var_lz4`, `nf90_inq_var_lz4`, `nf90_def_var_bzip2`, and `nf90_inq_var_bzip2` to enable and query compression.
 
 #### Q: What is the current version?
-**A:** NEP v2.6.0 is the current release (July 2026), providing:
+**A:** NEP v3.0.0 is the current release (July 2026), providing:
 - LZ4 and BZIP2 compression for HDF5/NetCDF-4 files (C and Fortran APIs)
 - GeoTIFF geospatial raster support via UDF handler (UDF0/UDF1)
 - GRIB2 meteorological/oceanographic data support via UDF handler (UDF2)
 - FITS astronomical data support via UDF handler (UDF3)
 - NASA CDF space physics data support via UDF handler (UDF4)
 - NASA/ESA PDS4 planetary science data support via UDF handler (UDF5), including New Horizons Alice mission data
-- All five format readers can be enabled simultaneously
-- Complete Spack variants for every optional reader and utility
-- Comprehensive documentation, CI testing, and example programs
-
-NEP v2.7.1 is in preparation and focuses on documentation cleanup and reorganization.
+- DICOM medical imaging support via UDF handler (UDF6), including uncompressed and JPEG Baseline multi-frame pixel data
+- All six format readers can be enabled simultaneously
+- Complete upstream-compatible Spack variants for every reader and utility with available upstream dependencies
+- Comprehensive documentation, CI testing, and example programs.
 
 #### Q: What formats does NEP support?
 **A:** NEP supports multiple scientific data formats through the NetCDF UDF system:
@@ -381,7 +380,9 @@ For more information:
 - **v2.5.0** (Jul 2026): Complete Spack variant coverage for all optional format readers (GeoTIFF, GRIB2, CDF, FITS, PDS4, parallel, examples, benchmarks); all-variants CI integration testing; comprehensive README Spack installation section
 - **v2.6.0** (Jul 2026): *In preparation* — further PDS4 reader testing with MAVEN NGIMS delimited tables, MAVEN IUVS `Group_Field_Binary` repeated fields (depth-2 nesting), Perseverance Mastcam-Z `Array_3D_Image` products (Sol 1738 and Sol 1737), and `scaling_factor`/`value_offset` attribute preservation
 - **v2.7.1** (Jul 2026): Documentation cleanup — per-format reference pages extracted from `docs/formats.md`, README PDS4 Tests section moved to `docs/pds4.md`, and design/prd/prfaq updated with New Horizons and v2.7.1 metadata
+- **v2.8.0** (Jul 2026): Optional Python visualization examples with validated grayscale PNG and metadata outputs
+- **v3.0.0** (Jul 2026): DICOM UDF reader for uncompressed, JPEG Baseline, and multi-frame imaging objects
 
 ---
 
-*Last Updated: July 2026 (v2.6.0, v2.7.1 release preparation)*
+*Last Updated: July 2026 (v3.0.0)*

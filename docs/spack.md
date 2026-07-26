@@ -4,7 +4,7 @@
 
 NEP can be installed using the Spack package manager for simplified dependency management in HPC environments.
 
-**Status**: NEP Spack package submitted to spack/spack-packages repository (PR pending). CDF Spack package submitted to spack/spack-packages repository (PR pending).
+**Status**: The NEP package update is tracked in [spack/spack-packages#5557](https://github.com/spack/spack-packages/pull/5557). The in-repository recipe matches the upstream-compatible variant set.
 
 ## Basic Installation
 
@@ -37,15 +37,6 @@ spack install nep+fortran
 spack install nep~fortran
 ```
 
-### CDF Support
-```bash
-# Note: CDF variant temporarily removed from NEP package until CDF package is accepted into Spack
-# CDF can be installed separately:
-spack install cdf
-
-# Once CDF package is in Spack, NEP will add back the +cdf variant
-```
-
 ## Using NEP
 
 Load NEP into your environment:
@@ -68,32 +59,16 @@ spack install nep ^netcdf-c@4.10.1
 spack install nep ^hdf5@2.1.1
 ```
 
-## CDF Package
-
-NASA CDF library is available as a separate Spack package:
-
-```bash
-# Install CDF
-spack install cdf
-
-# Load CDF
-spack load cdf
-```
-
-The CDF package uses a custom Makefile build system and has no external dependencies beyond a system compiler.
-
 ## Development
 
 ### Package Locations
 
 - **NEP Package**: `spack/NEP/package.py`
-- **CDF Package**: `spack/cdf/package.py`
 
 ### CI Testing
 
 Both packages have dedicated CI workflows:
 - **NEP**: `.github/workflows/spack.yml`
-- **CDF**: `.github/workflows/spack-cdf.yml`
 
 The CI workflows test:
 - Style and lint checks

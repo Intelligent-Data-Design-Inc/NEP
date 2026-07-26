@@ -13,7 +13,7 @@ from spack.package import *
 class Nep(CMakePackage):
     """NEP (NetCDF Expansion Pack) provides high-performance LZ4 and BZIP2
     compression filters for HDF5/NetCDF-4 files and transparent read access
-    to scientific data formats (GeoTIFF, GRIB2, FITS, NASA CDF, PDS4)
+    to scientific data formats (GeoTIFF, GRIB2, FITS, PDS4, DICOM)
     through the standard NetCDF API via User Defined Format handlers."""
 
     homepage = "https://github.com/Intelligent-Data-Design-Inc/NEP"
@@ -27,9 +27,39 @@ class Nep(CMakePackage):
     version("main", branch="main")
 
     version(
-        "2.3.0",
-        sha256="ce6eb7640a44e4b068af4beef3a1b7c5a4772666fbea73db34d81d71b4144dde",
-        url="https://github.com/Intelligent-Data-Design-Inc/NEP/archive/v2.3.0.tar.gz",
+        "3.0.0",
+        sha256="fda88f1b9c16864623a9c446b07396ab5cf9e3a579a44da8b616b6b606616bc6",
+        url="https://github.com/Intelligent-Data-Design-Inc/NEP/archive/v3.0.0.tar.gz",
+    )
+
+    version(
+        "2.8.0",
+        sha256="edb5ed3ae995ec42e2956f0d4c9f904990869453424ae4ddf29d7aecd0fbd714",
+        url="https://github.com/Intelligent-Data-Design-Inc/NEP/archive/v2.8.0.tar.gz",
+    )
+
+    version(
+        "2.7.1",
+        sha256="a3e19847938815b70c4de72c8de0a87f18822efbec2b89227bc0b3b861b3da98",
+        url="https://github.com/Intelligent-Data-Design-Inc/NEP/archive/v2.7.1.tar.gz",
+    )
+
+    version(
+        "2.7.0",
+        sha256="3c23214143d11086f23f6335f5426966c7fb11371450a339c1021d614ec6d136",
+        url="https://github.com/Intelligent-Data-Design-Inc/NEP/archive/v2.7.0.tar.gz",
+    )
+
+    version(
+        "2.6.1",
+        sha256="ea37f6b86c5be99fc87d92fc039c4ff5c7c52a99b3e38668fb75a8af9a8fee12",
+        url="https://github.com/Intelligent-Data-Design-Inc/NEP/archive/v2.6.1.tar.gz",
+    )
+
+    version(
+        "2.6.0",
+        sha256="33d985bae41d77ca302738b264eec35f1fe4e0b27ddc78d11d3a2b428bc52b45",
+        url="https://github.com/Intelligent-Data-Design-Inc/NEP/archive/v2.6.0.tar.gz",
     )
 
     version(
@@ -51,7 +81,6 @@ class Nep(CMakePackage):
     variant("fits", default=False, description="Enable FITS reader support via CFITSIO")
     variant("geotiff", default=False, description="Enable GeoTIFF reader support via libgeotiff")
     variant("grib2", default=False, description="Enable GRIB2 reader support via NCEPLIBS-g2c")
-    variant("cdf", default=False, description="Enable NASA CDF reader support")
     variant("pds4", default=False, description="Enable PDS4 reader support via libxml2")
     variant("dicom", default=False, description="Enable DICOM reader support via libdicom")
     variant(
@@ -75,8 +104,6 @@ class Nep(CMakePackage):
     depends_on("cfitsio", when="+fits", type=("build", "link"))
     depends_on("libgeotiff", when="+geotiff", type=("build", "link"))
     depends_on("g2c", when="+grib2", type=("build", "link"))
-    # cdf: NASA CDF library; not a Spack builtin. Register spack/cdf/package.py
-    # from the NEP repo in a local Spack repository before using +cdf.
     depends_on("libxml2", when="+pds4", type=("build", "link"))
     depends_on("libdicom", when="+dicom", type=("build", "link"))
     depends_on("libjpeg-turbo", when="+dicom", type=("build", "link"))
@@ -93,7 +120,6 @@ class Nep(CMakePackage):
             self.define_from_variant("NEP_ENABLE_FITS", "fits"),
             self.define_from_variant("NEP_ENABLE_GEOTIFF", "geotiff"),
             self.define_from_variant("NEP_ENABLE_GRIB2", "grib2"),
-            self.define_from_variant("NEP_ENABLE_CDF", "cdf"),
             self.define_from_variant("NEP_ENABLE_PDS4", "pds4"),
             self.define_from_variant("NEP_ENABLE_DICOM", "dicom"),
             self.define_from_variant("NEP_ENABLE_PARALLEL_TESTS", "parallel"),
@@ -113,12 +139,12 @@ class Nep(CMakePackage):
         plugin_dir = join_path(self.prefix.lib, "plugin")
         if "+lz4" in self.spec:
             assert os.path.exists(join_path(plugin_dir, "libh5lz4.so"))
+        if "+bzip2" in self.spec:
+            assert os.path.exists(join_path(plugin_dir, "libh5bzip2.so"))
         if "+geotiff" in self.spec:
             assert os.path.exists(join_path(self.prefix.lib, "libncgeotiff.so"))
         if "+grib2" in self.spec:
             assert os.path.exists(join_path(self.prefix.lib, "libncgrib2.so"))
-        if "+cdf" in self.spec:
-            assert os.path.exists(join_path(self.prefix.lib, "libnccdf.so"))
         if "+pds4" in self.spec:
             assert os.path.exists(join_path(self.prefix.lib, "libncpds4.so"))
         if "+dicom" in self.spec:
