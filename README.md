@@ -214,7 +214,7 @@ NEP can be installed using the [Spack](https://spack.io) package manager.
 
 ```bash
 # Latest stable release
-spack install nep@2.5.0
+spack install nep@3.0.0
 
 # Or install from the main branch
 spack install nep
@@ -233,7 +233,7 @@ This builds NEP with LZ4, BZIP2, Fortran wrappers, and documentation — no form
 | `fits` | OFF | FITS reader — HST, JWST, Chandra (requires CFITSIO) |
 | `geotiff` | OFF | GeoTIFF reader — CF-1.8 CRS metadata (requires libgeotiff) |
 | `grib2` | OFF | GRIB2 reader — NWP model output (requires NCEPLIBS-g2c) |
-| `cdf` | OFF | NASA CDF reader — space physics (requires local Spack repo, see below) |
+| `cdf` | OFF | NASA CDF reader — space physics (local NEP recipe only; requires local Spack repo, see below) |
 | `pds4` | OFF | PDS4 reader — planetary science (requires libxml2) |
 | `dicom` | OFF | DICOM reader — medical imaging (requires libdicom, libjpeg-turbo) |
 | `parallel` | OFF | Parallel I/O tests (requires MPI, HDF5+mpi, netcdf-c+mpi) |
@@ -258,7 +258,7 @@ spack install nep+parallel
 
 #### Installing the NASA CDF variant (`+cdf`)
 
-The NASA CDF library is not a Spack builtin. The in-repo `spack/cdf/package.py` recipe must be registered in a local Spack repository before concretizing `+cdf`:
+The NASA CDF library is not a Spack builtin, so the upstream NEP package does not expose `+cdf`. The in-repo NEP recipe supports `+cdf` after registering `spack/cdf/package.py` in a local Spack repository:
 
 ```bash
 # 1. Create a local Spack repository containing both NEP and CDF recipes

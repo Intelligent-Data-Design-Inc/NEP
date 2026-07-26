@@ -4,7 +4,7 @@
 
 NEP can be installed using the Spack package manager for simplified dependency management in HPC environments.
 
-**Status**: NEP Spack package submitted to spack/spack-packages repository (PR pending). CDF Spack package submitted to spack/spack-packages repository (PR pending).
+**Status**: The NEP package update is tracked in [spack/spack-packages#5557](https://github.com/spack/spack-packages/pull/5557). The in-repository NEP recipe includes `+cdf`; the upstream builtin recipe cannot expose that variant until the NASA CDF recipe is accepted upstream.
 
 ## Basic Installation
 
@@ -38,13 +38,22 @@ spack install nep~fortran
 ```
 
 ### CDF Support
-```bash
-# Note: CDF variant temporarily removed from NEP package until CDF package is accepted into Spack
-# CDF can be installed separately:
-spack install cdf
 
-# Once CDF package is in Spack, NEP will add back the +cdf variant
+The in-repository NEP recipe supports `+cdf` through the in-repository NASA CDF recipe. Register both recipes in a local Spack repository before installing:
+
+```bash
+mkdir -p $HOME/nep-repo/packages/nep $HOME/nep-repo/packages/cdf
+cp spack/NEP/package.py $HOME/nep-repo/packages/nep/
+cp spack/cdf/package.py $HOME/nep-repo/packages/cdf/
+cat > $HOME/nep-repo/repo.yaml << 'EOF'
+repo:
+  namespace: nep-local
+EOF
+spack repo add $HOME/nep-repo
+spack install nep+cdf
 ```
+
+The upstream builtin NEP recipe omits `+cdf` until NASA CDF is available as an upstream Spack package.
 
 ## Using NEP
 
@@ -70,17 +79,7 @@ spack install nep ^hdf5@2.1.1
 
 ## CDF Package
 
-NASA CDF library is available as a separate Spack package:
-
-```bash
-# Install CDF
-spack install cdf
-
-# Load CDF
-spack load cdf
-```
-
-The CDF package uses a custom Makefile build system and has no external dependencies beyond a system compiler.
+The in-repository CDF package uses a custom Makefile build system and has no external dependencies beyond a system compiler. It is available after registering the local repository described above.
 
 ## Development
 
