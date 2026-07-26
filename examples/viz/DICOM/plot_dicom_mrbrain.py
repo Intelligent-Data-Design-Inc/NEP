@@ -6,12 +6,16 @@ Writing High-Performance Programs for Scientific Data Management, Second Edition
 """
 import argparse
 import os
+import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 from _dicom_udf import read_pixel_data
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from plot_common import save_with_metadata
 
 

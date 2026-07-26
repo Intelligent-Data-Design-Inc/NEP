@@ -3,21 +3,24 @@ set(_viz_python_files
     test_plot_common.py
     test_udf_open.py
     verify_viz_artifacts.py
-    plot_fits_image.py
-    plot_cdf_var.py
-    plot_geotiff_subset.py
-    plot_grib2_grid.py
-    plot_pds4_messenger.py
-    plot_pds4_perseverance.py
-    plot_pds4_maven_l3.py
-    plot_pds4_new_horizons.py
-    _dicom_udf.py
-    plot_dicom_mrbrain.py
-    plot_dicom_xa_montage.py
-    plot_dicom_ct_brain.py
+    CDF/plot_cdf_var.py
+    DICOM/_dicom_udf.py
+    DICOM/plot_dicom_mrbrain.py
+    DICOM/plot_dicom_xa_montage.py
+    DICOM/plot_dicom_ct_brain.py
+    DICOM/plot_dicom_mr_head.py
+    FITS/plot_fits_image.py
+    GeoTIFF/plot_geotiff_subset.py
+    GRIB2/plot_grib2_grid.py
+    PDS4/plot_pds4_messenger.py
+    PDS4/plot_pds4_perseverance.py
+    PDS4/plot_pds4_maven_l3.py
+    PDS4/plot_pds4_new_horizons.py
 )
 
 foreach(_viz_file ${_viz_python_files})
+    get_filename_component(_viz_file_directory "${_viz_file}" DIRECTORY)
+    file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${_viz_file_directory}")
     configure_file(
         "${CMAKE_CURRENT_SOURCE_DIR}/${_viz_file}"
         "${CMAKE_CURRENT_BINARY_DIR}/${_viz_file}"
@@ -66,7 +69,7 @@ if(HAVE_FITS)
 
     add_test(
         NAME viz_fits_image
-        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/plot_fits_image.py"
+        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/FITS/plot_fits_image.py"
                 "${CMAKE_BINARY_DIR}/test/data/WFPC2u5780205r_c0fx.fits"
     )
     set_tests_properties(viz_fits_image PROPERTIES
@@ -80,7 +83,7 @@ endif()
 if(HAVE_CDF)
     add_test(
         NAME viz_cdf_temperature
-        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/plot_cdf_var.py"
+        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/CDF/plot_cdf_var.py"
                 "${CMAKE_BINARY_DIR}/test/data/tst_cdf_simple.cdf"
     )
     set_tests_properties(viz_cdf_temperature PROPERTIES
@@ -100,7 +103,7 @@ if(HAVE_GEOTIFF)
     )
     add_test(
         NAME viz_geotiff_modis_flood
-        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/plot_geotiff_subset.py"
+        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/GeoTIFF/plot_geotiff_subset.py"
                 "${CMAKE_BINARY_DIR}/test/data/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif"
     )
     set_tests_properties(viz_geotiff_modis_flood PROPERTIES
@@ -120,7 +123,7 @@ if(HAVE_GRIB2)
     )
     add_test(
         NAME viz_grib2_wave
-        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/plot_grib2_grid.py"
+        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/GRIB2/plot_grib2_grid.py"
                 "${CMAKE_BINARY_DIR}/test/data/gdaswave.t00z.wcoast.0p16.f000.grib2"
     )
     set_tests_properties(viz_grib2_wave PROPERTIES
@@ -145,7 +148,7 @@ if(HAVE_PDS4)
     )
     add_test(
         NAME viz_pds4_messenger
-        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/plot_pds4_messenger.py"
+        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/PDS4/plot_pds4_messenger.py"
                 "${CMAKE_BINARY_DIR}/test/data/PDS4/messenger_tnmap/thermal_neutron_map.xml"
     )
     set_tests_properties(viz_pds4_messenger PROPERTIES
@@ -167,7 +170,7 @@ if(HAVE_PDS4)
     )
     add_test(
         NAME viz_pds4_perseverance
-        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/plot_pds4_perseverance.py"
+        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/PDS4/plot_pds4_perseverance.py"
                 "${CMAKE_BINARY_DIR}/test/data/PDS4/perseverance/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml"
     )
     set_tests_properties(viz_pds4_perseverance PROPERTIES
@@ -189,7 +192,7 @@ if(HAVE_PDS4)
     )
     add_test(
         NAME viz_pds4_maven_l3
-        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/plot_pds4_maven_l3.py"
+        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/PDS4/plot_pds4_maven_l3.py"
                 "${CMAKE_BINARY_DIR}/test/data/PDS4/maven/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml"
     )
     set_tests_properties(viz_pds4_maven_l3 PROPERTIES
@@ -211,7 +214,7 @@ if(HAVE_PDS4)
     )
     add_test(
         NAME viz_pds4_new_horizons
-        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/plot_pds4_new_horizons.py"
+        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/PDS4/plot_pds4_new_horizons.py"
                 "${CMAKE_BINARY_DIR}/test/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.lblx"
     )
     set_tests_properties(viz_pds4_new_horizons PROPERTIES
@@ -230,7 +233,7 @@ endif()
 if(HAVE_DICOM)
     add_test(
         NAME viz_dicom_mrbrain
-        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/plot_dicom_mrbrain.py"
+        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/DICOM/plot_dicom_mrbrain.py"
                 "${CMAKE_BINARY_DIR}/test/data/DICOM/MRBRAIN.DCM"
     )
     set_tests_properties(viz_dicom_mrbrain PROPERTIES
@@ -241,7 +244,7 @@ if(HAVE_DICOM)
 
     add_test(
         NAME viz_dicom_xa_montage
-        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/plot_dicom_xa_montage.py"
+        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/DICOM/plot_dicom_xa_montage.py"
                 "${CMAKE_BINARY_DIR}/test/data/DICOM/0003.DCM"
     )
     set_tests_properties(viz_dicom_xa_montage PROPERTIES
@@ -252,7 +255,7 @@ if(HAVE_DICOM)
 
     add_test(
         NAME viz_dicom_ct_brain
-        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/plot_dicom_ct_brain.py"
+        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/DICOM/plot_dicom_ct_brain.py"
                 "${CMAKE_BINARY_DIR}/test/data/DICOM/CT-MONO2-16-brain.dcm"
     )
     set_tests_properties(viz_dicom_ct_brain PROPERTIES
