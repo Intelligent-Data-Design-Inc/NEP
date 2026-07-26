@@ -153,9 +153,8 @@ Bring the in-repository NEP Spack recipe, Spack CI, user documentation, and the 
 
 **Implementation scope:**
 - Add released versions 2.6.0, 2.6.1, 2.7.0, 2.7.1, 2.8.0, and 3.0.0 with verified tag-tarball checksums, in descending version order.
-- Resolve the open review feedback in [spack/spack-packages#5557](https://github.com/spack/spack-packages/pull/5557): version ordering, BZIP2 plugin verification, and CDF dependency handling.
-- Retain local `+cdf` support, declare its `cdf` dependency, and preserve the documented local-repository setup using `spack/cdf/package.py`.
-- Keep `+cdf` out of the upstream builtin package until NASA CDF has an upstream Spack recipe.
+- Resolve the open review feedback in [spack/spack-packages#5557](https://github.com/spack/spack-packages/pull/5557): version ordering, BZIP2 plugin verification, and removal of the unsatisfiable CDF variant.
+- Omit `+cdf` until NASA CDF has an upstream Spack recipe, so the in-repository package file remains directly submit-ready.
 - Update the upstream pull request in place, rather than opening a replacement.
 - Update Spack CI to use v3.0.0 as the stable release, cover DICOM and all supported reader combinations, and remove masked install failures.
 - Update the README and release-status documentation for the current stable Spack package.
@@ -163,21 +162,21 @@ Bring the in-repository NEP Spack recipe, Spack CI, user documentation, and the 
 **Clarified decisions:**
 - All published releases after 2.5.0 through 3.0.0 are added.
 - Spack CI validates default, minimal, DICOM-enabled, and all-supported-reader concretizations, plus minimal and all-supported-reader installs.
-- Local CDF remains supported; upstream CDF support is deferred until its dependency is accepted upstream.
+- CDF Spack support is deferred until its dependency is accepted upstream.
 
 **Acceptance Criteria:**
 - The local Spack recipe contains the six new versions with verified checksums in newest-to-oldest order.
-- Local `+cdf` concretizes after registering the in-repository CDF package.
+- The in-repository recipe omits `+cdf`, matching the submit-ready upstream-compatible variant set.
 - `check_install()` verifies both LZ4 and BZIP2 plugins when enabled.
 - The existing upstream PR resolves every outstanding review thread without exposing an unsatisfiable CDF variant.
-- CI concretizes v3.0.0 default, minimal, DICOM, and all-supported-reader configurations, and installs minimal and all-supported-reader configurations without `|| true`.
-- README Spack guidance identifies v3.0.0 as the latest stable release and documents the CDF local-repository constraint.
+- CI concretizes v3.0.0 default, minimal, DICOM, and all-upstream-supported-reader configurations, and installs minimal and all-upstream-supported-reader configurations without `|| true`.
+- README Spack guidance identifies v3.0.0 as the latest stable release and omits unavailable CDF variant guidance.
 
-**Testing:** Run `spack style`, `spack audit`, default/minimal/DICOM `spack spec` checks, and an all-supported-reader spec after registering the local NEP/CDF repository. Run minimal and all-supported-reader `spack install -v --fail-fast` commands and confirm the Spack CI jobs pass.
+**Testing:** Run `spack style`, `spack audit`, default/minimal/DICOM `spack spec` checks, and an all-upstream-supported-reader spec. Run minimal and all-upstream-supported-reader `spack install -v --fail-fast` commands and confirm the Spack CI jobs pass.
 
 **Build System Integration:** No CMake or Autotools source changes. The package retains the existing mappings from Spack variants to `NEP_*` CMake options.
 
-**Definition of Done:** The local recipe supports every published NEP release through v3.0.0, upstream review feedback is resolved according to Spack policy, CI validates v3.0.0 without ignored install failures, documentation is current, and the sprint issue is linked below.
+**Definition of Done:** The in-repository recipe supports every published NEP release through v3.0.0 and is directly submit-ready for spack-packages, upstream review feedback is resolved according to Spack policy, CI validates v3.0.0 without ignored install failures, documentation is current, and the sprint issue is linked below.
 
 **GitHub Issue:** #325
 

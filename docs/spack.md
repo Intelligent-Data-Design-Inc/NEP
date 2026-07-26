@@ -4,7 +4,7 @@
 
 NEP can be installed using the Spack package manager for simplified dependency management in HPC environments.
 
-**Status**: The NEP package update is tracked in [spack/spack-packages#5557](https://github.com/spack/spack-packages/pull/5557). The in-repository NEP recipe includes `+cdf`; the upstream builtin recipe cannot expose that variant until the NASA CDF recipe is accepted upstream.
+**Status**: The NEP package update is tracked in [spack/spack-packages#5557](https://github.com/spack/spack-packages/pull/5557). The in-repository recipe matches the upstream-compatible variant set.
 
 ## Basic Installation
 
@@ -37,24 +37,6 @@ spack install nep+fortran
 spack install nep~fortran
 ```
 
-### CDF Support
-
-The in-repository NEP recipe supports `+cdf` through the in-repository NASA CDF recipe. Register both recipes in a local Spack repository before installing:
-
-```bash
-mkdir -p $HOME/nep-repo/packages/nep $HOME/nep-repo/packages/cdf
-cp spack/NEP/package.py $HOME/nep-repo/packages/nep/
-cp spack/cdf/package.py $HOME/nep-repo/packages/cdf/
-cat > $HOME/nep-repo/repo.yaml << 'EOF'
-repo:
-  namespace: nep-local
-EOF
-spack repo add $HOME/nep-repo
-spack install nep+cdf
-```
-
-The upstream builtin NEP recipe omits `+cdf` until NASA CDF is available as an upstream Spack package.
-
 ## Using NEP
 
 Load NEP into your environment:
@@ -77,22 +59,16 @@ spack install nep ^netcdf-c@4.10.1
 spack install nep ^hdf5@2.1.1
 ```
 
-## CDF Package
-
-The in-repository CDF package uses a custom Makefile build system and has no external dependencies beyond a system compiler. It is available after registering the local repository described above.
-
 ## Development
 
 ### Package Locations
 
 - **NEP Package**: `spack/NEP/package.py`
-- **CDF Package**: `spack/cdf/package.py`
 
 ### CI Testing
 
 Both packages have dedicated CI workflows:
 - **NEP**: `.github/workflows/spack.yml`
-- **CDF**: `.github/workflows/spack-cdf.yml`
 
 The CI workflows test:
 - Style and lint checks

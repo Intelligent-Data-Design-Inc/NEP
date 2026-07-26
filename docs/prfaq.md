@@ -298,7 +298,7 @@ nc_get_vara_float(grpid, varid, start, count, data);
 - NASA/ESA PDS4 planetary science data support via UDF handler (UDF5), including New Horizons Alice mission data
 - DICOM medical imaging support via UDF handler (UDF6), including uncompressed and JPEG Baseline multi-frame pixel data
 - All six format readers can be enabled simultaneously
-- Complete local Spack variants for every optional reader and utility
+- Complete upstream-compatible Spack variants for every reader and utility with available upstream dependencies
 - Comprehensive documentation, CI testing, and example programs.
 
 #### Q: What formats does NEP support?

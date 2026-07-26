@@ -13,7 +13,7 @@ from spack.package import *
 class Nep(CMakePackage):
     """NEP (NetCDF Expansion Pack) provides high-performance LZ4 and BZIP2
     compression filters for HDF5/NetCDF-4 files and transparent read access
-    to scientific data formats (GeoTIFF, GRIB2, FITS, NASA CDF, PDS4, DICOM)
+    to scientific data formats (GeoTIFF, GRIB2, FITS, PDS4, DICOM)
     through the standard NetCDF API via User Defined Format handlers."""
 
     homepage = "https://github.com/Intelligent-Data-Design-Inc/NEP"
@@ -81,7 +81,6 @@ class Nep(CMakePackage):
     variant("fits", default=False, description="Enable FITS reader support via CFITSIO")
     variant("geotiff", default=False, description="Enable GeoTIFF reader support via libgeotiff")
     variant("grib2", default=False, description="Enable GRIB2 reader support via NCEPLIBS-g2c")
-    variant("cdf", default=False, description="Enable NASA CDF reader support")
     variant("pds4", default=False, description="Enable PDS4 reader support via libxml2")
     variant("dicom", default=False, description="Enable DICOM reader support via libdicom")
     variant(
@@ -105,9 +104,6 @@ class Nep(CMakePackage):
     depends_on("cfitsio", when="+fits", type=("build", "link"))
     depends_on("libgeotiff", when="+geotiff", type=("build", "link"))
     depends_on("g2c", when="+grib2", type=("build", "link"))
-    # cdf: NASA CDF library; not a Spack builtin. Register spack/cdf/package.py
-    # from the NEP repo in a local Spack repository before using +cdf.
-    depends_on("cdf", when="+cdf", type=("build", "link"))
     depends_on("libxml2", when="+pds4", type=("build", "link"))
     depends_on("libdicom", when="+dicom", type=("build", "link"))
     depends_on("libjpeg-turbo", when="+dicom", type=("build", "link"))
@@ -124,7 +120,6 @@ class Nep(CMakePackage):
             self.define_from_variant("NEP_ENABLE_FITS", "fits"),
             self.define_from_variant("NEP_ENABLE_GEOTIFF", "geotiff"),
             self.define_from_variant("NEP_ENABLE_GRIB2", "grib2"),
-            self.define_from_variant("NEP_ENABLE_CDF", "cdf"),
             self.define_from_variant("NEP_ENABLE_PDS4", "pds4"),
             self.define_from_variant("NEP_ENABLE_DICOM", "dicom"),
             self.define_from_variant("NEP_ENABLE_PARALLEL_TESTS", "parallel"),
@@ -150,8 +145,6 @@ class Nep(CMakePackage):
             assert os.path.exists(join_path(self.prefix.lib, "libncgeotiff.so"))
         if "+grib2" in self.spec:
             assert os.path.exists(join_path(self.prefix.lib, "libncgrib2.so"))
-        if "+cdf" in self.spec:
-            assert os.path.exists(join_path(self.prefix.lib, "libnccdf.so"))
         if "+pds4" in self.spec:
             assert os.path.exists(join_path(self.prefix.lib, "libncpds4.so"))
         if "+dicom" in self.spec:

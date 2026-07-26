@@ -55,9 +55,7 @@ jobs:
         run: |
           echo "=== Creating local Spack repository for NEP ==="
           mkdir -p $HOME/nep-repo/packages/nep
-          mkdir -p $HOME/nep-repo/packages/cdf
           cp spack/NEP/package.py $HOME/nep-repo/packages/nep/
-          cp spack/cdf/package.py $HOME/nep-repo/packages/cdf/
           cat > $HOME/nep-repo/repo.yaml << 'EOF'
           repo:
             namespace: nep-local
@@ -119,9 +117,7 @@ jobs:
         run: |
           echo "=== Creating local Spack repository for NEP ==="
           mkdir -p $HOME/nep-repo/packages/nep
-          mkdir -p $HOME/nep-repo/packages/cdf
           cp spack/NEP/package.py $HOME/nep-repo/packages/nep/
-          cp spack/cdf/package.py $HOME/nep-repo/packages/cdf/
           cat > $HOME/nep-repo/repo.yaml << 'EOF'
           repo:
             namespace: nep-local
@@ -141,7 +137,7 @@ jobs:
           spack spec -I nep@3.0.0
           spack spec -I nep@3.0.0~docs~fortran
           spack spec -I nep@3.0.0+dicom
-          spack spec -I nep@3.0.0+geotiff+grib2+cdf+fits+pds4+dicom~docs~fortran
+          spack spec -I nep@3.0.0+geotiff+grib2+fits+pds4+dicom~docs~fortran
           spack spec -I nep@main
 
   # Full install test - only runs on pushes to main
@@ -265,9 +261,7 @@ jobs:
         run: |
           echo "=== Creating local Spack repository for NEP ==="
           mkdir -p $HOME/nep-repo/packages/nep
-          mkdir -p $HOME/nep-repo/packages/cdf
           cp spack/NEP/package.py $HOME/nep-repo/packages/nep/
-          cp spack/cdf/package.py $HOME/nep-repo/packages/cdf/
           cat > $HOME/nep-repo/repo.yaml << 'EOF'
           repo:
             namespace: nep-local
@@ -298,7 +292,7 @@ jobs:
         run: |
           set -o pipefail
           . $HOME/spack/share/spack/setup-env.sh
-          spack install -v --fail-fast nep@3.0.0+geotiff+grib2+cdf+fits+pds4+dicom~docs~fortran 2>&1 | tee spack_install_all_readers.log
+          spack install -v --fail-fast nep@3.0.0+geotiff+grib2+fits+pds4+dicom~docs~fortran 2>&1 | tee spack_install_all_readers.log
 
       - name: Show build logs
         if: always()
