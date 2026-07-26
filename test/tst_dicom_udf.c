@@ -2,12 +2,14 @@
  * @file tst_dicom_udf.c
  * @brief Test for the DICOM User-Defined Format (UDF) handler.
  *
- * Sprint 2: validate open/close, metadata mapping to dimensions and
- * attributes, native uncompressed pixel data reads, and encapsulated
- * JPEG Baseline multi-frame reads.
+ * Sprint 3: expand regression coverage to all three DICOM sample files,
+ * verifying open/close, metadata mapping to dimensions and attributes,
+ * native uncompressed pixel data reads (8-bit and 16-bit), and
+ * encapsulated JPEG Baseline multi-frame reads.
  *
  * Test files:
  *   - data/DICOM/tst_dicom_uncompressed.dcm: 1-frame 4x6 grayscale 8-bit
+ *   - data/DICOM/MRBRAIN.DCM: 1-frame 512x512 16-bit MR
  *   - data/DICOM/0003.DCM: 17-frame 512x512 encapsulated JPEG Baseline
  *
  * @author Edward Hartnett
@@ -34,6 +36,9 @@
 
 /** Path to the native uncompressed DICOM test data file. */
 #define DICOM_UNCOMPRESSED_TEST_FILE "data/DICOM/tst_dicom_uncompressed.dcm"
+
+/** Path to a 16-bit single-frame uncompressed MR DICOM test file. */
+#define DICOM_16BIT_TEST_FILE "data/DICOM/MRBRAIN.DCM"
 
 /** Path to an encapsulated JPEG Baseline multi-frame DICOM test file. */
 #define DICOM_COMPRESSED_TEST_FILE "data/DICOM/0003.DCM"
@@ -163,6 +168,8 @@ main(void)
         unsigned char pixels[1][4][6];
         size_t start3[3] = {0, 0, 0};
         size_t count3[3] = {1, 4, 6};
+        char att_buf[NC_MAX_NAME + 1];
+        size_t att_len;
 
         if ((retval = nc_inq_varid(ncid, "pixel_data", &varid)))
             ERR(retval);
@@ -213,6 +220,28 @@ main(void)
             }
             printf("PASS: sub-slab [0][1:2][2:3] read matches expected pattern\n");
         }
+
+        /* Verify selected variable attributes are present and correct. */
+        if ((retval = nc_inq_att(ncid, varid, "NumberOfFrames",
+                                  &xtype, &att_len)))
+            ERR(retval);
+        if (xtype != NC_CHAR)
+        { fprintf(stderr, "NumberOfFrames: expected NC_CHAR\n"); return 1; }
+        if ((retval = nc_get_att_text(ncid, varid, "NumberOfFrames", att_buf)))
+            ERR(retval);
+        att_buf[att_len] = '\0';
+        if (strcmp(att_buf, "1") != 0)
+        { fprintf(stderr, "NumberOfFrames expected 1, got '%s'\n", att_buf); return 1; }
+        printf("PASS: var att NumberOfFrames='%s'\n", att_buf);
+
+        if ((retval = nc_inq_att(ncid, varid, "BitsAllocated", &xtype, &att_len)))
+            ERR(retval);
+        if ((retval = nc_get_att_text(ncid, varid, "BitsAllocated", att_buf)))
+            ERR(retval);
+        att_buf[att_len] = '\0';
+        if (strcmp(att_buf, "8") != 0)
+        { fprintf(stderr, "BitsAllocated expected 8, got '%s'\n", att_buf); return 1; }
+        printf("PASS: var att BitsAllocated='%s'\n", att_buf);
     }
 
     if ((retval = nc_close(ncid)))
@@ -269,16 +298,178 @@ main(void)
 
         if ((retval = nc_inq_varid(comp_ncid, "pixel_data", &comp_varid)))
             ERR(retval);
+        if ((retval = nc_inq_var(comp_ncid, comp_varid, name, &xtype,
+                                  &var_ndims, var_dimids, &var_natts)))
+            ERR(retval);
+        if (xtype != NC_UBYTE)
+        {
+            fprintf(stderr, "compressed: expected NC_UBYTE, got %d\n", xtype);
+            return 1;
+        }
+        printf("PASS: compressed pixel_data type=NC_UBYTE\n");
+
         if ((retval = nc_get_vara_uchar(comp_ncid, comp_varid, comp_start,
                                         comp_count, &pixel)))
             ERR(retval);
         printf("PASS: read one pixel from compressed frame 0 at [256][256]\n");
+
+        /* Read a center pixel and verify it is a plausible 8-bit value. */
+        {
+            size_t center_start[3] = {0, 255, 255};
+            size_t center_count[3] = {1, 1, 1};
+            unsigned char center_pixel;
+
+            if ((retval = nc_get_vara_uchar(comp_ncid, comp_varid, center_start,
+                                            center_count, &center_pixel)))
+                ERR(retval);
+            if (center_pixel > 255)
+            {
+                fprintf(stderr, "compressed center pixel out of range: %u\n",
+                        center_pixel);
+                return 1;
+            }
+            printf("PASS: compressed center pixel=%u\n", center_pixel);
+        }
 
         if ((retval = nc_close(comp_ncid)))
             ERR(retval);
         printf("PASS: nc_close compressed\n");
     }
 
+    /* Open the 16-bit single-frame uncompressed MR DICOM file. */
+    {
+        int mr_ncid, mr_varid;
+        size_t mr_frame_len, mr_row_len, mr_col_len;
+        unsigned short mr_center, mr_corner;
+        size_t mr_start_center[3] = {0, 255, 255};
+        size_t mr_start_corner[3] = {0, 511, 511};
+        size_t mr_count[3] = {1, 1, 1};
+        char att_buf[NC_MAX_NAME + 1];
+        size_t att_len;
+
+        if ((retval = nc_open(DICOM_16BIT_TEST_FILE, NC_UDF6, &mr_ncid)))
+            ERR(retval);
+        printf("PASS: nc_open %s\n", DICOM_16BIT_TEST_FILE);
+
+        if ((retval = nc_inq_dimid(mr_ncid, "frame", &var_dimids[0])))
+            ERR(retval);
+        if ((retval = nc_inq_dim(mr_ncid, var_dimids[0], name, &mr_frame_len)))
+            ERR(retval);
+        if (strcmp(name, "frame") != 0 || mr_frame_len != 1)
+        {
+            fprintf(stderr, "frame: expected name='frame' len=1, got '%s' len=%zu\n",
+                    name, mr_frame_len);
+            return 1;
+        }
+
+        if ((retval = nc_inq_dimid(mr_ncid, "row", &var_dimids[1])))
+            ERR(retval);
+        if ((retval = nc_inq_dim(mr_ncid, var_dimids[1], name, &mr_row_len)))
+            ERR(retval);
+        if (strcmp(name, "row") != 0 || mr_row_len != 512)
+        {
+            fprintf(stderr, "row: expected name='row' len=512, got '%s' len=%zu\n",
+                    name, mr_row_len);
+            return 1;
+        }
+
+        if ((retval = nc_inq_dimid(mr_ncid, "column", &var_dimids[2])))
+            ERR(retval);
+        if ((retval = nc_inq_dim(mr_ncid, var_dimids[2], name, &mr_col_len)))
+            ERR(retval);
+        if (strcmp(name, "column") != 0 || mr_col_len != 512)
+        {
+            fprintf(stderr, "column: expected name='column' len=512, got '%s' len=%zu\n",
+                    name, mr_col_len);
+            return 1;
+        }
+        printf("PASS: 16-bit dims frame=%zu row=%zu column=%zu\n",
+               mr_frame_len, mr_row_len, mr_col_len);
+
+        if ((retval = nc_inq_var(mr_ncid, 0, name, &xtype, &var_ndims,
+                                  var_dimids, &var_natts)))
+            ERR(retval);
+        if (strcmp(name, "pixel_data") != 0)
+        {
+            fprintf(stderr, "Expected var name 'pixel_data', got '%s'\n", name);
+            return 1;
+        }
+        /* 16-bit samples are signed or unsigned depending on PixelRepresentation. */
+        if (xtype != NC_SHORT && xtype != NC_USHORT)
+        {
+            fprintf(stderr, "MR: expected NC_SHORT or NC_USHORT, got %d\n", xtype);
+            return 1;
+        }
+        printf("PASS: 16-bit pixel_data xtype=%d ndims=%d\n", xtype, var_ndims);
+
+        if ((retval = nc_inq_att(mr_ncid, NC_GLOBAL, "PatientName", &xtype, &att_len)))
+            ERR(retval);
+        if (xtype != NC_CHAR)
+        { fprintf(stderr, "PatientName: expected NC_CHAR\n"); return 1; }
+        printf("PASS: att PatientName NC_CHAR len=%zu\n", att_len);
+
+        if ((retval = nc_inq_att(mr_ncid, NC_GLOBAL, "Modality", &xtype, &att_len)))
+            ERR(retval);
+        if (xtype != NC_CHAR)
+        { fprintf(stderr, "Modality: expected NC_CHAR\n"); return 1; }
+        printf("PASS: att Modality NC_CHAR len=%zu\n", att_len);
+
+        if ((retval = nc_inq_att(mr_ncid, NC_GLOBAL, "TransferSyntaxUID",
+                                  &xtype, &att_len)))
+            ERR(retval);
+        if (xtype != NC_CHAR)
+        { fprintf(stderr, "TransferSyntaxUID: expected NC_CHAR\n"); return 1; }
+        printf("PASS: att TransferSyntaxUID NC_CHAR len=%zu\n", att_len);
+
+        if ((retval = nc_inq_varid(mr_ncid, "pixel_data", &mr_varid)))
+            ERR(retval);
+
+        if ((retval = nc_inq_att(mr_ncid, mr_varid, "NumberOfFrames",
+                                  &xtype, &att_len)))
+            ERR(retval);
+        if ((retval = nc_get_att_text(mr_ncid, mr_varid, "NumberOfFrames", att_buf)))
+            ERR(retval);
+        att_buf[att_len] = '\0';
+        if (strcmp(att_buf, "1") != 0)
+        { fprintf(stderr, "NumberOfFrames expected 1, got '%s'\n", att_buf); return 1; }
+        printf("PASS: 16-bit var att NumberOfFrames='%s'\n", att_buf);
+
+        if ((retval = nc_inq_att(mr_ncid, mr_varid, "BitsAllocated", &xtype, &att_len)))
+            ERR(retval);
+        if ((retval = nc_get_att_text(mr_ncid, mr_varid, "BitsAllocated", att_buf)))
+            ERR(retval);
+        att_buf[att_len] = '\0';
+        if (strcmp(att_buf, "16") != 0)
+        { fprintf(stderr, "BitsAllocated expected 16, got '%s'\n", att_buf); return 1; }
+        printf("PASS: 16-bit var att BitsAllocated='%s'\n", att_buf);
+
+        if ((retval = nc_get_vara_ushort(mr_ncid, mr_varid, mr_start_center,
+                                         mr_count, &mr_center)))
+            ERR(retval);
+        if (mr_center == 0 || mr_center > 4095)
+        {
+            fprintf(stderr, "MR center pixel not in expected 12-bit range: %u\n",
+                    mr_center);
+            return 1;
+        }
+        printf("PASS: 16-bit center pixel=%u\n", mr_center);
+
+        if ((retval = nc_get_vara_ushort(mr_ncid, mr_varid, mr_start_corner,
+                                         mr_count, &mr_corner)))
+            ERR(retval);
+        if (mr_corner > 65535)
+        {
+            fprintf(stderr, "MR corner pixel out of range: %u\n", mr_corner);
+            return 1;
+        }
+        printf("PASS: 16-bit corner pixel=%u\n", mr_corner);
+
+        if ((retval = nc_close(mr_ncid)))
+            ERR(retval);
+        printf("PASS: nc_close 16-bit\n");
+    }
+
+    printf("Done.\n");
     return 0;
 }
 

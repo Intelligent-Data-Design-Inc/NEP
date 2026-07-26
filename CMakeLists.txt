@@ -467,7 +467,7 @@ if(NOT DOCS_ONLY)
     endif()
 
     # .ncrc: assemble from fragments for enabled formats (issue #134)
-    if(HAVE_GEOTIFF OR HAVE_CDF OR HAVE_GRIB2 OR HAVE_FITS OR HAVE_PDS4)
+    if(HAVE_GEOTIFF OR HAVE_CDF OR HAVE_GRIB2 OR HAVE_FITS OR HAVE_PDS4 OR HAVE_DICOM)
         set(NEP_NCRC_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}"
             CACHE PATH "Directory where .ncrc is installed")
 
@@ -487,6 +487,9 @@ if(NOT DOCS_ONLY)
         endif()
         if(HAVE_PDS4)
             list(APPEND NCRC_FRAGMENTS "${CMAKE_SOURCE_DIR}/.ncrc-pds4.in")
+        endif()
+        if(HAVE_DICOM)
+            list(APPEND NCRC_FRAGMENTS "${CMAKE_SOURCE_DIR}/.ncrc-dicom.in")
         endif()
 
         # Assemble a .ncrc for the build tree (tests point to the freshly built libraries)

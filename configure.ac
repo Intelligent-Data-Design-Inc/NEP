@@ -112,10 +112,12 @@ AC_SUBST([BUILD_LZF], [$enable_lzf])
 AS_IF([test "x$enable_lz4" = "xyes"],  [BUILD_LZ4_DEF=1], [BUILD_LZ4_DEF=0])
 AS_IF([test "x$enable_bzip2" = "xyes"], [BUILD_BZIP2_DEF=1], [BUILD_BZIP2_DEF=0])
 AS_IF([test "x$enable_fits" = "xyes"], [BUILD_FITS_DEF=1], [BUILD_FITS_DEF=0])
+AS_IF([test "x$enable_dicom" = "xyes"], [BUILD_DICOM_DEF=1], [BUILD_DICOM_DEF=0])
 
 AC_SUBST([BUILD_LZ4_DEF])
 AC_SUBST([BUILD_BZIP2_DEF])
 AC_SUBST([BUILD_FITS_DEF])
+AC_SUBST([BUILD_DICOM_DEF])
 
 dnl if test "x$enable_lz4" = xyes; then
 dnl    AC_CONFIG_SUBDIRS([LZ4])
@@ -883,6 +885,7 @@ AC_CONFIG_FILES([Makefile
                  test_parallel/Makefile
                  examples/Makefile
                  examples/classic/Makefile
+                 examples/dicom/Makefile
                  examples/netcdf-4/Makefile
                  examples/nczarr/Makefile
                  examples/f_classic/Makefile

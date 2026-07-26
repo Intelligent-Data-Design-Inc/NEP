@@ -43,6 +43,17 @@ if(HAVE_FITS)
         ENVIRONMENT "NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
 endif()
 
+# Build the DICOM Fortran test if DICOM is enabled.
+if(HAVE_DICOM)
+    add_executable(ftst_dicom_udf ftst_dicom_udf.F90)
+    target_link_libraries(ftst_dicom_udf PRIVATE ncdicom nepf nep ${NetCDF_Fortran_LIBRARIES} ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
+    target_include_directories(ftst_dicom_udf PRIVATE ${NetCDF_Fortran_INCLUDE_DIRS} ${DICOM_INCLUDE_DIR})
+    add_dependencies(ftst_dicom_udf ncdicom)
+    add_test(NAME ftst_dicom_udf COMMAND ftst_dicom_udf)
+    set_tests_properties(ftst_dicom_udf PROPERTIES
+        ENVIRONMENT "NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+endif()
+
 # Configure run_tests.sh script with proper paths.
 if(NEP_BUILD_LZ4)
     set(BUILD_LZ4 "yes")
@@ -58,6 +69,11 @@ if(HAVE_FITS)
     set(BUILD_FITS "yes")
 else()
     set(BUILD_FITS "no")
+endif()
+if(HAVE_DICOM)
+    set(BUILD_DICOM "yes")
+else()
+    set(BUILD_DICOM "no")
 endif()
 
 # Set the HDF5 plugin path for the generated test script. This must include

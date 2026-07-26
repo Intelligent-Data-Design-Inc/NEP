@@ -7,6 +7,10 @@ EXTRA_DIST = validate_cdl.sh.in expected_output
 # C examples are always built when BUILD_EXAMPLES is enabled
 SUBDIRS = classic netcdf-4 performance
 
+if HAVE_DICOM
+SUBDIRS += dicom
+endif
+
 if ENABLE_VIZ_EXAMPLES
 SUBDIRS += viz
 endif

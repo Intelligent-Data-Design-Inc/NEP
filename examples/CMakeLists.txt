@@ -6,6 +6,10 @@ add_subdirectory(classic)
 add_subdirectory(netcdf-4)
 add_subdirectory(performance)
 
+if(HAVE_DICOM)
+    add_subdirectory(dicom)
+endif()
+
 if(NEP_ENABLE_VIZ_EXAMPLES)
     add_subdirectory(viz)
 endif()
