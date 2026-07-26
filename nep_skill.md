@@ -108,7 +108,6 @@ NetCDF-C 4.10.0+ provides 10 UDF slots:
 
 ### Build System
 - `@/home/ed/NEP/CMakeLists.txt` - CMake build configuration
-- `@/home/ed/NEP/configure.ac` - Autotools configuration
 
 ## Filter IDs
 
@@ -120,7 +119,7 @@ NetCDF-C 4.10.0+ provides 10 UDF slots:
 
 ## Build Commands
 
-### CMake (Recommended)
+### CMake
 ```bash
 # Configure with all features
 cmake -B build -DCMAKE_INSTALL_PREFIX=/usr/local \
@@ -138,25 +137,6 @@ cmake --install build
 
 # Documentation
 cmake --build build --target docs
-```
-
-### Autotools (Legacy support)
-```bash
-# Bootstrap
-./autogen.sh
-
-# Configure
-./configure --prefix=/usr/local \
-    --enable-cdf --enable-lz4 --enable-bzip2
-
-# Build
-make
-
-# Test
-make check
-
-# Install
-make install
 ```
 
 ## Test Commands
@@ -179,17 +159,17 @@ ctest -V
 
 ## Configuration Options
 
-| CMake Option | Autotools Option | Description |
-|--------------|------------------|-------------|
-| `-DNEP_ENABLE_CDF=ON` | `--enable-cdf` | Enable CDF file support |
-| `-DNEP_ENABLE_GEOTIFF=ON` | `--enable-geotiff` | Enable GeoTIFF support |
-| `-DNEP_ENABLE_GRIB2=ON` | `--enable-grib2` | Enable GRIB2 support |
-| `-DNEP_BUILD_LZ4=ON` | `--enable-lz4` | Build LZ4 filter |
-| `-DNEP_BUILD_BZIP2=ON` | `--enable-bzip2` | Build BZIP2 filter |
-| `-DNEP_ENABLE_FORTRAN=ON` | `--enable-fortran` | Build Fortran wrappers |
-| `-DNEP_BUILD_DOCUMENTATION=ON` | `--enable-docs` | Build Doxygen documentation |
-| `-DNEP_BUILD_EXAMPLES=ON` | `--enable-examples` | Build example programs |
-| `-DBUILD_TESTING=ON` | - | Build test suite |
+| CMake Option | Description |
+|--------------|-------------|
+| `-DNEP_ENABLE_CDF=ON` | Enable CDF file support |
+| `-DNEP_ENABLE_GEOTIFF=ON` | Enable GeoTIFF support |
+| `-DNEP_ENABLE_GRIB2=ON` | Enable GRIB2 support |
+| `-DNEP_BUILD_LZ4=ON` | Build LZ4 filter |
+| `-DNEP_BUILD_BZIP2=ON` | Build BZIP2 filter |
+| `-DNEP_ENABLE_FORTRAN=ON` | Build Fortran wrappers |
+| `-DNEP_BUILD_DOCUMENTATION=ON` | Build Doxygen documentation |
+| `-DNEP_BUILD_EXAMPLES=ON` | Build example programs |
+| `-DBUILD_TESTING=ON` | Build test suite |
 
 ## Common Tasks
 
@@ -198,7 +178,7 @@ ctest -V
 1. Create dispatch table in `src/{format}dispatch.c`
 2. Create file operations in `src/{format}file.c`
 3. Create header in `include/{format}dispatch.h`
-4. Add to `CMakeLists.txt` and `configure.ac`
+4. Add to the relevant `CMakeLists.txt` file
 5. Add tests in `test_{format}/`
 
 ### Adding a New Compression Filter
@@ -222,7 +202,7 @@ ctest -V
 **Required:**
 - NetCDF-C (v4.10.0+ for UDF self-loading)
 - HDF5 (v1.12+)
-- CMake (v3.9+) or Autotools
+- CMake (v3.9+)
 
 **Optional:**
 - LZ4 library (for LZ4 compression)

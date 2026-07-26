@@ -1,4 +1,4 @@
-# GitHub Actions CI workflow for building and testing the NEP project with cmake and autotools.
+# GitHub Actions CI workflow for building and testing the NEP project with CMake.
 #
 # NEP CI Pipeline - v1.3.0 Configuration
 #
@@ -7,8 +7,8 @@
 # and adds NASA CDF library detection (library location only, no UDF yet).
 #
 # Compiler Warnings (Issue #86):
-# Both CMake and autotools build systems automatically add -Wall -Werror flags
-# for GNU compilers, ensuring all builds fail on any compiler warnings.
+# CMake builds automatically add -Wall -Werror flags for GNU compilers,
+# ensuring builds fail on compiler warnings.
 #
 #
 # Edward Hartnett, Intelligent Data Design, Inc., Nov 13, 2025
@@ -25,15 +25,11 @@ jobs:
   # DISABLED: Waiting for Jasper build fix
   grib2-build:
     if: false
-    name: GRIB2 Build (${{ matrix.build_system }})
+    name: GRIB2 Build (CMake)
     runs-on: ubuntu-latest
     env:
       LD_LIBRARY_PATH: $GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$LD_LIBRARY_PATH
       PKG_CONFIG_PATH: ${{ github.workspace }}/netcdf-c-install/lib/pkgconfig:${{ github.workspace }}/hdf5-install/lib/pkgconfig
-    strategy:
-      fail-fast: false
-      matrix:
-        build_system: [cmake, autotools]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -41,7 +37,7 @@ jobs:
       - name: Install base dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake make wget zlib1g-dev autoconf automake libtool pkg-config libpng-dev
+          sudo apt-get install -y cmake make wget zlib1g-dev pkg-config libpng-dev
 
       - name: Cache HDF5 install
         id: cache-hdf5-grib2
@@ -134,7 +130,6 @@ jobs:
 
       # --- CMake build with GRIB2 ---
       - name: Configure with CMake and GRIB2 enabled
-        if: matrix.build_system == 'cmake'
         run: |
           mkdir -p build
           cd build
@@ -154,176 +149,26 @@ jobs:
           grep "define HAVE_GRIB2" config.h && echo "SUCCESS: HAVE_GRIB2 is defined" || (echo "FAILURE: HAVE_GRIB2 not defined"; exit 1)
 
       - name: Build (CMake)
-        if: matrix.build_system == 'cmake'
         working-directory: build
         run: |
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$LD_LIBRARY_PATH"
           make -j$(nproc)
 
       - name: Test (CMake)
-        if: matrix.build_system == 'cmake'
         working-directory: build
         run: |
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$LD_LIBRARY_PATH"
           ctest --verbose -R tst_grib2_udf
 
-      # --- Autotools build with GRIB2 ---
-      - name: Bootstrap (Autotools)
-        if: matrix.build_system == 'autotools'
-        run: autoreconf -fiv
-
-      - name: Configure with Autotools and GRIB2 enabled
-        if: matrix.build_system == 'autotools'
-        run: |
-          export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
-          export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/g2c-install/include"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/g2c-install/lib"
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$LD_LIBRARY_PATH"
-          ./configure \
-            --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc \
-            --enable-grib2 \
-            --disable-cdf \
-            --disable-geotiff \
-            --disable-fortran \
-            --disable-lz4 \
-            --disable-bzip2 \
-            --disable-fits \
-            --disable-docs \
-            || (echo "Configure failed. Printing config.log:"; cat config.log; exit 1)
-          echo "=== Checking config.h for HAVE_GRIB2 ==="
-          grep "define HAVE_GRIB2" config.h && echo "SUCCESS: HAVE_GRIB2 is defined" || (echo "FAILURE: HAVE_GRIB2 not defined"; exit 1)
-
-      - name: Build (Autotools)
-        if: matrix.build_system == 'autotools'
-        run: |
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$LD_LIBRARY_PATH"
-          make -j$(nproc)
-
-      - name: Test (Autotools)
-        if: matrix.build_system == 'autotools'
-        run: |
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/g2c-install/lib:$LD_LIBRARY_PATH"
-          make check -C test TESTS=tst_grib2_udf || (echo "Tests failed:"; cat test/test-suite.log; exit 1)
-
       - name: Summary
         if: always()
         run: |
           echo "=== GRIB2 Build Test Summary ==="
-          echo "Build System: ${{ matrix.build_system }}"
+          echo "Build System: CMake"
           echo "g2c version: 2.3.0"
 
-  # Memory leak testing with AddressSanitizer
-  # DISABLED: Temporarily disabled
-  memory-leak-check:
-    if: false
-    name: Memory Leak Testing (AddressSanitizer)
-    runs-on: ubuntu-latest
-    env:
-      HDF5_PLUGIN_PATH: ${{ github.workspace }}/netcdf-c-install/hdf5/lib/plugin
-      LD_LIBRARY_PATH: $GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH
-      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1:abort_on_error=1:detect_odr_violation=0
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake make wget zlib1g-dev libtiff-dev libgeotiff-dev autoconf automake libtool pkg-config libpng-dev
-
-      - name: Cache HDF5 install
-        id: cache-hdf5-asan
-        uses: actions/cache@v4
-        with:
-          path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-2.1.1-asan-${{ runner.os }}-refresh-1
-      
-      - name: Download and build HDF5 2.1.1 with ASAN
-        if: steps.cache-hdf5-asan.outputs.cache-hit != 'true'
-        run: |
-          wget -q https://github.com/HDFGroup/hdf5/archive/refs/tags/2.1.1.tar.gz -O hdf5-2.1.1.tar.gz
-          tar -xzf hdf5-2.1.1.tar.gz
-          cd hdf5-2.1.1
-          mkdir build && cd build
-          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install \
-                -DCMAKE_C_FLAGS="-g -O0 -fsanitize=address -fno-omit-frame-pointer" \
-                -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address" \
-                -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=address" \
-                -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DHDF5_ENABLE_ZLIB_SUPPORT=ON ..
-          make -j$(nproc)
-          make install
-
-      - name: Cache NetCDF-C install
-        id: cache-netcdf-c-asan
-        uses: actions/cache@v4
-        with:
-          path: ${{ github.workspace }}/netcdf-c-install
-          key: netcdf-c-4.10.1-hdf5-2.1.1-asan-${{ runner.os }}-refresh-1
-
-      - name: Download and build NetCDF-C with ASAN
-        if: steps.cache-netcdf-c-asan.outputs.cache-hit != 'true'
-        run: |
-          wget https://github.com/Unidata/netcdf-c/archive/v4.10.1.tar.gz &> /dev/null
-          tar -xzf v4.10.1.tar.gz
-          cd netcdf-c-4.10.1
-          export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include"
-          export CFLAGS="-g -O0 -fsanitize=address -fno-omit-frame-pointer"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -fsanitize=address"
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$LD_LIBRARY_PATH"
-          ./configure --prefix=$GITHUB_WORKSPACE/netcdf-c-install --enable-netcdf-4 --enable-shared --disable-dap
-          make -j$(nproc)
-          make install
-
-      - name: Configure NEP with ASAN
-        run: |
-          autoreconf -i
-          export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
-          export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
-          export CFLAGS="-g -O0 -Wall -Werror -fsanitize=address -fno-omit-frame-pointer"
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -fsanitize=address"
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
-          ./configure --enable-geotiff --disable-grib2 --disable-cdf --disable-fortran --disable-shared --disable-bzip2 --disable-lz4 --disable-fits --enable-examples
-
-      - name: Build NEP with ASAN
-        run: make -j$(nproc)
-
-      - name: Copy test data files
-        run: |
-          cp -f test/data/MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif test_geotiff/
-          cp -f test/data/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif test_geotiff/
-          cp -f test/data/ABBA_2022_C61_HNL.tif test_geotiff/
-
-      - name: Generate .ncrc for UDF registration (GeoTIFF)
-        run: |
-          GEOTIFF_LIB="$GITHUB_WORKSPACE/src/.libs/libncgeotiff.so"
-          NCRC_FILE="$GITHUB_WORKSPACE/ncrc_asan.rc"
-          echo "NETCDF.UDF0.LIBRARY=PLACEHOLDER_GEOTIFF" > "$NCRC_FILE"
-          echo "NETCDF.UDF0.INIT=NC_GEOTIFF_initialize" >> "$NCRC_FILE"
-          echo "NETCDF.UDF0.MAGIC=II+" >> "$NCRC_FILE"
-          echo "NETCDF.UDF1.LIBRARY=PLACEHOLDER_GEOTIFF" >> "$NCRC_FILE"
-          echo "NETCDF.UDF1.INIT=NC_GEOTIFF_initialize" >> "$NCRC_FILE"
-          echo "NETCDF.UDF1.MAGIC=II*" >> "$NCRC_FILE"
-          sed -i "s|PLACEHOLDER_GEOTIFF|${GEOTIFF_LIB}|g" "$NCRC_FILE"
-          echo "Generated ncrc at $NCRC_FILE:"
-          cat "$NCRC_FILE"
-
-      - name: Run tests with AddressSanitizer
-        run: |
-          export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
-          export HDF5_PLUGIN_PATH="$GITHUB_WORKSPACE/netcdf-c-install/hdf5/lib/plugin"
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -fsanitize=address"
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
-          export ASAN_OPTIONS="detect_leaks=1:halt_on_error=1:abort_on_error=1:detect_odr_violation=0"
-          export NCRCENV_RC="$GITHUB_WORKSPACE/ncrc_asan.rc"
-          make check || (echo "Memory leak detected! Test logs:"; for f in $(find . -name test-suite.log); do echo "=== $f ==="; cat "$f"; done; exit 1)
-          echo "✅ All tests passed with zero memory leaks!"
-
   build:
-    name: build (${{ matrix.build_system }}, Fortran ${{ matrix.fortran }}, compression ${{ matrix.compression }})
+    name: build (CMake, Fortran ${{ matrix.fortran }}, compression ${{ matrix.compression }})
     runs-on: ubuntu-latest
     env:
       HDF5_PLUGIN_PATH: ${{ github.workspace }}/netcdf-c-install/hdf5/lib/plugin
@@ -332,7 +177,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build_system: [cmake, autotools]
         fortran: [on, off]
         compression: [all, no-bzip2, no-lz4]
     steps:
@@ -487,11 +331,9 @@ jobs:
 
             # --- CMake build ---------------------------------------------------
       - name: Create build directory (CMake)
-        if: matrix.build_system == 'cmake'
         run: mkdir -p build
 
       - name: Configure with CMake and custom HDF5
-        if: matrix.build_system == 'cmake'
         working-directory: build
         run: |
           echo "Building NEP v1.3.0 - LZ4/BZIP2 compression + CDF library detection"
@@ -515,7 +357,6 @@ jobs:
           cmake .. -DCMAKE_C_FLAGS="-Wall -Werror" -DCMAKE_Fortran_FLAGS="-Wall -Werror" -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install;$GITHUB_WORKSPACE/cdf-install;$GITHUB_WORKSPACE/libdicom-install;/usr/include/liblzf" -DBUILD_TESTING=ON -DNEP_BUILD_EXAMPLES=ON $DOC_FLAG $FORTRAN_FLAG $CDF_FLAG $DICOM_FLAG -DNEP_ENABLE_FITS=OFF -DNEP_ENABLE_GEOTIFF=OFF -DNEP_ENABLE_GRIB2=OFF
 
       - name: Build (CMake)
-        if: matrix.build_system == 'cmake'
         working-directory: build
         run: |
           set -x
@@ -528,7 +369,7 @@ jobs:
           make -j$(nproc)
 
       - name: Build Documentation (CMake)
-        if: matrix.build_system == 'cmake' && matrix.fortran == 'on' && matrix.compression == 'all'
+        if: matrix.fortran == 'on' && matrix.compression == 'all'
         working-directory: build
         run: |
           set -x
@@ -544,7 +385,6 @@ jobs:
           echo "Documentation built successfully without warnings"
 
       - name: Test (CTest)
-        if: matrix.build_system == 'cmake'
         working-directory: build
         run: |
           export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
@@ -556,107 +396,9 @@ jobs:
           sudo make install
 
       - name: Upload Documentation Artifacts (CMake)
-        if: matrix.build_system == 'cmake' && matrix.fortran == 'on' && matrix.compression == 'all'
+        if: matrix.fortran == 'on' && matrix.compression == 'all'
         uses: actions/upload-artifact@v4
         with:
           name: documentation-cmake-lz4
           path: build/docs/html/
           retention-days: 30
-
-      # --- Autotools build ---------------------------------------------
-      - name: Bootstrap (Autotools)
-        if: matrix.build_system == 'autotools'
-        run: |
-          ./bootstrap || true
-
-      - name: Configure (Autotools)
-        if: matrix.build_system == 'autotools'
-        run: |
-          set -x
-          echo "Building NEP v1.3.0 - LZ4/BZIP2 compression + CDF library detection"
-          autoreconf -i
-          export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
-          export HDF5_PLUGIN_PATH="$GITHUB_WORKSPACE/netcdf-c-install/hdf5/lib/plugin"
-          export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
-          LIBDICOM_LIBDIR="$GITHUB_WORKSPACE/libdicom-install/lib"
-          if [ -d "$GITHUB_WORKSPACE/libdicom-install/lib/x86_64-linux-gnu" ]; then
-            LIBDICOM_LIBDIR="$GITHUB_WORKSPACE/libdicom-install/lib/x86_64-linux-gnu"
-          fi
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include -I$GITHUB_WORKSPACE/cdf-install/include -I$GITHUB_WORKSPACE/libdicom-install/include -I/usr/include/liblzf"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib -L$LIBDICOM_LIBDIR"
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LIBDICOM_LIBDIR:$LD_LIBRARY_PATH"
-          export CFLAGS="-Wall"
-          export FCFLAGS="-Wall -Wno-error=missing-include-dirs -I$GITHUB_WORKSPACE/netcdf-fortran-install/include"
-          ls -l $GITHUB_WORKSPACE/hdf5-install/lib
-          FORTRAN_FLAG="--enable-fortran"
-          if [ "${{ matrix.fortran }}" = "off" ]; then
-            FORTRAN_FLAG="--disable-fortran"
-          fi
-
-          BZIP2_FLAG=""
-          LZ4_FLAG="--enable-lz4"
-          if [ "${{ matrix.compression }}" = "no-bzip2" ]; then
-            BZIP2_FLAG="--disable-bzip2"
-            LZ4_FLAG="--enable-lz4"
-          elif [ "${{ matrix.compression }}" = "no-lz4" ]; then
-            BZIP2_FLAG=""
-            LZ4_FLAG="--disable-lz4"
-          fi
-
-          DOCS_FLAG="--disable-docs"
-          if [ "${{ matrix.fortran }}" = "on" ] && [ "${{ matrix.compression }}" = "all" ]; then
-            DOCS_FLAG="--enable-docs"
-          fi
-
-          CDF_FLAG="--disable-cdf"
-          if [ "${{ matrix.fortran }}" = "on" ]; then
-            CDF_FLAG="--enable-cdf"
-          fi
-
-          DICOM_FLAG="--disable-dicom"
-          if [ "${{ matrix.fortran }}" = "on" ] && [ "${{ matrix.compression }}" = "all" ]; then
-            DICOM_FLAG="--enable-dicom"
-          fi
-
-          ./configure --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc $LZ4_FLAG $BZIP2_FLAG $DOCS_FLAG $FORTRAN_FLAG $CDF_FLAG $DICOM_FLAG --disable-geotiff --disable-grib2 --disable-fits --enable-examples || (echo "Configure failed. Printing config.log:"; cat config.log; echo "hdf5_plugins/config.log:"; cat hdf5_plugins/config.log; exit 1)
-
-      - name: Build (Autotools)
-        if: matrix.build_system == 'autotools'
-        run: make -j$(nproc)
-
-      - name: Build Documentation (Autotools)
-        if: matrix.build_system == 'autotools' && matrix.fortran == 'on' && matrix.compression == 'all'
-        run: |
-          set -x
-          echo "Building documentation with Autotools..."
-          pwd
-          make docs 2>&1 | tee doc_build.log
-          # Check for warnings in documentation build
-          if grep -i "warning" doc_build.log; then
-            echo "Documentation build contains warnings - failing build"
-            exit 1
-          fi
-          echo "Documentation built successfully without warnings"
-
-      - name: Test (Autotools)
-        if: matrix.build_system == 'autotools'
-        run: |
-          set -x
-          export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
-          export HDF5_PLUGIN_PATH="$GITHUB_WORKSPACE/netcdf-c-install/hdf5/lib/plugin"
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include -I$GITHUB_WORKSPACE/cdf-install/include -I/usr/include/liblzf"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib -L$GITHUB_WORKSPACE/cdf-install/lib"
-          LIBDICOM_LIBDIR="$GITHUB_WORKSPACE/libdicom-install/lib"
-          if [ -d "$GITHUB_WORKSPACE/libdicom-install/lib/x86_64-linux-gnu" ]; then
-            LIBDICOM_LIBDIR="$GITHUB_WORKSPACE/libdicom-install/lib/x86_64-linux-gnu"
-          fi
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$GITHUB_WORKSPACE/cdf-install/lib:$LIBDICOM_LIBDIR:$LD_LIBRARY_PATH"
-          ls -l "${HDF5_PLUGIN_PATH}"
-          make VERBOSE=1 check || (echo "Tests failed. Printing test logs:"; cat test/test-suite.log; cat test/run_tests.sh.log; if [ -f test_cdf/test-suite.log ]; then cat test_cdf/test-suite.log; fi; exit 1)
-          echo "Tests passed. Showing test output:"
-          cat test/run_tests.sh.log
-          if [ -f test_cdf/test-suite.log ]; then
-            echo "=== CDF Test Output ==="
-            cat test_cdf/test-suite.log
-          fi
-          sudo make install

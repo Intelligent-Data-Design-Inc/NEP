@@ -1,0 +1,10 @@
+prefix=/home/ed/NEP/libdicom-install
+includedir=${prefix}/include
+libdir=${prefix}/lib/x86_64-linux-gnu
+
+Name: libdicom
+Description: C library for reading DICOM files
+URL: https://github.com/ImagingDataCommons/libdicom
+Version: 1.3.0
+Libs: -L${libdir} -ldicom
+Cflags: -I${includedir}

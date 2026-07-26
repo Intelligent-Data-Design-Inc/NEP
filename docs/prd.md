@@ -66,14 +66,9 @@
 
 ### 3.3 Build Configuration
 **CMake:**
-- `BUILD_LZ4=ON/OFF` - Enable/disable LZ4 support (default: ON)
-- `BUILD_BZIP2=ON/OFF` - Enable/disable BZIP2 support (default: ON)
-- `ENABLE_FORTRAN=ON/OFF` - Enable/disable Fortran wrappers (default: ON)
-
-**Autotools:**
-- `--enable-lz4/--disable-lz4` - LZ4 support
-- `--enable-bzip2/--disable-bzip2` - BZIP2 support
-- `--enable-fortran/--disable-fortran` - Fortran wrappers
+- `NEP_BUILD_LZ4=ON/OFF` - Enable/disable LZ4 support (default: ON)
+- `NEP_BUILD_BZIP2=ON/OFF` - Enable/disable BZIP2 support (default: OFF)
+- `NEP_ENABLE_FORTRAN=ON/OFF` - Enable/disable Fortran wrappers (default: ON)
 
 ---
 
@@ -91,10 +86,7 @@ NASA Common Data Format (CDF) support via UDF handler enables transparent access
 
 ### 4.3 Build Configuration
 **CMake:**
-- `ENABLE_CDF=ON/OFF` - Enable/disable CDF support (default: OFF)
-
-**Autotools:**
-- `--enable-cdf` - Enable CDF support (default: disabled)
+- `NEP_ENABLE_CDF=ON/OFF` - Enable/disable CDF support (default: OFF)
 
 **Note on UDF slots:** Before v2.2.0, CDF and GRIB2 shared UDF slot 2 and were mutually exclusive. v2.2.0 moves CDF to UDF slot 4, removing the mutual-exclusivity restriction.
 
@@ -138,7 +130,7 @@ spack install cdf
 
 ### 5.5 Conda Package (v3.0.1)
 - **In-repo recipe**: `conda/meta.yaml` (conda-build format) packages the v3.0.0 source tag for conda-forge
-- **Build script**: `conda/build.sh` passes existing CMake options only for the Conda package; local CMake and Autotools builds are unchanged
+- **Build script**: `conda/build.sh` passes existing CMake options only for the Conda package; local CMake builds are unchanged
 - **Enabled features**: LZ4 and Fortran wrappers
 - **Excluded**: BZIP2 and all UDF readers, including CDF, GeoTIFF, GRIB2, FITS, PDS4, and DICOM
 - **CI workflow**: `.github/workflows/ci-conda.yml` renders, validates, builds, and clean-environment-tests the package on every PR
@@ -167,10 +159,7 @@ GeoTIFF geospatial raster data support via UDF handler enables transparent acces
 
 ### 6.4 Build Configuration
 **CMake:**
-- `ENABLE_GEOTIFF=ON/OFF` - Enable/disable GeoTIFF support (default: OFF)
-
-**Autotools:**
-- `--enable-geotiff/--disable-geotiff` - GeoTIFF support (default: disabled)
+- `NEP_ENABLE_GEOTIFF=ON/OFF` - Enable/disable GeoTIFF support (default: OFF)
 
 ### 6.5 Dependencies
 - libgeotiff (required when enabled)
@@ -225,10 +214,7 @@ GRIB2 (General Regularly-distributed Information in Binary form, Edition 2) supp
 
 ### 7.3 Build Configuration
 **CMake:**
-- `ENABLE_GRIB2=ON/OFF` - Enable/disable GRIB2 support (default: OFF)
-
-**Autotools:**
-- `--enable-grib2/--disable-grib2` - GRIB2 support (default: disabled)
+- `NEP_ENABLE_GRIB2=ON/OFF` - Enable/disable GRIB2 support (default: OFF)
 
 **Note on UDF slots:** GRIB2 uses UDF slot 2. Before v2.2.0, CDF shared this slot and the two formats were mutually exclusive. v2.2.0 moves CDF to UDF slot 4, allowing both formats to be enabled together.
 
@@ -304,7 +290,7 @@ Located in `examples/performance/`:
 - `fill_values.c` - Fill value handling performance: demonstrates fill mode NC_FILL vs NC_NOFILL across classic and NetCDF-4 formats; outputs CSV (`format,fill_mode,write_s,read_s,file_bytes`) with write time, read time, and file size
 - `endianness.c` - Endianness handling performance: demonstrates byte order (NC_ENDIAN_NATIVE, NC_ENDIAN_LITTLE, NC_ENDIAN_BIG) effects on write/read performance in NetCDF-4/HDF5 files; outputs CSV (`endian_mode,write_s,read_s,file_bytes`) with write time, read time, and file size
 
-**Note**: Performance examples are excluded from regular CI. They are built and run only when `ENABLE_BENCHMARKS=ON` (CMake) or `--enable-benchmarks` (Autotools) is specified. All four examples operate on a 500×180×360 (time×lat×lon) NC_FLOAT temperature dataset matching a meteorological grid.
+**Note**: Performance examples are excluded from regular CI. They are built and run only when `NEP_ENABLE_BENCHMARKS=ON` is specified. All four examples operate on a 500×180×360 (time×lat×lon) NC_FLOAT temperature dataset matching a meteorological grid.
 
 #### NcZarr Examples (v1.11.0)
 Located in `examples/nczarr/`:
@@ -329,7 +315,7 @@ Located in `examples/nczarr/`:
 **Fortran example** (Sprint 4):
 - `f_nczarr_enhanced.f90` — Fortran equivalent of `nczarr_enhanced.c`; demonstrates `nf90_def_grp()`, `nf90_def_dim()` with `NF90_UNLIMITED` in a child group, and `nf90_inq_grp_ncid()` with full C/Fortran parity.
 
-**Note**: NcZarr examples are only built when NetCDF-C reports NcZarr support (`NC_HAS_NCZARR` in `netcdf_meta.h`) and examples are enabled. The Fortran examples additionally require `--enable-fortran` (Autotools) or `ENABLE_FORTRAN=ON` (CMake). Each example writes to a distinct Zarr directory store to allow safe parallel test execution.
+**Note**: NcZarr examples are only built when NetCDF-C reports NcZarr support (`NC_HAS_NCZARR` in `netcdf_meta.h`) and examples are enabled. The Fortran examples additionally require `NEP_ENABLE_FORTRAN=ON`. Each example writes to a distinct Zarr directory store to allow safe parallel test execution.
 
 #### Visualization Examples (v2.7.0)
 
@@ -337,14 +323,9 @@ Located in `examples/viz/`, optional Python visualization examples open enabled 
 
 ### 8.4 Build Configuration
 **CMake:**
-- `BUILD_EXAMPLES=ON/OFF` - Enable/disable example programs (default: ON)
-- `ENABLE_BENCHMARKS=ON/OFF` - Enable/disable performance benchmark programs (default: OFF)
+- `NEP_BUILD_EXAMPLES=ON/OFF` - Enable/disable example programs (default: OFF)
+- `NEP_ENABLE_BENCHMARKS=ON/OFF` - Enable/disable performance benchmark programs (default: OFF)
 - `NEP_ENABLE_VIZ_EXAMPLES=ON/OFF` - Enable/disable Python visualization examples (default: OFF)
-
-**Autotools:**
-- `--enable-examples/--disable-examples` - Example programs (default: enabled)
-- `--enable-benchmarks` - Enable performance benchmark programs (default: disabled)
-- `--enable-viz-examples` - Python visualization examples (default: disabled)
 
 ### 8.5 Dependencies
 - NetCDF-C library (required for C examples)
@@ -362,10 +343,6 @@ cmake -B build
 cmake --build build
 ctest --test-dir build
 
-# Autotools
-./configure
-make
-make check
 ```
 
 ### 8.7 Output Validation
@@ -381,12 +358,8 @@ Parallel I/O support enables NEP to build and run test programs with MPI for hig
 ### 9.2 Build Configuration
 
 **CMake:**
-- `ENABLE_PARALLEL_TESTS=ON/OFF` - Enable parallel I/O test programs (default: OFF)
+- `NEP_ENABLE_PARALLEL_TESTS=ON/OFF` - Enable parallel I/O test programs (default: OFF)
 - `MPIEXEC_EXECUTABLE=PATH` - Specify path to mpiexec/mpirun
-
-**Autotools:**
-- `--enable-parallel-tests` - Enable parallel I/O test programs
-- `--with-mpiexec=PATH` - Specify path to mpiexec/mpirun
 
 ### 9.3 Dependencies
 - MPI implementation (OpenMPI or MPICH)
@@ -439,7 +412,7 @@ ncdump square16_par.nc
 
 ### 9.6 CI Integration
 Parallel I/O builds are tested in a separate CI workflow (`ci-parallel.yml`) with:
-- Matrix: CMake/Autotools × OpenMPI/MPICH
+- CMake build with OpenMPI
 - All dependencies (HDF5, NetCDF-C, NetCDF-Fortran) built with MPI compilers
 - Parallel test directory structure for parallel I/O examples
 - ncdump verification of parallel output files
@@ -454,16 +427,13 @@ Parallel I/O builds are tested in a separate CI workflow (`ci-parallel.yml`) wit
 - Documentation generation with Doxygen
 - Comprehensive test suite integration
 
-### 10.2 Autotools
-- Standard configure/make/make install workflow
-- Feature parity with CMake
-- Documentation generation support
-- Test suite integration
-
-### 10.3 Common Build Options
-- `BUILD_DOCUMENTATION=ON/OFF` (CMake) / `--enable-docs/--disable-docs` (Autotools)
+### 10.2 Build Options
+- `NEP_BUILD_DOCUMENTATION=ON/OFF`
 - Doxygen-generated API documentation
 - Zero-warning builds enforced
+
+### 10.3 Test Integration
+- CTest runs the complete test suite from the CMake build directory
 
 ---
 
@@ -490,11 +460,11 @@ Parallel I/O builds are tested in a separate CI workflow (`ci-parallel.yml`) wit
 - **CDF Tests**: Basic file operations and IMAP MAG L1B calibration data
 - **GeoTIFF Tests**: 10 comprehensive test programs covering edge cases, errors, performance
 - **Example Programs**: All examples run as tests to validate correctness
-- **Visualization Examples**: CMake and Autotools validate generated PNG/metadata pairs, grayscale pixels, size limits, and metadata schema; dedicated CI builds source-linked `netCDF4` before exercising enabled UDF readers
+- **Visualization Examples**: CMake validates generated PNG/metadata pairs, grayscale pixels, size limits, and metadata schema; dedicated CI builds source-linked `netCDF4` before exercising enabled UDF readers
 - **CI Integration**: GitHub Actions with multiple build configurations
 
 ### 12.2 CI Matrix
-- CMake and Autotools builds
+- CMake builds
 - Compression combinations (all, no-bzip2, no-lz4)
 - Fortran on/off configurations
 - Documentation validation
@@ -513,7 +483,7 @@ Parallel I/O builds are tested in a separate CI workflow (`ci-parallel.yml`) wit
 ### 13.1 Core Dependencies
 - NetCDF-C v4.10.1+ (required)
 - HDF5 v2.1.1+ (required)
-- CMake v3.9+ or Autotools (build)
+- CMake v3.9+ (build)
 
 ### 13.2 Optional Dependencies
 - LZ4 library (for LZ4 compression)
@@ -621,10 +591,6 @@ Stored in `var->format_var_info` for every PDS4 variable. Fields:
 - `NEP_ENABLE_PDS4=ON/OFF` — Enable/disable PDS4 support (default: OFF)
 - Requires `find_package(LibXml2 REQUIRED)` when enabled
 
-**Autotools:**
-- `--enable-pds4/--disable-pds4` — PDS4 support (default: disabled)
-- Uses `AC_CHECK_HEADERS([libxml/parser.h])` + `AC_CHECK_LIB([xml2], [xmlReadFile])`
-
 ### 14.6 Dependencies
 
 - libxml2 (`libxml2-dev` on Ubuntu/Debian; `libxml2-devel` on RHEL/Fedora)
@@ -685,9 +651,6 @@ DICOM (Digital Imaging and Communications in Medicine) support via a UDF handler
 **CMake:**
 - `-DNEP_ENABLE_DICOM=ON/OFF` - Enable/disable DICOM support (default: OFF)
 
-**Autotools:**
-- `--enable-dicom/--disable-dicom` - DICOM support (default: disabled)
-
 ### 15.5 Dependencies
 
 - libdicom (https://github.com/ImagingLib/libdicom)
@@ -707,8 +670,7 @@ DICOM is assigned UDF slot 6 (`NC_UDF6`).
 
 ## 16. Performance Examples (v1.10.0)
 
-Performance benchmark programs gated by `ENABLE_BENCHMARKS` (CMake) or
-`--enable-benchmarks` (Autotools). Not run in regular CI. Dataset for all
+Performance benchmark programs gated by `NEP_ENABLE_BENCHMARKS=ON`. Not run in regular CI. Dataset for all
 examples: 500×180×360 NC_FLOAT temperature (~129 MB uncompressed), chunk
 shape 10×45×90.
 

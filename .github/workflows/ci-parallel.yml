@@ -6,8 +6,7 @@
 # No MPI code is in the codebase - this confirms that existing code compiles
 # and passes tests under OpenMPI compiler wrappers.
 #
-# Matrix: cmake x autotools (2 jobs total)
-# MPI compilers are applied only to the NEP build itself.
+# MPI compilers are applied to the CMake NEP build.
 # HDF5, NetCDF-C, and NetCDF-Fortran are built with plain GCC (cached).
 #
 # Edward Hartnett, Intelligent Data Design, Inc., May 2026
@@ -21,15 +20,11 @@ on:
 
 jobs:
   parallel-build:
-    name: MPI Build (${{ matrix.build_system }})
+    name: MPI Build (CMake)
     runs-on: ubuntu-latest
     env:
       LD_LIBRARY_PATH: ${{ github.workspace }}/hdf5-install/lib:${{ github.workspace }}/netcdf-c-install/lib:${{ github.workspace }}/netcdf-fortran-install/lib:$LD_LIBRARY_PATH
       PKG_CONFIG_PATH: ${{ github.workspace }}/netcdf-c-install/lib/pkgconfig:${{ github.workspace }}/hdf5-install/lib/pkgconfig
-    strategy:
-      fail-fast: false
-      matrix:
-        build_system: [cmake, autotools]
 
     steps:
       - name: Checkout code
@@ -38,7 +33,7 @@ jobs:
       - name: Install base dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake make wget zlib1g-dev autoconf automake libtool pkg-config libzstd-dev
+          sudo apt-get install -y cmake make wget zlib1g-dev pkg-config libzstd-dev
 
       - name: Install OpenMPI
         run: |
@@ -128,7 +123,6 @@ jobs:
       # --- CMake build with MPI compilers ---
 
       - name: Configure with CMake (MPI)
-        if: matrix.build_system == 'cmake'
         run: |
           mkdir -p build
           cd build
@@ -152,70 +146,18 @@ jobs:
             -DBUILD_TESTING=ON
 
       - name: Build (CMake)
-        if: matrix.build_system == 'cmake'
         working-directory: build
         run: |
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
           make -j$(nproc)
 
       - name: Test (CMake)
-        if: matrix.build_system == 'cmake'
         working-directory: build
         run: |
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
           export OMPI_ALLOW_RUN_AS_ROOT=1
           export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
           ctest --verbose
-
-      # --- Autotools build with MPI compilers ---
-
-      - name: Bootstrap (Autotools)
-        if: matrix.build_system == 'autotools'
-        run: autoreconf -fiv
-
-      - name: Configure with Autotools (MPI)
-        if: matrix.build_system == 'autotools'
-        run: |
-          export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
-          export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include -I$GITHUB_WORKSPACE/netcdf-fortran-install/include"
-          export FCFLAGS="-I$GITHUB_WORKSPACE/netcdf-fortran-install/include"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L$GITHUB_WORKSPACE/netcdf-fortran-install/lib"
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
-          MPIEXEC_PATH=/usr/bin/mpiexec
-          CC=mpicc FC=mpif90 ./configure \
-            --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc \
-            --enable-fortran \
-            --enable-parallel-tests \
-            --with-mpiexec=$MPIEXEC_PATH \
-            --disable-grib2 \
-            --disable-cdf \
-            --disable-geotiff \
-            --disable-lz4 \
-            --disable-bzip2 \
-            --disable-fits \
-            --disable-docs \
-            --enable-examples \
-            || (echo "Configure failed. Printing config.log:"; cat config.log; exit 1)
-
-      - name: Build (Autotools)
-        if: matrix.build_system == 'autotools'
-        run: |
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
-          make -j$(nproc) CFLAGS="-Wall -Werror" FCFLAGS="-Wall -Werror -Wno-error=missing-include-dirs -I$GITHUB_WORKSPACE/netcdf-fortran-install/include"
-
-      - name: Test (Autotools)
-        if: matrix.build_system == 'autotools'
-        run: |
-          export PATH="$GITHUB_WORKSPACE/netcdf-c-install/bin:$PATH"
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
-          export OMPI_ALLOW_RUN_AS_ROOT=1
-          export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
-          make check CFLAGS="-Wall -Werror" FCFLAGS="-Wall -Werror -Wno-error=missing-include-dirs -I$GITHUB_WORKSPACE/netcdf-fortran-install/include" \
-            || (echo "Tests failed. Printing test logs:"; \
-                cat test/test-suite.log 2>/dev/null; \
-                cat examples/parallelIO/test-suite.log 2>/dev/null; \
-                exit 1)
 
       # --- Summary ---
 
@@ -224,6 +166,6 @@ jobs:
         run: |
           echo "=== MPI Parallel Build Summary ==="
           echo "MPI:          openmpi"
-          echo "Build System: ${{ matrix.build_system }}"
+          echo "Build System: CMake"
           echo "C compiler:   $(mpicc --version 2>&1 | head -1)"
           echo "FC compiler:  $(mpif90 --version 2>&1 | head -1)"

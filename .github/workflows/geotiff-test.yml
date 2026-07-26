@@ -2,9 +2,9 @@
 #
 # NEP GeoTIFF Test Pipeline - v1.5.0 Configuration
 #
-# This workflow tests GeoTIFF library detection in both CMake and Autotools build systems.
-# It installs libgeotiff and libtiff, then verifies that both build systems can detect
-# and configure with these libraries.
+# This workflow tests GeoTIFF library detection through CMake.
+# It installs libgeotiff and libtiff, then verifies CMake can detect and configure
+# with these libraries.
 #
 # Edward Hartnett, Intelligent Data Design, Inc., Dec 26, 2025
 name: geotiff_test
@@ -17,15 +17,11 @@ on:
 
 jobs:
   geotiff-detection:
-    name: GeoTIFF Detection (${{ matrix.build_system }})
+    name: GeoTIFF Detection (CMake)
     runs-on: ubuntu-latest
     env:
       LD_LIBRARY_PATH: $GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH
       PKG_CONFIG_PATH: ${{ github.workspace }}/netcdf-c-install/lib/pkgconfig:${{ github.workspace }}/hdf5-install/lib/pkgconfig
-    strategy:
-      fail-fast: false
-      matrix:
-        build_system: [cmake, autotools]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -33,7 +29,7 @@ jobs:
       - name: Install base dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake make wget zlib1g-dev autoconf automake libtool pkg-config
+          sudo apt-get install -y cmake make wget zlib1g-dev pkg-config
 
       - name: Install GeoTIFF and TIFF libraries
         run: |
@@ -93,11 +89,9 @@ jobs:
 
       # --- CMake build with GeoTIFF ---
       - name: Create build directory (CMake)
-        if: matrix.build_system == 'cmake'
         run: mkdir -p build
 
       - name: Configure with CMake and GeoTIFF enabled
-        if: matrix.build_system == 'cmake'
         working-directory: build
         run: |
           echo "=== Testing CMake GeoTIFF Detection ==="
@@ -117,7 +111,6 @@ jobs:
           grep "define HAVE_GEOTIFF" config.h && echo "SUCCESS: HAVE_GEOTIFF is defined" || echo "FAILURE: HAVE_GEOTIFF is not defined"
 
       - name: Build (CMake)
-        if: matrix.build_system == 'cmake'
         working-directory: build
         run: |
           echo "=== Building with CMake and GeoTIFF enabled ==="
@@ -125,7 +118,6 @@ jobs:
           echo "=== Build completed successfully ==="
 
       - name: Test CMake with GeoTIFF disabled
-        if: matrix.build_system == 'cmake'
         run: |
           echo "=== Testing CMake with GeoTIFF disabled ==="
           rm -rf build_disabled
@@ -152,96 +144,18 @@ jobs:
           make -j$(nproc)
           echo "=== Build with GeoTIFF disabled completed successfully ==="
 
-      # --- Autotools build with GeoTIFF ---
-      - name: Bootstrap (Autotools)
-        if: matrix.build_system == 'autotools'
-        run: |
-          autoreconf -fiv
-
-      - name: Configure with Autotools and GeoTIFF enabled
-        if: matrix.build_system == 'autotools'
-        run: |
-          echo "=== Testing Autotools GeoTIFF Detection ==="
-          export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
-          export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L/usr/lib/x86_64-linux-gnu"
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
-          ./configure \
-            --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc \
-            --enable-geotiff \
-            --disable-cdf \
-            --disable-grib2 \
-            --disable-fortran \
-            --disable-lz4 \
-            --disable-fits \
-            --disable-docs \
-            || (echo "Configure failed. Printing config.log:"; cat config.log; exit 1)
-          echo "=== Checking config.h for HAVE_GEOTIFF ==="
-          grep -i "HAVE_GEOTIFF" config.h || echo "HAVE_GEOTIFF not found in config.h"
-          grep "define HAVE_GEOTIFF" config.h && echo "SUCCESS: HAVE_GEOTIFF is defined" || echo "FAILURE: HAVE_GEOTIFF is not defined"
-          grep "define HAVE_GEOTIFF_H" config.h && echo "SUCCESS: HAVE_GEOTIFF_H is defined" || echo "FAILURE: HAVE_GEOTIFF_H is not defined"
-          grep "define HAVE_TIFF_H" config.h && echo "SUCCESS: HAVE_TIFF_H is defined" || echo "FAILURE: HAVE_TIFF_H is not defined"
-
-      - name: Build (Autotools)
-        if: matrix.build_system == 'autotools'
-        run: |
-          echo "=== Building with Autotools and GeoTIFF enabled ==="
-          make -j$(nproc)
-          echo "=== Build completed successfully ==="
-
-      - name: Test Autotools with GeoTIFF disabled
-        if: matrix.build_system == 'autotools'
-        run: |
-          echo "=== Testing Autotools with GeoTIFF disabled ==="
-          make distclean || true
-          autoreconf -fiv
-          export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
-          export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I$GITHUB_WORKSPACE/netcdf-c-install/include"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib -L$GITHUB_WORKSPACE/netcdf-c-install/lib -L/usr/lib/x86_64-linux-gnu"
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
-          ./configure \
-            --with-hdf5=$GITHUB_WORKSPACE/hdf5-install/bin/h5cc \
-            --disable-geotiff \
-            --disable-cdf \
-            --disable-grib2 \
-            --disable-fortran \
-            --disable-lz4 \
-            --disable-fits \
-            --disable-docs \
-            || (echo "Configure failed. Printing config.log:"; cat config.log; exit 1)
-          echo "=== Checking that HAVE_GEOTIFF is not defined ==="
-          if grep "define HAVE_GEOTIFF" config.h; then
-            echo "FAILURE: HAVE_GEOTIFF should not be defined when disabled"
-            exit 1
-          else
-            echo "SUCCESS: HAVE_GEOTIFF is not defined (as expected)"
-          fi
-          make -j$(nproc)
-          echo "=== Build with GeoTIFF disabled completed successfully ==="
-
       - name: Run Tests (CMake)
-        if: matrix.build_system == 'cmake'
         working-directory: build
         run: |
           echo "=== Running GeoTIFF Tests ==="
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
           ctest --output-on-failure --verbose
 
-      - name: Run Tests (Autotools)
-        if: matrix.build_system == 'autotools'
-        run: |
-          echo "=== Running GeoTIFF Tests ==="
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$LD_LIBRARY_PATH"
-          export NEP_GEOTIFF_LIB_PATH="$(pwd)/src/.libs/libncgeotiff.so"
-          make check -C test_geotiff
-
       - name: Summary
         if: always()
         run: |
           echo "=== GeoTIFF Detection Test Summary ==="
-          echo "Build System: ${{ matrix.build_system }}"
+          echo "Build System: CMake"
           echo "Test completed - check logs above for detailed results"
 
   geotiff-valgrind:

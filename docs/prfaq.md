@@ -74,7 +74,7 @@ This comprehensive framework enables scientists to:
 #### Availability
 
 NEP v2.2.0 is available now as open-source software. Installation options include:
-- **Source Build**: CMake or Autotools build systems
+- **Source Build**: CMake build system
 - **Spack Package Manager**: `spack install nep` for HPC environments
 - **Documentation**: Complete API documentation at https://intelligent-data-design-inc.github.io/NEP/
 
@@ -173,7 +173,7 @@ All features integrate seamlessly with the standard NetCDF API.
 - **GRIB2 Support (optional)**: NOAA NCEPLIBS-g2c (≥ 2.1.0), libjasper (≥ 3.0.0)
 - **FITS Support (optional)**: CFITSIO (≥ 3.0; locally `/usr/local/cfitsio-4.6.4/`; CI: apt `libcfitsio-dev`)
 - **PDS4 Support (optional)**: libxml2 (`libxml2-dev` on Ubuntu)
-- **Build Tools**: CMake (v3.9+) or Autotools
+- **Build Tools**: CMake (v3.9+)
 - **Documentation (optional)**: Doxygen and Graphviz
 
 #### Q: How do I install NEP?
@@ -181,13 +181,11 @@ All features integrate seamlessly with the standard NetCDF API.
 - **Spack** (recommended for HPC): `spack install nep`
 - **Conda**: `conda install -c conda-forge nep` installs the minimal LZ4 and Fortran-wrapper package; BZIP2 and UDF readers require a source build
 - **CMake**: `cmake -B build && cmake --build build && cmake --install build`
-- **Autotools**: `./configure && make && make install`
 See the README for detailed instructions.
 
 #### Q: Can I enable only specific features?
 **A:** Yes! Use build options to control which features are compiled. All extended format readers default to **OFF** (v2.2.0+); enable explicitly as needed:
-- **CMake**: `-DNEP_BUILD_LZ4=ON/OFF`, `-DNEP_BUILD_BZIP2=ON/OFF`, `-DNEP_ENABLE_FORTRAN=ON/OFF`, `-DNEP_ENABLE_CDF=ON/OFF`, `-DNEP_ENABLE_GEOTIFF=ON/OFF`, `-DNEP_ENABLE_GRIB2=ON/OFF`, `-DNEP_ENABLE_FITS=ON/OFF`, `-DNEP_ENABLE_PDS4=ON/OFF`, `-DNEP_BUILD_EXAMPLES=ON/OFF`
-- **Autotools**: `--enable-lz4`, `--enable-bzip2`, `--enable-fortran`, `--enable-cdf`, `--enable-geotiff`, `--enable-grib2`, `--enable-fits`, `--enable-pds4`, `--disable-examples`
+- **CMake**: `-DNEP_BUILD_LZ4=ON/OFF`, `-DNEP_BUILD_BZIP2=ON/OFF`, `-DNEP_ENABLE_FORTRAN=ON/OFF`, `-DNEP_ENABLE_CDF=ON/OFF`, `-DNEP_ENABLE_GEOTIFF=ON/OFF`, `-DNEP_ENABLE_GRIB2=ON/OFF`, `-DNEP_ENABLE_FITS=ON/OFF`, `-DNEP_ENABLE_PDS4=ON/OFF`, `-DNEP_ENABLE_DICOM=ON/OFF`, `-DNEP_BUILD_EXAMPLES=ON/OFF`
 - All five format readers (CDF, GeoTIFF, GRIB2, FITS, PDS4) can be enabled simultaneously — there are no mutual-exclusivity restrictions as of v2.2.0
 - **Spack**: `spack install nep+lz4+bzip2+fortran` (variants control features)
 

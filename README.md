@@ -50,15 +50,6 @@ cmake -B build \
   -DNEP_ENABLE_FITS=ON \
   -DNEP_ENABLE_PDS4=ON \
   -DNEP_ENABLE_DICOM=ON
-
-# Autotools
-./configure \
-  --enable-geotiff \
-  --enable-grib2 \
-  --enable-cdf \
-  --enable-fits \
-  --enable-pds4 \
-  --enable-dicom
 ```
 
 ### Example Programs
@@ -123,45 +114,25 @@ For example, if HDF5 2.1.1 is installed in `/usr/local/hdf5-2.1.1`:
 cmake -B build -DHDF5_ROOT=/usr/local/hdf5-2.1.1 -DCMAKE_INSTALL_PREFIX=/usr/local
 ```
 
-### Autotools Build and Installation
-
-```bash
-# Bootstrap and configure
-./autogen.sh
-./configure --prefix=/usr/local --enable-lz4 --enable-bzip2
-
-# Build
-make
-
-# Build documentation (optional)
-make docs
-
-# Install
-make install
-
-# Uninstall (if needed)
-make uninstall
-```
-
 ### Configuration Options
 
 #### Quick Reference
 
-| Option (CMake / Autotools) | Default | Purpose |
+| CMake Option | Default | Purpose |
 |---|---|---|
-| `-DNEP_BUILD_LZ4` / `--enable-lz4` | ON | LZ4 compression filter |
-| `-DNEP_BUILD_BZIP2` / `--enable-bzip2` | ON | BZIP2 compression filter |
-| `-DNEP_ENABLE_FORTRAN` / `--enable-fortran` | ON | Fortran wrappers and tests |
-| `-DNEP_ENABLE_GEOTIFF` / `--enable-geotiff` | **OFF** | GeoTIFF UDF handler (UDF0/UDF1) |
-| `-DNEP_ENABLE_GRIB2` / `--enable-grib2` | **OFF** | GRIB2 UDF handler (UDF2) |
-| `-DNEP_ENABLE_FITS` / `--enable-fits` | **OFF** | FITS UDF handler (UDF3) |
-| `-DNEP_ENABLE_CDF` / `--enable-cdf` | **OFF** | NASA CDF UDF handler (UDF4) |
-| `-DNEP_ENABLE_PDS4` / `--enable-pds4` | **OFF** | NASA/ESA PDS4 UDF handler (UDF5) |
-| `-DNEP_ENABLE_DICOM` / `--enable-dicom` | **OFF** | DICOM UDF handler (UDF6) |
-| `-DNEP_BUILD_EXAMPLES` / `--enable-examples` | ON | Example programs |
-| `-DNEP_ENABLE_BENCHMARKS` / `--enable-benchmarks` | OFF | Performance benchmark examples |
-| `-DNEP_ENABLE_PARALLEL_TESTS` / `--enable-parallel-tests` | OFF | MPI parallel I/O tests |
-| `-DNEP_BUILD_DOCUMENTATION` / `--enable-docs` | ON | Doxygen API docs |
+| `-DNEP_BUILD_LZ4` | ON | LZ4 compression filter |
+| `-DNEP_BUILD_BZIP2` | ON | BZIP2 compression filter |
+| `-DNEP_ENABLE_FORTRAN` | ON | Fortran wrappers and tests |
+| `-DNEP_ENABLE_GEOTIFF` | **OFF** | GeoTIFF UDF handler (UDF0/UDF1) |
+| `-DNEP_ENABLE_GRIB2` | **OFF** | GRIB2 UDF handler (UDF2) |
+| `-DNEP_ENABLE_FITS` | **OFF** | FITS UDF handler (UDF3) |
+| `-DNEP_ENABLE_CDF` | **OFF** | NASA CDF UDF handler (UDF4) |
+| `-DNEP_ENABLE_PDS4` | **OFF** | NASA/ESA PDS4 UDF handler (UDF5) |
+| `-DNEP_ENABLE_DICOM` | **OFF** | DICOM UDF handler (UDF6) |
+| `-DNEP_BUILD_EXAMPLES` | ON | Example programs |
+| `-DNEP_ENABLE_BENCHMARKS` | OFF | Performance benchmark examples |
+| `-DNEP_ENABLE_PARALLEL_TESTS` | OFF | MPI parallel I/O tests |
+| `-DNEP_BUILD_DOCUMENTATION` | ON | Doxygen API docs |
 
 #### Compression
 
@@ -170,33 +141,33 @@ make uninstall
 
 #### Fortran
 
-`-DNEP_ENABLE_FORTRAN` / `--enable-fortran` (default ON): builds Fortran wrappers in `fsrc/`, Fortran tests in `ftest/`, and Fortran examples in `examples/f_*/`. Requires NetCDF-Fortran and a Fortran 90+ compiler.
+`-DNEP_ENABLE_FORTRAN` (default ON): builds Fortran wrappers in `fsrc/`, Fortran tests in `ftest/`, and Fortran examples in `examples/f_*/`. Requires NetCDF-Fortran and a Fortran 90+ compiler.
 
 #### Format Readers
 
 All format readers default to **OFF** and are independent — any combination can be enabled simultaneously.
 
-| Format | CMake / Autotools | UDF Slot | Dependencies |
-|--------|-------------------|----------|--------------|
-| GeoTIFF | `-DNEP_ENABLE_GEOTIFF` / `--enable-geotiff` | UDF0, UDF1 | libgeotiff, libtiff |
-| GRIB2 | `-DNEP_ENABLE_GRIB2` / `--enable-grib2` | UDF2 | NCEPLIBS-g2c ≥ 2.1.0, libjasper ≥ 3.0.0 |
-| FITS | `-DNEP_ENABLE_FITS` / `--enable-fits` | UDF3 | CFITSIO ≥ 3.0 |
-| NASA CDF | `-DNEP_ENABLE_CDF` / `--enable-cdf` | UDF4 | NASA CDF library v3.9.x |
-| PDS4 | `-DNEP_ENABLE_PDS4` / `--enable-pds4` | UDF5 | libxml2 ≥ 2.9 |
-| DICOM | `-DNEP_ENABLE_DICOM` / `--enable-dicom` | UDF6 | libdicom, libjpeg / libjpeg-turbo |
+| Format | CMake Option | UDF Slot | Dependencies |
+|--------|--------------|----------|--------------|
+| GeoTIFF | `-DNEP_ENABLE_GEOTIFF` | UDF0, UDF1 | libgeotiff, libtiff |
+| GRIB2 | `-DNEP_ENABLE_GRIB2` | UDF2 | NCEPLIBS-g2c ≥ 2.1.0, libjasper ≥ 3.0.0 |
+| FITS | `-DNEP_ENABLE_FITS` | UDF3 | CFITSIO ≥ 3.0 |
+| NASA CDF | `-DNEP_ENABLE_CDF` | UDF4 | NASA CDF library v3.9.x |
+| PDS4 | `-DNEP_ENABLE_PDS4` | UDF5 | libxml2 ≥ 2.9 |
+| DICOM | `-DNEP_ENABLE_DICOM` | UDF6 | libdicom, libjpeg / libjpeg-turbo |
 
 - NASA CDF library: https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/ (or `spack install cdf`)
 - CDF moved from UDF2 to UDF4 in v2.2.0; GRIB2 and CDF can now be enabled together.
 
 #### Examples and Benchmarks
 
-- **`-DNEP_BUILD_EXAMPLES`** / `--enable-examples` (default ON): builds all example programs and registers them as tests.
-- **`-DNEP_ENABLE_BENCHMARKS`** / `--enable-benchmarks` (default OFF): builds compression benchmark programs in `examples/performance/`.
-- **`-DNEP_ENABLE_PARALLEL_TESTS`** / `--enable-parallel-tests` (default OFF): builds `examples/parallelIO/` and runs tests via `mpiexec -n 4`. Requires MPI and NetCDF-C with `NC_HAS_PARALLEL4`.
+- **`-DNEP_BUILD_EXAMPLES`** (default OFF): builds all example programs and registers them as tests.
+- **`-DNEP_ENABLE_BENCHMARKS`** (default OFF): builds compression benchmark programs in `examples/performance/`.
+- **`-DNEP_ENABLE_PARALLEL_TESTS`** (default OFF): builds `examples/parallelIO/` and runs tests via `mpiexec -n 4`. Requires MPI and NetCDF-C with `NC_HAS_PARALLEL4`.
 
 #### Documentation
 
-`-DNEP_BUILD_DOCUMENTATION` / `--enable-docs` (default ON): generates Doxygen API documentation from C and Fortran sources, published to GitHub Pages. Requires Doxygen and Graphviz.
+`-DNEP_BUILD_DOCUMENTATION` (default ON): generates Doxygen API documentation from C and Fortran sources, published to GitHub Pages. Requires Doxygen and Graphviz.
 
 ### Using NEP in Your Project
 
@@ -275,11 +246,7 @@ available for local validation with `conda build conda/`.
 Run the test suite after building:
 
 ```bash
-# CMake
 ctest --test-dir build
-
-# Autotools
-make check
 ```
 
 ---

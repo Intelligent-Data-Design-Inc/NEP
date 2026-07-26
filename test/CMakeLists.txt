@@ -130,6 +130,21 @@ if(HAVE_DICOM)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/DICOM/0003.DCM
                    ${CMAKE_CURRENT_BINARY_DIR}/data/DICOM/0003.DCM
                    COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/DICOM/CT-MONO2-16-chest.dcm
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/DICOM/CT-MONO2-16-chest.dcm
+                   COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/DICOM/CT-MONO2-16-brain.dcm
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/DICOM/CT-MONO2-16-brain.dcm
+                   COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/DICOM/MR-MONO2-16-head.dcm
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/DICOM/MR-MONO2-16-head.dcm
+                   COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/DICOM/CR-MONO1-10-chest.dcm
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/DICOM/CR-MONO1-10-chest.dcm
+                   COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/DICOM/MR-MONO2-12-shoulder.dcm
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/DICOM/MR-MONO2-12-shoulder.dcm
+                   COPYONLY)
 endif()
 
 # Build PDS4 UDF test if PDS4 is enabled

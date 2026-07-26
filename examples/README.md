@@ -69,23 +69,12 @@ cmake -B build -DNEP_BUILD_EXAMPLES=OFF
 cmake --build build
 ```
 
-### Autotools
-```bash
-# Build with examples enabled (default)
-./configure
-make
-
-# Disable examples
-./configure --disable-examples
-make
-```
-
 ## Fortran Examples
 
 Fortran examples require:
 - Fortran compiler
 - NetCDF-Fortran library
-- `NEP_ENABLE_FORTRAN=ON` (CMake) or `--enable-fortran` (Autotools)
+- `NEP_ENABLE_FORTRAN=ON`
 
 If Fortran support is disabled or NetCDF-Fortran is unavailable, Fortran examples are automatically skipped.
 
@@ -95,18 +84,12 @@ Parallel I/O examples require:
 - MPI implementation (OpenMPI, MPICH, or Intel MPI)
 - NetCDF-C library built with parallel support (`--enable-parallel-netcdf4`)
 - NetCDF-Fortran library built with parallel support (for Fortran examples)
-- `NEP_ENABLE_PARALLEL_TESTS=ON` (CMake) or `--enable-parallel-tests` (Autotools)
+- `NEP_ENABLE_PARALLEL_TESTS=ON`
 
 **CMake:**
 ```bash
 cmake -B build -DNEP_ENABLE_PARALLEL_TESTS=ON -DMPIEXEC_EXECUTABLE=/usr/bin/mpirun
 cmake --build build
-```
-
-**Autotools:**
-```bash
-./configure --enable-parallel-tests --with-mpiexec=/usr/bin/mpirun
-make
 ```
 
 Parallel examples run with 4 MPI processes:
@@ -121,11 +104,7 @@ If parallel support is not configured, parallel I/O examples are automatically s
 Examples are automatically run as tests when built:
 
 ```bash
-# CMake
 ctest --test-dir build
-
-# Autotools
-make check
 ```
 
 Each example creates NetCDF output files demonstrating the features being illustrated.

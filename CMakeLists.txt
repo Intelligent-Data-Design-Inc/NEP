@@ -14,11 +14,11 @@ option(DEBUG "Build with debugging symbols" OFF)
 # Add option to control building Fortran wrappers and tests
 option(NEP_ENABLE_FORTRAN "Build Fortran wrappers and related tests" ON)
 
-# Build options for compression filters (mirror autotools options)
+# Build options for compression filters
 option(NEP_BUILD_LZ4 "Enable LZ4 filter support" ON)
 option(NEP_BUILD_BZIP2 "Enable BZIP2 filter support" OFF)
 
-# Define global preprocessor symbol to mirror Autotools AC_DEFINE([USE_HDF5],[yes])
+# Define the global preprocessor symbol used by NEP.
 # Use add_definitions for compatibility with CMake 3.9
 add_definitions(-DUSE_HDF5=yes)
 
@@ -35,7 +35,6 @@ option(NEP_BUILD_DOCUMENTATION "Build documentation with Doxygen" ON)
 option(BUILD_TESTING "Build tests" ON)
 
 # Examples option - disabled by default in CMake due to complex HDF5 linking (v1.5.1)
-# Autotools build handles examples correctly; use that for example builds
 option(NEP_BUILD_EXAMPLES "Build example programs" OFF)
 option(NEP_ENABLE_VIZ_EXAMPLES "Enable Python visualization examples" OFF)
 
@@ -275,7 +274,7 @@ if(NEP_ENABLE_VIZ_EXAMPLES)
     if(NOT NEP_BUILD_EXAMPLES)
         message(FATAL_ERROR "NEP_ENABLE_VIZ_EXAMPLES requires NEP_BUILD_EXAMPLES=ON")
     endif()
-    if(NOT (HAVE_GEOTIFF OR HAVE_CDF OR HAVE_GRIB2 OR HAVE_FITS OR HAVE_PDS4))
+    if(NOT (HAVE_GEOTIFF OR HAVE_CDF OR HAVE_GRIB2 OR HAVE_FITS OR HAVE_PDS4 OR HAVE_DICOM))
         message(FATAL_ERROR "NEP_ENABLE_VIZ_EXAMPLES requires at least one enabled UDF reader")
     endif()
     set(PYTHON_EXECUTABLE "${CMAKE_SOURCE_DIR}/.venv/bin/python3")

@@ -37,15 +37,6 @@ cmake -DENABLE_OPENDAP_EXAMPLES=ON ..
 make opendap_examples
 ```
 
-### With Autotools
-
-```bash
-cd /path/to/nep
-./configure --enable-opendap-examples
-make
-cd examples/opendap
-```
-
 ## Running the Examples
 
 The examples use the public test server at test.opendap.org. An internet connection is required.

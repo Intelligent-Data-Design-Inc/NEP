@@ -36,4 +36,3 @@ fi
 if test "@BUILD_DICOM@" = "yes"; then
     ./ftst_dicom_udf
 fi
-

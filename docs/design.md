@@ -141,51 +141,41 @@ The project is structured as follows:
 
 Optional Python visualization examples in `examples/viz/` demonstrate direct use of `netCDF4.Dataset` with NEP UDF files. The build-tree `.ncrc` file autoloads enabled UDF dispatch libraries through `NCRCENV_RC`; `NETCDF_RC` identifies its containing directory and `LD_LIBRARY_PATH` provides NEP and format-library dependencies. The Python `netCDF4` extension must be built from source against the same NetCDF-C installation as NEP, because a wheel with another `libnetcdf` cannot load the in-process UDF handlers.
 
-Each script writes a 150-DPI grayscale PNG and companion metadata file to the build tree through `plot_common.py`. The shared verifier runs after the conditional format scripts in CMake and Autotools, requiring a PNG/metadata pair per enabled plot, ordered non-empty `title`, `caption`, and `alt_text` fields, captions of at most 75 words, dimensions no larger than 8.0 by 6.1 inches, and equal RGB channels. Artifacts are test outputs only and are not installed.
+Each script writes a 150-DPI grayscale PNG and companion metadata file to the build tree through `plot_common.py`. The shared verifier runs after the conditional format scripts in CMake, requiring a PNG/metadata pair per enabled plot, ordered non-empty `title`, `caption`, and `alt_text` fields, captions of at most 75 words, dimensions no larger than 8.0 by 6.1 inches, and equal RGB channels. Artifacts are test outputs only and are not installed.
 
 ## Continuous Integration and Documentation
 
 The project uses GitHub Actions for CI/CD with comprehensive documentation integration:
 
 ### Build and Test Pipeline
-- Automatic builds on Ubuntu for both CMake and Autotools
+- Automatic CMake builds on Ubuntu
 - Installation of dependencies (HDF5, NetCDF-C, LZ4, BZIP2, Doxygen)
 - Custom dependency builds with caching for performance
-- Test execution via CMake (CTest) and Autotools
+- Test execution via CTest
 - Compression performance benchmarking
 
 ### Documentation Integration
-- **Doxygen Build System Integration**: Complete documentation generation integrated into both build systems
-  - CMake: `make docs` target using `find_package(Doxygen)` with conditional building
-  - Autotools: `make docs` target with Doxygen detection in configure.ac
+- **Doxygen Build System Integration**: Documentation generation integrated with CMake
+  - CMake: `cmake --build build --target docs` using `find_package(Doxygen)` with conditional building
   - Template configuration: `Doxyfile.in` with automatic variable substitution
-  - Build options: `-DBUILD_DOCUMENTATION=ON/OFF` (CMake), `--enable/disable-docs` (Autotools)
-- **CI Documentation Builds**: Integrated documentation generation in CI pipeline
-  - Documentation build matrix for both CMake and Autotools build systems
+  - Build option: `-DNEP_BUILD_DOCUMENTATION=ON/OFF`
+- **CI Documentation Builds**: Integrated CMake documentation generation in CI
+  - Documentation builds use the CMake configuration
   - Zero-warning enforcement (documentation warnings treated as build failures)
   - Documentation artifacts uploaded and preserved for 30 days
   - GitHub Pages deployment for API documentation
 
 ## Build System Architecture
 
-### Dual Build System Support
+### CMake Build System
 
-NEP provides comprehensive support for both CMake and Autotools build systems to ensure maximum compatibility across diverse computing environments:
-
-#### CMake Build System
+NEP uses CMake as its sole supported build system.
 - **Modern CMake 3.9+**: Leverages contemporary CMake features and best practices
 - **Modular Compilation**: Each filter builds as an independent shared library
 - **Advanced Dependency Detection**: Automatic discovery with comprehensive Find modules
 - **Configurable Build Options**: Fine-grained control over compression filter inclusion
 - **Cross-Platform Support**: Unified build configuration across Linux and Unix
 - **Installation Integration**: Complete install/uninstall target implementation
-
-#### Autotools Build System
-- **Traditional Configure/Make Workflow**: Standard GNU autotools compatibility
-- **Legacy System Support**: Ensures compatibility with older computing environments
-- **Parallel Configuration**: Maintains feature parity with CMake system
-- **Portable Build Scripts**: Cross-platform shell script compatibility
-- **Standard Installation Paths**: Follows GNU coding standards for installation
 
 ### HDF5 Filter Plugin Integration
 
@@ -215,19 +205,10 @@ hdf5_plugins/
 **CMake Configuration:**
 ```bash
 # Installation path configuration
-cmake -DCMAKE_INSTALL_PREFIX=/usr/local
+cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr/local
 
 # Documentation control
-cmake -DBUILD_DOCUMENTATION=ON
-```
-
-**Autotools Configuration:**
-```bash
-# Configure with compression filters (default: enabled)
-./configure --prefix=/usr/local --enable-lz4 --enable-bzip2
-
-# Documentation control
-./configure --enable-docs
+cmake -S . -B build -DNEP_BUILD_DOCUMENTATION=ON
 ```
 
 ### Dependency Management
@@ -240,7 +221,7 @@ cmake -DBUILD_DOCUMENTATION=ON
 | Core | HDF5 | v2.1.1+ | HDF Group | pkg-config, FindHDF5.cmake |
 | LZ4 Filter | LZ4 | Latest | https://github.com/lz4/lz4 | pkg-config, FindLZ4.cmake |
 | BZIP2 Filter | BZIP2 | Latest | System library | FindBZip2.cmake |
-| DICOM Reader | libdicom + libjpeg | Latest | https://github.com/ImagingLib/libdicom + system | CMake find_library, AC_CHECK_LIB |
+| DICOM Reader | libdicom + libjpeg | Latest | https://github.com/ImagingLib/libdicom + system | CMake `find_library`, `find_path`, and `find_package(JPEG)` |
 | Docs | Doxygen | Latest | Optional | find_package(Doxygen) |
 
 #### Dependency Detection
@@ -266,14 +247,6 @@ cmake --build build
 cmake --install build
 ```
 
-**Autotools:**
-```bash
-./autogen.sh
-./configure --prefix=/usr/local
-make
-make install
-```
-
 #### Installation Structure
 ```
 ${PREFIX}/
@@ -290,9 +263,9 @@ ${PREFIX}/
 ```
 
 #### Uninstall Support
-Both build systems provide complete uninstall functionality:
+The CMake build provides uninstall functionality:
 ```bash
-make uninstall  # Removes all installed files
+cmake --build build --target uninstall  # Removes all installed files
 ```
 
 ## Usage
@@ -409,14 +382,8 @@ GeoTIFF support defaults to **OFF** as of v2.2.0 and must be enabled explicitly:
 
 **CMake:**
 ```bash
-cmake -DENABLE_GEOTIFF=ON   # Enable GeoTIFF support
-cmake -DENABLE_GEOTIFF=OFF  # Disable GeoTIFF support (default)
-```
-
-**Autotools:**
-```bash
-./configure --enable-geotiff   # Enable GeoTIFF support
-./configure --disable-geotiff  # Disable GeoTIFF support (default)
+cmake -S . -B build -DNEP_ENABLE_GEOTIFF=ON   # Enable GeoTIFF support
+cmake -S . -B build -DNEP_ENABLE_GEOTIFF=OFF  # Disable GeoTIFF support (default)
 ```
 
 #### Dependency Detection
@@ -598,14 +565,8 @@ GRIB2 support defaults to **OFF** as of v2.2.0 and must be enabled explicitly:
 
 **CMake:**
 ```bash
-cmake -DENABLE_GRIB2=ON   # Enable GRIB2 support
-cmake -DENABLE_GRIB2=OFF  # Disable GRIB2 support (default)
-```
-
-**Autotools:**
-```bash
-./configure --enable-grib2   # Enable GRIB2 support
-./configure --disable-grib2  # Disable GRIB2 support (default)
+cmake -S . -B build -DNEP_ENABLE_GRIB2=ON   # Enable GRIB2 support
+cmake -S . -B build -DNEP_ENABLE_GRIB2=OFF  # Disable GRIB2 support (default)
 ```
 
 ### Known Limitations
@@ -695,14 +656,8 @@ FITS support defaults to **OFF** as of v2.2.0 and must be enabled explicitly:
 
 **CMake:**
 ```bash
-cmake -DENABLE_FITS=ON   # Enable FITS support
-cmake -DENABLE_FITS=OFF  # Disable FITS support (default)
-```
-
-**Autotools:**
-```bash
-./configure --enable-fits   # Enable FITS support
-./configure --disable-fits  # Disable FITS support (default)
+cmake -S . -B build -DNEP_ENABLE_FITS=ON   # Enable FITS support
+cmake -S . -B build -DNEP_ENABLE_FITS=OFF  # Disable FITS support (default)
 ```
 
 ### Test Data
@@ -796,14 +751,8 @@ PDS4 support defaults to **OFF** and must be enabled explicitly:
 
 **CMake:**
 ```bash
-cmake -DENABLE_PDS4=ON   # Enable PDS4 support
-cmake -DENABLE_PDS4=OFF  # Disable PDS4 support (default)
-```
-
-**Autotools:**
-```bash
-./configure --enable-pds4   # Enable PDS4 support
-./configure --disable-pds4  # Disable PDS4 support (default)
+cmake -S . -B build -DNEP_ENABLE_PDS4=ON   # Enable PDS4 support
+cmake -S . -B build -DNEP_ENABLE_PDS4=OFF  # Disable PDS4 support (default)
 ```
 
 ### Test Data
@@ -872,9 +821,7 @@ The CDF UDF handler follows the same NC_Dispatch pattern used for other format h
 - NASA CDF Library v3.9.x (required when enabled)
 
 #### Build Integration
-- CDF support defaults to **OFF**; enable via build flags:
-  - CMake: `-DENABLE_CDF=ON` to enable (default: OFF)
-  - Autotools: `--enable-cdf` to enable (default: disabled)
+- CDF support defaults to **OFF**; enable it with `-DNEP_ENABLE_CDF=ON`.
 - CDF uses **UDF slot 4** (`NC_UDF4`) as of v2.2.0; moved from UDF2 to eliminate mutual-exclusivity with GRIB2
 
 ## Spack Package Manager Support (v1.4.0)
@@ -929,12 +876,8 @@ Parallel I/O in NEP follows the standard NetCDF-4 parallel pattern:
 ### Build Configuration
 
 **CMake:**
-- `ENABLE_PARALLEL_TESTS=ON/OFF` - Enable parallel I/O test programs (default: OFF)
+- `NEP_ENABLE_PARALLEL_TESTS=ON/OFF` - Enable parallel I/O test programs (default: OFF)
 - `MPIEXEC_EXECUTABLE=PATH` - Specify path to mpiexec/mpirun
-
-**Autotools:**
-- `--enable-parallel-tests` - Enable parallel I/O test programs
-- `--with-mpiexec=PATH` - Specify path to mpiexec/mpirun
 
 ### Dependencies
 - MPI implementation (OpenMPI or MPICH)
@@ -953,7 +896,7 @@ Parallel I/O examples in `examples/parallelIO/` demonstrate:
 ### Testing
 
 Parallel tests run via `mpiexec -n 4` in CI:
-- Matrix: CMake/Autotools × OpenMPI/MPICH
+- CMake build with OpenMPI
 - ncdump verification of output files
 - Automated data integrity validation
 
@@ -1064,20 +1007,6 @@ Each example subdirectory has its own `CMakeLists.txt` that:
 - Links against NetCDF-C (and NetCDF-Fortran for Fortran examples)
 - Registers examples as CTest tests
 
-#### Autotools Integration
-Examples are integrated into the Autotools build system:
-
-```bash
-# Configure option
-./configure --enable-examples  # default
-./configure --disable-examples
-```
-
-Each example subdirectory has its own `Makefile.am` that:
-- Compiles example programs
-- Links against NetCDF libraries
-- Registers examples in the test suite
-
 ### Test Integration
 
 All examples run as automated tests to ensure:
@@ -1092,11 +1021,6 @@ All examples run as automated tests to ensure:
 ctest --test-dir build
 ```
 
-**Autotools:**
-```bash
-make check
-```
-
 Each example:
 1. Creates a NetCDF file demonstrating specific features
 2. Reads the file back to verify correctness
@@ -1107,10 +1031,10 @@ Each example:
 
 - **C Examples**: NetCDF-C library, C99 compiler
 - **Fortran Examples**: NetCDF-Fortran library, Fortran 90+ compiler
-- **Build Systems**: CMake 3.9+ or Autotools
+- **Build System**: CMake 3.9+
 
 Fortran examples are automatically skipped if:
-- Fortran support is disabled (`ENABLE_FORTRAN=OFF` or `--disable-fortran`)
+- Fortran support is disabled (`NEP_ENABLE_FORTRAN=OFF`)
 - NetCDF-Fortran library is not available
 - No Fortran compiler is detected
 
