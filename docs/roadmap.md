@@ -1,5 +1,42 @@
 # NEP Development Roadmap
 
+### V3.2.0 - More DICOM
+
+Organize the visualization examples and add more DICOM functionality.
+
+#### Sprint 1: Organize examples/viz
+**Detailed Plan**: See `docs/plan/v3.2.0-sprint1-organize-viz.md`
+
+Reorganize format-specific visualization scripts into source directories for CDF, DICOM, FITS, GeoTIFF, GRIB2, and PDS4. CMake must mirror the same directory structure in the build tree while preserving all existing visualization test names, runtime environment, UDF guards, copied test data, artifact basenames, flat artifact output location, and verifier interface.
+
+**Clarified decisions:**
+- The source and CMake build trees mirror the six per-format directories.
+- The `examples/viz/` root retains shared infrastructure only: `plot_common.py`, helper tests, the verifier, root CMake configuration, and the root README.
+- DICOM's `_dicom_udf.py` is colocated with its DICOM plot scripts; format scripts must reliably import root shared utilities from their mirrored build-tree locations.
+- Generated PNG and metadata artifacts remain in the existing flat visualization build directory. No artifact basenames, CTest names, fixture behavior, or verifier command-line interface changes.
+- Update the root visualization README with the new layout and manual paths. Do not add per-format READMEs.
+
+**Acceptance Criteria:**
+- All format-specific visualization scripts are under their matching source and mirrored build-tree format directories.
+- Every enabled visualization test executes its relocated script with unchanged runtime behavior and expected artifacts.
+- The flat artifact output directory continues to pass `verify_viz_artifacts.py` using the existing basename list.
+- The root README accurately documents the grouped layout and manual execution paths.
+- No reader behavior, public CMake option, artifact content, artifact basename, or test data changes solely because of this reorganization.
+
+**Testing:** Configure with visualization examples and applicable readers enabled, run `ctest --test-dir build -R viz --output-on-failure`, execute enabled format tests individually, validate all artifacts through the existing verifier interface, inspect the mirrored build-tree layout, and run a non-visualization configuration for regression coverage.
+
+**Build System Integration:** `examples/viz/CMakeLists.txt`, relocated Python imports/path handling, and `examples/viz/README.md`. CMake remains the sole supported build system; no dependency, option, UDF-registration, or install-rule change is required.
+
+**Definition of Done:** Format-specific visualization scripts are organized in matching source and build-tree directories, shared utilities remain at the visualization root, existing CTest and artifact behavior is preserved, the README is current, and visualization tests pass for every enabled reader.
+
+**GitHub Issue:** #334
+
+#### Sprint 2: More DICOM Functionality
+- We need to be able to read all DICOM files in test/data/DICOM.
+
+#### Sprint 3: Visualize All DICOM Files in test/data/DICOM
+- We need to create new examples/viz/DICOM examples for the new files we can now read.
+
 ### V3.1.0 - DICOM Visualizations, CMake Only Builds
 
 #### Sprint 1: Add Visualization of DICOM Test File

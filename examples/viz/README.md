@@ -6,6 +6,11 @@ The scripts cover FITS, CDF, GeoTIFF, GRIB2, PDS4 MESSENGER,
 Perseverance, MAVEN, New Horizons, and DICOM products. They use the generated
 build-tree `.ncrc` to autoload enabled NEP UDF libraries.
 
+Format-specific scripts are organized in `CDF/`, `DICOM/`, `FITS/`,
+`GeoTIFF/`, `GRIB2/`, and `PDS4/` directories. CMake mirrors this layout under
+`build/examples/viz/`. Shared helpers, tests, the artifact verifier, this README,
+and the CMake configuration remain at the visualization root.
+
 ## Requirements
 
 - Python 3
@@ -71,26 +76,28 @@ export LD_LIBRARY_PATH=/path/to/nep/build/src:$LD_LIBRARY_PATH
 python3 /path/to/nep/build/examples/viz/test_plot_common.py
 python3 /path/to/nep/build/examples/viz/test_udf_open.py \
   /path/to/nep/build/test/data/WFPC2u5780205r_c0fx.fits
-python3 /path/to/nep/build/examples/viz/plot_fits_image.py \
+python3 /path/to/nep/build/examples/viz/FITS/plot_fits_image.py \
   /path/to/nep/build/test/data/WFPC2u5780205r_c0fx.fits
-python3 /path/to/nep/build/examples/viz/plot_cdf_var.py \
+python3 /path/to/nep/build/examples/viz/CDF/plot_cdf_var.py \
   /path/to/nep/build/test/data/tst_cdf_simple.cdf
-python3 /path/to/nep/build/examples/viz/plot_geotiff_subset.py \
+python3 /path/to/nep/build/examples/viz/GeoTIFF/plot_geotiff_subset.py \
   /path/to/nep/build/test/data/MCDWD_L3_F1C_NRT.A2025353.h00v03.061.tif
-python3 /path/to/nep/build/examples/viz/plot_grib2_grid.py \
+python3 /path/to/nep/build/examples/viz/GRIB2/plot_grib2_grid.py \
   /path/to/nep/build/test/data/gdaswave.t00z.wcoast.0p16.f000.grib2
-python3 /path/to/nep/build/examples/viz/plot_pds4_messenger.py \
+python3 /path/to/nep/build/examples/viz/PDS4/plot_pds4_messenger.py \
   /path/to/nep/build/test/data/PDS4/messenger_tnmap/thermal_neutron_map.xml
-python3 /path/to/nep/build/examples/viz/plot_pds4_perseverance.py \
+python3 /path/to/nep/build/examples/viz/PDS4/plot_pds4_perseverance.py \
   /path/to/nep/build/test/data/PDS4/perseverance/ZLF_1738_0821212185_707RAD_N0830000ZCAM00091_1100LMJ01.xml
-python3 /path/to/nep/build/examples/viz/plot_pds4_maven_l3.py \
+python3 /path/to/nep/build/examples/viz/PDS4/plot_pds4_maven_l3.py \
   /path/to/nep/build/test/data/PDS4/maven/mvn_ngi_l3_res-sht-58942_20250101T010116_v06_r03.xml
-python3 /path/to/nep/build/examples/viz/plot_pds4_new_horizons.py \
+python3 /path/to/nep/build/examples/viz/PDS4/plot_pds4_new_horizons.py \
   /path/to/nep/build/test/data/PDS4/new_horizons/ali_0030420276_0x4b0_sci_1.lblx
-python3 /path/to/nep/build/examples/viz/plot_dicom_mrbrain.py \
+python3 /path/to/nep/build/examples/viz/DICOM/plot_dicom_mrbrain.py \
   /path/to/nep/build/test/data/DICOM/MRBRAIN.DCM
-python3 /path/to/nep/build/examples/viz/plot_dicom_xa_montage.py \
+python3 /path/to/nep/build/examples/viz/DICOM/plot_dicom_xa_montage.py \
   /path/to/nep/build/test/data/DICOM/0003.DCM
+python3 /path/to/nep/build/examples/viz/DICOM/plot_dicom_ct_brain.py \
+  /path/to/nep/build/test/data/DICOM/CT-MONO2-16-brain.dcm
 python3 /path/to/nep/build/examples/viz/verify_viz_artifacts.py \
   /path/to/nep/build/examples/viz \
   viz_plot_common_test fits_wfpc2_image cdf_temperature geotiff_modis_flood \
@@ -100,23 +107,23 @@ python3 /path/to/nep/build/examples/viz/verify_viz_artifacts.py \
 
 ## Scripts
 
-- `test_plot_common.py` — validates `plot_common.py` and the `_metadata.txt` format.
-- `test_udf_open.py` — smoke test that opens a UDF file through `netCDF4.Dataset`.
-- `plot_fits_image.py` — opens `test/data/WFPC2u5780205r_c0fx.fits`, reads the first
-  `image` plane, and writes `fits_wfpc2_image.png` + `fits_wfpc2_image_metadata.txt`.
-- `plot_cdf_var.py` — opens `test/data/tst_cdf_simple.cdf`, reads the `temperature`
-  zVariable, and writes `cdf_temperature.png` + `cdf_temperature_metadata.txt`.
-- `plot_geotiff_subset.py` — plots the populated MODIS flood GeoTIFF raster.
-- `plot_grib2_grid.py` — plots valid cells from the GRIB2 `WIND` grid.
-- `plot_pds4_messenger.py` — plots the MESSENGER thermal neutron map.
-- `plot_pds4_perseverance.py` — plots scaled Perseverance Mastcam-Z band 0 data.
-- `plot_pds4_maven_l3.py` — plots MAVEN NGIMS L3 temperature against Unix time.
-- `plot_pds4_new_horizons.py` — plots a New Horizons Alice spectrum array.
-- `plot_dicom_mrbrain.py` — plots the single-frame 16-bit MRBRAIN.DCM image.
-- `plot_dicom_xa_montage.py` — plots a montage of all frames from 0003.DCM.
-- `plot_dicom_ct_brain.py` — plots the single-frame 16-bit CT-MONO2-16-brain.dcm image.
-- `verify_viz_artifacts.py` — verifies all expected PNG/metadata pairs, metadata
-  schema, caption length, and publication dimensions.
+- **Shared root files**: `test_plot_common.py` validates `plot_common.py` and the
+  `_metadata.txt` format; `test_udf_open.py` smoke-tests a UDF file through
+  `netCDF4.Dataset`; `verify_viz_artifacts.py` validates expected PNG/metadata pairs,
+  metadata schema, caption length, and publication dimensions.
+- **`CDF/`**: `plot_cdf_var.py` opens `test/data/tst_cdf_simple.cdf`, reads the
+  `temperature` zVariable, and writes `cdf_temperature.png` +
+  `cdf_temperature_metadata.txt`.
+- **`DICOM/`**: `_dicom_udf.py` provides DICOM NetCDF access; the four plot scripts
+  render the MRBRAIN image, the `0003.DCM` frame montage, and CT and MR head images.
+- **`FITS/`**: `plot_fits_image.py` opens `test/data/WFPC2u5780205r_c0fx.fits`, reads
+  the first `image` plane, and writes `fits_wfpc2_image.png` +
+  `fits_wfpc2_image_metadata.txt`.
+- **`GeoTIFF/`**: `plot_geotiff_subset.py` plots the populated MODIS flood raster.
+- **`GRIB2/`**: `plot_grib2_grid.py` plots valid cells from the GRIB2 `WIND` grid.
+- **`PDS4/`**: the scripts plot the MESSENGER thermal neutron map, Perseverance
+  Mastcam-Z band 0 radiance, MAVEN NGIMS L3 temperature, and a New Horizons Alice
+  spectrum array.
 
 Generated PNG and metadata files remain in the visualization build directory
 for inspection. They are not installed and are not written to the source tree.
