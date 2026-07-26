@@ -136,9 +136,11 @@ dicom_test_data_stamp = data/.dicom_copied
 
 $(dicom_test_data_stamp): $(srcdir)/data/DICOM/tst_dicom_uncompressed.dcm $(srcdir)/data/DICOM/MRBRAIN.DCM $(srcdir)/data/DICOM/0003.DCM
 	$(MKDIR_P) data/DICOM
-	cp $(srcdir)/data/DICOM/tst_dicom_uncompressed.dcm data/DICOM/
-	cp $(srcdir)/data/DICOM/MRBRAIN.DCM data/DICOM/
-	cp $(srcdir)/data/DICOM/0003.DCM data/DICOM/
+	@for f in tst_dicom_uncompressed.dcm MRBRAIN.DCM 0003.DCM; do \
+		src=$(srcdir)/data/DICOM/$$f; \
+		dst=data/DICOM/$$f; \
+		if [ "$$src" != "$$dst" ]; then cp "$$src" "$$dst"; fi; \
+	done
 	touch $@
 
 $(TESTS): $(dicom_test_data_stamp)
