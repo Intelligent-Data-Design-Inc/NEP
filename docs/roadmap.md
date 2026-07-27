@@ -31,10 +31,37 @@ Reorganize format-specific visualization scripts into source directories for CDF
 
 **GitHub Issue:** #334
 
-#### Sprint 2: More DICOM Functionality
+#### Sprint 2: Convert DICOM examples/viz/DICOM scripts to use python netCDF library
+**Detailed Plan**: See `docs/plan/v3.2.0-sprint2-dicom-python-netcdf4.md`
+
+Add DICOM to the Doxygen documentation of NEP format readers (`docs/mainpage.md` and `docs/Doxyfile.in`). The planned conversion of `examples/viz/DICOM` scripts to the Python `netCDF4` library is blocked: `netCDF4.Dataset` cannot pass the `NC_UDF6` mode flag, and NetCDF-C `.ncrc` UDF autoload matches magic numbers only at the start of a file, not at DICOM's byte-offset-128 `DICM` magic. Therefore `_dicom_udf.py` and its ctypes-based `nc_open(..., NC_UDF6 | NC_NOWRITE, ...)` remain necessary for opening DICOM files from Python.
+
+**Clarified decisions:**
+- `_dicom_udf.py` is retained; removing it would require changes to NetCDF-C or Python netCDF4 to support either UDF mode flags in `Dataset` or magic-offset UDF dispatch.
+- DICOM is added to the Doxygen main page (`docs/mainpage.md`) format readers list and installation requirements.
+- `src/dicomdispatch.c` and `src/dicomfile.c` are added to the Doxygen input so the DICOM reader is documented alongside the other format handlers.
+- The existing DICOM visualization scripts, `docs/dicom.md`, and `examples/viz/README.md` remain unchanged.
+
+**Acceptance Criteria:**
+- DICOM appears in the Doxygen main page format readers list and installation requirements.
+- `src/dicomdispatch.c` and `src/dicomfile.c` are listed in the Doxygen `INPUT` of `docs/Doxyfile.in`.
+- `docs/dicom.md` is already included in Doxygen input and serves as the DICOM reader overview page.
+- Existing DICOM tests (`tst_dicom_udf`) and visualization tests (`ctest --test-dir build -R viz_dicom`) continue to pass unchanged.
+- No regressions are introduced in the DICOM visualization scripts or their build-system integration.
+
+**Testing:** Build Doxygen documentation and confirm DICOM appears in the main page format readers list and has a dedicated overview page; run `ctest --test-dir build -R dicom --output-on-failure` and `ctest --test-dir build -R viz_dicom --output-on-failure` for regression coverage.
+
+**Build System Integration:** `docs/mainpage.md` and `docs/Doxyfile.in`. No changes to `examples/viz/CMakeLists.txt`, the DICOM plot scripts, or `_dicom_udf.py`.
+
+**Definition of Done:** DICOM is documented in the Doxygen format readers list with an overview page, and the planned but infeasible netCDF4 conversion is recorded as blocked.
+
+**GitHub Issue:** #337
+
+
+#### Sprint 3: More DICOM Functionality
 - We need to be able to read all DICOM files in test/data/DICOM.
 
-#### Sprint 3: Visualize All DICOM Files in test/data/DICOM
+#### Sprint 4: Visualize All DICOM Files in test/data/DICOM
 - We need to create new examples/viz/DICOM examples for the new files we can now read.
 
 ### V3.1.0 - DICOM Visualizations, CMake Only Builds

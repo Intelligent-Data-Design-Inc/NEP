@@ -942,6 +942,8 @@ INPUT                  = @abs_top_srcdir@/src/nep.c \
                          @abs_top_srcdir@/src/grib2file.c \
                          @abs_top_srcdir@/src/fitsdispatch.c \
                          @abs_top_srcdir@/src/fitsfile.c \
+                         @abs_top_srcdir@/src/dicomdispatch.c \
+                         @abs_top_srcdir@/src/dicomfile.c \
                          @abs_top_srcdir@/src/cdfdispatch.c \
                          @abs_top_srcdir@/src/cdffile.c \
                          @abs_top_srcdir@/src/cdffunc.c \

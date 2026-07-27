@@ -18,6 +18,7 @@ Five NetCDF UDF handlers that expose external scientific formats through the sta
 - **FITS** (UDF3): Astronomical images and tables from HST, JWST, Chandra, and other observatories
 - **CDF** (UDF4): NASA space physics and heliophysics time-series data
 - **PDS4** (UDF5): NASA/ESA planetary science archives (Curiosity, Perseverance, Cassini, and others)
+- **DICOM** (UDF6): Medical imaging objects such as CT, MR, XA, and ultrasound
 
 See **[Format Readers](formats.md)** — usage, code examples, and dependency information for each reader.
 
@@ -40,6 +41,7 @@ NEP requires:
 - NOAA NCEPLIBS-g2c >= 2.1.0 and libjasper >= 3.0.0 (optional, for GRIB2 file reading; `--enable-grib2`)
 - CFITSIO >= 3.0 (optional, for FITS file reading; `--enable-fits`)
 - libxml2 >= 2.9 (optional, for PDS4 file reading; `--enable-pds4`)
+- libdicom and libjpeg/libjpeg-turbo (optional, for DICOM file reading; `--enable-dicom`)
 
 Build with CMake or Autotools:
 
