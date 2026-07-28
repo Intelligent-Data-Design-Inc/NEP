@@ -187,6 +187,11 @@ jobs:
         run: |
           sudo apt-get install -y cmake make wget zlib1g-dev libjpeg-dev libjpeg-turbo8-dev liblz4-dev libbz2-dev liblzf-dev libzstd-dev meson ninja-build
 
+      - name: Install DICOM JPEG Lossless dependency
+        if: matrix.fortran == 'on' && matrix.compression == 'all'
+        run: |
+          sudo apt-get install -y libgdcm-dev
+
       - name: Install documentation dependencies
         if: matrix.fortran == 'on' && matrix.compression == 'all'
         run: |
