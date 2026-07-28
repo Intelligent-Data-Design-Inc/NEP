@@ -3,9 +3,12 @@
  * @brief DICOM User-Defined Format (UDF) dispatch layer.
  *
  * Implements the NEP DICOM reader, which maps DICOM image SOP Instances
- * to the netCDF-4 data model via libdicom. This Sprint 2 implementation
- * supports native (uncompressed) and encapsulated JPEG Baseline images,
- * including multi-frame objects. Other transfer syntaxes may be rejected.
+ * to the netCDF-4 data model via libdicom. This implementation supports
+ * native (uncompressed), encapsulated JPEG Baseline, and encapsulated JPEG
+ * Lossless (Process 14) images, including multi-frame objects. JPEG
+ * Lossless decoding uses GDCM's bundled IJG libjpeg 6b codec (see
+ * dicomjpeglossless.h) since mainline libjpeg/libjpeg-turbo does not
+ * support it. Other transfer syntaxes may be rejected.
  *
  * - Primary image: exposed as a `pixel_data` variable in the root group
  *   with dimensions derived from NumberOfFrames, Rows, Columns,
@@ -34,6 +37,7 @@
 #include <dicom/dicom.h>
 #include <jpeglib.h>
 #include <setjmp.h>
+#include "dicomjpeglossless.h"
 #endif
 
 extern int nc4_var_list_add(NC_GRP_INFO_T *grp, const char *name, int ndims,
@@ -528,6 +532,64 @@ cleanup:
 }
 
 /**
+ * @internal Decompress a JPEG Lossless (Process 14) encapsulated DICOM
+ * frame.
+ *
+ * Mainline libjpeg/libjpeg-turbo does not support JPEG Lossless (SOF3), so
+ * decoding uses GDCM's bundled IJG libjpeg 6b codec with the classic
+ * lossless patch applied. GDCM ships three separately-compiled,
+ * symbol-mangled variants of this codec for 8/12/16-bit sample precision;
+ * the correct variant is selected here based on the precision encoded in
+ * the frame's own SOF3 marker.
+ *
+ * @param dicom_file DICOM file state (rows, columns, samples, type size).
+ * @param src JPEG encoded frame bytes.
+ * @param src_len Length of JPEG input.
+ * @param bufp Receives malloc'd decompressed frame buffer.
+ * @param buf_lenp Receives length of decompressed buffer.
+ *
+ * @return NC_NOERR on success.
+ * @return NC_EIO On decode failure, or if JPEG Lossless support (the
+ * optional libgdcm-dev dependency) was not built in.
+ */
+static int
+dicom_decompress_jpeg_lossless(NC_DICOM_FILE_INFO_T *dicom_file,
+                               const void *src, size_t src_len,
+                               void **bufp, size_t *buf_lenp)
+{
+    int precision;
+    int ret;
+
+    *bufp = NULL;
+    *buf_lenp = 0;
+
+    precision = dicom_jpeg_lossless_precision(src, src_len);
+    if (precision <= 0)
+        return NC_EIO;
+
+    if (precision <= 8)
+        ret = dicom_jpeg_lossless_decode8(src, src_len, dicom_file->columns,
+                                          dicom_file->rows,
+                                          (size_t)dicom_file->samples_per_pixel,
+                                          dicom_file->type_size, bufp,
+                                          buf_lenp);
+    else if (precision <= 12)
+        ret = dicom_jpeg_lossless_decode12(src, src_len, dicom_file->columns,
+                                           dicom_file->rows,
+                                           (size_t)dicom_file->samples_per_pixel,
+                                           dicom_file->type_size, bufp,
+                                           buf_lenp);
+    else
+        ret = dicom_jpeg_lossless_decode16(src, src_len, dicom_file->columns,
+                                           dicom_file->rows,
+                                           (size_t)dicom_file->samples_per_pixel,
+                                           dicom_file->type_size, bufp,
+                                           buf_lenp);
+
+    return ret == 0 ? NC_NOERR : NC_EIO;
+}
+
+/**
  * @internal Read or decompress one DICOM frame into a malloc'd buffer.
  *
  * The returned buffer must be freed by the caller.
@@ -588,8 +650,13 @@ dicom_read_frame_buffer(NC_DICOM_FILE_INFO_T *dicom_file,
 
     if (dicom_file->encapsulated)
     {
-        ret = dicom_decompress_jpeg(dicom_file, frame_data, frame_length,
-                                    bufp, buf_lenp);
+        if (dicom_file->jpeg_lossless)
+            ret = dicom_decompress_jpeg_lossless(dicom_file, frame_data,
+                                                 frame_length, bufp,
+                                                 buf_lenp);
+        else
+            ret = dicom_decompress_jpeg(dicom_file, frame_data, frame_length,
+                                        bufp, buf_lenp);
         dcm_frame_destroy(frame);
         return ret;
     }
@@ -650,6 +717,27 @@ dicom_is_jpeg_baseline_transfer_syntax(const char *uid)
         return 0;
 
     return (strcmp(uid, "1.2.840.10008.1.2.4.50") == 0);   /* JPEG Baseline */
+}
+
+/**
+ * @internal Determine whether the given Transfer Syntax UID is a JPEG
+ * Lossless (Process 14) transfer syntax.
+ *
+ * @param uid Transfer Syntax UID string.
+ *
+ * @return Non-zero if JPEG Lossless.
+ */
+static int
+dicom_is_jpeg_lossless_transfer_syntax(const char *uid)
+{
+    if (!uid)
+        return 0;
+
+    /* JPEG Lossless, Non-Hierarchical (Process 14) and JPEG Lossless,
+     * Non-Hierarchical, First-Order Prediction (Process 14 [Selection
+     * Value 1], the default transfer syntax for lossless JPEG). */
+    return (strcmp(uid, "1.2.840.10008.1.2.4.57") == 0 ||
+            strcmp(uid, "1.2.840.10008.1.2.4.70") == 0);
 }
 
 /**
@@ -726,10 +814,15 @@ dicom_read_image_metadata(NC_FILE_INFO_T *h5)
         return NC_ENOMEM;
 
     dicom_file->encapsulated = !dicom_is_native_transfer_syntax(transfer_syntax_uid);
+    dicom_file->jpeg_lossless =
+        dicom_is_jpeg_lossless_transfer_syntax(transfer_syntax_uid);
 
-    /* Sprint 2 only supports native syntaxes and JPEG Baseline. */
+    /* Native syntaxes, JPEG Baseline, and JPEG Lossless are supported;
+     * other encapsulated transfer syntaxes (e.g. JPEG 2000, RLE) are
+     * rejected. */
     if (dicom_file->encapsulated &&
-        !dicom_is_jpeg_baseline_transfer_syntax(transfer_syntax_uid))
+        !dicom_is_jpeg_baseline_transfer_syntax(transfer_syntax_uid) &&
+        !dicom_file->jpeg_lossless)
         return NC_EINVAL;
 
     /* Required image pixel module tags. */

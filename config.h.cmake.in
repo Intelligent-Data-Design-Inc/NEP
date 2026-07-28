@@ -35,6 +35,10 @@
 /* Define if libdicom library is found */
 #cmakedefine HAVE_DICOM
 
+/* Define if GDCM's lossless JPEG codec (gdcmjpeg8/12/16) is found, enabling
+ * JPEG Lossless (Process 14) DICOM decode support (v3.2.0 Sprint 2) */
+#cmakedefine HAVE_DICOM_LOSSLESS
+
 /* Defined if you have HDF5 support */
 #cmakedefine HAVE_HDF5
 
