@@ -44,6 +44,7 @@ typedef struct NC_DICOM_FILE_INFO
     char *path;                 /**< Path to the open DICOM file */
     char *transfer_syntax_uid;  /**< Transfer Syntax UID string */
     int encapsulated;           /**< Non-zero for compressed transfer syntaxes */
+    int jpeg_lossless;          /**< Non-zero for JPEG Lossless (Process 14) */
     int nframes;                  /**< Number of frames (Sprint 1: always 1) */
     size_t rows;                /**< Image rows */
     size_t columns;               /**< Image columns */

@@ -11,6 +11,7 @@ program ftst_dicom_udf
   end interface
 
   character (len = *), parameter :: FILE_NAME = "../test/data/DICOM/tst_dicom_uncompressed.dcm"
+  character (len = *), parameter :: CT_BRAIN_FILE_NAME = "../test/data/DICOM/CT-MONO2-16-brain.dcm"
 
   integer :: ncid
   integer :: retval
@@ -146,6 +147,24 @@ program ftst_dicom_udf
      stop 1
   endif
   print *, "PASS: nf90_close"
+
+  ! v3.2.0 Sprint 2: lightweight open/close smoke check for one of the OME
+  ! public-domain samples added in v3.1.0 Sprint 1 (native uncompressed,
+  ! Explicit VR Little Endian). Deep validation of this and the other new
+  ! samples is covered by test/tst_dicom_udf.c.
+  retval = nf90_open(CT_BRAIN_FILE_NAME, ior(NF90_NOWRITE, 4194304), ncid)
+  if (retval /= nf90_noerr) then
+     print *, "Error opening CT brain DICOM file: ", trim(nf90_strerror(retval))
+     stop 1
+  endif
+  print *, "PASS: nf90_open ", CT_BRAIN_FILE_NAME
+
+  retval = nf90_close(ncid)
+  if (retval /= nf90_noerr) then
+     print *, "Error closing CT brain DICOM file: ", trim(nf90_strerror(retval))
+     stop 1
+  endif
+  print *, "PASS: nf90_close ", CT_BRAIN_FILE_NAME
 
   print *, "Success!"
 end program ftst_dicom_udf

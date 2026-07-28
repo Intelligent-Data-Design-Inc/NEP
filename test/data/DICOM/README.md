@@ -14,13 +14,17 @@ The following additional samples are from the Open Microscopy Environment
 (OME) DICOM sample collection, maintained by the OME team as freely usable test
 images. They are in the public domain and are free of patient identifiers.
 
-| File | Modality | Transfer Syntax | Size | Description |
-|------|----------|-----------------|------|-------------|
-| `CT-MONO2-16-chest.dcm` | CT | Explicit VR Little Endian | 145136 bytes | Chest CT slice. |
-| `CT-MONO2-16-brain.dcm` | CT | Explicit VR Little Endian | 525968 bytes | Brain CT slice. |
-| `MR-MONO2-16-head.dcm` | MR | Explicit VR Little Endian | 132876 bytes | Head MR slice. |
-| `CR-MONO1-10-chest.dcm` | CR | Implicit VR Little Endian | 387976 bytes | Chest X-ray. |
-| `MR-MONO2-12-shoulder.dcm` | MR | Explicit VR Little Endian | 720528 bytes | Shoulder MR slice. |
+Transfer syntax values below reflect the actual embedded Transfer Syntax UID
+of each file, verified directly via libdicom (v3.2.0 Sprint 2); some were
+mislabeled when these samples were first added.
+
+| File | Modality | Transfer Syntax | Size | Description | NEP Support |
+|------|----------|-----------------|------|-------------|-------------|
+| `CT-MONO2-16-brain.dcm` | CT | Explicit VR Little Endian | 525968 bytes | Brain CT slice. | Supported (native) |
+| `MR-MONO2-16-head.dcm` | MR | Implicit VR Little Endian | 132876 bytes | Head MR slice. | Metadata supported; pixel-data read fails due to a libdicom limitation with this file's missing `NumberOfFrames` tag (unrelated to NEP) |
+| `CT-MONO2-16-chest.dcm` | CT | JPEG Lossless, First-Order Prediction (`1.2.840.10008.1.2.4.70`) | 145136 bytes | Chest CT slice. | Supported (requires `libgdcm-dev`) |
+| `MR-MONO2-12-shoulder.dcm` | MR | JPEG Lossless (`1.2.840.10008.1.2.4.57`) | 720528 bytes | Shoulder MR slice, 12-bit stored. | Supported (requires `libgdcm-dev`) |
+| `CR-MONO1-10-chest.dcm` | CR | Unknown; file has no 128-byte preamble/`DICM` magic | 387976 bytes | Chest X-ray. | **Not supported** — rejected cleanly with `NC_EINVAL`; out of scope, see `docs/plan/v3.2.0-sprint2-dicom-sample-coverage.md` |
 
 Source: <https://downloads.openmicroscopy.org/images/DICOM/samples/>
 

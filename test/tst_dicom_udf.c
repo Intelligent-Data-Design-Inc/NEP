@@ -7,10 +7,26 @@
  * native uncompressed pixel data reads (8-bit and 16-bit), and
  * encapsulated JPEG Baseline multi-frame reads.
  *
+ * v3.2.0 Sprint 2: add coverage for the OME public-domain samples added in
+ * v3.1.0 Sprint 1. Two (CT-MONO2-16-brain.dcm, MR-MONO2-16-head.dcm) are
+ * native uncompressed. Two (CT-MONO2-16-chest.dcm, MR-MONO2-12-shoulder.dcm)
+ * use JPEG Lossless (Process 14) encapsulation, decoded via GDCM's bundled
+ * IJG lossless codec (see src/dicomjpeglossless.h). A fifth
+ * (CR-MONO1-10-chest.dcm) has no DICOM preamble/File Meta Information and
+ * is intentionally out of scope; it is verified to fail cleanly.
+ *
  * Test files:
  *   - data/DICOM/tst_dicom_uncompressed.dcm: 1-frame 4x6 grayscale 8-bit
  *   - data/DICOM/MRBRAIN.DCM: 1-frame 512x512 16-bit MR
  *   - data/DICOM/0003.DCM: 17-frame 512x512 encapsulated JPEG Baseline
+ *   - data/DICOM/CT-MONO2-16-brain.dcm: 1-frame 512x512 16-bit CT, native
+ *   - data/DICOM/MR-MONO2-16-head.dcm: 1-frame 256x256 16-bit MR, native
+ *   - data/DICOM/CT-MONO2-16-chest.dcm: 1-frame 400x512 16-bit CT, JPEG
+ *     Lossless
+ *   - data/DICOM/MR-MONO2-12-shoulder.dcm: 1-frame 1024x1024 12-bit MR,
+ *     JPEG Lossless
+ *   - data/DICOM/CR-MONO1-10-chest.dcm: no preamble; expected to be
+ *     rejected with NC_EINVAL
  *
  * @author Edward Hartnett
  * @date 2026-07-25
@@ -42,6 +58,25 @@
 
 /** Path to an encapsulated JPEG Baseline multi-frame DICOM test file. */
 #define DICOM_COMPRESSED_TEST_FILE "data/DICOM/0003.DCM"
+
+/** Path to a native uncompressed 16-bit CT DICOM test file. */
+#define DICOM_CT_BRAIN_TEST_FILE "data/DICOM/CT-MONO2-16-brain.dcm"
+
+/** Path to a native uncompressed 16-bit MR DICOM test file. */
+#define DICOM_MR_HEAD_TEST_FILE "data/DICOM/MR-MONO2-16-head.dcm"
+
+/** Path to a JPEG Lossless (16-bit precision) encapsulated CT DICOM test
+ * file. */
+#define DICOM_CT_CHEST_LOSSLESS_TEST_FILE "data/DICOM/CT-MONO2-16-chest.dcm"
+
+/** Path to a JPEG Lossless (12-bit precision) encapsulated MR DICOM test
+ * file. */
+#define DICOM_MR_SHOULDER_LOSSLESS_TEST_FILE \
+    "data/DICOM/MR-MONO2-12-shoulder.dcm"
+
+/** Path to a DICOM file with no preamble/File Meta Information; expected
+ * to be rejected cleanly. */
+#define DICOM_NO_PREAMBLE_TEST_FILE "data/DICOM/CR-MONO1-10-chest.dcm"
 
 int
 main(void)
@@ -467,6 +502,285 @@ main(void)
         if ((retval = nc_close(mr_ncid)))
             ERR(retval);
         printf("PASS: nc_close 16-bit\n");
+    }
+
+    /* Open the native uncompressed 16-bit CT DICOM file. */
+    {
+        int ct_ncid, ct_varid;
+        size_t ct_frame_len, ct_row_len, ct_col_len;
+        short ct_pixel;
+        size_t ct_start[3] = {0, 256, 256};
+        size_t ct_count[3] = {1, 1, 1};
+        char att_buf[NC_MAX_NAME + 1];
+        size_t att_len;
+
+        if ((retval = nc_open(DICOM_CT_BRAIN_TEST_FILE, NC_UDF6, &ct_ncid)))
+            ERR(retval);
+        printf("PASS: nc_open %s\n", DICOM_CT_BRAIN_TEST_FILE);
+
+        if ((retval = nc_inq_dimid(ct_ncid, "frame", &var_dimids[0])))
+            ERR(retval);
+        if ((retval = nc_inq_dim(ct_ncid, var_dimids[0], name, &ct_frame_len)))
+            ERR(retval);
+        if (strcmp(name, "frame") != 0 || ct_frame_len != 1)
+        { fprintf(stderr, "CT brain: unexpected frame dim\n"); return 1; }
+
+        if ((retval = nc_inq_dimid(ct_ncid, "row", &var_dimids[1])))
+            ERR(retval);
+        if ((retval = nc_inq_dim(ct_ncid, var_dimids[1], name, &ct_row_len)))
+            ERR(retval);
+        if (strcmp(name, "row") != 0 || ct_row_len != 512)
+        { fprintf(stderr, "CT brain: unexpected row dim\n"); return 1; }
+
+        if ((retval = nc_inq_dimid(ct_ncid, "column", &var_dimids[2])))
+            ERR(retval);
+        if ((retval = nc_inq_dim(ct_ncid, var_dimids[2], name, &ct_col_len)))
+            ERR(retval);
+        if (strcmp(name, "column") != 0 || ct_col_len != 512)
+        { fprintf(stderr, "CT brain: unexpected column dim\n"); return 1; }
+        printf("PASS: CT brain dims frame=%zu row=%zu column=%zu\n",
+               ct_frame_len, ct_row_len, ct_col_len);
+
+        if ((retval = nc_inq_varid(ct_ncid, "pixel_data", &ct_varid)))
+            ERR(retval);
+        if ((retval = nc_inq_var(ct_ncid, ct_varid, name, &xtype, &var_ndims,
+                                  var_dimids, &var_natts)))
+            ERR(retval);
+        if (xtype != NC_SHORT && xtype != NC_USHORT)
+        { fprintf(stderr, "CT brain: expected NC_SHORT/NC_USHORT\n"); return 1; }
+
+        if ((retval = nc_inq_att(ct_ncid, NC_GLOBAL, "Modality", &xtype,
+                                  &att_len)))
+            ERR(retval);
+        if ((retval = nc_get_att_text(ct_ncid, NC_GLOBAL, "Modality", att_buf)))
+            ERR(retval);
+        att_buf[att_len] = '\0';
+        if (strcmp(att_buf, "CT") != 0)
+        { fprintf(stderr, "CT brain: expected Modality='CT', got '%s'\n", att_buf); return 1; }
+        printf("PASS: CT brain att Modality='%s'\n", att_buf);
+
+        if ((retval = nc_get_vara_short(ct_ncid, ct_varid, ct_start, ct_count,
+                                        &ct_pixel)))
+            ERR(retval);
+        printf("PASS: CT brain center pixel=%d\n", ct_pixel);
+
+        if ((retval = nc_close(ct_ncid)))
+            ERR(retval);
+        printf("PASS: nc_close CT brain\n");
+    }
+
+    /* Open the native uncompressed 16-bit MR DICOM file.
+     *
+     * Note: this file lacks a NumberOfFrames tag in a way that causes
+     * libdicom's dcm_filehandle_read_frame() to fail internally (a
+     * libdicom limitation unrelated to JPEG Lossless support; other
+     * native files without this tag, e.g. MRBRAIN.DCM and
+     * CT-MONO2-16-brain.dcm, read pixel data without issue). Only
+     * metadata mapping is verified here; see
+     * docs/plan/v3.2.0-sprint2-dicom-sample-coverage.md for follow-up. */
+    {
+        int mrh_ncid;
+        size_t mrh_frame_len, mrh_row_len, mrh_col_len;
+        char att_buf[NC_MAX_NAME + 1];
+        size_t att_len;
+
+        if ((retval = nc_open(DICOM_MR_HEAD_TEST_FILE, NC_UDF6, &mrh_ncid)))
+            ERR(retval);
+        printf("PASS: nc_open %s\n", DICOM_MR_HEAD_TEST_FILE);
+
+        if ((retval = nc_inq_dimid(mrh_ncid, "frame", &var_dimids[0])))
+            ERR(retval);
+        if ((retval = nc_inq_dim(mrh_ncid, var_dimids[0], name, &mrh_frame_len)))
+            ERR(retval);
+        if (strcmp(name, "frame") != 0 || mrh_frame_len != 1)
+        { fprintf(stderr, "MR head: unexpected frame dim\n"); return 1; }
+
+        if ((retval = nc_inq_dimid(mrh_ncid, "row", &var_dimids[1])))
+            ERR(retval);
+        if ((retval = nc_inq_dim(mrh_ncid, var_dimids[1], name, &mrh_row_len)))
+            ERR(retval);
+        if (strcmp(name, "row") != 0 || mrh_row_len != 256)
+        { fprintf(stderr, "MR head: unexpected row dim\n"); return 1; }
+
+        if ((retval = nc_inq_dimid(mrh_ncid, "column", &var_dimids[2])))
+            ERR(retval);
+        if ((retval = nc_inq_dim(mrh_ncid, var_dimids[2], name, &mrh_col_len)))
+            ERR(retval);
+        if (strcmp(name, "column") != 0 || mrh_col_len != 256)
+        { fprintf(stderr, "MR head: unexpected column dim\n"); return 1; }
+        printf("PASS: MR head dims frame=%zu row=%zu column=%zu\n",
+               mrh_frame_len, mrh_row_len, mrh_col_len);
+
+        if ((retval = nc_inq_att(mrh_ncid, NC_GLOBAL, "Modality", &xtype,
+                                  &att_len)))
+            ERR(retval);
+        if ((retval = nc_get_att_text(mrh_ncid, NC_GLOBAL, "Modality", att_buf)))
+            ERR(retval);
+        att_buf[att_len] = '\0';
+        if (strcmp(att_buf, "MR") != 0)
+        { fprintf(stderr, "MR head: expected Modality='MR', got '%s'\n", att_buf); return 1; }
+        printf("PASS: MR head att Modality='%s'\n", att_buf);
+
+        if ((retval = nc_close(mrh_ncid)))
+            ERR(retval);
+        printf("PASS: nc_close MR head\n");
+    }
+
+    /* Open the JPEG Lossless (16-bit precision) encapsulated CT DICOM
+     * file. This exercises the gdcmjpeg16 decode path. */
+    {
+        int ctl_ncid, ctl_varid;
+        size_t ctl_frame_len, ctl_row_len, ctl_col_len;
+        short ctl_pixel;
+        size_t ctl_start[3] = {0, 200, 256};
+        size_t ctl_count[3] = {1, 1, 1};
+        char att_buf[NC_MAX_NAME + 1];
+        size_t att_len;
+
+        if ((retval = nc_open(DICOM_CT_CHEST_LOSSLESS_TEST_FILE, NC_UDF6,
+                              &ctl_ncid)))
+            ERR(retval);
+        printf("PASS: nc_open %s\n", DICOM_CT_CHEST_LOSSLESS_TEST_FILE);
+
+        if ((retval = nc_inq_dimid(ctl_ncid, "frame", &var_dimids[0])))
+            ERR(retval);
+        if ((retval = nc_inq_dim(ctl_ncid, var_dimids[0], name, &ctl_frame_len)))
+            ERR(retval);
+        if (strcmp(name, "frame") != 0 || ctl_frame_len != 1)
+        { fprintf(stderr, "CT chest lossless: unexpected frame dim\n"); return 1; }
+
+        if ((retval = nc_inq_dimid(ctl_ncid, "row", &var_dimids[1])))
+            ERR(retval);
+        if ((retval = nc_inq_dim(ctl_ncid, var_dimids[1], name, &ctl_row_len)))
+            ERR(retval);
+        if (strcmp(name, "row") != 0 || ctl_row_len != 400)
+        { fprintf(stderr, "CT chest lossless: unexpected row dim\n"); return 1; }
+
+        if ((retval = nc_inq_dimid(ctl_ncid, "column", &var_dimids[2])))
+            ERR(retval);
+        if ((retval = nc_inq_dim(ctl_ncid, var_dimids[2], name, &ctl_col_len)))
+            ERR(retval);
+        if (strcmp(name, "column") != 0 || ctl_col_len != 512)
+        { fprintf(stderr, "CT chest lossless: unexpected column dim\n"); return 1; }
+        printf("PASS: CT chest lossless dims frame=%zu row=%zu column=%zu\n",
+               ctl_frame_len, ctl_row_len, ctl_col_len);
+
+        if ((retval = nc_inq_att(ctl_ncid, NC_GLOBAL, "TransferSyntaxUID",
+                                  &xtype, &att_len)))
+            ERR(retval);
+        if ((retval = nc_get_att_text(ctl_ncid, NC_GLOBAL, "TransferSyntaxUID",
+                                      att_buf)))
+            ERR(retval);
+        att_buf[att_len] = '\0';
+        if (strcmp(att_buf, "1.2.840.10008.1.2.4.70") != 0)
+        {
+            fprintf(stderr, "CT chest lossless: expected TransferSyntaxUID="
+                    "'1.2.840.10008.1.2.4.70', got '%s'\n", att_buf);
+            return 1;
+        }
+        printf("PASS: CT chest lossless att TransferSyntaxUID='%s'\n", att_buf);
+
+        if ((retval = nc_inq_varid(ctl_ncid, "pixel_data", &ctl_varid)))
+            ERR(retval);
+        if ((retval = nc_get_vara_short(ctl_ncid, ctl_varid, ctl_start,
+                                        ctl_count, &ctl_pixel)))
+            ERR(retval);
+        printf("PASS: CT chest lossless decoded pixel=%d\n", ctl_pixel);
+
+        if ((retval = nc_close(ctl_ncid)))
+            ERR(retval);
+        printf("PASS: nc_close CT chest lossless\n");
+    }
+
+    /* Open the JPEG Lossless (12-bit precision) encapsulated MR DICOM
+     * file. This exercises the gdcmjpeg12 decode path. */
+    {
+        int mrl_ncid, mrl_varid;
+        size_t mrl_frame_len, mrl_row_len, mrl_col_len;
+        unsigned short mrl_pixel;
+        size_t mrl_start[3] = {0, 512, 512};
+        size_t mrl_count[3] = {1, 1, 1};
+        char att_buf[NC_MAX_NAME + 1];
+        size_t att_len;
+
+        if ((retval = nc_open(DICOM_MR_SHOULDER_LOSSLESS_TEST_FILE, NC_UDF6,
+                              &mrl_ncid)))
+            ERR(retval);
+        printf("PASS: nc_open %s\n", DICOM_MR_SHOULDER_LOSSLESS_TEST_FILE);
+
+        if ((retval = nc_inq_dimid(mrl_ncid, "frame", &var_dimids[0])))
+            ERR(retval);
+        if ((retval = nc_inq_dim(mrl_ncid, var_dimids[0], name, &mrl_frame_len)))
+            ERR(retval);
+        if (strcmp(name, "frame") != 0 || mrl_frame_len != 1)
+        { fprintf(stderr, "MR shoulder lossless: unexpected frame dim\n"); return 1; }
+
+        if ((retval = nc_inq_dimid(mrl_ncid, "row", &var_dimids[1])))
+            ERR(retval);
+        if ((retval = nc_inq_dim(mrl_ncid, var_dimids[1], name, &mrl_row_len)))
+            ERR(retval);
+        if (strcmp(name, "row") != 0 || mrl_row_len != 1024)
+        { fprintf(stderr, "MR shoulder lossless: unexpected row dim\n"); return 1; }
+
+        if ((retval = nc_inq_dimid(mrl_ncid, "column", &var_dimids[2])))
+            ERR(retval);
+        if ((retval = nc_inq_dim(mrl_ncid, var_dimids[2], name, &mrl_col_len)))
+            ERR(retval);
+        if (strcmp(name, "column") != 0 || mrl_col_len != 1024)
+        { fprintf(stderr, "MR shoulder lossless: unexpected column dim\n"); return 1; }
+        printf("PASS: MR shoulder lossless dims frame=%zu row=%zu column=%zu\n",
+               mrl_frame_len, mrl_row_len, mrl_col_len);
+
+        if ((retval = nc_inq_att(mrl_ncid, NC_GLOBAL, "TransferSyntaxUID",
+                                  &xtype, &att_len)))
+            ERR(retval);
+        if ((retval = nc_get_att_text(mrl_ncid, NC_GLOBAL, "TransferSyntaxUID",
+                                      att_buf)))
+            ERR(retval);
+        att_buf[att_len] = '\0';
+        if (strcmp(att_buf, "1.2.840.10008.1.2.4.57") != 0)
+        {
+            fprintf(stderr, "MR shoulder lossless: expected TransferSyntaxUID="
+                    "'1.2.840.10008.1.2.4.57', got '%s'\n", att_buf);
+            return 1;
+        }
+        printf("PASS: MR shoulder lossless att TransferSyntaxUID='%s'\n",
+               att_buf);
+
+        if ((retval = nc_inq_varid(mrl_ncid, "pixel_data", &mrl_varid)))
+            ERR(retval);
+        if ((retval = nc_get_vara_ushort(mrl_ncid, mrl_varid, mrl_start,
+                                         mrl_count, &mrl_pixel)))
+            ERR(retval);
+        /* BitsStored is 12, so decoded values must fit in [0, 4095]. */
+        if (mrl_pixel > 4095)
+        {
+            fprintf(stderr, "MR shoulder lossless: pixel %u exceeds 12-bit "
+                    "range\n", mrl_pixel);
+            return 1;
+        }
+        printf("PASS: MR shoulder lossless decoded pixel=%u\n", mrl_pixel);
+
+        if ((retval = nc_close(mrl_ncid)))
+            ERR(retval);
+        printf("PASS: nc_close MR shoulder lossless\n");
+    }
+
+    /* CR-MONO1-10-chest.dcm has no preamble/File Meta Information and is
+     * out of scope for this sprint; verify it is rejected cleanly rather
+     * than crashing or hanging. */
+    {
+        int np_ncid;
+
+        retval = nc_open(DICOM_NO_PREAMBLE_TEST_FILE, NC_UDF6, &np_ncid);
+        if (retval != NC_EINVAL)
+        {
+            fprintf(stderr, "no-preamble file: expected NC_EINVAL, got %d "
+                    "(%s)\n", retval, nc_strerror(retval));
+            return 1;
+        }
+        printf("PASS: %s cleanly rejected with NC_EINVAL as expected\n",
+               DICOM_NO_PREAMBLE_TEST_FILE);
     }
 
     printf("Done.\n");

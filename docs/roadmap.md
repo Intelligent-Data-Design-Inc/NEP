@@ -32,7 +32,42 @@ Reorganize format-specific visualization scripts into source directories for CDF
 **GitHub Issue:** #334
 
 #### Sprint 2: More DICOM Functionality
-- We need to be able to read all DICOM files in test/data/DICOM.
+**Detailed Plan**: See `docs/plan/v3.2.0-sprint2-dicom-sample-coverage.md`
+
+Verify and document that the NEP DICOM UDF reader correctly reads all sample files already present in `test/data/DICOM`. Baseline investigation found the sprint's original test-only premise was wrong: two of the five OME samples (`CT-MONO2-16-chest.dcm`, `MR-MONO2-12-shoulder.dcm`) use JPEG Lossless transfer syntaxes (`1.2.840.10008.1.2.4.70` and `.4.57`), not "Explicit VR Little Endian" as originally documented, and are currently rejected. A third (`CR-MONO1-10-chest.dcm`) has no DICOM preamble/File Meta Information at all and is unrelated to JPEG. This sprint adds JPEG Lossless decode support and descopes the no-preamble file.
+
+**Implementation scope:**
+- Add a memory-based `jpeg_source_mgr` and per-precision (8/12/16-bit) lossless JPEG decode wrappers using GDCM's `gdcmjpeg8`/`gdcmjpeg12`/`gdcmjpeg16` libraries (IJG libjpeg 6b + the classic lossless/Process 14 patch, mangled symbol namespace; new optional build dependency `libgdcm-dev`).
+- Detect the JPEG frame's data precision (SOF3 marker) at decode time to select the matching 8/12/16-bit codec.
+- Recognize `1.2.840.10008.1.2.4.57` and `1.2.840.10008.1.2.4.70` as supported encapsulated transfer syntaxes in `src/dicomfile.c`, alongside existing JPEG Baseline support.
+- Add CMake detection for `gdcmjpeg8`/`gdcmjpeg12`/`gdcmjpeg16` headers/libraries under `NEP_ENABLE_DICOM`.
+- Add test blocks to `test/tst_dicom_udf.c` for `CT-MONO2-16-brain.dcm` and `MR-MONO2-16-head.dcm` (native, already working) and for `CT-MONO2-16-chest.dcm` and `MR-MONO2-12-shoulder.dcm` (new lossless decode path), including pixel reads.
+- Add a test asserting `CR-MONO1-10-chest.dcm` is cleanly rejected (`NC_EINVAL`) and is out of scope for this sprint.
+- Add a lightweight open/close Fortran smoke check to `ftest/ftst_dicom_udf.F90` for one of the confirmed-working native files.
+- Correct `test/data/DICOM/README.md`'s transfer-syntax labels for all five OME samples to match their actual embedded UIDs, and update `docs/dicom.md`.
+- Update `.github/workflows/ci-dicom.yml` to install `libgdcm-dev`, build NetCDF-Fortran, and set `-DNEP_ENABLE_FORTRAN=ON` so `ftst_dicom_udf` runs in the focused DICOM workflow.
+
+**Clarified decisions:**
+- JPEG Lossless (`.4.57`, `.4.70`) decode is implemented via GDCM's bundled IJG lossless-JPEG codec (`gdcmjpeg8/12/16`), a new optional dependency, rather than vendoring the codec source or implementing a decoder from scratch.
+- `CR-MONO1-10-chest.dcm` (no preamble/File Meta Information) is explicitly descoped; it remains a clean-rejection case. No-preamble DICOM support is deferred to a future sprint if ever needed.
+- MONOCHROME1 pixel data (if encountered) is exposed as-is; the `PhotometricInterpretation` attribute remains the contract consumers use to invert for display.
+- Each sample gets its own explicit test block in `test/tst_dicom_udf.c`, matching the current per-file style.
+- Fortran coverage adds one smoke check (open/close only) rather than full parity with the C test.
+
+**Acceptance Criteria:**
+- `test/tst_dicom_udf.c` opens, inspects, and reads pixel data from `CT-MONO2-16-brain.dcm`, `CT-MONO2-16-chest.dcm`, and `MR-MONO2-12-shoulder.dcm`; opens and inspects metadata for `MR-MONO2-16-head.dcm` (pixel-data read is skipped due to an independent libdicom limitation with this file's missing `NumberOfFrames` tag, documented in the sprint plan); and asserts a clean `NC_EINVAL` rejection for `CR-MONO1-10-chest.dcm`.
+- `ftest/ftst_dicom_udf.F90` opens and closes at least one confirmed-working new sample without error.
+- `docs/dicom.md` and `test/data/DICOM/README.md` accurately describe JPEG Lossless support, correct transfer-syntax labels, and the `CR-MONO1-10-chest.dcm` rejection.
+- `.github/workflows/ci-dicom.yml` installs `libgdcm-dev`, builds NetCDF-Fortran, enables `NEP_ENABLE_FORTRAN`, and runs `ftst_dicom_udf` alongside `tst_dicom_udf`.
+- All DICOM tests pass with DICOM enabled; the full suite remains regression-free with DICOM disabled.
+
+**Testing:** Run `ctest --test-dir build -R dicom --output-on-failure` with `-DNEP_ENABLE_DICOM=ON -DNEP_ENABLE_FORTRAN=ON`; confirm `tst_dicom_udf` and `ftst_dicom_udf` both pass; confirm the updated `ci-dicom.yml` job is green.
+
+**Build System Integration:** `src/CMakeLists.txt` (gdcmjpeg8/12/16 detection and linking), `test/CMakeLists.txt`, `ftest/CMakeLists.txt`, `.github/workflows/ci-dicom.yml` (libgdcm-dev install, NetCDF-Fortran build step, `NEP_ENABLE_FORTRAN=ON`).
+
+**Definition of Done:** JPEG Lossless (`.4.57`/`.4.70`) DICOM files decode correctly through the DICOM UDF reader, all four newly-supported OME samples are validated by the C and Fortran test suites, `CR-MONO1-10-chest.dcm` is documented as a clean, expected rejection, documentation accurately reflects transfer-syntax support, `ci-dicom.yml` runs the expanded Fortran coverage with the new dependency, and the full test suite remains green with DICOM enabled and disabled.
+
+**GitHub Issue:** #338
 
 #### Sprint 3: Visualize All DICOM Files in test/data/DICOM
 - We need to create new examples/viz/DICOM examples for the new files we can now read.

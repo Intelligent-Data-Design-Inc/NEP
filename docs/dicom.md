@@ -29,7 +29,12 @@ DICOM (Digital Imaging and Communications in Medicine) is the standard format fo
 cmake -S . -B build -DNEP_ENABLE_DICOM=ON
 ```
 
-**Dependencies**: libdicom, libjpeg or libjpeg-turbo.
+**Dependencies**: libdicom, libjpeg or libjpeg-turbo. Optionally, `libgdcm-dev` (providing `gdcmjpeg8`/`gdcmjpeg12`/`gdcmjpeg16`) enables JPEG Lossless (Process 14) decode; without it, JPEG Lossless files are rejected cleanly with `NC_EINVAL`.
+
+**Supported Transfer Syntaxes**:
+- Native: Implicit VR Little Endian, Explicit VR Little Endian, Explicit VR Big Endian.
+- Encapsulated: JPEG Baseline (`1.2.840.10008.1.2.4.50`), JPEG Lossless (`1.2.840.10008.1.2.4.57`, `1.2.840.10008.1.2.4.70`, requires `libgdcm-dev`).
+- Rejected: all other encapsulated transfer syntaxes (e.g. JPEG 2000, RLE), and DICOM streams without a 128-byte preamble/`DICM` magic (legacy ACR-NEMA-style files).
 
 **Resources**: [libdicom on GitHub](https://github.com/ImagingDataCommons/libdicom) · [DICOM Standard](https://www.dicomstandard.org/)
 
