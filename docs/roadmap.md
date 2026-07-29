@@ -23,8 +23,19 @@
 **GitHub Issue:** [#342](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/342)
 
 #### Sprint 2: Dispatch Layer for PDB
+**Detailed Plan**: See `docs/plan/v3.3.0-sprint2-pdb-dispatch-layer.md`
+
 - Look at PDB skill file.
 - Write read-only PDB dispatch code.
+- Write tests involving PDB files in test/data/PDB. Check metadata and some data.
+
+**Clarified decisions:**
+- Schema scope: parse `ATOM`/`HETATM` coordinates and per-atom identity fields, `CRYST1` unit-cell global attributes, and `HEADER`/`TITLE`/`COMPND`/`SOURCE` global attributes. `SEQRES`-derived sequence data is deferred to Sprint 3.
+- `ATOM` and `HETATM` records share a single `atom` dimension in file order, distinguished by a per-atom `atom_site_group_PDB` variable (`"ATOM"`/`"HETATM"`), matching the `mmcif` skill's `_atom_site` mapping.
+- `MODEL`/`ENDMDL` blocks are parsed now: the `model` dimension is sized from the number of `MODEL` blocks (1 if none are present, as in both current test files), and the coordinate variable is shaped `[model][atom]`. Untested against real multi-model data this sprint since neither `1J7W.pdb` nor `4HHB.pdb` contains `MODEL` records.
+- Files with no `ATOM`/`HETATM` records at all are rejected with `NC_EINVAL`. Hybrid-36 encoded serial/residue numbers are a documented known limitation, not handled this sprint.
+
+**GitHub Issue:** [#343](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/343)
 
 #### Sprint 3: More Testing of PDB Reading
 
