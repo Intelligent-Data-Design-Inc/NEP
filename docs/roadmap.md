@@ -1,5 +1,26 @@
 # NEP Development Roadmap
 
+### V3.4.0 - More Proteins with mmCIF Format
+
+### V3.3.0 - Proteins with PDB Format
+
+#### Sprint 1: Setup
+- Look at PDB skill file.
+- There are new test files in /test/data/pdb. They will be used in tests. Make sure they are available in build directory.
+- Create a no-op dispatch layer for PDB.
+- Write a test for it.
+- Update the CI so the new test is run.
+
+#### Sprint 2: Dispatch Layer for PDB
+- Look at PDB skill file.
+- Write read-only PDB dispatch code.
+
+#### Sprint 3: More Testing of PDB Reading
+
+#### Sprint 4: Documentation
+- Update all the docs.
+- Add a section on PDB to doxygen docs.
+
 ### V3.2.0 - More DICOM
 
 Organize the visualization examples and add more DICOM functionality.
