@@ -58,6 +58,8 @@ build_test/
 *.su
 *.idb
 *.pdb
+# Exception: Protein Data Bank format test files (not MSVC debug symbols)
+!/test/data/PDB/*.pdb
 
 # Kernel Module Compile Results
 *.mod*

@@ -39,6 +39,10 @@
  * JPEG Lossless (Process 14) DICOM decode support (v3.2.0 Sprint 2) */
 #cmakedefine HAVE_DICOM_LOSSLESS
 
+/* Legacy PDB reader support (v3.3.0) - no external library required */
+/* Define if the legacy PDB reader is enabled */
+#cmakedefine HAVE_PDB
+
 /* Defined if you have HDF5 support */
 #cmakedefine HAVE_HDF5
 

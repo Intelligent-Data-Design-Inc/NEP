@@ -57,7 +57,7 @@ Review the project's documentation to gather architectural context and developme
 - Identify existing NC_Dispatch implementations to follow
 - Review error handling patterns and NetCDF error codes used
 - Check memory management patterns (allocation, cleanup)
-- Note build system patterns (CMake, Autotools)
+- Note build system patterns (CMake)
 
 **Check GitHub context:**
 - Search for related existing issues (open and closed)

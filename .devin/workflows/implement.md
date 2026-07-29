@@ -68,7 +68,7 @@ This workflow implements a roadmap sprint by resolving its GitHub issue, extract
 8. **Handle Dependencies**
    - Verify all dependencies are satisfied before implementation
    - Check for blocking issues or prerequisites
-   - Ensure build system changes are consistent across CMake/Autotools
+   - Ensure build system changes are consistent across the CMake build (default/minimal/format-enabled configurations)
 
 ### Phase 4: Quality Assurance & Completion
 

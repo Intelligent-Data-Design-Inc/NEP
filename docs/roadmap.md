@@ -1,5 +1,48 @@
 # NEP Development Roadmap
 
+### V3.4.0 - More Proteins with mmCIF Format
+
+### V3.3.0 - Proteins with PDB Format
+
+#### Sprint 1: Setup
+**Detailed Plan**: See `docs/plan/v3.3.0-sprint1-pdb-infrastructure.md`
+
+- Look at PDB skill file.
+- There are new test files in /test/data/PDB. They will be used in tests. Make sure they are available in build directory. (They are from https://www.rcsb.org)
+- Create a no-op dispatch layer for PDB.
+- Write a test for it.
+- Update the CI so the new test is run.
+
+**Clarified decisions:**
+- Legacy PDB is assigned **UDF7** (next free slot; it ships before mmCIF, which now takes UDF8). The `pdb-legacy` and `mmcif` skill files have been updated to match.
+- `NEP_ENABLE_PDB` / `--enable-pdb` defaults to **OFF** in this sprint, following the exact FITS Sprint 1/2 precedent (flip to ON once the dispatch layer is proven, in Sprint 2).
+- A new dedicated `ci-pdb.yml` workflow is added (consistent with `ci-fits.yml`/`ci-dicom.yml`), even though PDB requires no external parsing library — no extra system packages beyond the standard HDF5/NetCDF-C/NetCDF-Fortran stack are needed.
+- `test/tst_pdb_udf.c` only verifies an `nc_open()`/`nc_close()` round-trip on the real `.pdb` test files; no PDB record parsing or magic/format-detection testing happens until Sprint 2.
+- `NC_PDB_initialize()` registers the format with `nc_def_user_format()` using the literal magic string `"HEADER"` (`NEP_MAGIC_PDB`), per the `pdb-legacy` skill. Files that do not start with a `HEADER` record are a documented limitation, not solved in Sprint 1.
+
+**GitHub Issue:** [#342](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/342)
+
+#### Sprint 2: Dispatch Layer for PDB
+**Detailed Plan**: See `docs/plan/v3.3.0-sprint2-pdb-dispatch-layer.md`
+
+- Look at PDB skill file.
+- Write read-only PDB dispatch code.
+- Write tests involving PDB files in test/data/PDB. Check metadata and some data.
+
+**Clarified decisions:**
+- Schema scope: parse `ATOM`/`HETATM` coordinates and per-atom identity fields, `CRYST1` unit-cell global attributes, and `HEADER`/`TITLE`/`COMPND`/`SOURCE` global attributes. `SEQRES`-derived sequence data is deferred to Sprint 3.
+- `ATOM` and `HETATM` records share a single `atom` dimension in file order, distinguished by a per-atom `atom_site_group_PDB` variable (`"ATOM"`/`"HETATM"`), matching the `mmcif` skill's `_atom_site` mapping.
+- `MODEL`/`ENDMDL` blocks are parsed now: the `model` dimension is sized from the number of `MODEL` blocks (1 if none are present, as in both current test files), and the coordinate variable is shaped `[model][atom]`. Untested against real multi-model data this sprint since neither `1J7W.pdb` nor `4HHB.pdb` contains `MODEL` records.
+- Files with no `ATOM`/`HETATM` records at all are rejected with `NC_EINVAL`. Hybrid-36 encoded serial/residue numbers are a documented known limitation, not handled this sprint.
+
+**GitHub Issue:** [#343](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/343)
+
+#### Sprint 3: More Testing of PDB Reading
+
+#### Sprint 4: Documentation
+- Update all the docs.
+- Add a section on PDB to doxygen docs.
+
 ### V3.2.0 - More DICOM
 
 Organize the visualization examples and add more DICOM functionality.
