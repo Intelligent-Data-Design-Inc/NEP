@@ -32,9 +32,9 @@
 /* #include "netcdf_f.h" */
 #include "netcdf_mem.h"
 /* #include "netcdf_filter.h" */
-/* #ifdef USE_PARALLEL */
-/* #include "netcdf_par.h" */
-/* #endif /\* USE_PARALLEL *\/ */
+#ifdef USE_PARALLEL
+#include "netcdf_par.h"
+#endif /* USE_PARALLEL */
 
 /* Always needed */
 #include "nc.h"

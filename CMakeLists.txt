@@ -63,6 +63,9 @@ if(NOT DOCS_ONLY)
     link_directories (${HDF5_LIBRARY_DIRS})
     include_directories (${HDF5_INCLUDE_DIR})
     set (LINK_LIBS ${LINK_LIBS} ${HDF5_LIBRARIES})
+    if(HDF5_IS_PARALLEL)
+        set(HDF5_PARALLEL 1)
+    endif()
 
     # Find NetCDF-C (requires 4.10.1+ for UDF slots > 2)
     find_package(PkgConfig REQUIRED)
@@ -86,6 +89,17 @@ int main(void){ return 0; }" NETCDF_VERSION_OK)
     unset(_saved_cmake_required_includes)
     if(NOT NETCDF_VERSION_OK)
         message(FATAL_ERROR "NetCDF-C >= 4.10.1 is required for UDF slots > 2, but the installed headers are older.")
+    endif()
+
+    # Detect parallel NetCDF-C support (needed for matching internal struct layouts).
+    find_program(NC_CONFIG nc-config HINTS "${NETCDF_PREFIX}/bin")
+    if(NC_CONFIG)
+        execute_process(COMMAND ${NC_CONFIG} --has-parallel4
+                        OUTPUT_VARIABLE NETCDF_HAS_PARALLEL4
+                        OUTPUT_STRIP_TRAILING_WHITESPACE)
+        if(NETCDF_HAS_PARALLEL4 STREQUAL "yes")
+            set(USE_PARALLEL 1)
+        endif()
     endif()
 
     # Find ncdump from the NetCDF-C installation
@@ -130,8 +144,9 @@ option(NEP_ENABLE_PDS4 "Enable PDS4 reader support via libxml2" OFF)
 # DICOM reader support (v3.0.0) - default OFF; enable with -DNEP_ENABLE_DICOM=ON
 option(NEP_ENABLE_DICOM "Enable DICOM reader support via libdicom" OFF)
 
-# Legacy PDB reader support (v3.3.0) - default OFF; enable with -DNEP_ENABLE_PDB=ON
-option(NEP_ENABLE_PDB "Enable legacy PDB reader support" OFF)
+# Legacy PDB reader support (v3.3.0) - default ON now that the read-only
+# dispatch layer is implemented and tested.
+option(NEP_ENABLE_PDB "Enable legacy PDB reader support" ON)
 
 # GRIB2 library detection (v1.7.0) - default OFF; enable with -DNEP_ENABLE_GRIB2=ON
 option(NEP_ENABLE_GRIB2 "Enable GRIB2 support" OFF)

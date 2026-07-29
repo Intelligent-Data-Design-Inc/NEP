@@ -38,8 +38,33 @@
 **GitHub Issue:** [#343](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/343)
 
 #### Sprint 3: More Testing of PDB Reading
-- Can you find some sample files on https://www.rcsb.org/ or https://alphafold.ebi.ac.uk/ which contain MODEL and other features not reflected in current test files?
-- Then write tests for these files.
+**Detailed Plan**: See `docs/plan/v3.3.0-sprint3-pdb-more-testing.md`
+
+Acquire additional real-world legacy PDB test files and extend `test/tst_pdb_udf.c` to exercise features not covered by the existing `1J7W.pdb`/`4HHB.pdb` X-ray files. Flip `NEP_ENABLE_PDB` to default ON and add a Fortran smoke check once the reader is covered by the expanded C test suite.
+
+**Clarified decisions:**
+- Acquire one multi-model NMR ensemble from RCSB (to exercise the `MODEL`/`ENDMDL` path and the `[model][atom]` coordinate variables) and one single-model synthetic PDB file without `CRYST1` (AlphaFold DB direct download returned 404 for multiple UniProt IDs during acquisition).
+- All new sample files are placed in `test/data/PDB/`, copied to the build tree by `test/CMakeLists.txt`, and documented with provenance and license in the sprint plan.
+- `NEP_ENABLE_PDB` flips from OFF to default ON in `CMakeLists.txt` now that the dispatch layer parses real files end-to-end.
+- `ftest/ftst_pdb_udf.F90` is added as an open/close smoke check on one real PDB file, matching FITS/DICOM Fortran coverage.
+- New test assertions include: `model` dimension > 1, coordinates differ across models, and graceful handling of files with no `CRYST1` record (optional attributes omitted). `SEQRES`, hybrid-36 encoding, and multi-character chain IDs remain documented known limitations.
+- Build system remains CMake-only (Autotools removed in v3.1.0); `ci-pdb.yml` is updated to exercise the default-ON reader.
+
+**Acceptance Criteria:**
+- At least two new PDB test files are present in `test/data/PDB/` with documented provenance.
+- `model` dimension length is verified as > 1 for the NMR file, and `atom_site_Cartn_x/y/z` values for the same atom index differ across models.
+- The synthetic `no_cryst1.pdb` file opens successfully; since it lacks `CRYST1`, no `cell_*` or `space_group_name_H-M` global attributes are required.
+- `ftest/ftst_pdb_udf.F90` compiles and passes when `NEP_ENABLE_FORTRAN=ON`.
+- `NEP_ENABLE_PDB` defaults to ON in `CMakeLists.txt`.
+- All PDB tests pass with PDB enabled; the full suite remains green with PDB explicitly disabled.
+
+**Testing:** Configure with `-DNEP_ENABLE_PDB=ON` (now default) and run `ctest --test-dir build -R pdb --output-on-failure`. Verify `tst_pdb_udf` and `ftst_pdb_udf` pass, then run the full CTest suite to confirm no regressions. Validate the updated `ci-pdb.yml` job is green.
+
+**Build System Integration:** `CMakeLists.txt` (default option flip), `test/CMakeLists.txt` (copy new `test/data/PDB/` files and add them to `tst_pdb_udf`), `ftest/CMakeLists.txt` (add `ftst_pdb_udf`), and `.github/workflows/ci-pdb.yml` (remove explicit `-DNEP_ENABLE_PDB=ON` to test the default).
+
+**Definition of Done:** PDB reader is enabled by default, the expanded C test suite covers multi-model NMR and non-RCSB single-model files, a Fortran smoke test is in place, CI exercises the default-ON configuration, and all tests pass with no regressions.
+
+**GitHub Issue:** [#345](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/345)
 
 #### Sprint 4: Documentation
 - Update all the docs.

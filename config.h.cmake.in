@@ -46,6 +46,12 @@
 /* Defined if you have HDF5 support */
 #cmakedefine HAVE_HDF5
 
+/* Defined if HDF5 was built with parallel I/O support */
+#cmakedefine HDF5_PARALLEL
+
+/* Defined if NetCDF-C was built with parallel I/O support (matches internal struct layouts) */
+#cmakedefine USE_PARALLEL
+
 /* Define to 1 if LZ4 compression is enabled */
 #cmakedefine01 BUILD_LZ4
 

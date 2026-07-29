@@ -36,3 +36,8 @@ fi
 if test "@BUILD_DICOM@" = "yes"; then
     ./ftst_dicom_udf
 fi
+
+# If PDB is enabled, run the PDB UDF smoke test.
+if test "@BUILD_PDB@" = "yes"; then
+    ./ftst_pdb_udf
+fi

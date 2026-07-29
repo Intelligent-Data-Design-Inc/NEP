@@ -6,6 +6,8 @@
  * expected dimensions, variables, global attributes, and coordinate data
  * for the real PDB files test/data/PDB/1J7W.pdb and 4HHB.pdb (sourced
  * from https://www.rcsb.org), and rejects PDB-like files with no atoms.
+ * V3.3.0 Sprint 3: adds coverage for the multi-model NMR ensemble 1GAB.pdb
+ * and the synthetic no-CRYST1 file no_cryst1.pdb.
  *
  * @author Edward Hartnett
  * @date 2026-07-29
@@ -39,6 +41,12 @@
 
 /** Path to the second legacy PDB test file. */
 #define PDB_TEST_FILE_2 "data/PDB/4HHB.pdb"
+
+/** Path to the multi-model NMR legacy PDB test file. */
+#define PDB_TEST_FILE_3 "data/PDB/1GAB.pdb"
+
+/** Path to the synthetic single-model legacy PDB test file without CRYST1. */
+#define PDB_TEST_FILE_4 "data/PDB/no_cryst1.pdb"
 
 /**
  * @internal Check that a dimension exists and has the expected length.
@@ -210,6 +218,26 @@ check_group(int ncid, int atom_idx, const char *expected)
 }
 
 /**
+ * @internal Read a single coordinate value from a [model][atom] variable.
+ */
+static int
+read_coord(int ncid, const char *var_name, size_t model, size_t atom,
+             float *value)
+{
+    int varid;
+    size_t start[2] = {model, atom};
+    size_t count[2] = {1, 1};
+    int retval;
+
+    if ((retval = nc_inq_varid(ncid, var_name, &varid)))
+        ERR(retval);
+    if ((retval = nc_get_vara_float(ncid, varid, start, count, value)))
+        ERR(retval);
+
+    return 0;
+}
+
+/**
  * @internal Verify an entire legacy PDB file.
  */
 static int
@@ -312,6 +340,83 @@ main(void)
                             4778)))
         return retval;
     printf("PASS: %s\n", PDB_TEST_FILE_2);
+
+    /* Validate the multi-model NMR test file. */
+    {
+        int ncid3;
+        float x_m0, y_m0, z_m0;
+        float x_m1, y_m1, z_m1;
+
+        if ((retval = nc_open(PDB_TEST_FILE_3, NC_UDF7, &ncid3)))
+            ERR(retval);
+
+        if ((retval = check_dimlen(ncid3, "model", 20)))
+            return retval;
+        if ((retval = check_dimlen(ncid3, "atom", 851)))
+            return retval;
+
+        if ((retval = check_att_text(ncid3, "idCode", "1GAB")))
+            return retval;
+
+        /* Same atom in two different models must have different coordinates. */
+        if ((retval = read_coord(ncid3, "atom_site_Cartn_x", 0, 0, &x_m0)))
+            return retval;
+        if ((retval = read_coord(ncid3, "atom_site_Cartn_y", 0, 0, &y_m0)))
+            return retval;
+        if ((retval = read_coord(ncid3, "atom_site_Cartn_z", 0, 0, &z_m0)))
+            return retval;
+        if ((retval = read_coord(ncid3, "atom_site_Cartn_x", 1, 0, &x_m1)))
+            return retval;
+        if ((retval = read_coord(ncid3, "atom_site_Cartn_y", 1, 0, &y_m1)))
+            return retval;
+        if ((retval = read_coord(ncid3, "atom_site_Cartn_z", 1, 0, &z_m1)))
+            return retval;
+
+        if (x_m0 == x_m1 && y_m0 == y_m1 && z_m0 == z_m1)
+        {
+            fprintf(stderr, "Multi-model coordinates unexpectedly identical at line %d\n",
+                    __LINE__);
+            ERR(NC_EINVAL);
+        }
+
+        if ((retval = nc_close(ncid3)))
+            ERR(retval);
+        printf("PASS: %s (multi-model)\n", PDB_TEST_FILE_3);
+    }
+
+    /* Validate the synthetic file without a CRYST1 record. */
+    {
+        int ncid4;
+        size_t len;
+
+        if ((retval = nc_open(PDB_TEST_FILE_4, NC_UDF7, &ncid4)))
+            ERR(retval);
+
+        if ((retval = check_dimlen(ncid4, "model", 1)))
+            return retval;
+        if ((retval = check_dimlen(ncid4, "atom", 5)))
+            return retval;
+
+        if ((retval = check_att_text(ncid4, "idCode", "0001")))
+            return retval;
+
+        /* CRYST1-derived attributes must be absent. */
+        if (nc_inq_attlen(ncid4, NC_GLOBAL, "cell_length_a", &len) != NC_ENOTATT)
+        {
+            fprintf(stderr, "Expected cell_length_a to be absent at line %d\n", __LINE__);
+            ERR(NC_EINVAL);
+        }
+        if (nc_inq_attlen(ncid4, NC_GLOBAL, "space_group_name_H-M", &len) != NC_ENOTATT)
+        {
+            fprintf(stderr, "Expected space_group_name_H-M to be absent at line %d\n",
+                    __LINE__);
+            ERR(NC_EINVAL);
+        }
+
+        if ((retval = nc_close(ncid4)))
+            ERR(retval);
+        printf("PASS: %s (no CRYST1)\n", PDB_TEST_FILE_4);
+    }
 
     /* Malformed file with no ATOM/HETATM records must be rejected. */
     f = fopen("no_atoms.pdb", "w");
