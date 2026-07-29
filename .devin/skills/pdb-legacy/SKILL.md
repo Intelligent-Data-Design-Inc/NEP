@@ -240,8 +240,8 @@ current NEP allocations (see `docs/formats.md`):
 | UDF4 | NASA CDF |
 | UDF5 | NASA/ESA PDS4 |
 | UDF6 | DICOM |
-| **UDF7** | **PDBx/mmCIF** (see `mmcif` skill) |
-| **UDF8** | **Legacy PDB** |
+| **UDF7** | **Legacy PDB** |
+| **UDF8** | **PDBx/mmCIF** (see `mmcif` skill) |
 | UDF9 | Reserved |
 
 ### Magic Number / Detection
@@ -255,8 +255,8 @@ correct fixed columns. A `.pdb`/`.ent` extension check is a reasonable
 first-pass filter since there is no reliable binary magic number.
 
 ```c
-/** Legacy PDB format uses UDF8 slot */
-#define NEP_UDF_PDB NC_UDF8
+/** Legacy PDB format uses UDF7 slot */
+#define NEP_UDF_PDB NC_UDF7
 
 /** Legacy PDB magic: first record name, checked at open time by content
  *  inspection rather than a fixed byte pattern */

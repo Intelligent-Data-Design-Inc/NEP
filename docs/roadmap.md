@@ -5,11 +5,22 @@
 ### V3.3.0 - Proteins with PDB Format
 
 #### Sprint 1: Setup
+**Detailed Plan**: See `docs/plan/v3.3.0-sprint1-pdb-infrastructure.md`
+
 - Look at PDB skill file.
-- There are new test files in /test/data/pdb. They will be used in tests. Make sure they are available in build directory.
+- There are new test files in /test/data/PDB. They will be used in tests. Make sure they are available in build directory. (They are from https://www.rcsb.org)
 - Create a no-op dispatch layer for PDB.
 - Write a test for it.
 - Update the CI so the new test is run.
+
+**Clarified decisions:**
+- Legacy PDB is assigned **UDF7** (next free slot; it ships before mmCIF, which now takes UDF8). The `pdb-legacy` and `mmcif` skill files have been updated to match.
+- `NEP_ENABLE_PDB` / `--enable-pdb` defaults to **OFF** in this sprint, following the exact FITS Sprint 1/2 precedent (flip to ON once the dispatch layer is proven, in Sprint 2).
+- A new dedicated `ci-pdb.yml` workflow is added (consistent with `ci-fits.yml`/`ci-dicom.yml`), even though PDB requires no external parsing library — no extra system packages beyond the standard HDF5/NetCDF-C/NetCDF-Fortran stack are needed.
+- `test/tst_pdb_udf.c` only verifies an `nc_open()`/`nc_close()` round-trip on the real `.pdb` test files; no PDB record parsing or magic/format-detection testing happens until Sprint 2.
+- `NC_PDB_initialize()` registers the format with `nc_def_user_format()` using the literal magic string `"HEADER"` (`NEP_MAGIC_PDB`), per the `pdb-legacy` skill. Files that do not start with a `HEADER` record are a documented limitation, not solved in Sprint 1.
+
+**GitHub Issue:** [#342](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/342)
 
 #### Sprint 2: Dispatch Layer for PDB
 - Look at PDB skill file.

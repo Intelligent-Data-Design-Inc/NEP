@@ -36,7 +36,7 @@ mcp0_search_issues: query="label:v{VERSION} is:closed"
 Analyze collected issues and PRs, grouping them by:
 - **Features**: New functionality (label: enhancement, feature)
 - **Bug Fixes**: Resolved issues (label: bug, fix)
-- **Build System**: CMake, Autotools changes (label: build)
+- **Build System**: CMake changes (label: build)
 - **Testing**: Test coverage, new tests (label: testing)
 - **Documentation**: Docs updates (label: documentation)
 - **Dependencies**: New or updated libraries
@@ -68,7 +68,7 @@ Generate a markdown file named `docs/releases/v{VERSION}.md` with these sections
 - **Bug Fixes**: List significant bugs resolved with issue numbers
   - Format: "**[Bug description]** (#456) - Resolution details"
 - **API Changes**: New/modified NetCDF API extensions, NC_Dispatch implementations (if applicable)
-- **Build System**: CMake and Autotools changes, new dependencies, configuration options
+- **Build System**: CMake changes, new dependencies, configuration options
 - **Testing**: Coverage metrics, test strategies, new test files added
 - **Documentation**: Doxygen updates, API documentation, user guides (if applicable)
 - **Dependencies Added**: New libraries (HDF5, NetCDF-C, NCEPLIBS-g2, etc.) with versions

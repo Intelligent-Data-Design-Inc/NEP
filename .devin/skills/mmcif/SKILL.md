@@ -260,8 +260,8 @@ magic number shared with unrelated formats, but detection should:
  *  optional blank/comment lines) */
 #define NEP_MAGIC_MMCIF "data_"
 
-/** PDBx/mmCIF format uses UDF7 slot */
-#define NEP_UDF_MMCIF NC_UDF7
+/** PDBx/mmCIF format uses UDF8 slot */
+#define NEP_UDF_MMCIF NC_UDF8
 
 #define NEP_FORMAT_NAME_MMCIF "mmCIF"
 ```
@@ -281,8 +281,8 @@ Based on current NEP allocations (see `docs/formats.md`):
 | UDF4 | NASA CDF |
 | UDF5 | NASA/ESA PDS4 |
 | UDF6 | DICOM |
-| **UDF7** | **PDBx/mmCIF** |
-| UDF8 | Legacy PDB (see `pdb-legacy` skill) |
+| UDF7 | Legacy PDB (see `pdb-legacy` skill) |
+| **UDF8** | **PDBx/mmCIF** |
 | UDF9 | Reserved |
 
 ### Initialization
@@ -292,7 +292,7 @@ Follow the PDS4/FITS dispatch pattern used elsewhere in NEP
 
 ```c
 static const NC_Dispatch MMCIF_dispatcher = {
-    NC_FORMATX_UDF7,
+    NC_FORMATX_UDF8,
     NC_DISPATCH_VERSION,
     NC_RO_create,
     NC_MMCIF_open,

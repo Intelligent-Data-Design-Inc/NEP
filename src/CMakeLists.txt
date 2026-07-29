@@ -215,3 +215,28 @@ if(HAVE_DICOM)
         message(STATUS "  JPEG Lossless support: disabled (libgdcm-dev not found)")
     endif()
 endif()
+
+# Legacy PDB UDF Handler - v3.3.0 Sprint 1
+# Build PDB library if enabled (netCDF UDF support). No external parsing
+# library is required; Sprint 1 is a no-op dispatch skeleton only.
+if(HAVE_PDB)
+    set(PDB_LIB_NAME ncpdb)
+    add_library(${PDB_LIB_NAME} SHARED
+        pdbdispatch.c pdbfile.c)
+    target_link_libraries(${PDB_LIB_NAME} PRIVATE
+        ${HDF5_LIBRARIES} ${NETCDF_LIBRARIES})
+    set_target_properties(${PDB_LIB_NAME} PROPERTIES
+        VERSION ${PROJECT_VERSION}
+        SOVERSION 1
+        INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
+        INSTALL_RPATH_USE_LINK_PATH TRUE
+    )
+    install(TARGETS ${PDB_LIB_NAME}
+        EXPORT NEPTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
+    install(FILES "${CMAKE_SOURCE_DIR}/include/pdbdispatch.h"
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+    message(STATUS "Building legacy PDB UDF library: ${PDB_LIB_NAME}")
+endif()

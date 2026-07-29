@@ -1,0 +1,4 @@
+# Legacy PDB protein structure data (UDF slot 7)
+NETCDF.UDF7.LIBRARY=@NEP_LIBDIR@/libncpdb.so
+NETCDF.UDF7.INIT=NC_PDB_initialize
+NETCDF.UDF7.MAGIC=HEADER

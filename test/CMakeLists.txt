@@ -147,6 +147,25 @@ if(HAVE_DICOM)
                    COPYONLY)
 endif()
 
+# Build legacy PDB UDF test if PDB is enabled
+if(HAVE_PDB)
+    add_executable(tst_pdb_udf tst_pdb_udf.c)
+    target_link_libraries(tst_pdb_udf PRIVATE ncpdb nep ${NETCDF_LIBRARIES})
+    target_include_directories(tst_pdb_udf PRIVATE ${NETCDF_INCLUDE_DIRS})
+    add_test(NAME tst_pdb_udf COMMAND tst_pdb_udf)
+    set_tests_properties(tst_pdb_udf PROPERTIES
+        ENVIRONMENT "NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+
+    # Copy legacy PDB test data (from https://www.rcsb.org) to build directory
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data/PDB)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDB/1J7W.pdb
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDB/1J7W.pdb
+                   COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDB/4HHB.pdb
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDB/4HHB.pdb
+                   COPYONLY)
+endif()
+
 # Build PDS4 UDF test if PDS4 is enabled
 if(HAVE_PDS4)
     add_executable(tst_pds4_udf tst_pds4_udf.c)
@@ -348,6 +367,9 @@ if(HAVE_DICOM)
 endif()
 if(HAVE_PDS4)
     list(APPEND _test_exe_deps tst_pds4_udf)
+endif()
+if(HAVE_PDB)
+    list(APPEND _test_exe_deps tst_pdb_udf)
 endif()
 add_custom_target(test_executables ALL DEPENDS ${_test_exe_deps})
 add_dependencies(test_executables hdf5_plugins)

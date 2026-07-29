@@ -71,8 +71,9 @@ This workflow reads the roadmap document, selects the specified sprint for a ver
 - Provide suggested answers, labeled with letters, so questions can be answered with just a letter
 - Recommend an answer and provide justification for your recommendation
 - Ask minimum 3 questions, maximum 6 questions
+- Present all questions together in a single batch (e.g. one numbered list, or parallel question tool calls); never ask them one at a time across separate turns
 
-**⚠️ ASK QUESTIONS NOW**
+**⚠️ ASK QUESTIONS NOW, ALL AT ONCE**
 
 **Wait for user responses before proceeding**
 
@@ -96,7 +97,7 @@ This workflow reads the roadmap document, selects the specified sprint for a ver
   - Major tasks in dependency order
   - Acceptance criteria
   - Testing requirements, specifically testing any new capabilities added by the sprint
-  - Build system integration points (CMake and Autotools)
+  - Build system integration points (CMake)
   - Dependencies and blockers
   - Documentation updates required (e.g., `docs/prd.md`, `docs/design.md`, `README.md`, Doxygen, format guides)
   - Definition of done

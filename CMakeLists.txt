@@ -130,6 +130,9 @@ option(NEP_ENABLE_PDS4 "Enable PDS4 reader support via libxml2" OFF)
 # DICOM reader support (v3.0.0) - default OFF; enable with -DNEP_ENABLE_DICOM=ON
 option(NEP_ENABLE_DICOM "Enable DICOM reader support via libdicom" OFF)
 
+# Legacy PDB reader support (v3.3.0) - default OFF; enable with -DNEP_ENABLE_PDB=ON
+option(NEP_ENABLE_PDB "Enable legacy PDB reader support" OFF)
+
 # GRIB2 library detection (v1.7.0) - default OFF; enable with -DNEP_ENABLE_GRIB2=ON
 option(NEP_ENABLE_GRIB2 "Enable GRIB2 support" OFF)
 
@@ -266,6 +269,13 @@ if(NOT DOCS_ONLY)
         endif()
     endif()
 
+    # Legacy PDB reader support (v3.3.0) - no external library required;
+    # a custom fixed-column line reader is sufficient.
+    if(NEP_ENABLE_PDB)
+        set(HAVE_PDB TRUE)
+        message(STATUS "Legacy PDB reader: enabled (no external library required)")
+    endif()
+
     # Parallel I/O test support (v1.9.0)
     if(NEP_ENABLE_PARALLEL_TESTS)
         include(CheckSymbolExists)
@@ -296,7 +306,7 @@ if(NEP_ENABLE_VIZ_EXAMPLES)
     if(NOT NEP_BUILD_EXAMPLES)
         message(FATAL_ERROR "NEP_ENABLE_VIZ_EXAMPLES requires NEP_BUILD_EXAMPLES=ON")
     endif()
-    if(NOT (HAVE_GEOTIFF OR HAVE_CDF OR HAVE_GRIB2 OR HAVE_FITS OR HAVE_PDS4 OR HAVE_DICOM))
+    if(NOT (HAVE_GEOTIFF OR HAVE_CDF OR HAVE_GRIB2 OR HAVE_FITS OR HAVE_PDS4 OR HAVE_DICOM OR HAVE_PDB))
         message(FATAL_ERROR "NEP_ENABLE_VIZ_EXAMPLES requires at least one enabled UDF reader")
     endif()
     set(PYTHON_EXECUTABLE "${CMAKE_SOURCE_DIR}/.venv/bin/python3")
@@ -488,7 +498,7 @@ if(NOT DOCS_ONLY)
     endif()
 
     # .ncrc: assemble from fragments for enabled formats (issue #134)
-    if(HAVE_GEOTIFF OR HAVE_CDF OR HAVE_GRIB2 OR HAVE_FITS OR HAVE_PDS4 OR HAVE_DICOM)
+    if(HAVE_GEOTIFF OR HAVE_CDF OR HAVE_GRIB2 OR HAVE_FITS OR HAVE_PDS4 OR HAVE_DICOM OR HAVE_PDB)
         set(NEP_NCRC_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}"
             CACHE PATH "Directory where .ncrc is installed")
 
@@ -511,6 +521,9 @@ if(NOT DOCS_ONLY)
         endif()
         if(HAVE_DICOM)
             list(APPEND NCRC_FRAGMENTS "${CMAKE_SOURCE_DIR}/.ncrc-dicom.in")
+        endif()
+        if(HAVE_PDB)
+            list(APPEND NCRC_FRAGMENTS "${CMAKE_SOURCE_DIR}/.ncrc-pdb.in")
         endif()
 
         # Assemble a .ncrc for the build tree (tests point to the freshly built libraries)
