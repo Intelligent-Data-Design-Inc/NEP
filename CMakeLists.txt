@@ -130,8 +130,9 @@ option(NEP_ENABLE_PDS4 "Enable PDS4 reader support via libxml2" OFF)
 # DICOM reader support (v3.0.0) - default OFF; enable with -DNEP_ENABLE_DICOM=ON
 option(NEP_ENABLE_DICOM "Enable DICOM reader support via libdicom" OFF)
 
-# Legacy PDB reader support (v3.3.0) - default OFF; enable with -DNEP_ENABLE_PDB=ON
-option(NEP_ENABLE_PDB "Enable legacy PDB reader support" OFF)
+# Legacy PDB reader support (v3.3.0) - default ON now that the read-only
+# dispatch layer is implemented and tested.
+option(NEP_ENABLE_PDB "Enable legacy PDB reader support" ON)
 
 # GRIB2 library detection (v1.7.0) - default OFF; enable with -DNEP_ENABLE_GRIB2=ON
 option(NEP_ENABLE_GRIB2 "Enable GRIB2 support" OFF)

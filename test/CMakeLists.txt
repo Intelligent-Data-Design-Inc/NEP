@@ -164,6 +164,12 @@ if(HAVE_PDB)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDB/4HHB.pdb
                    ${CMAKE_CURRENT_BINARY_DIR}/data/PDB/4HHB.pdb
                    COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDB/1GAB.pdb
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDB/1GAB.pdb
+                   COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/PDB/no_cryst1.pdb
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/PDB/no_cryst1.pdb
+                   COPYONLY)
 endif()
 
 # Build PDS4 UDF test if PDS4 is enabled

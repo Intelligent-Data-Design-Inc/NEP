@@ -3,7 +3,8 @@
 #
 # V3.3.0 Sprint 1: no-op PDB dispatch layer infrastructure.
 #
-# This workflow builds NEP with NEP_ENABLE_PDB=ON using:
+# This workflow builds NEP with the default PDB reader enabled
+# (NEP_ENABLE_PDB now defaults to ON) using:
 # - HDF5 2.1.1 (built from source, cached)
 # - NetCDF-C 4.10.1 (built from source, cached)
 # - NetCDF-Fortran (built from source, cached)
@@ -17,7 +18,7 @@
 #   export PKG_CONFIG_PATH=/usr/local/netcdf-c/lib/pkgconfig:/usr/local/hdf5-2.1.1/lib/pkgconfig:$PKG_CONFIG_PATH
 #   rm -rf build && mkdir build && cd build
 #   cmake .. -DCMAKE_PREFIX_PATH="/usr/local/hdf5-2.1.1;/usr/local/netcdf-c" \
-#       -DNEP_ENABLE_PDB=ON -DBUILD_TESTING=ON
+#       -DBUILD_TESTING=ON
 #   make -j$(nproc) && ctest --verbose
 #
 # Edward Hartnett, Intelligent Data Design, Inc.
@@ -106,7 +107,7 @@ jobs:
           make install
 
       # --- CMake build ---
-      - name: Configure with CMake and PDB enabled
+      - name: Configure with CMake (PDB reader now defaults to ON)
         run: |
           mkdir -p build && cd build
           export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
@@ -114,7 +115,6 @@ jobs:
             -DCMAKE_C_FLAGS="-Wall -Werror" \
             -DCMAKE_Fortran_FLAGS="-Wall -Werror" \
             -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-install;$GITHUB_WORKSPACE/netcdf-c-install;$GITHUB_WORKSPACE/netcdf-fortran-install" \
-            -DNEP_ENABLE_PDB=ON \
             -DNEP_ENABLE_FORTRAN=ON \
             -DNEP_ENABLE_FITS=OFF \
             -DNEP_ENABLE_GRIB2=OFF \
