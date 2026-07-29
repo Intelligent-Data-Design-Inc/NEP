@@ -150,8 +150,8 @@ endif()
 # Build legacy PDB UDF test if PDB is enabled
 if(HAVE_PDB)
     add_executable(tst_pdb_udf tst_pdb_udf.c)
-    target_link_libraries(tst_pdb_udf PRIVATE ncpdb nep ${NETCDF_LIBRARIES})
-    target_include_directories(tst_pdb_udf PRIVATE ${NETCDF_INCLUDE_DIRS})
+    target_link_libraries(tst_pdb_udf PRIVATE ncpdb nep ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
+    target_include_directories(tst_pdb_udf PRIVATE ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
     add_test(NAME tst_pdb_udf COMMAND tst_pdb_udf)
     set_tests_properties(tst_pdb_udf PROPERTIES
         ENVIRONMENT "NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
