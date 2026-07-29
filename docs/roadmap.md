@@ -38,10 +38,13 @@
 **GitHub Issue:** [#343](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/343)
 
 #### Sprint 3: More Testing of PDB Reading
+- Can you find some sample files on https://www.rcsb.org/ or https://alphafold.ebi.ac.uk/ which contain MODEL and other features not reflected in current test files?
+- Then write tests for these files.
 
 #### Sprint 4: Documentation
 - Update all the docs.
 - Add a section on PDB to doxygen docs.
+- Write some examples/viz visulaizations.
 
 ### V3.2.0 - More DICOM
 

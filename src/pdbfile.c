@@ -592,7 +592,6 @@ pdb_parse_file(const char *path, int *retvalp)
         {
             int is_atom = (strncmp(line, "ATOM  ", 6) == 0);
             int flat_idx;
-            char buf[256];
             char name_trim[16];
             char elem_buf[PDB_ELEMENT_LEN + 1];
 
