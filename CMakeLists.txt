@@ -91,6 +91,17 @@ int main(void){ return 0; }" NETCDF_VERSION_OK)
         message(FATAL_ERROR "NetCDF-C >= 4.10.1 is required for UDF slots > 2, but the installed headers are older.")
     endif()
 
+    # Detect parallel NetCDF-C support (needed for matching internal struct layouts).
+    find_program(NC_CONFIG nc-config HINTS "${NETCDF_PREFIX}/bin")
+    if(NC_CONFIG)
+        execute_process(COMMAND ${NC_CONFIG} --has-parallel4
+                        OUTPUT_VARIABLE NETCDF_HAS_PARALLEL4
+                        OUTPUT_STRIP_TRAILING_WHITESPACE)
+        if(NETCDF_HAS_PARALLEL4 STREQUAL "yes")
+            set(USE_PARALLEL 1)
+        endif()
+    endif()
+
     # Find ncdump from the NetCDF-C installation
     find_program(NCDUMP ncdump HINTS "${NETCDF_PREFIX}/bin" REQUIRED)
     message(STATUS "Found ncdump: ${NCDUMP}")
