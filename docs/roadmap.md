@@ -25,8 +25,20 @@
 **GitHub Issue:** TBD
 
 #### Sprint 2: Dispatch Layer for mmCIF
+**Detailed Plan**: See `docs/plan/v3.4.0-sprint2-mmcif-dispatch-layer.md`
+
 - Fill in read-only dispatch layer.
 - Build tests around files in /home/ed/NEP/test/data/mmCIF
+
+**Clarified decisions:**
+- Schema scope: parse `_atom_site` (coordinates and per-atom identity fields), `_cell`/`_symmetry` (unit cell), and single-row `_entry`/`_struct`/`_entity`/`_pdbx_database_status` categories as global attributes, matching the PDB Sprint 2 scope (CRYST1 + HEADER/TITLE/COMPND/SOURCE analogs). `_entity_poly_seq`-derived sequence data is deferred to a later sprint, mirroring PDB deferring `SEQRES` to Sprint 3.
+- Coordinates are exposed as three separate `atom_site_Cartn_x/y/z` variables (`NC_DOUBLE`, shape `[model][atom]`), directly mirroring the PDB Sprint 2 `atom_site_Cartn_x/y/z` pattern (double instead of PDB's float, since mmCIF values carry more decimal precision).
+- The `model` dimension is sized from distinct `_atom_site.pdbx_PDB_model_num` values (1 for all three current test files: `1J7W.cif`, `2W6V.cif`, `4HHB.cif`, all single-model X-ray structures); the `[model][atom]` code path exists but multi-model mmCIF is untested this sprint, a documented limitation until an NMR mmCIF file is acquired.
+- The PDBx-vs-generic-CIF category check deferred from Sprint 1 is added now: after the `"data_"` magic match, `NC_MMCIF_open()` rejects files with no `_atom_site` category.
+- `?` (unknown) and `.` (not-applicable) mmCIF placeholder values both map to the variable's type-appropriate NetCDF fill value; no separate mask/flag variable is added this sprint.
+- `NEP_ENABLE_MMCIF` stays default **OFF** in `CMakeLists.txt`; only `ci-mmcif.yml` builds with it ON. Following the PDB precedent, the flip to default ON is reserved for a later "more testing" sprint.
+
+**GitHub Issue:** [#350](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/350)
 
 ### V3.3.0 - Proteins with PDB Format
 
