@@ -148,6 +148,9 @@ option(NEP_ENABLE_DICOM "Enable DICOM reader support via libdicom" OFF)
 # dispatch layer is implemented and tested.
 option(NEP_ENABLE_PDB "Enable legacy PDB reader support" ON)
 
+# PDBx/mmCIF reader support (v3.4.0) - default OFF; enable with -DNEP_ENABLE_MMCIF=ON
+option(NEP_ENABLE_MMCIF "Enable PDBx/mmCIF reader support" OFF)
+
 # GRIB2 library detection (v1.7.0) - default OFF; enable with -DNEP_ENABLE_GRIB2=ON
 option(NEP_ENABLE_GRIB2 "Enable GRIB2 support" OFF)
 
@@ -291,6 +294,13 @@ if(NOT DOCS_ONLY)
         message(STATUS "Legacy PDB reader: enabled (no external library required)")
     endif()
 
+    # PDBx/mmCIF reader support (v3.4.0 Sprint 1) - no external library required;
+    # a custom STAR/CIF tokenizer will be added in Sprint 2.
+    if(NEP_ENABLE_MMCIF)
+        set(HAVE_MMCIF TRUE)
+        message(STATUS "PDBx/mmCIF reader: enabled (no external library required)")
+    endif()
+
     # Parallel I/O test support (v1.9.0)
     if(NEP_ENABLE_PARALLEL_TESTS)
         include(CheckSymbolExists)
@@ -321,7 +331,7 @@ if(NEP_ENABLE_VIZ_EXAMPLES)
     if(NOT NEP_BUILD_EXAMPLES)
         message(FATAL_ERROR "NEP_ENABLE_VIZ_EXAMPLES requires NEP_BUILD_EXAMPLES=ON")
     endif()
-    if(NOT (HAVE_GEOTIFF OR HAVE_CDF OR HAVE_GRIB2 OR HAVE_FITS OR HAVE_PDS4 OR HAVE_DICOM OR HAVE_PDB))
+    if(NOT (HAVE_GEOTIFF OR HAVE_CDF OR HAVE_GRIB2 OR HAVE_FITS OR HAVE_PDS4 OR HAVE_DICOM OR HAVE_PDB OR HAVE_MMCIF))
         message(FATAL_ERROR "NEP_ENABLE_VIZ_EXAMPLES requires at least one enabled UDF reader")
     endif()
     set(PYTHON_EXECUTABLE "${CMAKE_SOURCE_DIR}/.venv/bin/python3")
@@ -352,6 +362,7 @@ endif()
 message(STATUS "Performance benchmarks: ${NEP_ENABLE_BENCHMARKS}")
 message(STATUS "OPeNDAP examples: ${NEP_ENABLE_OPENDAP_EXAMPLES}")
 message(STATUS "Visualization examples: ${NEP_ENABLE_VIZ_EXAMPLES}")
+message(STATUS "PDBx/mmCIF reader: ${NEP_ENABLE_MMCIF}")
 
 # It's really easy to pick up the wrong HDF5 library if you set the path
 # wrong. Turn this on for added confirmation that you got it right.
@@ -513,7 +524,7 @@ if(NOT DOCS_ONLY)
     endif()
 
     # .ncrc: assemble from fragments for enabled formats (issue #134)
-    if(HAVE_GEOTIFF OR HAVE_CDF OR HAVE_GRIB2 OR HAVE_FITS OR HAVE_PDS4 OR HAVE_DICOM OR HAVE_PDB)
+    if(HAVE_GEOTIFF OR HAVE_CDF OR HAVE_GRIB2 OR HAVE_FITS OR HAVE_PDS4 OR HAVE_DICOM OR HAVE_PDB OR HAVE_MMCIF)
         set(NEP_NCRC_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}"
             CACHE PATH "Directory where .ncrc is installed")
 
@@ -539,6 +550,9 @@ if(NOT DOCS_ONLY)
         endif()
         if(HAVE_PDB)
             list(APPEND NCRC_FRAGMENTS "${CMAKE_SOURCE_DIR}/.ncrc-pdb.in")
+        endif()
+        if(HAVE_MMCIF)
+            list(APPEND NCRC_FRAGMENTS "${CMAKE_SOURCE_DIR}/.ncrc-mmcif.in")
         endif()
 
         # Assemble a .ncrc for the build tree (tests point to the freshly built libraries)

@@ -1,0 +1,4 @@
+# PDBx/mmCIF protein structure data (UDF slot 8)
+NETCDF.UDF8.LIBRARY=@NEP_LIBDIR@/libncmmcif.so
+NETCDF.UDF8.INIT=NC_MMCIF_initialize
+NETCDF.UDF8.MAGIC=data_

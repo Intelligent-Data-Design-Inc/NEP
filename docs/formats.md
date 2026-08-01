@@ -1,6 +1,6 @@
 # NEP Format Readers
 
-NEP implements seven NetCDF User Defined Format (UDF) handlers that allow external scientific data formats to be opened with the standard `nc_open()` API. Most readers are **disabled by default** and must be enabled at build time; the legacy PDB reader is enabled by default.
+NEP implements eight NetCDF User Defined Format (UDF) handlers that allow external scientific data formats to be opened with the standard `nc_open()` API. Most readers are **disabled by default** and must be enabled at build time; the legacy PDB reader is enabled by default.
 
 ## UDF Slot Assignments
 
@@ -14,6 +14,7 @@ NEP implements seven NetCDF User Defined Format (UDF) handlers that allow extern
 | UDF5 | NASA/ESA PDS4 | XML root `Product_Observational` | v2.2.0 |
 | UDF6 | DICOM | `DICM` at byte offset 128 | v3.0.0 |
 | UDF7 | Legacy PDB | `HEADER` | v3.3.0 |
+| UDF8 | PDBx/mmCIF | `data_` | v3.4.0 |
 
 All readers can be enabled simultaneously — there are no mutual-exclusivity restrictions.
 
@@ -31,6 +32,7 @@ dependencies, resources, and examples:
 | NASA/ESA PDS4 | UDF5 | [PDS4-to-NetCDF Mapping](pds4.md) |
 | DICOM | UDF6 | [DICOM](dicom.md) |
 | Legacy PDB | UDF7 | [PDB](pdb.md) |
+| PDBx/mmCIF | UDF8 | [mmCIF](mmcif.md) |
 
 See also the native NetCDF-4 compression documentation:
 [LZ4/BZIP2 HDF5 filters](compression.md).

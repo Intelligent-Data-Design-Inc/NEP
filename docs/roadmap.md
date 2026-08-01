@@ -2,6 +2,60 @@
 
 ### V3.4.0 - More Proteins with mmCIF Format
 
+#### Sprint 1: Setup
+**Detailed Plan**: See `docs/plan/v3.4.0-sprint1-mmcif-setup.md`
+
+- Refer to the `mmcif` skill file (`/.devin/skills/mmcif/SKILL.md`) and the `pdb-legacy` skill for the relationship between legacy PDB and mmCIF.
+- Add the PDBx/mmCIF UDF8 slot definitions to `include/nep.h` (`NEP_UDF_MMCIF`, `NEP_MAGIC_MMCIF`, `NEP_FORMAT_NAME_MMCIF`).
+- Add the `NEP_ENABLE_MMCIF` CMake option (default OFF) and the `HAVE_MMCIF`/`#cmakedefine HAVE_MMCIF` plumbing.
+- Create a no-op dispatch skeleton (`include/mmcifdispatch.h`, `src/mmcifdispatch.c`, `src/mmciffile.c`) that builds `libncmmcif.so` and registers `"data_"` magic on UDF8.
+- Ensure the existing `test/data/mmCIF/*.cif` files (from https://www.rcsb.org) are copied into the build tree.
+- Add a C smoke test `test/tst_mmcif_udf.c` that opens and closes a real `.cif` file through `nc_open()`.
+- Add a Fortran smoke test `ftest/ftst_mmcif_udf.F90` that opens and closes a real `.cif` file through `nf90_open()`.
+- Add a dedicated `.github/workflows/ci-mmcif.yml` workflow that builds and tests with `NEP_ENABLE_MMCIF=ON`.
+
+**Clarified decisions:**
+- mmCIF is assigned **UDF8**; legacy PDB remains UDF7. The `mmcif` and `pdb-legacy` skill files already reflect this allocation.
+- `NEP_ENABLE_MMCIF` defaults to **OFF** in this sprint, following the FITS/PDB precedent; it will flip to ON once the read-only dispatch layer is proven in Sprint 2.
+- The new workflow is CMake-only because Autotools was removed in v3.1.0.
+- No external parsing library is required; a custom STAR/CIF tokenizer will be added in Sprint 2.
+- The smoke tests verify only `nc_open()`/`nc_close()` round-trips; no record parsing or PDBx category detection happens until Sprint 2.
+- `NC_MMCIF_initialize()` registers the handler with the literal magic string `"data_"`. Avoiding false positives against generic (small-molecule) CIF files via a PDBx category check is deferred to Sprint 2.
+
+**GitHub Issue:** TBD
+
+#### Sprint 2: Dispatch Layer for mmCIF
+**Detailed Plan**: See `docs/plan/v3.4.0-sprint2-mmcif-dispatch-layer.md`
+
+- Fill in read-only dispatch layer.
+- Build tests around files in /home/ed/NEP/test/data/mmCIF
+
+**Clarified decisions:**
+- Schema scope: parse `_atom_site` (coordinates and per-atom identity fields), `_cell`/`_symmetry` (unit cell), and single-row `_entry`/`_struct`/`_entity`/`_pdbx_database_status` categories as global attributes, matching the PDB Sprint 2 scope (CRYST1 + HEADER/TITLE/COMPND/SOURCE analogs). `_entity_poly_seq`-derived sequence data is deferred to a later sprint, mirroring PDB deferring `SEQRES` to Sprint 3.
+- Coordinates are exposed as three separate `atom_site_Cartn_x/y/z` variables (`NC_DOUBLE`, shape `[model][atom]`), directly mirroring the PDB Sprint 2 `atom_site_Cartn_x/y/z` pattern (double instead of PDB's float, since mmCIF values carry more decimal precision).
+- The `model` dimension is sized from distinct `_atom_site.pdbx_PDB_model_num` values (1 for all three current test files: `1J7W.cif`, `2W6V.cif`, `4HHB.cif`, all single-model X-ray structures); the `[model][atom]` code path exists but multi-model mmCIF is untested this sprint, a documented limitation until an NMR mmCIF file is acquired.
+- The PDBx-vs-generic-CIF category check deferred from Sprint 1 is added now: after the `"data_"` magic match, `NC_MMCIF_open()` rejects files with no `_atom_site` category.
+- `?` (unknown) and `.` (not-applicable) mmCIF placeholder values both map to the variable's type-appropriate NetCDF fill value; no separate mask/flag variable is added this sprint.
+- `NEP_ENABLE_MMCIF` stays default **OFF** in `CMakeLists.txt`; only `ci-mmcif.yml` builds with it ON. Following the PDB precedent, the flip to default ON is reserved for a later "more testing" sprint.
+
+**GitHub Issue:** [#350](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/350)
+
+#### Sprint 3: Example Visualization
+**Detailed Plan**: See `docs/plan/v3.4.0-sprint3-mmcif-visualizations.md`
+
+- Add `examples/viz/mmCIF/` Python visualization scripts that open each mmCIF test file through the NetCDF UDF interface and produce publication-ready PNG artifacts, following the `examples/viz/PDB/` pattern.
+- Wire the new scripts into `examples/viz/CMakeLists.txt` (`HAVE_MMCIF` guard, `_viz_artifacts` registration) and `examples/viz/README.md`.
+- Update `docs/mmcif.md` (new file, if it does not already exist) with a Visualization section.
+- Update `.github/workflows/ci-mmcif.yml` to build with `NEP_ENABLE_VIZ_EXAMPLES=ON` using the project virtual environment, so the new plots run in CI.
+
+**Clarified decisions:**
+- All three existing mmCIF test files (`1J7W.cif`, `2W6V.cif`, `4HHB.cif`) get their own visualization script/plot, maximizing parser regression coverage, matching the v3.1.0 Sprint 3 "visualize all test files" precedent rather than picking just one or two files.
+- Plot content reuses the PDB Sprint viz pattern exactly: a 3D scatter of `atom_site_Cartn_x/y/z`, colored/marked by `atom_site_group_PDB` (`ATOM` vs `HETATM`), for consistency with `examples/viz/PDB/plot_pdb_xray_structure.py` and minimal new code, since the mmCIF and PDB schemas expose the same fields.
+- `NEP_ENABLE_MMCIF` stays default **OFF** in `CMakeLists.txt`; this sprint is scoped to visualization only (unlike PDB Sprint 3, which combined "more testing" with the default flip). Flipping the default is deferred to a future "more testing" sprint.
+- `ci-mmcif.yml` is extended to set up the project Python virtual environment and build with `-DNEP_ENABLE_VIZ_EXAMPLES=ON`, matching the DICOM Sprint 1 and PDB visualization precedent, so the new plots are exercised on every PR.
+
+**GitHub Issue:** [#351](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/351)
+
 ### V3.3.0 - Proteins with PDB Format
 
 #### Sprint 1: Setup

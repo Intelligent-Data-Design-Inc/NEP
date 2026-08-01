@@ -240,3 +240,28 @@ if(HAVE_PDB)
     )
     message(STATUS "Building legacy PDB UDF library: ${PDB_LIB_NAME}")
 endif()
+
+# PDBx/mmCIF UDF Handler - v3.4.0 Sprint 1
+# Build mmCIF library if enabled (netCDF UDF support). No external parsing
+# library is required; a custom STAR/CIF tokenizer will be added in Sprint 2.
+if(HAVE_MMCIF)
+    set(MMCIF_LIB_NAME ncmmcif)
+    add_library(${MMCIF_LIB_NAME} SHARED
+        mmcifdispatch.c mmciffile.c)
+    target_link_libraries(${MMCIF_LIB_NAME} PRIVATE
+        ${HDF5_LIBRARIES} ${NETCDF_LIBRARIES})
+    set_target_properties(${MMCIF_LIB_NAME} PROPERTIES
+        VERSION ${PROJECT_VERSION}
+        SOVERSION 1
+        INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
+        INSTALL_RPATH_USE_LINK_PATH TRUE
+    )
+    install(TARGETS ${MMCIF_LIB_NAME}
+        EXPORT NEPTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
+    install(FILES "${CMAKE_SOURCE_DIR}/include/mmcifdispatch.h"
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+    message(STATUS "Building PDBx/mmCIF UDF library: ${MMCIF_LIB_NAME}")
+endif()

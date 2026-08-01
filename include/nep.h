@@ -16,7 +16,8 @@
  * - UDF5: PDS4 planetary data system (magic: "<?xml")
  * - UDF6: DICOM medical imaging data (magic: "DICM")
  * - UDF7: Legacy PDB protein structure data (magic: "HEADER")
- * - UDF8-UDF9: Reserved for future use
+ * - UDF8: PDBx/mmCIF protein structure data (magic: "data_")
+ * - UDF9: Reserved for future use
  *
  * @author Edward Hartnett
  * @date Nov 13, 2025
@@ -73,11 +74,13 @@ extern "C" {
  * | UDF5  | NEP_UDF_PDS4               | NASA/ESA PDS4 planetary  | `<?xml`     |
  * | UDF6  | NEP_UDF_DICOM              | DICOM medical imaging    | `DICM`      |
  * | UDF7  | NEP_UDF_PDB                | Legacy PDB protein data  | `HEADER`    |
- * | UDF8–9| —                          | Reserved                 | —           |
+ * | UDF8  | NEP_UDF_MMCIF              | PDBx/mmCIF protein data   | `data_`     |
+ * | UDF9  | —                          | Reserved                 | —           |
  *
  * Call `NC_GEOTIFF_initialize()`, `NC_GRIB2_initialize()`, `NC_FITS_initialize()`,
- * `NC_CDF_initialize()`, `NC_PDS4_initialize()`, `NC_DICOM_initialize()`, or
- * `NC_PDB_initialize()` to register the corresponding handler before calling
+ * `NC_CDF_initialize()`, `NC_PDS4_initialize()`, `NC_DICOM_initialize()`,
+ * `NC_PDB_initialize()`, or `NC_MMCIF_initialize()` to register the corresponding
+ * handler before calling
  * `nc_open()`. With `.ncrc` autoload (NetCDF-C main branch) no explicit call
  * is needed.
  */
@@ -106,6 +109,9 @@ extern "C" {
 /** Legacy PDB protein structure data format uses UDF7 slot */
 #define NEP_UDF_PDB NC_UDF7
 
+/** PDBx/mmCIF protein structure data format uses UDF8 slot */
+#define NEP_UDF_MMCIF NC_UDF8
+
 /** @} */
 
 /**
@@ -129,6 +135,7 @@ extern "C" {
  * | NEP_MAGIC_PDS4              | `"<?xml"`      | PDS4                   | XML declaration; namespace checked |
  * | NEP_MAGIC_DICOM             | `"DICM"`       | DICOM                  | 4-byte prefix at byte offset 128   |
  * | NEP_MAGIC_PDB               | `"HEADER"`     | Legacy PDB             | First record name of the file      |
+ * | NEP_MAGIC_MMCIF             | `"data_"`      | PDBx/mmCIF             | First token of every CIF data block|
  */
 
 /** GeoTIFF standard TIFF magic number: "II*" */
@@ -155,6 +162,9 @@ extern "C" {
 /** Legacy PDB magic number: "HEADER" record name at the start of the file */
 #define NEP_MAGIC_PDB "HEADER"
 
+/** PDBx/mmCIF magic number: "data_" token at the start of the file */
+#define NEP_MAGIC_MMCIF "data_"
+
 /** @} */
 
 /**
@@ -175,6 +185,7 @@ extern "C" {
  * | NEP_FORMAT_NAME_PDS4     | `"PDS4"`      | NASA/ESA PDS4 planetary |
  * | NEP_FORMAT_NAME_DICOM    | `"DICOM"`     | DICOM medical imaging   |
  * | NEP_FORMAT_NAME_PDB      | `"PDB"`       | Legacy PDB protein data |
+ * | NEP_FORMAT_NAME_MMCIF    | `"mmCIF"`     | PDBx/mmCIF protein data |
  */
 
 /** GeoTIFF format display name */
@@ -197,6 +208,9 @@ extern "C" {
 
 /** Legacy PDB format display name */
 #define NEP_FORMAT_NAME_PDB "PDB"
+
+/** PDBx/mmCIF format display name */
+#define NEP_FORMAT_NAME_MMCIF "mmCIF"
 
 /** @} */
 

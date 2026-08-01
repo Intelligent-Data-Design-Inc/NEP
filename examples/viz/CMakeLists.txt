@@ -19,6 +19,10 @@ set(_viz_python_files
     PDB/_pdb_udf.py
     PDB/plot_pdb_xray_structure.py
     PDB/plot_pdb_nmr_ensemble.py
+    mmCIF/_mmcif_udf.py
+    mmCIF/plot_mmcif_1j7w.py
+    mmCIF/plot_mmcif_2w6v.py
+    mmCIF/plot_mmcif_4hhb.py
 )
 
 foreach(_viz_file ${_viz_python_files})
@@ -294,6 +298,43 @@ if(HAVE_PDB)
     )
 
     list(APPEND _viz_artifacts pdb_xray_structure pdb_nmr_ensemble)
+endif()
+
+if(HAVE_MMCIF)
+    add_test(
+        NAME viz_mmcif_1j7w
+        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/mmCIF/plot_mmcif_1j7w.py"
+                "${CMAKE_BINARY_DIR}/test/data/mmCIF/1J7W.cif"
+    )
+    set_tests_properties(viz_mmcif_1j7w PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+        ENVIRONMENT "${_viz_environment}"
+        FIXTURES_SETUP viz_artifacts
+    )
+
+    add_test(
+        NAME viz_mmcif_2w6v
+        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/mmCIF/plot_mmcif_2w6v.py"
+                "${CMAKE_BINARY_DIR}/test/data/mmCIF/2W6V.cif"
+    )
+    set_tests_properties(viz_mmcif_2w6v PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+        ENVIRONMENT "${_viz_environment}"
+        FIXTURES_SETUP viz_artifacts
+    )
+
+    add_test(
+        NAME viz_mmcif_4hhb
+        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/mmCIF/plot_mmcif_4hhb.py"
+                "${CMAKE_BINARY_DIR}/test/data/mmCIF/4HHB.cif"
+    )
+    set_tests_properties(viz_mmcif_4hhb PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+        ENVIRONMENT "${_viz_environment}"
+        FIXTURES_SETUP viz_artifacts
+    )
+
+    list(APPEND _viz_artifacts mmcif_1j7w_structure mmcif_2w6v_structure mmcif_4hhb_structure)
 endif()
 
 add_test(
