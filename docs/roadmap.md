@@ -40,6 +40,22 @@
 
 **GitHub Issue:** [#350](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/350)
 
+#### Sprint 3: Example Visualization
+**Detailed Plan**: See `docs/plan/v3.4.0-sprint3-mmcif-visualizations.md`
+
+- Add `examples/viz/mmCIF/` Python visualization scripts that open each mmCIF test file through the NetCDF UDF interface and produce publication-ready PNG artifacts, following the `examples/viz/PDB/` pattern.
+- Wire the new scripts into `examples/viz/CMakeLists.txt` (`HAVE_MMCIF` guard, `_viz_artifacts` registration) and `examples/viz/README.md`.
+- Update `docs/mmcif.md` (new file, if it does not already exist) with a Visualization section.
+- Update `.github/workflows/ci-mmcif.yml` to build with `NEP_ENABLE_VIZ_EXAMPLES=ON` using the project virtual environment, so the new plots run in CI.
+
+**Clarified decisions:**
+- All three existing mmCIF test files (`1J7W.cif`, `2W6V.cif`, `4HHB.cif`) get their own visualization script/plot, maximizing parser regression coverage, matching the v3.1.0 Sprint 3 "visualize all test files" precedent rather than picking just one or two files.
+- Plot content reuses the PDB Sprint viz pattern exactly: a 3D scatter of `atom_site_Cartn_x/y/z`, colored/marked by `atom_site_group_PDB` (`ATOM` vs `HETATM`), for consistency with `examples/viz/PDB/plot_pdb_xray_structure.py` and minimal new code, since the mmCIF and PDB schemas expose the same fields.
+- `NEP_ENABLE_MMCIF` stays default **OFF** in `CMakeLists.txt`; this sprint is scoped to visualization only (unlike PDB Sprint 3, which combined "more testing" with the default flip). Flipping the default is deferred to a future "more testing" sprint.
+- `ci-mmcif.yml` is extended to set up the project Python virtual environment and build with `-DNEP_ENABLE_VIZ_EXAMPLES=ON`, matching the DICOM Sprint 1 and PDB visualization precedent, so the new plots are exercised on every PR.
+
+**GitHub Issue:** [#351](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/351)
+
 ### V3.3.0 - Proteins with PDB Format
 
 #### Sprint 1: Setup

@@ -3,11 +3,11 @@
 The visualization examples use Python `netCDF4` to open NEP UDF files and
 Matplotlib to write static PNG plots. They are optional and disabled by default.
 The scripts cover FITS, CDF, GeoTIFF, GRIB2, PDS4 MESSENGER,
-Perseverance, MAVEN, New Horizons, DICOM, and legacy PDB products. They use the
-generated build-tree `.ncrc` to autoload enabled NEP UDF libraries.
+Perseverance, MAVEN, New Horizons, DICOM, legacy PDB, and PDBx/mmCIF products.
+They use the generated build-tree `.ncrc` to autoload enabled NEP UDF libraries.
 
 Format-specific scripts are organized in `CDF/`, `DICOM/`, `FITS/`,
-`GeoTIFF/`, `GRIB2/`, `PDS4/`, and `PDB/` directories. CMake mirrors this layout under
+`GeoTIFF/`, `GRIB2/`, `PDS4/`, `PDB/`, and `mmCIF/` directories. CMake mirrors this layout under
 `build/examples/viz/`. Shared helpers, tests, the artifact verifier, this README,
 and the CMake configuration remain at the visualization root.
 
@@ -56,7 +56,8 @@ cmake -S . -B build \
   -DNEP_ENABLE_GRIB2=ON \
   -DNEP_ENABLE_PDS4=ON \
   -DNEP_ENABLE_DICOM=ON \
-  -DNEP_ENABLE_PDB=ON
+  -DNEP_ENABLE_PDB=ON \
+  -DNEP_ENABLE_MMCIF=ON
 cmake --build build
 ctest --test-dir build -R viz --output-on-failure
 ```
@@ -103,12 +104,18 @@ python3 /path/to/nep/build/examples/viz/PDB/plot_pdb_xray_structure.py \
   /path/to/nep/build/test/data/PDB/4HHB.pdb
 python3 /path/to/nep/build/examples/viz/PDB/plot_pdb_nmr_ensemble.py \
   /path/to/nep/build/test/data/PDB/1GAB.pdb
+python3 /path/to/nep/build/examples/viz/mmCIF/plot_mmcif_1j7w.py \
+  /path/to/nep/build/test/data/mmCIF/1J7W.cif
+python3 /path/to/nep/build/examples/viz/mmCIF/plot_mmcif_2w6v.py \
+  /path/to/nep/build/test/data/mmCIF/2W6V.cif
+python3 /path/to/nep/build/examples/viz/mmCIF/plot_mmcif_4hhb.py \
+  /path/to/nep/build/test/data/mmCIF/4HHB.cif
 python3 /path/to/nep/build/examples/viz/verify_viz_artifacts.py \
   /path/to/nep/build/examples/viz \
   viz_plot_common_test fits_wfpc2_image cdf_temperature geotiff_modis_flood \
   grib2_wave pds4_messenger_tnmap pds4_perseverance_mastcamz \
   pds4_maven_ngims_l3 pds4_new_horizons_alice dicom_mrbrain_image dicom_xa_frame_montage \
-  pdb_xray_structure pdb_nmr_ensemble
+  pdb_xray_structure pdb_nmr_ensemble mmcif_1j7w_structure mmcif_2w6v_structure mmcif_4hhb_structure
 ```
 
 ## Scripts
@@ -133,6 +140,10 @@ python3 /path/to/nep/build/examples/viz/verify_viz_artifacts.py \
 - **`PDB/`**: `_pdb_udf.py` provides legacy PDB NetCDF access; `plot_pdb_xray_structure.py`
   renders a 3D scatter of the `4HHB.pdb` X-ray structure atoms, and
   `plot_pdb_nmr_ensemble.py` overlays all 20 models of the `1GAB.pdb` NMR ensemble.
+- **`mmCIF/`**: `_mmcif_udf.py` provides PDBx/mmCIF NetCDF access; `plot_mmcif_1j7w.py`,
+  `plot_mmcif_2w6v.py`, and `plot_mmcif_4hhb.py` each render a 3D scatter of ATOM and
+  HETATM Cartesian coordinates for the `1J7W.cif`, `2W6V.cif`, and `4HHB.cif` X-ray
+  structures.
 
 Generated PNG and metadata files remain in the visualization build directory
 for inspection. They are not installed and are not written to the source tree.

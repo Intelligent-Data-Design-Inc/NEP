@@ -44,7 +44,7 @@ jobs:
       - name: Install base dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake make wget zlib1g-dev pkg-config gfortran libzstd-dev
+          sudo apt-get install -y cmake make wget zlib1g-dev pkg-config gfortran libzstd-dev python3-venv python3-pip
 
       - name: Cache HDF5 install
         id: cache-hdf5-mmcif
@@ -106,6 +106,13 @@ jobs:
           make -j$(nproc)
           make install
 
+      - name: Set up Python virtual environment for visualization tests
+        run: |
+          python3 -m venv .venv
+          NETCDF4_DIR="$GITHUB_WORKSPACE/netcdf-c-install" \
+          HDF5_DIR="$GITHUB_WORKSPACE/hdf5-install" \
+            .venv/bin/python -m pip install -r requirements.txt
+
       # --- CMake build ---
       - name: Configure with CMake (mmCIF reader enabled)
         run: |
@@ -127,7 +134,8 @@ jobs:
             -DNEP_BUILD_LZ4=OFF \
             -DNEP_BUILD_BZIP2=OFF \
             -DNEP_BUILD_DOCUMENTATION=OFF \
-            -DNEP_BUILD_EXAMPLES=OFF \
+            -DNEP_BUILD_EXAMPLES=ON \
+            -DNEP_ENABLE_VIZ_EXAMPLES=ON \
             -DBUILD_TESTING=ON
           echo "=== Checking config.h for HAVE_MMCIF ==="
           grep "define HAVE_MMCIF" config.h && echo "SUCCESS: HAVE_MMCIF is defined" || (echo "FAILURE: HAVE_MMCIF not defined"; exit 1)
