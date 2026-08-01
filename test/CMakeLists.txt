@@ -172,6 +172,28 @@ if(HAVE_PDB)
                    COPYONLY)
 endif()
 
+# Build PDBx/mmCIF UDF test if mmCIF is enabled
+if(HAVE_MMCIF)
+    add_executable(tst_mmcif_udf tst_mmcif_udf.c)
+    target_link_libraries(tst_mmcif_udf PRIVATE ncmmcif nep ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
+    target_include_directories(tst_mmcif_udf PRIVATE ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+    add_test(NAME tst_mmcif_udf COMMAND tst_mmcif_udf)
+    set_tests_properties(tst_mmcif_udf PROPERTIES
+        ENVIRONMENT "NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+
+    # Copy PDBx/mmCIF test data (from https://www.rcsb.org) to build directory
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data/mmCIF)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/mmCIF/1J7W.cif
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/mmCIF/1J7W.cif
+                   COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/mmCIF/2W6V.cif
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/mmCIF/2W6V.cif
+                   COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/mmCIF/4HHB.cif
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/mmCIF/4HHB.cif
+                   COPYONLY)
+endif()
+
 # Build PDS4 UDF test if PDS4 is enabled
 if(HAVE_PDS4)
     add_executable(tst_pds4_udf tst_pds4_udf.c)
@@ -376,6 +398,9 @@ if(HAVE_PDS4)
 endif()
 if(HAVE_PDB)
     list(APPEND _test_exe_deps tst_pdb_udf)
+endif()
+if(HAVE_MMCIF)
+    list(APPEND _test_exe_deps tst_mmcif_udf)
 endif()
 add_custom_target(test_executables ALL DEPENDS ${_test_exe_deps})
 add_dependencies(test_executables hdf5_plugins)

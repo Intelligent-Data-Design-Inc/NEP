@@ -41,3 +41,8 @@ fi
 if test "@BUILD_PDB@" = "yes"; then
     ./ftst_pdb_udf
 fi
+
+# If PDBx/mmCIF is enabled, run the mmCIF UDF smoke test.
+if test "@BUILD_MMCIF@" = "yes"; then
+    ./ftst_mmcif_udf
+fi

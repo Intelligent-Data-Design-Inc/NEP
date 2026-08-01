@@ -65,6 +65,17 @@ if(HAVE_PDB)
         ENVIRONMENT "NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
 endif()
 
+# Build the PDBx/mmCIF Fortran smoke test if mmCIF is enabled.
+if(HAVE_MMCIF)
+    add_executable(ftst_mmcif_udf ftst_mmcif_udf.F90)
+    target_link_libraries(ftst_mmcif_udf PRIVATE ncmmcif nepf nep ${NetCDF_Fortran_LIBRARIES} ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
+    target_include_directories(ftst_mmcif_udf PRIVATE ${NetCDF_Fortran_INCLUDE_DIRS})
+    add_dependencies(ftst_mmcif_udf ncmmcif)
+    add_test(NAME ftst_mmcif_udf COMMAND ftst_mmcif_udf)
+    set_tests_properties(ftst_mmcif_udf PROPERTIES
+        ENVIRONMENT "NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+endif()
+
 # Configure run_tests.sh script with proper paths.
 if(NEP_BUILD_LZ4)
     set(BUILD_LZ4 "yes")
@@ -90,6 +101,11 @@ if(HAVE_PDB)
     set(BUILD_PDB "yes")
 else()
     set(BUILD_PDB "no")
+endif()
+if(HAVE_MMCIF)
+    set(BUILD_MMCIF "yes")
+else()
+    set(BUILD_MMCIF "no")
 endif()
 
 # Set the HDF5 plugin path for the generated test script. This must include

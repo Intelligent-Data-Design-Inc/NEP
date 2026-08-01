@@ -2,6 +2,32 @@
 
 ### V3.4.0 - More Proteins with mmCIF Format
 
+#### Sprint 1: Setup
+**Detailed Plan**: See `docs/plan/v3.4.0-sprint1-mmcif-setup.md`
+
+- Refer to the `mmcif` skill file (`/.devin/skills/mmcif/SKILL.md`) and the `pdb-legacy` skill for the relationship between legacy PDB and mmCIF.
+- Add the PDBx/mmCIF UDF8 slot definitions to `include/nep.h` (`NEP_UDF_MMCIF`, `NEP_MAGIC_MMCIF`, `NEP_FORMAT_NAME_MMCIF`).
+- Add the `NEP_ENABLE_MMCIF` CMake option (default OFF) and the `HAVE_MMCIF`/`#cmakedefine HAVE_MMCIF` plumbing.
+- Create a no-op dispatch skeleton (`include/mmcifdispatch.h`, `src/mmcifdispatch.c`, `src/mmciffile.c`) that builds `libncmmcif.so` and registers `"data_"` magic on UDF8.
+- Ensure the existing `test/data/mmCIF/*.cif` files (from https://www.rcsb.org) are copied into the build tree.
+- Add a C smoke test `test/tst_mmcif_udf.c` that opens and closes a real `.cif` file through `nc_open()`.
+- Add a Fortran smoke test `ftest/ftst_mmcif_udf.F90` that opens and closes a real `.cif` file through `nf90_open()`.
+- Add a dedicated `.github/workflows/ci-mmcif.yml` workflow that builds and tests with `NEP_ENABLE_MMCIF=ON`.
+
+**Clarified decisions:**
+- mmCIF is assigned **UDF8**; legacy PDB remains UDF7. The `mmcif` and `pdb-legacy` skill files already reflect this allocation.
+- `NEP_ENABLE_MMCIF` defaults to **OFF** in this sprint, following the FITS/PDB precedent; it will flip to ON once the read-only dispatch layer is proven in Sprint 2.
+- The new workflow is CMake-only because Autotools was removed in v3.1.0.
+- No external parsing library is required; a custom STAR/CIF tokenizer will be added in Sprint 2.
+- The smoke tests verify only `nc_open()`/`nc_close()` round-trips; no record parsing or PDBx category detection happens until Sprint 2.
+- `NC_MMCIF_initialize()` registers the handler with the literal magic string `"data_"`. Avoiding false positives against generic (small-molecule) CIF files via a PDBx category check is deferred to Sprint 2.
+
+**GitHub Issue:** TBD
+
+#### Sprint 2: Dispatch Layer for mmCIF
+- Fill in read-only dispatch layer.
+- Build tests around files in /home/ed/NEP/test/data/mmCIF
+
 ### V3.3.0 - Proteins with PDB Format
 
 #### Sprint 1: Setup
