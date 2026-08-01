@@ -13,7 +13,7 @@ from spack.package import *
 class Nep(CMakePackage):
     """NEP (NetCDF Expansion Pack) provides high-performance LZ4 and BZIP2
     compression filters for HDF5/NetCDF-4 files and transparent read access
-    to scientific data formats (GeoTIFF, GRIB2, FITS, PDS4, DICOM)
+    to scientific data formats (GeoTIFF, GRIB2, FITS, PDS4, DICOM, legacy PDB)
     through the standard NetCDF API via User Defined Format handlers."""
 
     homepage = "https://github.com/Intelligent-Data-Design-Inc/NEP"
@@ -83,6 +83,7 @@ class Nep(CMakePackage):
     variant("grib2", default=False, description="Enable GRIB2 reader support via NCEPLIBS-g2c")
     variant("pds4", default=False, description="Enable PDS4 reader support via libxml2")
     variant("dicom", default=False, description="Enable DICOM reader support via libdicom")
+    variant("pdb", default=True, description="Enable legacy PDB reader support (no external library required)")
     variant(
         "parallel",
         default=False,
@@ -122,6 +123,7 @@ class Nep(CMakePackage):
             self.define_from_variant("NEP_ENABLE_GRIB2", "grib2"),
             self.define_from_variant("NEP_ENABLE_PDS4", "pds4"),
             self.define_from_variant("NEP_ENABLE_DICOM", "dicom"),
+            self.define_from_variant("NEP_ENABLE_PDB", "pdb"),
             self.define_from_variant("NEP_ENABLE_PARALLEL_TESTS", "parallel"),
             self.define_from_variant("NEP_BUILD_EXAMPLES", "examples"),
             self.define_from_variant("NEP_ENABLE_BENCHMARKS", "benchmarks"),
@@ -149,5 +151,7 @@ class Nep(CMakePackage):
             assert os.path.exists(join_path(self.prefix.lib, "libncpds4.so"))
         if "+dicom" in self.spec:
             assert os.path.exists(join_path(self.prefix.lib, "libncdicom.so"))
+        if "+pdb" in self.spec:
+            assert os.path.exists(join_path(self.prefix.lib, "libncpdb.so"))
         if "+fits" in self.spec:
             assert os.path.exists(join_path(self.prefix.lib, "libncfits.so"))

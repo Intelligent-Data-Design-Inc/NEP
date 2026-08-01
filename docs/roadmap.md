@@ -67,9 +67,19 @@ Acquire additional real-world legacy PDB test files and extend `test/tst_pdb_udf
 **GitHub Issue:** [#345](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/345)
 
 #### Sprint 4: Documentation
+**Detailed Plan**: See `docs/plan/v3.3.0-sprint4-pdb-documentation.md`
+
 - Update all the docs.
 - Add a section on PDB to doxygen docs.
 - Write some examples/viz visulaizations.
+
+**Clarified decisions:**
+- Two visualization scripts are added under `examples/viz/PDB/`: a static 3D scatter plot of `ATOM`/`HETATM` Cartesian coordinates for the X-ray structure `4HHB.pdb`, and a multi-model overlay plot from the NMR ensemble `1GAB.pdb` showing coordinate variation across models. Both follow the existing per-format viz pattern (`plot_common.py`, `verify_viz_artifacts.py`, metadata sidecar files).
+- A standalone C example `examples/pdb/pdb_read.c` is added, matching the style of `examples/dicom/dicom_read.c` (calls `NC_PDB_initialize()`, opens a PDB file, prints dims/vars and a slice of atom coordinates), and is registered in `examples/CMakeLists.txt` and `examples/README.md`.
+- Full documentation parity with FITS/DICOM: a new `docs/pdb.md` format reference page (mapping, enabling, dependencies, resources, example, matching `docs/fits.md` structure), a new PDB row/section in `docs/formats.md`'s UDF slot table and format reference table, PDB entries in the top-level `README.md` (format table, CMake option table, Spack variant table), `docs/pdb.md` added to `docs/Doxyfile.in`'s `INPUT` list, and PDB mentions added to `examples/README.md` and `examples/viz/README.md`.
+- No reader behavior changes in this sprint; it is documentation- and example-only.
+
+**GitHub Issue:** [#347](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/347)
 
 ### V3.2.0 - More DICOM
 

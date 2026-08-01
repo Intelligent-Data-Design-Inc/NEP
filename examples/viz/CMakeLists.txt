@@ -16,6 +16,9 @@ set(_viz_python_files
     PDS4/plot_pds4_perseverance.py
     PDS4/plot_pds4_maven_l3.py
     PDS4/plot_pds4_new_horizons.py
+    PDB/_pdb_udf.py
+    PDB/plot_pdb_xray_structure.py
+    PDB/plot_pdb_nmr_ensemble.py
 )
 
 foreach(_viz_file ${_viz_python_files})
@@ -265,6 +268,32 @@ if(HAVE_DICOM)
     )
 
     list(APPEND _viz_artifacts dicom_mrbrain_image dicom_xa_frame_montage dicom_ct_brain_image)
+endif()
+
+if(HAVE_PDB)
+    add_test(
+        NAME viz_pdb_xray_structure
+        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/PDB/plot_pdb_xray_structure.py"
+                "${CMAKE_BINARY_DIR}/test/data/PDB/4HHB.pdb"
+    )
+    set_tests_properties(viz_pdb_xray_structure PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+        ENVIRONMENT "${_viz_environment}"
+        FIXTURES_SETUP viz_artifacts
+    )
+
+    add_test(
+        NAME viz_pdb_nmr_ensemble
+        COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/PDB/plot_pdb_nmr_ensemble.py"
+                "${CMAKE_BINARY_DIR}/test/data/PDB/1GAB.pdb"
+    )
+    set_tests_properties(viz_pdb_nmr_ensemble PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+        ENVIRONMENT "${_viz_environment}"
+        FIXTURES_SETUP viz_artifacts
+    )
+
+    list(APPEND _viz_artifacts pdb_xray_structure pdb_nmr_ensemble)
 endif()
 
 add_test(

@@ -10,6 +10,10 @@ if(HAVE_DICOM)
     add_subdirectory(dicom)
 endif()
 
+if(HAVE_PDB)
+    add_subdirectory(pdb)
+endif()
+
 if(NEP_ENABLE_VIZ_EXAMPLES)
     add_subdirectory(viz)
 endif()

@@ -36,6 +36,7 @@ Read other formats with the netcdf-c library, as if they were netCDF files.
 | **FITS** | Astronomical images and tables (HST, JWST) |
 | **PDS4** | NASA/ESA planetary science (Mars, Moon, etc.) |
 | **DICOM** | Medical imaging (CT, MR, XA, US) |
+| **Legacy PDB** | Protein/macromolecular structures (RCSB) |
 
 All readers use the standard NetCDF UDF system. Once enabled, **existing C and Fortran programs require no code modification** — an existing Fortran program that calls `nf90_open()` and `nf90_get_var()` can read a FITS, CDF, GeoTIFF, GRIB2, or PDS4 file without changing code.
 
@@ -49,7 +50,8 @@ cmake -B build \
   -DNEP_ENABLE_CDF=ON \
   -DNEP_ENABLE_FITS=ON \
   -DNEP_ENABLE_PDS4=ON \
-  -DNEP_ENABLE_DICOM=ON
+  -DNEP_ENABLE_DICOM=ON \
+  -DNEP_ENABLE_PDB=ON
 ```
 
 ### Example Programs
@@ -129,6 +131,7 @@ cmake -B build -DHDF5_ROOT=/usr/local/hdf5-2.1.1 -DCMAKE_INSTALL_PREFIX=/usr/loc
 | `-DNEP_ENABLE_CDF` | **OFF** | NASA CDF UDF handler (UDF4) |
 | `-DNEP_ENABLE_PDS4` | **OFF** | NASA/ESA PDS4 UDF handler (UDF5) |
 | `-DNEP_ENABLE_DICOM` | **OFF** | DICOM UDF handler (UDF6) |
+| `-DNEP_ENABLE_PDB` | ON | Legacy PDB UDF handler (UDF7) |
 | `-DNEP_BUILD_EXAMPLES` | ON | Example programs |
 | `-DNEP_ENABLE_BENCHMARKS` | OFF | Performance benchmark examples |
 | `-DNEP_ENABLE_PARALLEL_TESTS` | OFF | MPI parallel I/O tests |
@@ -145,7 +148,7 @@ cmake -B build -DHDF5_ROOT=/usr/local/hdf5-2.1.1 -DCMAKE_INSTALL_PREFIX=/usr/loc
 
 #### Format Readers
 
-All format readers default to **OFF** and are independent — any combination can be enabled simultaneously.
+All format readers are independent — any combination can be enabled simultaneously. Legacy PDB defaults to **ON**; the rest default to **OFF**.
 
 | Format | CMake Option | UDF Slot | Dependencies |
 |--------|--------------|----------|--------------|
@@ -155,6 +158,7 @@ All format readers default to **OFF** and are independent — any combination ca
 | NASA CDF | `-DNEP_ENABLE_CDF` | UDF4 | NASA CDF library v3.9.x |
 | PDS4 | `-DNEP_ENABLE_PDS4` | UDF5 | libxml2 ≥ 2.9 |
 | DICOM | `-DNEP_ENABLE_DICOM` | UDF6 | libdicom, libjpeg / libjpeg-turbo |
+| Legacy PDB | `-DNEP_ENABLE_PDB` | UDF7 | None (built-in fixed-column parser) |
 
 - NASA CDF library: https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/ (or `spack install cdf`)
 - CDF moved from UDF2 to UDF4 in v2.2.0; GRIB2 and CDF can now be enabled together.
@@ -206,6 +210,7 @@ This builds NEP with LZ4, BZIP2, Fortran wrappers, and documentation — no form
 | `grib2` | OFF | GRIB2 reader — NWP model output (requires NCEPLIBS-g2c) |
 | `pds4` | OFF | PDS4 reader — planetary science (requires libxml2) |
 | `dicom` | OFF | DICOM reader — medical imaging (requires libdicom, libjpeg-turbo) |
+| `pdb` | ON | Legacy PDB reader — protein structures (no external library required) |
 | `parallel` | OFF | Parallel I/O tests (requires MPI, HDF5+mpi, netcdf-c+mpi) |
 | `examples` | OFF | Example programs |
 | `benchmarks` | OFF | Performance benchmark programs |
@@ -217,7 +222,7 @@ This builds NEP with LZ4, BZIP2, Fortran wrappers, and documentation — no form
 spack install nep+geotiff+grib2
 
 # All format readers
-spack install nep+geotiff+grib2+fits+pds4+dicom
+spack install nep+geotiff+grib2+fits+pds4+dicom+pdb
 
 # Minimal build (no docs, no Fortran) for CI/containers
 spack install nep~docs~fortran
