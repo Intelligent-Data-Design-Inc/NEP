@@ -1,0 +1,65 @@
+{{Cite web| title = NetCDF: Documentation| access-date = 2026-05-30| url = https://docs.unidata.ucar.edu/netcdf-c/current/}}
+{{Cite web| title = PIO: Parallel I/O Libraries (PIO)| access-date = 2026-05-30| url = https://ncar.github.io/ParallelIO/}}
+{{Cite| publisher = Intelligent-Data-Design-Inc| title = Intelligent-Data-Design-Inc/NEP| access-date = 2026-05-30| date = 2026-05-28| url = https://github.com/Intelligent-Data-Design-Inc/NEP}}
+{{Cite| doi = 10.5065/D6H70CW6| last1 = NSF Unidata| last2 = Davis| first2 = Glenn| last3 = Rew| first3 = Russ| last4 = Heimbigner| first4 = Dennis| last5 = Hartnett| first5 = Edward| last6 = Fisher| first6 = Ward| last7 = Others| first7 = Many| title = NetCDF-C| access-date = 2026-05-30| date = 2026-05-28| url = https://github.com/Unidata/netcdf-c}}
+{{Cite web| title = NetCDF-Fortran: Unidata NetCDF Fortran Library| access-date = 2026-05-30| url = https://docs.unidata.ucar.edu/netcdf-fortran/current/}}
+{{Cite| publisher = NSF Unidata| title = Unidata/netcdf-fortran| access-date = 2026-05-30| date = 2026-05-17| url = https://github.com/Unidata/netcdf-fortran}}
+{{Cite paper| doi = 10.13140/RG.2.2.31433.11361| last1 = Hartnett| first1 = Edward| last2 = Lei| first2 = Hang| last3 = Jovic| first3 = Dusan| title = IN31C-0673: Benchmarking Zstandard and Quantize Compression in NetCDF| date = 2023-12-11}}
+{{Cite paper| last = Hartnett| first = Edward| title = Unit Testing NetCDF and NCEPLIBS Model Infrastructure Meeting 12/4/23| date = 2023-12-06}}
+{{Cite conference| conference = AMS| title = (PDF) THE PARALLELIO (PIO) C/FORTRAN LIBRARIES FOR SCALABLE HPC PERFORMANCE| booktitle = ResearchGate| access-date = 2026-05-30| date = 2021-01| url = https://www.researchgate.net/publication/348169990_THE_PARALLELIO_PIO_CFORTRAN_LIBRARIES_FOR_SCALABLE_HPC_PERFORMANCE}}
+{{Cite paper| doi = 10.13140/RG.2.2.32990.14404| title = (PDF) NetCDF Tricks of the Jedi Masters| work = ResearchGate| location = CU LASP| access-date = 2026-05-30| date = 2024-03-24| url = https://www.researchgate.net/publication/386377963_NetCDF_Tricks_of_the_Jedi_Masters}}
+{{Cite conference| title = (PDF) NetCDF Compression Improvements| booktitle = ResearchGate| location = Hamburg, Germany| access-date = 2026-05-30| date = 2023| url = https://www.researchgate.net/publication/374030060_NetCDF_Compression_Improvements_-_HDF5_User_Meeting_Hamburg_2023}}
+{{Cite paper| doi = 10.13140/RG.2.2.24489.36965| title = (PDF) Better Compression for UFS with Support from the NetCDF Community| work = ResearchGate| access-date = 2026-05-30| date = 2023-06-28| url = https://www.researchgate.net/publication/372744136_Better_Compression_for_UFS_with_Support_from_the_NetCDF_Community}}
+{{Cite paper| last1 = Zender| first1 = Charlie| last2 = Tolento| first2 = Juan| last3 = Hartnett| first3 = Edward| title = Advanced Compression Algorithms for netCDF Datasets with the Community Codec Repository| date = 2022-07-25}}
+{{Cite paper| last = Hartnett| first = Edward| title = NetCDF Compression Improvements| date = 2022-11-02}}
+{{Cite paper| last = Hartnett| first = Edward| title = NetCDF Compression Improvements SENA Meeting, 6/21/23| date = 2023-06-28}}
+{{Cite paper| last1 = Zender| first1 = Charlie| last2 = Tolento| first2 = Juan| last3 = Hartnett| first3 = Edward| title = Advanced Compression Algorithms for netCDF Datasets with the Community Codec Repository| date = 2022-07-25}}
+{{Cite conference| conference = EGU| last1 = Hartnett| first1 = Edward| last2 = Zender| first2 = Charlie| title = Adding Quantization to the NetCDF C and Fortran Libraries to Enable Lossy Compression| date = 2022-05-24}}
+{{Cite conference| conference = AGU| last1 = Hartnett| first1 = Edward| last2 = Zender| first2 = Charles| last3 = Fisher| first3 = Ward| last4 = Heimbigner| first4 = Dennis| last5 = Lei| first5 = Hang| last6 = Curtis| first6 = Brian| last7 = Gerheiser| first7 = Kyle| title = Quantization and Next-Generation Zlib Compression for Fully Backward-Compatible, Faster, and More Effective Data Compression in NetCDF Files| date = 2021-12-13}}
+{{Cite paper| doi = 10.13140/RG.2.2.22979.84005| last = Hartnett| first = Edward| title = PIO and NetCDF Integration| date = 2019-12-23}}
+{{Cite conference| conference = Improving Scientific Software| last1 = Hartnett| first1 = Edward| last2 = Edwards| first2 = Jim| title = SOFTWARE ENGINEERING METHODS USED FOR THE PARALLELIO (PIO) C/FORTRAN LIBRARIES| date = 2019-04-03}}
+{{Cite paper| doi = 10.13140/RG.2.2.24258.63682| last = Hartnett| first = Edward| title = NetCDF-4 Performance Improvements Opening Complex Data Files| date = 2019-01-10}}
+{{Cite paper| last1 = Rew| first1 = Russ| last2 = Hartnett| first2 = Edward| last3 = Heimbigner| first3 = D.| last4 = Caron| first4 = John| title = Advances in the NetCDF Data Model, Format, and Software| work = AGU Fall Meeting Abstracts| date = 2010-12-01}}
+{{Cite conference| last1 = Gallagher| first1 = James| last2 = Rew| first2 = Russ| last3 = McQueary| first3 = R.| last4 = Heimbigner| first4 = D.| last5 = Hartnett| first5 = Edward| title = Merging the Data Models of NetCDF and DAP: Design Choices and Benefits| booktitle = AGU Fall Meeting Abstracts| date = 2008-01-01}}
+{{Cite journal| last1 = Folk| first1 = Mike| last2 = Rew| first2 = Russ| last3 = Yang| first3 = M.| last4 = Hartnett| first4 = Edward| last5 = McGrath| first5 = R.| last6 = Koziol| first6 = Quincey| title = NetCDF-4: Combining netCDF and HDF5 Data| journal = AGU Fall Meeting Abstracts| date = 2003-12-01}}
+{{Cite conference| last1 = Hartnett| first1 = Edward| last2 = Rew| first2 = Russ| title = 7C.2 EXPERIENCE WITH AN ENHANCED NETCDF DATA MODEL AND INTERFACE FOR SCIENTIFIC DATA ACCESS}}
+{{Cite journal| doi = 10.5194/gmd-10-413-2017| issn = 1991-9603| volume = 10| issue = 1| pages = 413–423| last1 = Silver| first1 = Jeremy D.| last2 = Zender| first2 = Charles S.| title = The compression–error trade-off for large gridded data sets| journal = Geoscientific Model Development| access-date = 2026-05-30| date = 2017-01-27| url = https://gmd.copernicus.org/articles/10/413/2017/}}
+{{Cite journal| doi = 10.5194/gmd-9-3199-2016| issn = 1991-9603| volume = 9| issue = 9| pages = 3199–3211| last = Zender| first = Charles S.| title = Bit Grooming: statistically accurate precision-preserving quantization with compression, evaluated in the netCDF Operators (NCO, v4.4.8+)| journal = Geoscientific Model Development| access-date = 2026-05-30| date = 2016-09-19| url = https://gmd.copernicus.org/articles/9/3199/2016/}}
+{{Cite| doi = 10.1002/essoar.10509577.1| last = Zender| first = Charles| title = What Geoscientists Want: Short and Sweet Commands with Eco-friendly Data| access-date = 2026-05-30| date = 2021-12-15| url = https://essopenarchive.org/doi/full/10.1002/essoar.10509577.1}}
+{{Cite journal| doi = 10.5194/gmd-10-4619-2017| issn = 1991-9603| volume = 10| issue = 12| pages = 4619–4646| last1 = Hassell| first1 = David| last2 = Gregory| first2 = Jonathan| last3 = Blower| first3 = Jon| last4 = Lawrence| first4 = Bryan N.| last5 = Taylor| first5 = Karl E.| title = A data model of the Climate and Forecast metadata conventions (CF-1.6) with a software implementation (cf-python v2.1)| journal = Geoscientific Model Development| access-date = 2026-05-30| date = 2017-12-19| url = https://gmd.copernicus.org/articles/10/4619/2017/}}
+{{Cite web| title = UDUNITS {{!}} NSF Unidata| access-date = 2026-05-30| url = https://www.unidata.ucar.edu/software/udunits}}
+{{Cite web| title = Zarr| work = Zarr| access-date = 2026-05-30| url = https://zarr.dev/}}
+{{Cite web| title = The HDF5® Library & File Format| work = The HDF Group - ensuring long-term access and usability of HDF data and supporting users of HDF technologies| access-date = 2026-05-30| url = https://www.hdfgroup.org/solutions/hdf5/}}
+{{Cite web| last = loricooper| title = HDF4| work = The HDF Group - ensuring long-term access and usability of HDF data and supporting users of HDF technologies| access-date = 2026-05-30| url = https://www.hdfgroup.org/download/hdf4/}}
+{{Cite web| title = Homepage — OPeNDAP| access-date = 2026-05-30| date = 2026-04-22| url = https://www.opendap.org/}}
+{{Cite web| title = OPeNDAP User Guide| access-date = 2026-05-30| url = https://opendap.github.io/documentation/UserGuideComprehensive.html}}
+{{Cite web| title = PnetCDF| access-date = 2026-05-30| url = https://parallel-netcdf.github.io/}}
+{{Cite web| title = CDF Home| work = Common Data Format (CDF)| access-date = 2026-05-30| url = https://cdf.gsfc.nasa.gov/}}
+{{Cite conference| publisher = Internet Engineering Task Force| doi = 10.17487/RFC1950| last1 = Deutsch| first1 = L. Peter| last2 = Gailly| first2 = Jean-loup| title = ZLIB Compressed Data Format Specification version 3.3| access-date = 2026-06-08| date = 1996-05| url = https://datatracker.ietf.org/doc/rfc1950}}
+{{Cite web| title = Szip - User Manual - NHR@ZIB| access-date = 2026-06-08| url = https://user.nhr.zib.de/wiki/spaces/PUB/pages/427535/Szip}}
+{{Cite web| title = szip/src/szlib.h at master · erdc/szip| work = GitHub| access-date = 2026-06-08| url = https://github.com/erdc/szip/blob/master/src/szlib.h}}
+{{Cite web| title = szip homepage| access-date = 2026-06-08| url = http://www.compressconsult.com/szip/}}
+{{Cite web| title = dkrz-sw / libaec · GitLab| work = GitLab| access-date = 2026-06-08| date = 2026-05-19| url = https://gitlab.dkrz.de/dkrz-sw/libaec}}
+{{Cite web| title = libaec/INSTALL.md at main · Deutsches-Klimarechenzentrum/libaec| work = GitHub| access-date = 2026-06-08| url = https://github.com/Deutsches-Klimarechenzentrum/libaec/blob/main/INSTALL.md}}
+{{Cite web| title = Zstandard - Real-time data compression algorithm| access-date = 2026-06-08| url = https://facebook.github.io/zstd/}}
+{{Cite conference| publisher = Internet Engineering Task Force| doi = 10.17487/RFC8878| last1 = Collet| first1 = Yann| last2 = Kucherawy| first2 = Murray| title = Zstandard Compression and the 'application/zstd' Media Type| access-date = 2026-06-08| date = 2021-02| url = https://datatracker.ietf.org/doc/rfc8878}}
+{{Cite| publisher = lz4| title = lz4/lz4| access-date = 2026-06-08| date = 2026-06-07| url = https://github.com/lz4/lz4}}
+{{Cite web| title = bzip2 : Home| access-date = 2026-06-08| url = https://sourceware.org/bzip2/}}
+{{Cite| publisher = lz4| title = lz4/lz4| access-date = 2026-06-08| date = 2026-06-08| url = https://github.com/lz4/lz4}}
+{{Cite| publisher = Intelligent-Data-Design-Inc| title = Intelligent-Data-Design-Inc/NEP| access-date = 2026-06-10| date = 2026-06-06| url = https://github.com/Intelligent-Data-Design-Inc/NEP}}
+{{Cite journal| publisher = CF Community| doi = 10.5281/ZENODO.15015065| last1 = Davis| first1 = Ethan| last2 = Taylor| first2 = Karl E.| last3 = Adloff| first3 = Fanny| last4 = Gregory| first4 = Jonathan| last5 = Lawrence| first5 = Bryan| last6 = Lee| first6 = Daniel| title = Supporting Open Science with the CF Metadata Conventions for NetCDF| access-date = 2026-06-10| date = 2024-12-11| url = https://zenodo.org/doi/10.5281/zenodo.15015065}}
+{{Cite web| title = CF Standard Names}}
+{{Cite web| title = CF Metadata Conventions}}
+{{Cite| publisher = OPeNDAP™| title = OPENDAP/bes| access-date = 2026-06-16| date = 2026-06-15| url = https://github.com/OPENDAP/bes}}
+{{Cite web| title = CMIP - Coupled Model Intercomparison Project| access-date = 2026-06-23| date = 2022-10-30| url = https://wcrp-cmip.org/}}
+{{Cite web| title = Home {{!}} Community Earth System Model| access-date = 2026-06-23| url = https://www.cesm.ucar.edu/}}
+{{Cite web| title = Weather Research & Forecasting Model (WRF) {{!}} Mesoscale & Microscale Meteorology| access-date = 2026-07-02| url = https://www.mmm.ucar.edu/models/wrf}}
+{{Cite web| title = Integrated Data Viewer {{!}} NSF Unidata| access-date = 2026-07-02| url = https://www.unidata.ucar.edu/software/idv}}
+{{Cite web| title = ERA5 hourly data on single levels from 1940 to present| access-date = 2026-07-02| url = https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels?tab=overview}}
+{{Cite web| title = Climate Data Store| access-date = 2026-07-02| url = https://cds.climate.copernicus.eu/}}
+{{Cite web| title = CMIP Phase 5 (CMIP5) - Coupled Model Intercomparison Project| access-date = 2026-07-02| date = 2022-12-02| url = https://wcrp-cmip.org/cmip-phases/cmip5/}}
+{{Cite web| title = IPCC — Intergovernmental Panel on Climate Change| access-date = 2026-07-02| url = https://www.ipcc.ch/}}
+{{Cite web| title = The Ocean Observatories Initiative (OOI)| access-date = 2026-07-02| url = https://oceanobservatories.org/}}
+{{Cite| publisher = Intelligent-Data-Design-Inc| title = Intelligent-Data-Design-Inc/NEP| access-date = 2026-07-02| date = 2026-06-29| url = https://github.com/Intelligent-Data-Design-Inc/NEP}}
+{{Cite web| title = NCO Homepage| access-date = 2026-07-05| url = https://nco.sourceforge.net/}}
+{{Cite| last = Hartnett| first = Edward| title = The NetCDF Expansion Pack (NEP) - Extending the Capabilities of NetCDF| access-date = 2026-07-19| url = https://github.com/Intelligent-Data-Design-Inc/NEP/blob/main/docs/NEP_abstract.md}}

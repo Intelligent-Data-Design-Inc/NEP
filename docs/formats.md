@@ -1,6 +1,6 @@
 # NEP Format Readers
 
-NEP implements five NetCDF User Defined Format (UDF) handlers that allow external scientific data formats to be opened with the standard `nc_open()` API. All readers are **disabled by default** and must be enabled at build time.
+NEP implements seven NetCDF User Defined Format (UDF) handlers that allow external scientific data formats to be opened with the standard `nc_open()` API. Most readers are **disabled by default** and must be enabled at build time; the legacy PDB reader is enabled by default.
 
 ## UDF Slot Assignments
 
@@ -13,6 +13,7 @@ NEP implements five NetCDF User Defined Format (UDF) handlers that allow externa
 | UDF4 | NASA CDF | `\xCD\xF3\x00\x01` | v1.3.0 |
 | UDF5 | NASA/ESA PDS4 | XML root `Product_Observational` | v2.2.0 |
 | UDF6 | DICOM | `DICM` at byte offset 128 | v3.0.0 |
+| UDF7 | Legacy PDB | `HEADER` | v3.3.0 |
 
 All readers can be enabled simultaneously — there are no mutual-exclusivity restrictions.
 
@@ -29,6 +30,7 @@ dependencies, resources, and examples:
 | NASA CDF | UDF4 | [NASA CDF](cdf.md) |
 | NASA/ESA PDS4 | UDF5 | [PDS4-to-NetCDF Mapping](pds4.md) |
 | DICOM | UDF6 | [DICOM](dicom.md) |
+| Legacy PDB | UDF7 | [PDB](pdb.md) |
 
 See also the native NetCDF-4 compression documentation:
 [LZ4/BZIP2 HDF5 filters](compression.md).
@@ -60,6 +62,7 @@ nc_open("data.cdf",                             NC_NOWRITE, &ncid);  /* CDF */
 nc_open("gdaswave.t00z.wcoast.0p16.f000.grib2", NC_NOWRITE, &ncid);  /* GRIB2 */
 nc_open("image.fits",                           NC_NOWRITE, &ncid);  /* FITS */
 nc_open("image.dcm",                            NC_UDF6,    &ncid);  /* DICOM */
+nc_open("structure.pdb",                        NC_UDF7,    &ncid);  /* Legacy PDB */
 ```
 
 **Install path**:

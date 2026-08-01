@@ -952,6 +952,7 @@ INPUT                  = @abs_top_srcdir@/src/nep.c \
                          @abs_top_srcdir@/include/grib2dispatch.h \
                          @abs_top_srcdir@/include/fitsdispatch.h \
                          @abs_top_srcdir@/include/dicomdispatch.h \
+                         @abs_top_srcdir@/include/pdbdispatch.h \
                          @abs_top_srcdir@/include/cdfdispatch.h \
                          @abs_top_srcdir@/fsrc/nep.F90 \
                          @abs_top_srcdir@/docs/mainpage.md \
@@ -963,6 +964,7 @@ INPUT                  = @abs_top_srcdir@/src/nep.c \
                          @abs_top_srcdir@/docs/fits.md \
                          @abs_top_srcdir@/docs/dicom.md \
                          @abs_top_srcdir@/docs/pds4.md \
+                         @abs_top_srcdir@/docs/pdb.md \
                          @abs_top_srcdir@/docs/examples.md \
                          @abs_top_srcdir@/examples/README.md \
                          @abs_top_srcdir@/examples
