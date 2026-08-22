@@ -63,6 +63,67 @@ In `NC_NETCDF4_MODEL` mode, the following features are forbidden at create time:
 
 Attempts to use these features with `NC_NETCDF4_MODEL` will return `NC_EINVAL` or `NC_ENOTNC4` as appropriate.
 
+## Feature Detection: `nep_meta.h`
+
+Before any other NEXTCDF-4 work begins, NEP will add a `nep_meta.h` build-generated header, following the same pattern netcdf-c already uses for `include/netcdf_meta.h` (generated from `include/netcdf_meta.h.in` via `configure_file(... @ONLY)` in `CMakeLists.txt`).
+
+This addresses the need for downstream code (`nextcopy`, `nextdump`, third-party applications, and NEP's own test suite) to feature-detect NEXTCDF-4 capabilities at compile time, rather than guessing based on HDF5 or NEP version numbers alone, since availability of individual features depends on the HDF5 version NEP was built against (1.14.x vs. 2.1.1+) as well as whether NEXTCDF-4 was enabled at all.
+
+### Why This Comes First
+
+- Every later phase (new types, reference support, bitfields, tools) needs a place to advertise "is this feature compiled in," both for NEP's own conditional compilation (`#ifdef`) and for external code that links against NEP.
+- Introducing it after other features exist would mean retrofitting feature macros into already-written code and risks inconsistent naming; defining the full macro surface up front keeps naming consistent across all of Phase 1–4.
+- It is a small, low-risk, purely additive change (one `.h.in` file plus one `configure_file()` call), making it a low-cost first step that unblocks everything else.
+
+### File Contents
+
+`include/nep_meta.h.in` will be added alongside the existing `include/netcdf_meta.h.in`, generated the same way into `${netCDF_BINARY_DIR}/include/nep_meta.h`:
+
+```c
+#ifndef NEP_META_H
+#define NEP_META_H
+
+/* NEXTCDF-4 rewrite present at all (vs. classic libhdf5 backend). */
+#define NEP_HAS_NEXTCDF4        @NEP_HAS_NEXTCDF4@
+
+/* HDF5 version NEP was built against, for feature gating. */
+#define NEP_HDF5_VERSION_MAJOR  @HDF5_VERSION_MAJOR@
+#define NEP_HDF5_VERSION_MINOR  @HDF5_VERSION_MINOR@
+#define NEP_HDF5_VERSION_PATCH  @HDF5_VERSION_PATCH@
+
+/* Superblock v3 / HDF5 1.14.x+ features. */
+#define NEP_HAS_SUPERBLOCK_V3   @NEP_HAS_SUPERBLOCK_V3@
+#define NEP_HAS_FLOAT16         @NEP_HAS_FLOAT16@
+#define NEP_HAS_REF_TYPES       @NEP_HAS_REF_TYPES@
+#define NEP_HAS_BITFIELD        @NEP_HAS_BITFIELD@
+#define NEP_HAS_COMPLEX         @NEP_HAS_COMPLEX@
+
+/* HDF5 2.1.1+ small floating-point types. */
+#define NEP_HAS_BFLOAT16        @NEP_HAS_BFLOAT16@
+#define NEP_HAS_FLOAT8          @NEP_HAS_FLOAT8@
+#define NEP_HAS_FLOAT6          @NEP_HAS_FLOAT6@
+#define NEP_HAS_FLOAT4          @NEP_HAS_FLOAT4@
+
+/* NC_NETCDF4_MODEL compatibility flag support. */
+#define NEP_HAS_NETCDF4_MODEL   @NEP_HAS_NETCDF4_MODEL@
+
+/* nextcopy / nextdump tools built. */
+#define NEP_HAS_NEXTCOPY        @NEP_HAS_NEXTCOPY@
+#define NEP_HAS_NEXTDUMP        @NEP_HAS_NEXTDUMP@
+
+#endif /* NEP_META_H */
+```
+
+Each `@NEP_HAS_*@` macro is set to `1` or `0` by the CMake configure step based on detected HDF5 version and enabled NEP build options (mirroring how `netcdf_meta.h.in` sets `NC_HAS_HDF5`, `NC_HAS_DAP2`, etc.), so all of them are always defined (as `0` or `1`), never simply absent — callers can write `#if NEP_HAS_FLOAT16` unconditionally without an `#ifdef` guard first.
+
+### Build System Integration
+
+- Add `include/nep_meta.h.in` next to the existing `include/netcdf_meta.h.in`.
+- Add a `configure_file(${netCDF_SOURCE_DIR}/include/nep_meta.h.in ${netCDF_BINARY_DIR}/include/nep_meta.h @ONLY)` call in the top-level `CMakeLists.txt`, immediately following the existing `netcdf_meta.h` generation step.
+- Add the equivalent Autotools generation (`nep_meta.h.in` processed by `config.status`) to keep the CMake and Autotools build systems consistent, per the project's documentation rules.
+- Install `nep_meta.h` alongside `netcdf_meta.h` in the public include directory.
+- This is a Phase 0 / prerequisite task, completed before Phase 1 ("Foundation") begins, so that every subsequent phase can gate its own new code behind the appropriate `NEP_HAS_*` macro from day one.
+
 ## Use Superblock v3
 
 NEXTCDF-4 will use HDF5 Superblock v3 for files by default. Superblock v3 was introduced in HDF5 1.14.x and provides:
@@ -97,6 +158,19 @@ NEXTCDF-4 will:
 - Re-attach dimension scales when a rename changes the relationship between a coordinate variable and its dimension.
 - Preserve dimids across renames so that existing variable references remain valid.
 - Every rename will cause a flush to disk with the update. NEXTCDF-4 will not attempt to manage name changes in memory only, and then write everything at once. Each name change will be atomic, and flush to disk. The next name change, if there is one, will face a file on disk and memory info that match and are complete.
+
+### Design Rationale: Flush-Per-Rename
+
+Nearly all of the existing rename bugs in `libhdf5` stem from attempts to batch or defer rename bookkeeping (dimension scales, `DIMENSION_LIST`/`REFERENCE_LIST`, hidden `_Netcdf4Coordinates`/`_Netcdf4Dimid` attributes) and reconcile it later, which breaks down because users can issue renames in arbitrary, adversarial orders (e.g. swapping two names, renaming a dimension to a name a variable currently holds, then renaming that variable away, etc.).
+
+NEXTCDF-4 deliberately avoids this class of bug by design rather than by handling every possible ordering:
+
+- Each `nc_rename_dim`/`nc_rename_var` call performs its HDF5-level rename, updates all dependent in-memory and on-disk metadata (dimension scale names, hidden attributes, `DIMENSION_LIST`/`REFERENCE_LIST`), and flushes to disk **before returning to the caller**.
+- Because every rename starts from a state where memory and disk are already fully consistent, each rename only ever has to solve one simple, well-defined problem: "given a consistent file, apply this one rename correctly." It never has to reason about a queue of pending, possibly-conflicting renames.
+- This trades rename throughput for correctness: a script issuing thousands of renames in a loop will incur a flush per call. This is an accepted, intentional cost — rename operations are not expected to be a hot path, and the correctness guarantee is considered more valuable than batched rename performance.
+- This behavior is not configurable; there is no "deferred flush" mode for renames, precisely because reintroducing deferred/batched updates is what caused the original bugs.
+- Applications that need to perform many renames efficiently should be advised (in user-facing documentation) to expect O(1) disk flushes per rename call, and to avoid rename-heavy workloads in performance-sensitive code paths.
+- Renaming a dimension or variable never invalidates an existing `NC_REF_OBJECT`/`NC_REF_REGION` reference to it: HDF5 renames (`H5Lmove`) only change the group *link* pointing at an object, not the object's underlying address/token that references actually store. See "Reference Validity Across File Changes" under "Support for HDF5 Reference Types" for the operations that *do* invalidate references.
 
 ## Dimension Scales and Dimension Mapping
 
@@ -171,6 +245,33 @@ These types are software-emulated in HDF5 and implicit conversions are unreliabl
 - `NC_BFLOAT16` and the FP8/FP6/FP4 types require HDF5 2.1.1 or later.
 - Reading an existing float16, bfloat16, or FP8/FP6/FP4 dataset from a non-NEXTCDF-4 HDF5 file is supported.
 - These types cannot be coordinate variables.
+
+### Default Fill Values
+
+Each new floating-point type has a documented default fill value, following the same design principle as the existing classic-type defaults (`NC_FILL_FLOAT`, `NC_FILL_DOUBLE`, etc.): a finite, large-magnitude value that is unlikely to occur in real data and is clearly distinguishable from normal results, but that does not risk overflowing to infinity during ordinary arithmetic.
+
+| NetCDF Type      | Default Fill Value | Bit Pattern | Rationale |
+|------------------|--------------------:|-------------|-----------|
+| `NC_FLOAT16`     | `55296.0`           | `0x7B00`    | Second-highest exponent (`11110`) with mantissa `1100000000`; well below the max finite value (`65504`, `0x7BFF`) and far from `+Inf` (`0x7C00`), so ordinary rounding/arithmetic on nearby data cannot produce or collide with it. |
+| `NC_BFLOAT16`    | `~2.9e36`           | `0x7CF0`    | The upper 16 bits of the `NC_FILL_FLOAT` bit pattern (`0x7CF00000`), since `bfloat16` is defined as a truncation of IEEE `binary32`. This keeps the fill value numerically consistent with `NC_FILL_FLOAT` under widening conversion. |
+| `NC_FLOAT8_E4M3` | `224.0`             | `0x76`      | Exponent `1110` (second-highest finite exponent), mantissa `110`; avoids the reserved all-ones pattern (`0x7F`/`0xFF`) that E4M3 uses for NaN. |
+| `NC_FLOAT8_E5M2` | `28672.0`           | `0x77`      | Exponent `11101` (one below the max finite exponent `11110`), mantissa `11`; avoids the reserved exponent `11111` used for `Inf`/`NaN` in E5M2. |
+| `NC_FLOAT6_E2M3` | *(no default; see below)* | — | — |
+| `NC_FLOAT4_E2M1` | *(no default; see below)* | — | — |
+
+`NC_FLOAT6_E2M3` and `NC_FLOAT4_E2M1` have too few representable values (at most 32 and 8 finite magnitudes, including sign, respectively) for any reserved "unlikely" sentinel to be meaningful — any fill value chosen is likely to collide with legitimate data. NEXTCDF-4 therefore:
+
+- Does **not** define a default fill value for `NC_FLOAT6_E2M3` or `NC_FLOAT4_E2M1`.
+- Creates variables of these types with fill mode enabled per the caller's request via `nc_def_var_fill`, exactly like any other type, but leaves the underlying HDF5 dataset without an implicit fill value unless the caller supplies one explicitly.
+- Returns `NC_EINVAL` from `nc_def_var_fill` if the caller does not supply an explicit fill value and also does not disable fill (`NC_NOFILL`) for a variable of one of these two types, so silent reliance on an unlikely-to-be-meaningful default is impossible.
+
+For `NC_COMPLEX` and `NC_DOUBLECOMPLEX` (see "Support for Complex Numbers" below), the default fill value is the compound `{ NC_FILL_FLOAT, NC_FILL_FLOAT }` or `{ NC_FILL_DOUBLE, NC_FILL_DOUBLE }` respectively, applied independently to the real and imaginary members.
+
+`NC_BITFIELD8/16/32/64` and `NC_REF_OBJECT`/`NC_REF_REGION` have no numeric interpretation, so no default fill value is defined for them (matching existing netCDF-4 behavior for `NC_OPAQUE`); files are created with `NC_NOFILL` semantics for these types unless the caller explicitly requests a fill pattern.
+
+### Fill Value Validation
+
+`nc_def_var_fill` will validate that a caller-supplied fill value for any of the new floating-point types is **exactly** representable in the target type's bit layout (no lossy rounding). If the requested value cannot be represented exactly, the call fails with `NC_EINVAL` rather than silently rounding to the nearest representable value. This avoids a class of bugs where a fill value that "looks right" in the API call actually reads back as a different value once written to disk.
 
 ## Support for HDF5 Reference Types
 
@@ -259,11 +360,34 @@ int nc_deref_region(int ncid, const nc_region_ref_t *ref,
 
 Both functions translate between NetCDF-style `start` / `count` / `stride` arrays and the corresponding HDF5 dataspace selection. Only simple strided hyperslabs that can be represented by `start` / `count` / `stride` are supported; more complex HDF5 selections fail with `NC_EINVAL`.
 
+### Reference Validity Across File Changes
+
+HDF5 object and region references target an object's underlying address/token, not its path name, so most structural metadata edits are safe. NEXTCDF-4 documents the following guarantees and failure modes explicitly, rather than leaving them implicit:
+
+**Safe (never invalidates an existing reference):**
+
+- Renaming the referenced dimension, variable, or group (`nc_rename_dim`, `nc_rename_var`, group rename), including the atomic flush-per-rename behavior described under "Correct Renaming of Dims and Vars." HDF5 renames only change the link, not the object.
+- Extending an unlimited dimension, as long as a region reference's stored hyperslab (`start`/`count`/`stride`) remains within the variable's (possibly grown) current shape.
+- Adding, removing, or modifying attributes on the referenced object.
+
+**Unsafe (invalidates or stales an existing reference):**
+
+- Deleting the referenced variable or group, including the common "delete and recreate under the same name" pattern used to simulate retyping/reshaping. The recreated object has a new HDF5 address/token; old references to the original object become dangling.
+- Shrinking a dimension (or otherwise reducing a variable's shape) such that a previously valid region reference's stored `start`/`count`/`stride` selection no longer fits within the variable's current dataspace.
+
+**Enforcement**: `nc_deref_object` and `nc_deref_region` will detect both failure modes at dereference time rather than assuming success:
+
+- If the referenced object no longer exists, both functions return `NC_EINVAL`.
+- If a region reference's stored selection no longer fits the target variable's current shape, `nc_deref_region` returns `NC_EINVAL` rather than returning a truncated or out-of-bounds selection.
+
+This is a purely reactive (dereference-time) check — NEXTCDF-4 does not track which variables have outstanding references against them, and does not block or warn on the destructive operations themselves at the time they are performed. Applications that create long-lived references to variables that may later be deleted, recreated, or shrunk are responsible for re-validating those references (e.g. by dereferencing them again) after such operations.
+
 ### Restrictions
 
 - Reference-typed variables cannot be coordinate variables.
 - Reference types cannot be used inside compound types in the initial implementation.
 - Reference types are forbidden in `NC_NETCDF4_MODEL` mode.
+- No default `_FillValue` is defined for reference types (see "Default Fill Values" above); variables are created with `NC_NOFILL` semantics unless the caller explicitly requests a fill pattern.
 
 ## Support for Complex Numbers
 
@@ -290,11 +414,30 @@ H5Tinsert(type_id, "i", sizeof(float), H5T_IEEE_F32LE);
 - Layout in memory is the portable compound `{ float r; float i; }` (or `{ double r; double i; }`).
 - On platforms with native C `_Complex` support, convenience conversions may be provided, but the file and wire format use the explicit `{r, i}` compound layout.
 
+### Detecting Complex Types on Open
+
+NEXTCDF-4 identifies a compound datatype as `NC_COMPLEX`/`NC_DOUBLECOMPLEX` using a purely structural rule, with no separate marker attribute or reserved committed-type name:
+
+A compound datatype is treated as `NC_COMPLEX` (or `NC_DOUBLECOMPLEX`) if and only if it has:
+
+- Exactly two members, in order.
+- The first member named exactly `r`, the second named exactly `i` (case-sensitive).
+- Both members of the same base type, either both `H5T_IEEE_F32LE`/`BE` (→ `NC_COMPLEX`) or both `H5T_IEEE_F64LE`/`BE` (→ `NC_DOUBLECOMPLEX`).
+- No padding between or after the members (`i` immediately follows `r`, and the compound's total size is exactly `2 * sizeof(member type)`).
+
+Any compound matching this shape — including one created by upstream netcdf-c or another tool with no knowledge of NEXTCDF-4 — is presented to the caller as `NC_COMPLEX`/`NC_DOUBLECOMPLEX`, not as a generic user-defined compound. This is a deliberate simplicity/compatibility trade-off:
+
+- **Pro**: no hidden attributes or reserved committed-type names to keep in sync across renames, copies, or subsetting operations; any tool that writes the exact `{r, i}` layout interoperates automatically.
+- **Con**: a pre-existing user-defined compound type that happens to match this exact shape (member names `r`/`i`, matching float/double members, no padding) will be reinterpreted as a complex number when opened by NEXTCDF-4, even if the original author intended a plain 2-field record. This is considered acceptable because the `r`/`i` naming convention for a 2-member float/double compound is already the de facto complex-number convention in the wider HDF5/NetCDF ecosystem (e.g. h5py, PyTables), so a genuine collision is expected to be rare in practice.
+- This structural rule applies identically to compound types used for variables, attributes, and compound-type members nested inside other compounds.
+
 ### Compatibility
 
 - Complex types are only available outside `NC_NETCDF4_MODEL`.
-- Existing NetCDF-4 files with user-defined compound types named like complex numbers will continue to be read as plain compound types.
+- Existing NetCDF-4 files with user-defined compound types that do **not** match the exact `{r, i}` structural shape above continue to be read as plain compound types, unchanged from current netcdf-4 behavior.
+- Existing files whose compound types do match the structural shape (see "Detecting Complex Types on Open") will now be read as `NC_COMPLEX`/`NC_DOUBLECOMPLEX` rather than as a generic compound; this is a documented, intentional behavior change from upstream netcdf-c and will be called out in release notes.
 - User-defined compound types are otherwise unchanged from netcdf-4.
+- See "Default Fill Values" above for the default `_FillValue` applied to `NC_COMPLEX`/`NC_DOUBLECOMPLEX` variables.
 
 ## Support for HDF5 Bitfield Types
 
@@ -333,6 +476,7 @@ Bitfield variables are defined with the standard `nc_def_var` using an `NC_BITFI
 - Bitfield types are only available when `NC_NETCDF4_MODEL` is **not** set.
 - When reading an existing HDF5 file, `H5T_BITFIELD` is mapped to the matching `NC_BITFIELD*` type based on the datatype size.
 - When writing, `NC_BITFIELD*` maps to the corresponding HDF5 bitfield datatype, preserving round-trip fidelity.
+- No default `_FillValue` is defined for bitfield types (see "Default Fill Values" above); variables are created with `NC_NOFILL` semantics unless the caller explicitly requests a fill pattern.
 
 ## Type Mapping Summary
 
@@ -370,6 +514,11 @@ Bitfield variables are defined with the standard `nc_def_var` using an `NC_BITFI
 | User vlen           | `H5T_VLEN`                     | Yes                  |
 
 ## Implementation Phases
+
+### Phase 0 — Feature Detection Header
+
+- Add `include/nep_meta.h.in` and wire it into both the CMake and Autotools build systems (see "Feature Detection: `nep_meta.h`" above).
+- This phase must land before any other NEXTCDF-4 code is written, so every subsequent phase can gate new functionality behind `NEP_HAS_*` macros from the start.
 
 ### Phase 1 — Foundation
 
@@ -412,12 +561,14 @@ Bitfield variables are defined with the standard `nc_def_var` using an `NC_BITFI
 - Unit tests for each new datatype and HDF5 mapping.
 - Round-trip tests that create, close, and re-read files.
 - Small floating-point round-trip tests for `NC_FLOAT16`, `NC_BFLOAT16`, `NC_FLOAT8/6/4` types.
+- Default fill-value tests verifying the documented `NC_FILL_FLOAT16`/`NC_FILL_BFLOAT16`/`NC_FILL_FLOAT8_E4M3`/`NC_FILL_FLOAT8_E5M2` bit patterns round-trip exactly, that `NC_FLOAT6_E2M3`/`NC_FLOAT4_E2M1` variables require an explicit fill value or `NC_NOFILL`, and that `nc_def_var_fill` rejects inexact fill values with `NC_EINVAL`.
 - Bitfield round-trip tests verifying `NC_BITFIELD8/16/32/64` and `H5T_BITFIELD` fidelity.
 - Tests verifying `_Netcdf4Coordinates` and `_Netcdf4Dimid` are written and read correctly.
 - Fallback tests that open files without hidden coordinates attributes using dimscale matching.
 - Compatibility tests that open NEXTCDF-4 files with upstream netcdf-c (for `NC_NETCDF4_MODEL`).
 - Compatibility tests that open upstream netcdf-c files with NEXTCDF-4.
 - Rename regression tests covering coordinate variables and shared dimension scales.
+- Reference-validity tests: create an object/region reference, then (a) rename the target and confirm the reference still dereferences correctly, (b) extend an unlimited dimension and confirm an in-bounds region reference still dereferences correctly, (c) delete-and-recreate the target under the same name and confirm `nc_deref_object`/`nc_deref_region` return `NC_EINVAL`, and (d) shrink a dimension so a region reference's selection no longer fits and confirm `nc_deref_region` returns `NC_EINVAL`.
 
 ## Risks and Mitigations
 
