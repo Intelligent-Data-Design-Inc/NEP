@@ -205,6 +205,20 @@ typedef struct NC_VAR_INFO_T {
 
 **Delegates to**: HDF5 library → HDF5 VFD layer → actual storage
 
+### Dimension Mapping in libhdf5
+
+NetCDF-4 dimensions are stored as **HDF5 dimension scales** — special 1-D datasets marked with `CLASS = "DIMENSION_SCALE"`. Variables attach to these scales via `H5DSattach_scale()`. At file open, the backend must map each variable back to its dimensions.
+
+Two mechanisms exist:
+
+1. **Dimension scale matching** — The legacy approach: read all dimension scales and variable `DIMENSION_LIST` attributes, then match references to recover the variable-to-dimension mapping. This can be expensive for files with many variables.
+
+2. **Hidden attributes** — Faster mapping using private attributes written by modern netcdf-c:
+   - `_Netcdf4Coordinates` on a variable stores the list of `dimids` for that variable, avoiding full dimscale traversal.
+   - `_Netcdf4Dimid` on a dimension scale stores the dimension's `dimid`.
+
+When opening a file, `libhdf5` first checks `_Netcdf4Coordinates`; if it is absent, it falls back to dimscale matching. When writing, modern netcdf-c (and NEXTCDF-4) writes both the dimension scales and the hidden attributes for fast reopens.
+
 ### libnczarr/ - Zarr Storage
 
 **Purpose**: Cloud-native storage using Zarr format specification.
