@@ -120,7 +120,7 @@ H5Tset_order(f16, H5T_ORDER_LE);
 NEXTCDF-4 proposes a new NetCDF type:
 
 ```c
-#define NC_FLOAT16 13  /* example value; assign official nc_type */
+#define NC_FLOAT16 17  /* first free nc_type slot after NC_COMPOUND (16) */
 ```
 
 Memory layout is exactly the IEEE 754 binary16 representation. The C API uses arrays of `uint16_t` (raw bits) for I/O. Platform half-precision convenience wrappers may be added later, but the canonical memory type is `uint16_t`.
@@ -208,8 +208,8 @@ H5Tinsert(dcplx, "i", sizeof(double), H5T_IEEE_F64LE);
 Proposed NetCDF type constants:
 
 ```c
-#define NC_COMPLEX       14  /* float complex  */
-#define NC_DOUBLECOMPLEX 15  /* double complex */
+#define NC_COMPLEX       18  /* float complex  */
+#define NC_DOUBLECOMPLEX 19  /* double complex */
 ```
 
 Memory layout is the portable compound `{ float r; float i; }` (or `{ double r; double i; }`). This matches the C `_Complex` layout on most platforms and is the canonical NetCDF ABI. On platforms without native `_Complex` support, users interact with the same `{r, i}` compound layout.
@@ -254,8 +254,8 @@ H5Rcreate(&ref, file_id, "/g1/dset", H5R_DATASET_REGION, space_id);
 NEXTCDF-4 proposes two new opaque NetCDF types:
 
 ```c
-#define NC_REF_OBJECT 16
-#define NC_REF_REGION 17
+#define NC_REF_OBJECT 20
+#define NC_REF_REGION 21
 ```
 
 - Variables of these types store HDF5 references as opaque byte arrays.
@@ -290,10 +290,10 @@ HDF5 provides atomic bitfield types (`H5T_BITFIELD`) for storing raw bit pattern
 Classic netcdf-c does not support bitfields. NEXTCDF-4 maps them to new base NetCDF types because they appear in existing HDF5 files (for example, packed quality flags and bitmasks in HDF-EOS and remote-sensing products):
 
 ```c
-#define NC_BITFIELD8  18  /* maps to H5T_STD_B8LE/BE  */
-#define NC_BITFIELD16 19  /* maps to H5T_STD_B16LE/BE */
-#define NC_BITFIELD32 20  /* maps to H5T_STD_B32LE/BE */
-#define NC_BITFIELD64 21  /* maps to H5T_STD_B64LE/BE */
+#define NC_BITFIELD8  22  /* maps to H5T_STD_B8LE/BE  */
+#define NC_BITFIELD16 23  /* maps to H5T_STD_B16LE/BE */
+#define NC_BITFIELD32 24  /* maps to H5T_STD_B32LE/BE */
+#define NC_BITFIELD64 25  /* maps to H5T_STD_B64LE/BE */
 ```
 
 Memory representation is the matching unsigned integer size (`uint8_t`, `uint16_t`, `uint32_t`, `uint64_t`). The NetCDF API treats the values as unsigned integers; decoding individual bits is the caller's responsibility.

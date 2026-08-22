@@ -83,6 +83,7 @@ Before v2.2.0, CDF and GRIB2 shared UDF slot 2 and were mutually exclusive. v2.2
 
 The project is structured as follows:
 - `/src` - Core C source code including UDF handlers and compression filters
+- `/src/nextcdf4` - NEXTCDF-4 rewrite of the HDF5 backend (planned, see `docs/plan/NEXTCDF4_plan.md`)
 - `/fsrc` - Fortran wrappers for compression functions
 - `/include` - Public header files
 - `/test` - C unit tests for all features

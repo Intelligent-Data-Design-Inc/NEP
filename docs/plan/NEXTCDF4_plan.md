@@ -2,7 +2,7 @@
 
 ## Overview
 
-NEXTCDF-4 is a clean rewrite from scratch of netcdf-c's `libhdf5` HDF5 backend, implemented in a new `nextcdf4/` directory. No code will be reused from the existing `libhdf5/` implementation, although it may be consulted as a reference. The rewrite takes advantage of new features in HDF5 1.14.x and HDF5 2.1.1+, such as Superblock v3, float16, and the new small floating-point types. It adds support for HDF5 reference types, and also fixes some long-standing bugs relating to renaming vars and dims.
+NEXTCDF-4 is a clean rewrite from scratch of netcdf-c's `libhdf5` HDF5 backend, implemented in a new `src/nextcdf4/` directory. No code will be reused from the existing `libhdf5/` implementation, although it may be consulted as a reference. The rewrite takes advantage of new features in HDF5 1.14.x and HDF5 2.1.1+, such as Superblock v3, float16, and the new small floating-point types. It adds support for HDF5 reference types, and also fixes some long-standing bugs relating to renaming vars and dims.
 
 The goals are:
 
@@ -14,7 +14,7 @@ The goals are:
 
 ### Goals
 
-- Write a new version of the HDF5 backend in a `nextcdf4/` directory with a modern, layered design aligned with the `NC_FILE_INFO_T` metadata model.
+- Write a new version of the HDF5 backend in a `src/nextcdf4/` directory with a modern, layered design aligned with the `NC_FILE_INFO_T` metadata model.
 - Default to HDF5 Superblock v3 for all newly created NEXTCDF-4 files.
 - Add native support for 16-bit floating point (`H5T_IEEE_F16LE` / `H5T_IEEE_F16BE`).
 - Add read and write support for HDF5 reference types (object references and region references).
@@ -27,7 +27,7 @@ The goals are:
 - Changing the public NetCDF-C API for classic NetCDF-3 files.
 - Removing support for classic-model NetCDF-4 files.
 - Modifying the NcZarr, DAP, or NetCDF-3 backends.
-- Reusing code from the existing netcdf-c `libhdf5/` implementation. It may be consulted as a reference, but `nextcdf4/` will be written from scratch.
+- Reusing code from the existing netcdf-c `libhdf5/` implementation. It may be consulted as a reference, but `src/nextcdf4/` will be written from scratch.
 
 ## Backward Compatibility
 
@@ -222,12 +222,12 @@ NEXTCDF-4 will support the IEEE 754 half-precision (16-bit) floating point type 
 In addition to `NC_FLOAT16`, NEXTCDF-4 will support the non-IEEE small floating-point types added in HDF5 2.x:
 
 ```c
-#define NC_BFLOAT16    22  /* H5T_FLOAT_BFLOAT16, 1-8-7 layout */
-#define NC_FLOAT8_E4M3 23  /* H5T_FLOAT_F8E4M3, 1-4-3 layout   */
-#define NC_FLOAT8_E5M2 24  /* H5T_FLOAT_F8E5M2, 1-5-2 layout   */
-#define NC_FLOAT6_E2M3 25  /* H5T_FLOAT_F6E2M3, 1-2-3 layout   */
-#define NC_FLOAT6_E3M2 26  /* H5T_FLOAT_F6E3M2, 1-3-2 layout   */
-#define NC_FLOAT4_E2M1 27  /* H5T_FLOAT_F4E2M1, 1-2-1 layout   */
+#define NC_BFLOAT16    26  /* H5T_FLOAT_BFLOAT16, 1-8-7 layout */
+#define NC_FLOAT8_E4M3 27  /* H5T_FLOAT_F8E4M3, 1-4-3 layout   */
+#define NC_FLOAT8_E5M2 28  /* H5T_FLOAT_F8E5M2, 1-5-2 layout   */
+#define NC_FLOAT6_E2M3 29  /* H5T_FLOAT_F6E2M3, 1-2-3 layout   */
+#define NC_FLOAT6_E3M2 30  /* H5T_FLOAT_F6E3M2, 1-3-2 layout   */
+#define NC_FLOAT4_E2M1 31  /* H5T_FLOAT_F4E2M1, 1-2-1 layout   */
 ```
 
 Memory representation is the raw bit pattern:
@@ -452,10 +452,10 @@ HDF5 bitfield types store raw bit patterns with no numeric semantics. Predefined
 New base NetCDF types:
 
 ```c
-#define NC_BITFIELD8  18
-#define NC_BITFIELD16 19
-#define NC_BITFIELD32 20
-#define NC_BITFIELD64 21
+#define NC_BITFIELD8  22
+#define NC_BITFIELD16 23
+#define NC_BITFIELD32 24
+#define NC_BITFIELD64 25
 ```
 
 Memory representation:
@@ -522,7 +522,7 @@ Bitfield variables are defined with the standard `nc_def_var` using an `NC_BITFI
 
 ### Phase 1 — Foundation
 
-- Create the new `nextcdf4/` directory structure.
+- Create the new `src/nextcdf4/` directory structure.
 - Implement create/open/close with Superblock v3 default.
 - Add `NC_NETCDF4_MODEL` flag and compatibility path.
 - Port existing variable and attribute I/O.
