@@ -1,6 +1,6 @@
 ---
 name: hdf5
-description: Understanding HDF5 storage features used by NEXTCDF-4, including Superblock v3, float16, compound types, and reference types.
+description: Understanding HDF5 storage features used by NEXTCDF-4, including Superblock v3, float16, compound types, reference types, bitfield types, and HDF5 2.1.1 small floating-point types.
 metadata:
   author: netcdf-analysis
   version: "1.0"
@@ -9,7 +9,7 @@ metadata:
 
 # HDF5 Skill
 
-This skill covers the HDF5 features that NEXTCDF-4 depends on: Superblock v3, the half-precision float16 datatype, compound types, and HDF5 reference types. It is intended to guide implementation of the NEXTCDF-4 rewrite of netcdf-c's `libhdf5/` backend.
+This skill covers the HDF5 features that NEXTCDF-4 depends on: Superblock v3, the half-precision float16 datatype, compound types, HDF5 reference types, bitfield types, and the small floating-point types added in HDF5 2.1.1. It is intended to guide implementation of the NEXTCDF-4 rewrite of netcdf-c's `libhdf5/` backend.
 
 ## Overview
 
@@ -54,14 +54,7 @@ H5Pset_libver_bounds(fapl_id, H5F_LIBVER_LATEST, H5F_LIBVER_LATEST);
 hid_t file_id = H5Fcreate("file.h5", H5F_ACC_TRUNC, H5P_DEFAULT, fapl_id);
 ```
 
-To query the superblock version of an open file:
-
-```c
-unsigned superblock_version;
-H5Fget_superblock(file_id, &superblock_version);  /* HDF5 1.14+ */
-```
-
-Or read the file superblock directly with `H5Fget_info2`:
+To query the superblock version of an open file, use `H5Fget_info2`:
 
 ```c
 H5F_info2_t info;
@@ -81,15 +74,13 @@ Two compatibility flags are supported:
 
 - `NC_CLASSIC_MODEL` — restricts the file to the classic NetCDF-3 data model, exactly as upstream netcdf-c does. Only the root group is allowed, no user-defined types, only one unlimited dimension (first and slowest-varying), and only classic atomic types. `NC_CLASSIC_MODEL` and `NC_NETCDF4_MODEL` are mutually exclusive.
 
-- `NC_NETCDF4_MODEL` — allows the enhanced NetCDF-4 data model but forbids the new NEXTCDF-4-specific types. Files are written with Superblock v3, matching native-mode files, so they require HDF5 1.14.x or later to read. They remain readable by upstream netcdf-c when it is linked against HDF5 1.14.x or later.
+- `NC_NETCDF4_MODEL` — allows the enhanced NetCDF-4 data model but forbids the new NEXTCDF-4-specific types. Like native-mode files, these files are always written with Superblock v3 and require HDF5 1.14.x or later to read. They remain readable by upstream netcdf-c when it is linked against HDF5 1.14.x or later.
 
 ### Implementation Guidance
 
-- Set the file access property list bounds based on the create mode.
-- For native NEXTCDF-4: `H5F_LIBVER_LATEST` for both lower and upper bound (Superblock v3).
-- For `NC_NETCDF4_MODEL`: use `H5F_LIBVER_LATEST` to write Superblock v3 files, but do not create any of the new NEXTCDF-4 types.
-- For `NC_CLASSIC_MODEL`: use bounds that ensure broad readability with upstream netcdf-c classic-model behavior.
-- Add a runtime check that refuses to create native-mode files when the linked HDF5 library is too old.
+- Set the file access property list bounds to `H5F_LIBVER_LATEST` for both lower and upper bound in all create modes (native, `NC_NETCDF4_MODEL`, and `NC_CLASSIC_MODEL`).
+- Do not create any of the new NEXTCDF-4 types when `NC_NETCDF4_MODEL` is set.
+- Add a runtime check that refuses to create files when the linked HDF5 library is too old to write Superblock v3.
 
 ## Float16
 
@@ -132,7 +123,7 @@ NEXTCDF-4 proposes a new NetCDF type:
 #define NC_FLOAT16 13  /* example value; assign official nc_type */
 ```
 
-Memory layout is exactly the IEEE 754 binary16 representation. Users pass arrays of `uint16_t` (raw bits) or a platform half-precision type if available.
+Memory layout is exactly the IEEE 754 binary16 representation. The C API uses arrays of `uint16_t` (raw bits) for I/O. Platform half-precision convenience wrappers may be added later, but the canonical memory type is `uint16_t`.
 
 ### API Additions
 
@@ -221,7 +212,7 @@ Proposed NetCDF type constants:
 #define NC_DOUBLECOMPLEX 15  /* double complex */
 ```
 
-Memory layout is `{ float r; float i; }` (or double), matching the C `_Complex` layout on most platforms. On platforms without native complex support, expose the compound layout explicitly.
+Memory layout is the portable compound `{ float r; float i; }` (or `{ double r; double i; }`). This matches the C `_Complex` layout on most platforms and is the canonical NetCDF ABI. On platforms without native `_Complex` support, users interact with the same `{r, i}` compound layout.
 
 ### Implementation Notes
 
@@ -364,13 +355,14 @@ Using `_Netcdf4Coordinates` for every variable:
 | `NC_UINT64`          | `H5T_STD_U64LE/BE`               | Yes                           |
 | `NC_FLOAT`           | `H5T_IEEE_F32LE/BE`              | Yes                           |
 | `NC_DOUBLE`          | `H5T_IEEE_F64LE/BE`              | Yes                           |
+| `NC_CHAR`            | `H5T_C_S1`                       | Yes                           |
 | `NC_STRING`          | `H5T_STRING`                     | Yes                           |
 | User enum            | `H5T_ENUM`                       | Yes                           |
 | User compound        | `H5T_COMPOUND`                   | Yes                           |
 | User opaque          | `H5T_OPAQUE`                     | Yes                           |
 | User vlen            | `H5T_VLEN`                       | Yes                           |
 | `NC_FLOAT16`         | `H5T_IEEE_F16LE/BE`              | No                            |
-| `NC_BFLOAT16`        | `H5T_FLOAT_BFLOAT16LE/BE`         | No                            |
+| `NC_BFLOAT16`        | `H5T_FLOAT_BFLOAT16LE/BE`        | No                            |
 | `NC_FLOAT8_E4M3`     | `H5T_FLOAT_F8E4M3`               | No                            |
 | `NC_FLOAT8_E5M2`     | `H5T_FLOAT_F8E5M2`               | No                            |
 | `NC_FLOAT6_E2M3`     | `H5T_FLOAT_F6E2M3`               | No                            |

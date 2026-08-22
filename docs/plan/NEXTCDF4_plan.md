@@ -2,7 +2,7 @@
 
 ## Overview
 
-NEXTCDF-4 is a clean rewrite from scratch of netcdf-c's `libhdf5` HDF5 backend, implemented in a new `nextcdf4/` directory. No code will be reused from the existing `libhdf5/` implementation, although it may be consulted as a reference. The rewrite takes advantage of new features in HDF5 1.14.x and HDF5 2.1.1+, like SWMR, float16, and compound types. It adds support for HDF5 reference types, and also fixes some long-standing bugs relating to renaming vars and dims.
+NEXTCDF-4 is a clean rewrite from scratch of netcdf-c's `libhdf5` HDF5 backend, implemented in a new `nextcdf4/` directory. No code will be reused from the existing `libhdf5/` implementation, although it may be consulted as a reference. The rewrite takes advantage of new features in HDF5 1.14.x and HDF5 2.1.1+, such as Superblock v3, float16, and the new small floating-point types. It adds support for HDF5 reference types, and also fixes some long-standing bugs relating to renaming vars and dims.
 
 The goals are:
 
@@ -78,9 +78,9 @@ NEXTCDF-4 will use HDF5 Superblock v3 for files by default. Superblock v3 was in
 
 ### Implementation Notes
 
-- Use `H5Pset_libver_bounds(fapl_id, H5F_LIBVER_LATEST, H5F_LIBVER_LATEST)` when creating files in native mode.
-- For `NC_NETCDF4_MODEL` files, use `H5F_LIBVER_EARLIEST` or the netcdf-c default bounds so the file remains broadly readable.
+- Use `H5Pset_libver_bounds(fapl_id, H5F_LIBVER_LATEST, H5F_LIBVER_LATEST)` when creating files in all modes (native, `NC_NETCDF4_MODEL`, and `NC_CLASSIC_MODEL`).
 - At NEP build time, check that we have hdf5-1.14.x or better.
+- At create time, refuse to create files if the linked HDF5 library is too old to write Superblock v3.
 
 ## Correct Renaming of Dims and Vars
 
@@ -136,6 +136,7 @@ NEXTCDF-4 will support the IEEE 754 half-precision (16-bit) floating point type 
 - Native type: `H5T_IEEE_F16LE` or `H5T_IEEE_F16BE` depending on endianness.
 - The NetCDF type constant will be `NC_FLOAT16`.
 - Memory representation is the standard IEEE 754 binary16 format (1 sign bit, 5 exponent bits, 10 mantissa bits).
+- The C API uses `uint16_t` raw bits for I/O.
 
 ### API Additions
 
@@ -230,10 +231,12 @@ Both functions validate that the requested `obj_type` matches the actual HDF5 ob
 Region references are represented by an opaque struct large enough to hold an HDF5 dataset-region reference token:
 
 ```c
-#define NC_REF_REGION_SIZE 64
-
+/* Region references are opaque and variable-sized in HDF5 1.12+.
+ * The caller must allocate a buffer of at least
+ * H5Tget_size(H5T_STD_REF_DSETREG) bytes and set `size` accordingly. */
 typedef struct {
-    unsigned char bytes[NC_REF_REGION_SIZE];
+    size_t size;
+    unsigned char *bytes;
 } nc_region_ref_t;
 ```
 
@@ -273,10 +276,10 @@ A complex number is represented as an HDF5 compound type with two members:
 - `r` — real part.
 - `i` — imaginary part.
 
-For example, a single-precision complex number maps to:
+For example, a single-precision complex number maps to the portable compound layout:
 
 ```c
-H5Tcreate(H5T_COMPOUND, sizeof(float _Complex));
+H5Tcreate(H5T_COMPOUND, 2 * sizeof(float));
 H5Tinsert(type_id, "r", 0, H5T_IEEE_F32LE);
 H5Tinsert(type_id, "i", sizeof(float), H5T_IEEE_F32LE);
 ```
@@ -284,8 +287,8 @@ H5Tinsert(type_id, "i", sizeof(float), H5T_IEEE_F32LE);
 ### NetCDF Mapping
 
 - New base types: `NC_COMPLEX` (single precision), `NC_DOUBLECOMPLEX` (double precision).
-- Layout in memory follows the C `_Complex` ABI for the target platform.
-- On platforms without native `_Complex` support, the user sees the compound `{r, i}` representation.
+- Layout in memory is the portable compound `{ float r; float i; }` (or `{ double r; double i; }`).
+- On platforms with native C `_Complex` support, convenience conversions may be provided, but the file and wire format use the explicit `{r, i}` compound layout.
 
 ### Compatibility
 
@@ -337,6 +340,7 @@ Bitfield variables are defined with the standard `nc_def_var` using an `NC_BITFI
 |---------------------|--------------------------------|----------------------|
 | `NC_BYTE`           | `H5T_STD_I8LE/BE`              | Yes                  |
 | `NC_UBYTE`          | `H5T_STD_U8LE/BE`              | Yes                  |
+| `NC_CHAR`           | `H5T_C_S1`                     | Yes                  |
 | `NC_SHORT`          | `H5T_STD_I16LE/BE`             | Yes                  |
 | `NC_USHORT`         | `H5T_STD_U16LE/BE`             | Yes                  |
 | `NC_INT`            | `H5T_STD_I32LE/BE`             | Yes                  |
