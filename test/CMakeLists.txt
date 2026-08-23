@@ -51,7 +51,9 @@ if(HAVE_CDF)
     
     # Add test - creates its own CDF file
     add_test(NAME tst_cdf_udf COMMAND tst_cdf_udf)
-    
+    set_tests_properties(tst_cdf_udf PROPERTIES
+        ENVIRONMENT "LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+
     # Build IMAP MAG CDF test
     add_executable(tst_imap_mag tst_imap_mag.c)
     target_link_directories(tst_imap_mag PRIVATE ${HDF5_LIB_DIR})
@@ -74,6 +76,8 @@ if(HAVE_CDF)
     
     # Add test - uses existing IMAP MAG CDF file
     add_test(NAME tst_imap_mag COMMAND tst_imap_mag)
+    set_tests_properties(tst_imap_mag PROPERTIES
+        ENVIRONMENT "LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
 endif()
 
 # Build GRIB2 UDF placeholder test if GRIB2 is enabled
@@ -92,8 +96,12 @@ endif()
 
 # Build FITS UDF test if FITS is enabled
 if(HAVE_FITS)
+    # Get HDF5 library directory
+    get_filename_component(HDF5_LIB_DIR "${HDF5_INCLUDE_DIR}/../lib" ABSOLUTE)
+
     add_executable(tst_fits_udf tst_fits_udf.c)
-    target_link_libraries(tst_fits_udf PRIVATE ncfits nep ${NETCDF_LIBRARIES})
+    target_link_directories(tst_fits_udf PRIVATE ${HDF5_LIB_DIR})
+    target_link_libraries(tst_fits_udf PRIVATE ncfits nep ${NETCDF_LIBRARIES} hdf5 hdf5_hl)
     target_include_directories(tst_fits_udf PRIVATE ${NETCDF_INCLUDE_DIRS} ${CFITSIO_INCLUDE_DIR})
     add_test(NAME tst_fits_udf COMMAND tst_fits_udf)
     set_tests_properties(tst_fits_udf PROPERTIES
