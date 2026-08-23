@@ -85,6 +85,26 @@ NEP adds LZ4 and BZIP2 HDF5 filter plugins for NetCDF-4 files, enabled by defaul
 - C compiler and, optionally, a Fortran 90+ compiler
 - Doxygen and Graphviz (only if building documentation)
 
+### Ubuntu / Debian Dependencies
+
+The core build tools and optional format/reader packages can be installed with `apt`.
+NetCDF-C and HDF5 should usually be built from source to guarantee matching versions (see below).
+
+| Feature | Install command | Notes |
+|---|---|---|
+| Core build tools | `sudo apt-get install build-essential cmake pkg-config` | Required for every build |
+| Fortran wrappers / examples | `sudo apt-get install gfortran` | Also requires a matching NetCDF-Fortran installation |
+| Documentation | `sudo apt-get install doxygen graphviz` | Optional |
+| LZ4 compression filter | `sudo apt-get install liblz4-dev` | Builds `libh5lz4.so` |
+| BZIP2 compression filter | `sudo apt-get install libbz2-dev` | Also needs an `h5bzip2` plugin at runtime |
+| GeoTIFF reader | `sudo apt-get install libgeotiff-dev libtiff-dev` | |
+| FITS reader | `sudo apt-get install libcfitsio-dev` | |
+| GRIB2 reader | `sudo apt-get install libjasper-dev` | NCEPLIBS-g2c must be built separately |
+| NASA CDF reader | — | Not packaged; build from [SPDF CDF](https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/) or use `spack install cdf` |
+| PDS4 reader | `sudo apt-get install libxml2-dev` | |
+| DICOM reader | `sudo apt-get install libdicom-dev libjpeg-dev libgdcm-dev` | `libgdcm-dev` is required because most DICOM images use JPEG Lossless transfer syntaxes |
+| Legacy PDB / mmCIF reader | — | No external packages needed |
+
 ### CMake Build and Installation
 
 ```bash

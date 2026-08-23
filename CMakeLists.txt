@@ -261,15 +261,14 @@ if(NOT DOCS_ONLY)
             include_directories(${DICOM_INCLUDE_DIR})
             set(HAVE_DICOM TRUE)
         else()
-            message(FATAL_ERROR "libdicom and libjpeg are required for the DICOM reader. Install libdicom/libjpeg or use -DNEP_ENABLE_DICOM=OFF")
+            message(FATAL_ERROR "libdicom, libjpeg, and GDCM (libgdcm-dev) are required for the DICOM reader. Install the dependencies or use -DNEP_ENABLE_DICOM=OFF")
         endif()
 
         # JPEG Lossless (Process 14) codec detection via GDCM's bundled IJG
-        # libjpeg 6b + lossless patch (v3.2.0 Sprint 2). Optional: mainline
-        # libjpeg/libjpeg-turbo has no JPEG Lossless support, so this is a
-        # separate, narrowly-scoped dependency (libgdcm-dev) used only for
-        # decoding JPEG Lossless (.4.57/.4.70) DICOM pixel data. If not
-        # found, DICOM still builds, but JPEG Lossless files are rejected.
+        # libjpeg 6b + lossless patch (v3.2.0 Sprint 2). Mainline
+        # libjpeg/libjpeg-turbo has no JPEG Lossless support, so GDCM is a
+        # required dependency for the DICOM reader because most DICOM images
+        # use lossless compression transfer syntaxes (.4.57/.4.70).
         find_path(GDCMJPEG_INCLUDE_DIR gdcmjpeg/8/jpeglib.h
             PATH_SUFFIXES gdcm-3.0 gdcm-3.1 gdcm-3.2)
         find_library(GDCMJPEG8_LIBRARY NAMES gdcmjpeg8)
@@ -283,7 +282,7 @@ if(NOT DOCS_ONLY)
             message(STATUS "  gdcmjpeg16: ${GDCMJPEG16_LIBRARY}")
             set(HAVE_DICOM_LOSSLESS TRUE)
         else()
-            message(STATUS "GDCM lossless JPEG codec (libgdcm-dev) not found; JPEG Lossless DICOM files will be rejected")
+            message(FATAL_ERROR "GDCM (libgdcm-dev) is required for the DICOM reader. Install libgdcm-dev or use -DNEP_ENABLE_DICOM=OFF")
         endif()
     endif()
 
