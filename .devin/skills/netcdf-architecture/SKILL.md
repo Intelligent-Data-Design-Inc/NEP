@@ -205,6 +205,20 @@ typedef struct NC_VAR_INFO_T {
 
 **Delegates to**: HDF5 library → HDF5 VFD layer → actual storage
 
+### Dimension Mapping in libhdf5
+
+NetCDF-4 dimensions are stored as **HDF5 dimension scales** — special 1-D datasets marked with `CLASS = "DIMENSION_SCALE"`. Variables attach to these scales via `H5DSattach_scale()`. At file open, the backend must map each variable back to its dimensions.
+
+Two mechanisms exist:
+
+1. **Dimension scale matching** — The legacy approach: read all dimension scales and variable `DIMENSION_LIST` attributes, then match references to recover the variable-to-dimension mapping. This can be expensive for files with many variables.
+
+2. **Hidden attributes** — Faster mapping using private attributes written by modern netcdf-c:
+   - `_Netcdf4Coordinates` on a variable stores the list of `dimids` for that variable, avoiding full dimscale traversal.
+   - `_Netcdf4Dimid` on a dimension scale stores the dimension's `dimid`.
+
+When opening a file, `libhdf5` first checks `_Netcdf4Coordinates`; if it is absent, it falls back to dimscale matching. When writing, modern netcdf-c (and NEXTCDF-4) writes both the dimension scales and the hidden attributes for fast reopens.
+
 ### libnczarr/ - Zarr Storage
 
 **Purpose**: Cloud-native storage using Zarr format specification.
@@ -265,7 +279,7 @@ typedef struct NC_VAR_INFO_T {
 
 **Purpose**: Extensible plugin system for custom file formats and storage backends.
 
-**Available Slots**: UDF0 through UDF9 (10 independent format slots)
+**Available Slots**: 64 independent format slots (0 through 63), accessed through the `NC_UDF(n)` macro
 
 **Dispatch Tables**: Registered via `nc_def_user_format()` or RC file configuration
 
@@ -316,9 +330,11 @@ NETCDF.UDF0.MAGIC=MYFORMAT
 5. `$CWD/.daprc`
 6. `$CWD/.dodsrc`
 
-**UDF Slot Modes**:
-- **UDF0, UDF1**: Original slots, mode flags in lower 16 bits
-- **UDF2-UDF9**: Extended slots, mode flags in upper 16 bits
+**UDF Mode Encoding**:
+- A UDF mode is flagged by `NC_UDF_FLAG` (bit 6, value `0x0040`).
+- The slot number is stored in a 6-bit field at bits 19-24 (`NC_UDF_NUM_SHIFT` / `NC_UDF_NUM_MASK`).
+- Build a mode flag with `NC_UDF(n)` for slot `n` (0-63).
+- Convenience macros `NC_UDF0` through `NC_UDF9` are provided; for slots 10-63 use `NC_UDF(n)` directly.
 
 **Pre-defined Dispatch Functions** (for plugin use):
 - `NC_RO_*` - Read-only stubs (return `NC_EPERM`)
@@ -329,10 +345,11 @@ NETCDF.UDF0.MAGIC=MYFORMAT
 - `NC4_*` - NetCDF-4 inquiry functions using internal metadata model
 
 **Critical Files**:
-- `libdispatch/dfile.c` - UDF dispatch table storage (`UDF0_dispatch_table`, etc.)
+- `libdispatch/dfile.c` - UDF dispatch table storage and mode/index conversion
 - `libdispatch/ddispatch.c` - `nc_def_user_format()`, `nc_inq_user_format()`
 - `libdispatch/drc.c` - RC file parsing for UDF configuration
 - `libdispatch/dutil.c` - Plugin library loading
+- `libdispatch/dudfplugins.c` - RC-driven UDF plugin autoloading
 - `include/netcdf_dispatch.h` - `NC_Dispatch` structure definition
 - `libdispatch/dreadonly.c` - Pre-defined read-only stubs
 - `libdispatch/dnotnc*.c` - Pre-defined not-supported stubs
@@ -372,6 +389,9 @@ int my_plugin_init(void) {
 - Format translation layers
 - Domain-specific data formats
 - Integration with legacy systems
+
+**Upstream Status Note**:
+The expanded 64-slot UDF system and `.ncrc` autoloading described here are being upstreamed to netcdf-c. Some of these capabilities are already present in the netcdf-c main branch, while others are still in the associated PR/branch. For NEP and NEXTCDF-4, assume the full UDF rewrite is present in the netcdf-c main branch before NEXTCDF-4 development begins.
 
 ## Common Patterns
 

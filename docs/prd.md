@@ -10,7 +10,7 @@
 - Simplify installation and deployment in HPC environments
 
 ### 1.3 Success Metrics
-- Zero breaking changes across all releases
+- Zero breaking changes across all releases, with one documented exception: NEXTCDF-4's structural detection of `NC_COMPLEX`/`NC_DOUBLECOMPLEX` (see NEXTCDF-4 plan) may reinterpret a pre-existing user-defined compound type as a complex number if it exactly matches the `{r, i}` two-member float/double layout; this is called out explicitly in release notes
 - High-performance compression with minimal overhead
 - Successful integration with scientific data workflows
 - Comprehensive test coverage and CI validation

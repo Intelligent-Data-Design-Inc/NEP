@@ -39,13 +39,17 @@ NEP has two primary components:
 
 ### UDF Slot Allocation
 
-NetCDF-C 4.10.0+ provides 10 UDF slots:
+NetCDF-C (with the upstream UDF rewrite) provides 64 UDF slots (0-63), accessed via the `NC_UDF(n)` macro. NEP currently uses:
 - **UDF0**: GeoTIFF BigTIFF (magic: "II+")
 - **UDF1**: GeoTIFF standard TIFF (magic: "II*")
 - **UDF2**: GRIB2 (magic: "GRIB")
 - **UDF3**: FITS (magic: "SIMPLE")
 - **UDF4**: NASA CDF (magic: 0xCDF30001)
-- **UDF5-UDF9**: Reserved for future use
+- **UDF5**: PDS4 (magic: "<?xml")
+- **UDF6**: DICOM (magic: "DICM")
+- **UDF7**: Legacy PDB (magic: "HEADER")
+- **UDF8**: PDBx/mmCIF (magic: "data_")
+- **UDF9**: NEXTCDF-4 (no magic number; opened explicitly with `NC_NEXTCDF4`)
 
 ## Directory Structure
 
@@ -58,7 +62,8 @@ NetCDF-C 4.10.0+ provides 10 UDF slots:
 │   ├── geotiffdispatch.c   # GeoTIFF dispatch table
 │   ├── geotifffile.c       # GeoTIFF file operations
 │   ├── grib2dispatch.c     # GRIB2 dispatch table
-│   └── grib2file.c         # GRIB2 file operations
+│   ├── grib2file.c         # GRIB2 file operations
+│   └── nextcdf4/           # NEXTCDF-4 HDF5 backend rewrite
 ├── include/                # Public header files
 │   ├── nep.h               # Main public API header
 │   ├── cdfdispatch.h       # CDF dispatch definitions
