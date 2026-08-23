@@ -66,13 +66,13 @@ H5Fget_info2(file_id, &info);
 
 - Files created with `H5F_LIBVER_LATEST` (Superblock v3) require **HDF5 1.14.0 or later** to read.
 - Older HDF5 1.12.x and 1.10.x libraries cannot open Superblock v3 files.
-- NEXTCDF-4 therefore requires HDF5 1.14.x or newer when creating native-mode files.
+- NEXTCDF-4 therefore requires HDF5 1.14.x or newer when creating any NEXTCDF-4 files, including compatibility-mode files.
 
 ### Compatibility Mode in NEXTCDF-4
 
 Two compatibility flags are supported:
 
-- `NC_CLASSIC_MODEL` — restricts the file to the classic NetCDF-3 data model, exactly as upstream netcdf-c does. Only the root group is allowed, no user-defined types, only one unlimited dimension (first and slowest-varying), and only classic atomic types. `NC_CLASSIC_MODEL` and `NC_NETCDF4_MODEL` are mutually exclusive.
+- `NC_CLASSIC_MODEL` — restricts the file to the classic NetCDF-3 data model with the same restrictions as upstream netcdf-c. Only the root group is allowed, no user-defined types, only one unlimited dimension (first and slowest-varying), and only classic atomic types. Like all NEXTCDF-4 files, the file is written with Superblock v3 and requires HDF5 1.14.x or later to read. `NC_CLASSIC_MODEL` and `NC_NETCDF4_MODEL` are mutually exclusive.
 
 - `NC_NETCDF4_MODEL` — allows the enhanced NetCDF-4 data model but forbids the new NEXTCDF-4-specific types. Like native-mode files, these files are always written with Superblock v3 and require HDF5 1.14.x or later to read. They remain readable by upstream netcdf-c when it is linked against HDF5 1.14.x or later.
 
@@ -80,6 +80,7 @@ Two compatibility flags are supported:
 
 - Set the file access property list bounds to `H5F_LIBVER_LATEST` for both lower and upper bound in all create modes (native, `NC_NETCDF4_MODEL`, and `NC_CLASSIC_MODEL`).
 - Do not create any of the new NEXTCDF-4 types when `NC_NETCDF4_MODEL` is set.
+- At NEP configure time, disable NEXTCDF-4 entirely (`NEP_HAS_NEXTCDF4=0`) if the detected HDF5 version is older than 1.14.x.
 - Add a runtime check that refuses to create files when the linked HDF5 library is too old to write Superblock v3.
 
 ## Float16
@@ -452,7 +453,7 @@ Important caveats:
 
 ## Important Caveats
 
-1. **Superblock v3 requires HDF5 1.14+**; do not use it when `NC_NETCDF4_MODEL` is set.
+1. **Superblock v3 requires HDF5 1.14+**; all NEXTCDF-4 files, including `NC_NETCDF4_MODEL` and `NC_CLASSIC_MODEL` compatibility files, are written with Superblock v3.
 2. **Float16** is a distinct HDF5 atomic type; do not confuse it with a 16-bit integer or a user-defined type.
 3. **Compound types with complex-number member names** (`r`, `i`) should be recognized as complex only when the exact layout matches and the user type name or flag indicates a complex type.
 4. **References are opaque tokens**; they are meaningful only within the file that created them.

@@ -39,11 +39,13 @@ NEXTCDF-4 occupies the remaining NEP UDF slot:
 
 ```c
 /* include/nep.h */
-#define NEP_UDF_NEXTCDF4 NC_UDF9   /* UDF slot 9, bit 25, value 0x2000000 */
+#define NEP_UDF_NEXTCDF4 NC_UDF9   /* UDF slot 9 (NC_UDF9 = 0x00480040) */
 #define NC_NEXTCDF4      NEP_UDF_NEXTCDF4
 ```
 
-`NC_UDF9` is the only unassigned NEP slot. Because the slot is in the upper UDF range (slot ≥ 3), `.ncrc` autoloading is affected by the known netcdf-c `dudfplugins.c` shift bug. NEXTCDF-4 will therefore rely on explicit in-process registration via `nc_def_user_format()` (for example from an `__attribute__((constructor))` initializer or an explicit `NC_NEXTCDF4_initialize()` call) rather than on `.ncrc` autoloading.
+`NC_UDF9` is the only unassigned NEP slot and is the permanent slot for NEXTCDF-4.
+
+NEXTCDF-4 autoloads via `.ncrc` like the other NEP handlers, using the `NETCDF.UDF9.LIBRARY` and `NETCDF.UDF9.INIT` keys. This relies on the expanded UDF support in netcdf-c main (64 slots, `dudfplugins.c` autoloading), which is a prerequisite for the NEXTCDF-4 work.
 
 ### Create-Time Backend Selection
 
@@ -91,7 +93,7 @@ These attributes use the underscore-prefix convention already followed by netcdf
 
 ### `NC_CLASSIC_MODEL`
 
-NEXTCDF-4 will support the existing `NC_CLASSIC_MODEL` create flag exactly as upstream netcdf-c does. When this flag is set:
+NEXTCDF-4 will support the existing `NC_CLASSIC_MODEL` create flag. The data-model restrictions match upstream netcdf-c, but the file will be written with HDF5 Superblock v3 and therefore requires HDF5 1.14.x or later to read. When this flag is set:
 
 - The file is restricted to the classic NetCDF-3 data model.
 - Only the root group may be used; no subgroups may be created.
@@ -103,11 +105,11 @@ NEXTCDF-4 will support the existing `NC_CLASSIC_MODEL` create flag exactly as up
 
 ### `NC_NETCDF4_MODEL` Compatibility Flag
 
-A new create flag `NC_NETCDF4_MODEL` is introduced in `include/nep.h` (value `0x04000000`, bit 26) and is only meaningful when `NC_NETCDF4 | NC_NEXTCDF4` is also set. It behaves like the existing `NC_CLASSIC_MODEL` flag, but for the enhanced NetCDF-4 data model:
+A new create flag `NC_NETCDF4_MODEL` is introduced in `include/nep.h` (value `0x04000000`, bit 26) and is only meaningful when `NC_NEXTCDF4` is also set. It behaves like the existing `NC_CLASSIC_MODEL` flag, but for the enhanced NetCDF-4 data model:
 
-- When `NC_NETCDF4_MODEL` is set, the file must follow the same restrictions as files created by the current netcdf-c `libhdf5` implementation.
-- Such files will be written using Superblock v3, but without the new NEXTCDF-4 types.
-- This ensures the resulting file can be opened by older versions of netcdf-c and by the current NetCDF-4 reference implementation, as long as HDF5-1.14.x or later is used.
+- When `NC_NETCDF4_MODEL` is set, the file must follow the same data-model restrictions as files created by the current netcdf-c `libhdf5` implementation.
+- Such files are always written using Superblock v3 and therefore require HDF5 1.14.x or later to read.
+- No NEXTCDF-4-specific types may be used, so the resulting file can be opened by upstream netcdf-c when it is linked against HDF5 1.14.x or later.
 - When `NC_NETCDF4_MODEL` is **not** set, NEXTCDF-4 is free to use the new types described below.
 
 ### Restrictions in Compatibility Mode
@@ -178,7 +180,7 @@ Each `@NEP_HAS_*@` macro is set to `1` or `0` by the CMake configure step based 
 
 - Add `include/nep_meta.h.in` next to the existing `include/netcdf_meta.h.in`.
 - Add a `configure_file(${netCDF_SOURCE_DIR}/include/nep_meta.h.in ${netCDF_BINARY_DIR}/include/nep_meta.h @ONLY)` call in the top-level `CMakeLists.txt`, immediately following the existing `netcdf_meta.h` generation step.
-- Add the equivalent Autotools generation (`nep_meta.h.in` processed by `config.status`) to keep the CMake and Autotools build systems consistent, per the project's documentation rules.
+- NEP is CMake-only, so no Autotools generation is required.
 - Install `nep_meta.h` alongside `netcdf_meta.h` in the public include directory.
 - This is a Phase 0 / prerequisite task, completed before Phase 1 ("Foundation") begins, so that every subsequent phase can gate its own new code behind the appropriate `NEP_HAS_*` macro from day one.
 
@@ -192,14 +194,14 @@ NEXTCDF-4 will use HDF5 Superblock v3 for files by default. Superblock v3 was in
 
 ### Requirements
 
-- Build-time HDF5 version must be 1.14.0 or later; HDF5 2.1.1+ is the recommended modern target.
-- Files created by NEXTCDF-4 without `NC_NETCDF4_MODEL` will not be readable by HDF5 1.12.x or older.
+- Build-time HDF5 version must be 1.14.0 or later; HDF5 2.1.1+ is the recommended modern target. If the detected HDF5 version is older than 1.14.x, NEXTCDF-4 is not built.
+- All files created by NEXTCDF-4, in every create mode, are written with Superblock v3 and are therefore not readable by HDF5 1.12.x or older.
 
 ### Implementation Notes
 
 - Use `H5Pset_libver_bounds(fapl_id, H5F_LIBVER_LATEST, H5F_LIBVER_LATEST)` when creating files in all modes (native, `NC_NETCDF4_MODEL`, and `NC_CLASSIC_MODEL`).
-- At NEP build time, check that we have hdf5-1.14.x or better.
-- At create time, refuse to create files if the linked HDF5 library is too old to write Superblock v3.
+- At NEP configure time, check that the detected HDF5 version is 1.14.x or better. If it is not, disable NEXTCDF-4 entirely (`NEP_HAS_NEXTCDF4=0`).
+- At create time, assert that the linked HDF5 library is 1.14.x or later and refuse to create files if it is too old to write Superblock v3. This is a defensive runtime check in addition to the configure-time gate.
 
 ## Correct Renaming of Dims and Vars
 
