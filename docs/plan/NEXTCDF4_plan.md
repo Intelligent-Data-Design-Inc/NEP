@@ -29,6 +29,64 @@ The goals are:
 - Modifying the NcZarr, DAP, or NetCDF-3 backends.
 - Reusing code from the existing netcdf-c `libhdf5/` implementation. It may be consulted as a reference, but `src/nextcdf4/` will be written from scratch.
 
+## NEXTCDF-4 as a NEP UDF Expansion Pack
+
+NEXTCDF-4 is delivered as a NetCDF-C **User-Defined Format (UDF)** expansion pack. It does not modify any netcdf-c source files, including `libdispatch/dfile.c`. Activation and backend selection happen entirely through the existing UDF mechanism and mode flags.
+
+### UDF Slot Assignment
+
+NEXTCDF-4 occupies the remaining NEP UDF slot:
+
+```c
+/* include/nep.h */
+#define NEP_UDF_NEXTCDF4 NC_UDF9   /* UDF slot 9, bit 25, value 0x2000000 */
+#define NC_NEXTCDF4      NEP_UDF_NEXTCDF4
+```
+
+`NC_UDF9` is the only unassigned NEP slot. Because the slot is in the upper UDF range (slot ≥ 3), `.ncrc` autoloading is affected by the known netcdf-c `dudfplugins.c` shift bug. NEXTCDF-4 will therefore rely on explicit in-process registration via `nc_def_user_format()` (for example from an `__attribute__((constructor))` initializer or an explicit `NC_NEXTCDF4_initialize()` call) rather than on `.ncrc` autoloading.
+
+### Create-Time Backend Selection
+
+To create a file with NEXTCDF-4, pass `NC_NEXTCDF4`:
+
+```c
+nc_create(path, NC_NEXTCDF4 | NC_CLOBBER, &ncid);
+```
+
+`nc_create` routes to the NEXTCDF-4 dispatch table because `NC_NEXTCDF4` is the `NC_UDF9` mode flag. Passing `NC_NETCDF4 | NC_NEXTCDF4` is also accepted but the `NC_NETCDF4` part is redundant. If `NC_NEXTCDF4` is not set, `nc_create` uses the built-in netcdf-c `libhdf5` backend, so the two backends coexist.
+
+### Open-Time Backend Selection
+
+Because HDF5 files share a single fixed magic number already claimed by the built-in NetCDF-4/HDF5 backend, automatic magic-based dispatch cannot route a file to NEXTCDF-4 without modifying netcdf-c. Therefore, opening a file with the NEXTCDF-4 backend requires passing `NC_NEXTCDF4`:
+
+```c
+nc_open(path, NC_NEXTCDF4, &ncid);
+```
+
+Files created without `NC_NEXTCDF4` continue to open with the legacy backend when `nc_open` is called without `NC_NEXTCDF4`.
+
+### Compatibility Mode Flag
+
+The `NC_NETCDF4_MODEL` create flag is also defined in `nep.h` because netcdf-c itself does not yet know about it:
+
+```c
+/* include/nep.h — bit 26, chosen to avoid all netcdf-c mode flags */
+#define NC_NETCDF4_MODEL 0x04000000
+```
+
+`NC_NETCDF4_MODEL` is only meaningful when `NC_NEXTCDF4` is also set. It is passed through `nc_create`'s mode bits to the NEXTCDF-4 dispatch create function, which enforces the compatibility restrictions described below.
+
+### Stored Markers
+
+NEXTCDF-4 writes hidden root-group attributes so later opens can verify provenance and compatibility mode:
+
+| Attribute | Condition | Purpose |
+|-----------|-----------|---------|
+| `_Nextcdf4Backend` | `NC_NEXTCDF4` was used at create | Records that NEXTCDF-4 created the file. Value is a version string, e.g. `"NEXTCDF-4/1.0"`. |
+| `_Nextcdf4Model` | `NC_NETCDF4_MODEL` was also set | Records that the file must remain in NetCDF-4-model compatibility mode. Value `1`. |
+
+These attributes use the underscore-prefix convention already followed by netcdf-c's hidden attributes. Unmodified netcdf-c releases do not know to filter them, so older netcdf-c versions may expose `_Nextcdf4Backend`/`_Nextcdf4Model` as user global attributes on `NC_NETCDF4_MODEL` files. This is a documented cosmetic compatibility caveat; it does not affect data readability.
+
 ## Backward Compatibility
 
 ### `NC_CLASSIC_MODEL`
@@ -45,7 +103,7 @@ NEXTCDF-4 will support the existing `NC_CLASSIC_MODEL` create flag exactly as up
 
 ### `NC_NETCDF4_MODEL` Compatibility Flag
 
-A new create flag `NC_NETCDF4_MODEL` will be introduced. It behaves like the existing `NC_CLASSIC_MODEL` flag, but for the enhanced NetCDF-4 data model:
+A new create flag `NC_NETCDF4_MODEL` is introduced in `include/nep.h` (value `0x04000000`, bit 26) and is only meaningful when `NC_NETCDF4 | NC_NEXTCDF4` is also set. It behaves like the existing `NC_CLASSIC_MODEL` flag, but for the enhanced NetCDF-4 data model:
 
 - When `NC_NETCDF4_MODEL` is set, the file must follow the same restrictions as files created by the current netcdf-c `libhdf5` implementation.
 - Such files will be written using Superblock v3, but without the new NEXTCDF-4 types.
@@ -202,20 +260,22 @@ Reading and matching dimension scales alone is slow for complex files and cannot
 ## Support for Float16
 
 NEXTCDF-4 will support the IEEE 754 half-precision (16-bit) floating point type as a first-class NetCDF type.
-- Will be called NC_FLOAT16
-- Will map to the C float16 type.
+- Will be called `NC_FLOAT16`.
+- `NC_FLOAT16` is the IEEE 754 **binary16** format (1 sign bit, 5 exponent bits, 10 mantissa bits). This is the same 16-bit format that C implementations call `float16`, `_Float16`, or `__fp16` on platforms that support it.
+- `NC_FLOAT16` is **not** `bfloat16` (1 sign bit, 8 exponent bits, 7 mantissa bits); `bfloat16` is a separate format described below.
+- The C API for `NC_FLOAT16` will use `_Float16 *` on C23 compilers that provide `_Float16`. If the compiler does not support `_Float16`, it will fall back to `uint16_t *` raw bits. Conversions to and from `float`/`double` follow IEEE 754 binary16 rules.
 
 ### HDF5 Mapping
 
 - Native type: `H5T_IEEE_F16LE` or `H5T_IEEE_F16BE` depending on endianness.
 - The NetCDF type constant will be `NC_FLOAT16`.
-- Memory representation is the standard IEEE 754 binary16 format (1 sign bit, 5 exponent bits, 10 mantissa bits).
-- The C API uses `uint16_t` raw bits for I/O.
+- Memory representation is the standard IEEE 754 binary16 format.
 
 ### API Additions
 
 - Standard `nc_def_var` with `NC_FLOAT16` xtype.
-- `nc_put_var_float16` and `nc_get_var_float16` variants.
+- `nc_put_var_float16` and `nc_get_var_float16`, using `_Float16 *` when the compiler supports `_Float16` and `uint16_t *` otherwise.
+- The generic `nc_put_var` / `nc_get_var` family continues to take `void *`.
 
 ### Small Floating-Point Types
 
@@ -252,8 +312,8 @@ Each new floating-point type has a documented default fill value, following the 
 
 | NetCDF Type      | Default Fill Value | Bit Pattern | Rationale |
 |------------------|--------------------:|-------------|-----------|
-| `NC_FLOAT16`     | `55296.0`           | `0x7B00`    | Second-highest exponent (`11110`) with mantissa `1100000000`; well below the max finite value (`65504`, `0x7BFF`) and far from `+Inf` (`0x7C00`), so ordinary rounding/arithmetic on nearby data cannot produce or collide with it. |
-| `NC_BFLOAT16`    | `~2.9e36`           | `0x7CF0`    | The upper 16 bits of the `NC_FILL_FLOAT` bit pattern (`0x7CF00000`), since `bfloat16` is defined as a truncation of IEEE `binary32`. This keeps the fill value numerically consistent with `NC_FILL_FLOAT` under widening conversion. |
+| `NC_FLOAT16`     | `57344.0`           | `0x7B00`    | Second-highest exponent (`11110`) with mantissa `1100000000`; well below the max finite value (`65504`, `0x7BFF`) and far from `+Inf` (`0x7C00`), so ordinary rounding/arithmetic on nearby data cannot produce or collide with it. |
+| `NC_BFLOAT16`    | `9.969209968386869e+36` | `0x7CF0`    | The upper 16 bits of the `NC_FILL_FLOAT` bit pattern (`0x7CF00000`), since `bfloat16` is defined as a truncation of IEEE `binary32`. This keeps the fill value numerically consistent with `NC_FILL_FLOAT` under widening conversion. |
 | `NC_FLOAT8_E4M3` | `224.0`             | `0x76`      | Exponent `1110` (second-highest finite exponent), mantissa `110`; avoids the reserved all-ones pattern (`0x7F`/`0xFF`) that E4M3 uses for NaN. |
 | `NC_FLOAT8_E5M2` | `28672.0`           | `0x77`      | Exponent `11101` (one below the max finite exponent `11110`), mantissa `11`; avoids the reserved exponent `11111` used for `Inf`/`NaN` in E5M2. |
 | `NC_FLOAT6_E2M3` | *(no default; see below)* | — | — |
