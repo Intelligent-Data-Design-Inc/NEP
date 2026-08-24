@@ -4,6 +4,7 @@
 # Include directories to match Makefile.am AM_CPPFLAGS
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_BINARY_DIR})
+include_directories(${CMAKE_BINARY_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR})
 
 # Enable testing
@@ -33,6 +34,10 @@ add_executable(tst_perf tst_perf.c tst_utils.c)
 target_link_libraries(tst_perf PRIVATE nep ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
 target_include_directories(tst_perf PRIVATE ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
 
+# Build build metadata header test
+add_executable(tst_meta tst_meta.c)
+add_test(NAME tst_meta COMMAND tst_meta)
+
 # Build CDF UDF test if CDF is enabled
 if(HAVE_CDF)
     # Get HDF5 library directory
@@ -51,7 +56,9 @@ if(HAVE_CDF)
     
     # Add test - creates its own CDF file
     add_test(NAME tst_cdf_udf COMMAND tst_cdf_udf)
-    
+    set_tests_properties(tst_cdf_udf PROPERTIES
+        ENVIRONMENT "LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+
     # Build IMAP MAG CDF test
     add_executable(tst_imap_mag tst_imap_mag.c)
     target_link_directories(tst_imap_mag PRIVATE ${HDF5_LIB_DIR})
@@ -74,6 +81,8 @@ if(HAVE_CDF)
     
     # Add test - uses existing IMAP MAG CDF file
     add_test(NAME tst_imap_mag COMMAND tst_imap_mag)
+    set_tests_properties(tst_imap_mag PROPERTIES
+        ENVIRONMENT "LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
 endif()
 
 # Build GRIB2 UDF placeholder test if GRIB2 is enabled
@@ -92,8 +101,12 @@ endif()
 
 # Build FITS UDF test if FITS is enabled
 if(HAVE_FITS)
+    # Get HDF5 library directory
+    get_filename_component(HDF5_LIB_DIR "${HDF5_INCLUDE_DIR}/../lib" ABSOLUTE)
+
     add_executable(tst_fits_udf tst_fits_udf.c)
-    target_link_libraries(tst_fits_udf PRIVATE ncfits nep ${NETCDF_LIBRARIES})
+    target_link_directories(tst_fits_udf PRIVATE ${HDF5_LIB_DIR})
+    target_link_libraries(tst_fits_udf PRIVATE ncfits nep ${NETCDF_LIBRARIES} hdf5 hdf5_hl)
     target_include_directories(tst_fits_udf PRIVATE ${NETCDF_INCLUDE_DIRS} ${CFITSIO_INCLUDE_DIR})
     add_test(NAME tst_fits_udf COMMAND tst_fits_udf)
     set_tests_properties(tst_fits_udf PROPERTIES
@@ -374,7 +387,7 @@ set_tests_properties(run_tests PROPERTIES
     ENVIRONMENT "LD_LIBRARY_PATH=${MY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}")
 
 # Make test script depend on hdf5_plugins being built
-set(_test_exe_deps tst_perf)
+set(_test_exe_deps tst_perf tst_meta)
 if(NEP_BUILD_LZ4)
     list(APPEND _test_exe_deps tst_lz4)
 endif()

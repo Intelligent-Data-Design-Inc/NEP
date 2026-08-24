@@ -28,6 +28,8 @@ set_target_properties(tst_cdf_basic PROPERTIES
 
 # Add the test (matches TESTS = tst_cdf_basic)
 add_test(NAME tst_cdf_basic COMMAND tst_cdf_basic)
+set_tests_properties(tst_cdf_basic PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
 
 # Test for UDF self-loading functionality (v1.5.4 Sprint 3)
 add_executable(tst_cdf_self_load tst_cdf_self_load.c)
@@ -45,7 +47,8 @@ set_target_properties(tst_cdf_self_load PROPERTIES
     BUILD_RPATH "${CDF_LIB_DIR}")
 add_test(NAME tst_cdf_self_load COMMAND tst_cdf_self_load)
 set_tests_properties(tst_cdf_self_load PROPERTIES 
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    ENVIRONMENT "LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
 
 # Test for .ncrc autoloading via NETCDF_RC (issue #134)
 add_executable(tst_cdf_ncrc_autoload tst_cdf_ncrc_autoload.c)
@@ -62,4 +65,5 @@ set_target_properties(tst_cdf_ncrc_autoload PROPERTIES
     BUILD_RPATH "${CDF_LIB_DIR}")
 add_test(NAME tst_cdf_ncrc_autoload COMMAND tst_cdf_ncrc_autoload)
 set_tests_properties(tst_cdf_ncrc_autoload PROPERTIES
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    ENVIRONMENT "LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")

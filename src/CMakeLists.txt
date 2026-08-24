@@ -4,6 +4,7 @@
 # Include directories to match Makefile.am AM_CPPFLAGS
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_BINARY_DIR})
+include_directories(${CMAKE_BINARY_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR})
 
 # Build the main nep library
@@ -265,3 +266,7 @@ if(HAVE_MMCIF)
     )
     message(STATUS "Building PDBx/mmCIF UDF library: ${MMCIF_LIB_NAME}")
 endif()
+
+# Install the generated build metadata header.
+install(FILES "${CMAKE_BINARY_DIR}/include/nep_meta.h"
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

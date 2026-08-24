@@ -1,5 +1,25 @@
 # NEP Development Roadmap
 
+### V3.5.0 - Add nep_meta.h with Build Info
+
+#### Sprint 1: Create nep_meta.h
+**Detailed Plan**: See `docs/plan/v3.5.0-sprint1-nep_meta.md`
+
+- Create `include/nep_meta.h` from a committed `include/nep_meta.h.in` template using CMake `configure_file()` at build time; the generated `nep_meta.h` is added to `.gitignore` and never committed.
+- Include version (major/minor/patch), build date, compiler name, and feature flags for enabled readers and compression filters.
+- Add CMake logic to populate `nep_meta.h.in` placeholders using `version.txt` and the existing `HAVE_*` / `NEP_ENABLE_*` options.
+- Update documentation to reference the new meta header and add an install rule for `nep_meta.h`.
+
+**Clarified decisions:**
+- `include/nep_meta.h.in` is the committed source of truth; `include/nep_meta.h` is generated into the build tree and added to `.gitignore`, matching the netcdf-c `netcdf_meta.h` convention.
+- The build-info header is generated at configure time; build date is a configure-time timestamp, not a per-build dynamic value, to avoid unnecessary rebuilds.
+- Feature flags reflect the state of `NEP_ENABLE_*` CMake options (PDB, MMCIF, CDF, GeoTIFF, GRIB2, FITS, PDS4, DICOM, LZ4, BZIP2, Fortran, etc.) as `0`/`1` macros.
+- The generated header is installed alongside `nep.h` so downstream projects can inspect build capabilities.
+- Acceptance is a compile-only C test `test/tst_meta.c` that includes `nep_meta.h` and validates the version macros.
+- No runtime API for querying build info is added in this sprint.
+
+**GitHub Issue:** [#353](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/353)
+
 ### V3.4.0 - More Proteins with mmCIF Format
 
 #### Sprint 1: Setup

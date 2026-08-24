@@ -240,4 +240,7 @@ test_netcdf_crs
 # Machine-specific local build scripts
 examples/validate_cdl.sh
 
+# Generated from include/nep_meta.h.in at configure time
+include/nep_meta.h
+
 

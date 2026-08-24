@@ -177,6 +177,7 @@ NEP uses CMake as its sole supported build system.
 - **Configurable Build Options**: Fine-grained control over compression filter inclusion
 - **Cross-Platform Support**: Unified build configuration across Linux and Unix
 - **Installation Integration**: Complete install/uninstall target implementation
+- **Build Metadata Header**: `include/nep_meta.h` is generated from `include/nep_meta.h.in` at configure time and reports the NEP version, build date, compiler, and enabled features (`NEP_HAS_*` macros) to consuming projects.
 
 ### HDF5 Filter Plugin Integration
 

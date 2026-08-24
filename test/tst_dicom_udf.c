@@ -626,6 +626,7 @@ main(void)
         printf("PASS: nc_close MR head\n");
     }
 
+#ifdef HAVE_DICOM_LOSSLESS
     /* Open the JPEG Lossless (16-bit precision) encapsulated CT DICOM
      * file. This exercises the gdcmjpeg16 decode path. */
     {
@@ -765,6 +766,7 @@ main(void)
             ERR(retval);
         printf("PASS: nc_close MR shoulder lossless\n");
     }
+#endif /* HAVE_DICOM_LOSSLESS */
 
     /* CR-MONO1-10-chest.dcm has no preamble/File Meta Information and is
      * out of scope for this sprint; verify it is rejected cleanly rather
