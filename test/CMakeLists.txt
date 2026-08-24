@@ -4,6 +4,7 @@
 # Include directories to match Makefile.am AM_CPPFLAGS
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_BINARY_DIR})
+include_directories(${CMAKE_BINARY_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR})
 
 # Enable testing
@@ -32,6 +33,10 @@ endif()
 add_executable(tst_perf tst_perf.c tst_utils.c)
 target_link_libraries(tst_perf PRIVATE nep ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
 target_include_directories(tst_perf PRIVATE ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+
+# Build build metadata header test
+add_executable(tst_meta tst_meta.c)
+add_test(NAME tst_meta COMMAND tst_meta)
 
 # Build CDF UDF test if CDF is enabled
 if(HAVE_CDF)
@@ -382,7 +387,7 @@ set_tests_properties(run_tests PROPERTIES
     ENVIRONMENT "LD_LIBRARY_PATH=${MY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}")
 
 # Make test script depend on hdf5_plugins being built
-set(_test_exe_deps tst_perf)
+set(_test_exe_deps tst_perf tst_meta)
 if(NEP_BUILD_LZ4)
     list(APPEND _test_exe_deps tst_lz4)
 endif()
