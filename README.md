@@ -68,6 +68,11 @@ NEP includes over 26 C and Fortran example programs, organized by topic. They ar
 
 Both C and Fortran versions provided for Classic, NetCDF-4, and NcZarr categories.
 
+A standalone Python example is also included: `examples/nisar/` opens a
+NISAR Level 3 Soil Moisture (SME2) HDF5 product and plots it with
+`xarray`/`cartopy`. It is not built by CMake/CTest; see
+[examples/nisar/README.md](examples/nisar/README.md) for setup and usage.
+
 ---
 
 ## Compression

@@ -20,6 +20,28 @@
 
 **GitHub Issue:** [#353](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/353)
 
+#### Sprint 2: NISAR Example
+**Detailed Plan**: See `docs/plan/v3.5.0-sprint2-nisar-example.md`
+
+- NISAR is a super-cool satellite!
+- Let's add some example code which opens NISAR file and plots it in python.
+- We want to take the example from /home/ed/nisar_play
+- NISAR file is too big for repo, so user must provide path to it on the command line. There is one here: /home/ed/Downloads/NISAR_L3_PR_SME2_028_005_A_020_4005_DHDH_A_20260813T125218_20260813T125253_P05023_N_F_J_001_QA_STATS.h5
+- CI does not really need to test this, we just need a working example from the command line.
+- README.md needs to clearly explain how to run NISAR example, and show the output graph for fun.
+- We are interested in NISAR soil moisture for this example.
+
+**Clarified decisions:**
+- The example lives in a new top-level `examples/nisar/` directory (not `examples/viz/NISAR/`), since NISAR SME2 files are plain CF/netCDF-compliant HDF5 read directly with `xarray`/`netCDF4` and involve no NEP UDF dispatch code, unlike the per-format `examples/viz/<FORMAT>` scripts.
+- The example is Python-only and standalone: not registered in CMake/CTest and not run in CI, matching the roadmap's "CI does not really need to test this" note.
+- The CLI mirrors `nisar_play`'s `plot-sme2` command: a required positional NISAR SME2 `.h5` path, plus `--output-dir` and `--show` flags, porting `sme2.py`/`plots.py` logic with minimal changes.
+- Dependencies match `nisar_play` exactly: `xarray`, `netCDF4`, `matplotlib`, `cartopy`, plus `earthaccess` for the bbox fetch path, declared in a new `examples/nisar/requirements.txt`.
+- The Earthdata bbox-search/download capability (`fetch.py`, `--bbox` flag) is ported over in full, including `~/.netrc` / `EARTHDATA_USERNAME`/`EARTHDATA_PASSWORD` credential handling, matching `nisar_play` feature-for-feature.
+- A pre-generated soil-moisture PNG (produced from the sample SME2 file) is committed under `examples/nisar/` and embedded in `examples/nisar/README.md` and referenced from the top-level `README.md`.
+- No changes are made to NEP's C library, `include/nep.h`, or the UDF dispatch framework this sprint; this is a pure Python usage example.
+
+**GitHub Issue:** [#355](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/355)
+
 ### V3.4.0 - More Proteins with mmCIF Format
 
 #### Sprint 1: Setup
