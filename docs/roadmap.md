@@ -1,6 +1,6 @@
 # NEP Development Roadmap
 
-### V3.5.0 - Add nep_meta.h with Build Info
+### V3.5.0 - Add nep_meta.h with Build Info, and NISAR/SWOT Examples
 
 #### Sprint 1: Create nep_meta.h
 **Detailed Plan**: See `docs/plan/v3.5.0-sprint1-nep_meta.md`
@@ -41,6 +41,25 @@
 - No changes are made to NEP's C library, `include/nep.h`, or the UDF dispatch framework this sprint; this is a pure Python usage example.
 
 **GitHub Issue:** [#355](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/355)
+
+#### Sprint 3: SWOT Example
+**Detailed Plan**: See `docs/plan/v3.5.0-sprint3-swot-example.md`
+
+- Add a standalone Python example under `examples/swot/` that opens a SWOT gridded sea-surface-height product (NASA PO.DAAC `SWOT_L2_LR_SSH_*` or AVISO+ `SWOT_L3_LR_SSH` NetCDF) and plots sea surface height anomaly (`ssha`) with `xarray`/`netCDF4`, `matplotlib`, and `cartopy`.
+- Mirror the `examples/nisar/` structure: a `swot_example/` package with reader, plots, CLI, and an optional Earthdata/AVISO+ fetch module; `requirements.txt`; `README.md`; and committed example output PNG(s).
+- The CLI takes a local `.nc` file path or a `--bbox W S E N` fetch path; the fetch path uses `earthaccess` against the chosen collection, with credentials from `~/.netrc` or environment variables.
+- Write `docs/netCDF_with_SWOT.md` as a companion paper mirroring `docs/netCDF_with_NISAR.md`: explain how SWOT gridded SSH products map to netCDF-4, show `ncdump`/`h5dump` excerpts, and reference the example code.
+- Update top-level `README.md` and `examples/README.md` to list the new SWOT example.
+
+**Clarified decisions:**
+- Target product is a SWOT gridded sea-surface-height NetCDF (e.g., PO.DAAC `SWOT_L2_LR_SSH_D` Basic/Expert or AVISO+ `SWOT_L3_LR_SSH` Basic). The primary plotted variable is `ssha` (sea surface height anomaly), masked with the product `quality_flag` when present; coordinates come from 2D `latitude`/`longitude` variables.
+- The example is a standalone Python package (not a NEP UDF reader and not added to CMake/CTest/CI), following the NISAR Sprint 2 precedent.
+- The fetch path uses `earthaccess` and NASA Earthdata/PO.DAAC credentials (`~/.netrc` or `EARTHDATA_USERNAME`/`EARTHDATA_PASSWORD`); if AVISO+ `L3_LR_SSH` is chosen, the fetch implementation switches to AVISO+ FTP/THREDDS access and documents AVISO+ credential setup.
+- The reader is organized as `examples/swot/swot_example/l3_ssh.py`, `plots.py`, `fetch.py`, and `cli.py`, invoked via `python -m swot_example FILE` or `python -m swot_example --bbox W S E N`.
+- Output PNGs (e.g., `ssha_map.png` and a `swath_footprint.png` overview) are committed under `examples/swot/figures/` and embedded in `examples/swot/README.md` and referenced from `docs/netCDF_with_SWOT.md`.
+- No changes are made to NEP's C library, `include/nep.h`, the build system, or CI this sprint; this is documentation- and example-only.
+
+**GitHub Issue:** [#357](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/357)
 
 ### V3.4.0 - More Proteins with mmCIF Format
 

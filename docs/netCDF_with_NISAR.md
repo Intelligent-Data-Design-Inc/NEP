@@ -31,10 +31,228 @@ NEP (the NetCDF Expansion Pack) is a superset of netCDF-C that adds
 compression filters and read layers for scientific data formats netCDF
 does not natively understand. NISAR SME2 files need none of that: they
 are already CF-1.7 netCDF-4 files, so a plain `nc_open()` or `ncdump`
-opens them directly. NEP still ships a working, standalone Python
+opens them directly. But NEP ships a working, standalone Python
 example that opens an SME2 file and plots the soil moisture grid, in
 `examples/nisar/`; see `examples/nisar/README.md`. Code from that
 example is used throughout this document.
+
+---
+
+## The NISAR Mission, Spacecraft, and Instruments
+
+NISAR (the NASA-ISRO Synthetic Aperture Radar) is the first
+joint hardware-development mission between NASA and the Indian Space
+Research Organisation (ISRO). It is descended from the DESDynI
+(Deformation, Ecosystem Structure and Dynamics of Ice) radar mission
+concept recommended in the 2007 U.S. National Research Council Decadal
+Survey. NISAR's objective is to make repeated, high-resolution radar
+measurements of Earth's changing land, ice, vegetation, and water
+surfaces, supporting studies of earthquakes, volcanoes, landslides,
+glaciers, sea ice, soil moisture, biomass, agriculture, and coastal
+processes. The mission launched on 30 July 2025 from the Satish Dhawan
+Space Centre (SDSC, a.k.a. SHAR) on an ISRO GSLV Mark II launch vehicle. 
+
+NASA requires at least
+three years of science operations with the L-band SAR; ISRO requires at
+least five years with the S-band SAR, and operations may be extended if
+fuel reserves allow. All NISAR science data are freely available and open
+to the public.
+
+### Spacecraft and Orbit
+
+The NISAR spacecraft is built around ISRO's I-3K satellite bus. The
+octagonal instrument structure, which carries the two radars and their
+shared antenna, attaches to this bus. The spacecraft is three-axis
+stabilized using reaction wheels and attitude-control thrusters. Key
+spacecraft facts:
+
+- **Launch mass:** roughly 2,380–2,800 kg, including propellant.
+- **Bus and payload length:** about 5.5 m (18 ft).
+- **Solar arrays:** two deployable arrays, each about 5.5 m long,
+  providing roughly 23 m² of collecting area and about 5 kW of power,
+  with an 180 amp-hour battery for eclipse operations.
+- **Attitude control:** star sensors, Sun sensors, and inertial/velocity/
+  position sensors; four reaction wheels; eleven 11-newton and four
+  1-newton hydrazine thrusters; three magnetic torque rods.
+- **Propulsion:** a 390-liter tank carrying about 265 kg of hydrazine
+  propellant.
+- **Command and telemetry:** S-band for command uplink and low-rate
+  telemetry.
+- **High-rate downlink:** Ka-band telecom at up to about 4.0 Gbps to
+  NASA ground stations and 2.88 Gbps to ISRO ground stations.
+- **Storage:** a NASA-provided high-capacity solid-state recorder with
+  about 9 terabits of storage at end of life.
+- **Orbit determination:** NASA-provided GPS receivers.
+
+NISAR flies in a near-polar, Sun-synchronous, dawn-dusk orbit. The
+orbit parameters are:
+
+- **Altitude:** 747 km, circular.
+- **Inclination:** about 98.4°.
+- **Orbital period:** roughly 100 minutes.
+- **Exact repeat cycle:** 12 days.
+- **Equator crossing:** approximately 6 AM local time on the ascending
+  node and 6 PM local time on the descending node.
+
+Because the orbit repeats every 12 days, any given location is revisited
+on the same ground track every 12 days. Combining ascending and
+descending passes gives an average revisit time of about 6 days. The
+look direction is to the left (south) of the flight track.
+
+### The Dual-Frequency SAR Payload
+
+NISAR is the first satellite to carry two fully capable SAR
+instruments operating at two different wavelengths on the same
+spacecraft. Both radars share a single large deployable antenna, but
+each has its own feed electronics and science objectives.
+
+#### L-SAR (NASA/JPL)
+
+The L-band SAR, supplied by NASA's Jet Propulsion Laboratory, operates
+at a wavelength of about 24 cm (center frequency near 1.25 GHz). It is a
+side-looking, fully polarimetric, interferometric SAR. L-band
+microwaves penetrate clouds and moderate vegetation, making the
+instrument especially useful for observing forests, ice sheets, and
+ground deformation beneath vegetation. Key characteristics:
+
+- **Swath:** greater than 240 km, nominally about 242 km.
+- **Resolution:** about 7 m along-track and 3–24 m cross-track,
+  depending on the acquisition mode (mission documentation also quotes
+  a general range of 3–10 m, mode-dependent).
+- **Polarizations:** single, dual, circular, and quad polarization are
+  supported. Quad-polarization transmits and receives both horizontal
+  and vertical polarizations.
+- **Array:** 24 transmit/receive elements arranged in two rows of 12,
+  one row per polarization.
+- **Usage:** L-SAR operates globally and is the workhorse for NASA's
+  science requirements. The instrument is on and collecting data for
+  roughly 45–50% of each orbit on average, with peaks up to 70%.
+- **Interferometric sensitivity:** from the 747 km science orbit,
+  repeat-pass interferograms can resolve large-scale land-deformation
+  rates as small as about 4 mm per year.
+
+#### S-SAR (ISRO/SAC)
+
+The S-band SAR, supplied by ISRO's Space Applications Centre at
+Ahmedabad, operates at a wavelength of about 9.4 cm (center frequency
+near 3.2 GHz). S-band is less affected by the ionosphere than L-band
+and is more sensitive to lighter vegetation and surface moisture. It
+supports ISRO's science priorities in agriculture, soil moisture,
+glaciers, landslides, and coastal processes. S-SAR uses the same
+antenna and SweepSAR technique as L-SAR but is operated over India and
+selected calibration/validation sites around the world rather than
+continuously globally. It supports single, dual, circular, and QQP
+(quad-polarization-like) modes, with spatial resolution that is
+comparable to L-SAR and likewise varies by acquisition mode.
+
+### The Shared Antenna and SweepSAR Technique
+
+Both radars use a single 12-m diameter deployable mesh reflector
+mounted at the end of a 9-m deployable boom. The reflector is fed by a
+one-dimensional phased-array feed that illuminates the reflector in a
+mode called **SweepSAR** (scan-on-receive). In SweepSAR, the radar
+transmits a broad beam that illuminates the entire ~242 km swath at
+once, but on receive the phased-array feed rapidly steers a narrow
+beam across the reflector, "sweeping" the swath and collecting echoes
+from each sub-swath in turn. This lets NISAR achieve both wide-area
+coverage and fine spatial resolution without needing a physically
+enormous antenna or multiple narrow beams.
+
+### Supporting Engineering Payload
+
+In addition to the two SAR instruments, the observatory carries several
+NASA-provided engineering systems that make the science mission possible:
+
+1. **High-capacity solid-state recorder (SSR)** — stores up to about
+   9 terabits of science and engineering data at end of life.
+2. **GPS receivers** — track the NAVSTAR GPS constellation for precise
+   orbit determination.
+3. **Ka-band payload communication subsystem** — downlinks the large SAR
+   data volume to NASA and ISRO ground stations.
+4. **Payload data subsystem / engineering payload** — coordinates
+   command and data handling between the NASA-provided payload elements
+   and the ISRO spacecraft bus.
+5. **Power distribution and thermal management** — provided by ISRO as
+   part of the bus, keeping the spacecraft, radars, and recorder within
+   their operating temperatures.
+
+---
+
+## NISAR Data Processing Levels
+
+NISAR data products are organized by processing level, moving from raw
+instrument voltages to geocoded and geophysical quantities usable by
+end users. The NASA NISAR Science Data System (SDS) produces Level 0,
+Level 1, and Level 2 products directly; the NISAR Project Science Team
+produces Level 3 products such as SME2. Level 4 products are research
+and analysis products generated by the science community.
+
+- **Level 0 — Raw data.** Level-0 products contain unprocessed
+  telemetry. L0A is the raw data stream as received from the
+  spacecraft, archived mainly for reference. L0B (Radar Raw Signal Data,
+  RRSD) is the unfocused raw radar signal data, more structured than
+  L0A but still close to the instrument.
+
+- **Level 1 — Range-Doppler products.** Level-1 products are focused or
+  partially focused in the radar's native range-Doppler geometry.
+
+  - **RSLC (Range-Doppler Single Look Complex)** — the foundational
+    Level-1 product. It contains focused SAR images with full complex
+    amplitude and phase information on a constant azimuth-time and
+    range-spacing grid. Most other Level-1 and Level-2 products are
+    derived from pairs or stacks of RSLC products.
+  - **RIFG (Range-Doppler Wrapped Interferogram)** — a wrapped
+    interferogram formed from two co-registered RSLCs, flattened for
+    ellipsoid and topography, useful for grounding-line and change
+    detection studies.
+  - **RUNW (Range-Doppler Unwrapped Interferogram)** — an unwrapped,
+    multi-looked differential interferogram derived from two RSLCs,
+    primarily supporting solid-Earth surface-displacement
+    measurements.
+  - **ROFF (Range-Doppler Pixel Offsets)** — dense pixel-offset layers
+    from speckle tracking between two RSLCs, used mainly for glacier
+    and ice-sheet motion.
+
+- **Level 2 — Geocoded products.** Level-2 products reproject the
+  Level-1 data into geographic or map coordinates and apply radiometric
+  and terrain corrections.
+
+  - **GSLC (Geocoded Single Look Complex)** — the geocoded version of
+    RSLC, useful for amplitude analysis and for users who want to form
+    their own interferograms from geocoded stacks.
+  - **GCOV (Geocoded Polarimetric Covariance Matrix)** — radiometrically
+    terrain-corrected SAR backscatter and covariance data, designed to
+    support biomass, soil moisture, disturbance, inundation, and crop
+    mapping.
+  - **GUNW (Geocoded Unwrapped Interferogram)** — the geocoded,
+    unwrapped differential interferogram corresponding to RUNW, used
+    for deformation and change studies in GIS-friendly coordinates.
+  - **GOFF (Geocoded Pixel Offsets)** — the geocoded version of ROFF,
+    for cryosphere motion studies.
+
+- **Level 3 — Geophysical products.** Level-3 products are derived
+  geophysical quantities on regular grids. The mission-produced Level-3
+  product is:
+
+  - **SME2 (Soil Moisture EASE-Grid 2.0)** — global soil moisture at
+    200 m pixel spacing (400 m over the Sahara) on the EASE-Grid 2.0
+    projection, the product used in this document's example.
+
+  The NISAR science teams also develop additional Level-3 and Level-4
+  products for calibration/validation sites (for example, ice-sheet
+  velocity, glacier flow, and ecosystem products), and many of the
+  algorithms are published as Python notebooks that users can run for
+  their own areas of interest.
+
+- **Level 4 — Research and analysis products.** These are value-added
+  products generated by the science community, such as merged time
+  series, modeled surface displacements, biomass maps, and hydrologic
+  assimilation products. They are not produced routinely by the
+  mission's SDS.
+
+This document focuses on the **L3 SME2** product because it is a
+CF-1.7-compliant netCDF-4/HDF5 file that can be opened directly with
+standard netCDF tools and is small enough to plot on a laptop.
 
 ---
 
@@ -441,3 +659,4 @@ almost certainly want in a NumPy array instead, not a terminal.
 - **HDF5**: <https://www.hdfgroup.org/solutions/hdf5/>
 - **NISAR Mission (NASA JPL)**: <https://nisar.jpl.nasa.gov/>
 - **NISAR Mission (ISRO)**: <https://www.isro.gov.in/NISAR.html>
+- **NISAR Data User Guide (ASF)**: <https://nisar-docs.asf.alaska.edu/>
