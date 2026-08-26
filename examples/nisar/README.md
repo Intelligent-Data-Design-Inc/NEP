@@ -89,12 +89,13 @@ machine urs.earthdata.nasa.gov
 
 ![Soil moisture map](figures/soil_moisture.png)
 
-*Soil moisture (m³/m³) from a sample SME2 granule over southern
-Nevada/California, drawn on a cartopy map with state borders and
-gridlines. Only recommended retrievals are shown: fill values and pixels
-whose `retrievalQualityFlag` marks the retrieval "not recommended" (e.g.
-urban areas, water, dense vegetation) are left blank. The tilted swath
-edge reflects the satellite's orbit track on the EASE-Grid 2.0 grid.*
+*Soil moisture (m³/m³) from a sample NISAR L3 SME2 granule over
+southern Nevada and southeastern California. Colored pixels are
+recommended retrievals on the EASE-Grid 2.0 projection; white pixels are
+fill values or masked by `retrievalQualityFlag` (water, urban cover,
+dense vegetation, etc.). The map is drawn with coastlines, state
+borders, and a lat/lon grid; the color scale runs from 0.1 to
+0.5 m³/m³.*
 
 ![Footprint overview map](figures/footprint.png)
 
