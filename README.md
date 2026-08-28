@@ -84,6 +84,10 @@ They are not built by CMake/CTest; see
 [examples/swot/README.md](examples/swot/README.md), and
 [examples/abi/README.md](examples/abi/README.md) for setup and usage.
 
+They are not built by CMake/CTest; see
+[examples/nisar/README.md](examples/nisar/README.md) and
+[examples/swot/README.md](examples/swot/README.md) for setup and usage.
+
 ---
 
 ## Compression

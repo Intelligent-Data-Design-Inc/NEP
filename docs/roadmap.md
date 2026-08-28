@@ -61,25 +61,6 @@
 
 **GitHub Issue:** [#357](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/357)
 
-#### Sprint 4: ABI Example
-**Detailed Plan**: See `docs/plan/v3.5.0-sprint4-abi-example.md`
-
-- Add a standalone Python example under `examples/abi/` that opens a GOES-R Advanced Baseline Imager (ABI) Level 2 Cloud and Moisture Imagery (CMIP) NetCDF and plots a single channel image on its native geostationary projection.
-- Mirror the `examples/nisar/` and `examples/swot/` structure: an `abi_example/` package with reader, plots, CLI, and an optional fetch module; `requirements.txt`; `README.md`; and committed example output PNG(s).
-- The CLI takes a local `.nc` file path or fetches a granule from the NOAA GOES AWS Open Data registry (`s3://noaa-goes16/ABI-L2-CMIP...`) using a date, satellite, channel, and region.
-- Write `docs/netCDF_with_ABI_CMIP.md` as a companion paper mirroring `docs/netCDF_with_NISAR.md` and `docs/netCDF_with_SWOT.md`: explain how ABI CMIP products map to netCDF-4, show the geostationary projection metadata and `ncdump` excerpts, and reference the example code.
-- Update top-level `README.md` and `examples/README.md` to list the new ABI example.
-
-**Clarified decisions:**
-- Target product is the GOES-R ABI Level 2 Cloud and Moisture Imagery Product (`ABI-L2-CMIPM1` for full-disk or `ABI-L2-CMIPC` for CONUS), a CF-compliant NetCDF-4 file. The primary plotted variable is `CMI` (Cloud and Moisture Imagery reflectance or brightness temperature), masked with the `DQF` variable when present; coordinates come from 1-D `x` and `y` radian-angle variables plus the `goes_imager_projection` grid-mapping variable.
-- The example is a standalone Python package (not a NEP UDF reader and not added to CMake/CTest/CI), following the NISAR and SWOT precedent.
-- The fetch path uses the NOAA GOES AWS Open Data registry (`noaa-goes16`/`noaa-goes18`/`noaa-goes19` buckets) via `boto3`/`s3fs` or direct HTTPS from `https://noaa-goes16.s3.amazonaws.com/`. No Earthdata credentials are required; if the environment lacks network access, a user-supplied local `.nc` file is used instead.
-- The reader is organized as `examples/abi/abi_example/reader.py`, `plots.py`, `fetch.py`, and `cli.py`, invoked via `python -m abi_example FILE` or `python -m abi_example --date YYYY-MM-DDTHH:MM --satellite GOES-16 --channel 09 --region M1`.
-- Output PNGs (e.g., `cmi_map.png` and a `full_disk_preview.png`) are committed under `examples/abi/figures/` and embedded in `examples/abi/README.md` and referenced from `docs/netCDF_with_ABI_CMIP.md`.
-- No changes are made to NEP's C library, `include/nep.h`, the build system, or CI this sprint; this is documentation- and example-only.
-
-**GitHub Issue:** [#359](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/359)
-
 ### V3.4.0 - More Proteins with mmCIF Format
 
 #### Sprint 1: Setup
