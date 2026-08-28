@@ -29,7 +29,7 @@ Three sector products are produced:
 * `ABI-L2-CMIPC` — CONUS (Contiguous U.S.)
 * `ABI-L2-CMIPM1` / `ABI-L2-CMIPM2` — Mesoscale sectors 1 and 2
 
-See [`docs/netCDF_with_ABI_CMIP.md`](../../docs/netCDF_with_ABI_CMIP.md) for a
+See `docs/netCDF_with_ABI_CMIP.md` for a
 fuller description of the GOES-R spacecraft, ABI channels, the other
 GOES-R instruments, ground data processing, and the family of ABI-derived
 Level 2 products.

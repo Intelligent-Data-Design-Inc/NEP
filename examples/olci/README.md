@@ -29,7 +29,7 @@ Full Resolution product (`OL_2_LFR___`) is distributed as a SAFE package
 This example reads `OTCI` from `otci.nc`, applies the `LQSF` quality mask, and
 plots the result on a lat/lon map using `cartopy`.
 
-See [`docs/netCDF_with_Sentinel3_OLCI.md`](../../docs/netCDF_with_Sentinel3_OLCI.md)
+See `docs/netCDF_with_Sentinel3_OLCI.md`
 for a fuller description of the mission, instrument, product families, and the
 NetCDF data model.
 
