@@ -1,5 +1,47 @@
 # NEP Development Roadmap
 
+### V4.0.0 - NEXTCDF4
+
+NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NEP UDF expansion pack. The complete architecture, compatibility contract, datatype roadmap, and proposed source layout are defined in `docs/plan/NEXTCDF4_plan.md`.
+
+#### Sprint 1: Prepare the NEXTCDF-4 Foundation
+**Detailed Plan**: See `docs/plan/NEXTCDF4_plan.md`, especially "NEXTCDF-4 as a NEP UDF Expansion Pack," "Implementation Phases," and "`src/nextcdf4/` Source Organization."
+
+**Objective:** Establish a buildable, testable NEXTCDF-4 plugin skeleton and prove UDF9 registration before implementing HDF5 file operations. This sprint creates the integration boundary that later sprints will fill in; it does not create, open, modify, or read files.
+
+**Prerequisites:**
+- Complete the v3.5.0 `nep_meta.h` work so NEXTCDF-4 availability can be advertised as `NEP_HAS_NEXTCDF4`.
+- Build against a netcdf-c version that provides `NC_UDF9`, supports UDF plugin autoloading, and exposes the `NC_Dispatch` interface required by the backend.
+- Detect HDF5 1.14.0 or newer. If the dependency is unavailable, keep NEXTCDF-4 disabled without affecting the existing NEP handlers or the built-in NetCDF-4 backend.
+
+**Deliverables:**
+- Reserve UDF9 permanently in `include/nep.h` with `NEP_UDF_NEXTCDF4` and the public alias `NC_NEXTCDF4`; update the UDF allocation documentation so the slot is no longer described as reserved.
+- Add an opt-in CMake option for NEXTCDF-4, disabled by default, and gate it on compatible netcdf-c and HDF5 versions. Keep existing configurations and installations unchanged when the option is off.
+- Create the initial `src/nextcdf4/` build target and private headers. Limit the first source set to dispatch, initialization/finalization, and the minimum shared definitions needed by later sprints.
+- Implement `NC_NEXTCDF4_initialize()` and `NC_NEXTCDF4_finalize()` with repeatable initialization, safe cleanup, and UDF9 registration through `nc_def_user_format()`.
+- Define the NEXTCDF-4 `NC_Dispatch` table with the correct model identifier and complete ABI-compatible layout for the supported netcdf-c version. File and metadata callbacks remain intentional stubs that return an appropriate NetCDF "not supported/not implemented" error rather than succeeding or dereferencing null pointers.
+- Add `.ncrc`/autoload metadata for `NETCDF.UDF9.LIBRARY` and `NETCDF.UDF9.INIT`, following the same install and plugin-discovery conventions as existing NEP UDF handlers.
+- Install any public declarations needed to initialize and feature-detect NEXTCDF-4, while keeping implementation headers private.
+- Update architecture, build, and UDF-slot documentation to describe NEXTCDF-4 as an optional backend that coexists with netcdf-c's built-in HDF5 backend.
+
+**Verification and acceptance criteria:**
+- A default build with NEXTCDF-4 disabled continues to configure, build, and pass the full existing unit test suite.
+- An enabled build with supported dependencies compiles and links the NEXTCDF-4 plugin without unresolved dispatch symbols or compiler warnings introduced by this sprint.
+- A focused unit test initializes the plugin, confirms UDF9 registration, verifies repeated initialization/finalization is safe, and confirms a representative unimplemented operation returns the documented error without creating a file.
+- Autoload verification confirms the installed plugin can be discovered through the UDF9 `.ncrc` keys without an explicit initialization call.
+- Configuration with HDF5 older than 1.14.0 either disables NEXTCDF-4 with a clear status message or fails only when the user explicitly requires the feature; all unrelated NEP features remain buildable.
+- Public UDF constants, generated feature macros, installed configuration, and user-facing documentation agree on whether NEXTCDF-4 is available.
+
+**Out of scope for Sprint 1:**
+- HDF5 `create`, `open`, `close`, or metadata discovery.
+- Superblock selection, `_Nextcdf4Backend`/`_Nextcdf4Model` markers, and `NC_NETCDF4_MODEL` behavior.
+- Dimensions, variables, attributes, groups, user-defined types, filters, data I/O, renaming fixes, Fortran APIs, `nextcopy`, and `nextdump`.
+- Automatic magic-number selection for HDF5 files; NEXTCDF-4 selection remains explicit through `NC_NEXTCDF4`.
+
+#### Sprint 2: Files
+- Look at plan in docs/plan/NEXTCDF4_plan.md
+- Write create/open/close code for nextcdf4.
+
 ### V3.5.0 - Add nep_meta.h with Build Info, and NISAR/SWOT/ABI Examples
 
 #### Sprint 1: Create nep_meta.h

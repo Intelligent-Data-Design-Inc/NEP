@@ -60,6 +60,10 @@ int main(int argc, char **argv)
         fprintf(stderr, "Error: NEP_HAS_HDF5 is %d, expected 1.\n", NEP_HAS_HDF5);
         return 1;
     }
+    if (NEP_HAS_NEXTCDF4 != 0 && NEP_HAS_NEXTCDF4 != 1) {
+        fprintf(stderr, "Error: NEP_HAS_NEXTCDF4 is %d, expected 0 or 1.\n", NEP_HAS_NEXTCDF4);
+        return 1;
+    }
 
     printf("OK: nep_meta.h version %s date %s compiler %s %s\n",
            NEP_VERSION, NEP_BUILD_DATE, NEP_COMPILER_NAME, NEP_COMPILER_VERSION);

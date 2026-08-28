@@ -76,8 +76,11 @@ NetCDF-C exposes ten UDF slots (0–9). NEP assigns each format handler a perman
 | CDF | 4 | `NC_UDF4` | NASA CDF; moved from UDF2 in v2.2.0 Sprint 2 |
 | PDS4 | 5 | `NC_UDF5` | NASA/ESA planetary data labels (v2.2.0 Sprint 3) |
 | DICOM | 6 | `NC_UDF6` | DICOM medical imaging (v3.0.0 Sprint 3) |
+| Legacy PDB | 7 | `NC_UDF7` | Legacy protein structure data |
+| PDBx/mmCIF | 8 | `NC_UDF8` | Modern protein structure data |
+| NEXTCDF-4 | 9 | `NC_UDF9` | Optional HDF5 backend selected explicitly with `NC_NEXTCDF4` |
 
-Before v2.2.0, CDF and GRIB2 shared UDF slot 2 and were mutually exclusive. v2.2.0 Sprint 2 removes that restriction by moving CDF to its own slot. DICOM uses UDF slot 6.
+Before v2.2.0, CDF and GRIB2 shared UDF slot 2 and were mutually exclusive. v2.2.0 Sprint 2 removes that restriction by moving CDF to its own slot. NEXTCDF-4 occupies UDF9 and has no magic-number registration because HDF5 files already belong to the built-in NetCDF-4 backend; applications select it explicitly with `NC_NEXTCDF4`.
 
 ## Project Structure
 

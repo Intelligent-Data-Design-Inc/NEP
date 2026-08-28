@@ -1,0 +1,3 @@
+# NEXTCDF-4 HDF5 backend (UDF slot 9; explicit NC_NEXTCDF4 selection)
+NETCDF.UDF9.LIBRARY=@NEP_LIBDIR@/libncnextcdf4.so
+NETCDF.UDF9.INIT=NC_NEXTCDF4_initialize

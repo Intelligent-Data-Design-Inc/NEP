@@ -17,7 +17,7 @@
  * - UDF6: DICOM medical imaging data (magic: "DICM")
  * - UDF7: Legacy PDB protein structure data (magic: "HEADER")
  * - UDF8: PDBx/mmCIF protein structure data (magic: "data_")
- * - UDF9: Reserved for future use
+ * - UDF9: NEXTCDF-4 HDF5 backend
  *
  * @author Edward Hartnett
  * @date Nov 13, 2025
@@ -62,7 +62,7 @@ extern "C" {
  * NetCDF-C exposes ten User-Defined Format (UDF) slots (UDF0–UDF9). Each NEP
  * format handler occupies a permanently assigned slot so that multiple handlers
  * can be enabled simultaneously without conflict. Slot assignments are stable
- * across NEP releases; UDF6–UDF9 are reserved for future formats.
+ * across NEP releases.
  *
  * | Slot  | Macro                      | Format                   | Magic       |
  * |-------|----------------------------|--------------------------|-------------|
@@ -75,7 +75,7 @@ extern "C" {
  * | UDF6  | NEP_UDF_DICOM              | DICOM medical imaging    | `DICM`      |
  * | UDF7  | NEP_UDF_PDB                | Legacy PDB protein data  | `HEADER`    |
  * | UDF8  | NEP_UDF_MMCIF              | PDBx/mmCIF protein data   | `data_`     |
- * | UDF9  | —                          | Reserved                 | —           |
+ * | UDF9  | NEP_UDF_NEXTCDF4           | NEXTCDF-4 HDF5 backend   | explicit    |
  *
  * Call `NC_GEOTIFF_initialize()`, `NC_GRIB2_initialize()`, `NC_FITS_initialize()`,
  * `NC_CDF_initialize()`, `NC_PDS4_initialize()`, `NC_DICOM_initialize()`,
@@ -111,6 +111,12 @@ extern "C" {
 
 /** PDBx/mmCIF protein structure data format uses UDF8 slot */
 #define NEP_UDF_MMCIF NC_UDF8
+
+/** NEXTCDF-4 HDF5 backend uses UDF9 slot */
+#define NEP_UDF_NEXTCDF4 NC_UDF9
+
+/** Explicit create/open mode for the NEXTCDF-4 backend */
+#define NC_NEXTCDF4 NEP_UDF_NEXTCDF4
 
 /** @} */
 

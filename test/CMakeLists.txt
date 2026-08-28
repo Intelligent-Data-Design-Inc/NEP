@@ -38,6 +38,22 @@ target_include_directories(tst_perf PRIVATE ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUD
 add_executable(tst_meta tst_meta.c)
 add_test(NAME tst_meta COMMAND tst_meta)
 
+if(HAVE_NEXTCDF4)
+    add_executable(tst_nextcdf4_dispatch tst_nextcdf4_dispatch.c)
+    target_link_libraries(tst_nextcdf4_dispatch PRIVATE ncnextcdf4 ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
+    target_include_directories(tst_nextcdf4_dispatch PRIVATE ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+    add_test(NAME tst_nextcdf4_dispatch COMMAND tst_nextcdf4_dispatch)
+    set_tests_properties(tst_nextcdf4_dispatch PROPERTIES
+        ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+
+    add_executable(tst_nextcdf4_autoload tst_nextcdf4_autoload.c)
+    target_link_libraries(tst_nextcdf4_autoload PRIVATE ${NETCDF_LIBRARIES})
+    target_include_directories(tst_nextcdf4_autoload PRIVATE ${NETCDF_INCLUDE_DIRS})
+    add_test(NAME tst_nextcdf4_autoload COMMAND tst_nextcdf4_autoload)
+    set_tests_properties(tst_nextcdf4_autoload PROPERTIES
+        ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+endif()
+
 # Build CDF UDF test if CDF is enabled
 if(HAVE_CDF)
     # Get HDF5 library directory
