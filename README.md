@@ -75,6 +75,14 @@ Standalone Python examples are also included:
 - `examples/swot/` opens a SWOT Level 2 KaRIn Low Rate Sea Surface
   Height (L2_LR_SSH) NetCDF-4 product and plots sea surface height
   anomaly with `xarray`/`cartopy`.
+- `examples/abi/` opens a GOES-R ABI Level 2 Cloud and Moisture
+  Imagery (CMIP) NetCDF-4 product and plots it on the native
+  geostationary projection with `xarray`/`cartopy`.
+
+They are not built by CMake/CTest; see
+[examples/nisar/README.md](examples/nisar/README.md),
+[examples/swot/README.md](examples/swot/README.md), and
+[examples/abi/README.md](examples/abi/README.md) for setup and usage.
 
 They are not built by CMake/CTest; see
 [examples/nisar/README.md](examples/nisar/README.md) and

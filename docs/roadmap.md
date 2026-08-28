@@ -1,6 +1,6 @@
 # NEP Development Roadmap
 
-### V3.5.0 - Add nep_meta.h with Build Info, and NISAR/SWOT Examples
+### V3.5.0 - Add nep_meta.h with Build Info, and NISAR/SWOT/ABI Examples
 
 #### Sprint 1: Create nep_meta.h
 **Detailed Plan**: See `docs/plan/v3.5.0-sprint1-nep_meta.md`

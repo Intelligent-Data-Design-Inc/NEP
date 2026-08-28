@@ -15,7 +15,7 @@ The goals are:
 ### Goals
 
 - Write a new version of the HDF5 backend in a `src/nextcdf4/` directory with a modern, layered design aligned with the `NC_FILE_INFO_T` metadata model.
-- Default to HDF5 Superblock v3 for all newly created NEXTCDF-4 files.
+- Default to HDF5 Superblock v3 for all newly created NEXTCDF-4 files; use Superblock v1 for files created with the `NC_NETCDF4_MODEL` compatibility flag.
 - Add native support for 16-bit floating point (`H5T_IEEE_F16LE` / `H5T_IEEE_F16BE`).
 - Add read and write support for HDF5 reference types (object references and region references).
 - Add native support for complex number types via HDF5 compound types.
@@ -108,8 +108,8 @@ NEXTCDF-4 will support the existing `NC_CLASSIC_MODEL` create flag. The data-mod
 A new create flag `NC_NETCDF4_MODEL` is introduced in `include/nep.h` (value `0x04000000`, bit 26) and is only meaningful when `NC_NEXTCDF4` is also set. It behaves like the existing `NC_CLASSIC_MODEL` flag, but for the enhanced NetCDF-4 data model:
 
 - When `NC_NETCDF4_MODEL` is set, the file must follow the same data-model restrictions as files created by the current netcdf-c `libhdf5` implementation.
-- Such files are always written using Superblock v3 and therefore require HDF5 1.14.x or later to read.
-- No NEXTCDF-4-specific types may be used, so the resulting file can be opened by upstream netcdf-c when it is linked against HDF5 1.14.x or later.
+- Such files are always written using Superblock v1 so they remain readable by upstream netcdf-c and HDF5 1.10.x or later.
+- No NEXTCDF-4-specific types may be used, so the resulting file can be opened by upstream netcdf-c when it is linked against HDF5 1.10.x or later.
 - When `NC_NETCDF4_MODEL` is **not** set, NEXTCDF-4 is free to use the new types described below.
 
 ### Restrictions in Compatibility Mode
@@ -186,7 +186,7 @@ Each `@NEP_HAS_*@` macro is set to `1` or `0` by the CMake configure step based 
 
 ## Use Superblock v3
 
-NEXTCDF-4 will use HDF5 Superblock v3 for files by default. Superblock v3 was introduced in HDF5 1.14.x and provides:
+NEXTCDF-4 will use HDF5 Superblock v3 for files by default, and Superblock v1 for `NC_NETCDF4_MODEL` compatibility files. Superblock v3 was introduced in HDF5 1.14.x and provides:
 
 - Larger address and length fields (up to 64-bit throughout).
 - Better support for huge datasets and high-throughput storage.
@@ -195,11 +195,12 @@ NEXTCDF-4 will use HDF5 Superblock v3 for files by default. Superblock v3 was in
 ### Requirements
 
 - Build-time HDF5 version must be 1.14.0 or later; HDF5 2.1.1+ is the recommended modern target. If the detected HDF5 version is older than 1.14.x, NEXTCDF-4 is not built.
-- All files created by NEXTCDF-4, in every create mode, are written with Superblock v3 and are therefore not readable by HDF5 1.12.x or older.
+- All files created by NEXTCDF-4 are written with Superblock v3 by default. Files created with the `NC_NETCDF4_MODEL` compatibility flag are written with Superblock v1 and remain readable by HDF5 1.10.x and later; all other files require HDF5 1.14.x or later to read.
 
 ### Implementation Notes
 
-- Use `H5Pset_libver_bounds(fapl_id, H5F_LIBVER_LATEST, H5F_LIBVER_LATEST)` when creating files in all modes (native, `NC_NETCDF4_MODEL`, and `NC_CLASSIC_MODEL`).
+- Use `H5Pset_libver_bounds(fapl_id, H5F_LIBVER_LATEST, H5F_LIBVER_LATEST)` when creating files in native and `NC_CLASSIC_MODEL` modes.
+- Use `H5Pset_libver_bounds(fapl_id, H5F_LIBVER_V110, H5F_LIBVER_V110)` when creating files with `NC_NETCDF4_MODEL`, which produces a Superblock v1 file compatible with older netcdf-c/HDF5 releases.
 - At NEP configure time, check that the detected HDF5 version is 1.14.x or better. If it is not, disable NEXTCDF-4 entirely (`NEP_HAS_NEXTCDF4=0`).
 - At create time, assert that the linked HDF5 library is 1.14.x or later and refuse to create files if it is too old to write Superblock v3. This is a defensive runtime check in addition to the configure-time gate.
 
@@ -585,7 +586,7 @@ Bitfield variables are defined with the standard `nc_def_var` using an `NC_BITFI
 ### Phase 1 — Foundation
 
 - Create the new `src/nextcdf4/` directory structure.
-- Implement create/open/close with Superblock v3 default.
+- Implement create/open/close with Superblock v3 default (Superblock v1 for `NC_NETCDF4_MODEL` compatibility files).
 - Add `NC_NETCDF4_MODEL` flag and compatibility path.
 - Port existing variable and attribute I/O.
 - Create HDF5 dimension scales and attach them to variable datasets.
@@ -646,3 +647,112 @@ Bitfield variables are defined with the standard `nc_def_var` using an `NC_BITFI
 
 - Which HDF5 2.1.1+ features should be adopted beyond Superblock v3, float16, and reference types (e.g., FP4/FP6/FP8 datatypes, SWMR Fortran wrappers)?
 - Should the rewrite use `H5VL` (virtual object layer) connectors for testing or layered I/O?
+
+## `src/nextcdf4/` Source Organization
+
+The NEXTCDF-4 backend is a clean rewrite in a new `src/nextcdf4/` directory. It is modelled on the split between `netcdf-c/libsrc4` (the in-memory NetCDF-4 metadata model) and `netcdf-c/libhdf5` (the HDF5-specific I/O and dispatch implementation). Existing code is used only as a reference, not copied.
+
+The same NetCDF-4 `NC_Dispatch` interface is exposed, but the dispatch table lives in `src/nextcdf4/` and every file is written from scratch. Public entry points should use the existing `NC4_*` dispatch names where the semantics are unchanged, and `NEXTCDF4_*` names for helper routines that are internal to the new backend.
+
+### Dispatch and build files
+
+- `CMakeLists.txt` — Object library `netcdfnext4` that builds all files below, links `HDF5::HDF5`, and supplies the `NETCDF.UDF9.LIBRARY` / `NETCDF.UDF9.INIT` autoload keys.
+- `nxt4dispatch.c` / `nxt4dispatch.h` — `NC_Dispatch` table and `NC_NEXTCDF4_initialize` / `NC_NEXTCDF4_finalize`, analogous to `hdf5dispatch.c` (`NC_HDF5_initialize` / `NC_HDF5_finalize`) and `nc4dispatch.c` (`NC4_initialize` / `NC4_finalize`).
+
+### File life-cycle (analogous to `libhdf5/hdf5create.c`, `hdf5open.c`, `hdf5file.c`)
+
+- `nxt4create.c`:
+  - `NC4_create`, `NEXTCDF4_create_file`, `NEXTCDF4_H5Fcreate`
+  - Set `H5Pset_libver_bounds` to `H5F_LIBVER_LATEST` by default and `H5F_LIBVER_V110` when `NC_NETCDF4_MODEL` is set.
+- `nxt4open.c`:
+  - `NC4_open`, `NEXTCDF4_open_file`, `NEXTCDF4_H5Fopen`
+  - `NEXTCDF4_read_metadata`, `NEXTCDF4_read_var`, `NEXTCDF4_read_type`, `NEXTCDF4_read_att`, `NEXTCDF4_read_dimscales`, `NEXTCDF4_rec_read_metadata`
+- `nxt4file.c`:
+  - `NC4_close`, `NC4_sync`, `NC4_redef`, `NC4__enddef`, `NC4_set_fill`
+  - `NC4_inq_format`, `NC4_inq_format_extended`
+  - `NEXTCDF4_close_hdf5_file`, `NEXTCDF4_enddef_netcdf4_file`, `NEXTCDF4_sync_file`
+
+### Variable I/O and chunking (analogous to `libhdf5/hdf5var.c` + `libsrc4/nc4var.c`)
+
+- `nxt4var.c`:
+  - `NC4_def_var`, `NC4_def_var_chunking`, `NC4_def_var_deflate`, `NC4_def_var_endian`, `NC4_def_var_fill`, `NC4_def_var_fletcher32`, `NC4_def_var_quantize`
+  - `NC4_put_vara`, `NC4_get_vara`, `NC4_put_vars`, `NC4_get_vars`
+  - `NC4_rename_var`, `NC4_var_par_access`, `NC4_HDF5_inq_var_all`
+  - `NEXTCDF4_def_var_extra`, `NEXTCDF4_var_create_dataset`, `NEXTCDF4_set_par_access`, `NEXTCDF4_give_var_secret_name`
+
+### Attributes (analogous to `libhdf5/hdf5attr.c` + `libsrc4/nc4attr.c`)
+
+- `nxt4attr.c`:
+  - `NC4_HDF5_put_att`, `NC4_HDF5_get_att`, `NC4_HDF5_del_att`, `NC4_HDF5_inq_att`, `NC4_HDF5_inq_attid`, `NC4_HDF5_inq_attname`, `NC4_HDF5_rename_att`
+  - `NEXTCDF4_getattlist`, `NEXTCDF4_put_att`
+
+### Dimensions and dimscales (analogous to `libhdf5/hdf5dim.c` + `libsrc4/nc4dim.c`)
+
+- `nxt4dim.c`:
+  - `NC4_def_dim`, `NC4_inq_dim`, `NC4_rename_dim`
+  - `NC4_inq_dimid`, `NC4_inq_unlimdim`, `NC4_inq_unlimdims`
+  - `NEXTCDF4_attach_dimscales`, `NEXTCDF4_detach_scales`, `NEXTCDF4_write_dim`, `NEXTCDF4_write_coord_dimids`, `NEXTCDF4_delete_dimscale_dataset`
+
+### Groups and types (analogous to `libhdf5/hdf5grp.c`, `hdf5type.c` and `libsrc4/nc4grp.c`, `nc4type.c`)
+
+- `nxt4grp.c`:
+  - `NC4_def_grp`, `NC4_rename_grp`
+  - `NC4_inq_ncid`, `NC4_inq_grps`, `NC4_inq_grpname`, `NC4_inq_grpname_full`, `NC4_inq_grp_parent`, `NC4_inq_grp_full_ncid`
+  - `NC4_inq_varids`, `NC4_inq_dimids`, `NC4_inq_typeids`
+- `nxt4type.c`:
+  - `NC4_def_compound`, `NC4_insert_compound`, `NC4_insert_array_compound`, `NC4_inq_compound_field`, `NC4_inq_compound_fieldindex`
+  - `NC4_def_vlen`, `NC4_put_vlen_element`, `NC4_get_vlen_element`
+  - `NC4_def_enum`, `NC4_insert_enum`, `NC4_inq_enum_member`, `NC4_inq_enum_ident`
+  - `NC4_def_opaque`, `NC4_inq_type`, `NC4_inq_typeid`, `NC4_inq_typeids`, `NC4_inq_user_type`, `NC4_inq_type_equal`
+  - New type mapping helpers: `NEXTCDF4_get_hdf_typeid`, `NEXTCDF4_get_netcdf_type`, `NEXTCDF4_add_user_type`
+
+### Core HDF5 metadata read/write (analogous to `libhdf5/nc4hdf.c`)
+
+- `nxt4hdf.c`:
+  - `NEXTCDF4_write_var`, `NEXTCDF4_write_attlist`, `NEXTCDF4_write_dim`, `NEXTCDF4_write_coord_dimids`, `NEXTCDF4_write_netcdf4_dimid`, `NEXTCDF4_write_quantize_att`
+  - `NEXTCDF4_var_create_dataset`, `NEXTCDF4_var_exists`
+  - `NEXTCDF4_commit_type`, `NEXTCDF4_create_group`
+  - `NEXTCDF4_rec_write_metadata`, `NEXTCDF4_rec_write_groups_types`
+  - `NEXTCDF4_rec_match_dimscales`, `NEXTCDF4_attach_dimscales`, `NEXTCDF4_rec_reattach_scales`, `NEXTCDF4_remove_coord_atts`
+  - `NEXTCDF4_root_att_exists`, `NEXTCDF4_walk`, `NEXTCDF4_get_hdf_typeid`
+
+### Filters and plugins (analogous to `libhdf5/hdf5filter.c`, `hdf5plugins.c` and `libsrc4/nc4filters.c`)
+
+- `nxt4filter.c`:
+  - `NC4_hdf5_def_var_filter`, `NC4_hdf5_inq_var_filter_ids`, `NC4_hdf5_inq_var_filter_info`, `NC4_hdf5_inq_filter_avail`
+  - `NEXTCDF4_filter_lookup`, `NEXTCDF4_filter_remove`, `NEXTCDF4_filter_initialize`, `NEXTCDF4_filter_finalize`
+- `nxt4plugins.c` (optional, if NEP plugin path support is required):
+  - `NEXTCDF4_plugin_path_initialize`, `NEXTCDF4_plugin_path_finalize`, `NEXTCDF4_plugin_path_get/set`
+
+### In-memory metadata model and utilities (analogous to `libhdf5/hdf5internal.c` and `libsrc4/nc4internal.c`)
+
+- `nxt4internal.c`:
+  - `NC_FILE_INFO_T` / `NC_GRP_INFO_T` / `NC_VAR_INFO_T` list management:
+    - `NEXTCDF4_find_grp`, `NEXTCDF4_find_var`, `NEXTCDF4_find_dim`, `NEXTCDF4_find_type`, `NEXTCDF4_find_att`
+    - `NEXTCDF4_file_list_add`, `NEXTCDF4_file_list_get`, `NEXTCDF4_file_list_del`
+    - `NEXTCDF4_type_new`, `NEXTCDF4_type_free`, `NEXTCDF4_var_free`, `NEXTCDF4_dim_free`, `NEXTCDF4_att_free`
+  - Name handling: `NEXTCDF4_check_name`, `NEXTCDF4_check_dup_name`, `NEXTCDF4_normalize_name`
+  - `NEXTCDF4_hdf5_initialize`, `NEXTCDF4_hdf5_finalize`, `NEXTCDF4_hdf5_set_log_level`
+  - `NEXTCDF4_show_metadata`, `NEXTCDF4_log_metadata_nc`, `NEXTCDF4_log_hdf5`
+
+### Provenance / NCProperties (analogous to `libhdf5/nc4info.c`)
+
+- `nxt4provenance.c`:
+  - `NC4_new_provenance`, `NC4_clear_provenance`, `NC4_free_provenance`
+  - `NC4_write_provenance`, `NC4_read_provenance`
+  - `NC4_write_ncproperties`, `NC4_read_ncproperties`
+  - `NEXTCDF4_build_propstring`, `NEXTCDF4_parse_provenance`, `NEXTCDF4_properties_getversion`
+
+### In-memory images and debugging (optional/adapted)
+
+- `nxt4image.c`:
+  - `NC4_create_image_file`, `NC4_open_image_file`
+- `nxt4debug.c` / `nxt4debug.h`:
+  - `NEXTCDF4_hdf5breakpoint`, `NEXTCDF4_set_log_level`, `NEXTCDF4_log_hdf5`
+  - Trace/logging macros (`TRACE0`, `TRACE1`, `TRACEEND`, `TRACEFAIL`, etc.)
+
+### Private headers
+
+- `nxt4internal.h` — shared internal data structures and function prototypes.
+- `nxt4dispatch.h` — dispatch table and UDF init/final declarations.
+- `nxt4debug.h` — logging macros, `nch5breakpoint`, and trace flags.
