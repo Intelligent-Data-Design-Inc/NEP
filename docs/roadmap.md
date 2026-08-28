@@ -38,9 +38,76 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 - Dimensions, variables, attributes, groups, user-defined types, filters, data I/O, renaming fixes, Fortran APIs, `nextcopy`, and `nextdump`.
 - Automatic magic-number selection for HDF5 files; NEXTCDF-4 selection remains explicit through `NC_NEXTCDF4`.
 
-#### Sprint 2: Files
-- Look at plan in docs/plan/NEXTCDF4_plan.md
-- Write create/open/close code for nextcdf4.
+#### Sprint 2: Implement the File Lifecycle
+**Detailed Plan**: See `docs/plan/NEXTCDF4_plan.md`, especially "Create-Time Backend Selection," "Open-Time Backend Selection," "Stored Markers," "Use Superblock v3," and "File life-cycle."
+
+**Objective:** Replace the Sprint 1 file-operation stubs with a complete lifecycle for empty NEXTCDF-4 files. When this sprint is complete, `nc_create()`, `nc_open()`, and `nc_close()` will work for NEXTCDF-4 files selected explicitly with `NC_NEXTCDF4`; metadata definition and data I/O remain later work.
+
+**Prerequisites and constraints:**
+- Build on the Sprint 1 UDF9 dispatch registration, `.ncrc` autoload configuration, dependency checks, and `NEP_HAS_NEXTCDF4` feature macro.
+- Continue using `/usr/local/netcdf-c` and `/usr/local/hdf5-2.1.1` for local development, with Fortran disabled for this sprint.
+- Keep NEXTCDF-4 external to netcdf-c: do not modify netcdf-c's dispatch, model-inference, or HDF5 backend sources.
+- Treat the implementation as a clean rewrite. Existing netcdf-c `libsrc4` and `libhdf5` code may be studied for required behavior and ABI contracts but must not be copied.
+- Require explicit `NC_NEXTCDF4` selection for both create and open; do not register the shared HDF5 magic number for UDF9.
+
+**Lifecycle design:**
+- Add a private `nxt4internal.h` containing the minimum per-file state for this sprint: the owning `NC`/ncid relationship, normalized mode, path, HDF5 file and root-group identifiers, read-only/define-mode state, and ownership flags used for reliable cleanup.
+- Split lifecycle code out of `nxt4dispatch.c` into `nxt4create.c`, `nxt4open.c`, and `nxt4file.c`, leaving dispatch registration and table wiring in `nxt4dispatch.c`.
+- Attach NEXTCDF-4 state to the netcdf-c `NC` handle through the supported dispatch interface, initialize the minimum root `NC_FILE_INFO_T`/`NC_GRP_INFO_T` metadata required by existing `NC4_*` inquiry callbacks, and remove all registered state on close or failed initialization.
+- Centralize HDF5 identifier cleanup so partial create/open failures close resources exactly once and never leave a usable ncid, leaked identifier, or half-created in-memory file entry.
+- Translate HDF5 failures to stable NetCDF error codes and suppress expected HDF5 diagnostic-stack output on handled error paths.
+
+**Create path (`nxt4create.c`):**
+- Implement `NEXTCDF4_create()` and internal helpers to validate the path and create-mode flags before allocating persistent state.
+- Accept `NC_NEXTCDF4 | NC_CLOBBER` and `NC_NEXTCDF4 | NC_NOCLOBBER`; accept redundant `NC_NETCDF4 | NC_NEXTCDF4` as specified by the NEXTCDF-4 plan.
+- Reject incompatible format-selection flags and reject `NC_CLASSIC_MODEL | NC_NETCDF4_MODEL` together with `NC_EINVAL`.
+- Add the public `NC_NETCDF4_MODEL` flag defined by the plan, ensuring its bit does not overlap the installed netcdf-c mode flags.
+- Check the linked HDF5 runtime version before creating a file and fail cleanly if it is older than the configured minimum.
+- Create an HDF5 file-access property list and select library-version bounds according to the plan: `H5F_LIBVER_LATEST` for native NEXTCDF-4 and `NC_CLASSIC_MODEL`, and `H5F_LIBVER_V110` for `NC_NETCDF4_MODEL` compatibility files.
+- Map `NC_CLOBBER`/`NC_NOCLOBBER` to `H5F_ACC_TRUNC`/`H5F_ACC_EXCL` and preserve the expected NetCDF errors for an existing file, invalid path, or permission failure.
+- Create/open the root group and write `_Nextcdf4Backend` on every new file; write `_Nextcdf4Model = 1` only when `NC_NETCDF4_MODEL` was requested. Flush these markers before returning success.
+- Return a valid ncid in define mode with zero dimensions, variables, and user attributes visible through the basic NetCDF inquiry API.
+
+**Open path (`nxt4open.c`):**
+- Implement `NEXTCDF4_open()` and internal helpers using `H5F_ACC_RDONLY` for `NC_NOWRITE` and `H5F_ACC_RDWR` for `NC_WRITE`.
+- Require a valid HDF5 file and `_Nextcdf4Backend`; reject non-HDF5 inputs and unmarked HDF5/legacy NetCDF-4 files rather than silently claiming files owned by the built-in backend.
+- Read and validate `_Nextcdf4Backend` and optional `_Nextcdf4Model`, restore the mode recorded by the file, and reject malformed or unsupported marker values.
+- Reconstruct only the root and empty-file metadata needed in this sprint. Opening files that contain dimensions, variables, subgroups, user-defined types, or unsupported NEXTCDF-4 metadata must fail explicitly rather than returning incomplete metadata.
+- Honor read-only mode throughout the in-memory state so later modifying calls cannot accidentally write through an `NC_NOWRITE` handle.
+
+**Close, abort, and basic inquiry path (`nxt4file.c`):**
+- Implement `NEXTCDF4_close()` to flush writable files, close the root group and HDF5 file, free path and metadata allocations, detach dispatch state, and return the first meaningful cleanup error.
+- Implement `NEXTCDF4_abort()` so a newly created define-mode file can be abandoned without leaking HDF5 or netcdf-c resources. Sprint 2 retains the valid empty file, matching the close path, so it can be reopened explicitly with `NC_NEXTCDF4`; test this behavior.
+- Implement the minimum `sync`, `inq_format`, and `inq_format_extended` behavior needed for a valid lifecycle. `nc_inq_format()` reports NetCDF-4 semantics, while `nc_inq_format_extended()` identifies the UDF9/NEXTCDF-4 backend and returns the effective mode.
+- Make repeated close impossible through normal ncid validation and ensure operations on a closed ncid return the standard bad-ID error.
+
+**Implementation sequence:**
+1. Define private lifecycle structures, ownership rules, and shared cleanup/error helpers.
+2. Implement create for an empty native NEXTCDF-4 file, then verify the HDF5 signature, superblock version, and backend marker directly with HDF5.
+3. Implement close/abort and verify that all HDF5 object counts return to their pre-operation values.
+4. Implement read-only open/close of a file created in step 2, including marker validation and empty root metadata reconstruction.
+5. Add read/write open, clobber/no-clobber handling, runtime-version checks, and failure-path cleanup.
+6. Add `NC_NETCDF4_MODEL`, compatibility-mode property bounds, and marker restoration.
+7. Replace lifecycle stubs in the dispatch table, then expand direct-registration and `.ncrc` autoload tests to exercise the public `nc_*` API.
+8. Update design and user documentation with selection flags, compatibility behavior, and the intentional empty-file limitation for Sprint 2.
+
+**Verification and acceptance criteria:**
+- `nc_create(path, NC_NEXTCDF4 | NC_CLOBBER, &ncid)` succeeds, returns a valid ncid, and `nc_close(ncid)` produces a valid marked HDF5 file.
+- `nc_open(path, NC_NEXTCDF4 | NC_NOWRITE, &ncid)` and `nc_open(path, NC_NEXTCDF4 | NC_WRITE, &ncid)` both succeed for a Sprint 2 file and close cleanly.
+- `nc_inq()` on a newly created or reopened file reports zero dimensions, zero variables, zero visible global attributes, and no unlimited dimension.
+- Native and `NC_CLASSIC_MODEL` files use the planned latest-format bounds; `NC_NETCDF4_MODEL` files use the planned compatibility bounds. Tests inspect the resulting superblock rather than assuming the property-list request succeeded.
+- `_Nextcdf4Backend` survives close/reopen, `_Nextcdf4Model` is present only in compatibility mode, and neither marker is counted as a user-visible global attribute.
+- `NC_NOCLOBBER` preserves an existing file and returns the expected NetCDF error; `NC_CLOBBER` replaces it.
+- Explicit open rejects an ordinary unmarked HDF5/NetCDF-4 file, a non-HDF5 file, a missing file, and malformed marker metadata with stable errors and no leaked HDF5 identifiers.
+- Repeated create/open/close cycles pass under HDF5 leak checks; injected or naturally triggered failures at each allocation/open step leave no registered file state behind.
+- Direct UDF initialization and `.ncrc` autoload paths both pass the same public lifecycle tests.
+- A clean CMake build with `NEP_ENABLE_NEXTCDF4=ON` and `NEP_ENABLE_FORTRAN=OFF` passes the full C test suite against `/usr/local/netcdf-c` and `/usr/local/hdf5-2.1.1`.
+
+**Out of scope for Sprint 2:**
+- Defining, reading, or writing dimensions, variables, user attributes, groups, filters, or user-defined datatypes.
+- Opening populated NetCDF-4/HDF5 files or files produced by the built-in netcdf-c HDF5 backend.
+- `redef`, `enddef`, fill behavior beyond lifecycle defaults, parallel I/O, diskless/in-memory files, and non-default virtual file drivers.
+- Rename fixes, dimension scales, `_Netcdf4Coordinates`, `_Netcdf4Dimid`, new numeric/reference/bitfield types, Fortran APIs, `nextcopy`, and `nextdump`.
 
 ### V3.5.0 - Add nep_meta.h with Build Info, and NISAR/SWOT/ABI Examples
 

@@ -82,6 +82,8 @@ NetCDF-C exposes ten UDF slots (0–9). NEP assigns each format handler a perman
 
 Before v2.2.0, CDF and GRIB2 shared UDF slot 2 and were mutually exclusive. v2.2.0 Sprint 2 removes that restriction by moving CDF to its own slot. NEXTCDF-4 occupies UDF9 and has no magic-number registration because HDF5 files already belong to the built-in NetCDF-4 backend; applications select it explicitly with `NC_NEXTCDF4`.
 
+NEXTCDF-4 currently supports the lifecycle for empty, backend-marked HDF5 files. `nc_create()` writes `_Nextcdf4Backend` and, in `NC_NETCDF4_MODEL` mode, `_Nextcdf4Model`; `nc_open()` validates those markers and rejects unmarked or populated HDF5 files until metadata reconstruction is implemented. Native and classic-model files use the latest HDF5 format bounds, while `NC_NETCDF4_MODEL` uses the HDF5 1.10 compatibility bounds. Dimension, variable, group, attribute, and data operations remain unavailable at this stage.
+
 ## Project Structure
 
 The project is structured as follows:

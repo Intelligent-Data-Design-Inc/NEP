@@ -1,4 +1,9 @@
-add_library(ncnextcdf4 SHARED nxt4dispatch.c)
+add_library(ncnextcdf4 SHARED
+    nxt4dispatch.c
+    nxt4create.c
+    nxt4open.c
+    nxt4file.c
+)
 target_include_directories(ncnextcdf4 PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_BINARY_DIR}

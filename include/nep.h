@@ -118,6 +118,9 @@ extern "C" {
 /** Explicit create/open mode for the NEXTCDF-4 backend */
 #define NC_NEXTCDF4 NEP_UDF_NEXTCDF4
 
+/** Request NetCDF-4-model compatibility from the NEXTCDF-4 backend */
+#define NC_NETCDF4_MODEL 0x04000000
+
 /** @} */
 
 /**

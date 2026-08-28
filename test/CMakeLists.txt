@@ -46,6 +46,13 @@ if(HAVE_NEXTCDF4)
     set_tests_properties(tst_nextcdf4_dispatch PROPERTIES
         ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
 
+    add_executable(tst_nextcdf4_file tst_nextcdf4_file.c)
+    target_link_libraries(tst_nextcdf4_file PRIVATE ncnextcdf4 ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
+    target_include_directories(tst_nextcdf4_file PRIVATE ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+    add_test(NAME tst_nextcdf4_file COMMAND tst_nextcdf4_file)
+    set_tests_properties(tst_nextcdf4_file PROPERTIES
+        ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+
     add_executable(tst_nextcdf4_autoload tst_nextcdf4_autoload.c)
     target_link_libraries(tst_nextcdf4_autoload PRIVATE ${NETCDF_LIBRARIES})
     target_include_directories(tst_nextcdf4_autoload PRIVATE ${NETCDF_INCLUDE_DIRS})

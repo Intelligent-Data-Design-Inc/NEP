@@ -1,9 +1,16 @@
+/**
+ * @file tst_nextcdf4_dispatch.c
+ * @brief Tests NEXTCDF-4 UDF9 dispatch registration and lifecycle callbacks.
+ * @author Edward Hartnett
+ * @date 2026-08-28
+ */
 #include <stdio.h>
 #include <netcdf.h>
 #include <netcdf_dispatch.h>
 #include "nextcdf4dispatch.h"
 #include "nep_meta.h"
 
+/** @return Zero when all dispatch registration checks pass. */
 int
 main(void)
 {
@@ -34,10 +41,9 @@ main(void)
         return 1;
     }
 
-    ret = dispatch->create("tst_nextcdf4_not_created.nc", NC_NEXTCDF4, 0, 0,
-                           NULL, NULL, dispatch, -1);
-    if (ret != NC_ENOTBUILT) {
-        fprintf(stderr, "create returned %s instead of NC_ENOTBUILT\n", nc_strerror(ret));
+    if (!dispatch->create || !dispatch->open || !dispatch->close ||
+        !dispatch->abort || !dispatch->sync) {
+        fprintf(stderr, "NEXTCDF-4 lifecycle dispatch is incomplete\n");
         return 1;
     }
 

@@ -1,74 +1,28 @@
+/**
+ * @file nxt4dispatch.c
+ * @brief UDF9 dispatch table registration for the NEXTCDF-4 backend.
+ *
+ * @author Edward Hartnett
+ * @date 2026-08-28
+ * @copyright Intelligent Data Design, Inc. All rights reserved.
+ */
 #include "config.h"
 #include "nextcdf4dispatch.h"
 #include "nc4dispatch.h"
 #include "hdf5dispatch.h"
 #include "netcdf_filter.h"
+#include "nxt4internal.h"
 
-int
-NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
-                size_t *chunksizehintp, void *parameters,
-                const NC_Dispatch *dispatch, int ncid)
-{
-    (void)path;
-    (void)cmode;
-    (void)initialsz;
-    (void)basepe;
-    (void)chunksizehintp;
-    (void)parameters;
-    (void)dispatch;
-    (void)ncid;
-    return NC_ENOTBUILT;
-}
-
-int
-NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
-              void *parameters, const NC_Dispatch *dispatch, int ncid)
-{
-    (void)path;
-    (void)mode;
-    (void)basepe;
-    (void)chunksizehintp;
-    (void)parameters;
-    (void)dispatch;
-    (void)ncid;
-    return NC_ENOTBUILT;
-}
-
-static int
-NEXTCDF4_abort(int ncid)
-{
-    (void)ncid;
-    return NC_ENOTBUILT;
-}
-
-static int
-NEXTCDF4_close(int ncid, void *parameters)
-{
-    (void)ncid;
-    (void)parameters;
-    return NC_ENOTBUILT;
-}
-
-static int
-NEXTCDF4_inq_format(int ncid, int *formatp)
-{
-    (void)ncid;
-    if (formatp)
-        *formatp = NC_FORMAT_NETCDF4;
-    return NC_NOERR;
-}
-
-static int
-NEXTCDF4_inq_format_extended(int ncid, int *formatp, int *modep)
-{
-    (void)ncid;
-    if (formatp)
-        *formatp = NC_FORMATX_NEXTCDF4;
-    if (modep)
-        *modep = NC_NEXTCDF4;
-    return NC_NOERR;
-}
-
+/**
+ * @internal Report that variable reads are not implemented yet.
+ * @param ncid NetCDF file identifier.
+ * @param varid NetCDF variable identifier.
+ * @param start Hyperslab start indices.
+ * @param count Hyperslab element counts.
+ * @param value Destination data buffer.
+ * @param memtype Requested in-memory NetCDF type.
+ * @return `NC_ENOTBUILT`.
+ */
 static int
 NEXTCDF4_get_vara(int ncid, int varid, const size_t *start,
                   const size_t *count, void *value, nc_type memtype)
@@ -82,6 +36,7 @@ NEXTCDF4_get_vara(int ncid, int varid, const size_t *start,
     return NC_ENOTBUILT;
 }
 
+/** Complete NetCDF dispatch table for NEXTCDF-4 UDF slot 9. */
 static const NC_Dispatch NEXTCDF4_dispatcher = {
     NC_FORMATX_NEXTCDF4,
     NC_DISPATCH_VERSION,
@@ -89,7 +44,7 @@ static const NC_Dispatch NEXTCDF4_dispatcher = {
     NEXTCDF4_open,
     NC_RO_redef,
     NC_RO__enddef,
-    NC_RO_sync,
+    NEXTCDF4_sync,
     NEXTCDF4_abort,
     NEXTCDF4_close,
     NC_RO_set_fill,
@@ -164,8 +119,13 @@ static const NC_Dispatch NEXTCDF4_dispatcher = {
     NC_NOOP_inq_filter_avail
 };
 
+/** Active NEXTCDF-4 dispatch table, populated during initialization. */
 const NC_Dispatch *NEXTCDF4_dispatch_table = NULL;
 
+/**
+ * Register the NEXTCDF-4 dispatch table in NetCDF UDF slot 9.
+ * @return Pointer to the NEXTCDF-4 dispatch table.
+ */
 NC_Dispatch *
 NC_NEXTCDF4_initialize(void)
 {
@@ -174,6 +134,10 @@ NC_NEXTCDF4_initialize(void)
     return (NC_Dispatch *)&NEXTCDF4_dispatcher;
 }
 
+/**
+ * Finalize process-wide NEXTCDF-4 dispatch state.
+ * @return `NC_NOERR`.
+ */
 int
 NC_NEXTCDF4_finalize(void)
 {

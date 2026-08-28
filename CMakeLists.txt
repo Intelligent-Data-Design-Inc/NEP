@@ -317,7 +317,7 @@ if(NOT DOCS_ONLY)
             message(FATAL_ERROR "NEP_ENABLE_NEXTCDF4 requires NetCDF-C with NC_UDF9 support")
         endif()
         set(HAVE_NEXTCDF4 TRUE)
-        message(STATUS "NEXTCDF-4 backend: enabled (Sprint 1 dispatch foundation)")
+        message(STATUS "NEXTCDF-4 backend: enabled")
     endif()
 
     # Parallel I/O test support (v1.9.0)
