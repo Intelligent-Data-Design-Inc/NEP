@@ -135,6 +135,30 @@ NEXTCDF4_map_hdf_type(nc_type xtype, hid_t *typep)
     case NC_FLOAT4_E2M1:
         *typep = H5Tcopy(H5T_FLOAT_F4E2M1);
         return NC_NOERR;
+    case NC_COMPLEX:
+        *typep = H5Tcopy(H5T_COMPLEX_IEEE_F32LE);
+        return NC_NOERR;
+    case NC_DOUBLECOMPLEX:
+        *typep = H5Tcopy(H5T_COMPLEX_IEEE_F64LE);
+        return NC_NOERR;
+    case NC_BITFIELD8:
+        *typep = H5Tcopy(H5T_STD_B8LE);
+        return NC_NOERR;
+    case NC_BITFIELD16:
+        *typep = H5Tcopy(H5T_STD_B16LE);
+        return NC_NOERR;
+    case NC_BITFIELD32:
+        *typep = H5Tcopy(H5T_STD_B32LE);
+        return NC_NOERR;
+    case NC_BITFIELD64:
+        *typep = H5Tcopy(H5T_STD_B64LE);
+        return NC_NOERR;
+    case NC_REF_OBJECT:
+        *typep = H5Tcopy(H5T_STD_REF_OBJ);
+        return NC_NOERR;
+    case NC_REF_REGION:
+        *typep = H5Tcopy(H5T_STD_REF_DSETREG);
+        return NC_NOERR;
     case NC_STRING:
         *typep = H5Tcopy(H5T_C_S1);
         if (*typep >= 0) {
@@ -182,6 +206,30 @@ NEXTCDF4_type_size(nc_type xtype, size_t *sizep)
     case NC_FLOAT4_E2M1:
         size = 1;
         break;
+    case NC_COMPLEX:
+        size = 2 * sizeof(float);
+        break;
+    case NC_DOUBLECOMPLEX:
+        size = 2 * sizeof(double);
+        break;
+    case NC_BITFIELD8:
+        size = 1;
+        break;
+    case NC_BITFIELD16:
+        size = 2;
+        break;
+    case NC_BITFIELD32:
+        size = 4;
+        break;
+    case NC_BITFIELD64:
+        size = 8;
+        break;
+    case NC_REF_OBJECT:
+        size = 8;
+        break;
+    case NC_REF_REGION:
+        size = 12;
+        break;
     case NC_STRING:
         size = sizeof(char *);
         break;
@@ -215,6 +263,14 @@ NEXTCDF4_type_name(nc_type xtype)
     case NC_FLOAT6_E2M3: return "float6_e2m3";
     case NC_FLOAT6_E3M2: return "float6_e3m2";
     case NC_FLOAT4_E2M1: return "float4_e2m1";
+    case NC_COMPLEX:    return "complex";
+    case NC_DOUBLECOMPLEX: return "doublecomplex";
+    case NC_BITFIELD8:  return "bitfield8";
+    case NC_BITFIELD16: return "bitfield16";
+    case NC_BITFIELD32: return "bitfield32";
+    case NC_BITFIELD64: return "bitfield64";
+    case NC_REF_OBJECT: return "ref_object";
+    case NC_REF_REGION: return "ref_region";
     case NC_STRING:     return "string";
     default:            return "unknown";
     }
@@ -251,6 +307,14 @@ NEXTCDF4_check_atomic_type(NEXTCDF4_FILE_INFO_T *file, nc_type xtype)
     case NC_FLOAT6_E2M3:
     case NC_FLOAT6_E3M2:
     case NC_FLOAT4_E2M1:
+    case NC_COMPLEX:
+    case NC_DOUBLECOMPLEX:
+    case NC_BITFIELD8:
+    case NC_BITFIELD16:
+    case NC_BITFIELD32:
+    case NC_BITFIELD64:
+    case NC_REF_OBJECT:
+    case NC_REF_REGION:
         return (!file->netcdf4_model && !(file->mode & NC_CLASSIC_MODEL))
             ? NC_NOERR : NC_ENOTNC4;
     default:
@@ -322,6 +386,13 @@ set_var_type(NC_VAR_INFO_T *var, nc_type xtype)
         type->nc_type_class = NC_STRING;
     else if (xtype == NC_STRING)
         type->nc_type_class = NC_STRING;
+    else if (xtype == NC_COMPLEX || xtype == NC_DOUBLECOMPLEX) {
+        type->nc_type_class = NC_COMPOUND;
+        type->u.c.field = nclistnew();
+    } else if (xtype >= NC_BITFIELD8 && xtype <= NC_BITFIELD64)
+        type->nc_type_class = NC_INT;
+    else if (xtype == NC_REF_OBJECT || xtype == NC_REF_REGION)
+        type->nc_type_class = NC_OPAQUE;
     else
         type->nc_type_class = NC_INT;
     type->endianness = NC_ENDIAN_NATIVE;
@@ -476,6 +547,37 @@ map_nc_type(hid_t htype, nc_type *xtypep)
     } else if (cls == H5T_STRING && size == 1) {
         *xtypep = NC_CHAR;
         return NC_NOERR;
+    } else if (cls == H5T_COMPLEX) {
+        if (size == 2 * sizeof(float)) {
+            *xtypep = NC_COMPLEX;
+            return NC_NOERR;
+        } else if (size == 2 * sizeof(double)) {
+            *xtypep = NC_DOUBLECOMPLEX;
+            return NC_NOERR;
+        }
+    } else if (cls == H5T_BITFIELD) {
+        switch (size) {
+        case 1:
+            *xtypep = NC_BITFIELD8;
+            return NC_NOERR;
+        case 2:
+            *xtypep = NC_BITFIELD16;
+            return NC_NOERR;
+        case 4:
+            *xtypep = NC_BITFIELD32;
+            return NC_NOERR;
+        case 8:
+            *xtypep = NC_BITFIELD64;
+            return NC_NOERR;
+        }
+    } else if (cls == H5T_REFERENCE) {
+        if (H5Tequal(htype, H5T_STD_REF_OBJ) > 0) {
+            *xtypep = NC_REF_OBJECT;
+            return NC_NOERR;
+        } else if (H5Tequal(htype, H5T_STD_REF_DSETREG) > 0) {
+            *xtypep = NC_REF_REGION;
+            return NC_NOERR;
+        }
     }
     return NC_EBADTYPE;
 }

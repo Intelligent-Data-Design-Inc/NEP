@@ -64,6 +64,20 @@ memory_type(nc_type type, int *closep)
         if (closep)
             *closep = 1;
         return H5Tcopy(H5T_FLOAT_F4E2M1);
+    case NC_COMPLEX: return H5T_NATIVE_FLOAT_COMPLEX;
+    case NC_DOUBLECOMPLEX: return H5T_NATIVE_DOUBLE_COMPLEX;
+    case NC_BITFIELD8: return H5T_NATIVE_B8;
+    case NC_BITFIELD16: return H5T_NATIVE_B16;
+    case NC_BITFIELD32: return H5T_NATIVE_B32;
+    case NC_BITFIELD64: return H5T_NATIVE_B64;
+    case NC_REF_OBJECT:
+        if (closep)
+            *closep = 1;
+        return H5Tcopy(H5T_STD_REF_OBJ);
+    case NC_REF_REGION:
+        if (closep)
+            *closep = 1;
+        return H5Tcopy(H5T_STD_REF_DSETREG);
     case NC_STRING:
         if (closep)
             *closep = 1;

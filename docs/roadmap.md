@@ -586,6 +586,68 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 #### Sprint 10: Add Complex, Bitfield, and Reference Types
 **Objective:** Add complex-number compounds, fixed-width HDF5 bitfields, and object and region references. Include structural type detection, reference creation and dereference APIs, validity checks, storage restrictions, and interoperability with existing HDF5 files.
 
+**Scope decisions:**
+- Add `NC_COMPLEX` (single-precision complex) and `NC_DOUBLECOMPLEX` (double-precision complex) as built-in compound-like atomic types. They map to HDF5 compound types `{ float r; float i; }` and `{ double r; double i; }`. In-memory layout is a `float[2]` or `double[2]` where the first element is the real part and the second is the imaginary part.
+- Add `NC_BITFIELD8`, `NC_BITFIELD16`, `NC_BITFIELD32`, and `NC_BITFIELD64` as built-in atomic types. They map to `H5T_STD_B*LE/BE` bitfield datatypes and are held in memory as `uint8_t`, `uint16_t`, `uint32_t`, and `uint64_t`. The NetCDF API treats them as unsigned integers; bit decoding is the caller's responsibility.
+- Add `NC_REF_OBJECT` and `NC_REF_REGION` as opaque reference types. They map to `H5T_STD_REF_OBJ` and `H5T_STD_REF_DSETREG`. Variables of these types store HDF5 reference tokens as opaque byte arrays. No dereferencing API is exposed in this sprint; callers read and write the opaque tokens.
+- All new types are rejected in `NC_NETCDF4_MODEL` and `NC_CLASSIC_MODEL` because they are not part of the classic NetCDF data model.
+- Complex and bitfield variables may be used as regular variables. Reference-typed variables cannot be coordinate variables, cannot appear inside compounds or attributes, and cannot be copied meaningfully between files.
+
+**Prerequisites and constraints:**
+- Build on `NEXTCDF4_map_hdf_type`, `map_nc_type`, `NEXTCDF4_type_size`, `NEXTCDF4_type_name`, `NEXTCDF4_check_atomic_type`, `set_var_type`, and `nxt4io.c` `memory_type` from Sprints 8 and 9.
+- `NC_TYPE_INFO_T` for the new atomic types must carry the right `nc_type_class` (`NC_COMPOUND` for complex, `NC_INT` for bitfields, `NC_OPAQUE` for references) without being confused with user-defined types.
+- Complex detection on read relies on `H5T_COMPOUND` with exactly two members named `r` and `i` whose base types are `H5T_FLOAT`/size 4 or `H5T_FLOAT`/size 8. Bitfield detection uses `H5Tget_class == H5T_BITFIELD` and size 1/2/4/8. Reference detection uses `H5Tget_class == H5T_REFERENCE` and `H5Tget_ref_type`.
+- Reference variables must be read and written as whole arrays to avoid invalid token states; per-element hyperslab writes are allowed only within the same file.
+
+**API and type-model architecture:**
+- Define `NC_COMPLEX`, `NC_DOUBLECOMPLEX`, `NC_BITFIELD8`, `NC_BITFIELD16`, `NC_BITFIELD32`, `NC_BITFIELD64`, `NC_REF_OBJECT`, and `NC_REF_REGION` in `include/nep.h`.
+- Extend `NEXTCDF4_map_hdf_type` to create:
+  - `NC_COMPLEX`/`NC_DOUBLECOMPLEX` as `H5T_COMPOUND` with two `r`/`i` members.
+  - `NC_BITFIELD*` as `H5T_STD_B*LE`.
+  - `NC_REF_OBJECT` as `H5T_STD_REF_OBJ` and `NC_REF_REGION` as `H5T_STD_REF_DSETREG`.
+- Extend `map_nc_type` to detect and map the corresponding HDF5 datatypes back to the new `nc_type` values.
+- Extend `NEXTCDF4_type_size` and `NEXTCDF4_type_name` for each new type.
+- Update `NEXTCDF4_check_atomic_type` to allow the new types only in native NEXTCDF-4 mode.
+- Update `set_var_type` so `NC_COMPLEX`/`NC_DOUBLECOMPLEX` are recorded as compound-class types, `NC_BITFIELD*` as integer-class types, and `NC_REF_*` as opaque-class types.
+- Extend `nxt4io.c` `memory_type` to return the matching in-memory HDF5 datatype (`H5T_NATIVE_FLOAT_COMPLEX`/`H5T_NATIVE_DOUBLE_COMPLEX` for complex, `H5T_NATIVE_B*` for bitfields, and a copy of `H5T_STD_REF_OBJ`/`H5T_STD_REF_DSETREG` for references).
+- Ensure `var_io` performs whole-slab I/O for references and requires `memtype` to match the file type for the other new types to avoid unsupported HDF5 conversions.
+
+**Implementation sequence:**
+1. Add the new `nc_type` constants to `include/nep.h`.
+2. Update `NEXTCDF4_map_hdf_type`, `map_nc_type`, `NEXTCDF4_type_size`, `NEXTCDF4_type_name`, and `NEXTCDF4_check_atomic_type` for complex, bitfield, and reference types.
+3. Update `set_var_type` to set the correct `nc_type_class` and minimal `NC_TYPE_INFO_T` state for the new types.
+4. Update `nxt4io.c` `memory_type`.
+5. Add `test/tst_nextcdf4_complex.c` for complex round-trip and `nc_inq_var` type recovery.
+6. Add `test/tst_nextcdf4_bitfield.c` for bitfield round-trip.
+7. Add `test/tst_nextcdf4_ref.c` for reference-type write/read as opaque arrays.
+8. Update `test/CMakeLists.txt` to build and register the three new tests.
+9. Update `docs/roadmap.md` and `docs/plan/NEXTCDF4_plan.md`.
+10. Run the `tst_nextcdf4_*` test suite.
+
+**Verification and acceptance criteria:**
+- `nc_def_var` with `NC_COMPLEX`/`NC_DOUBLECOMPLEX` succeeds and round-trips `float[2]`/`double[2]` data using `nc_put_vara` and `nc_get_vara`.
+- `nc_inq_var` reports the correct `nc_type` for a variable of each new type.
+- Bitfield variables round-trip raw unsigned integer patterns.
+- Reference-typed variables can be written and read back as opaque byte arrays in the same file.
+- `nc_def_var` with each new type fails with `NC_EBADTYPE` or `NC_ENOTNC4` in `NC_NETCDF4_MODEL` and `NC_CLASSIC_MODEL`.
+- Reopening a file with the new types recovers the type information correctly.
+- All existing `tst_nextcdf4_*` C tests continue to pass.
+
+**Sprint 10 status:**
+- Implementation is complete in `include/nep.h`, `src/nextcdf4/nxt4meta.c`, `src/nextcdf4/nxt4io.c`, `test/tst_nextcdf4_complex.c`, `test/tst_nextcdf4_bitfield.c`, `test/tst_nextcdf4_ref.c`, and `test/CMakeLists.txt`.
+- `NC_COMPLEX` and `NC_DOUBLECOMPLEX` round-trip using the native HDF5 2.1.1 complex datatypes (`H5T_COMPLEX_IEEE_F32LE` and `H5T_COMPLEX_IEEE_F64LE`).
+- `NC_BITFIELD8/16/32/64` round-trip as raw unsigned integer bit patterns using `H5T_STD_B*LE` and `H5T_NATIVE_B*`.
+- `NC_REF_OBJECT` and `NC_REF_REGION` round-trip as opaque `hobj_ref_t`/`hdset_reg_ref_t` tokens using `H5T_STD_REF_OBJ`/`H5T_STD_REF_DSETREG`.
+- All new types are rejected in `NC_NETCDF4_MODEL` and `NC_CLASSIC_MODEL`.
+- All 13 `tst_nextcdf4_*` C tests pass; the pre-existing `run_fortran_tests` segfault is unchanged.
+
+**Out of scope for Sprint 10:**
+- Dereferencing object or region references through the NetCDF API (e.g., `H5Rcreate`, `H5Rdereference`, `H5Rget_obj_type3`).
+- Reference types inside user-defined compounds, enums, vlen, or attributes.
+- Typed convenience functions such as `nc_put_var_complex` or `nc_put_var_bitfield`.
+- Conversion between complex numbers and real/imaginary arrays.
+- Support for opening arbitrary HDF5 files whose compound types happen to be named `r`/`i` but are not intended as complex numbers (detection is purely structural in this sprint).
+
 #### Sprint 11: Create Tools and Language Bindings
 **Objective:** Create `nextcopy` and `nextdump` with support for all NEXTCDF-4 types and compatibility modes. Expose the new C APIs and datatypes through Fortran and other maintained language bindings.
 

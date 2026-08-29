@@ -835,3 +835,34 @@ Sprint 9 adds `NC_FLOAT16` and, when HDF5 2.1.1+ is available, `NC_BFLOAT16` and
   - Existing `tst_nextcdf4_*` tests continue to pass.
 
 **Sprint 9 is implemented.** All seven small-floating-point types round-trip in `test/tst_nextcdf4_float16.c`, which passes. The relevant functions are in `nxt4meta.c`, `nxt4io.c`, and `nxt4internal.h`; constants are in `include/nep.h`.
+
+## Sprint 10: Add Complex, Bitfield, and Reference Types
+
+Sprint 10 adds built-in complex (`NC_COMPLEX`, `NC_DOUBLECOMPLEX`), bitfield (`NC_BITFIELD8/16/32/64`), and reference (`NC_REF_OBJECT`, `NC_REF_REGION`) types to the NEXTCDF-4 backend.
+
+- `include/nep.h`:
+  - Define the eight new `nc_type` constants.
+
+- `src/nextcdf4/nxt4meta.c`:
+  - Extend `NEXTCDF4_map_hdf_type` to create the matching HDF5 compound, bitfield, and reference datatypes.
+  - Extend `map_nc_type` to detect `H5T_COMPOUND` with `r`/`i` float or double members (complex), `H5T_BITFIELD` by size, and `H5T_REFERENCE` by reference type.
+  - Extend `NEXTCDF4_type_size` and `NEXTCDF4_type_name`.
+  - Update `NEXTCDF4_check_atomic_type` to allow the new types only in native NEXTCDF-4 mode.
+  - Update `set_var_type` to set the correct `nc_type_class` for each new type.
+
+- `src/nextcdf4/nxt4io.c`:
+  - Extend `memory_type` to return the matching in-memory HDF5 type for each new type and ensure whole-slab I/O for references.
+
+- Tests:
+  - `test/tst_nextcdf4_complex.c` round-trips `NC_COMPLEX` and `NC_DOUBLECOMPLEX`.
+  - `test/tst_nextcdf4_bitfield.c` round-trips `NC_BITFIELD8/16/32/64`.
+  - `test/tst_nextcdf4_ref.c` round-trips `NC_REF_OBJECT` and `NC_REF_REGION` as opaque byte arrays.
+  - Rejection in `NC_NETCDF4_MODEL` and `NC_CLASSIC_MODEL` for each new type.
+
+- Acceptance criteria:
+  - Each new type round-trips in native NEXTCDF-4 files.
+  - `nc_inq_var` reports the correct `nc_type`.
+  - Compatibility modes reject the new types.
+  - Existing `tst_nextcdf4_*` tests continue to pass.
+
+**Sprint 10 is implemented.** Complex, bitfield, and reference types round-trip in `test/tst_nextcdf4_complex.c`, `test/tst_nextcdf4_bitfield.c`, and `test/tst_nextcdf4_ref.c`. The relevant functions are in `nxt4meta.c` and `nxt4io.c`; constants are in `include/nep.h`.

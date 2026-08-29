@@ -44,6 +44,22 @@
 #define NC_FLOAT6_E3M2 22
 /** NEXTCDF-4 4-bit E2M1 floating point type (HDF5 2.1.1+). */
 #define NC_FLOAT4_E2M1 23
+/** NEXTCDF-4 single-precision complex number type. */
+#define NC_COMPLEX     24
+/** NEXTCDF-4 double-precision complex number type. */
+#define NC_DOUBLECOMPLEX 25
+/** NEXTCDF-4 8-bit bitfield type. */
+#define NC_BITFIELD8   26
+/** NEXTCDF-4 16-bit bitfield type. */
+#define NC_BITFIELD16  27
+/** NEXTCDF-4 32-bit bitfield type. */
+#define NC_BITFIELD32  28
+/** NEXTCDF-4 64-bit bitfield type. */
+#define NC_BITFIELD64  29
+/** NEXTCDF-4 object reference type. */
+#define NC_REF_OBJECT  30
+/** NEXTCDF-4 dataset region reference type. */
+#define NC_REF_REGION  31
 
 /** The filter ID for BZIP2 compression. */
 #define BZIP2_ID 307
