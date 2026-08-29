@@ -120,9 +120,34 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
     }
     if (H5Sselect_hyperslab(fspace, H5S_SELECT_SET, start, stride, count, NULL) < 0 ||
         (mspace = H5Screate_simple(ndims, count, NULL)) < 0) { ret = NC_EHDFERR; goto done; }
-    if (writing)
-        ret = H5Dwrite(vinfo->hdf_dataset, mtype, mspace, fspace, H5P_DEFAULT, data) < 0 ? NC_EHDFERR : NC_NOERR;
-    else
+    if (writing) {
+        void *wdata = data;
+        if (var->quantize_mode != NC_NOQUANTIZE) {
+            nc_type file_xtype = var->type_info->hdr.id;
+            nc_type src_type = (memtype == NC_NAT) ? file_xtype : memtype;
+            size_t xtype_size;
+            void *conv = NULL;
+            int range_error;
+            if ((ret = NEXTCDF4_type_size(file_xtype, &xtype_size))) goto done;
+            if (!(conv = malloc(total * xtype_size))) { ret = NC_ENOMEM; goto done; }
+            if ((ret = nc4_convert_type(data, conv, src_type, file_xtype, total,
+                                        &range_error, var->fill_value, 0,
+                                        var->quantize_mode, var->nsd))) {
+                free(conv);
+                goto done;
+            }
+            if (close_mtype) { H5Tclose(mtype); close_mtype = 0; }
+            if ((mtype = memory_type(file_xtype, &close_mtype)) < 0) { free(conv); ret = NC_EBADTYPE; goto done; }
+            wdata = conv;
+            if (H5Dwrite(vinfo->hdf_dataset, mtype, mspace, fspace, H5P_DEFAULT, wdata) < 0)
+                ret = NC_EHDFERR;
+            else
+                ret = NC_NOERR;
+            free(conv);
+        } else {
+            ret = H5Dwrite(vinfo->hdf_dataset, mtype, mspace, fspace, H5P_DEFAULT, data) < 0 ? NC_EHDFERR : NC_NOERR;
+        }
+    } else
         ret = H5Dread(vinfo->hdf_dataset, mtype, mspace, fspace, H5P_DEFAULT, data) < 0 ? NC_EHDFERR : NC_NOERR;
 done:
     if (mspace >= 0) H5Sclose(mspace);

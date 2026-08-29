@@ -59,6 +59,9 @@ typedef struct NEXTCDF4_DIM_INFO
 typedef struct NEXTCDF4_VAR_INFO
 {
     hid_t hdf_dataset;  /**< HDF5 variable dataset identifier. */
+    int deflate_level;  /**< Deflate level, or -1 if deflate is not applied. */
+    int shuffle;        /**< Non-zero if the shuffle filter is enabled. */
+    int fletcher32;     /**< Non-zero if the fletcher32 checksum filter is enabled. */
 } NEXTCDF4_VAR_INFO_T;
 
 /** Format-specific information attached to an NC_TYPE_INFO_T. */
@@ -187,6 +190,18 @@ int NEXTCDF4_inq_dim(int ncid, int dimid, char *name, size_t *lenp);
 int NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
                      const int *dimidsp, int *varidp);
 
+/** Variable storage-property dispatch callbacks. */
+int NEXTCDF4_def_var_chunking(int ncid, int varid, int storage,
+                              const size_t *chunksizesp);
+int NEXTCDF4_def_var_deflate(int ncid, int varid, int shuffle,
+                             int deflate, int deflate_level);
+int NEXTCDF4_def_var_fletcher32(int ncid, int varid, int fletcher32);
+int NEXTCDF4_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value);
+int NEXTCDF4_def_var_endian(int ncid, int varid, int endianness);
+int NEXTCDF4_def_var_quantize(int ncid, int varid, int quantize_mode, int nsd);
+int NEXTCDF4_def_var_filter(int ncid, int varid, unsigned int id, size_t nparams,
+                            const unsigned int *params);
+
 /** Inquire a variable by id.
  * @param ncid NetCDF file identifier.
  * @param varid Variable id.
@@ -199,6 +214,16 @@ int NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
  */
 int NEXTCDF4_inq_var(int ncid, int varid, char *name, nc_type *xtypep,
                      int *ndimsp, int *dimidsp, int *nattsp);
+int NEXTCDF4_inq_var_all(int ncid, int varid, char *name, nc_type *xtypep,
+                         int *ndimsp, int *dimidsp, int *nattsp,
+                         int *shufflep, int *deflatep, int *deflate_levelp,
+                         int *fletcher32p, int *contiguousp, size_t *chunksizesp,
+                         int *no_fillp, void *fill_valuep, int *endiannessp,
+                         unsigned int *idp, size_t *nparamsp, unsigned int *params);
+int NEXTCDF4_inq_var_filter_ids(int ncid, int varid, size_t *nfiltersp,
+                                unsigned int *ids);
+int NEXTCDF4_inq_var_filter_info(int ncid, int varid, unsigned int id,
+                                 size_t *nparamsp, unsigned int *params);
 
 /** Fixed-size atomic variable hyperslab I/O callbacks. */
 int NEXTCDF4_get_vara(int, int, const size_t *, const size_t *, void *, nc_type);

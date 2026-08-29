@@ -849,6 +849,425 @@ fail:
     return ret;
 }
 
+/** Create or re-create the HDF5 dataset for a variable, applying the
+ * current storage, chunking, fill, filter, and endian settings. */
+static int
+create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
+                   NEXTCDF4_FILE_INFO_T *file, NC_GRP_INFO_T *grp)
+{
+    NEXTCDF4_VAR_INFO_T *vinfo = (NEXTCDF4_VAR_INFO_T *)var->format_var_info;
+    NEXTCDF4_GRP_INFO_T *ginfo = (NEXTCDF4_GRP_INFO_T *)grp->format_grp_info;
+    hid_t hdf_grp = ginfo ? ginfo->hdf_group : file->rootid;
+    hid_t hdf_type = -1;
+    hid_t space = -1;
+    hid_t dcpl = -1;
+    hsize_t dims[NC_MAX_VAR_DIMS];
+    hsize_t maxdims[NC_MAX_VAR_DIMS];
+    hsize_t chunks[NC_MAX_VAR_DIMS];
+    int has_unlimited = 0;
+    int coordinate = 0;
+    int i, ret;
+
+    coordinate = (var->ndims == 1 &&
+                  !strcmp(var->hdr.name, var->dim[0]->hdr.name));
+
+    /* Remove any existing dataset for this variable. */
+    H5E_BEGIN_TRY {
+        if (vinfo && vinfo->hdf_dataset >= 0) {
+            H5Dclose(vinfo->hdf_dataset);
+            vinfo->hdf_dataset = -1;
+        }
+        if (coordinate) {
+            NEXTCDF4_DIM_INFO_T *dinfo =
+                (NEXTCDF4_DIM_INFO_T *)var->dim[0]->format_dim_info;
+            if (dinfo && dinfo->hdf_dataset >= 0) {
+                H5Dclose(dinfo->hdf_dataset);
+                dinfo->hdf_dataset = -1;
+            }
+        }
+        H5Ldelete(hdf_grp, var->hdr.name, H5P_DEFAULT);
+    } H5E_END_TRY;
+
+    if ((ret = NEXTCDF4_map_hdf_type(var->type_info->hdr.id, &hdf_type)))
+        return ret;
+
+    for (i = 0; i < (int)var->ndims; i++) {
+        dims[i] = var->dim[i]->len;
+        if (var->dim[i]->unlimited) {
+            maxdims[i] = H5S_UNLIMITED;
+            has_unlimited = 1;
+        } else {
+            maxdims[i] = var->dim[i]->len;
+        }
+    }
+
+    if (var->endianness == NC_ENDIAN_BIG)
+        H5Tset_order(hdf_type, H5T_ORDER_BE);
+    else if (var->endianness == NC_ENDIAN_LITTLE)
+        H5Tset_order(hdf_type, H5T_ORDER_LE);
+
+    if (var->ndims == 0) {
+        if ((space = H5Screate(H5S_SCALAR)) < 0) {
+            ret = NC_EHDFERR;
+            goto fail;
+        }
+    } else {
+        if ((space = H5Screate_simple(var->ndims, dims, maxdims)) < 0) {
+            ret = NC_EHDFERR;
+            goto fail;
+        }
+    }
+
+    if ((dcpl = H5Pcreate(H5P_DATASET_CREATE)) < 0) {
+        ret = NC_EHDFERR;
+        goto fail;
+    }
+
+    if (var->storage == NC_CHUNKED ||
+        (var->storage == 0 && (has_unlimited || (vinfo && vinfo->deflate_level >= 0) ||
+                               (vinfo && vinfo->fletcher32) ||
+                               (vinfo && vinfo->shuffle)))) {
+        for (i = 0; i < (int)var->ndims; i++) {
+            if (var->chunksizes && var->chunksizes[i])
+                chunks[i] = var->chunksizes[i];
+            else if (var->dim[i]->unlimited)
+                chunks[i] = 1;
+            else
+                chunks[i] = (var->dim[i]->len > 0) ? var->dim[i]->len : 1;
+        }
+        if (H5Pset_chunk(dcpl, var->ndims, chunks) < 0) {
+            ret = NC_EHDFERR;
+            goto fail;
+        }
+        if (var->storage == 0)
+            var->storage = NC_CHUNKED;
+    }
+
+    if (var->ndims == 0) {
+        H5Pclose(dcpl);
+        dcpl = H5P_DEFAULT;
+    } else {
+        if (!var->no_fill && var->fill_value) {
+            hid_t fill_type = H5Tget_native_type(hdf_type, H5T_DIR_DEFAULT);
+            if (fill_type < 0 ||
+                H5Pset_fill_value(dcpl, fill_type, var->fill_value) < 0) {
+                if (fill_type >= 0)
+                    H5Tclose(fill_type);
+                ret = NC_EHDFERR;
+                goto fail;
+            }
+            H5Tclose(fill_type);
+        } else if (var->no_fill) {
+            H5Pset_fill_time(dcpl, H5D_FILL_TIME_NEVER);
+        }
+
+        if (vinfo) {
+            if (vinfo->shuffle)
+                H5Pset_shuffle(dcpl);
+            if (vinfo->deflate_level >= 0)
+                H5Pset_deflate(dcpl, vinfo->deflate_level);
+            if (vinfo->fletcher32)
+                H5Pset_fletcher32(dcpl);
+        }
+    }
+
+    if (coordinate) {
+        NEXTCDF4_DIM_INFO_T *dinfo =
+            (NEXTCDF4_DIM_INFO_T *)var->dim[0]->format_dim_info;
+        if (!dinfo) {
+            ret = NC_EFILEMETA;
+            goto fail;
+        }
+        dinfo->hdf_dataset = H5Dcreate2(hdf_grp, var->hdr.name, hdf_type, space,
+                                        H5P_DEFAULT, dcpl, H5P_DEFAULT);
+        if (dinfo->hdf_dataset < 0 ||
+            H5DSset_scale(dinfo->hdf_dataset, var->hdr.name) < 0)
+            { if (!ret) ret = NC_EHDFERR; goto fail; }
+        vinfo->hdf_dataset = H5Dopen2(hdf_grp, var->hdr.name, H5P_DEFAULT);
+        if (vinfo->hdf_dataset < 0)
+            { ret = NC_EHDFERR; goto fail; }
+    } else {
+        vinfo->hdf_dataset = H5Dcreate2(hdf_grp, var->hdr.name, hdf_type, space,
+                                        H5P_DEFAULT, dcpl, H5P_DEFAULT);
+        if (vinfo->hdf_dataset < 0)
+            { ret = NC_EHDFERR; goto fail; }
+    }
+
+    if (dcpl >= 0 && dcpl != H5P_DEFAULT)
+        H5Pclose(dcpl);
+    dcpl = -1;
+
+    if ((ret = write_int_att(vinfo->hdf_dataset, NEXTCDF4_VARID_ATT,
+                             var->hdr.id)) ||
+        (ret = write_int_array_att(vinfo->hdf_dataset,
+                                   NEXTCDF4_VARDIMIDS_ATT,
+                                   (const int *)var->dimids, var->ndims)))
+        goto fail;
+
+    if (!coordinate) {
+        for (i = 0; i < (int)var->ndims; i++) {
+            NEXTCDF4_DIM_INFO_T *dinfo =
+                (NEXTCDF4_DIM_INFO_T *)var->dim[i]->format_dim_info;
+            if (!dinfo || dinfo->hdf_dataset < 0 ||
+                H5DSattach_scale(vinfo->hdf_dataset, dinfo->hdf_dataset,
+                                 (unsigned)i) < 0) {
+                ret = NC_EHDFERR;
+                goto fail;
+            }
+        }
+    }
+
+    H5Tclose(hdf_type);
+    H5Sclose(space);
+    return NC_NOERR;
+
+fail:
+    H5E_BEGIN_TRY { if (vinfo && vinfo->hdf_dataset >= 0) H5Dclose(vinfo->hdf_dataset); } H5E_END_TRY;
+    if (vinfo)
+        vinfo->hdf_dataset = -1;
+    H5E_BEGIN_TRY { H5Ldelete(hdf_grp, var->hdr.name, H5P_DEFAULT); } H5E_END_TRY;
+    if (hdf_type >= 0)
+        H5Tclose(hdf_type);
+    if (space >= 0)
+        H5Sclose(space);
+    if (dcpl >= 0 && dcpl != H5P_DEFAULT)
+        H5Pclose(dcpl);
+    return ret;
+}
+
+/** Common setup for a variable-storage dispatch function. */
+static int
+find_var_for_write(int ncid, int varid, NC_FILE_INFO_T **h5,
+                   NEXTCDF4_FILE_INFO_T **file, NC_GRP_INFO_T **grp,
+                   NC_VAR_INFO_T **var)
+{
+    int ret;
+    if ((ret = nc4_find_grp_h5_var(ncid, varid, h5, grp, var)))
+        return ret;
+    if ((ret = NEXTCDF4_get_file(ncid, NULL, file)))
+        return ret;
+    return NEXTCDF4_check_write_define(*file);
+}
+
+int
+NEXTCDF4_def_var_chunking(int ncid, int varid, int storage,
+                          const size_t *chunksizesp)
+{
+    NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
+    NC_GRP_INFO_T *grp;
+    NC_VAR_INFO_T *var;
+    int i, ret;
+
+    if ((ret = find_var_for_write(ncid, varid, &h5, &file, &grp, &var)))
+        return ret;
+
+    if (storage != NC_CHUNKED && storage != NC_CONTIGUOUS)
+        return NC_EINVAL;
+    if (var->ndims == 0 && storage == NC_CHUNKED)
+        return NC_EINVAL;
+
+    var->storage = storage;
+    if (storage == NC_CHUNKED) {
+        if (!chunksizesp)
+            return NC_EINVAL;
+        if (!var->chunksizes) {
+            if (!(var->chunksizes = calloc(var->ndims, sizeof(size_t))))
+                return NC_ENOMEM;
+        }
+        for (i = 0; i < (int)var->ndims; i++)
+            var->chunksizes[i] = chunksizesp[i];
+    }
+
+    return create_var_dataset(var, h5, file, grp);
+}
+
+int
+NEXTCDF4_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
+                         int deflate_level)
+{
+    NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
+    NC_GRP_INFO_T *grp;
+    NC_VAR_INFO_T *var;
+    NEXTCDF4_VAR_INFO_T *vinfo;
+    int ret;
+
+    if ((ret = find_var_for_write(ncid, varid, &h5, &file, &grp, &var)))
+        return ret;
+    if (var->ndims == 0)
+        return NC_EINVAL;
+    if (deflate_level < 0 || deflate_level > 9)
+        return NC_EINVAL;
+
+    vinfo = (NEXTCDF4_VAR_INFO_T *)var->format_var_info;
+    vinfo->shuffle = shuffle ? 1 : 0;
+    vinfo->deflate_level = deflate ? deflate_level : -1;
+
+    return create_var_dataset(var, h5, file, grp);
+}
+
+int
+NEXTCDF4_def_var_fletcher32(int ncid, int varid, int fletcher32)
+{
+    NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
+    NC_GRP_INFO_T *grp;
+    NC_VAR_INFO_T *var;
+    NEXTCDF4_VAR_INFO_T *vinfo;
+    int ret;
+
+    if ((ret = find_var_for_write(ncid, varid, &h5, &file, &grp, &var)))
+        return ret;
+    if (var->ndims == 0)
+        return NC_EINVAL;
+
+    vinfo = (NEXTCDF4_VAR_INFO_T *)var->format_var_info;
+    vinfo->fletcher32 = fletcher32 ? 1 : 0;
+
+    return create_var_dataset(var, h5, file, grp);
+}
+
+int
+NEXTCDF4_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
+{
+    NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
+    NC_GRP_INFO_T *grp;
+    NC_VAR_INFO_T *var;
+    size_t size;
+    int ret;
+
+    if ((ret = find_var_for_write(ncid, varid, &h5, &file, &grp, &var)))
+        return ret;
+
+    var->no_fill = no_fill ? 1 : 0;
+    if (var->fill_value) {
+        free(var->fill_value);
+        var->fill_value = NULL;
+    }
+    if (!no_fill && fill_value) {
+        if ((ret = NEXTCDF4_type_size(var->type_info->hdr.id, &size)))
+            return ret;
+        if (!(var->fill_value = malloc(size)))
+            return NC_ENOMEM;
+        memcpy(var->fill_value, fill_value, size);
+        var->fill_val_changed = 1;
+    }
+
+    return create_var_dataset(var, h5, file, grp);
+}
+
+int
+NEXTCDF4_def_var_endian(int ncid, int varid, int endianness)
+{
+    NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
+    NC_GRP_INFO_T *grp;
+    NC_VAR_INFO_T *var;
+    int ret;
+
+    if ((ret = find_var_for_write(ncid, varid, &h5, &file, &grp, &var)))
+        return ret;
+    if (endianness != NC_ENDIAN_NATIVE && endianness != NC_ENDIAN_LITTLE &&
+        endianness != NC_ENDIAN_BIG)
+        return NC_EINVAL;
+
+    var->endianness = endianness;
+    return create_var_dataset(var, h5, file, grp);
+}
+
+int
+NEXTCDF4_def_var_quantize(int ncid, int varid, int quantize_mode, int nsd)
+{
+    NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
+    NC_GRP_INFO_T *grp;
+    NC_VAR_INFO_T *var;
+    int ret;
+
+    if ((ret = find_var_for_write(ncid, varid, &h5, &file, &grp, &var)))
+        return ret;
+    if (quantize_mode != NC_NOQUANTIZE &&
+        quantize_mode != NC_QUANTIZE_BITGROOM &&
+        quantize_mode != NC_QUANTIZE_GRANULARBR &&
+        quantize_mode != NC_QUANTIZE_BITROUND)
+        return NC_EINVAL;
+    if (quantize_mode != NC_NOQUANTIZE && nsd < 1)
+        return NC_EINVAL;
+
+    var->quantize_mode = quantize_mode;
+    var->nsd = nsd;
+    return NC_NOERR;
+}
+
+int
+NEXTCDF4_def_var_filter(int ncid, int varid, unsigned int id, size_t nparams,
+                        const unsigned int *params)
+{
+    (void)ncid; (void)varid; (void)id; (void)nparams; (void)params;
+    return NC_ENOTBUILT;
+}
+
+int
+NEXTCDF4_inq_var_all(int ncid, int varid, char *name, nc_type *xtypep,
+                     int *ndimsp, int *dimidsp, int *nattsp,
+                     int *shufflep, int *deflatep, int *deflate_levelp,
+                     int *fletcher32p, int *contiguousp, size_t *chunksizesp,
+                     int *no_fillp, void *fill_valuep, int *endiannessp,
+                     unsigned int *idp, size_t *nparamsp, unsigned int *params)
+{
+    NC_FILE_INFO_T *h5;
+    NC_GRP_INFO_T *grp;
+    NC_VAR_INFO_T *var;
+    NEXTCDF4_VAR_INFO_T *vinfo;
+    size_t size;
+    int i, ret;
+
+    if ((ret = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var)))
+        return ret;
+    vinfo = (NEXTCDF4_VAR_INFO_T *)var->format_var_info;
+
+    if (name)
+        strncpy(name, var->hdr.name, NC_MAX_NAME);
+    if (xtypep)
+        *xtypep = var->type_info->hdr.id;
+    if (ndimsp)
+        *ndimsp = (int)var->ndims;
+    if (dimidsp)
+        for (i = 0; i < (int)var->ndims; i++)
+            dimidsp[i] = var->dimids[i];
+    if (nattsp)
+        *nattsp = ncindexsize(var->att);
+    if (shufflep)
+        *shufflep = vinfo ? vinfo->shuffle : 0;
+    if (deflatep)
+        *deflatep = (vinfo && vinfo->deflate_level >= 0) ? 1 : 0;
+    if (deflate_levelp)
+        *deflate_levelp = (vinfo && vinfo->deflate_level > 0) ? vinfo->deflate_level : 0;
+    if (fletcher32p)
+        *fletcher32p = vinfo ? vinfo->fletcher32 : 0;
+    if (contiguousp)
+        *contiguousp = var->storage;
+    if (chunksizesp && var->storage == NC_CHUNKED) {
+        for (i = 0; i < (int)var->ndims; i++)
+            chunksizesp[i] = (var->chunksizes && var->chunksizes[i]) ?
+                             var->chunksizes[i] : (size_t)((var->dim[i]->unlimited) ? 1 : var->dim[i]->len);
+    }
+    if (no_fillp)
+        *no_fillp = (int)var->no_fill;
+    if (fill_valuep && !var->no_fill && var->fill_value) {
+        if ((ret = NEXTCDF4_type_size(var->type_info->hdr.id, &size)))
+            return ret;
+        memcpy(fill_valuep, var->fill_value, size);
+    }
+    if (endiannessp)
+        *endiannessp = var->endianness;
+
+    (void)idp; (void)nparamsp; (void)params; (void)h5;
+    return NC_NOERR;
+}
+
 int
 NEXTCDF4_inq_var(int ncid, int varid, char *name, nc_type *xtypep,
                  int *ndimsp, int *dimidsp, int *nattsp)
@@ -873,6 +1292,70 @@ NEXTCDF4_inq_var(int ncid, int varid, char *name, nc_type *xtypep,
     }
     if (nattsp)
         *nattsp = ncindexsize(var->att);
+    return NC_NOERR;
+}
+
+int
+NEXTCDF4_inq_var_filter_ids(int ncid, int varid, size_t *nfiltersp,
+                            unsigned int *ids)
+{
+    NC_FILE_INFO_T *h5;
+    NC_GRP_INFO_T *grp;
+    NC_VAR_INFO_T *var;
+    NEXTCDF4_VAR_INFO_T *vinfo;
+    size_t n = 0;
+    int ret;
+
+    if ((ret = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var)))
+        return ret;
+    vinfo = (NEXTCDF4_VAR_INFO_T *)var->format_var_info;
+
+    if (vinfo && vinfo->deflate_level >= 0)
+        ids[n++] = H5Z_FILTER_DEFLATE;
+    if (vinfo && vinfo->shuffle)
+        ids[n++] = H5Z_FILTER_SHUFFLE;
+    if (vinfo && vinfo->fletcher32)
+        ids[n++] = H5Z_FILTER_FLETCHER32;
+
+    if (nfiltersp)
+        *nfiltersp = n;
+    if (n > 0 && ids)
+        return NC_NOERR;
+    return NC_ENOFILTER;
+}
+
+int
+NEXTCDF4_inq_var_filter_info(int ncid, int varid, unsigned int id,
+                             size_t *nparamsp, unsigned int *params)
+{
+    NC_FILE_INFO_T *h5;
+    NC_GRP_INFO_T *grp;
+    NC_VAR_INFO_T *var;
+    NEXTCDF4_VAR_INFO_T *vinfo;
+    size_t nparams = 0;
+    unsigned int p[4];
+    int ret;
+
+    if ((ret = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var)))
+        return ret;
+    vinfo = (NEXTCDF4_VAR_INFO_T *)var->format_var_info;
+
+    if (id == H5Z_FILTER_DEFLATE && vinfo && vinfo->deflate_level >= 0) {
+        nparams = 1;
+        p[0] = (unsigned int)vinfo->deflate_level;
+    } else if (id == H5Z_FILTER_SHUFFLE && vinfo && vinfo->shuffle) {
+        nparams = 0;
+    } else if (id == H5Z_FILTER_FLETCHER32 && vinfo && vinfo->fletcher32) {
+        nparams = 0;
+    } else {
+        return NC_ENOFILTER;
+    }
+
+    if (nparamsp)
+        *nparamsp = nparams;
+    if (params && nparams)
+        memcpy(params, p, nparams * sizeof(unsigned int));
+    (void)h5;
     return NC_NOERR;
 }
 
@@ -1473,6 +1956,89 @@ load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
     var->meta_read = 1;
     var->atts_read = 1;
     var->created = 1;
+
+    /* Read the dataset creation properties. */
+    {
+        hid_t dcpl;
+        int j, nfilter;
+        unsigned int cd_values[4];
+        size_t cd_nelmts;
+        H5T_order_t order;
+        H5D_fill_time_t fill_time;
+
+        if ((dcpl = H5Dget_create_plist(vinfo->hdf_dataset)) >= 0) {
+            hsize_t chunks[NC_MAX_VAR_DIMS];
+            int chunk_ndims = H5Pget_chunk(dcpl, ndims, chunks);
+            if (chunk_ndims > 0) {
+                var->storage = NC_CHUNKED;
+                if (!var->chunksizes)
+                    var->chunksizes = calloc(ndims, sizeof(size_t));
+                if (var->chunksizes)
+                    for (j = 0; j < chunk_ndims; j++)
+                        var->chunksizes[j] = (size_t)chunks[j];
+            } else if (ndims > 0) {
+                var->storage = NC_CONTIGUOUS;
+            }
+
+            if (H5Pget_fill_time(dcpl, &fill_time) >= 0 &&
+                fill_time == H5D_FILL_TIME_NEVER)
+                var->no_fill = 1;
+
+            if (!var->no_fill) {
+                size_t fsize;
+                if (var->fill_value) {
+                    free(var->fill_value);
+                    var->fill_value = NULL;
+                }
+                if (!NEXTCDF4_type_size(xtype, &fsize) &&
+                    (var->fill_value = malloc(fsize))) {
+                    hid_t mem_type = H5Tget_native_type(ftype, H5T_DIR_DEFAULT);
+                    int rv;
+                    if (mem_type < 0) {
+                        free(var->fill_value);
+                        var->fill_value = NULL;
+                    } else {
+                        rv = H5Pget_fill_value(dcpl, mem_type, var->fill_value);
+                        if (rv < 0) {
+                            free(var->fill_value);
+                            var->fill_value = NULL;
+                        }
+                        H5Tclose(mem_type);
+                    }
+                }
+            }
+
+            nfilter = H5Pget_nfilters(dcpl);
+            for (j = 0; j < nfilter; j++) {
+                cd_nelmts = 4;
+                if (H5Pget_filter2(dcpl, (unsigned)j, NULL, &cd_nelmts,
+                                   cd_values, 0, NULL, NULL) < 0)
+                    continue;
+                switch (H5Pget_filter2(dcpl, (unsigned)j, NULL, &cd_nelmts,
+                                       cd_values, 0, NULL, NULL)) {
+                case H5Z_FILTER_DEFLATE:
+                    if (cd_nelmts > 0)
+                        vinfo->deflate_level = (int)cd_values[0];
+                    break;
+                case H5Z_FILTER_SHUFFLE:
+                    vinfo->shuffle = 1;
+                    break;
+                case H5Z_FILTER_FLETCHER32:
+                    vinfo->fletcher32 = 1;
+                    break;
+                }
+            }
+            H5Pclose(dcpl);
+        }
+
+        order = H5Tget_order(ftype);
+        if (order == H5T_ORDER_BE)
+            var->endianness = NC_ENDIAN_BIG;
+        else if (order == H5T_ORDER_LE)
+            var->endianness = NC_ENDIAN_LITTLE;
+        else
+            var->endianness = NC_ENDIAN_NATIVE;
+    }
 
 done:
     if (dset >= 0)

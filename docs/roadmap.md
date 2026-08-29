@@ -331,7 +331,77 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 - Tools, language bindings, parallel I/O, diskless/in-memory files, and non-default HDF5 virtual file drivers.
 
 #### Sprint 6: Add Variable Storage Features
-**Objective:** Implement chunking, fill behavior, compression, filters, endianness, checksums, and related variable creation properties. Cover dataset extension and synchronization behavior needed for production use of unlimited dimensions and chunked data.
+**Detailed Plan**: See `docs/plan/NEXTCDF4_plan.md`, especially the "Variable I/O and chunking" section, the type-mapping summary, and the compatibility rules for `NC_NETCDF4_MODEL`.
+
+**Objective:** Implement chunking, fill behavior, compression, filters, endianness, checksums, quantization, and related variable creation properties. Cover dataset extension and synchronization behavior needed for production use of unlimited dimensions and chunked data.
+
+**Scope decisions:**
+- Support both `NC_CHUNKED` (with caller-supplied or auto-computed chunk shapes) and `NC_CONTIGUOUS` storage. Default to chunked for variables with unlimited dimensions and to contiguous for small fixed-size variables unless the caller overrides.
+- Implement `nc_def_var_chunking`, `nc_inq_var_chunking`, and the chunk-inquiry helpers.
+- Implement fill mode and fill values for all current types: classic atomic, `NC_STRING`, compound, enum, opaque, and vlen. Support `nc_def_var_fill`, `nc_set_fill`, `nc_inq_var_fill`, and `NC_NOFILL`.
+- Implement compression and checksum filters: `nc_def_var_deflate` (zlib level 0-9 plus optional shuffle), `nc_def_var_fletcher32`, and `nc_def_var_filter` for registering HDF5 filter IDs that the linked HDF5 supports.
+- Implement `nc_def_var_endian` with `NC_ENDIAN_LITTLE`, `NC_ENDIAN_BIG`, and `NC_ENDIAN_NATIVE`.
+- Implement `nc_def_var_quantize` with `NC_QUANTIZE_BITGROOM`, `NC_QUANTIZE_GRANULARBR`, and `NC_QUANTIZE_BITROUND` for numeric variables.
+- Keep `nc_def_var_szip`, `nc_def_var_zstandard`, `nc_def_var_bzip2`, and other third-party filters out of this sprint unless they are already available as HDF5 plugins.
+- Maintain `NC_CLASSIC_MODEL` and `NC_NETCDF4_MODEL` restrictions: no enhanced features in classic; `NC_NETCDF4_MODEL` must only use filter/chunking/fill settings that upstream netcdf-c can read back.
+
+**Prerequisites and constraints:**
+- Build on the Sprint 5 group/type and Sprint 4 I/O foundations: stable object IDs, recursive group metadata, type info, and the `NC_VAR_INFO_T`/`NEXTCDF4_VAR_INFO_T` structures.
+- Use HDF5 Dataset Creation Property Lists (DCPL) and Dataset Access Property Lists (DAPL) only through public HDF5 APIs.
+- Keep the existing `NC_NEXTCDF4` opt-in and do not modify netcdf-c or the built-in HDF5 backend.
+- Preserve round-trip compatibility for `NC_NETCDF4_MODEL` files; write standard HDF5 chunking, fill, deflate, shuffle, and fletcher32 attributes.
+- Ensure `nc_sync`, `nc_enddef`, and write operations correctly extend unlimited dimensions and flush chunked datasets.
+
+**Variable storage architecture:**
+- Introduce `src/nextcdf4/nxt4var.c` (or extend `nxt4io.c`) to centralize variable creation, DCPL construction, and the `def_var_chunking/deflate/fill/endian/fletcher32/quantize` dispatch functions.
+- Build the DCPL with: chunk shape, fill value (`H5Pset_fill_value` or `NC_NOFILL`), deflate+shuffle filter (`H5Pset_deflate`/`H5Pset_shuffle`), fletcher32 (`H5Pset_fletcher32`), endianness (`H5Tset_order` on the file type), and quantization state.
+- Store the file type with the chosen endianness in `var->type_info`/`format_type_info`; preserve the memory type as native.
+- Apply quantization during write: round floating-point or integer data to the requested number of significant bits before calling `H5Dwrite`; on read, return the quantized (stored) values.
+- Load chunking, fill, filter, endian, and quantization metadata when opening an existing file by reading the DCPL and dataset attributes; update `NC_VAR_INFO_T` accordingly.
+- Continue to support `nc_put_vara`/`nc_get_vara`/`nc_put_vars`/`nc_get_vars` for chunked and unlimited variables; ensure `H5Dset_extent` is called when writing beyond the current unlimited dimension length.
+
+**Dispatch and API coverage:**
+- `nc_def_var_chunking`, `nc_inq_var_chunking`
+- `nc_def_var_deflate`, `nc_inq_var_deflate`
+- `nc_def_var_fill`, `nc_inq_var_fill`, `nc_set_fill`
+- `nc_def_var_endian`, `nc_inq_var_endian`
+- `nc_def_var_fletcher32`, `nc_inq_var_fletcher32`
+- `nc_def_var_quantize`, `nc_inq_var_quantize`
+- `nc_sync`, `nc__enddef`, and `nc_redef` already exist; extend them to flush/create datasets and extend unlimited dimensions for new variables.
+
+**Implementation sequence:**
+1. Add `nxt4var.c` skeleton and move existing `NEXTCDF4_def_var`/`var_create_dataset` logic into it or from `nxt4io.c`.
+2. Implement DCPL builders for chunking, fill, deflate+shuffle, fletcher32, endian, and quantization.
+3. Hook the DCPL into `NEXTCDF4_def_var` and `NEXTCDF4__enddef`.
+4. Extend the I/O path to apply quantization before writing and to extend unlimited dimensions before `H5Dwrite`.
+5. Update `NEXTCDF4_load_metadata` to read DCPL properties and reconstruct chunking/fill/filter/endian/quantize state.
+6. Add `test/tst_nextcdf4_chunking.c` with scalar, fixed, unlimited, chunked, compressed, checksummed, big-endian, and quantized round-trip tests.
+7. Update `docs/roadmap.md` and `NEXTCDF4_plan.md` to reflect the new capabilities.
+8. Audit and bring all Doxygen comments in `src/nextcdf4/` up to date with the current implementation, and make Doxygen maintenance a required step in every future sprint.
+
+**Verification and acceptance criteria:**
+- Chunked, contiguous, and auto-chunked variables can be created, written, read, and reopened.
+- Deflate/shuffle/fletcher32 round-trips produce the same data and report correct filter state.
+- Fill values work for atomic, `NC_STRING`, compound, enum, opaque, and vlen variables; `NC_NOFILL` disables fill.
+- `nc_def_var_endian` writes big-endian or little-endian datasets and reads them back as native.
+- `nc_def_var_quantize` stores the specified number of significant bits and reads back the quantized values.
+- Unlimited chunked variables can be extended and flushed with `nc_sync`/`nc_enddef`.
+- `NC_CLASSIC_MODEL` rejects all enhanced storage calls; `NC_NETCDF4_MODEL` only uses upstream-compatible features and the resulting files are readable by netcdf-c.
+- A clean NEXTCDF-4 build passes the full C test suite including the new chunking tests.
+
+**Sprint 6 status:**
+|- Implementation is complete in `src/nextcdf4/nxt4meta.c`, `src/nextcdf4/nxt4io.c`, `src/nextcdf4/nxt4dispatch.c`, and `src/nextcdf4/nxt4internal.h`.
+|- `test/tst_nextcdf4_chunking.c` covers `nc_def_var_chunking`, `nc_def_var_deflate`, `nc_def_var_fletcher32`, `nc_def_var_fill`, `nc_def_var_endian`, `nc_def_var_quantize`, and their `nc_inq_var_*` counterparts, including close/reopen round-trips for chunking, filters, fill, and endian settings.
+|- Quantization is applied to floating-point data before `H5Dwrite` using `nc4_convert_type`.
+|- DCPL properties (chunking, fill, deflate/shuffle, fletcher32, endianness) are read back from the HDF5 dataset when an existing file is opened.
+|- The NEXTCDF-4 C test suite passes; the remaining `run_fortran_tests` segfault is unrelated to the NEXTCDF-4 C backend.
+
+**Out of scope for Sprint 6:**
+- Szip, Zstandard, BZIP2, LZ4, and other third-party filters (except through `nc_def_var_filter` if already registered).
+- Parallel I/O, advanced chunk cache tuning, and non-default HDF5 virtual file drivers.
+- Chunking/fill/filter discovery in arbitrarily legacy files not created by NEXTCDF-4 (Sprint 7).
+- Rename of chunked/compressed variables (Sprint 8).
+- Float16, complex, bitfield, reference types (Sprints 9 and 10).
 
 #### Sprint 7: Open Existing and Populated Files
 **Objective:** Expand metadata discovery so NEXTCDF-4 can open populated files produced by both NEXTCDF-4 and the upstream NetCDF-4/HDF5 backend. Support hidden-coordinate fast paths, dimension-scale fallback, and the compatibility rules for native, classic-model, and `NC_NETCDF4_MODEL` files.
