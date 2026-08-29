@@ -50,6 +50,7 @@
 #define NEP_HAS_DICOM        @NEP_HAS_DICOM@ /*!< DICOM UDF support. */
 #define NEP_HAS_PDB          @NEP_HAS_PDB@ /*!< Legacy PDB UDF support. */
 #define NEP_HAS_MMCIF        @NEP_HAS_MMCIF@ /*!< PDBx/mmCIF UDF support. */
+#define NEP_HAS_NEXTCDF4     @NEP_HAS_NEXTCDF4@ /*!< NEXTCDF-4 UDF backend support. */
 
 #define NEP_HAS_NCZARR       @NEP_HAS_NCZARR@ /*!< NcZarr support. */
 #define NEP_HAS_PARALLEL     @NEP_HAS_PARALLEL@ /*!< Parallel I/O support. */

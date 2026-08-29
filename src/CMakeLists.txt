@@ -267,6 +267,10 @@ if(HAVE_MMCIF)
     message(STATUS "Building PDBx/mmCIF UDF library: ${MMCIF_LIB_NAME}")
 endif()
 
+if(HAVE_NEXTCDF4)
+    add_subdirectory(nextcdf4)
+endif()
+
 # Install the generated build metadata header.
 install(FILES "${CMAKE_BINARY_DIR}/include/nep_meta.h"
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
