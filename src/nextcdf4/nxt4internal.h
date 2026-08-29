@@ -267,6 +267,22 @@ int NEXTCDF4_get_att(int ncid, int varid, const char *name, void *value,
 int NEXTCDF4_rename_att(int ncid, int varid, const char *name,
                         const char *newname);
 
+/** Rename a dimension.
+ * @param ncid NetCDF file identifier.
+ * @param dimid Dimension id.
+ * @param name New dimension name.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+int NEXTCDF4_rename_dim(int ncid, int dimid, const char *name);
+
+/** Rename a variable.
+ * @param ncid NetCDF file identifier.
+ * @param varid Variable id.
+ * @param name New variable name.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+int NEXTCDF4_rename_var(int ncid, int varid, const char *name);
+
 /** Delete an attribute.
  * @param ncid NetCDF file identifier.
  * @param varid Variable id or `NC_GLOBAL`.

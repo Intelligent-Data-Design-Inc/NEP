@@ -757,6 +757,43 @@ The same NetCDF-4 `NC_Dispatch` interface is exposed, but the dispatch table liv
 - `nxt4dispatch.h` — dispatch table and UDF init/final declarations.
 - `nxt4debug.h` — logging macros, `nch5breakpoint`, and trace flags.
 
+## Sprint 8: Correct Dimension and Variable Renaming
+
+Sprint 8 adds full `nc_rename_dim` and `nc_rename_var` support for the NEXTCDF-4 backend.
+
+- `NEXTCDF4_rename_dim` (new `nxt4dim.c` or `nxt4meta.c`):
+  - Validates define mode/writable state and new-name constraints.
+  - Locates the dimension's `NC_DIM_INFO_T` and `NEXTCDF4_DIM_INFO_T` HDF5 dataset.
+  - Calls `H5Lmove` in the parent HDF5 group to rename the scale dataset link.
+  - Calls `H5DSset_scale` with the new name so the dimension-scale `NAME` attribute is updated.
+  - Updates the in-memory `dim->hdr.name`, frees the old string, and re-inserts the dimension into the group's dimension index under the new name.
+  - If the dimension has a 1D coordinate variable (same name as the dim), also updates the associated `NC_VAR_INFO_T` name without a second `H5Lmove`.
+
+- `NEXTCDF4_rename_var` (new `nxt4var.c` or `nxt4meta.c`):
+  - Validates define mode/writable state and new-name constraints.
+  - Locates the variable's `NC_VAR_INFO_T` and `NEXTCDF4_VAR_INFO_T` HDF5 dataset.
+  - Calls `H5Lmove` in the parent HDF5 group to rename the variable dataset link.
+  - Updates the in-memory `var->hdr.name` and re-inserts the variable into the group's variable index under the new name.
+  - If the variable is a 1D coordinate variable (one dimension and same name as that dimension), also renames the dimension and scale `NAME` attribute with `H5DSset_scale` and updates `NC_DIM_INFO_T`.
+
+- `nxt4dispatch.c`:
+  - Replace the `NC_RO_rename_dim` and `NC_RO_rename_var` fallback entries with `NEXTCDF4_rename_dim` and `NEXTCDF4_rename_var`.
+
+- `test/tst_nextcdf4_rename.c`:
+  - Simple dimension rename.
+  - Coordinate-variable/dimension mutual rename.
+  - Variable rename that is a coordinate variable (dimension also renamed).
+  - Shared-dimension rename with two dependent variables.
+  - Reopen and verify persisted names.
+
+- Acceptance criteria:
+  - `nc_rename_dim` and `nc_rename_var` return `NC_NOERR` and update `nc_inq_dim`/`nc_inq_var` results.
+  - Coordinate-variable/dimension name pairs stay synchronized.
+  - Shared dimensions rename without corrupting dependent variables.
+  - All existing `tst_nextcdf4_*` tests continue to pass.
+
+**Sprint 8 is implemented.** The functions live in `src/nextcdf4/nxt4meta.c`, are wired into `nxt4dispatch.c`, and are covered by `test/tst_nextcdf4_rename.c`. All `tst_nextcdf4_*` C tests pass.
+
 ## Sprint 7: Open Existing and Populated Files
 
 Sprint 7 is implemented and tested. The key changes are in `src/nextcdf4/nxt4meta.c`, `nxt4file.c`, `nxt4open.c`, `nxt4internal.h`, and `test/tst_nextcdf4_open.c`.

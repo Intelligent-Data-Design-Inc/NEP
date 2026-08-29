@@ -1607,6 +1607,166 @@ NEXTCDF4_rename_att(int ncid, int varid, const char *name, const char *newname)
     return NC_NOERR;
 }
 
+/** Find a 1D coordinate variable that uses a dimension. */
+static NC_VAR_INFO_T *
+find_coord_var(NC_GRP_INFO_T *grp, NC_DIM_INFO_T *dim)
+{
+    size_t i;
+    if (!grp->vars)
+        return NULL;
+    for (i = 0; i < (size_t)ncindexsize(grp->vars); i++) {
+        NC_VAR_INFO_T *var = (NC_VAR_INFO_T *)ncindexith(grp->vars, i);
+        if (var && var->ndims == 1 && var->dimids[0] == dim->hdr.id &&
+            var->hdr.name && !strcmp(var->hdr.name, dim->hdr.name))
+            return var;
+    }
+    return NULL;
+}
+
+/** Determine if a variable is a 1D coordinate variable. */
+static NC_DIM_INFO_T *
+coord_var_dim(NC_VAR_INFO_T *var)
+{
+    if (var->ndims == 1 && var->dim[0] &&
+        var->hdr.name && var->dim[0]->hdr.name &&
+        !strcmp(var->hdr.name, var->dim[0]->hdr.name))
+        return var->dim[0];
+    return NULL;
+}
+
+int
+NEXTCDF4_rename_dim(int ncid, int dimid, const char *name)
+{
+    NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
+    NC_GRP_INFO_T *grp;
+    NC_DIM_INFO_T *dim = NULL;
+    NEXTCDF4_DIM_INFO_T *dinfo = NULL;
+    NEXTCDF4_GRP_INFO_T *ginfo;
+    NC_VAR_INFO_T *cvar;
+    hid_t hdf_grp = -1;
+    char *oldname;
+    int ret;
+
+    if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
+        return ret;
+    if ((ret = nc4_find_nc4_grp(ncid, &grp)))
+        return ret;
+    if ((ret = NEXTCDF4_check_write_define(file)))
+        return ret;
+    if ((ret = NC_check_name(name)))
+        return ret;
+
+    if ((ret = nc4_find_dim(grp, dimid, &dim, NULL)))
+        return ret;
+    if (!dim)
+        return NC_EBADDIM;
+    if (!strcmp(dim->hdr.name, name))
+        return NC_NOERR;
+
+    if ((ret = nc4_check_dup_name(dim->container, (char *)name)))
+        return ret;
+
+    dinfo = (NEXTCDF4_DIM_INFO_T *)dim->format_dim_info;
+    ginfo = dim->container->format_grp_info;
+    hdf_grp = ginfo ? ginfo->hdf_group : file->rootid;
+    oldname = dim->hdr.name;
+
+    if (dinfo && dinfo->hdf_dataset >= 0) {
+        if (H5Lmove(hdf_grp, oldname, hdf_grp, name, H5P_DEFAULT,
+                    H5P_DEFAULT) < 0)
+            return NC_EHDFERR;
+        if (H5DSset_scale(dinfo->hdf_dataset, name) < 0)
+            return NC_EHDFERR;
+    }
+
+    free(dim->hdr.name);
+    if (!(dim->hdr.name = strdup(name)))
+        return NC_ENOMEM;
+    if (!ncindexrebuild(dim->container->dim))
+        return NC_EHDFERR;
+
+    cvar = find_coord_var(dim->container, dim);
+    if (cvar) {
+        free(cvar->hdr.name);
+        if (!(cvar->hdr.name = strdup(name)))
+            return NC_ENOMEM;
+        if (!ncindexrebuild(dim->container->vars))
+            return NC_EHDFERR;
+    }
+
+    return NC_NOERR;
+}
+
+int
+NEXTCDF4_rename_var(int ncid, int varid, const char *name)
+{
+    NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
+    NC_GRP_INFO_T *grp;
+    NC_VAR_INFO_T *var = NULL;
+    NEXTCDF4_VAR_INFO_T *vinfo = NULL;
+    NEXTCDF4_GRP_INFO_T *ginfo;
+    NC_DIM_INFO_T *dim;
+    NEXTCDF4_DIM_INFO_T *dinfo;
+    hid_t hdf_grp = -1;
+    char *oldname;
+    int ret;
+
+    if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
+        return ret;
+    if ((ret = nc4_find_nc4_grp(ncid, &grp)))
+        return ret;
+    if ((ret = NEXTCDF4_check_write_define(file)))
+        return ret;
+    if ((ret = NC_check_name(name)))
+        return ret;
+
+    if (varid < 0 || varid >= ncindexsize(grp->vars))
+        return NC_ENOTVAR;
+    var = (NC_VAR_INFO_T *)ncindexith(grp->vars, varid);
+    if (!var)
+        return NC_ENOTVAR;
+    if (!strcmp(var->hdr.name, name))
+        return NC_NOERR;
+
+    if ((ret = nc4_check_dup_name(var->container, (char *)name)))
+        return ret;
+
+    vinfo = (NEXTCDF4_VAR_INFO_T *)var->format_var_info;
+    ginfo = var->container->format_grp_info;
+    hdf_grp = ginfo ? ginfo->hdf_group : file->rootid;
+    oldname = var->hdr.name;
+
+    if (vinfo && vinfo->hdf_dataset >= 0) {
+        if (H5Lmove(hdf_grp, oldname, hdf_grp, name, H5P_DEFAULT,
+                    H5P_DEFAULT) < 0)
+            return NC_EHDFERR;
+    }
+
+    free(var->hdr.name);
+    if (!(var->hdr.name = strdup(name)))
+        return NC_ENOMEM;
+    if (!ncindexrebuild(var->container->vars))
+        return NC_EHDFERR;
+
+    dim = coord_var_dim(var);
+    if (dim) {
+        dinfo = (NEXTCDF4_DIM_INFO_T *)dim->format_dim_info;
+        if (dinfo && dinfo->hdf_dataset >= 0) {
+            if (H5DSset_scale(dinfo->hdf_dataset, name) < 0)
+                return NC_EHDFERR;
+        }
+        free(dim->hdr.name);
+        if (!(dim->hdr.name = strdup(name)))
+            return NC_ENOMEM;
+        if (!ncindexrebuild(var->container->dim))
+            return NC_EHDFERR;
+    }
+
+    return NC_NOERR;
+}
+
 int
 NEXTCDF4_del_att(int ncid, int varid, const char *name)
 {
