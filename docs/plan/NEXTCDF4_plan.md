@@ -756,3 +756,14 @@ The same NetCDF-4 `NC_Dispatch` interface is exposed, but the dispatch table liv
 - `nxt4internal.h` — shared internal data structures and function prototypes.
 - `nxt4dispatch.h` — dispatch table and UDF init/final declarations.
 - `nxt4debug.h` — logging macros, `nch5breakpoint`, and trace flags.
+
+## Sprint 7: Open Existing and Populated Files
+
+Sprint 7 is implemented and tested. The key changes are in `src/nextcdf4/nxt4meta.c`, `nxt4file.c`, `nxt4open.c`, `nxt4internal.h`, and `test/tst_nextcdf4_open.c`.
+
+- `NEXTCDF4_load_metadata` now calls `load_group_metadata` recursively for the root group and every child group.
+- `load_dimensions`, `load_variables`, and `load_group_attributes` accept an `NC_GRP_INFO_T *` and its `hdf_group` so that each group loads its own metadata.
+- `load_one_var` resolves dimension ids from the `_Netcdf4Coordinates` hidden attribute first, then falls back to `H5DSget_num_scales`/`H5DSiterate_scales` and the `_Netcdf4Dimid`/`NAME` attributes.
+- `find_var_cb` accepts coordinate variables, regular variables with attached dimension scales, and NEXTCDF-4 variables, but rejects bare dimension scales and arbitrary HDF5 datasets.
+- `NEXTCDF4_read_markers` allows a missing `_Nextcdf4Backend` marker to support upstream `NC_NETCDF4` files while still rejecting unmarked, non-NetCDF-4 HDF5 files.
+- `test/tst_nextcdf4_open.c` covers both NEXTCDF-4 reopen and upstream `NC_NETCDF4` open.

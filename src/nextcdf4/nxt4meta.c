@@ -29,6 +29,12 @@ static const char *reserved_atts[] = {
     "_Netcdf4Coordinates",
     "_FillValue",
     "_Format",
+    "_nc3_strict",
+    "_NCProperties",
+    "_SuperblockVersion",
+    "_IsNetcdf4",
+    "_ARRAY_DIMENSIONS",
+    "_Codecs",
     NULL
 };
 
@@ -1713,6 +1719,8 @@ static int
 load_one_dim(NEXTCDF4_FILE_INFO_T *file, NC_GRP_INFO_T *grp,
              const char *name, int dimid)
 {
+    NEXTCDF4_GRP_INFO_T *ginfo = grp->format_grp_info;
+    hid_t hdf_grp = ginfo ? ginfo->hdf_group : file->rootid;
     hid_t dset = -1;
     hid_t space = -1;
     hid_t att = -1;
@@ -1727,7 +1735,7 @@ load_one_dim(NEXTCDF4_FILE_INFO_T *file, NC_GRP_INFO_T *grp,
     if (!(dinfo = calloc(1, sizeof(*dinfo))))
         return NC_ENOMEM;
 
-    if ((dset = H5Dopen2(file->rootid, name, H5P_DEFAULT)) < 0) {
+    if ((dset = H5Dopen2(hdf_grp, name, H5P_DEFAULT)) < 0) {
         free(dinfo);
         return NC_EHDFERR;
     }
@@ -1761,18 +1769,22 @@ done:
     return ret;
 }
 
-/** Load all dimensions in stable id order. */
+/** Load all dimensions in stable id order for a group. */
 static int
-load_dimensions(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5)
+load_dimensions(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
+                NC_GRP_INFO_T *grp)
 {
+    NEXTCDF4_GRP_INFO_T *ginfo = grp->format_grp_info;
+    hid_t hdf_grp = ginfo ? ginfo->hdf_group : file->rootid;
     dim_list_t dl = {0};
     int maxid = -1;
     int loaded = 0;
     int id;
     int i;
     int ret;
+    (void)h5;
 
-    if (H5Literate(file->rootid, H5_INDEX_NAME, H5_ITER_INC, NULL,
+    if (H5Literate(hdf_grp, H5_INDEX_NAME, H5_ITER_INC, NULL,
                    find_dim_cb, &dl) < 0)
         return NC_EHDFERR;
 
@@ -1783,7 +1795,7 @@ load_dimensions(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5)
     for (id = 0; id <= maxid; id++) {
         for (i = 0; i < dl.count; i++) {
             if (dl.dimids[i] == id) {
-                if ((ret = load_one_dim(file, h5->root_grp,
+                if ((ret = load_one_dim(file, grp,
                                         dl.names[i], dl.dimids[i]))) {
                     free_name_list(dl.names, dl.count);
                     free(dl.dimids);
@@ -1821,6 +1833,7 @@ find_var_cb(hid_t loc, const char *name, const H5L_info_t *info, void *op_data)
     hid_t dset = -1;
     hid_t att = -1;
     int varid = -1;
+    int is_scale;
     (void)info;
 
     H5E_BEGIN_TRY {
@@ -1829,19 +1842,67 @@ find_var_cb(hid_t loc, const char *name, const H5L_info_t *info, void *op_data)
     if (dset < 0)
         return 0;
 
-    /* Dimension scales carrying a varid are coordinate variables; ordinary
-     * scales have no varid and are ignored below. */
+    /* NEXTCDF-4 files store a variable id attribute. */
     H5E_BEGIN_TRY {
         att = H5Aopen(dset, NEXTCDF4_VARID_ATT, H5P_DEFAULT);
     } H5E_END_TRY;
     if (att >= 0) {
         H5Aread(att, H5T_NATIVE_INT, &varid);
         H5Aclose(att);
+        att = -1;
     }
-    H5Dclose(dset);
 
-    if (varid < 0)
-        return 0;
+    /* If no varid is present, accept datasets that look like NetCDF-4
+     * variables: coordinate variables (scales with _Netcdf4Coordinates) or
+     * non-scale datasets with attached dimension scales or _Netcdf4Coordinates. */
+    if (varid < 0) {
+        hid_t space = -1;
+        int ndims = 0;
+
+        is_scale = H5DSis_scale(dset);
+        if (is_scale > 0) {
+            H5E_BEGIN_TRY {
+                att = H5Aopen(dset, NEXTCDF4_VARDIMIDS_ATT, H5P_DEFAULT);
+            } H5E_END_TRY;
+            if (att < 0) {
+                H5Dclose(dset);
+                return 0;
+            }
+            H5Aclose(att);
+            att = -1;
+        } else if (is_scale < 0) {
+            H5Dclose(dset);
+            return -1;
+        } else {
+            int has_vardimids = 0;
+            int has_scales = 0;
+
+            H5E_BEGIN_TRY {
+                att = H5Aopen(dset, NEXTCDF4_VARDIMIDS_ATT, H5P_DEFAULT);
+            } H5E_END_TRY;
+            if (att >= 0) {
+                H5Aclose(att);
+                att = -1;
+                has_vardimids = 1;
+            }
+            if ((space = H5Dget_space(dset)) >= 0) {
+                ndims = H5Sget_simple_extent_ndims(space);
+                H5Sclose(space);
+            }
+            if (ndims > 0) {
+                has_scales = H5DSget_num_scales(dset, 0);
+                if (has_scales < 0)
+                    has_scales = 0;
+            }
+            if (!has_vardimids && ndims > 0 && !has_scales) {
+                H5Dclose(dset);
+                return 0;
+            }
+        }
+        varid = -1;
+    }
+
+    H5Dclose(dset);
 
     if (vl->count >= vl->capacity) {
         vl->capacity = vl->capacity ? vl->capacity * 2 : 4;
@@ -1854,11 +1915,105 @@ find_var_cb(hid_t loc, const char *name, const H5L_info_t *info, void *op_data)
     return 0;
 }
 
+/** Find a dimension in the current group or any ancestor by name. */
+static NC_DIM_INFO_T *
+find_dim_by_name(NC_GRP_INFO_T *grp, const char *name)
+{
+    NC_GRP_INFO_T *g;
+    size_t i;
+    for (g = grp; g; g = g->parent) {
+        if (g->dim) {
+            for (i = 0; i < ncindexsize(g->dim); i++) {
+                NC_DIM_INFO_T *dim = (NC_DIM_INFO_T *)ncindexith(g->dim, i);
+                if (dim && !strcmp(dim->hdr.name, name))
+                    return dim;
+            }
+        }
+    }
+    return NULL;
+}
+
+typedef struct {
+    NC_GRP_INFO_T *grp;
+    int *dimid;
+    int found;
+} resolve_scale_t;
+
+/** Resolve a single attached scale to a dimid. Only acts on the first scale. */
+static int
+scale_resolve_visitor(hid_t did, unsigned int dim, hid_t dsid, void *op_data)
+{
+    resolve_scale_t *r = op_data;
+    NC_DIM_INFO_T *diminfo = NULL;
+    int dimid = -1;
+    char name[NC_MAX_NAME + 1];
+    hid_t att = -1;
+    (void)did;
+    (void)dim;
+
+    if (r->found)
+        return 0;
+
+    H5E_BEGIN_TRY {
+        att = H5Aopen(dsid, NEXTCDF4_DIMID_ATT, H5P_DEFAULT);
+    } H5E_END_TRY;
+    if (att >= 0) {
+        H5Aread(att, H5T_NATIVE_INT, &dimid);
+        H5Aclose(att);
+    }
+    if (dimid >= 0)
+        nc4_find_dim(r->grp, dimid, &diminfo, NULL);
+    if (!diminfo) {
+        name[0] = '\0';
+        H5DSget_scale_name(dsid, name, sizeof(name));
+        if (name[0])
+            diminfo = find_dim_by_name(r->grp, name);
+    }
+    if (diminfo) {
+        *r->dimid = diminfo->hdr.id;
+        r->found = 1;
+    }
+    return 0;
+}
+
+/** Resolve a variable's dimension ids from attached dimension scales. */
+static int
+resolve_var_dimids(NC_GRP_INFO_T *grp, hid_t dset, int ndims, int *dimids)
+{
+    int d;
+    int ret = NC_NOERR;
+
+    for (d = 0; d < ndims; d++) {
+        int num_scales;
+        resolve_scale_t r = {grp, &dimids[d], 0};
+
+        dimids[d] = -1;
+        num_scales = H5DSget_num_scales(dset, (unsigned)d);
+        if (num_scales < 0)
+            num_scales = 0;
+        if (num_scales == 0) {
+            ret = NC_EFILEMETA;
+            break;
+        }
+        if (H5DSiterate_scales(dset, (unsigned)d, NULL, scale_resolve_visitor, &r) < 0) {
+            ret = NC_EHDFERR;
+            break;
+        }
+        if (!r.found) {
+            ret = NC_EBADDIM;
+            break;
+        }
+    }
+    return ret;
+}
+
 /** Load one variable and its attributes. */
 static int
 load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
-             const char *name, int varid)
+             NC_GRP_INFO_T *grp, const char *name, int varid)
 {
+    NEXTCDF4_GRP_INFO_T *ginfo = grp->format_grp_info;
+    hid_t hdf_grp = ginfo ? ginfo->hdf_group : file->rootid;
     hid_t dset = -1;
     hid_t ftype = -1;
     hid_t space = -1;
@@ -1874,11 +2029,12 @@ load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
     hsize_t npoints;
     int i;
     int ret;
+    (void)h5;
 
     if (!(vinfo = calloc(1, sizeof(*vinfo))))
         return NC_ENOMEM;
 
-    if ((dset = H5Dopen2(file->rootid, name, H5P_DEFAULT)) < 0) {
+    if ((dset = H5Dopen2(hdf_grp, name, H5P_DEFAULT)) < 0) {
         free(vinfo);
         return NC_EHDFERR;
     }
@@ -1904,30 +2060,30 @@ load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
         H5E_BEGIN_TRY {
             att = H5Aopen(dset, NEXTCDF4_VARDIMIDS_ATT, H5P_DEFAULT);
         } H5E_END_TRY;
-        if (att < 0) {
-            ret = NC_EFILEMETA;
+        if (att >= 0) {
+            if ((aspace = H5Aget_space(att)) < 0) {
+                ret = NC_EHDFERR;
+                goto done;
+            }
+            if ((npoints = H5Sget_simple_extent_npoints(aspace)) < 0 ||
+                npoints != (hsize_t)ndims) {
+                ret = NC_EFILEMETA;
+                goto done;
+            }
+            if (H5Aread(att, H5T_NATIVE_INT, dimids) < 0) {
+                ret = NC_EHDFERR;
+                goto done;
+            }
+            H5Aclose(att);
+            att = -1;
+            H5Sclose(aspace);
+            aspace = -1;
+        } else if ((ret = resolve_var_dimids(grp, dset, ndims, dimids))) {
             goto done;
         }
-        if ((aspace = H5Aget_space(att)) < 0) {
-            ret = NC_EHDFERR;
-            goto done;
-        }
-        if ((npoints = H5Sget_simple_extent_npoints(aspace)) < 0 ||
-            npoints != (hsize_t)ndims) {
-            ret = NC_EFILEMETA;
-            goto done;
-        }
-        if (H5Aread(att, H5T_NATIVE_INT, dimids) < 0) {
-            ret = NC_EHDFERR;
-            goto done;
-        }
-        H5Aclose(att);
-        att = -1;
-        H5Sclose(aspace);
-        aspace = -1;
     }
 
-    if ((ret = nc4_var_list_add(h5->root_grp, name, ndims, &var))) {
+    if ((ret = nc4_var_list_add(grp, name, ndims, &var))) {
         free(vinfo);
         goto done;
     }
@@ -1940,13 +2096,13 @@ load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
         goto done;
     }
     var->format_var_info = vinfo;
-    var->hdr.id = varid;
+    (void)varid;
     vinfo->hdf_dataset = dset;
     dset = -1; /* ownership transferred */
 
     for (i = 0; i < ndims; i++) {
         NC_DIM_INFO_T *dim = NULL;
-        if ((ret = nc4_find_dim(h5->root_grp, dimids[i], &dim, NULL))) {
+        if ((ret = nc4_find_dim(grp, dimids[i], &dim, NULL))) {
             free(vinfo);
             goto done;
         }
@@ -2070,23 +2226,28 @@ load_att_cb(hid_t loc, const char *attr_name, const H5A_info_t *ainfo,
     if (is_reserved_att(attr_name))
         return 0;
     if (read_hdf5_att(loc, attr_name, ad->list, ad->container))
-        return -1;
+        return 0; /* skip attributes that cannot be mapped */
     return 0;
 }
 
-/** Load all variables and their attributes. */
+/** Load all variables and their attributes for a group. */
 static int
-load_variables(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5)
+load_variables(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
+               NC_GRP_INFO_T *grp)
 {
+    NEXTCDF4_GRP_INFO_T *ginfo = grp->format_grp_info;
+    hid_t hdf_grp = ginfo ? ginfo->hdf_group : file->rootid;
     var_list_t vl = {0};
     att_iter_data_t ad;
-    int maxid = -1;
     int loaded = 0;
-    int id;
     int i;
     int ret;
+    (void)h5;
 
-    if (H5Literate(file->rootid, H5_INDEX_NAME, H5_ITER_INC, NULL,
+    int maxid = -1;
+    int id;
+
+    if (H5Literate(hdf_grp, H5_INDEX_NAME, H5_ITER_INC, NULL,
                    find_var_cb, &vl) < 0)
         return NC_EHDFERR;
 
@@ -2094,24 +2255,44 @@ load_variables(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5)
         if (vl.varids[i] > maxid)
             maxid = vl.varids[i];
 
-    for (id = 0; id <= maxid; id++) {
+    if (maxid < 0) {
+        /* No stored varids: load in HDF5 iteration order. */
         for (i = 0; i < vl.count; i++) {
-            if (vl.varids[i] == id) {
-                if ((ret = load_one_var(file, h5, vl.names[i], vl.varids[i]))) {
-                    free_name_list(vl.names, vl.count);
-                    free(vl.varids);
-                    return ret;
+            if ((ret = load_one_var(file, h5, grp, vl.names[i], vl.varids[i]))) {
+                free_name_list(vl.names, vl.count);
+                free(vl.varids);
+                return ret;
+            }
+            ad.loc = ((NEXTCDF4_VAR_INFO_T *)
+                      ((NC_VAR_INFO_T *)ncindexith(grp->vars, loaded))
+                      ->format_var_info)->hdf_dataset;
+            ad.list = ((NC_VAR_INFO_T *)ncindexith(grp->vars, loaded))->att;
+            ad.container = &((NC_VAR_INFO_T *)ncindexith(grp->vars, loaded))->hdr;
+            H5Aiterate2(ad.loc, H5_INDEX_NAME, H5_ITER_INC, NULL,
+                        load_att_cb, &ad);
+            loaded++;
+        }
+    } else {
+        /* Stored varids present: load in id order so nc4_var_list_add
+         * assigns the same ids. */
+        for (id = 0; id <= maxid; id++) {
+            for (i = 0; i < vl.count; i++) {
+                if (vl.varids[i] == id) {
+                    if ((ret = load_one_var(file, h5, grp, vl.names[i], vl.varids[i]))) {
+                        free_name_list(vl.names, vl.count);
+                        free(vl.varids);
+                        return ret;
+                    }
+                    ad.loc = ((NEXTCDF4_VAR_INFO_T *)
+                              ((NC_VAR_INFO_T *)ncindexith(grp->vars, loaded))
+                              ->format_var_info)->hdf_dataset;
+                    ad.list = ((NC_VAR_INFO_T *)ncindexith(grp->vars, loaded))->att;
+                    ad.container = &((NC_VAR_INFO_T *)ncindexith(grp->vars, loaded))->hdr;
+                    H5Aiterate2(ad.loc, H5_INDEX_NAME, H5_ITER_INC, NULL,
+                                load_att_cb, &ad);
+                    loaded++;
+                    break;
                 }
-                /* Load attributes for the just-added variable. */
-                ad.loc = ((NEXTCDF4_VAR_INFO_T *)
-                          ((NC_VAR_INFO_T *)ncindexith(h5->root_grp->vars, loaded))
-                          ->format_var_info)->hdf_dataset;
-                ad.list = ((NC_VAR_INFO_T *)ncindexith(h5->root_grp->vars, loaded))->att;
-                ad.container = &((NC_VAR_INFO_T *)ncindexith(h5->root_grp->vars, loaded))->hdr;
-                H5Aiterate2(ad.loc, H5_INDEX_NAME, H5_ITER_INC, NULL,
-                            load_att_cb, &ad);
-                loaded++;
-                break;
             }
         }
     }
@@ -2127,18 +2308,23 @@ load_variables(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5)
     return NC_NOERR;
 }
 
-/** Load global (root group) attributes. */
+/** Load attributes for the given group. */
 static int
-load_global_attributes(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5)
+load_group_attributes(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
+                      NC_GRP_INFO_T *grp)
 {
+    NEXTCDF4_GRP_INFO_T *ginfo = grp->format_grp_info;
+    hid_t hdf_grp = ginfo ? ginfo->hdf_group : file->rootid;
     att_iter_data_t ad;
-    ad.loc = file->rootid;
-    ad.list = h5->root_grp->att;
-    ad.container = &h5->root_grp->hdr;
-    if (H5Aiterate2(file->rootid, H5_INDEX_NAME, H5_ITER_INC, NULL,
+    (void)file;
+    (void)h5;
+    ad.loc = hdf_grp;
+    ad.list = grp->att;
+    ad.container = &grp->hdr;
+    if (H5Aiterate2(hdf_grp, H5_INDEX_NAME, H5_ITER_INC, NULL,
                     load_att_cb, &ad) < 0)
         return NC_EHDFERR;
-    h5->root_grp->atts_read = 1;
+    grp->atts_read = 1;
     return NC_NOERR;
 }
 
@@ -2219,6 +2405,30 @@ load_one_type(NC_GRP_INFO_T *grp, hid_t htype, const char *name)
     return NC_NOERR;
 }
 
+/** Load dimensions, variables, attributes, and then child groups for a group. */
+static int
+load_group_metadata(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
+                    NC_GRP_INFO_T *grp, hid_t hdf_grp)
+{
+    int ret;
+    (void)hdf_grp;
+
+    if ((ret = load_dimensions(file, h5, grp)))
+        return ret;
+    if ((ret = load_variables(file, h5, grp)))
+        return ret;
+    if ((ret = load_group_attributes(file, h5, grp)))
+        return ret;
+    if ((ret = load_children(file, h5, hdf_grp, grp)))
+        return ret;
+    /* Unmarked non-NetCDF-4 HDF5 files must have at least dimensions or
+     * variables that follow the NetCDF-4 dimension-scale convention. */
+    if (grp == h5->root_grp && !file->backend_marked &&
+        ncindexsize(grp->dim) == 0 && ncindexsize(grp->vars) == 0)
+        return NC_ENOTNC;
+    return NC_NOERR;
+}
+
 /** Load a single HDF5 group and all of its descendants. */
 static int
 load_one_group(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
@@ -2242,7 +2452,7 @@ load_one_group(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
     ginfo->hdf_group = child_hdf;
     grp->format_grp_info = ginfo;
 
-    if ((ret = load_children(file, h5, child_hdf, grp)))
+    if ((ret = load_group_metadata(file, h5, grp, child_hdf)))
         goto fail;
 
     return NC_NOERR;
@@ -2305,15 +2515,11 @@ load_children(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
 int
 NEXTCDF4_load_metadata(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5)
 {
-    int ret;
+    NEXTCDF4_GRP_INFO_T *ginfo;
+    hid_t hdf_grp;
 
-    if ((ret = load_dimensions(file, h5)))
-        return ret;
-    if ((ret = load_variables(file, h5)))
-        return ret;
-    if ((ret = load_global_attributes(file, h5)))
-        return ret;
-    if ((ret = load_children(file, h5, file->rootid, h5->root_grp)))
-        return ret;
-    return NC_NOERR;
+    ginfo = h5->root_grp ? h5->root_grp->format_grp_info : NULL;
+    hdf_grp = ginfo ? ginfo->hdf_group : file->rootid;
+
+    return load_group_metadata(file, h5, h5->root_grp, hdf_grp);
 }

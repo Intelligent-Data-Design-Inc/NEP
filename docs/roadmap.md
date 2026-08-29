@@ -404,7 +404,73 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 - Float16, complex, bitfield, reference types (Sprints 9 and 10).
 
 #### Sprint 7: Open Existing and Populated Files
-**Objective:** Expand metadata discovery so NEXTCDF-4 can open populated files produced by both NEXTCDF-4 and the upstream NetCDF-4/HDF5 backend. Support hidden-coordinate fast paths, dimension-scale fallback, and the compatibility rules for native, classic-model, and `NC_NETCDF4_MODEL` files.
+**Objective:** Expand metadata discovery so NEXTCDF-4 can open populated files produced by both NEXTCDF-4 and the upstream NetCDF-4/HDF5 backend. Support hidden-coordinate fast paths, dimension-scale reference fallback, and the compatibility rules for native, classic-model, and `NC_NETCDF4_MODEL` files. Reading from legacy and third-party HDF5 layouts remains out of scope.
+
+**Scope decisions:**
+- `nc_open(..., NC_NEXTCDF4 | NC_NOWRITE)` must be able to open any file previously written by `NC_NEXTCDF4` and any standard `NC_NETCDF4` file produced by the upstream netcdf-c HDF5 backend.
+- Autoload behavior (`.ncrc` / `NCRCENV_RC` magic matching) must also route these files to the NEXTCDF-4 backend when the user has not explicitly passed `NC_NEXTCDF4`.
+- All groups, dimensions, variables, attributes, and user-defined types reachable from the root must be reconstructed in the same `NC_FILE_INFO_T`/`NC_GRP_INFO_T` hierarchy used by the rest of the backend.
+- Dimension-to-variable mapping must first use the `_Netcdf4Coordinates` integer array (the `_Netcdf4Dimid` fast path already used for dimensions) for O(1) reconstruction.
+- If `_Netcdf4Coordinates` is absent, fall back to the HDF5 `DIMENSION_LIST` / `REFERENCE_LIST` dimension-scale reference attributes and resolve them to `NC_DIM_INFO_T` entries.
+- If neither hidden attribute is present, fall back to matching dimension scales by `NAME` and `CLASS` attributes and by the dimension length, tolerating minor naming/ordering differences where the match is unambiguous.
+- Variable datatypes, shapes, chunking, fill, filters, endianness, and quantization state must be recovered from the DCPL and dataset attributes (reusing the Sprint 6 DCPL reader).
+- Opened files are read-only with respect to legacy HDF5 layout details: rewriting or re-chunking files not created by NEXTCDF-4 is out of scope.
+
+**Prerequisites and constraints:**
+- Build on Sprint 5 recursive group/type loading and Sprint 6 DCPL recovery.
+- Use only public HDF5 and HDF5 high-level APIs (`H5Gopen2`, `H5DSget_num_scales`, `H5DSget_scale_name`, `H5Aopen`, `H5Dget_create_plist`, etc.).
+- Keep `NC_NEXTCDF4` opt-in and do not modify the upstream netcdf-c or built-in HDF5 backend.
+- Preserve `NC_CLASSIC_MODEL` and `NC_NETCDF4_MODEL` restrictions when opening files: reject classic-model files that contain unsupported enhanced features, and allow only features that upstream netcdf-c can read back for `NC_NETCDF4_MODEL` files.
+
+**Metadata discovery architecture:**
+- Refactor `load_dimensions` and `load_variables` to accept an `NC_GRP_INFO_T *` (and its `hdf_group`) so that every group loads its own dimensions and variables before child groups are processed.
+- Update `load_one_dim` to read existing HDF5 dimension-scale datasets, extract `_Netcdf4Dimid`, `CLASS`, and `NAME` attributes, and determine unlimited status from the dataspace max extent.
+- Update `load_one_var` to open the variable dataset in the correct group, read `_Netcdf4Coordinates` if available, and otherwise resolve dimensions through `DIMENSION_LIST` references or by scale-name matching.
+- Introduce a `resolve_var_dimids` helper that maps a variable's dimension-scale references or scale names to the `dimids` already loaded into the parent `NC_GRP_INFO_T`.
+- Ensure `load_global_attributes` and variable attribute loading run after all dimensions and variables for the group have been created, so that user attributes attach to the right container.
+- Update `NEXTCDF4_load_metadata` to walk the group tree recursively: load dimensions, variables, and attributes for the root, then repeat for each child group loaded by `load_children`.
+
+**Dispatch and API coverage:**
+- `NEXTCDF4_open` is the entry point; the work is in `NEXTCDF4_load_metadata` and the per-group loaders.
+- `nc_open` with `NC_NEXTCDF4` and the autoload path must both route to the NEXTCDF-4 backend.
+- `nc_inq_*`, `nc_get_var*`, and, for files NEXTCDF-4 created, `nc_put_var*` must work on opened files without redefinition errors.
+
+**Implementation sequence:**
+1. Refactor `load_dimensions`/`load_variables` to take a group pointer and operate on `grp->format_grp_info->hdf_group`.
+2. Update `load_one_var` to accept the target group and its HDF5 group, and to read `_Netcdf4Coordinates` as the primary dimid source.
+3. Add a `DIMENSION_LIST` / `REFERENCE_LIST` reader and a dimension-scale reference resolver.
+4. Add a scale-name fallback for files that only expose `CLASS`/`NAME` dimension-scale attributes.
+5. Update `load_one_dim` to handle unlimited dimension discovery from existing scale datasets and to validate `_Netcdf4Dimid`.
+6. Make `NEXTCDF4_load_metadata` recurse into child groups in the correct dependency order (dims, vars, atts, children).
+7. Add compatibility checks for `NC_CLASSIC_MODEL` and `NC_NETCDF4_MODEL` open paths.
+8. Add `test/tst_nextcdf4_open.c` with cases for: (a) opening a NEXTCDF-4-written file without `NC_NEXTCDF4` (autoload), (b) opening an upstream `NC_NETCDF4` file with `NC_NEXTCDF4`, and (c) a file without `_Netcdf4Coordinates` that requires dimension-scale fallback.
+9. Update `docs/roadmap.md` and `docs/plan/NEXTCDF4_plan.md` to reflect the new discovery capabilities.
+10. Audit and update Doxygen comments in the modified `src/nextcdf4/` files.
+
+**Verification and acceptance criteria:**
+- A NEXTCDF-4-created file can be closed and reopened with `nc_open(..., NC_NEXTCDF4)` and all groups, dimensions, variables, attributes, and storage properties are recovered.
+- The same file can be opened by autoload (no explicit format flag) when `.ncrc` / `NCRCENV_RC` points to the build `.ncrc`.
+- An upstream `NC_NETCDF4` file with `_Netcdf4Coordinates` and `_Netcdf4Dimid` attributes opens and matches the original `nc_inq` results.
+- A file with only `DIMENSION_LIST` / `REFERENCE_LIST` attributes opens and produces the same variable-to-dimension mapping.
+- A file with only `CLASS`/`NAME` dimension scales opens and falls back to name-based matching.
+- Data read back from an opened file (`nc_get_var_*`) matches the stored values for atomic types, chunked or contiguous variables, and unlimited variables.
+- `NC_CLASSIC_MODEL` and `NC_NETCDF4_MODEL` compatibility checks reject unsupported files and allow supported ones.
+- A clean NEXTCDF-4 build passes the full C test suite including the new open tests.
+
+**Sprint 7 status:**
+|- Implementation is complete in `src/nextcdf4/nxt4meta.c`, `src/nextcdf4/nxt4file.c`, `src/nextcdf4/nxt4open.c`, `src/nextcdf4/nxt4internal.h`, `test/tst_nextcdf4_open.c`, and `test/CMakeLists.txt`.
+|- `load_dimensions`, `load_variables`, `load_group_attributes`, and `load_group_metadata` now operate per-group and recurse through the group tree.
+|- `load_one_var` resolves dimensions from `_Netcdf4Coordinates`, attached HDF5 dimension scales (`H5DS`), or `_Netcdf4Dimid`/`NAME` fallbacks.
+|- `find_var_cb` and `find_dim_cb` distinguish NEXTCDF-4-created files, upstream `NC_NETCDF4` files, and arbitrary HDF5 datasets.
+|- `NEXTCDF4_read_markers` treats a missing backend marker as an upstream NetCDF-4/HDF5 file while still rejecting arbitrary unmarked HDF5 files.
+|- `test/tst_nextcdf4_open.c` covers reopening a NEXTCDF-4 file and opening an upstream `NC_NETCDF4` file via `NC_NEXTCDF4`.
+|- All NEXTCDF-4 C tests pass; the unrelated `run_fortran_tests` segfault remains unchanged.
+
+**Out of scope for Sprint 7:**
+- Writing, re-chunking, or redefining files not originally created by NEXTCDF-4.
+- Arbitrary non-NetCDF-4 HDF5 files that do not follow the dimension-scale convention.
+- Dimension and variable renaming (Sprint 8).
+- Float16, complex, bitfield, and reference types (Sprints 9 and 10).
 
 #### Sprint 8: Correct Dimension and Variable Renaming
 **Objective:** Implement atomic, flush-per-operation dimension and variable renaming. Keep in-memory metadata, HDF5 links, dimension-scale relationships, and hidden dimension-mapping attributes consistent across coordinate-variable and shared-dimension edge cases.

@@ -218,8 +218,12 @@ NEXTCDF4_read_markers(NEXTCDF4_FILE_INFO_T *file)
 
     if (H5Aexists(file->rootid, NEXTCDF4_BACKEND_ATT) <= 0 ||
         (attr = H5Aopen(file->rootid, NEXTCDF4_BACKEND_ATT, H5P_DEFAULT)) < 0 ||
-        (type = H5Aget_type(attr)) < 0 || H5Tget_class(type) != H5T_STRING)
+        (type = H5Aget_type(attr)) < 0 || H5Tget_class(type) != H5T_STRING) {
+        /* Missing or unreadable backend marker: this may be an upstream
+         * NetCDF-4/HDF5 file. Proceed without setting the backend flag. */
+        ret = NC_NOERR;
         goto done;
+    }
     size = H5Tget_size(type);
     if (!size || !(value = calloc(size + 1, 1)) || H5Aread(attr, type, value) < 0)
         goto done;
@@ -237,6 +241,7 @@ NEXTCDF4_read_markers(NEXTCDF4_FILE_INFO_T *file)
         file->netcdf4_model = 1;
         file->mode |= NC_NETCDF4_MODEL;
     }
+    file->backend_marked = 1;
     ret = NC_NOERR;
 
 done:

@@ -41,6 +41,7 @@ typedef struct NEXTCDF4_FILE_INFO
     int no_write;       /**< Nonzero when the HDF5 file is read-only. */
     int define_mode;    /**< Nonzero while the file is in define mode. */
     int netcdf4_model;  /**< Nonzero for `NC_NETCDF4_MODEL` compatibility mode. */
+    int backend_marked; /**< Nonzero when the NEXTCDF-4 backend marker is present. */
 } NEXTCDF4_FILE_INFO_T;
 
 /** Format-specific information attached to an NC_GRP_INFO_T. */
