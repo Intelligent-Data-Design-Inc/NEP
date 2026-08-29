@@ -804,3 +804,34 @@ Sprint 7 is implemented and tested. The key changes are in `src/nextcdf4/nxt4met
 - `find_var_cb` accepts coordinate variables, regular variables with attached dimension scales, and NEXTCDF-4 variables, but rejects bare dimension scales and arbitrary HDF5 datasets.
 - `NEXTCDF4_read_markers` allows a missing `_Nextcdf4Backend` marker to support upstream `NC_NETCDF4` files while still rejecting unmarked, non-NetCDF-4 HDF5 files.
 - `test/tst_nextcdf4_open.c` covers both NEXTCDF-4 reopen and upstream `NC_NETCDF4` open.
+
+## Sprint 9: Add Small Floating-Point Types
+
+Sprint 9 adds `NC_FLOAT16` and, when HDF5 2.1.1+ is available, `NC_BFLOAT16` and the FP8/FP6/FP4 small floating-point types to the NEXTCDF-4 backend.
+
+- `include/nep.h`:
+  - Define `NC_FLOAT16` (and optionally `NC_BFLOAT16`, `NC_FLOAT8_E4M3`, `NC_FLOAT8_E5M2`, `NC_FLOAT6_E2M3`, `NC_FLOAT6_E3M2`, `NC_FLOAT4_E2M1`) with non-colliding `nc_type` values.
+
+- `src/nextcdf4/nxt4type.c`:
+  - Extend `NEXTCDF4_map_hdf_type` to map `NC_FLOAT16` to `H5T_IEEE_F16LE/BE` and the 2.1.1+ small floats to their HDF5 predefined datatypes.
+  - Extend `NEXTCDF4_type_size` and `NEXTCDF4_type_name` for the new types.
+
+- `src/nextcdf4/nxt4meta.c`:
+  - Extend `map_nc_type` to recognize `H5T_FLOAT`/`H5T_BITFIELD` size 2 as `NC_FLOAT16` and the HDF5 2.1.1 small-float type/size pairs.
+  - Update `set_var_type` and `NEXTCDF4_check_atomic_type` to permit the new types only in native NEXTCDF-4 mode.
+
+- `src/nextcdf4/nxt4io.c`:
+  - Ensure `var_io` uses the correct HDF5 memory/file type for the new small floats. For the initial implementation, require `memtype` to match the variable's file type to avoid incomplete HDF5 conversions.
+
+- `test/tst_nextcdf4_float16.c`:
+  - Round-trip `NC_FLOAT16` data using `nc_def_var`, `nc_put_vara`, and `nc_get_vara`.
+  - Verify `nc_inq_var` reports `NC_FLOAT16`.
+  - Verify `NC_NETCDF4_MODEL` and `NC_CLASSIC_MODEL` reject `NC_FLOAT16`.
+
+- Acceptance criteria:
+  - `NC_FLOAT16` round-trips in native NEXTCDF-4 files.
+  - The type is rejected in compatibility modes.
+  - Reopening a file with `NC_FLOAT16` variables correctly recovers the type.
+  - Existing `tst_nextcdf4_*` tests continue to pass.
+
+**Sprint 9 is implemented.** All seven small-floating-point types round-trip in `test/tst_nextcdf4_float16.c`, which passes. The relevant functions are in `nxt4meta.c`, `nxt4io.c`, and `nxt4internal.h`; constants are in `include/nep.h`.

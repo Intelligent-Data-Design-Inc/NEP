@@ -39,6 +39,31 @@ memory_type(nc_type type, int *closep)
     case NC_UINT64: return H5T_NATIVE_ULLONG;
     case NC_FLOAT: return H5T_NATIVE_FLOAT;
     case NC_DOUBLE: return H5T_NATIVE_DOUBLE;
+    case NC_FLOAT16: return H5T_NATIVE_FLOAT16;
+    case NC_BFLOAT16:
+        if (closep)
+            *closep = 1;
+        return H5Tcopy(H5T_FLOAT_BFLOAT16LE);
+    case NC_FLOAT8_E4M3:
+        if (closep)
+            *closep = 1;
+        return H5Tcopy(H5T_FLOAT_F8E4M3);
+    case NC_FLOAT8_E5M2:
+        if (closep)
+            *closep = 1;
+        return H5Tcopy(H5T_FLOAT_F8E5M2);
+    case NC_FLOAT6_E2M3:
+        if (closep)
+            *closep = 1;
+        return H5Tcopy(H5T_FLOAT_F6E2M3);
+    case NC_FLOAT6_E3M2:
+        if (closep)
+            *closep = 1;
+        return H5Tcopy(H5T_FLOAT_F6E3M2);
+    case NC_FLOAT4_E2M1:
+        if (closep)
+            *closep = 1;
+        return H5Tcopy(H5T_FLOAT_F4E2M1);
     case NC_STRING:
         if (closep)
             *closep = 1;

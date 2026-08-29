@@ -114,6 +114,27 @@ NEXTCDF4_map_hdf_type(nc_type xtype, hid_t *typep)
     case NC_DOUBLE:
         *typep = H5Tcopy(H5T_IEEE_F64LE);
         return NC_NOERR;
+    case NC_FLOAT16:
+        *typep = H5Tcopy(H5T_IEEE_F16LE);
+        return NC_NOERR;
+    case NC_BFLOAT16:
+        *typep = H5Tcopy(H5T_FLOAT_BFLOAT16LE);
+        return NC_NOERR;
+    case NC_FLOAT8_E4M3:
+        *typep = H5Tcopy(H5T_FLOAT_F8E4M3);
+        return NC_NOERR;
+    case NC_FLOAT8_E5M2:
+        *typep = H5Tcopy(H5T_FLOAT_F8E5M2);
+        return NC_NOERR;
+    case NC_FLOAT6_E2M3:
+        *typep = H5Tcopy(H5T_FLOAT_F6E2M3);
+        return NC_NOERR;
+    case NC_FLOAT6_E3M2:
+        *typep = H5Tcopy(H5T_FLOAT_F6E3M2);
+        return NC_NOERR;
+    case NC_FLOAT4_E2M1:
+        *typep = H5Tcopy(H5T_FLOAT_F4E2M1);
+        return NC_NOERR;
     case NC_STRING:
         *typep = H5Tcopy(H5T_C_S1);
         if (*typep >= 0) {
@@ -150,6 +171,17 @@ NEXTCDF4_type_size(nc_type xtype, size_t *sizep)
     case NC_DOUBLE:
         size = 8;
         break;
+    case NC_FLOAT16:
+    case NC_BFLOAT16:
+        size = 2;
+        break;
+    case NC_FLOAT8_E4M3:
+    case NC_FLOAT8_E5M2:
+    case NC_FLOAT6_E2M3:
+    case NC_FLOAT6_E3M2:
+    case NC_FLOAT4_E2M1:
+        size = 1;
+        break;
     case NC_STRING:
         size = sizeof(char *);
         break;
@@ -174,10 +206,17 @@ NEXTCDF4_type_name(nc_type xtype)
     case NC_UINT:   return "uint";
     case NC_INT64:  return "int64";
     case NC_UINT64: return "uint64";
-    case NC_FLOAT:  return "float";
-    case NC_DOUBLE: return "double";
-    case NC_STRING: return "string";
-    default:        return "unknown";
+    case NC_FLOAT:      return "float";
+    case NC_DOUBLE:     return "double";
+    case NC_FLOAT16:    return "float16";
+    case NC_BFLOAT16:   return "bfloat16";
+    case NC_FLOAT8_E4M3: return "float8_e4m3";
+    case NC_FLOAT8_E5M2: return "float8_e5m2";
+    case NC_FLOAT6_E2M3: return "float6_e2m3";
+    case NC_FLOAT6_E3M2: return "float6_e3m2";
+    case NC_FLOAT4_E2M1: return "float4_e2m1";
+    case NC_STRING:     return "string";
+    default:            return "unknown";
     }
 }
 
@@ -205,6 +244,15 @@ NEXTCDF4_check_atomic_type(NEXTCDF4_FILE_INFO_T *file, nc_type xtype)
     case NC_STRING:
         return (!file->netcdf4_model && !(file->mode & NC_CLASSIC_MODEL))
             ? NC_NOERR : NC_EBADTYPE;
+    case NC_FLOAT16:
+    case NC_BFLOAT16:
+    case NC_FLOAT8_E4M3:
+    case NC_FLOAT8_E5M2:
+    case NC_FLOAT6_E2M3:
+    case NC_FLOAT6_E3M2:
+    case NC_FLOAT4_E2M1:
+        return (!file->netcdf4_model && !(file->mode & NC_CLASSIC_MODEL))
+            ? NC_NOERR : NC_ENOTNC4;
     default:
         return NC_EBADTYPE;
     }
@@ -264,10 +312,12 @@ set_var_type(NC_VAR_INFO_T *var, nc_type xtype)
     type->hdr.sort = NCTYP;
     type->hdr.id = (size_t)xtype;
     type->rc = 1;
-    if (xtype == NC_FLOAT)
+    if (xtype == NC_FLOAT || xtype == NC_DOUBLE ||
+        xtype == NC_FLOAT16 || xtype == NC_BFLOAT16 ||
+        xtype == NC_FLOAT8_E4M3 || xtype == NC_FLOAT8_E5M2 ||
+        xtype == NC_FLOAT6_E2M3 || xtype == NC_FLOAT6_E3M2 ||
+        xtype == NC_FLOAT4_E2M1)
         type->nc_type_class = NC_FLOAT;
-    else if (xtype == NC_DOUBLE)
-        type->nc_type_class = NC_DOUBLE;
     else if (xtype == NC_CHAR)
         type->nc_type_class = NC_STRING;
     else if (xtype == NC_STRING)
@@ -397,6 +447,30 @@ map_nc_type(hid_t htype, nc_type *xtypep)
             return NC_NOERR;
         } else if (size == 8) {
             *xtypep = NC_DOUBLE;
+            return NC_NOERR;
+        } else if (size == 2) {
+            if (H5Tequal(htype, H5T_IEEE_F16LE) > 0 ||
+                H5Tequal(htype, H5T_IEEE_F16BE) > 0)
+                *xtypep = NC_FLOAT16;
+            else if (H5Tequal(htype, H5T_FLOAT_BFLOAT16LE) > 0 ||
+                     H5Tequal(htype, H5T_FLOAT_BFLOAT16BE) > 0)
+                *xtypep = NC_BFLOAT16;
+            else
+                return NC_EBADTYPE;
+            return NC_NOERR;
+        } else if (size == 1) {
+            if (H5Tequal(htype, H5T_FLOAT_F8E4M3) > 0)
+                *xtypep = NC_FLOAT8_E4M3;
+            else if (H5Tequal(htype, H5T_FLOAT_F8E5M2) > 0)
+                *xtypep = NC_FLOAT8_E5M2;
+            else if (H5Tequal(htype, H5T_FLOAT_F6E2M3) > 0)
+                *xtypep = NC_FLOAT6_E2M3;
+            else if (H5Tequal(htype, H5T_FLOAT_F6E3M2) > 0)
+                *xtypep = NC_FLOAT6_E3M2;
+            else if (H5Tequal(htype, H5T_FLOAT_F4E2M1) > 0)
+                *xtypep = NC_FLOAT4_E2M1;
+            else
+                return NC_EBADTYPE;
             return NC_NOERR;
         }
     } else if (cls == H5T_STRING && size == 1) {

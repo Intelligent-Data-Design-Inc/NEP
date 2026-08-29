@@ -30,6 +30,21 @@
 #include <netcdf.h>
 #include <netcdf_filter.h>
 
+/** NEXTCDF-4 16-bit IEEE 754 half-precision floating point type. */
+#define NC_FLOAT16     17
+/** NEXTCDF-4 16-bit bfloat16 floating point type (HDF5 2.1.1+). */
+#define NC_BFLOAT16    18
+/** NEXTCDF-4 8-bit E4M3 floating point type (HDF5 2.1.1+). */
+#define NC_FLOAT8_E4M3 19
+/** NEXTCDF-4 8-bit E5M2 floating point type (HDF5 2.1.1+). */
+#define NC_FLOAT8_E5M2 20
+/** NEXTCDF-4 6-bit E2M3 floating point type (HDF5 2.1.1+). */
+#define NC_FLOAT6_E2M3 21
+/** NEXTCDF-4 6-bit E3M2 floating point type (HDF5 2.1.1+). */
+#define NC_FLOAT6_E3M2 22
+/** NEXTCDF-4 4-bit E2M1 floating point type (HDF5 2.1.1+). */
+#define NC_FLOAT4_E2M1 23
+
 /** The filter ID for BZIP2 compression. */
 #define BZIP2_ID 307
 

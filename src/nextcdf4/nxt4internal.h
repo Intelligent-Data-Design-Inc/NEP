@@ -11,6 +11,7 @@
 
 #include <hdf5.h>
 #include "nep_nc4.h"
+#include "nep.h"
 #include "nextcdf4dispatch.h"
 
 /** Hidden root attribute identifying a NEXTCDF-4-created file. */

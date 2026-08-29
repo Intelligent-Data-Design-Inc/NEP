@@ -528,6 +528,61 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 #### Sprint 9: Add Small Floating-Point Types
 **Objective:** Add `NC_FLOAT16` and, when supported by HDF5, bfloat16 and FP8/FP6/FP4 types. Define their public APIs, HDF5 mappings, conversion rules, fill-value behavior, compatibility restrictions, and round-trip coverage.
 
+**Scope decisions:**
+- Primary deliverable is `NC_FLOAT16` (IEEE 754 binary16). It maps to `H5T_IEEE_F16LE/BE` and is stored as 2-byte `uint16_t` in memory.
+- If the build links HDF5 2.1.1 or later, also add `NC_BFLOAT16`, `NC_FLOAT8_E4M3`, `NC_FLOAT8_E5M2`, `NC_FLOAT6_E2M3`, `NC_FLOAT6_E3M2`, and `NC_FLOAT4_E2M1` with the mappings and memory types from the HDF5 2.x small-floating-point datatypes.
+- Small floating-point types are atomic NetCDF types, not user-defined types. They use the same `nc_def_var`/`nc_put_vara`/`nc_get_vara` dispatch path as other atomic types.
+- `NC_FLOAT16` and the other small floats are only allowed in native NEXTCDF-4 mode; they are rejected in `NC_NETCDF4_MODEL` and `NC_CLASSIC_MODEL`.
+- They cannot be used as coordinate variables because they do not support a total ordering suitable for dimension coordinates.
+- The canonical in-memory representation is the raw bit pattern (`uint16_t` for 16-bit, `uint8_t` for 8/6/4-bit types). Users are responsible for producing valid encodings; no automatic conversion to/from `float`/`double` is guaranteed for the non-IEEE formats.
+
+**Prerequisites and constraints:**
+- Build on `NEXTCDF4_map_hdf_type`, `map_nc_type`, `NEXTCDF4_type_size`, and `NEXTCDF4_check_atomic_type`.
+- `NC_FLOAT16` requires HDF5 1.14.0 or later; the other small floats require HDF5 2.1.1 or later.
+- The CMake/autotools checks must detect HDF5 version and the presence of the small-float predefined datatypes (`H5T_IEEE_F16LE`, `H5T_FLOAT_BFLOAT16LE`, etc.) before enabling them.
+- `ncindex` and `NC_TYPE_INFO_T` do not need to change; the new types are atomic.
+
+**API and type-model architecture:**
+- Define `NC_FLOAT16` (and the optional small-float constants) in `include/nep.h` with values that do not collide with existing `nc_type` constants.
+- Add `nc_put_vara_float16`/`nc_get_vara_float16` or document that callers use `nc_put_vara`/`nc_get_vara` with `memtype = NC_FLOAT16` and a `uint16_t` buffer.
+- Extend `NEXTCDF4_map_hdf_type` to create `H5T_IEEE_F16LE/BE` (and the HDF5 2.x small-float types) for the new `nc_type` values.
+- Extend `map_nc_type` in `nxt4meta.c` to recognize `H5T_FLOAT` with size 2 as `NC_FLOAT16`, and the HDF5 2.x small-float class/type pairs as the other new types.
+- Extend `NEXTCDF4_type_size` and `NEXTCDF4_type_name` for each new type.
+- Update `NEXTCDF4_check_atomic_type` to accept the new types only when `NC_NETCDF4_MODEL` and `NC_CLASSIC_MODEL` are not set.
+- Ensure `set_var_type` in `nxt4meta.c` accepts the new `nc_type` values and sets `var->nc_typeid` correctly.
+- `var_io` in `nxt4io.c` must use the correct HDF5 memory and file types when the variable or `memtype` is one of the new small floats. For now, require `memtype` equal to the file type to avoid conversion edge cases.
+
+**Implementation sequence:**
+1. Add `NC_FLOAT16` constant to `include/nep.h` and guard the optional small-float constants with `HAVE_HDF5_2_1_1` or similar.
+2. Update `NEXTCDF4_map_hdf_type`, `map_nc_type`, `NEXTCDF4_type_size`, and `NEXTCDF4_type_name` for `NC_FLOAT16`.
+3. Update `NEXTCDF4_check_atomic_type` and `set_var_type` to permit `NC_FLOAT16`.
+4. Add `test/tst_nextcdf4_float16.c` that creates a `NC_FLOAT16` variable, writes/reads `uint16_t` values with `nc_put_vara`/`nc_get_vara`, and verifies round-trip.
+5. If HDF5 2.1.1 is available, repeat step 2-4 for bfloat16/FP8/FP6/FP4.
+6. Add documentation notes in `docs/roadmap.md` and `docs/plan/NEXTCDF4_plan.md`.
+7. Run the full `tst_nextcdf4_*` test suite and the full C test suite.
+
+**Verification and acceptance criteria:**
+- `nc_def_var` with `NC_FLOAT16` succeeds in native NEXTCDF-4 mode.
+- `nc_put_vara` and `nc_get_vara` round-trip `uint16_t` values without corruption when `memtype == NC_FLOAT16 == var->nc_typeid`.
+- `nc_inq_var` reports `xtype == NC_FLOAT16` for a float16 variable.
+- `nc_def_var` with `NC_FLOAT16` fails with `NC_EBADTYPE` in `NC_NETCDF4_MODEL` and `NC_CLASSIC_MODEL`.
+- Reopening a file with a float16 variable recovers the type correctly.
+- (Optional, if HDF5 >= 2.1.1) bfloat16 and FP8/FP6/FP4 pass the same round-trip tests.
+- All existing NEXTCDF-4 C tests continue to pass.
+
+**Sprint 9 status:**
+- Implementation is complete in `include/nep.h`, `src/nextcdf4/nxt4internal.h`, `src/nextcdf4/nxt4meta.c`, `src/nextcdf4/nxt4io.c`, `test/tst_nextcdf4_float16.c`, and `test/CMakeLists.txt`.
+- `NC_FLOAT16` and all HDF5 2.1.1 small floats (`NC_BFLOAT16`, `NC_FLOAT8_E4M3`, `NC_FLOAT8_E5M2`, `NC_FLOAT6_E2M3`, `NC_FLOAT6_E3M2`, `NC_FLOAT4_E2M1`) are defined and round-trip through `nc_def_var`, `nc_put_vara`, and `nc_get_vara`.
+- `NEXTCDF4_map_hdf_type`, `map_nc_type`, `NEXTCDF4_type_size`, `NEXTCDF4_type_name`, `NEXTCDF4_check_atomic_type`, `set_var_type`, and `nxt4io.c` `memory_type` all handle the new types.
+- `test/tst_nextcdf4_float16.c` covers round-trip for all seven types and rejection in `NC_NETCDF4_MODEL` and `NC_CLASSIC_MODEL`.
+- All 10 `tst_nextcdf4_*` C tests pass; the pre-existing `run_fortran_tests` segfault is unchanged.
+
+**Out of scope for Sprint 9:**
+- Automatic conversion between `NC_FLOAT16`/small floats and `NC_FLOAT`/`NC_DOUBLE`; users must supply the correct in-memory type.
+- Complex numbers, bitfields, and reference types (Sprint 10).
+- Coordinate variables and unlimited dimensions using small floats.
+- Support for HDF5 versions older than 1.14.0.
+
 #### Sprint 10: Add Complex, Bitfield, and Reference Types
 **Objective:** Add complex-number compounds, fixed-width HDF5 bitfields, and object and region references. Include structural type detection, reference creation and dereference APIs, validity checks, storage restrictions, and interoperability with existing HDF5 files.
 
