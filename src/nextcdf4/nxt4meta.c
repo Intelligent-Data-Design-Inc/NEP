@@ -61,6 +61,11 @@ free_name_list(char **names, size_t n)
     free(names);
 }
 
+/**
+ * @brief Check that a file is writable and currently in define mode.
+ * @param file Description of file.
+ * @return NC_NOERR on success, or another error code on failure.
+ */
 int
 NEXTCDF4_check_write_define(NEXTCDF4_FILE_INFO_T *file)
 {
@@ -71,6 +76,12 @@ NEXTCDF4_check_write_define(NEXTCDF4_FILE_INFO_T *file)
     return NC_NOERR;
 }
 
+/**
+ * @brief Map an atomic nc_type to its on-disk HDF5 datatype.
+ * @param xtype Description of xtype.
+ * @param typep Description of typep.
+ * @return NC_NOERR on success, or another error code on failure.
+ */
 int
 NEXTCDF4_map_hdf_type(nc_type xtype, hid_t *typep)
 {
@@ -171,6 +182,12 @@ NEXTCDF4_map_hdf_type(nc_type xtype, hid_t *typep)
     }
 }
 
+/**
+ * @brief Return the in-memory size, in bytes, of an atomic nc_type.
+ * @param xtype Description of xtype.
+ * @param sizep Description of sizep.
+ * @return NC_NOERR on success, or another error code on failure.
+ */
 int
 NEXTCDF4_type_size(nc_type xtype, size_t *sizep)
 {
@@ -241,6 +258,11 @@ NEXTCDF4_type_size(nc_type xtype, size_t *sizep)
     return NC_NOERR;
 }
 
+/**
+ * @brief Return the short name for an atomic nc_type.
+ * @param xtype Description of xtype.
+ * @return Pointer to the type name string.
+ */
 const char *
 NEXTCDF4_type_name(nc_type xtype)
 {
@@ -276,6 +298,12 @@ NEXTCDF4_type_name(nc_type xtype)
     }
 }
 
+/**
+ * @brief Check whether an atomic type is allowed for the current file mode.
+ * @param file Description of file.
+ * @param xtype Description of xtype.
+ * @return NC_NOERR if allowed, or another error code on failure.
+ */
 int
 NEXTCDF4_check_atomic_type(NEXTCDF4_FILE_INFO_T *file, nc_type xtype)
 {
@@ -734,6 +762,14 @@ done:
     return ret;
 }
 
+/**
+ * @brief Define a dimension in the current group.
+ * @param ncid Description of ncid.
+ * @param name Description of name.
+ * @param len Description of len.
+ * @param idp Description of idp.
+ * @return NC_NOERR on success, or another error code on failure.
+ */
 int
 NEXTCDF4_def_dim(int ncid, const char *name, size_t len, int *idp)
 {
@@ -841,6 +877,14 @@ fail:
     return ret;
 }
 
+/**
+ * @brief Inquire about a dimension.
+ * @param ncid Description of ncid.
+ * @param dimid Description of dimid.
+ * @param name Description of name.
+ * @param lenp Description of lenp.
+ * @return NC_NOERR on success, or another error code on failure.
+ */
 int
 NEXTCDF4_inq_dim(int ncid, int dimid, char *name, size_t *lenp)
 {
@@ -860,6 +904,16 @@ NEXTCDF4_inq_dim(int ncid, int dimid, char *name, size_t *lenp)
     return NC_NOERR;
 }
 
+/**
+ * @brief Define a variable in the current group.
+ * @param ncid Description of ncid.
+ * @param name Description of name.
+ * @param xtype Description of xtype.
+ * @param ndims Description of ndims.
+ * @param dimidsp Description of dimidsp.
+ * @param varidp Description of varidp.
+ * @return NC_NOERR on success, or another error code on failure.
+ */
 int
 NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
                  const int *dimidsp, int *varidp)
@@ -1231,6 +1285,14 @@ find_var_for_write(int ncid, int varid, NC_FILE_INFO_T **h5,
     return NEXTCDF4_check_write_define(*file);
 }
 
+/**
+ * @brief Set the storage and chunking parameters for a variable.
+ * @param ncid Description of ncid.
+ * @param varid Description of varid.
+ * @param storage Description of storage.
+ * @param chunksizesp Description of chunksizesp.
+ * @return NC_NOERR on success, or another error code on failure.
+ */
 int
 NEXTCDF4_def_var_chunking(int ncid, int varid, int storage,
                           const size_t *chunksizesp)
@@ -1264,6 +1326,15 @@ NEXTCDF4_def_var_chunking(int ncid, int varid, int storage,
     return create_var_dataset(var, h5, file, grp);
 }
 
+/**
+ * @brief Set the deflate compression parameters for a variable.
+ * @param ncid Description of ncid.
+ * @param varid Description of varid.
+ * @param shuffle Description of shuffle.
+ * @param deflate Description of deflate.
+ * @param deflate_level Description of deflate_level.
+ * @return NC_NOERR on success, or another error code on failure.
+ */
 int
 NEXTCDF4_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
                          int deflate_level)
@@ -1289,6 +1360,13 @@ NEXTCDF4_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
     return create_var_dataset(var, h5, file, grp);
 }
 
+/**
+ * @brief Enable or disable the Fletcher32 checksum filter for a variable.
+ * @param ncid Description of ncid.
+ * @param varid Description of varid.
+ * @param fletcher32 Description of fletcher32.
+ * @return NC_NOERR on success, or another error code on failure.
+ */
 int
 NEXTCDF4_def_var_fletcher32(int ncid, int varid, int fletcher32)
 {
@@ -1310,6 +1388,14 @@ NEXTCDF4_def_var_fletcher32(int ncid, int varid, int fletcher32)
     return create_var_dataset(var, h5, file, grp);
 }
 
+/**
+ * @brief Set the fill value behavior for a variable.
+ * @param ncid Description of ncid.
+ * @param varid Description of varid.
+ * @param no_fill Description of no_fill.
+ * @param fill_value Description of fill_value.
+ * @return NC_NOERR on success, or another error code on failure.
+ */
 int
 NEXTCDF4_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
 {
@@ -1340,6 +1426,13 @@ NEXTCDF4_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
     return create_var_dataset(var, h5, file, grp);
 }
 
+/**
+ * @brief Set the byte order for a variable's data.
+ * @param ncid Description of ncid.
+ * @param varid Description of varid.
+ * @param endianness Description of endianness.
+ * @return NC_NOERR on success, or another error code on failure.
+ */
 int
 NEXTCDF4_def_var_endian(int ncid, int varid, int endianness)
 {
@@ -1359,6 +1452,14 @@ NEXTCDF4_def_var_endian(int ncid, int varid, int endianness)
     return create_var_dataset(var, h5, file, grp);
 }
 
+/**
+ * @brief Set the quantization mode for a variable.
+ * @param ncid Description of ncid.
+ * @param varid Description of varid.
+ * @param quantize_mode Description of quantize_mode.
+ * @param nsd Description of nsd.
+ * @return NC_NOERR on success, or another error code on failure.
+ */
 int
 NEXTCDF4_def_var_quantize(int ncid, int varid, int quantize_mode, int nsd)
 {
@@ -1383,6 +1484,15 @@ NEXTCDF4_def_var_quantize(int ncid, int varid, int quantize_mode, int nsd)
     return NC_NOERR;
 }
 
+/**
+ * @brief Stub for user-defined variable filters (not implemented).
+ * @param ncid Description of ncid.
+ * @param varid Description of varid.
+ * @param id Description of id.
+ * @param nparams Description of nparams.
+ * @param params Description of params.
+ * @return NC_ENOTBUILT.
+ */
 int
 NEXTCDF4_def_var_filter(int ncid, int varid, unsigned int id, size_t nparams,
                         const unsigned int *params)
@@ -1391,6 +1501,29 @@ NEXTCDF4_def_var_filter(int ncid, int varid, unsigned int id, size_t nparams,
     return NC_ENOTBUILT;
 }
 
+/**
+ * @brief Inquire about all supported properties of a variable.
+ * @param ncid Description of ncid.
+ * @param varid Description of varid.
+ * @param name Description of name.
+ * @param xtypep Description of xtypep.
+ * @param ndimsp Description of ndimsp.
+ * @param dimidsp Description of dimidsp.
+ * @param nattsp Description of nattsp.
+ * @param shufflep Description of shufflep.
+ * @param deflatep Description of deflatep.
+ * @param deflate_levelp Description of deflate_levelp.
+ * @param fletcher32p Description of fletcher32p.
+ * @param contiguousp Description of contiguousp.
+ * @param chunksizesp Description of chunksizesp.
+ * @param no_fillp Description of no_fillp.
+ * @param fill_valuep Description of fill_valuep.
+ * @param endiannessp Description of endiannessp.
+ * @param idp Description of idp.
+ * @param nparamsp Description of nparamsp.
+ * @param params Description of params.
+ * @return NC_NOERR on success, or another error code on failure.
+ */
 int
 NEXTCDF4_inq_var_all(int ncid, int varid, char *name, nc_type *xtypep,
                      int *ndimsp, int *dimidsp, int *nattsp,
@@ -1450,6 +1583,17 @@ NEXTCDF4_inq_var_all(int ncid, int varid, char *name, nc_type *xtypep,
     return NC_NOERR;
 }
 
+/**
+ * @brief Inquire about a variable's name, type, dimensions, and attributes.
+ * @param ncid Description of ncid.
+ * @param varid Description of varid.
+ * @param name Description of name.
+ * @param xtypep Description of xtypep.
+ * @param ndimsp Description of ndimsp.
+ * @param dimidsp Description of dimidsp.
+ * @param nattsp Description of nattsp.
+ * @return NC_NOERR on success, or another error code on failure.
+ */
 int
 NEXTCDF4_inq_var(int ncid, int varid, char *name, nc_type *xtypep,
                  int *ndimsp, int *dimidsp, int *nattsp)
@@ -1477,6 +1621,14 @@ NEXTCDF4_inq_var(int ncid, int varid, char *name, nc_type *xtypep,
     return NC_NOERR;
 }
 
+/**
+ * @brief Inquire about the filter ids applied to a variable.
+ * @param ncid Description of ncid.
+ * @param varid Description of varid.
+ * @param nfiltersp Description of nfiltersp.
+ * @param ids Description of ids.
+ * @return NC_NOERR if filters are found, or another error code on failure.
+ */
 int
 NEXTCDF4_inq_var_filter_ids(int ncid, int varid, size_t *nfiltersp,
                             unsigned int *ids)
@@ -1506,6 +1658,15 @@ NEXTCDF4_inq_var_filter_ids(int ncid, int varid, size_t *nfiltersp,
     return NC_ENOFILTER;
 }
 
+/**
+ * @brief Inquire about the parameters of a variable filter.
+ * @param ncid Description of ncid.
+ * @param varid Description of varid.
+ * @param id Description of id.
+ * @param nparamsp Description of nparamsp.
+ * @param params Description of params.
+ * @return NC_NOERR on success, or another error code on failure.
+ */
 int
 NEXTCDF4_inq_var_filter_info(int ncid, int varid, unsigned int id,
                              size_t *nparamsp, unsigned int *params)
@@ -1541,6 +1702,17 @@ NEXTCDF4_inq_var_filter_info(int ncid, int varid, unsigned int id,
     return NC_NOERR;
 }
 
+/**
+ * @brief Create or replace an attribute on a group or variable.
+ * @param ncid Description of ncid.
+ * @param varid Description of varid.
+ * @param name Description of name.
+ * @param datatype Description of datatype.
+ * @param len Description of len.
+ * @param value Description of value.
+ * @param memtype Description of memtype.
+ * @return NC_NOERR on success, or another error code on failure.
+ */
 int
 NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type datatype,
                  size_t len, const void *value, nc_type memtype)
@@ -1668,6 +1840,15 @@ fail:
     return ret;
 }
 
+/**
+ * @brief Read the value of an attribute.
+ * @param ncid Description of ncid.
+ * @param varid Description of varid.
+ * @param name Description of name.
+ * @param value Description of value.
+ * @param memtype Description of memtype.
+ * @return NC_NOERR on success, or another error code on failure.
+ */
 int
 NEXTCDF4_get_att(int ncid, int varid, const char *name, void *value,
                  nc_type memtype)
@@ -1725,6 +1906,14 @@ NEXTCDF4_get_att(int ncid, int varid, const char *name, void *value,
                             att->len, &range_error, NULL, 0, 0, 0);
 }
 
+/**
+ * @brief Rename an attribute on a group or variable.
+ * @param ncid Description of ncid.
+ * @param varid Description of varid.
+ * @param name Description of name.
+ * @param newname Description of newname.
+ * @return NC_NOERR on success, or another error code on failure.
+ */
 int
 NEXTCDF4_rename_att(int ncid, int varid, const char *name, const char *newname)
 {
@@ -1810,6 +1999,13 @@ coord_var_dim(NC_VAR_INFO_T *var)
     return NULL;
 }
 
+/**
+ * @brief Rename a dimension and update its HDF5 link.
+ * @param ncid Description of ncid.
+ * @param dimid Description of dimid.
+ * @param name Description of name.
+ * @return NC_NOERR on success, or another error code on failure.
+ */
 int
 NEXTCDF4_rename_dim(int ncid, int dimid, const char *name)
 {
@@ -1874,6 +2070,13 @@ NEXTCDF4_rename_dim(int ncid, int dimid, const char *name)
     return NC_NOERR;
 }
 
+/**
+ * @brief Rename a variable and update its HDF5 link.
+ * @param ncid Description of ncid.
+ * @param varid Description of varid.
+ * @param name Description of name.
+ * @return NC_NOERR on success, or another error code on failure.
+ */
 int
 NEXTCDF4_rename_var(int ncid, int varid, const char *name)
 {
@@ -1943,6 +2146,13 @@ NEXTCDF4_rename_var(int ncid, int varid, const char *name)
     return NC_NOERR;
 }
 
+/**
+ * @brief Delete an attribute from a group or variable.
+ * @param ncid Description of ncid.
+ * @param varid Description of varid.
+ * @param name Description of name.
+ * @return NC_NOERR on success, or another error code on failure.
+ */
 int
 NEXTCDF4_del_att(int ncid, int varid, const char *name)
 {
@@ -2162,6 +2372,14 @@ typedef struct {
     int capacity;
 } var_list_t;
 
+/**
+ * @brief H5Literate callback that collects candidate variable datasets.
+ * @param loc Description of loc.
+ * @param name Description of name.
+ * @param info Description of info.
+ * @param op_data Description of op_data.
+ * @return Non-negative on success, or negative on failure.
+ */
 static herr_t
 find_var_cb(hid_t loc, const char *name, const H5L_info_t *info, void *op_data)
 {
@@ -2553,6 +2771,14 @@ typedef struct {
     hid_t loc;
 } att_iter_data_t;
 
+/**
+ * @brief H5Aiterate2 callback that loads a single attribute.
+ * @param loc Description of loc.
+ * @param attr_name Description of attr_name.
+ * @param ainfo Description of ainfo.
+ * @param op_data Description of op_data.
+ * @return Non-negative on success, or negative on failure.
+ */
 static herr_t
 load_att_cb(hid_t loc, const char *attr_name, const H5A_info_t *ainfo,
             void *op_data)
@@ -2848,6 +3074,12 @@ load_children(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
     return NC_NOERR;
 }
 
+/**
+ * @brief Load all metadata for an open NEXTCDF-4 file.
+ * @param file Description of file.
+ * @param h5 Description of h5.
+ * @return NC_NOERR on success, or another error code on failure.
+ */
 int
 NEXTCDF4_load_metadata(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5)
 {

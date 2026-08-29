@@ -358,12 +358,12 @@ NC_GRIB2_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
                         }
                     }
 
-                    /* Get grid dimensions; g2c_inq_dim_info returns size
+                    /* Get grid dimensions; g2c_inq_dim returns size
                      * without allocating a coordinate value array. */
-                    if (g2c_inq_dim_info(g2cid, m, f, 0, &nx, dim_name) == 0)
-                        p->nx = nx;
-                    if (g2c_inq_dim_info(g2cid, m, f, 1, &ny, dim_name) == 0)
-                        p->ny = ny;
+                    if (g2c_inq_dim(g2cid, m, f, 0, &nx, dim_name, NULL) == 0)
+                        p->nx = (int)nx;
+                    if (g2c_inq_dim(g2cid, m, f, 1, &ny, dim_name, NULL) == 0)
+                        p->ny = (int)ny;
 
                     /* Store first product's grid size in file-level fields. */
                     if (prod_idx == 0)
