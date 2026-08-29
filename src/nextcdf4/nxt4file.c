@@ -254,6 +254,10 @@ NEXTCDF4_close(int ncid, void *parameters)
     (void)parameters;
     if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
         return ret;
+    if (file->define_mode) {
+        if ((ret = NEXTCDF4__enddef(ncid, 0, 0, 0, 0)))
+            return ret;
+    }
     if (!file->no_write && H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0)
         close_ret = NC_EHDFERR;
     h5->format_file_info = NULL;
@@ -308,5 +312,59 @@ NEXTCDF4_inq_format_extended(int ncid, int *formatp, int *modep)
         *formatp = NC_FORMATX_NEXTCDF4;
     if (modep)
         *modep = file->mode | NC_NEXTCDF4;
+    return NC_NOERR;
+}
+
+/**
+ * Materialize pending root-group metadata and exit define mode.
+ * @param ncid NetCDF file identifier.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+int
+NEXTCDF4__enddef(int ncid, size_t h_minfree, size_t v_align,
+                 size_t v_minfree, size_t r_align)
+{
+    NEXTCDF4_FILE_INFO_T *file;
+    NC_FILE_INFO_T *h5;
+    int ret;
+
+    (void)h_minfree;
+    (void)v_align;
+    (void)v_minfree;
+    (void)r_align;
+
+    if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
+        return ret;
+    if (file->no_write)
+        return NC_EPERM;
+    if (!file->define_mode)
+        return NC_EINVAL;
+    if (H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0)
+        return NC_EHDFERR;
+    file->define_mode = 0;
+    h5->flags &= ~NC_INDEF;
+    return NC_NOERR;
+}
+
+/**
+ * Return the file to define mode.
+ * @param ncid NetCDF file identifier.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+int
+NEXTCDF4_redef(int ncid)
+{
+    NEXTCDF4_FILE_INFO_T *file;
+    NC_FILE_INFO_T *h5;
+    int ret;
+
+    if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
+        return ret;
+    if (file->no_write)
+        return NC_EPERM;
+    if (file->define_mode)
+        return NC_EINVAL;
+    file->define_mode = 1;
+    h5->flags |= NC_INDEF;
     return NC_NOERR;
 }

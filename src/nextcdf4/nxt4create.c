@@ -57,6 +57,7 @@ NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
     unsigned flags;
     int existed;
     int ret;
+    NC_FILE_INFO_T *h5 = NULL;
 
     (void)initialsz;
     (void)basepe;
@@ -75,6 +76,9 @@ NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
     existed = access(path, F_OK) == 0;
     if ((ret = NEXTCDF4_add_file(ncid, path, cmode, &file)))
         return ret;
+    if ((ret = nc4_find_grp_h5(ncid, NULL, &h5)))
+        goto fail;
+    h5->flags |= NC_INDEF;
     file->no_write = 0;
     if ((fapl = H5Pcreate(H5P_FILE_ACCESS)) < 0) {
         ret = NC_EHDFERR;

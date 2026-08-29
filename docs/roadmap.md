@@ -109,6 +109,98 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 - `redef`, `enddef`, fill behavior beyond lifecycle defaults, parallel I/O, diskless/in-memory files, and non-default virtual file drivers.
 - Rename fixes, dimension scales, `_Netcdf4Coordinates`, `_Netcdf4Dimid`, new numeric/reference/bitfield types, Fortran APIs, `nextcopy`, and `nextdump`.
 
+#### Sprint 3: Build the Core Metadata Model
+**Detailed Plan**: See `docs/plan/NEXTCDF4_plan.md`, especially "Dimension Scales and Dimension Mapping," "Backward Compatibility," "Implementation Phases," and the type-mapping summary.
+
+**Objective:** Replace the core metadata stubs with a persistent root-group metadata implementation for dimensions, variables, and attributes. Sprint 3 supports complete create/define/inquire/close/reopen round trips for metadata built from the existing fixed-size NetCDF atomic types; variable data I/O and dimension-scale attachment remain Sprint 4 work.
+
+**Scope decisions:**
+- Persist Sprint 3 metadata to HDF5 and reconstruct it through NEXTCDF-4 on reopen rather than limiting the sprint to an in-memory model or HDF5-only inspection.
+- Support both global and variable attributes, including definition, retrieval, inquiry, rename, and deletion.
+- Create basic HDF5 dimension-scale datasets and stable `_Netcdf4Dimid` values in this sprint. Attaching scales to variable datasets and writing `_Netcdf4Coordinates` remain in Sprint 4.
+- Support the fixed-size standard atomic types allowed by the active model: `NC_BYTE`, `NC_CHAR`, `NC_SHORT`, `NC_INT`, `NC_FLOAT`, `NC_DOUBLE`, `NC_UBYTE`, `NC_USHORT`, `NC_UINT`, `NC_INT64`, and `NC_UINT64`. Defer `NC_STRING`, user-defined types, and all NEXTCDF-4-specific types.
+
+**Prerequisites and constraints:**
+- Build on the Sprint 2 file lifecycle, root `NC_FILE_INFO_T`/`NC_GRP_INFO_T` state, HDF5 identifiers, mode validation, markers, synchronization, and cleanup behavior.
+- Continue to require explicit `NC_NEXTCDF4` selection and keep all changes within NEP; do not modify netcdf-c or its built-in HDF5 backend.
+- Use netcdf-c's common NetCDF-4 metadata structures and inquiry helpers where their contracts fit, while keeping all new HDF5 persistence and discovery code in `src/nextcdf4/`.
+- Restrict Sprint 3 to the root group. Group creation and nested metadata remain Sprint 5 work.
+- Enforce `NC_NOWRITE`, define-mode, duplicate-name, invalid-ID, invalid-name, and active-model restrictions with standard NetCDF error codes.
+- Preserve Sprint 2's hidden backend/model markers and ensure they never appear as user attributes.
+
+**Metadata architecture:**
+- Extend private NEXTCDF-4 state with the ownership and lookup information needed to keep HDF5 objects synchronized with `NC_FILE_INFO_T`, `NC_GRP_INFO_T`, `NC_DIM_INFO_T`, `NC_VAR_INFO_T`, and `NC_ATT_INFO_T` metadata.
+- Add focused source modules for dimensions, variables, attributes, metadata loading, and shared type/name helpers rather than growing lifecycle or dispatch files into general metadata implementations.
+- Allocate stable dimension and variable IDs in definition order and rebuild the same IDs when reopening a file.
+- Represent each dimension with a basic HDF5 dimension-scale dataset carrying `_Netcdf4Dimid`. Support one or more unlimited dimensions in enhanced mode, but enforce the classic-model single-unlimited-dimension and ordering rules.
+- Create variable datasets with the correct rank, extents, maximum extents, and fixed-size HDF5 atomic datatype. Dataset creation in this sprint establishes persistent variable metadata but does not expose variable data reads or writes.
+- Store user attributes on the root group or variable dataset as appropriate and distinguish them from HDF5 and NEXTCDF-4 internal attributes during inquiry and open.
+- Load dimensions before variables and variables before their attributes when reopening, validating malformed, duplicate, unsupported, or inconsistent metadata instead of exposing a partial file.
+
+**Dispatch and API coverage:**
+- Implement `redef` and `_enddef`, including legal mode transitions, read-only rejection, metadata materialization, flush behavior, and rollback/cleanup after a failed transition.
+- Implement dimension definition and inquiry callbacks: define, lookup by name, lookup by ID, unlimited-dimension inquiry, and root-group dimension-ID enumeration. Dimension rename remains Sprint 8 work.
+- Implement variable definition and inquiry callbacks: define, lookup by name, lookup by ID, complete variable inquiry, and root-group variable-ID enumeration. Variable rename and all `get_var*`/`put_var*` operations remain later work.
+- Implement global and variable attribute put/get/inquiry/name/ID/rename/delete callbacks for the supported atomic types, including zero-length attributes and type conversion behavior provided by the supported NetCDF API contract.
+- Keep unsupported callbacks wired to explicit `NC_ENOTBUILT`, `NC_ENOTNC4`, or read-only errors as appropriate; no callback may succeed without implementing its promised state change.
+- Update `sync`, `close`, and `open` so pending metadata is materialized and flushed, populated Sprint 3 files can be reconstructed, and partial-load failures release every HDF5 identifier and netcdf-c metadata allocation.
+
+**Implementation sequence:**
+1. Define metadata ownership, ID-allocation, HDF5 naming, internal-attribute filtering, and supported-type mapping rules; add shared helpers and focused tests for those rules.
+2. Implement define-mode transitions and root metadata transaction boundaries without changing variable data I/O.
+3. Implement dimensions, basic dimension-scale creation, `_Netcdf4Dimid`, dimension inquiry, and classic/enhanced unlimited-dimension validation.
+4. Implement fixed-size atomic variable definitions and inquiries, creating correctly shaped HDF5 datasets without attaching scales or enabling public data access.
+5. Implement global and variable attribute mutation and inquiry, including filtering of all backend, dimension-scale, and NetCDF hidden attributes.
+6. Implement populated-file metadata discovery in dependency order and verify stable IDs and equivalent inquiries after close/reopen.
+7. Wire the completed callbacks into the dispatch table, retain intentional stubs for later sprints, and expand direct-registration and autoload test coverage.
+8. Update NEXTCDF-4 design and user documentation to describe the supported Sprint 3 metadata subset and its intentional I/O limitations.
+
+**Verification and acceptance criteria:**
+- A file can define multiple fixed and unlimited dimensions, fixed-size atomic variables of ranks zero and higher, and global and variable attributes, then return matching metadata through all relevant inquiry calls.
+- Closing and reopening through `NC_NEXTCDF4` preserves names, IDs, lengths, unlimited status, variable rank/type/dimension IDs, and user attributes.
+- Direct HDF5 inspection confirms each dimension has a dimension-scale dataset and stable `_Netcdf4Dimid`, variable datasets have the expected datatype and dataspace, and internal attributes are not counted as user attributes.
+- `nc_enddef()` and `nc_redef()` enforce valid transitions; repeated or invalid transitions, metadata mutation outside define mode where prohibited, and all mutation through `NC_NOWRITE` handles return the expected errors.
+- Classic-model files reject enhanced atomic types, multiple unlimited dimensions, and an unlimited dimension in a disallowed variable position. Enhanced and `NC_NETCDF4_MODEL` files accept only the types allowed by their respective contracts.
+- Duplicate names, invalid names, bad IDs, unsupported types, malformed on-disk metadata, and injected HDF5 failures return stable errors without leaking HDF5 identifiers or leaving partially registered metadata.
+- Global and variable attribute put/get/rename/delete operations round-trip all supported types, lengths, and zero-length cases while hidden attributes remain invisible.
+- Variable data access continues to return the documented not-implemented error, proving Sprint 3 does not accidentally claim Sprint 4 behavior.
+- Direct initialization and `.ncrc` autoload run the same metadata round-trip tests, and a clean NEXTCDF-4-enabled build passes the full C test suite.
+
+**Out of scope for Sprint 3:**
+- Variable data reads or writes, dimension-scale attachment, `DIMENSION_LIST`/`REFERENCE_LIST`, and `_Netcdf4Coordinates`; these belong to Sprint 4.
+- Nested groups, `NC_STRING`, compound, enum, opaque, or vlen types; these belong to Sprint 5.
+- Chunking controls, compression, filters, checksums, quantization, endianness controls, and detailed fill behavior; these belong to Sprint 6.
+- General discovery of legacy or arbitrary upstream NetCDF-4/HDF5 layouts beyond the populated subset written by Sprint 3; broader interoperability belongs to Sprint 7.
+- Dimension and variable rename behavior, which remains Sprint 8 work. Attribute rename is included because it does not alter dimension-scale relationships.
+- New floating-point, complex, bitfield, and reference types, tools, language bindings, parallel I/O, diskless/in-memory files, and non-default HDF5 virtual file drivers.
+
+#### Sprint 4: Implement Variable I/O and Dimension Scales
+**Objective:** Add read and write access for standard atomic variables, including scalar, array, and unlimited-dimension data. Attach the basic HDF5 dimension scales created in Sprint 3, write `_Netcdf4Coordinates`, maintain `DIMENSION_LIST`/`REFERENCE_LIST`, and reconstruct complete variable-to-dimension mappings when files are reopened.
+
+#### Sprint 5: Add Groups and User-Defined Types
+**Objective:** Implement the enhanced NetCDF-4 data model for nested groups and the existing compound, enum, opaque, vlen, and string types. Complete the associated definition, inquiry, attribute, and variable-I/O paths while enforcing classic-model restrictions.
+
+#### Sprint 6: Add Variable Storage Features
+**Objective:** Implement chunking, fill behavior, compression, filters, endianness, checksums, and related variable creation properties. Cover dataset extension and synchronization behavior needed for production use of unlimited dimensions and chunked data.
+
+#### Sprint 7: Open Existing and Populated Files
+**Objective:** Expand metadata discovery so NEXTCDF-4 can open populated files produced by both NEXTCDF-4 and the upstream NetCDF-4/HDF5 backend. Support hidden-coordinate fast paths, dimension-scale fallback, and the compatibility rules for native, classic-model, and `NC_NETCDF4_MODEL` files.
+
+#### Sprint 8: Correct Dimension and Variable Renaming
+**Objective:** Implement atomic, flush-per-operation dimension and variable renaming. Keep in-memory metadata, HDF5 links, dimension-scale relationships, and hidden dimension-mapping attributes consistent across coordinate-variable and shared-dimension edge cases.
+
+#### Sprint 9: Add Small Floating-Point Types
+**Objective:** Add `NC_FLOAT16` and, when supported by HDF5, bfloat16 and FP8/FP6/FP4 types. Define their public APIs, HDF5 mappings, conversion rules, fill-value behavior, compatibility restrictions, and round-trip coverage.
+
+#### Sprint 10: Add Complex, Bitfield, and Reference Types
+**Objective:** Add complex-number compounds, fixed-width HDF5 bitfields, and object and region references. Include structural type detection, reference creation and dereference APIs, validity checks, storage restrictions, and interoperability with existing HDF5 files.
+
+#### Sprint 11: Create Tools and Language Bindings
+**Objective:** Create `nextcopy` and `nextdump` with support for all NEXTCDF-4 types and compatibility modes. Expose the new C APIs and datatypes through Fortran and other maintained language bindings.
+
+#### Sprint 12: Validate Compatibility and Prepare the Release
+**Objective:** Run broad NetCDF-C compatibility, interoperability, regression, and representative-file testing across supported HDF5 versions. Complete performance and resource-leak checks, user documentation, examples, release notes, and v4.0.0 release readiness work.
+
 ### V3.5.0 - Add nep_meta.h with Build Info, and NISAR/SWOT/ABI Examples
 
 #### Sprint 1: Create nep_meta.h

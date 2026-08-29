@@ -30,7 +30,7 @@ NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
               void *parameters, const NC_Dispatch *dispatch, int ncid)
 {
     NEXTCDF4_FILE_INFO_T *file = NULL;
-    H5G_info_t group_info;
+    NC_FILE_INFO_T *h5 = NULL;
     unsigned flags;
     int ret;
 
@@ -49,6 +49,8 @@ NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
         return NC_ENOTNC;
     if ((ret = NEXTCDF4_add_file(ncid, path, mode, &file)))
         return ret;
+    if ((ret = nc4_find_grp_h5(ncid, NULL, &h5)))
+        goto fail;
     file->define_mode = 0;
     flags = (mode & NC_WRITE) ? H5F_ACC_RDWR : H5F_ACC_RDONLY;
     H5E_BEGIN_TRY {
@@ -64,14 +66,9 @@ NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     }
     if ((ret = NEXTCDF4_read_markers(file)))
         goto fail;
-    if (H5Gget_info(file->rootid, &group_info) < 0) {
-        ret = NC_EHDFERR;
+    h5->root_grp->atts_read = 0;
+    if ((ret = NEXTCDF4_load_metadata(file, h5)))
         goto fail;
-    }
-    if (group_info.nlinks != 0) {
-        ret = NC_EFILEMETA;
-        goto fail;
-    }
     return NC_NOERR;
 
 fail:

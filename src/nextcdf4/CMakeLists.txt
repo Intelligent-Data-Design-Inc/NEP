@@ -3,6 +3,7 @@ add_library(ncnextcdf4 SHARED
     nxt4create.c
     nxt4open.c
     nxt4file.c
+    nxt4meta.c
 )
 target_include_directories(ncnextcdf4 PRIVATE
     ${CMAKE_SOURCE_DIR}/include
