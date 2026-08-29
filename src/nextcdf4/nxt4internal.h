@@ -25,7 +25,7 @@
 /** Hidden attribute storing a variable's stable NetCDF varid. */
 #define NEXTCDF4_VARID_ATT "_Nextcdf4Varid"
 /** Hidden attribute storing a variable's dimension id list. */
-#define NEXTCDF4_VARDIMIDS_ATT "_Nextcdf4VarDimids"
+#define NEXTCDF4_VARDIMIDS_ATT "_Netcdf4Coordinates"
 /** HDF5 dimension scale class marker. */
 #define NEXTCDF4_DIMCLASS "DIMENSION_SCALE"
 /** Optional dimension scale name attribute. */
@@ -187,6 +187,14 @@ int NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
  */
 int NEXTCDF4_inq_var(int ncid, int varid, char *name, nc_type *xtypep,
                      int *ndimsp, int *dimidsp, int *nattsp);
+
+/** Fixed-size atomic variable hyperslab I/O callbacks. */
+int NEXTCDF4_get_vara(int, int, const size_t *, const size_t *, void *, nc_type);
+int NEXTCDF4_put_vara(int, int, const size_t *, const size_t *, const void *, nc_type);
+int NEXTCDF4_get_vars(int, int, const size_t *, const size_t *, const ptrdiff_t *, void *, nc_type);
+int NEXTCDF4_put_vars(int, int, const size_t *, const size_t *, const ptrdiff_t *, const void *, nc_type);
+int NEXTCDF4_get_varm(int, int, const size_t *, const size_t *, const ptrdiff_t *, const ptrdiff_t *, void *, nc_type);
+int NEXTCDF4_put_varm(int, int, const size_t *, const size_t *, const ptrdiff_t *, const ptrdiff_t *, const void *, nc_type);
 
 /** Put an attribute on the root group or a variable.
  * @param ncid NetCDF file identifier.

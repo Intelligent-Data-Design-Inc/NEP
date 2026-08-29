@@ -175,7 +175,78 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 - New floating-point, complex, bitfield, and reference types, tools, language bindings, parallel I/O, diskless/in-memory files, and non-default HDF5 virtual file drivers.
 
 #### Sprint 4: Implement Variable I/O and Dimension Scales
-**Objective:** Add read and write access for standard atomic variables, including scalar, array, and unlimited-dimension data. Attach the basic HDF5 dimension scales created in Sprint 3, write `_Netcdf4Coordinates`, maintain `DIMENSION_LIST`/`REFERENCE_LIST`, and reconstruct complete variable-to-dimension mappings when files are reopened.
+**Detailed Plan**: See `docs/plan/NEXTCDF4_plan.md`, especially "Dimension Scales and Dimension Mapping," "Use Superblock v3," "Backward Compatibility," and the type-mapping summary.
+
+**Objective:** Add read and write access for standard atomic variables, including scalar, array, strided, and unlimited-dimension data. Attach the basic HDF5 dimension scales created in Sprint 3, write `_Netcdf4Coordinates` and `DIMENSION_LIST`/`REFERENCE_LIST`, and reconstruct complete variable-to-dimension mappings when files are reopened. The legacy mapped variable I/O calls (`nc_get_varm`/`nc_put_varm`) are intentionally out of scope and will remain unimplemented in NEXTCDF-4 because they are deprecated.
+
+**Scope decisions:**
+- Support the full generic variable I/O surface except the deprecated mapped (`varm`) variants: `nc_put_var`/`nc_get_var`, `nc_put_var1`/`nc_get_var1`, `nc_put_vara`/`nc_get_vara`, and `nc_put_vars`/`nc_get_vars` for all fixed-size standard atomic types.
+- Do not implement `nc_put_varm`/`nc_get_varm`; keep the dispatch table entries returning `NC_ENOTBUILT` and document that mapped I/O is deprecated in NEXTCDF-4.
+- Support full read and extend behavior for unlimited dimensions, including appending record data and re-opening to report the updated length.
+- Treat a variable that shares a dimension's name and has the same one-dimensional shape as the basic coordinate variable: it is stored using the same HDF5 dimension-scale dataset as the dimension and is identified during reopen and inquiry.
+- Keep strided (`vars`) read and write in Sprint 4; leave the mapped (`varm`) calls unimplemented.
+
+**Prerequisites and constraints:**
+- Build on the Sprint 3 metadata model: `NC_FILE_INFO_T`/`NC_GRP_INFO_T`/`NC_DIM_INFO_T`/`NC_VAR_INFO_T`/`NC_ATT_INFO_T`, stable IDs, `_Netcdf4Dimid`, basic dimension scales, hidden attribute filtering, and root-group metadata persistence.
+- Continue to require explicit `NC_NEXTCDF4` selection and keep all changes within NEP; do not modify netcdf-c or its built-in HDF5 backend.
+- Use only public HDF5 APIs and NEP/netcdf-c internal metadata helpers; do not copy netcdf-c `libhdf5` code.
+- Restrict variable I/O to the fixed-size standard atomic types supported in Sprint 3. `NC_STRING`, user-defined types, and all NEXTCDF-4-specific types remain later work.
+- Preserve `NC_NOWRITE`, define-mode, compatibility-mode, and type restrictions with standard NetCDF error codes.
+- Honor the classic model and `NC_NETCDF4_MODEL` storage restrictions defined in the NEXTCDF-4 plan.
+
+**Dimension scale and coordinate architecture:**
+- After defining a variable in `nc_def_var`, attach each dimension's existing HDF5 dimension-scale dataset to the variable's HDF5 dataset using the appropriate dimension-scale API.
+- Maintain the `DIMENSION_LIST` attribute on the variable and the `REFERENCE_LIST` attribute on each used dimension scale to preserve standard HDF5 dimension-scale semantics.
+- Write `_Netcdf4Coordinates` on every variable as a little-endian integer array of the variable's `dimids`, enabling fast variable-to-dimension mapping on reopen.
+- When opening a file, prefer `_Netcdf4Coordinates` for variable-to-dimension recovery; retain the dimension-scale matching path as a fallback for files without the hidden attribute.
+- Treat a variable whose name matches a dimension and whose shape is one dimension of that length as the coordinate variable for that dimension. The coordinate variable's data and the dimension-scale dataset share the same HDF5 dataset, not a separate one.
+- For unlimited coordinate variables, ensure the dimension scale and coordinate dataset extend together when record data is appended.
+
+**Variable I/O architecture:**
+- Implement contiguous and chunked HDF5 dataset access in new or extended source modules. Fixed-size variables with no unlimited dimensions use contiguous storage; variables with at least one unlimited dimension use chunked storage with default chunk sizes.
+- Implement memory-to-disk and disk-to-memory type conversion using the supported netcdf-c helper for the standard atomic types.
+- Implement scalar, one-element, hyperslab, and strided access through a common hyperslab selection helper that maps NetCDF `start`/`count`/`stride` arrays to HDF5 dataspace selections.
+- For unlimited variables, support appending record data by extending the dataset along the unlimited dimension. Validate that writes stay within the current+extended shape and that reads do not exceed the current extent.
+- Update `sync`, `close`, and `open` so dimension-scale attachments, `_Netcdf4Coordinates`, and dataset extensions are materialized and flushed. Ensure partial-write and partial-load failures release every HDF5 identifier and netcdf-c metadata allocation.
+
+**Dispatch and API coverage:**
+- Implement `get_vara` and `put_vara` for all supported standard atomic types, scalar and array variables, and unlimited-dimension extension.
+- Implement `get_var1` and `put_var1` as single-element `get_vara`/`put_vara` calls.
+- Implement `get_var` and `put_var` as full-variable reads and writes using the variable's current shape.
+- Implement `get_vars` and `put_vars` for strided hyperslab access. `get_varm` and `put_varm` remain unimplemented and return `NC_ENOTBUILT`.
+- Update `inq_var_all` so `contiguousp`, `no_fill`, `fill_valuep`, and `endiannessp` reflect actual dataset storage when applicable.
+- Ensure all read and write calls enforce `NC_NOWRITE`, `NC_EBADID`, `NC_EINVAL` for malformed hyperslabs, `NC_EEDGE` for out-of-bounds accesses, and `NC_EBADTYPE` for unsupported in-memory types.
+- Keep unsupported variable controls (chunking, compression, filters, checksums, endianness, quantization) wired to explicit `NC_ENOTBUILT` or `NC_ENOTNC4` errors as appropriate.
+
+**Implementation sequence:**
+1. Add the dimension-scale attachment step to `nc_def_var`, write `_Netcdf4Coordinates`, `DIMENSION_LIST`, and `REFERENCE_LIST`, and add focused tests verifying the attachments persist after close/reopen.
+2. Implement a shared HDF5 dataspace selection and I/O helper for `vara` access; cover scalar, fixed-shape, and unlimited-dimension cases.
+3. Implement `put_vara`/`get_vara` and the generic `put_var`/`get_var` wrappers for supported atomic types, including memory type conversion and fill-value handling.
+4. Implement `put_var1`/`get_var1` as single-element wrappers.
+5. Implement `put_vars`/`get_vars` for strided access using the same selection helper.
+6. Implement unlimited-dimension dataset extension and coordinate-variable extension, with tests for append and reopen.
+7. Wire the completed I/O callbacks into the dispatch table, keep `put_varm`/`get_varm` as `NC_ENOTBUILT` stubs, and expand direct-registration and autoload test coverage.
+8. Update NEXTCDF-4 design and user documentation to describe the supported I/O subset, the deprecated `varm` calls, and the coordinate-variable behavior.
+
+**Verification and acceptance criteria:**
+- Scalar, fixed-array, and unlimited variables can be written and read back with matching values for all fixed-size standard atomic types.
+- `nc_put_var1`/`nc_get_var1` write and read a single element; `nc_put_vara`/`nc_get_vara` write and read arbitrary contiguous hyperslabs; `nc_put_vars`/`nc_get_vars` write and read strided selections.
+- `nc_put_varm`/`nc_get_varm` return `NC_ENOTBUILT` with a documented deprecation note.
+- Variables with multiple dimensions use the correct `start`/`count`/`stride` ordering; out-of-bounds and malformed selections return `NC_EEDGE` or `NC_EINVAL` without writing partial data.
+- Unlimited variables can be extended by writing beyond the current length; `nc_inq_dimlen` reports the new length; reopening the file preserves and reports the extended length.
+- Coordinate variables share the dimension-scale dataset; reading and writing the coordinate variable updates the dimension values, and reopening identifies the variable as the coordinate for that dimension.
+- Direct HDF5 inspection confirms `DIMENSION_LIST` on variables, `REFERENCE_LIST` on dimension scales, `_Netcdf4Coordinates` on every variable, and `_Netcdf4Dimid` on every dimension scale.
+- `nc_get_var`/`nc_put_var` round-trip all supported atomic types for scalar, fixed, and unlimited variables.
+- Read-only, non-existent variable, bad ID, and unsupported type cases return stable errors without leaking HDF5 identifiers.
+- Direct initialization and `.ncrc` autoload run the same variable I/O tests, and a clean NEXTCDF-4-enabled build passes the full C test suite.
+
+**Out of scope for Sprint 4:**
+- `nc_put_varm`/`nc_get_varm` are intentionally unimplemented because they are deprecated in NEXTCDF-4.
+- User-defined types, `NC_STRING`, compound, enum, opaque, vlen, and all NEXTCDF-4-specific types; these belong to Sprints 5, 9, and 10.
+- Chunking controls, compression, filters, checksums, quantization, endianness controls, and detailed fill behavior beyond default fill values; these belong to Sprint 6.
+- General discovery of legacy or arbitrary upstream NetCDF-4/HDF5 layouts beyond the populated subset written by NEXTCDF-4; broader interoperability belongs to Sprint 7.
+- Dimension and variable rename behavior, which remains Sprint 8 work.
+- New floating-point, complex, bitfield, and reference types, tools, language bindings, parallel I/O, diskless/in-memory files, and non-default HDF5 virtual file drivers.
 
 #### Sprint 5: Add Groups and User-Defined Types
 **Objective:** Implement the enhanced NetCDF-4 data model for nested groups and the existing compound, enum, opaque, vlen, and string types. Complete the associated definition, inquiry, attribute, and variable-I/O paths while enforcing classic-model restrictions.

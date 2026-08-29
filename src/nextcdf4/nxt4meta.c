@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <hdf5_hl.h>
 #include "nxt4internal.h"
 
 /** List of attribute names that are internal to NEXTCDF-4/HDF5. */
@@ -639,6 +640,7 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
     hsize_t maxdims[NC_MAX_VAR_DIMS];
     hsize_t chunks[NC_MAX_VAR_DIMS];
     int has_unlimited = 0;
+    int coordinate = 0;
     int i;
     int ret;
 
@@ -695,6 +697,7 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
             return NC_EINVAL;
     }
 
+    coordinate = ndims == 1 && !strcmp(name, var->dim[0]->hdr.name);
     if ((ret = NEXTCDF4_map_hdf_type(xtype, &hdf_type)))
         goto fail;
 
@@ -720,22 +723,45 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
         }
     }
 
-    vinfo->hdf_dataset = H5Dcreate2(file->rootid, name, hdf_type, space,
-                                    H5P_DEFAULT, (dcpl >= 0) ? dcpl : H5P_DEFAULT,
-                                    H5P_DEFAULT);
-    if (vinfo->hdf_dataset < 0) {
-        ret = NC_EHDFERR;
-        goto fail;
+    if (coordinate) {
+        NEXTCDF4_DIM_INFO_T *dinfo = var->dim[0]->format_dim_info;
+        if (!dinfo || dinfo->hdf_dataset < 0) { ret = NC_EFILEMETA; goto fail; }
+        H5Dclose(dinfo->hdf_dataset);
+        dinfo->hdf_dataset = -1;
+        if (H5Ldelete(file->rootid, name, H5P_DEFAULT) < 0)
+            { ret = NC_EHDFERR; goto fail; }
+        dinfo->hdf_dataset = H5Dcreate2(file->rootid, name, hdf_type, space,
+                                        H5P_DEFAULT, dcpl >= 0 ? dcpl : H5P_DEFAULT,
+                                        H5P_DEFAULT);
+        if (dinfo->hdf_dataset < 0 || H5DSset_scale(dinfo->hdf_dataset, name) < 0 ||
+            (ret = write_int_att(dinfo->hdf_dataset, NEXTCDF4_DIMID_ATT,
+                                 var->dimids[0])))
+            { if (!ret) ret = NC_EHDFERR; goto fail; }
+        vinfo->hdf_dataset = H5Dopen2(file->rootid, name, H5P_DEFAULT);
+    } else {
+        vinfo->hdf_dataset = H5Dcreate2(file->rootid, name, hdf_type, space,
+                                        H5P_DEFAULT, dcpl >= 0 ? dcpl : H5P_DEFAULT,
+                                        H5P_DEFAULT);
     }
+    if (vinfo->hdf_dataset < 0) { ret = NC_EHDFERR; goto fail; }
 
     if ((ret = write_int_att(vinfo->hdf_dataset, NEXTCDF4_VARID_ATT,
-                             var->hdr.id)))
-        goto fail;
-    if (ndims > 0 &&
+                             var->hdr.id)) ||
         (ret = write_int_array_att(vinfo->hdf_dataset,
                                    NEXTCDF4_VARDIMIDS_ATT,
                                    (const int *)var->dimids, ndims)))
         goto fail;
+    if (!coordinate) {
+        for (i = 0; i < ndims; i++) {
+            NEXTCDF4_DIM_INFO_T *dinfo = var->dim[i]->format_dim_info;
+            if (!dinfo || dinfo->hdf_dataset < 0 ||
+                H5DSattach_scale(vinfo->hdf_dataset, dinfo->hdf_dataset,
+                                 (unsigned)i) < 0) {
+                ret = NC_EHDFERR;
+                goto fail;
+            }
+        }
+    }
 
     if (varidp)
         *varidp = var->hdr.id;
@@ -1224,7 +1250,6 @@ find_var_cb(hid_t loc, const char *name, const H5L_info_t *info, void *op_data)
     var_list_t *vl = op_data;
     hid_t dset = -1;
     hid_t att = -1;
-    char cls[64];
     int varid = -1;
     (void)info;
 
@@ -1234,23 +1259,8 @@ find_var_cb(hid_t loc, const char *name, const H5L_info_t *info, void *op_data)
     if (dset < 0)
         return 0;
 
-    /* Skip dimension scale datasets. */
-    H5E_BEGIN_TRY {
-        att = H5Aopen(dset, "CLASS", H5P_DEFAULT);
-    } H5E_END_TRY;
-    if (att >= 0) {
-        hid_t type = H5Aget_type(att);
-        if (type >= 0) {
-            H5Aread(att, type, cls);
-            H5Tclose(type);
-        }
-        H5Aclose(att);
-        if (!strcmp(cls, NEXTCDF4_DIMCLASS)) {
-            H5Dclose(dset);
-            return 0;
-        }
-    }
-
+    /* Dimension scales carrying a varid are coordinate variables; ordinary
+     * scales have no varid and are ignored below. */
     H5E_BEGIN_TRY {
         att = H5Aopen(dset, NEXTCDF4_VARID_ATT, H5P_DEFAULT);
     } H5E_END_TRY;

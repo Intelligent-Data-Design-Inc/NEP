@@ -13,29 +13,6 @@
 #include "netcdf_filter.h"
 #include "nxt4internal.h"
 
-/**
- * @internal Report that variable reads are not implemented yet.
- * @param ncid NetCDF file identifier.
- * @param varid NetCDF variable identifier.
- * @param start Hyperslab start indices.
- * @param count Hyperslab element counts.
- * @param value Destination data buffer.
- * @param memtype Requested in-memory NetCDF type.
- * @return `NC_ENOTBUILT`.
- */
-static int
-NEXTCDF4_get_vara(int ncid, int varid, const size_t *start,
-                  const size_t *count, void *value, nc_type memtype)
-{
-    (void)ncid;
-    (void)varid;
-    (void)start;
-    (void)count;
-    (void)value;
-    (void)memtype;
-    return NC_ENOTBUILT;
-}
-
 /** Complete NetCDF dispatch table for NEXTCDF-4 UDF slot 9. */
 static const NC_Dispatch NEXTCDF4_dispatcher = {
     NC_FORMATX_NEXTCDF4,
@@ -68,11 +45,11 @@ static const NC_Dispatch NEXTCDF4_dispatcher = {
     NC4_inq_varid,
     NC_RO_rename_var,
     NEXTCDF4_get_vara,
-    NC_RO_put_vara,
-    NCDEFAULT_get_vars,
-    NCDEFAULT_put_vars,
-    NCDEFAULT_get_varm,
-    NCDEFAULT_put_varm,
+    NEXTCDF4_put_vara,
+    NEXTCDF4_get_vars,
+    NEXTCDF4_put_vars,
+    NEXTCDF4_get_varm,
+    NEXTCDF4_put_varm,
     NC4_inq_var_all,
     NC_NOTNC4_var_par_access,
     NC_RO_def_var_fill,
