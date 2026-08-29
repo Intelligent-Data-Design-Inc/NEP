@@ -73,6 +73,13 @@ if(HAVE_NEXTCDF4)
     add_test(NAME tst_nextcdf4_var COMMAND tst_nextcdf4_var)
     set_tests_properties(tst_nextcdf4_var PROPERTIES
         ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+
+    add_executable(tst_nextcdf4_group tst_nextcdf4_group.c)
+    target_link_libraries(tst_nextcdf4_group PRIVATE ncnextcdf4 ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
+    target_include_directories(tst_nextcdf4_group PRIVATE ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+    add_test(NAME tst_nextcdf4_group COMMAND tst_nextcdf4_group)
+    set_tests_properties(tst_nextcdf4_group PROPERTIES
+        ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
 endif()
 
 # Build CDF UDF test if CDF is enabled

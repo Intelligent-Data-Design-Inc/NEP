@@ -50,24 +50,25 @@ test_1d(void)
     int varid;
     unsigned int data[5] = {1, 2, 3, 4, 5};
     unsigned int out[5] = {0};
+    int ret;
 
     unlink(FILE_NAME);
-    if (nc_create(FILE_NAME, NC_NEXTCDF4 | NC_CLOBBER, &ncid))
-        return 1;
-    if (nc_def_dim(ncid, "x", 5, &dimid))
-        return 1;
-    if (nc_def_var(ncid, "data", NC_UINT, 1, &dimid, &varid))
-        return 1;
-    if (nc_enddef(ncid))
-        return 1;
-    if (nc_put_var_uint(ncid, varid, data))
-        return 1;
-    if (nc_get_var_uint(ncid, varid, out))
-        return 1;
+    if ((ret = nc_create(FILE_NAME, NC_NEXTCDF4 | NC_CLOBBER, &ncid)))
+        { fprintf(stderr, "create: %s\n", nc_strerror(ret)); return 1; }
+    if ((ret = nc_def_dim(ncid, "x", 5, &dimid)))
+        { fprintf(stderr, "def_dim: %s\n", nc_strerror(ret)); return 1; }
+    if ((ret = nc_def_var(ncid, "data", NC_UINT, 1, &dimid, &varid)))
+        { fprintf(stderr, "def_var: %s\n", nc_strerror(ret)); return 1; }
+    if ((ret = nc_enddef(ncid)))
+        { fprintf(stderr, "enddef: %s\n", nc_strerror(ret)); return 1; }
+    if ((ret = nc_put_var_uint(ncid, varid, data)))
+        { fprintf(stderr, "put_var: %s\n", nc_strerror(ret)); return 1; }
+    if ((ret = nc_get_var_uint(ncid, varid, out)))
+        { fprintf(stderr, "get_var: %s\n", nc_strerror(ret)); return 1; }
     if (memcmp(data, out, sizeof(data)))
-        return 1;
-    if (nc_close(ncid))
-        return 1;
+        { fprintf(stderr, "data mismatch\n"); return 1; }
+    if ((ret = nc_close(ncid)))
+        { fprintf(stderr, "close: %s\n", nc_strerror(ret)); return 1; }
     return 0;
 }
 

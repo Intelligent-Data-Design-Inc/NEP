@@ -64,6 +64,8 @@ NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
         ret = NC_EHDFERR;
         goto fail;
     }
+    if (h5->root_grp->format_grp_info)
+        ((NEXTCDF4_GRP_INFO_T *)h5->root_grp->format_grp_info)->hdf_group = file->rootid;
     if ((ret = NEXTCDF4_read_markers(file)))
         goto fail;
     h5->root_grp->atts_read = 0;

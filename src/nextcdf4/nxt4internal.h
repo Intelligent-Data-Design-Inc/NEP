@@ -43,6 +43,12 @@ typedef struct NEXTCDF4_FILE_INFO
     int netcdf4_model;  /**< Nonzero for `NC_NETCDF4_MODEL` compatibility mode. */
 } NEXTCDF4_FILE_INFO_T;
 
+/** Format-specific information attached to an NC_GRP_INFO_T. */
+typedef struct NEXTCDF4_GRP_INFO
+{
+    hid_t hdf_group;    /**< Open HDF5 group identifier, or a negative value. */
+} NEXTCDF4_GRP_INFO_T;
+
 /** Format-specific information attached to an NC_DIM_INFO_T. */
 typedef struct NEXTCDF4_DIM_INFO
 {
@@ -54,6 +60,12 @@ typedef struct NEXTCDF4_VAR_INFO
 {
     hid_t hdf_dataset;  /**< HDF5 variable dataset identifier. */
 } NEXTCDF4_VAR_INFO_T;
+
+/** Format-specific information attached to an NC_TYPE_INFO_T. */
+typedef struct NEXTCDF4_TYPE_INFO
+{
+    hid_t hdf_type;     /**< Open committed HDF5 datatype identifier, or a negative value. */
+} NEXTCDF4_TYPE_INFO_T;
 
 /** Allocate and register per-file NEXTCDF-4 state.
  * @param ncid NetCDF file identifier.
@@ -243,5 +255,42 @@ int NEXTCDF4_del_att(int ncid, int varid, const char *name);
  * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int NEXTCDF4_write_attributes(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5);
+
+/* Group and type operations. */
+int NEXTCDF4_def_grp(int ncid, const char *name, int *grpidp);
+int NEXTCDF4_inq_ncid(int ncid, const char *name, int *grpidp);
+int NEXTCDF4_inq_grps(int ncid, int *numgrps, int *grpidsp);
+int NEXTCDF4_inq_grpname(int ncid, char *name);
+int NEXTCDF4_inq_grpname_full(int ncid, size_t *lenp, char *name);
+int NEXTCDF4_inq_grp_parent(int ncid, int *parentidp);
+int NEXTCDF4_inq_grp_full_ncid(int ncid, const char *full_name, int *grpidp);
+int NEXTCDF4_inq_typeids(int ncid, int *ntypes, int *typeids);
+
+/* User-defined type operations. */
+int NEXTCDF4_def_compound(int ncid, size_t size, const char *name, nc_type *typeidp);
+int NEXTCDF4_insert_compound(int ncid, nc_type typeid, const char *name, size_t offset, nc_type xtype);
+int NEXTCDF4_insert_array_compound(int ncid, nc_type typeid, const char *name,
+                                   size_t offset, nc_type xtype, int ndims, const int *dim_sizesp);
+int NEXTCDF4_inq_compound_field(int ncid, nc_type typeid, int fieldid, char *name,
+                                size_t *offsetp, nc_type *fieldtypep, int *ndimsp, int *dim_sizesp);
+int NEXTCDF4_inq_compound_fieldindex(int ncid, nc_type typeid, const char *name, int *fieldidxp);
+int NEXTCDF4_def_vlen(int ncid, const char *name, nc_type base_typeid, nc_type *typeidp);
+int NEXTCDF4_put_vlen_element(int ncid, int typeid, void *vlen_element,
+                              size_t len, const void *data);
+int NEXTCDF4_get_vlen_element(int ncid, int typeid, const void *vlen_element,
+                              size_t *lenp, void *data);
+int NEXTCDF4_def_enum(int ncid, nc_type base_typeid, const char *name, nc_type *typeidp);
+int NEXTCDF4_insert_enum(int ncid, nc_type typeid, const char *name, const void *value);
+int NEXTCDF4_inq_enum_member(int ncid, nc_type typeid, int idx, char *name, void *value);
+int NEXTCDF4_inq_enum_ident(int ncid, nc_type typeid, long long value, char *identifier);
+int NEXTCDF4_def_opaque(int ncid, size_t size, const char *name, nc_type *typeidp);
+int NEXTCDF4_write_types(NC_FILE_INFO_T *h5);
+int NEXTCDF4_inq_user_type(int ncid, nc_type typeid, char *name, size_t *size,
+                           nc_type *base_typep, size_t *nfieldsp, int *classp);
+int NEXTCDF4_inq_typeid(int ncid, const char *name, nc_type *typeidp);
+int NEXTCDF4_inq_type_equal(int ncid1, nc_type typeid1, int ncid2, nc_type typeid2, int *equalp);
+
+/* String and user-defined type I/O helpers. */
+int NEXTCDF4_get_type_size(nc_type xtype, size_t *sizep);
 
 #endif

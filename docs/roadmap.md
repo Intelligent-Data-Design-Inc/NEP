@@ -249,7 +249,86 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 - New floating-point, complex, bitfield, and reference types, tools, language bindings, parallel I/O, diskless/in-memory files, and non-default HDF5 virtual file drivers.
 
 #### Sprint 5: Add Groups and User-Defined Types
-**Objective:** Implement the enhanced NetCDF-4 data model for nested groups and the existing compound, enum, opaque, vlen, and string types. Complete the associated definition, inquiry, attribute, and variable-I/O paths while enforcing classic-model restrictions.
+**Detailed Plan**: See `docs/plan/NEXTCDF4_plan.md`, especially "Correct Renaming of Dims and Vars" for group/type interactions, "Backward Compatibility," the type-mapping summary, and the enhanced-data-model contract.
+
+**Objective:** Extend NEXTCDF-4 from a single root group to the full enhanced NetCDF-4 data model with arbitrarily nested groups, plus user-defined types and string variables. Implement definition, inquiry, attribute, and basic variable I/O for `NC_STRING` and for compound, enum, opaque, and vlen types, while enforcing classic-model and `NC_NETCDF4_MODEL` restrictions.
+
+**Scope decisions:**
+- Support arbitrary-depth nested groups, including group creation, parent/child inquiry, full-name and full-path lookup, and per-group namespaces for dimensions, variables, types, attributes, and subgroups.
+- Implement all user-defined types that are already part of the classic enhanced NetCDF-4 model: compound, enum, opaque, and vlen, plus the base `NC_STRING` variable-length string type. NEXTCDF-4-specific types (float16 variants, complex, bitfield, reference) remain Sprints 9 and 10.
+- Support both fixed-size `NC_CHAR` arrays and true variable-length `NC_STRING` strings; `NC_STRING` is represented with HDF5 variable-length `H5T_C_S1` and is forbidden in classic model and `NC_NETCDF4_MODEL` mode.
+- Support basic read and write for variables of all types introduced in this sprint, including scalar, fixed-array, and unlimited-dimension access, using the existing hyperslab I/O machinery. Compound, enum, opaque, vlen, and string attribute I/O is also included.
+
+**Prerequisites and constraints:**
+- Build on the Sprint 4 metadata and I/O foundation: stable IDs, in-memory `NC_FILE_INFO_T`/`NC_GRP_INFO_T`/`NC_DIM_INFO_T`/`NC_VAR_INFO_T`/`NC_ATT_INFO_T` trees, dimension scales, `_Netcdf4Coordinates`, hidden attribute filtering, and atomic type I/O.
+- Continue to require explicit `NC_NEXTCDF4` selection and keep all changes within NEP; do not modify netcdf-c or its built-in HDF5 backend.
+- Use only public HDF5 APIs and the existing NEP/netcdf-c internal metadata helpers; do not copy netcdf-c `libhdf5` code.
+- Enforce the classic model and `NC_NETCDF4_MODEL` restrictions: no nested groups, no user-defined types other than those allowed, no `NC_STRING`, and only classic atomic variables in `NC_CLASSIC_MODEL`; in `NC_NETCDF4_MODEL` no user-defined types and no `NC_STRING`.
+- Preserve stable object IDs across dimensions, variables, groups, and types so that reopening reconstructs a consistent namespace.
+
+**Group architecture:**
+- Move from a single hard-coded root group to a recursive `NC_GRP_INFO_T` tree under `NC_FILE_INFO_T`/`root_grp`.
+- Implement `def_grp` to create an HDF5 subgroup and a matching `NC_GRP_INFO_T` child, allocating stable group IDs and recording parent/child relationships.
+- Implement group lookup by full name, parent group, direct and recursive child enumeration, `ncid` derivation, and `inq_ncid`/`inq_grps`/`inq_grpname`/`inq_grpname_full`/`inq_grp_parent`/`inq_grp_full_ncid`.
+- Distinguish group-local dimensions and variables from those in parent or sibling groups; dimension IDs remain file-scoped and must be resolvable from any group that contains them.
+- Keep group-hidden attributes (`_Nextcdf4Backend`, `_Nextcdf4Model`) on the root group and add a group-marker attribute only if needed for fast root-group identification of subgroups.
+- Maintain a single `_Nextcdf4VarDimids` per variable and `_Nextcdf4Dimid` per dimension scale regardless of the group that owns them.
+
+**User-defined type architecture:**
+- Add a type-creation and commit pipeline for compound, enum, opaque, and vlen, storing each committed HDF5 type inside its owning group and registering it in the group `NC_TYPE_INFO_T` index.
+- Track type references (variables and attributes) so that types cannot be deleted while in use; for this sprint, committed types are immutable after creation.
+- Implement compound member insertion with fixed-size atomic base types and, later, nested compounds. Keep the `r`/`i` structural rule for `NC_COMPLEX` detection out of this sprint; plain compounds are created with user-supplied member names.
+- Map enum base types to the fixed-size signed and unsigned integers supported by the active model; store values in little-endian committed HDF5 `H5T_ENUM` datatypes.
+- Map opaque types to `H5T_OPAQUE` with the declared size; provide round-trip `put`/`get` as raw bytes.
+- Map vlen types to `H5T_VLEN` over a fixed-size atomic or `NC_CHAR`/`NC_STRING` base type; support the standard `put`/`get` vlen element helper APIs.
+- Map `NC_STRING` to HDF5 variable-length `H5T_C_S1` with native memory layout `hvl_t`.
+- Support attribute read/write for all new types, including compound, enum, opaque, vlen, and `NC_STRING`.
+- Load all committed types before variables when opening a file so that variable and attribute datatypes can be resolved during variable discovery.
+
+**Variable I/O extension:**
+- Extend the existing `var_io` helper to dispatch on `var->type_info->nc_type_class` and, for user-defined types, to use the committed HDF5 type as the file datatype and a correctly shaped memory buffer.
+- For compound and opaque variables, treat the memory buffer as raw bytes of the declared size and rely on HDF5 for endian conversion.
+- For enum variables, support read and write using the enum's base type memory buffer; conversions between the numeric base and the enum are not yet required to be lossy-checked.
+- For vlen and `NC_STRING` variables, use `hvl_t` or `char **` memory buffers, respectively, and free all returned elements on close or after `nc_free_vlens`.
+- Extend coordinate-variable detection and dimension-scale attachment to handle variables whose dimensions are in the same group or an ancestor group.
+- Keep `nc_put_varm`/`nc_get_varm` unimplemented and deprecated.
+
+**Dispatch and API coverage:**
+- Implement `def_grp`, `inq_ncid`, `inq_grps`, `inq_grpname`, `inq_grpname_full`, `inq_grp_parent`, and `inq_grp_full_ncid`.
+- Implement `inq_typeids`, `inq_user_type`, `inq_typeid`, `inq_type_equal`, `inq_compound_field`, and `inq_compound_fieldindex`.
+- Implement `def_compound`, `insert_compound`, `insert_array_compound`, `def_vlen`, `put_vlen_element`, `get_vlen_element`, `def_enum`, `insert_enum`, `inq_enum_member`, `inq_enum_ident`, and `def_opaque`.
+- Update `def_var`, `put_att`, `get_att`, and `inq_var_all` so they accept and report the new types and groups correctly.
+- Keep `NC_COMPLEX`/`NC_DOUBLECOMPLEX`, `NC_BITFIELD*`, `NC_FLOAT16`, and reference types as `NC_ENOTBUILT` or `NC_EBADTYPE` until Sprints 9 and 10.
+
+**Implementation sequence:**
+1. Add recursive group creation and discovery to `nxt4meta.c` or a new `nxt4group.c`, including HDF5 group link creation, parent-child indexing, and stable group-ID allocation.
+2. Extend dimension and variable lookup to support group-local and ancestor-group dimension resolution, and add tests for group scoping.
+3. Add a type-commitment module for compound, enum, opaque, and vlen types, and extend `NC_TYPE_INFO_T` ownership, reference counting, and on-disk committed-type naming.
+4. Extend `NEXTCDF4_map_hdf_type` and `set_var_type` to recognize the new base and user-defined types and load committed HDF5 types on open.
+5. Extend the attribute and variable I/O paths to support `NC_STRING` and the user-defined types with appropriate memory layouts.
+6. Update the dispatch table, group/type inquiry callbacks, and classic/enhanced compatibility checks.
+7. Add a dedicated `tst_nextcdf4_group.c` and expand `tst_nextcdf4_meta.c` with type and string round-trip tests.
+8. Update NEXTCDF-4 design and user documentation to describe the new groups, types, and classic/compat restrictions.
+
+**Verification and acceptance criteria:**
+- Files with nested groups can be created, closed, reopened, and navigated using full names and `inq_grp*` functions; duplicate and invalid group names return the expected errors.
+- Variables and dimensions defined in subgroups are resolved only from their owning and ancestor groups, and IDs remain stable across reopens.
+- Compound, enum, opaque, vlen, and `NC_STRING` types can be defined, used in variables and attributes, and round-tripped with `put`/`get` for scalar, fixed, and unlimited cases.
+- `NC_CHAR` multi-dimensional arrays continue to work as fixed-size character arrays, and `NC_STRING` works as variable-length strings.
+- Classic-model files reject groups, `NC_STRING`, and all user-defined types; `NC_NETCDF4_MODEL` files reject `NC_STRING` and user-defined types.
+- Type inquiry functions return correct names, sizes, base types, enum members, and compound field offsets and types.
+- Direct HDF5 inspection confirms committed datatypes in the correct group, dimension scales attached to variables in subgroups, and `_Netcdf4Coordinates` present on all variables.
+- A clean NEXTCDF-4-enabled build passes the full C test suite including the new group and type tests.
+
+**Out of scope for Sprint 5:**
+- The `NC_COMPLEX`/`NC_DOUBLECOMPLEX` structural reinterpretation, which belongs to Sprint 10.
+- `NC_BITFIELD*` types, which belong to Sprint 10.
+- `NC_FLOAT16` and other small floating-point types, which belong to Sprint 9.
+- Reference types and `nc_ref_object`/`nc_ref_region`, which belong to Sprint 10.
+- Chunking controls, compression, filters, checksums, quantization, endianness controls, and detailed fill behavior beyond the defaults, which belong to Sprint 6.
+- Dimension and variable renaming, which remains Sprint 8 work.
+- General discovery of legacy or arbitrary upstream NetCDF-4/HDF5 layouts beyond the populated subset written by NEXTCDF-4; broader interoperability belongs to Sprint 7.
+- Tools, language bindings, parallel I/O, diskless/in-memory files, and non-default HDF5 virtual file drivers.
 
 #### Sprint 6: Add Variable Storage Features
 **Objective:** Implement chunking, fill behavior, compression, filters, endianness, checksums, and related variable creation properties. Cover dataset extension and synchronization behavior needed for production use of unlimited dimensions and chunked data.

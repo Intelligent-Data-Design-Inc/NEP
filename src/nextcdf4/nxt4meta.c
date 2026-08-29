@@ -12,6 +12,7 @@
 #include <string.h>
 #include <assert.h>
 #include <hdf5_hl.h>
+#include "nclist.h"
 #include "nxt4internal.h"
 
 /** List of attribute names that are internal to NEXTCDF-4/HDF5. */
@@ -107,6 +108,13 @@ NEXTCDF4_map_hdf_type(nc_type xtype, hid_t *typep)
     case NC_DOUBLE:
         *typep = H5Tcopy(H5T_IEEE_F64LE);
         return NC_NOERR;
+    case NC_STRING:
+        *typep = H5Tcopy(H5T_C_S1);
+        if (*typep >= 0) {
+            H5Tset_size(*typep, H5T_VARIABLE);
+            H5Tset_strpad(*typep, H5T_STR_NULLTERM);
+        }
+        return NC_NOERR;
     default:
         return NC_EBADTYPE;
     }
@@ -136,6 +144,9 @@ NEXTCDF4_type_size(nc_type xtype, size_t *sizep)
     case NC_DOUBLE:
         size = 8;
         break;
+    case NC_STRING:
+        size = sizeof(char *);
+        break;
     default:
         return NC_EBADTYPE;
     }
@@ -159,6 +170,7 @@ NEXTCDF4_type_name(nc_type xtype)
     case NC_UINT64: return "uint64";
     case NC_FLOAT:  return "float";
     case NC_DOUBLE: return "double";
+    case NC_STRING: return "string";
     default:        return "unknown";
     }
 }
@@ -184,6 +196,9 @@ NEXTCDF4_check_atomic_type(NEXTCDF4_FILE_INFO_T *file, nc_type xtype)
     case NC_UINT64:
         is_ok = !file->netcdf4_model && !(file->mode & NC_CLASSIC_MODEL);
         break;
+    case NC_STRING:
+        return (!file->netcdf4_model && !(file->mode & NC_CLASSIC_MODEL))
+            ? NC_NOERR : NC_EBADTYPE;
     default:
         return NC_EBADTYPE;
     }
@@ -229,8 +244,11 @@ set_var_type(NC_VAR_INFO_T *var, nc_type xtype)
     const char *name = NEXTCDF4_type_name(xtype);
     size_t size;
 
-    if (NEXTCDF4_type_size(xtype, &size))
+    if (xtype == NC_STRING) {
+        size = sizeof(char *);
+    } else if (NEXTCDF4_type_size(xtype, &size)) {
         return NC_EBADTYPE;
+    }
     if (!(type = calloc(1, sizeof(NC_TYPE_INFO_T))))
         return NC_ENOMEM;
     if (!(type->hdr.name = strdup(name))) {
@@ -239,11 +257,14 @@ set_var_type(NC_VAR_INFO_T *var, nc_type xtype)
     }
     type->hdr.sort = NCTYP;
     type->hdr.id = (size_t)xtype;
+    type->rc = 1;
     if (xtype == NC_FLOAT)
         type->nc_type_class = NC_FLOAT;
     else if (xtype == NC_DOUBLE)
         type->nc_type_class = NC_DOUBLE;
     else if (xtype == NC_CHAR)
+        type->nc_type_class = NC_STRING;
+    else if (xtype == NC_STRING)
         type->nc_type_class = NC_STRING;
     else
         type->nc_type_class = NC_INT;
@@ -422,17 +443,43 @@ add_att(NCindex *list, NC_OBJ *container, const char *name,
     size_t size;
     void *copy = NULL;
     int ret;
+    size_t i;
 
     if ((ret = nc4_att_list_add(list, name, &att)))
         return ret;
     if (len > 0) {
-        if ((ret = NEXTCDF4_type_size(xtype, &size)))
-            return ret;
-        if (!(copy = malloc(len * size))) {
-            nc4_att_list_del(list, att);
-            return NC_ENOMEM;
+        if (xtype == NC_STRING) {
+            const char **src = (const char **)data;
+            char **cp = malloc(len * sizeof(char *));
+            if (!cp) {
+                nc4_att_list_del(list, att);
+                return NC_ENOMEM;
+            }
+            for (i = 0; i < len; i++) {
+                if (src && src[i])
+                    cp[i] = strdup(src[i]);
+                else
+                    cp[i] = strdup("");
+                if (!cp[i]) {
+                    size_t j;
+                    for (j = 0; j < i; j++)
+                        free(cp[j]);
+                    free(cp);
+                    nc4_att_list_del(list, att);
+                    return NC_ENOMEM;
+                }
+            }
+            copy = cp;
+            size = sizeof(char *);
+        } else {
+            if ((ret = NEXTCDF4_type_size(xtype, &size)))
+                return ret;
+            if (!(copy = malloc(len * size))) {
+                nc4_att_list_del(list, att);
+                return NC_ENOMEM;
+            }
+            memcpy(copy, data, len * size);
         }
-        memcpy(copy, data, len * size);
     }
     att->nc_typeid = xtype;
     att->len = len;
@@ -513,9 +560,11 @@ NEXTCDF4_def_dim(int ncid, const char *name, size_t len, int *idp)
     NC_GRP_INFO_T *grp;
     NC_DIM_INFO_T *dim = NULL;
     NEXTCDF4_DIM_INFO_T *dinfo = NULL;
+    NEXTCDF4_GRP_INFO_T *ginfo;
     hid_t space = -1;
     hid_t dcpl = -1;
     hid_t dtype = -1;
+    hid_t hdf_grp = -1;
     hsize_t cur = (len == 0) ? 0 : len;
     hsize_t max = (len == 0) ? H5S_UNLIMITED : 0;
     hsize_t chunk = 1;
@@ -524,28 +573,33 @@ NEXTCDF4_def_dim(int ncid, const char *name, size_t len, int *idp)
 
     if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
         return ret;
+    if ((ret = nc4_find_nc4_grp(ncid, &grp)))
+        return ret;
     if ((ret = NEXTCDF4_check_write_define(file)))
         return ret;
     if ((ret = NC_check_name(name)))
         return ret;
-    if ((ret = nc4_check_dup_name(h5->root_grp, (char *)name)))
+    if ((ret = nc4_check_dup_name(grp, (char *)name)))
         return ret;
 
     /* Classic model: at most one unlimited dimension. */
     if ((file->mode & NC_CLASSIC_MODEL) && len == 0) {
         size_t i;
-        for (i = 0; i < ncindexsize(h5->root_grp->dim); i++) {
-            NC_DIM_INFO_T *d = (NC_DIM_INFO_T *)ncindexith(h5->root_grp->dim, i);
+        for (i = 0; i < ncindexsize(grp->dim); i++) {
+            NC_DIM_INFO_T *d = (NC_DIM_INFO_T *)ncindexith(grp->dim, i);
             if (d && d->unlimited)
                 return NC_EINVAL;
         }
     }
 
+    ginfo = grp->format_grp_info;
+    hdf_grp = ginfo ? ginfo->hdf_group : file->rootid;
+
     if (!(dinfo = calloc(1, sizeof(*dinfo))))
         return NC_ENOMEM;
 
     assignedid = h5->next_dimid;
-    if ((ret = nc4_dim_list_add(h5->root_grp, name, len, assignedid, &dim)))
+    if ((ret = nc4_dim_list_add(grp, name, len, assignedid, &dim)))
         goto fail;
     dim->unlimited = (len == 0);
     dim->format_dim_info = dinfo;
@@ -565,7 +619,7 @@ NEXTCDF4_def_dim(int ncid, const char *name, size_t len, int *idp)
         if ((space = H5Screate_simple(1, &cur, NULL)) < 0)
             goto fail;
     }
-    dinfo->hdf_dataset = H5Dcreate2(file->rootid, name, dtype, space,
+    dinfo->hdf_dataset = H5Dcreate2(hdf_grp, name, dtype, space,
                                     H5P_DEFAULT, (dcpl >= 0) ? dcpl : H5P_DEFAULT,
                                     H5P_DEFAULT);
     if (dinfo->hdf_dataset < 0) {
@@ -594,7 +648,7 @@ fail:
             H5Dclose(dinfo->hdf_dataset);
     } H5E_END_TRY;
     if (dim)
-        nc4_dim_list_del(h5->root_grp, dim);
+        nc4_dim_list_del(grp, dim);
     free(dinfo);
     if (space >= 0)
         H5Sclose(space);
@@ -633,9 +687,11 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
     NC_GRP_INFO_T *grp;
     NC_VAR_INFO_T *var = NULL;
     NEXTCDF4_VAR_INFO_T *vinfo = NULL;
+    NEXTCDF4_GRP_INFO_T *ginfo;
     hid_t hdf_type = -1;
     hid_t space = -1;
     hid_t dcpl = -1;
+    hid_t hdf_grp = -1;
     hsize_t dims[NC_MAX_VAR_DIMS];
     hsize_t maxdims[NC_MAX_VAR_DIMS];
     hsize_t chunks[NC_MAX_VAR_DIMS];
@@ -646,6 +702,8 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
 
     if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
         return ret;
+    if ((ret = nc4_find_nc4_grp(ncid, &grp)))
+        return ret;
     if ((ret = NEXTCDF4_check_write_define(file)))
         return ret;
     if ((ret = NEXTCDF4_check_atomic_type(file, xtype)))
@@ -654,13 +712,16 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
         return NC_EINVAL;
     if ((ret = NC_check_name(name)))
         return ret;
-    if ((ret = nc4_check_dup_name(h5->root_grp, (char *)name)))
+    if ((ret = nc4_check_dup_name(grp, (char *)name)))
         return ret;
+
+    ginfo = grp->format_grp_info;
+    hdf_grp = ginfo ? ginfo->hdf_group : file->rootid;
 
     if (!(vinfo = calloc(1, sizeof(*vinfo))))
         return NC_ENOMEM;
 
-    if ((ret = nc4_var_list_add(h5->root_grp, name, ndims, &var)))
+    if ((ret = nc4_var_list_add(grp, name, ndims, &var)))
         goto fail;
     if ((ret = nc4_var_set_ndims(var, ndims)))
         goto fail;
@@ -670,7 +731,7 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
 
     for (i = 0; i < ndims; i++) {
         NC_DIM_INFO_T *dim = NULL;
-        if ((ret = nc4_find_dim(h5->root_grp, dimidsp[i], &dim, NULL)))
+        if ((ret = nc4_find_dim(grp, dimidsp[i], &dim, NULL)))
             goto fail;
         var->dimids[i] = dimidsp[i];
         var->dim[i] = dim;
@@ -728,18 +789,18 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
         if (!dinfo || dinfo->hdf_dataset < 0) { ret = NC_EFILEMETA; goto fail; }
         H5Dclose(dinfo->hdf_dataset);
         dinfo->hdf_dataset = -1;
-        if (H5Ldelete(file->rootid, name, H5P_DEFAULT) < 0)
+        if (H5Ldelete(hdf_grp, name, H5P_DEFAULT) < 0)
             { ret = NC_EHDFERR; goto fail; }
-        dinfo->hdf_dataset = H5Dcreate2(file->rootid, name, hdf_type, space,
+        dinfo->hdf_dataset = H5Dcreate2(hdf_grp, name, hdf_type, space,
                                         H5P_DEFAULT, dcpl >= 0 ? dcpl : H5P_DEFAULT,
                                         H5P_DEFAULT);
         if (dinfo->hdf_dataset < 0 || H5DSset_scale(dinfo->hdf_dataset, name) < 0 ||
             (ret = write_int_att(dinfo->hdf_dataset, NEXTCDF4_DIMID_ATT,
                                  var->dimids[0])))
             { if (!ret) ret = NC_EHDFERR; goto fail; }
-        vinfo->hdf_dataset = H5Dopen2(file->rootid, name, H5P_DEFAULT);
+        vinfo->hdf_dataset = H5Dopen2(hdf_grp, name, H5P_DEFAULT);
     } else {
-        vinfo->hdf_dataset = H5Dcreate2(file->rootid, name, hdf_type, space,
+        vinfo->hdf_dataset = H5Dcreate2(hdf_grp, name, hdf_type, space,
                                         H5P_DEFAULT, dcpl >= 0 ? dcpl : H5P_DEFAULT,
                                         H5P_DEFAULT);
     }
@@ -777,7 +838,7 @@ fail:
             H5Dclose(vinfo->hdf_dataset);
     } H5E_END_TRY;
     if (var)
-        nc4_var_list_del(h5->root_grp, var);
+        nc4_var_list_del(grp, var);
     free(vinfo);
     if (hdf_type >= 0)
         H5Tclose(hdf_type);
@@ -902,13 +963,27 @@ NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type datatype,
             goto fail;
     }
     {
-        hid_t mem_type = (datatype == NC_CHAR) ? hdf_type
-            : native_hdf_type(datatype);
+        hid_t mem_type = -1;
+        int close_mem = 0;
+        if (datatype == NC_CHAR) {
+            mem_type = hdf_type;
+        } else if (datatype == NC_STRING) {
+            mem_type = H5Tcopy(H5T_C_S1);
+            if (mem_type >= 0) {
+                H5Tset_size(mem_type, H5T_VARIABLE);
+                H5Tset_strpad(mem_type, H5T_STR_NULLTERM);
+            }
+            close_mem = 1;
+        } else {
+            mem_type = native_hdf_type(datatype);
+        }
         if ((attr = H5Acreate2(loc, name, hdf_type, space, H5P_DEFAULT,
                                H5P_DEFAULT)) < 0)
             goto fail;
         if (len > 0 && H5Awrite(attr, mem_type, att->data) < 0)
-            goto fail;
+            { if (close_mem) H5Tclose(mem_type); ret = NC_EHDFERR; goto fail; }
+        if (close_mem)
+            H5Tclose(mem_type);
     }
 
     H5Aclose(attr);
@@ -959,11 +1034,23 @@ NEXTCDF4_get_att(int ncid, int varid, const char *name, void *value,
         return NC_ENOTATT;
 
     if (att->nc_typeid == memtype && att->len > 0) {
-        size_t size;
-        if ((ret = NEXTCDF4_type_size(memtype, &size)))
-            return ret;
-        memcpy(value, att->data, att->len * size);
-        return NC_NOERR;
+        if (memtype == NC_STRING) {
+            char **src = (char **)att->data;
+            char **dst = (char **)value;
+            size_t i;
+            for (i = 0; i < att->len; i++) {
+                dst[i] = strdup(src[i]);
+                if (!dst[i])
+                    return NC_ENOMEM;
+            }
+            return NC_NOERR;
+        } else {
+            size_t size;
+            if ((ret = NEXTCDF4_type_size(memtype, &size)))
+                return ret;
+            memcpy(value, att->data, att->len * size);
+            return NC_NOERR;
+        }
     }
 
     if (att->len == 0)
@@ -1489,6 +1576,166 @@ load_global_attributes(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5)
     return NC_NOERR;
 }
 
+/** Data carried to the load-children callback. */
+typedef struct {
+    NEXTCDF4_FILE_INFO_T *file;
+    NC_FILE_INFO_T *h5;
+    NC_GRP_INFO_T *parent;
+    hid_t parent_hdf;
+} load_children_data_t;
+
+static int load_children(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
+                         hid_t parent_hdf, NC_GRP_INFO_T *parent);
+static int load_one_type(NC_GRP_INFO_T *grp, hid_t htype, const char *name);
+
+/** Load a single committed HDF5 type into the in-memory group type list. */
+static int
+load_one_type(NC_GRP_INFO_T *grp, hid_t htype, const char *name)
+{
+    NC_TYPE_INFO_T *type = NULL;
+    NEXTCDF4_TYPE_INFO_T *tinfo;
+    H5T_class_t cls;
+    size_t size = 0;
+    hid_t super = -1;
+    nc_type xtype;
+    int ret;
+
+    cls = H5Tget_class(htype);
+    size = H5Tget_size(htype);
+
+    if (cls == H5T_STRING && H5Tis_variable_str(htype))
+        size = sizeof(char *);
+
+    if ((ret = nc4_type_list_add(grp, size, name, &type))) {
+        H5Tclose(htype);
+        return ret;
+    }
+
+    if (!(tinfo = calloc(1, sizeof(*tinfo)))) {
+        H5Tclose(htype);
+        return NC_ENOMEM;
+    }
+    tinfo->hdf_type = htype;
+    type->format_type_info = tinfo;
+
+    switch (cls) {
+    case H5T_COMPOUND:
+        type->nc_type_class = NC_COMPOUND;
+        type->u.c.field = nclistnew();
+        break;
+    case H5T_ENUM:
+        type->nc_type_class = NC_ENUM;
+        type->u.e.enum_member = nclistnew();
+        if ((super = H5Tget_super(htype)) < 0)
+            return NC_EHDFERR;
+        if (map_nc_type(super, &xtype) == NC_NOERR)
+            type->u.e.base_nc_typeid = xtype;
+        H5Tclose(super);
+        break;
+    case H5T_OPAQUE:
+        type->nc_type_class = NC_OPAQUE;
+        break;
+    case H5T_VLEN:
+        type->nc_type_class = NC_VLEN;
+        if ((super = H5Tget_super(htype)) >= 0) {
+            if (map_nc_type(super, &xtype) == NC_NOERR)
+                type->u.v.base_nc_typeid = xtype;
+            H5Tclose(super);
+        }
+        break;
+    case H5T_STRING:
+        type->nc_type_class = NC_STRING;
+        break;
+    default:
+        break;
+    }
+
+    return NC_NOERR;
+}
+
+/** Load a single HDF5 group and all of its descendants. */
+static int
+load_one_group(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
+               NC_GRP_INFO_T *parent, hid_t parent_hdf, const char *name)
+{
+    NC_GRP_INFO_T *grp = NULL;
+    NEXTCDF4_GRP_INFO_T *ginfo = NULL;
+    hid_t child_hdf = -1;
+    int ret;
+
+    if ((child_hdf = H5Gopen2(parent_hdf, name, H5P_DEFAULT)) < 0)
+        return NC_EHDFERR;
+
+    if ((ret = nc4_grp_list_add(h5, parent, (char *)name, &grp)))
+        goto fail;
+
+    if (!(ginfo = calloc(1, sizeof(*ginfo)))) {
+        ret = NC_ENOMEM;
+        goto fail;
+    }
+    ginfo->hdf_group = child_hdf;
+    grp->format_grp_info = ginfo;
+
+    if ((ret = load_children(file, h5, child_hdf, grp)))
+        goto fail;
+
+    return NC_NOERR;
+
+fail:
+    if (ginfo)
+        ginfo->hdf_group = -1;
+    if (child_hdf >= 0)
+        H5Gclose(child_hdf);
+    return ret;
+}
+
+/** Callback that loads child groups and committed types. */
+static herr_t
+load_children_cb(hid_t loc, const char *name, const H5L_info_t *info, void *op_data)
+{
+    load_children_data_t *ld = op_data;
+    hid_t child_g = -1;
+    hid_t child_t = -1;
+    (void)info;
+
+    H5E_BEGIN_TRY {
+        child_g = H5Gopen2(loc, name, H5P_DEFAULT);
+    } H5E_END_TRY;
+    if (child_g >= 0) {
+        if (load_one_group(ld->file, ld->h5, ld->parent, loc, name)) {
+            H5Gclose(child_g);
+            return -1;
+        }
+        return 0;
+    }
+
+    H5E_BEGIN_TRY {
+        child_t = H5Topen2(loc, name, H5P_DEFAULT);
+    } H5E_END_TRY;
+    if (child_t >= 0) {
+        if (load_one_type(ld->parent, child_t, name)) {
+            H5Tclose(child_t);
+            return -1;
+        }
+        return 0;
+    }
+
+    return 0;
+}
+
+/** Load all child groups and committed types for a group. */
+static int
+load_children(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
+              hid_t parent_hdf, NC_GRP_INFO_T *parent)
+{
+    load_children_data_t ld = {file, h5, parent, parent_hdf};
+
+    if (H5Literate(parent_hdf, H5_INDEX_NAME, H5_ITER_INC, NULL,
+                   load_children_cb, &ld) < 0)
+        return NC_EHDFERR;
+    return NC_NOERR;
+}
+
 int
 NEXTCDF4_load_metadata(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5)
 {
@@ -1499,6 +1746,8 @@ NEXTCDF4_load_metadata(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5)
     if ((ret = load_variables(file, h5)))
         return ret;
     if ((ret = load_global_attributes(file, h5)))
+        return ret;
+    if ((ret = load_children(file, h5, file->rootid, h5->root_grp)))
         return ret;
     return NC_NOERR;
 }

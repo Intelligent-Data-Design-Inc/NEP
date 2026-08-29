@@ -18,6 +18,29 @@ NEXTCDF4_hdf_error(void)
     return NC_EHDFERR;
 }
 
+/** Recursively close HDF5 group identifiers. */
+static void
+close_group_hdf(NC_GRP_INFO_T *grp)
+{
+    size_t i;
+    NEXTCDF4_GRP_INFO_T *ginfo;
+
+    if (!grp)
+        return;
+    if ((ginfo = grp->format_grp_info)) {
+        if (ginfo->hdf_group >= 0 && ginfo->hdf_group !=
+            ((NEXTCDF4_FILE_INFO_T *)grp->nc4_info->format_file_info)->rootid) {
+            H5E_BEGIN_TRY {
+                H5Gclose(ginfo->hdf_group);
+            } H5E_END_TRY;
+        }
+        free(ginfo);
+        grp->format_grp_info = NULL;
+    }
+    for (i = 0; i < ncindexsize(grp->children); i++)
+        close_group_hdf((NC_GRP_INFO_T *)ncindexith(grp->children, i));
+}
+
 /**
  * Close owned HDF5 identifiers and release per-file memory.
  * @param file State to release; may be `NULL`.
@@ -75,6 +98,12 @@ NEXTCDF4_add_file(int ncid, const char *path, int mode,
     h5->no_write = file->no_write;
     h5->root_grp->atts_read = 1;
     h5->format_file_info = file;
+    {
+        NEXTCDF4_GRP_INFO_T *ginfo;
+        if ((ginfo = calloc(1, sizeof(*ginfo))))
+            ginfo->hdf_group = file->rootid;
+        h5->root_grp->format_grp_info = ginfo;
+    }
     *filep = file;
     return NC_NOERR;
 }
@@ -260,6 +289,7 @@ NEXTCDF4_close(int ncid, void *parameters)
     }
     if (!file->no_write && H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0)
         close_ret = NC_EHDFERR;
+    close_group_hdf(h5->root_grp);
     h5->format_file_info = NULL;
     ret = NEXTCDF4_free_file(file);
     return close_ret ? close_ret : ret;
@@ -339,6 +369,8 @@ NEXTCDF4__enddef(int ncid, size_t h_minfree, size_t v_align,
         return NC_EPERM;
     if (!file->define_mode)
         return NC_EINVAL;
+    if ((ret = NEXTCDF4_write_types(h5)))
+        return ret;
     if (H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0)
         return NC_EHDFERR;
     file->define_mode = 0;

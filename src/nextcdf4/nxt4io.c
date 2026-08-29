@@ -13,12 +13,24 @@
 
 /** Return the native HDF5 memory datatype for a standard atomic type. */
 static hid_t
-memory_type(nc_type type)
+memory_type(nc_type type, int *closep)
 {
+    if (closep)
+        *closep = 0;
     switch (type) {
     case NC_BYTE: return H5T_NATIVE_SCHAR;
     case NC_UBYTE: return H5T_NATIVE_UCHAR;
-    case NC_CHAR: return H5T_NATIVE_CHAR;
+    case NC_CHAR:
+        if (closep)
+            *closep = 1;
+        {
+            hid_t t = H5Tcopy(H5T_C_S1);
+            if (t >= 0) {
+                H5Tset_size(t, 1);
+                H5Tset_strpad(t, H5T_STR_NULLPAD);
+            }
+            return t;
+        }
     case NC_SHORT: return H5T_NATIVE_SHORT;
     case NC_USHORT: return H5T_NATIVE_USHORT;
     case NC_INT: return H5T_NATIVE_INT;
@@ -27,6 +39,17 @@ memory_type(nc_type type)
     case NC_UINT64: return H5T_NATIVE_ULLONG;
     case NC_FLOAT: return H5T_NATIVE_FLOAT;
     case NC_DOUBLE: return H5T_NATIVE_DOUBLE;
+    case NC_STRING:
+        if (closep)
+            *closep = 1;
+        {
+            hid_t t = H5Tcopy(H5T_C_S1);
+            if (t >= 0) {
+                H5Tset_size(t, H5T_VARIABLE);
+                H5Tset_strpad(t, H5T_STR_NULLTERM);
+            }
+            return t;
+        }
     default: return -1;
     }
 }
@@ -42,7 +65,8 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
     NC_VAR_INFO_T *var;
     NEXTCDF4_VAR_INFO_T *vinfo;
     hid_t fspace = -1, mspace = -1;
-    hid_t mtype;
+    hid_t mtype = -1;
+    int close_mtype = 0;
     hsize_t dims[NC_MAX_VAR_DIMS], newdims[NC_MAX_VAR_DIMS];
     hsize_t start[NC_MAX_VAR_DIMS], count[NC_MAX_VAR_DIMS], stride[NC_MAX_VAR_DIMS];
     hsize_t total = 1;
@@ -55,7 +79,7 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
     if (writing && file->define_mode) return NC_EINDEFINE;
     if (!writing && file->define_mode) return NC_EINDEFINE;
     if (!data) return NC_EINVAL;
-    if ((mtype = memory_type(memtype)) < 0) return NC_EBADTYPE;
+    if ((mtype = memory_type(memtype, &close_mtype)) < 0) return NC_EBADTYPE;
     ndims = (int)var->ndims;
     if ((fspace = H5Dget_space(vinfo->hdf_dataset)) < 0) return NC_EHDFERR;
     if (ndims == 0) {
@@ -103,6 +127,7 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
 done:
     if (mspace >= 0) H5Sclose(mspace);
     if (fspace >= 0) H5Sclose(fspace);
+    if (mtype >= 0 && close_mtype) H5Tclose(mtype);
     return ret;
 }
 

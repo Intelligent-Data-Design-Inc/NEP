@@ -105,6 +105,8 @@ NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
             ret = NC_EHDFERR;
         goto fail;
     }
+    if (h5->root_grp->format_grp_info)
+        ((NEXTCDF4_GRP_INFO_T *)h5->root_grp->format_grp_info)->hdf_group = file->rootid;
     H5Pclose(fapl);
     return NC_NOERR;
 
