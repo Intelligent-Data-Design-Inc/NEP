@@ -44,11 +44,11 @@ NEXTCDF-4 availability is advertised at compile time through `nep_meta.h`:
 
 ## Compatibility Modes
 
-| Mode | Selection | Superblock | Purpose |
-|------|-----------|------------|---------|
-| Native | `NC_NEXTCDF4` | v3 | Full enhanced model and all new types |
-| Classic model | `NC_NEXTCDF4 | NC_CLASSIC_MODEL` | v3 | NetCDF-3 data model on HDF5 |
-| NetCDF-4 model | `NC_NEXTCDF4 | NC_NETCDF4_MODEL` | v1 | Files readable by upstream netcdf-c |
+| Mode | Base flag | Compatibility flag | Superblock | Purpose |
+|------|-----------|--------------------|------------|---------|
+| Native | `NC_NEXTCDF4` | — | v3 | Full enhanced model and all new types |
+| Classic model | `NC_NEXTCDF4` | `NC_CLASSIC_MODEL` | v3 | NetCDF-3 data model on HDF5 |
+| NetCDF-4 model | `NC_NEXTCDF4` | `NC_NETCDF4_MODEL` | v1 | Files readable by upstream netcdf-c |
 
 **Native mode** allows all NEXTCDF-4-specific types and HDF5 1.14+ features.
 

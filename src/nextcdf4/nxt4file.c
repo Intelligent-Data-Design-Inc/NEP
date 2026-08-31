@@ -12,15 +12,6 @@
 #include "nxt4internal.h"
 
 /*
- * @return The NetCDF error code used for HDF5-layer failures.
- */
-int
-NEXTCDF4_hdf_error(void)
-{
-    return NC_EHDFERR;
-}
-
-/*
  * Recursively close HDF5 object identifiers for a group.
  */
 static void

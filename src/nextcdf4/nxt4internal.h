@@ -104,10 +104,6 @@ int NEXTCDF4_write_markers(NEXTCDF4_FILE_INFO_T *file);
  * @return `NC_NOERR` on success, or `NC_EFILEMETA` for invalid markers.
  */
 int NEXTCDF4_read_markers(NEXTCDF4_FILE_INFO_T *file);
-/** Return the NetCDF error used for an HDF5-layer failure.
- * @return `NC_EHDFERR`.
- */
-int NEXTCDF4_hdf_error(void);
 
 /** Verify the file is in define mode and not read-only.
  * @param file NEXTCDF-4 file state.
