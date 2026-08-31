@@ -60,22 +60,22 @@ NEXTCDF-4 availability is advertised at compile time through `nep_meta.h`:
 
 ## Diagnostics and Logging
 
-NEXTCDF-4 uses the same `LOG(())` macro convention as netcdf-c's `libsrc4` and `libhdf5`. Diagnostics are compiled in only when NEP is built against a NetCDF-C that was itself built with logging support. Build-time availability is reported in `nep_meta.h`:
+NEXTCDF-4 uses the same `LOG(())` macro convention as netcdf-c's `libsrc4` and `libhdf5`, but NEP logging is independent of the underlying NetCDF-C logging build. It is compiled in by default and can be disabled with `-DNEP_ENABLE_LOGGING=OFF`. Build-time availability is reported in `nep_meta.h`:
 
 ```c
 #include <nep_meta.h>
 
 #if NEP_HAS_LOGGING
-/* NEXTCDF-4 can emit diagnostic messages. */
+/* NEXTCDF-4 is instrumented for diagnostics. */
 #endif
 ```
 
-When logging is available, the following controls apply:
+To control diagnostics:
 
-- Set the `NETCDF_LOG_LEVEL` environment variable before opening a file. The backend initialization reads this variable and calls `nc_set_log_level()`.
-- Call `nc_set_log_level(level)` directly, where `level` is `0` (errors only), `1` (major messages), `2` (lifecycle events), `3` (metadata operations), or higher for more detail. `nc_set_log_level(-1)` disables all output.
+- Set the `NEP_LOG_LEVEL` environment variable before opening a file. The NEXTCDF-4 initialization reads this variable and applies it with `nep_set_log_level()`.
+- Call `nep_set_log_level(level)` directly, where `level` is `0` (errors only), `1` (major messages), `2` (lifecycle events), `3` (metadata operations), or higher for more detail. `nep_set_log_level(-1)` disables all output.
 
-Messages are written to `stderr` (or to per-rank log files for parallel NetCDF-C builds). Instrumented NEXTCDF-4 paths include file creation and open, close/abort, define/end-define mode transitions, dimension and variable definition, and the metadata loader. HDF5 failures additionally dump the HDF5 error stack.
+Messages are written to `stderr`. Instrumented NEXTCDF-4 paths include file creation and open, close/abort, define/end-define mode transitions, dimension and variable definition, and the metadata loader. HDF5 failures additionally dump the HDF5 error stack.
 
 ## Supported Atomic Types
 

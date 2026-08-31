@@ -117,7 +117,7 @@ main(void)
         return 1;
     }
 
-    nc_set_log_level(3);
+    nep_set_log_level(3);
 
     if (!NC_NEXTCDF4_initialize()) {
         restore_stderr(oldfd);
@@ -156,7 +156,7 @@ main(void)
         return 1;
     }
 
-    nc_set_log_level(-1);
+    nep_set_log_level(-1);
 
     if (nc_open(FILE_NAME, NC_NEXTCDF4 | NC_NOWRITE, &ncid) != NC_NOERR) {
         restore_stderr(oldfd);
@@ -190,7 +190,7 @@ main(void)
         return 1;
     }
 
-    nc_set_log_level(1);
+    nep_set_log_level(1);
 
     /* This open must fail because the file is not a valid HDF5 file. */
     if (nc_open(BAD_FILE, NC_NEXTCDF4 | NC_NOWRITE, &ncid) == NC_NOERR) {

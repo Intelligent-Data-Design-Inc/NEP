@@ -14,13 +14,9 @@
 #define NXT4ERR_H
 
 #include "config.h"
-#include "nc_logging.h"
+#include "nep_logging.h"
 #include <netcdf.h>
-
-#ifdef LOGGING
-/* Dump the HDF5 error stack after a NetCDF HDF5 failure. */
-extern void nc_log_hdf5(void);
-#endif /* LOGGING */
+#include <hdf5.h>
 
 /**
  * @internal Log a NetCDF error, set `ret`, and jump to the `fail:`
@@ -46,7 +42,7 @@ extern void nc_log_hdf5(void);
 #define BAIL2(e) \
    do { \
       BAILLOG(e); \
-      nc_log_hdf5(); \
+      H5Eprint2(H5E_DEFAULT, stderr); \
       ret = e; \
       goto fail; \
    } while (0)

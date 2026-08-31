@@ -114,11 +114,11 @@ NC_NEXTCDF4_initialize(void)
 
 #ifdef LOGGING
     {
-        const char *env = getenv("NETCDF_LOG_LEVEL");
+        const char *env = getenv("NEP_LOG_LEVEL");
         if (env) {
             int level = atoi(env);
             if (level >= 0)
-                nc_set_log_level(level);
+                nep_set_log_level(level);
         }
     }
 #endif /* LOGGING */

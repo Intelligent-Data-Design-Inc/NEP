@@ -75,67 +75,30 @@
 
 
 #### Sprint 2: Logging in NEP
-**Objective:** Introduce a NetCDF-C-style `LOG(())` logging system into NEP, automatically enabling it when the linked NetCDF-C library was built with logging support. Wire the system into the NEXTCDF-4 backend so that lifecycle, metadata, I/O, and error paths can emit diagnostics on demand without affecting release builds when logging is disabled.
+**Objective:** Add an independent NEP logging system for the NEXTCDF-4 backend and future NEP handlers. It uses the same `LOG(())` macro style as netcdf-c's `libsrc4` and `libhdf5`, but routes output through NEP's own `nep_log()` and is controlled by a public `nep_set_log_level()` API. Logging is enabled by default and does not depend on whether the host NetCDF-C was built with logging.
 
-**Detailed Plan:** The implementation mirrors the legacy NetCDF-C logging facility used in `netcdf-c/libsrc4` and `netcdf-c/libhdf5`: a compile-time `LOGGING` symbol, a variadic `LOG(e)` macro that expands to a backend-provided logging function, and companion `BAIL`/`BAIL2` macros that log an error, capture the HDF5 error stack, set `retval`, and jump to a cleanup label. NEP will reuse the `nc_log()` function and `nc_log_level` global exported by a logging-enabled NetCDF-C, so NEP diagnostics share the same log level and `NETCDF_LOG_LEVEL` runtime control as the host library.
-
-**Prerequisites:**
-- NetCDF-C installed at `/usr/local/netcdf-c` with logging enabled (`NC_HAS_LOGGING = 1` in `netcdf_meta.h`). This makes `nc_log`, `nc_set_log_level`, and, for HDF5 backends, `nc_log_hdf5` available as dynamic symbols.
-- NEXTCDF-4 backend is buildable and passes its v4.0.0 Sprint 2 lifecycle tests.
-- NEP carries its own copies of NetCDF-C internal headers (`include/nc4internal.h`, `include/hdf5internal.h`, etc.), so a private `include/nc_logging.h` can be added without depending on NetCDF-C-installed internal headers.
-
-**Deliverables:**
-1. **CMake detection of NetCDF-C logging.** In `CMakeLists.txt`, after NetCDF-C is found, probe `NC_HAS_LOGGING` from `netcdf_meta.h` (or use `nc-config --has-logging` if available). When logging is present, define the build-level symbols `HAVE_NETCDF_LOGGING` and `LOGGING`; otherwise leave `LOGGING` undefined. Expose the capability as `NEP_HAS_LOGGING` in `include/nep_meta.h.in`.
-2. **`include/nc_logging.h`** — a NEP copy of the NetCDF-C logging macro header:
-   - Under `#ifdef LOGGING`: declare `void nc_log(int severity, const char *fmt, ...);` and define `LOG(e) nc_log e`, so `LOG((2, "msg %s", path))` expands to `nc_log(2, "msg %s", path)`.
-   - Under `#else`: define `LOG(e)` to nothing, so disabled builds pay zero runtime cost.
-   - Define `BAILLOG(e)`, `BAIL(e)`, and `BAIL_QUIET(e)` for common error paths.
-   - If NetCDF-C does not provide `nc_set_log_level`, define it away under non-logging builds so client test code compiles cleanly.
-3. **`src/nextcdf4/nxt4err.h`** — NEXTCDF-4-specific error macros:
-   - Define `BAIL(e)` to log the NetCDF error, set `retval = e`, and `goto fail`.
-   - Define `BAIL2(e)` (logging builds only) to log the error, call `nc_log_hdf5()` to dump the HDF5 error stack, set `retval`, and `goto fail`.
-   - Keep the macros compatible with the existing `fail:` cleanup pattern used in `nxt4create.c`/`nxt4open.c`.
-4. **Integrate logging into NEXTCDF-4.**
-   - Include `nc_logging.h` from `nxt4internal.h` (and therefore all NEXTCDF-4 sources).
-   - In `NC_NEXTCDF4_initialize()`, when `LOGGING` is defined, read the `NETCDF_LOG_LEVEL` environment variable and call `nc_set_log_level()` so diagnostics are active without requiring an explicit API call.
-   - Replace the temporary `fprintf(stderr, ...)` debug statements in `nxt4create.c`, `nxt4open.c`, and `nxt4file.c` with `LOG((severity, ...))` calls.
-   - Add entry/exit and error logging to the main lifecycle functions (`NEXTCDF4_create`, `NEXTCDF4_open`, `NEXTCDF4_close`, `NEXTCDF4_abort`, `NEXTCDF4__enddef`, `NEXTCDF4_redef`), the metadata loader (`NEXTCDF4_load_metadata`), and selected I/O helpers.
-   - Use `BAIL2` on HDF5 failures so the HDF5 error stack is captured automatically.
-5. **Logging regression test.** Add `test/nextcdf4/tst_nextcdf4_logging.c`:
-   - Skip cleanly when `NEP_HAS_LOGGING` is false.
-   - Redirect `stderr` to a temporary file, call `nc_set_log_level(4)`, perform `nc_create`/`nc_open`/`nc_close` cycles, and verify that expected diagnostics appear.
-   - Set `nc_set_log_level(-1)` and confirm that subsequent operations produce no log output.
-   - Exercise an intentional HDF5 failure path and verify a severity-0 error line and HDF5 stack dump are emitted when logging is on.
-6. **Documentation updates.**
-   - In `docs/nextcdf4.md`, add a "Diagnostics and Logging" subsection describing how to enable NEP logging (build NetCDF-C with logging, set `NETCDF_LOG_LEVEL`, or call `nc_set_log_level`), the severity-level convention, and which NEXTCDF-4 operations are instrumented.
-   - In `docs/releases/v4.1.0.md`, note that Sprint 2 delivered the shared `LOG(())` infrastructure and NEXTCDF-4 instrumentation.
-
-**Implementation sequence:**
-1. Add `NC_HAS_LOGGING` detection to `CMakeLists.txt` and `NEP_HAS_LOGGING` to `include/nep_meta.h.in`.
-2. Create `include/nc_logging.h` with guarded `LOG`, `BAIL`, `BAILLOG`, and `BAIL_QUIET` macros.
-3. Create `src/nextcdf4/nxt4err.h` with HDF5-aware `BAIL2` and include it from NEXTCDF-4 source files.
-4. Update `nxt4internal.h` to include `nc_logging.h`.
-5. Replace ad-hoc `fprintf(stderr, ...)` debug prints in `nxt4create.c`, `nxt4open.c`, and `nxt4file.c` with `LOG(...)` calls.
-6. Add entry/exit logging and `BAIL`/`BAIL2` conversions in the lifecycle and metadata functions, keeping the existing cleanup paths intact.
-7. Add `NETCDF_LOG_LEVEL` initialization in `NC_NEXTCDF4_initialize()`.
-8. Add `test/nextcdf4/tst_nextcdf4_logging.c` and wire it into `test/nextcdf4/CMakeLists.txt`.
-9. Build and test in two configurations:
-   - NetCDF-C with logging enabled: verify `NEP_HAS_LOGGING=1`, `LOG` emits output, and the new test passes.
-   - NetCDF-C with logging disabled: verify `NEP_HAS_LOGGING=0`, `LOG` expands to nothing, and the full test suite still passes.
-10. Update `docs/nextcdf4.md` and `docs/releases/v4.1.0.md`.
+**Detailed Plan:**
+- Add a CMake option `NEP_ENABLE_LOGGING` (default ON). When ON, define the `LOGGING` preprocessor macro; when OFF, `LOG(...)` expands to nothing and `nep_set_log_level()` is a no-op.
+- Expose the capability as `NEP_HAS_LOGGING` in `include/nep_meta.h.in`.
+- Create `include/nep_logging.h` with the `LOG(())`, `BAILLOG`, `BAIL`, and `BAIL_QUIET` macros.
+- Add the public function `nep_set_log_level(int new_level)` to `include/nep.h` and implement it, along with `nep_log()` and the `nep_log_level` global, in `src/nep.c`.
+- Link the NEXTCDF-4 backend (`ncnextcdf4`) against the core `nep` library so it can use the shared logging state.
+- Add `src/nextcdf4/nxt4err.h` with `BAIL`/`BAIL2` macros adapted to the local `ret`/`fail:` style. `BAIL2` dumps the HDF5 error stack directly with `H5Eprint2()` so it does not require NetCDF-C's `nc_log_hdf5()`.
+- Instrument NEXTCDF-4 lifecycle and metadata functions, replacing temporary `fprintf(stderr, ...)` debug prints with `LOG(...)` calls.
+- In `NC_NEXTCDF4_initialize()`, read `NEP_LOG_LEVEL` and call `nep_set_log_level()`.
+- Add `test/nextcdf4/tst_nextcdf4_logging.c` to verify output at level 3, suppression at `-1`, and HDF5 failure logging.
+- Update `docs/nextcdf4.md` and `docs/releases/v4.1.0.md`.
 
 **Verification and acceptance criteria:**
-- A default NEP build against a non-logging NetCDF-C still configures, builds, and passes the existing C test suite with no unresolved `nc_log` references.
-- A NEP build against the logging-enabled `/usr/local/netcdf-c` sets `NEP_HAS_LOGGING=1`, resolves `nc_log`/`nc_log_hdf5` from the NetCDF-C shared library, and passes all tests.
-- `LOG((severity, fmt, ...))` calls in NEXTCDF-4 produce output only when `severity <= nc_log_level`; output is suppressed after `nc_set_log_level(-1)`.
-- The temporary `fprintf(stderr, ...)` statements in `nxt4create.c`, `nxt4open.c`, and `nxt4file.c` are removed; no unguarded debug output remains in the NEXTCDF-4 backend.
-- `BAIL2` on an injected HDF5 failure emits a severity-0 NetCDF error line followed by an HDF5 error-stack dump.
-- The logging test captures and checks `stderr`, passes in the logging build, and skips in the non-logging build.
-- `cmake --build build` produces no new warnings from the variadic `LOG` macro or the `nc_log` declaration.
+- A default NEP build sets `NEP_HAS_LOGGING=1`; `nep_set_log_level()` controls NEXTCDF-4 diagnostic output.
+- With logging enabled, `LOG((severity, fmt, ...))` calls produce output only when `severity <= nep_log_level`, and output is suppressed after `nep_set_log_level(-1)`.
+- With logging disabled (`-DNEP_ENABLE_LOGGING=OFF`), `LOG(...)` expands to nothing, the logging test skips, and the full C test suite still passes.
+- The temporary `fprintf(stderr, ...)` debug statements in `nxt4create.c`, `nxt4open.c`, and `nxt4file.c` are removed; no unguarded debug output remains in the NEXTCDF-4 backend.
+- `BAIL2` on an injected HDF5 failure emits a severity-0 NetCDF error line and dumps the HDF5 error stack.
+- `cmake --build build` produces no new warnings.
 
 **Out of scope for Sprint 2:**
-- A public NEP-specific logging API (e.g., `nep_set_log_level` or `nep_log`); NEP reuses the existing NetCDF-C `nc_set_log_level` and `NETCDF_LOG_LEVEL` controls.
-- Logging in read-only format handlers (GeoTIFF, GRIB2, FITS, PDS4, DICOM, CDF, PDB, mmCIF) beyond the shared macro header; those may be instrumented in later maintenance sprints.
+- Instrumenting the read-only format handlers (GeoTIFF, GRIB2, FITS, PDS4, DICOM, CDF, PDB, mmCIF) beyond making the shared macro header available; those may be instrumented in later maintenance sprints.
 - Per-rank log files for parallel builds; NEP does not yet exercise parallel NEXTCDF-4 I/O.
 - Replacing every existing error path in NEXTCDF-4 with `BAIL` macros; the goal is coverage of the lifecycle and metadata paths, not a wholesale control-flow refactor.
 

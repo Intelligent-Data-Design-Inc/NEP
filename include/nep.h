@@ -81,7 +81,9 @@ extern "C" {
     int nc_inq_var_lz4(int ncid, int varid, int *lz4p, int *levelp);
     int nc_def_var_lzf(int ncid, int varid);
     int nc_inq_var_lzf(int ncid, int varid, int *lzfp);
-    
+
+    /** Set the NEP logging level (0=errors, higher=more verbose, -1=off). */
+    int nep_set_log_level(int new_level);
 #if defined(__cplusplus)
 }
 #endif
