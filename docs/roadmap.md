@@ -1,5 +1,12 @@
 # NEP Development Roadmap
 
+### V4.1.0 - NEXTCDF4 Tools and Examples
+#### Sprint 1: Create Tools and Language Bindings
+**Objective:** Create `nextcopy` and `nextdump` with support for all NEXTCDF-4 types and compatibility modes. Expose the new C APIs and datatypes through Fortran and other maintained language bindings.
+
+#### Sprint 2: Validate Compatibility and Prepare the Release
+**Objective:** Run broad NetCDF-C compatibility, interoperability, regression, and representative-file testing across supported HDF5 versions. Complete performance and resource-leak checks, user documentation, examples, release notes, and v4.0.0 release readiness work.
+
 ### V4.0.0 - NEXTCDF4
 
 NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NEP UDF expansion pack. The complete architecture, compatibility contract, datatype roadmap, and proposed source layout are defined in `docs/plan/NEXTCDF4_plan.md`.
@@ -647,12 +654,6 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 - Typed convenience functions such as `nc_put_var_complex` or `nc_put_var_bitfield`.
 - Conversion between complex numbers and real/imaginary arrays.
 - Support for opening arbitrary HDF5 files whose compound types happen to be named `r`/`i` but are not intended as complex numbers (detection is purely structural in this sprint).
-
-#### Sprint 11: Create Tools and Language Bindings
-**Objective:** Create `nextcopy` and `nextdump` with support for all NEXTCDF-4 types and compatibility modes. Expose the new C APIs and datatypes through Fortran and other maintained language bindings.
-
-#### Sprint 12: Validate Compatibility and Prepare the Release
-**Objective:** Run broad NetCDF-C compatibility, interoperability, regression, and representative-file testing across supported HDF5 versions. Complete performance and resource-leak checks, user documentation, examples, release notes, and v4.0.0 release readiness work.
 
 ### V3.5.0 - Add nep_meta.h with Build Info, and NISAR/SWOT/ABI Examples
 

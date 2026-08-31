@@ -18,7 +18,7 @@ NEXTCDF4_hdf_error(void)
     return NC_EHDFERR;
 }
 
-/** Recursively close HDF5 group identifiers. */
+/** Recursively close HDF5 object identifiers for a group. */
 static void
 close_group_hdf(NC_GRP_INFO_T *grp)
 {
@@ -37,6 +37,30 @@ close_group_hdf(NC_GRP_INFO_T *grp)
         free(ginfo);
         grp->format_grp_info = NULL;
     }
+
+    for (i = 0; i < ncindexsize(grp->vars); i++) {
+        NC_VAR_INFO_T *var = (NC_VAR_INFO_T *)ncindexith(grp->vars, i);
+        NEXTCDF4_VAR_INFO_T *vinfo;
+        if (var && (vinfo = var->format_var_info) && vinfo->hdf_dataset >= 0) {
+            H5E_BEGIN_TRY {
+                H5Dclose(vinfo->hdf_dataset);
+            } H5E_END_TRY;
+            vinfo->hdf_dataset = -1;
+        }
+    }
+
+    for (i = 0; i < ncindexsize(grp->dim); i++) {
+        NC_DIM_INFO_T *dim = (NC_DIM_INFO_T *)ncindexith(grp->dim, i);
+        NEXTCDF4_DIM_INFO_T *dinfo;
+        if (dim && (dinfo = (NEXTCDF4_DIM_INFO_T *)dim->format_dim_info) &&
+            dinfo->hdf_dataset >= 0) {
+            H5E_BEGIN_TRY {
+                H5Dclose(dinfo->hdf_dataset);
+            } H5E_END_TRY;
+            dinfo->hdf_dataset = -1;
+        }
+    }
+
     for (i = 0; i < ncindexsize(grp->children); i++)
         close_group_hdf((NC_GRP_INFO_T *)ncindexith(grp->children, i));
 }
@@ -57,6 +81,11 @@ NEXTCDF4_free_file(NEXTCDF4_FILE_INFO_T *file)
         ret = NC_EHDFERR;
     if (file->hdfid >= 0 && H5Fclose(file->hdfid) < 0)
         ret = NC_EHDFERR;
+    if (file->hdfid >= 0) {
+        int nobj = H5Fget_obj_count(file->hdfid, H5F_OBJ_ALL);
+        fprintf(stderr, "NEXTCDF4_free_file: hdfid=%ld closed? nobj=%d ret=%d\n",
+                (long)file->hdfid, nobj, ret);
+    }
     free(file->path);
     free(file);
     return ret;
@@ -292,11 +321,12 @@ NEXTCDF4_close(int ncid, void *parameters)
         if ((ret = NEXTCDF4__enddef(ncid, 0, 0, 0, 0)))
             return ret;
     }
-    if (!file->no_write && H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0)
-        close_ret = NC_EHDFERR;
     close_group_hdf(h5->root_grp);
     h5->format_file_info = NULL;
+    if (!file->no_write && H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0)
+        close_ret = NC_EHDFERR;
     ret = NEXTCDF4_free_file(file);
+    nc4_file_list_del(ncid);
     return close_ret ? close_ret : ret;
 }
 
