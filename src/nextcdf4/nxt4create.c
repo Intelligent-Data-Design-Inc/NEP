@@ -8,6 +8,8 @@
  */
 #include "config.h"
 #include <unistd.h>
+#include <string.h>
+#include <errno.h>
 #include "nxt4internal.h"
 
 /**
@@ -74,6 +76,11 @@ NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
         return NC_ENOTBUILT;
 
     existed = access(path, F_OK) == 0;
+    if (existed && !(cmode & NC_NOCLOBBER)) {
+        fprintf(stderr, "NEXTCDF4_create: unlinking %s\n", path);
+        if (unlink(path) < 0)
+            fprintf(stderr, "NEXTCDF4_create: unlink %s failed: %s\n", path, strerror(errno));
+    }
     if ((ret = NEXTCDF4_add_file(ncid, path, cmode, &file)))
         return ret;
     if ((ret = nc4_find_grp_h5(ncid, NULL, &h5)))
@@ -81,6 +88,10 @@ NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
     h5->flags |= NC_INDEF;
     file->no_write = 0;
     if ((fapl = H5Pcreate(H5P_FILE_ACCESS)) < 0) {
+        ret = NC_EHDFERR;
+        goto fail;
+    }
+    if (H5Pset_fclose_degree(fapl, H5F_CLOSE_STRONG) < 0) {
         ret = NC_EHDFERR;
         goto fail;
     }
@@ -96,6 +107,13 @@ NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
     if (file->hdfid < 0) {
         ret = existed && (cmode & NC_NOCLOBBER) ? NC_EEXIST : NC_EHDFERR;
         goto fail;
+    }
+    {
+        char fname[1024];
+        ssize_t len = H5Fget_name(file->hdfid, fname, sizeof(fname));
+        int nobj = H5Fget_obj_count(file->hdfid, H5F_OBJ_ALL);
+        fprintf(stderr, "NEXTCDF4_create: H5Fcreate succeeded hdfid=%ld path=%s nobj=%d\n",
+                (long)file->hdfid, len > 0 ? fname : "?", nobj);
     }
     ret = NC_NOERR;
     if ((file->rootid = H5Gopen2(file->hdfid, "/", H5P_DEFAULT)) < 0 ||

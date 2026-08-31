@@ -31,6 +31,7 @@ NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
 {
     NEXTCDF4_FILE_INFO_T *file = NULL;
     NC_FILE_INFO_T *h5 = NULL;
+    hid_t fapl = -1;
     unsigned flags;
     int ret;
 
@@ -47,6 +48,12 @@ NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     } H5E_END_TRY;
     if (ret <= 0)
         return NC_ENOTNC;
+    if ((fapl = H5Pcreate(H5P_FILE_ACCESS)) < 0)
+        return NC_EHDFERR;
+    if (H5Pset_fclose_degree(fapl, H5F_CLOSE_STRONG) < 0) {
+        H5Pclose(fapl);
+        return NC_EHDFERR;
+    }
     if ((ret = NEXTCDF4_add_file(ncid, path, mode, &file)))
         return ret;
     if ((ret = nc4_find_grp_h5(ncid, NULL, &h5)))
@@ -54,8 +61,9 @@ NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     file->define_mode = 0;
     flags = (mode & NC_WRITE) ? H5F_ACC_RDWR : H5F_ACC_RDONLY;
     H5E_BEGIN_TRY {
-        file->hdfid = H5Fopen(path, flags, H5P_DEFAULT);
+        file->hdfid = H5Fopen(path, flags, fapl);
     } H5E_END_TRY;
+    H5Pclose(fapl);
     if (file->hdfid < 0) {
         ret = NC_EHDFERR;
         goto fail;

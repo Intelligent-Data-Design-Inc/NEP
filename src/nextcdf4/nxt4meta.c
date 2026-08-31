@@ -813,6 +813,7 @@ NEXTCDF4_def_dim(int ncid, const char *name, size_t len, int *idp)
     ginfo = grp->format_grp_info;
     hdf_grp = ginfo ? ginfo->hdf_group : file->rootid;
 
+    fprintf(stderr, "NEXTCDF4_def_dim: name=%s ncid=%d\n", name, ncid);
     if (!(dinfo = calloc(1, sizeof(*dinfo))))
         return NC_ENOMEM;
 
@@ -921,6 +922,8 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
     NC_FILE_INFO_T *h5;
     NEXTCDF4_FILE_INFO_T *file;
     NC_GRP_INFO_T *grp;
+
+    fprintf(stderr, "NEXTCDF4_def_var: name=%s ncid=%d\n", name, ncid);
     NC_VAR_INFO_T *var = NULL;
     NEXTCDF4_VAR_INFO_T *vinfo = NULL;
     NEXTCDF4_GRP_INFO_T *ginfo;
@@ -1969,6 +1972,9 @@ NEXTCDF4_rename_att(int ncid, int varid, const char *name, const char *newname)
     }
     nc4_att_list_del(list, att);
     nc4_att_free(att);
+
+    if (H5Fflush(file->hdfid, H5F_SCOPE_LOCAL) < 0)
+        return NC_EHDFERR;
     return NC_NOERR;
 }
 
@@ -2015,7 +2021,6 @@ NEXTCDF4_rename_dim(int ncid, int dimid, const char *name)
     NC_DIM_INFO_T *dim = NULL;
     NEXTCDF4_DIM_INFO_T *dinfo = NULL;
     NEXTCDF4_GRP_INFO_T *ginfo;
-    NC_VAR_INFO_T *cvar;
     hid_t hdf_grp = -1;
     char *oldname;
     int ret;
@@ -2058,15 +2063,13 @@ NEXTCDF4_rename_dim(int ncid, int dimid, const char *name)
     if (!ncindexrebuild(dim->container->dim))
         return NC_EHDFERR;
 
-    cvar = find_coord_var(dim->container, dim);
-    if (cvar) {
-        free(cvar->hdr.name);
-        if (!(cvar->hdr.name = strdup(name)))
-            return NC_ENOMEM;
-        if (!ncindexrebuild(dim->container->vars))
-            return NC_EHDFERR;
-    }
+    /* Do not rename the in-memory coordinate variable here; netcdf-c
+     * semantics keep the variable name unchanged until the caller
+     * explicitly renames it with nc_rename_var. The HDF5 link, however,
+     * has already moved with the dimension-scale dataset. */
 
+    if (H5Fflush(file->hdfid, H5F_SCOPE_LOCAL) < 0)
+        return NC_EHDFERR;
     return NC_NOERR;
 }
 
@@ -2118,9 +2121,36 @@ NEXTCDF4_rename_var(int ncid, int varid, const char *name)
     oldname = var->hdr.name;
 
     if (vinfo && vinfo->hdf_dataset >= 0) {
-        if (H5Lmove(hdf_grp, oldname, hdf_grp, name, H5P_DEFAULT,
-                    H5P_DEFAULT) < 0)
-            return NC_EHDFERR;
+        char cur_path[1024];
+        ssize_t n;
+        const char *cur_name = oldname;
+
+        n = H5Iget_name(vinfo->hdf_dataset, cur_path, sizeof(cur_path));
+        if (n > 0 && n < (ssize_t)sizeof(cur_path)) {
+            char *p = strrchr(cur_path, '/');
+            if (p)
+                cur_name = p + 1;
+        }
+
+        if (H5Lexists(hdf_grp, name, H5P_DEFAULT) > 0) {
+            /* The target link already exists. If it is the same object
+             * as the variable's dataset (e.g. the dimension was already
+             * renamed), no link move is needed. Otherwise delete the
+             * existing object and move the variable into its name. */
+            if (strcmp(cur_name, name) != 0) {
+                H5E_BEGIN_TRY {
+                    H5Ldelete(hdf_grp, name, H5P_DEFAULT);
+                } H5E_END_TRY;
+                if (H5Lmove(hdf_grp, cur_name, hdf_grp, name, H5P_DEFAULT,
+                            H5P_DEFAULT) < 0)
+                    return NC_EHDFERR;
+            }
+        } else if (H5Lexists(hdf_grp, cur_name, H5P_DEFAULT) > 0) {
+            if (H5Lmove(hdf_grp, cur_name, hdf_grp, name, H5P_DEFAULT,
+                        H5P_DEFAULT) < 0)
+                return NC_EHDFERR;
+        }
+        /* If cur_name has no link the dataset was already moved. */
     }
 
     free(var->hdr.name);
@@ -2133,6 +2163,13 @@ NEXTCDF4_rename_var(int ncid, int varid, const char *name)
     if (dim) {
         dinfo = (NEXTCDF4_DIM_INFO_T *)dim->format_dim_info;
         if (dinfo && dinfo->hdf_dataset >= 0) {
+            if (dinfo->hdf_dataset != vinfo->hdf_dataset) {
+                if (H5Dclose(dinfo->hdf_dataset) < 0)
+                    return NC_EHDFERR;
+                dinfo->hdf_dataset = H5Dopen2(hdf_grp, name, H5P_DEFAULT);
+                if (dinfo->hdf_dataset < 0)
+                    return NC_EHDFERR;
+            }
             if (H5DSset_scale(dinfo->hdf_dataset, name) < 0)
                 return NC_EHDFERR;
         }
@@ -2143,6 +2180,8 @@ NEXTCDF4_rename_var(int ncid, int varid, const char *name)
             return NC_EHDFERR;
     }
 
+    if (H5Fflush(file->hdfid, H5F_SCOPE_LOCAL) < 0)
+        return NC_EHDFERR;
     return NC_NOERR;
 }
 
