@@ -151,6 +151,10 @@ int NEXTCDF4_load_metadata(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5);
 
 /** Materialize pending root-group metadata to HDF5 and exit define mode.
  * @param ncid NetCDF file identifier.
+ * @param h_minfree Ignored (reserved for future alignment control).
+ * @param v_align Ignored (reserved for future alignment control).
+ * @param v_minfree Ignored (reserved for future alignment control).
+ * @param r_align Ignored (reserved for future alignment control).
  * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int NEXTCDF4__enddef(int ncid, size_t h_minfree, size_t v_align,
@@ -242,6 +246,7 @@ int NEXTCDF4_put_varm(int, int, const size_t *, const size_t *, const ptrdiff_t 
  * @param xtype NetCDF atomic type.
  * @param len Number of elements.
  * @param value Attribute data.
+ * @param memtype In-memory type for the attribute value.
  * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type xtype,

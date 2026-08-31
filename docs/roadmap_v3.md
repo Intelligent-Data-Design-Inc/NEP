@@ -1,88 +1,11 @@
 # NEP Development Roadmap
 
 ### V4.1.0 - NEXTCDF4 Tools and Examples
-
-#### Sprint 1: Docs for NEXTCDF4
-**Objective:** Create complete user-facing and developer documentation for the NEXTCDF-4 backend, including a dedicated reference page, Doxygen main-page integration, and updates to design, PRD, FAQ, and release notes so users and downstream developers can understand how to build, select, and use NEXTCDF-4 files and new types.
-
-**Detailed Plan**: See `docs/plan/NEXTCDF4_plan.md` for architecture, compatibility contract, type mapping, and source layout.
-
-**Prerequisites:**
-- v4.0.0 NEXTCDF-4 backend implementation complete and buildable with `NEP_ENABLE_NEXTCDF4`.
-- `NEP_HAS_NEXTCDF4` and related feature macros are stable in `nep_meta.h`.
-- `NC_NEXTCDF4`, `NC_NETCDF4_MODEL`, and new atomic type constants (`NC_FLOAT16`, `NC_BFLOAT16`, `NC_FLOAT8_*`, etc.) are public API in `include/nep.h`.
-- Existing format-reader documentation (`docs/geotiff.md`, `docs/grib2.md`, `docs/fits.md`, etc.) establishes the page style and section order to follow.
-
-**Deliverables:**
-1. **`docs/nextcdf4.md`** — dedicated user reference page covering:
-   - Overview and relationship to the built-in NetCDF-4/HDF5 backend.
-   - Build configuration (`NEP_ENABLE_NEXTCDF4`), HDF5 version requirements (1.14.0+ required, 2.1.1+ recommended), and `nep_meta.h` feature macros.
-   - Creating and opening files with `NC_NEXTCDF4` and the `.ncrc` UDF9 autoload path.
-   - Compatibility modes: native NEXTCDF-4, `NC_CLASSIC_MODEL`, and `NC_NETCDF4_MODEL`.
-   - Supported atomic types table (classic, small floating-point, complex, bitfield, reference) and their HDF5 mappings.
-   - Dimension, variable, attribute, group, and user-defined-type behavior, including hidden markers (`_Nextcdf4Backend`, `_Nextcdf4Model`, `_Netcdf4Coordinates`, `_Netcdf4Dimid`).
-   - New reference APIs: `nc_ref_object`, `nc_deref_object`, `nc_ref_region`, `nc_deref_region`.
-   - Limitations: explicit `NC_NEXTCDF4` selection only (no magic-number dispatch), deprecated `nc_put_varm`/`nc_get_varm`, reference restrictions, and `NC_NETCDF4_MODEL` type restrictions.
-   - Code examples for create/read/reopen, compatibility-mode files, and reference usage.
-
-2. **`docs/mainpage.md`** — add a NEXTCDF-4 section to the Doxygen landing page with a brief description, UDF9 / `NC_NEXTCDF4` mention, and a link to `docs/nextcdf4.md`.
-
-3. **`docs/formats.md`** — add NEXTCDF-4 as a UDF9 backend entry (distinct from the read-only format readers) with a link to `docs/nextcdf4.md`; preserve the existing UDF slot table and autoload examples.
-
-4. **`docs/design.md`** — update the architecture and project-structure sections:
-   - Remove "(planned)" from the `src/nextcdf4` entry.
-   - Expand the NEXTCDF-4 paragraph to cover the full v4.0.0 feature set (metadata, I/O, groups, types, rename, small floats, complex, bitfield, reference).
-   - Clarify that UDF9 selection is explicit because HDF5 magic numbers are already owned by the built-in backend.
-
-5. **`docs/prd.md`** — add a NEXTCDF-4 product-requirements section covering goals, build options, type support, compatibility contract, new reference APIs, and limitations.
-
-6. **`docs/prfaq.md`** — add FAQ entries for NEXTCDF-4:
-   - What is NEXTCDF-4 and why does NEP include it?
-   - How do I create or open a NEXTCDF-4 file?
-   - What new atomic types does NEXTCDF-4 support?
-   - Can NEXTCDF-4 files be read by upstream netcdf-c?
-   - Why is NEXTCDF-4 explicit selection only?
-   - What are `NC_CLASSIC_MODEL` and `NC_NETCDF4_MODEL` compatibility modes?
-   - Update the "What is the current version?" and "What formats does NEP support?" answers to mention NEXTCDF-4.
-
-7. **`docs/releases/v4.1.0.md`** — create release notes documenting that v4.1.0 Sprint 1 delivered the NEXTCDF-4 documentation suite and pointing forward to the logging, tools, and language-binding sprints.
-
-8. **Doxygen integration** — verify that `src/nextcdf4/*.c` and `src/nextcdf4/*.h` source files are included in Doxygen `INPUT` paths, that existing file-level `@file`/`@brief` comments render, and that any new documentation cross-references resolve correctly.
-
-**Implementation sequence:**
-1. Draft `docs/nextcdf4.md` using the established format-reader page template.
-2. Update `docs/mainpage.md` with a NEXTCDF-4 section.
-3. Update `docs/formats.md` with a NEXTCDF-4 backend entry.
-4. Update `docs/design.md` architecture and project-structure sections.
-5. Add a NEXTCDF-4 section to `docs/prd.md`.
-6. Add NEXTCDF-4 FAQ entries to `docs/prfaq.md` and update version/format summary answers.
-7. Create `docs/releases/v4.1.0.md` release notes.
-8. Run the Doxygen build (`cmake --build build --target docs`) and fix any warnings or broken cross-references.
-
-**Verification and acceptance criteria:**
-- `docs/nextcdf4.md` exists, follows the existing format-reader style, and covers every deliverable topic listed above.
-- `docs/mainpage.md` links to `nextcdf4.md` and mentions `NC_NEXTCDF4` / UDF9.
-- All internal cross-references in new and updated docs resolve without broken links.
-- `cmake --build build --target docs` completes with zero Doxygen warnings.
-- New and updated documentation is consistent with `docs/plan/NEXTCDF4_plan.md`, the detailed v4.0.0 sprint descriptions in this roadmap, and the actual `src/nextcdf4/` implementation and public headers.
-- No code changes are introduced; only documentation is added or updated.
-
-**Out of scope for Sprint 1:**
-- Implementation of `nextcopy` / `nextdump` tools (v4.1.0 Sprint 3).
-- Fortran or other language bindings for NEXTCDF-4 (later v4.1.0 sprints).
-- New NEXTCDF-4 functionality beyond documenting the existing v4.0.0 behavior.
-- Autotools documentation parity; NEP is CMake-only, so Autotools examples are not required.
-
-
-#### Sprint 2: Logging in NEP
-- Add a LOG(()) macro as in /home/ed/netcdf-c/libsrc4 and libhdf5.
-- Turn on NEP logging when netcdf-c logging is enabled.
-
-#### Sprint 3: Create Tools and Language Bindings
+#### Sprint 1: Create Tools and Language Bindings
 **Objective:** Create `nextcopy` and `nextdump` with support for all NEXTCDF-4 types and compatibility modes. Expose the new C APIs and datatypes through Fortran and other maintained language bindings.
 
-#### Sprint 4: Validate Compatibility and Prepare the Release
-**Objective:** Run broad NetCDF-C compatibility, interoperability, regression, and representative-file testing across supported HDF5 versions. Complete performance and resource-leak checks, final documentation, examples, release notes, and v4.1.0 release readiness work.
+#### Sprint 2: Validate Compatibility and Prepare the Release
+**Objective:** Run broad NetCDF-C compatibility, interoperability, regression, and representative-file testing across supported HDF5 versions. Complete performance and resource-leak checks, user documentation, examples, release notes, and v4.0.0 release readiness work.
 
 ### V4.0.0 - NEXTCDF4
 

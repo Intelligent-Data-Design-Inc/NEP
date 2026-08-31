@@ -13,7 +13,9 @@
 #include "netcdf_filter.h"
 #include "nxt4internal.h"
 
-/** Complete NetCDF dispatch table for NEXTCDF-4 UDF slot 9. */
+/*
+ * Complete NetCDF dispatch table for NEXTCDF-4 UDF slot 9.
+ */
 static const NC_Dispatch NEXTCDF4_dispatcher = {
     NC_FORMATX_NEXTCDF4,
     NC_DISPATCH_VERSION,
@@ -96,12 +98,13 @@ static const NC_Dispatch NEXTCDF4_dispatcher = {
     NC_NOOP_inq_filter_avail
 };
 
-/** Active NEXTCDF-4 dispatch table, populated during initialization. */
+/*
+ * Active NEXTCDF-4 dispatch table, populated during initialization.
+ */
 const NC_Dispatch *NEXTCDF4_dispatch_table = NULL;
 
-/**
+/*
  * Register the NEXTCDF-4 dispatch table in NetCDF UDF slot 9.
- * @return Pointer to the NEXTCDF-4 dispatch table.
  */
 NC_Dispatch *
 NC_NEXTCDF4_initialize(void)
@@ -111,9 +114,8 @@ NC_NEXTCDF4_initialize(void)
     return (NC_Dispatch *)&NEXTCDF4_dispatcher;
 }
 
-/**
+/*
  * Finalize process-wide NEXTCDF-4 dispatch state.
- * @return `NC_NOERR`.
  */
 int
 NC_NEXTCDF4_finalize(void)

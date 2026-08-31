@@ -15,7 +15,9 @@
 #include "nclist.h"
 #include "nxt4internal.h"
 
-/** List of attribute names that are internal to NEXTCDF-4/HDF5. */
+/*
+ * List of attribute names that are internal to NEXTCDF-4/HDF5.
+ */
 static const char *reserved_atts[] = {
     NEXTCDF4_BACKEND_ATT,
     NEXTCDF4_MODEL_ATT,
@@ -38,7 +40,9 @@ static const char *reserved_atts[] = {
     NULL
 };
 
-/** @return Nonzero when @p name is a reserved attribute name. */
+/*
+ * @return Nonzero when @p name is a reserved attribute name.
+ */
 static int
 is_reserved_att(const char *name)
 {
@@ -49,7 +53,9 @@ is_reserved_att(const char *name)
     return 0;
 }
 
-/** Free a dynamically-allocated string list used by the loader. */
+/*
+ * Free a dynamically-allocated string list used by the loader.
+ */
 static void
 free_name_list(char **names, size_t n)
 {
@@ -61,10 +67,8 @@ free_name_list(char **names, size_t n)
     free(names);
 }
 
-/**
+/*
  * @brief Check that a file is writable and currently in define mode.
- * @param file Description of file.
- * @return NC_NOERR on success, or another error code on failure.
  */
 int
 NEXTCDF4_check_write_define(NEXTCDF4_FILE_INFO_T *file)
@@ -76,11 +80,8 @@ NEXTCDF4_check_write_define(NEXTCDF4_FILE_INFO_T *file)
     return NC_NOERR;
 }
 
-/**
+/*
  * @brief Map an atomic nc_type to its on-disk HDF5 datatype.
- * @param xtype Description of xtype.
- * @param typep Description of typep.
- * @return NC_NOERR on success, or another error code on failure.
  */
 int
 NEXTCDF4_map_hdf_type(nc_type xtype, hid_t *typep)
@@ -182,11 +183,8 @@ NEXTCDF4_map_hdf_type(nc_type xtype, hid_t *typep)
     }
 }
 
-/**
+/*
  * @brief Return the in-memory size, in bytes, of an atomic nc_type.
- * @param xtype Description of xtype.
- * @param sizep Description of sizep.
- * @return NC_NOERR on success, or another error code on failure.
  */
 int
 NEXTCDF4_type_size(nc_type xtype, size_t *sizep)
@@ -258,10 +256,8 @@ NEXTCDF4_type_size(nc_type xtype, size_t *sizep)
     return NC_NOERR;
 }
 
-/**
+/*
  * @brief Return the short name for an atomic nc_type.
- * @param xtype Description of xtype.
- * @return Pointer to the type name string.
  */
 const char *
 NEXTCDF4_type_name(nc_type xtype)
@@ -298,11 +294,8 @@ NEXTCDF4_type_name(nc_type xtype)
     }
 }
 
-/**
+/*
  * @brief Check whether an atomic type is allowed for the current file mode.
- * @param file Description of file.
- * @param xtype Description of xtype.
- * @return NC_NOERR if allowed, or another error code on failure.
  */
 int
 NEXTCDF4_check_atomic_type(NEXTCDF4_FILE_INFO_T *file, nc_type xtype)
@@ -351,7 +344,9 @@ NEXTCDF4_check_atomic_type(NEXTCDF4_FILE_INFO_T *file, nc_type xtype)
     return is_ok ? NC_NOERR : NC_ENOTNC4;
 }
 
-/** @return The native in-memory HDF5 type that corresponds to an nc_type. */
+/*
+ * @return The native in-memory HDF5 type that corresponds to an nc_type.
+ */
 static hid_t
 native_hdf_type(nc_type xtype)
 {
@@ -382,7 +377,9 @@ native_hdf_type(nc_type xtype)
     }
 }
 
-/** Build an NC_TYPE_INFO_T for a fixed-size atomic variable. */
+/*
+ * Build an NC_TYPE_INFO_T for a fixed-size atomic variable.
+ */
 static int
 set_var_type(NC_VAR_INFO_T *var, nc_type xtype)
 {
@@ -430,7 +427,9 @@ set_var_type(NC_VAR_INFO_T *var, nc_type xtype)
     return NC_NOERR;
 }
 
-/** Write a null-terminated scalar string HDF5 attribute. */
+/*
+ * Write a null-terminated scalar string HDF5 attribute.
+ */
 static int
 write_string_att(hid_t loc, const char *name, const char *value)
 {
@@ -459,7 +458,9 @@ done:
     return ret;
 }
 
-/** Write a one-element 32-bit integer HDF5 attribute. */
+/*
+ * Write a one-element 32-bit integer HDF5 attribute.
+ */
 static int
 write_int_att(hid_t loc, const char *name, int value)
 {
@@ -482,7 +483,9 @@ done:
     return ret;
 }
 
-/** Write an array of 32-bit integers as an HDF5 attribute. */
+/*
+ * Write an array of 32-bit integers as an HDF5 attribute.
+ */
 static int
 write_int_array_att(hid_t loc, const char *name, const int *values, size_t len)
 {
@@ -513,7 +516,9 @@ done:
     return ret;
 }
 
-/** Map an on-disk HDF5 datatype to a fixed-size NetCDF type. */
+/*
+ * Map an on-disk HDF5 datatype to a fixed-size NetCDF type.
+ */
 static int
 map_nc_type(hid_t htype, nc_type *xtypep)
 {
@@ -610,7 +615,9 @@ map_nc_type(hid_t htype, nc_type *xtypep)
     return NC_EBADTYPE;
 }
 
-/** @return The group or variable attribute list and the object HDF5 id. */
+/*
+ * @return The group or variable attribute list and the object HDF5 id.
+ */
 static int
 get_att_context(NC_GRP_INFO_T *grp, NC_VAR_INFO_T *var, NCindex **listp,
                 hid_t *locp)
@@ -630,7 +637,9 @@ get_att_context(NC_GRP_INFO_T *grp, NC_VAR_INFO_T *var, NCindex **listp,
     return NC_NOERR;
 }
 
-/** Find an existing attribute by name in the appropriate list. */
+/*
+ * Find an existing attribute by name in the appropriate list.
+ */
 static NC_ATT_INFO_T *
 find_att(NCindex *list, const char *name)
 {
@@ -643,7 +652,9 @@ find_att(NCindex *list, const char *name)
     return (NC_ATT_INFO_T *)obj;
 }
 
-/** Allocate and add a new attribute to the in-memory model. */
+/*
+ * Allocate and add a new attribute to the in-memory model.
+ */
 static int
 add_att(NCindex *list, NC_OBJ *container, const char *name,
         nc_type xtype, size_t len, const void *data,
@@ -700,7 +711,9 @@ add_att(NCindex *list, NC_OBJ *container, const char *name,
     return NC_NOERR;
 }
 
-/** Read an HDF5 attribute into the in-memory model. */
+/*
+ * Read an HDF5 attribute into the in-memory model.
+ */
 static int
 read_hdf5_att(hid_t loc, const char *name, NCindex *list, NC_OBJ *container)
 {
@@ -762,13 +775,8 @@ done:
     return ret;
 }
 
-/**
+/*
  * @brief Define a dimension in the current group.
- * @param ncid Description of ncid.
- * @param name Description of name.
- * @param len Description of len.
- * @param idp Description of idp.
- * @return NC_NOERR on success, or another error code on failure.
  */
 int
 NEXTCDF4_def_dim(int ncid, const char *name, size_t len, int *idp)
@@ -878,13 +886,8 @@ fail:
     return ret;
 }
 
-/**
+/*
  * @brief Inquire about a dimension.
- * @param ncid Description of ncid.
- * @param dimid Description of dimid.
- * @param name Description of name.
- * @param lenp Description of lenp.
- * @return NC_NOERR on success, or another error code on failure.
  */
 int
 NEXTCDF4_inq_dim(int ncid, int dimid, char *name, size_t *lenp)
@@ -905,15 +908,8 @@ NEXTCDF4_inq_dim(int ncid, int dimid, char *name, size_t *lenp)
     return NC_NOERR;
 }
 
-/**
+/*
  * @brief Define a variable in the current group.
- * @param ncid Description of ncid.
- * @param name Description of name.
- * @param xtype Description of xtype.
- * @param ndims Description of ndims.
- * @param dimidsp Description of dimidsp.
- * @param varidp Description of varidp.
- * @return NC_NOERR on success, or another error code on failure.
  */
 int
 NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
@@ -1088,7 +1084,7 @@ fail:
     return ret;
 }
 
-/** Create or re-create the HDF5 dataset for a variable, applying the
+/* Create or re-create the HDF5 dataset for a variable, applying the
  * current storage, chunking, fill, filter, and endian settings. */
 static int
 create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
@@ -1274,7 +1270,9 @@ fail:
     return ret;
 }
 
-/** Common setup for a variable-storage dispatch function. */
+/*
+ * Common setup for a variable-storage dispatch function.
+ */
 static int
 find_var_for_write(int ncid, int varid, NC_FILE_INFO_T **h5,
                    NEXTCDF4_FILE_INFO_T **file, NC_GRP_INFO_T **grp,
@@ -1288,13 +1286,8 @@ find_var_for_write(int ncid, int varid, NC_FILE_INFO_T **h5,
     return NEXTCDF4_check_write_define(*file);
 }
 
-/**
+/*
  * @brief Set the storage and chunking parameters for a variable.
- * @param ncid Description of ncid.
- * @param varid Description of varid.
- * @param storage Description of storage.
- * @param chunksizesp Description of chunksizesp.
- * @return NC_NOERR on success, or another error code on failure.
  */
 int
 NEXTCDF4_def_var_chunking(int ncid, int varid, int storage,
@@ -1329,14 +1322,8 @@ NEXTCDF4_def_var_chunking(int ncid, int varid, int storage,
     return create_var_dataset(var, h5, file, grp);
 }
 
-/**
+/*
  * @brief Set the deflate compression parameters for a variable.
- * @param ncid Description of ncid.
- * @param varid Description of varid.
- * @param shuffle Description of shuffle.
- * @param deflate Description of deflate.
- * @param deflate_level Description of deflate_level.
- * @return NC_NOERR on success, or another error code on failure.
  */
 int
 NEXTCDF4_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
@@ -1363,12 +1350,8 @@ NEXTCDF4_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
     return create_var_dataset(var, h5, file, grp);
 }
 
-/**
+/*
  * @brief Enable or disable the Fletcher32 checksum filter for a variable.
- * @param ncid Description of ncid.
- * @param varid Description of varid.
- * @param fletcher32 Description of fletcher32.
- * @return NC_NOERR on success, or another error code on failure.
  */
 int
 NEXTCDF4_def_var_fletcher32(int ncid, int varid, int fletcher32)
@@ -1391,13 +1374,8 @@ NEXTCDF4_def_var_fletcher32(int ncid, int varid, int fletcher32)
     return create_var_dataset(var, h5, file, grp);
 }
 
-/**
+/*
  * @brief Set the fill value behavior for a variable.
- * @param ncid Description of ncid.
- * @param varid Description of varid.
- * @param no_fill Description of no_fill.
- * @param fill_value Description of fill_value.
- * @return NC_NOERR on success, or another error code on failure.
  */
 int
 NEXTCDF4_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
@@ -1429,12 +1407,8 @@ NEXTCDF4_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
     return create_var_dataset(var, h5, file, grp);
 }
 
-/**
+/*
  * @brief Set the byte order for a variable's data.
- * @param ncid Description of ncid.
- * @param varid Description of varid.
- * @param endianness Description of endianness.
- * @return NC_NOERR on success, or another error code on failure.
  */
 int
 NEXTCDF4_def_var_endian(int ncid, int varid, int endianness)
@@ -1455,13 +1429,8 @@ NEXTCDF4_def_var_endian(int ncid, int varid, int endianness)
     return create_var_dataset(var, h5, file, grp);
 }
 
-/**
+/*
  * @brief Set the quantization mode for a variable.
- * @param ncid Description of ncid.
- * @param varid Description of varid.
- * @param quantize_mode Description of quantize_mode.
- * @param nsd Description of nsd.
- * @return NC_NOERR on success, or another error code on failure.
  */
 int
 NEXTCDF4_def_var_quantize(int ncid, int varid, int quantize_mode, int nsd)
@@ -1487,14 +1456,8 @@ NEXTCDF4_def_var_quantize(int ncid, int varid, int quantize_mode, int nsd)
     return NC_NOERR;
 }
 
-/**
+/*
  * @brief Stub for user-defined variable filters (not implemented).
- * @param ncid Description of ncid.
- * @param varid Description of varid.
- * @param id Description of id.
- * @param nparams Description of nparams.
- * @param params Description of params.
- * @return NC_ENOTBUILT.
  */
 int
 NEXTCDF4_def_var_filter(int ncid, int varid, unsigned int id, size_t nparams,
@@ -1504,28 +1467,8 @@ NEXTCDF4_def_var_filter(int ncid, int varid, unsigned int id, size_t nparams,
     return NC_ENOTBUILT;
 }
 
-/**
+/*
  * @brief Inquire about all supported properties of a variable.
- * @param ncid Description of ncid.
- * @param varid Description of varid.
- * @param name Description of name.
- * @param xtypep Description of xtypep.
- * @param ndimsp Description of ndimsp.
- * @param dimidsp Description of dimidsp.
- * @param nattsp Description of nattsp.
- * @param shufflep Description of shufflep.
- * @param deflatep Description of deflatep.
- * @param deflate_levelp Description of deflate_levelp.
- * @param fletcher32p Description of fletcher32p.
- * @param contiguousp Description of contiguousp.
- * @param chunksizesp Description of chunksizesp.
- * @param no_fillp Description of no_fillp.
- * @param fill_valuep Description of fill_valuep.
- * @param endiannessp Description of endiannessp.
- * @param idp Description of idp.
- * @param nparamsp Description of nparamsp.
- * @param params Description of params.
- * @return NC_NOERR on success, or another error code on failure.
  */
 int
 NEXTCDF4_inq_var_all(int ncid, int varid, char *name, nc_type *xtypep,
@@ -1586,16 +1529,8 @@ NEXTCDF4_inq_var_all(int ncid, int varid, char *name, nc_type *xtypep,
     return NC_NOERR;
 }
 
-/**
+/*
  * @brief Inquire about a variable's name, type, dimensions, and attributes.
- * @param ncid Description of ncid.
- * @param varid Description of varid.
- * @param name Description of name.
- * @param xtypep Description of xtypep.
- * @param ndimsp Description of ndimsp.
- * @param dimidsp Description of dimidsp.
- * @param nattsp Description of nattsp.
- * @return NC_NOERR on success, or another error code on failure.
  */
 int
 NEXTCDF4_inq_var(int ncid, int varid, char *name, nc_type *xtypep,
@@ -1624,13 +1559,8 @@ NEXTCDF4_inq_var(int ncid, int varid, char *name, nc_type *xtypep,
     return NC_NOERR;
 }
 
-/**
+/*
  * @brief Inquire about the filter ids applied to a variable.
- * @param ncid Description of ncid.
- * @param varid Description of varid.
- * @param nfiltersp Description of nfiltersp.
- * @param ids Description of ids.
- * @return NC_NOERR if filters are found, or another error code on failure.
  */
 int
 NEXTCDF4_inq_var_filter_ids(int ncid, int varid, size_t *nfiltersp,
@@ -1661,14 +1591,8 @@ NEXTCDF4_inq_var_filter_ids(int ncid, int varid, size_t *nfiltersp,
     return NC_ENOFILTER;
 }
 
-/**
+/*
  * @brief Inquire about the parameters of a variable filter.
- * @param ncid Description of ncid.
- * @param varid Description of varid.
- * @param id Description of id.
- * @param nparamsp Description of nparamsp.
- * @param params Description of params.
- * @return NC_NOERR on success, or another error code on failure.
  */
 int
 NEXTCDF4_inq_var_filter_info(int ncid, int varid, unsigned int id,
@@ -1705,16 +1629,8 @@ NEXTCDF4_inq_var_filter_info(int ncid, int varid, unsigned int id,
     return NC_NOERR;
 }
 
-/**
+/*
  * @brief Create or replace an attribute on a group or variable.
- * @param ncid Description of ncid.
- * @param varid Description of varid.
- * @param name Description of name.
- * @param datatype Description of datatype.
- * @param len Description of len.
- * @param value Description of value.
- * @param memtype Description of memtype.
- * @return NC_NOERR on success, or another error code on failure.
  */
 int
 NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type datatype,
@@ -1843,14 +1759,8 @@ fail:
     return ret;
 }
 
-/**
+/*
  * @brief Read the value of an attribute.
- * @param ncid Description of ncid.
- * @param varid Description of varid.
- * @param name Description of name.
- * @param value Description of value.
- * @param memtype Description of memtype.
- * @return NC_NOERR on success, or another error code on failure.
  */
 int
 NEXTCDF4_get_att(int ncid, int varid, const char *name, void *value,
@@ -1909,13 +1819,8 @@ NEXTCDF4_get_att(int ncid, int varid, const char *name, void *value,
                             att->len, &range_error, NULL, 0, 0, 0);
 }
 
-/**
+/*
  * @brief Rename an attribute on a group or variable.
- * @param ncid Description of ncid.
- * @param varid Description of varid.
- * @param name Description of name.
- * @param newname Description of newname.
- * @return NC_NOERR on success, or another error code on failure.
  */
 int
 NEXTCDF4_rename_att(int ncid, int varid, const char *name, const char *newname)
@@ -1978,7 +1883,9 @@ NEXTCDF4_rename_att(int ncid, int varid, const char *name, const char *newname)
     return NC_NOERR;
 }
 
-/** Find a 1D coordinate variable that uses a dimension. */
+/*
+ * Find a 1D coordinate variable that uses a dimension.
+ */
 static NC_VAR_INFO_T *
 find_coord_var(NC_GRP_INFO_T *grp, NC_DIM_INFO_T *dim)
 {
@@ -1994,7 +1901,9 @@ find_coord_var(NC_GRP_INFO_T *grp, NC_DIM_INFO_T *dim)
     return NULL;
 }
 
-/** Determine if a variable is a 1D coordinate variable. */
+/*
+ * Determine if a variable is a 1D coordinate variable.
+ */
 static NC_DIM_INFO_T *
 coord_var_dim(NC_VAR_INFO_T *var)
 {
@@ -2005,12 +1914,8 @@ coord_var_dim(NC_VAR_INFO_T *var)
     return NULL;
 }
 
-/**
+/*
  * @brief Rename a dimension and update its HDF5 link.
- * @param ncid Description of ncid.
- * @param dimid Description of dimid.
- * @param name Description of name.
- * @return NC_NOERR on success, or another error code on failure.
  */
 int
 NEXTCDF4_rename_dim(int ncid, int dimid, const char *name)
@@ -2073,12 +1978,8 @@ NEXTCDF4_rename_dim(int ncid, int dimid, const char *name)
     return NC_NOERR;
 }
 
-/**
+/*
  * @brief Rename a variable and update its HDF5 link.
- * @param ncid Description of ncid.
- * @param varid Description of varid.
- * @param name Description of name.
- * @return NC_NOERR on success, or another error code on failure.
  */
 int
 NEXTCDF4_rename_var(int ncid, int varid, const char *name)
@@ -2185,12 +2086,8 @@ NEXTCDF4_rename_var(int ncid, int varid, const char *name)
     return NC_NOERR;
 }
 
-/**
+/*
  * @brief Delete an attribute from a group or variable.
- * @param ncid Description of ncid.
- * @param varid Description of varid.
- * @param name Description of name.
- * @return NC_NOERR on success, or another error code on failure.
  */
 int
 NEXTCDF4_del_att(int ncid, int varid, const char *name)
@@ -2230,7 +2127,9 @@ NEXTCDF4_del_att(int ncid, int varid, const char *name)
     return NC_NOERR;
 }
 
-/** Data collected while iterating over the root group. */
+/*
+ * Data collected while iterating over the root group.
+ */
 typedef struct {
     char **names;
     int *dimids;
@@ -2238,7 +2137,9 @@ typedef struct {
     int capacity;
 } dim_list_t;
 
-/** Callback for H5Literate that collects dimension scale datasets. */
+/*
+ * Callback for H5Literate that collects dimension scale datasets.
+ */
 static herr_t
 find_dim_cb(hid_t loc, const char *name, const H5L_info_t *info, void *op_data)
 {
@@ -2299,7 +2200,9 @@ find_dim_cb(hid_t loc, const char *name, const H5L_info_t *info, void *op_data)
     return 0;
 }
 
-/** Load one dimension from the file. */
+/*
+ * Load one dimension from the file.
+ */
 static int
 load_one_dim(NEXTCDF4_FILE_INFO_T *file, NC_GRP_INFO_T *grp,
              const char *name, int dimid)
@@ -2354,7 +2257,9 @@ done:
     return ret;
 }
 
-/** Load all dimensions in stable id order for a group. */
+/*
+ * Load all dimensions in stable id order for a group.
+ */
 static int
 load_dimensions(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
                 NC_GRP_INFO_T *grp)
@@ -2403,7 +2308,9 @@ load_dimensions(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
     return NC_NOERR;
 }
 
-/** Collect variable dataset names and their stored varids. */
+/*
+ * Collect variable dataset names and their stored varids.
+ */
 typedef struct {
     char **names;
     int *varids;
@@ -2411,13 +2318,8 @@ typedef struct {
     int capacity;
 } var_list_t;
 
-/**
+/*
  * @brief H5Literate callback that collects candidate variable datasets.
- * @param loc Description of loc.
- * @param name Description of name.
- * @param info Description of info.
- * @param op_data Description of op_data.
- * @return Non-negative on success, or negative on failure.
  */
 static herr_t
 find_var_cb(hid_t loc, const char *name, const H5L_info_t *info, void *op_data)
@@ -2508,7 +2410,9 @@ find_var_cb(hid_t loc, const char *name, const H5L_info_t *info, void *op_data)
     return 0;
 }
 
-/** Find a dimension in the current group or any ancestor by name. */
+/*
+ * Find a dimension in the current group or any ancestor by name.
+ */
 static NC_DIM_INFO_T *
 find_dim_by_name(NC_GRP_INFO_T *grp, const char *name)
 {
@@ -2532,7 +2436,9 @@ typedef struct {
     int found;
 } resolve_scale_t;
 
-/** Resolve a single attached scale to a dimid. Only acts on the first scale. */
+/*
+ * Resolve a single attached scale to a dimid. Only acts on the first scale.
+ */
 static int
 scale_resolve_visitor(hid_t did, unsigned int dim, hid_t dsid, void *op_data)
 {
@@ -2569,7 +2475,9 @@ scale_resolve_visitor(hid_t did, unsigned int dim, hid_t dsid, void *op_data)
     return 0;
 }
 
-/** Resolve a variable's dimension ids from attached dimension scales. */
+/*
+ * Resolve a variable's dimension ids from attached dimension scales.
+ */
 static int
 resolve_var_dimids(NC_GRP_INFO_T *grp, hid_t dset, int ndims, int *dimids)
 {
@@ -2600,7 +2508,9 @@ resolve_var_dimids(NC_GRP_INFO_T *grp, hid_t dset, int ndims, int *dimids)
     return ret;
 }
 
-/** Load one variable and its attributes. */
+/*
+ * Load one variable and its attributes.
+ */
 static int
 load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
              NC_GRP_INFO_T *grp, const char *name, int varid)
@@ -2803,20 +2713,17 @@ done:
     return ret;
 }
 
-/** Iteration callback for variable attributes. */
+/*
+ * Iteration callback for variable attributes.
+ */
 typedef struct {
     NCindex *list;
     NC_OBJ *container;
     hid_t loc;
 } att_iter_data_t;
 
-/**
+/*
  * @brief H5Aiterate2 callback that loads a single attribute.
- * @param loc Description of loc.
- * @param attr_name Description of attr_name.
- * @param ainfo Description of ainfo.
- * @param op_data Description of op_data.
- * @return Non-negative on success, or negative on failure.
  */
 static herr_t
 load_att_cb(hid_t loc, const char *attr_name, const H5A_info_t *ainfo,
@@ -2831,7 +2738,9 @@ load_att_cb(hid_t loc, const char *attr_name, const H5A_info_t *ainfo,
     return 0;
 }
 
-/** Load all variables and their attributes for a group. */
+/*
+ * Load all variables and their attributes for a group.
+ */
 static int
 load_variables(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
                NC_GRP_INFO_T *grp)
@@ -2909,7 +2818,9 @@ load_variables(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
     return NC_NOERR;
 }
 
-/** Load attributes for the given group. */
+/*
+ * Load attributes for the given group.
+ */
 static int
 load_group_attributes(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
                       NC_GRP_INFO_T *grp)
@@ -2929,7 +2840,9 @@ load_group_attributes(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
     return NC_NOERR;
 }
 
-/** Data carried to the load-children callback. */
+/*
+ * Data carried to the load-children callback.
+ */
 typedef struct {
     NEXTCDF4_FILE_INFO_T *file;
     NC_FILE_INFO_T *h5;
@@ -2941,7 +2854,9 @@ static int load_children(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
                          hid_t parent_hdf, NC_GRP_INFO_T *parent);
 static int load_one_type(NC_GRP_INFO_T *grp, hid_t htype, const char *name);
 
-/** Load a single committed HDF5 type into the in-memory group type list. */
+/*
+ * Load a single committed HDF5 type into the in-memory group type list.
+ */
 static int
 load_one_type(NC_GRP_INFO_T *grp, hid_t htype, const char *name)
 {
@@ -3006,7 +2921,9 @@ load_one_type(NC_GRP_INFO_T *grp, hid_t htype, const char *name)
     return NC_NOERR;
 }
 
-/** Load dimensions, variables, attributes, and then child groups for a group. */
+/*
+ * Load dimensions, variables, attributes, and then child groups for a group.
+ */
 static int
 load_group_metadata(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
                     NC_GRP_INFO_T *grp, hid_t hdf_grp)
@@ -3030,7 +2947,9 @@ load_group_metadata(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
     return NC_NOERR;
 }
 
-/** Load a single HDF5 group and all of its descendants. */
+/*
+ * Load a single HDF5 group and all of its descendants.
+ */
 static int
 load_one_group(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
                NC_GRP_INFO_T *parent, hid_t parent_hdf, const char *name)
@@ -3066,7 +2985,9 @@ fail:
     return ret;
 }
 
-/** Callback that loads child groups and committed types. */
+/*
+ * Callback that loads child groups and committed types.
+ */
 static herr_t
 load_children_cb(hid_t loc, const char *name, const H5L_info_t *info, void *op_data)
 {
@@ -3100,7 +3021,9 @@ load_children_cb(hid_t loc, const char *name, const H5L_info_t *info, void *op_d
     return 0;
 }
 
-/** Load all child groups and committed types for a group. */
+/*
+ * Load all child groups and committed types for a group.
+ */
 static int
 load_children(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
               hid_t parent_hdf, NC_GRP_INFO_T *parent)
@@ -3113,11 +3036,8 @@ load_children(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
     return NC_NOERR;
 }
 
-/**
+/*
  * @brief Load all metadata for an open NEXTCDF-4 file.
- * @param file Description of file.
- * @param h5 Description of h5.
- * @return NC_NOERR on success, or another error code on failure.
  */
 int
 NEXTCDF4_load_metadata(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5)

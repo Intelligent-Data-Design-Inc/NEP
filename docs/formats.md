@@ -1,6 +1,6 @@
 # NEP Format Readers
 
-NEP implements eight NetCDF User Defined Format (UDF) handlers that allow external scientific data formats to be opened with the standard `nc_open()` API. Most readers are **disabled by default** and must be enabled at build time; the legacy PDB reader is enabled by default.
+NEP implements NetCDF User Defined Format (UDF) handlers that allow external scientific data formats to be opened with the standard `nc_open()` API, plus an optional NEXTCDF-4 backend that replaces the built-in NetCDF-4/HDF5 backend when selected explicitly. Most format readers are **disabled by default** and must be enabled at build time; the legacy PDB reader is enabled by default.
 
 ## UDF Slot Assignments
 
@@ -15,8 +15,9 @@ NEP implements eight NetCDF User Defined Format (UDF) handlers that allow extern
 | UDF6 | DICOM | `DICM` at byte offset 128 | v3.0.0 |
 | UDF7 | Legacy PDB | `HEADER` | v3.3.0 |
 | UDF8 | PDBx/mmCIF | `data_` | v3.4.0 |
+| UDF9 | NEXTCDF-4 | explicit `NC_NEXTCDF4` | v4.0.0 |
 
-All readers can be enabled simultaneously — there are no mutual-exclusivity restrictions.
+All readers can be enabled simultaneously — there are no mutual-exclusivity restrictions. The NEXTCDF-4 backend can be enabled together with all readers.
 
 ## Format Reference Pages
 
@@ -33,6 +34,7 @@ dependencies, resources, and examples:
 | DICOM | UDF6 | [DICOM](dicom.md) |
 | Legacy PDB | UDF7 | [PDB](pdb.md) |
 | PDBx/mmCIF | UDF8 | [mmCIF](mmcif.md) |
+| NEXTCDF-4 | UDF9 | [NEXTCDF-4](nextcdf4.md) |
 
 See also the native NetCDF-4 compression documentation:
 [LZ4/BZIP2 HDF5 filters](compression.md).
@@ -65,6 +67,7 @@ nc_open("gdaswave.t00z.wcoast.0p16.f000.grib2", NC_NOWRITE, &ncid);  /* GRIB2 */
 nc_open("image.fits",                           NC_NOWRITE, &ncid);  /* FITS */
 nc_open("image.dcm",                            NC_UDF6,    &ncid);  /* DICOM */
 nc_open("structure.pdb",                        NC_UDF7,    &ncid);  /* Legacy PDB */
+nc_open("example.nc",                           NC_NEXTCDF4 | NC_NOWRITE, &ncid);  /* NEXTCDF-4 */
 ```
 
 **Install path**:

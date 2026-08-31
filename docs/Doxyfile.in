@@ -968,8 +968,10 @@ INPUT                  = @abs_top_srcdir@/src/nep.c \
                          @abs_top_srcdir@/docs/pdb.md \
                          @abs_top_srcdir@/docs/mmcif.md \
                          @abs_top_srcdir@/docs/examples.md \
-                         @abs_top_srcdir@/examples/README.md \
-                         @abs_top_srcdir@/examples
+                         @abs_top_srcdir@/docs/nextcdf4.md \
+                         @abs_top_srcdir@/examples \
+                         @abs_top_srcdir@/src/nextcdf4 \
+                         @abs_top_srcdir@/include/nextcdf4dispatch.h
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses

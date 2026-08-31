@@ -10,21 +10,11 @@
 #include <unistd.h>
 #include "nxt4internal.h"
 
-/**
+/*
  * Open and validate an empty NEXTCDF-4 HDF5 file.
  *
  * The file must be HDF5, contain a valid `_Nextcdf4Backend` marker, and have
- * no root-group links. Read/write access is selected from `NC_WRITE`.
- *
- * @param path File-system path to open.
- * @param mode NetCDF open-mode flags.
- * @param basepe Base processing element; currently ignored.
- * @param chunksizehintp Chunk-size hint; currently ignored.
- * @param parameters Optional dispatch parameters; currently ignored.
- * @param dispatch Selected dispatch table.
- * @param ncid NetCDF file identifier allocated by netcdf-c.
- * @return `NC_NOERR` on success, or a NetCDF error code.
- */
+ * no root-group links. Read/write access is selected from `NC_WRITE`.*/
 int
 NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
               void *parameters, const NC_Dispatch *dispatch, int ncid)

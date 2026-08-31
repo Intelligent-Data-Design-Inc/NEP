@@ -12,14 +12,18 @@
 #include <assert.h>
 #include "nxt4internal.h"
 
-/** @return The in-memory type size for any base nc_type. */
+/*
+ * @return The in-memory type size for any base nc_type.
+ */
 int
 NEXTCDF4_get_type_size(nc_type xtype, size_t *sizep)
 {
     return NEXTCDF4_type_size(xtype, sizep);
 }
 
-/** Validate a type for definition. */
+/*
+ * Validate a type for definition.
+ */
 static int
 check_type_write(NEXTCDF4_FILE_INFO_T *file, NC_GRP_INFO_T *grp)
 {
@@ -37,7 +41,9 @@ check_type_write(NEXTCDF4_FILE_INFO_T *file, NC_GRP_INFO_T *grp)
     return NC_NOERR;
 }
 
-/** @return The group associated with an ncid. */
+/*
+ * @return The group associated with an ncid.
+ */
 static int
 get_grp_and_file(int ncid, NC_FILE_INFO_T **h5, NC_GRP_INFO_T **grp,
                  NEXTCDF4_FILE_INFO_T **filep)
@@ -50,7 +56,9 @@ get_grp_and_file(int ncid, NC_FILE_INFO_T **h5, NC_GRP_INFO_T **grp,
     return NC_NOERR;
 }
 
-/** Map an in-memory nc_type to an HDF5 atomic type. */
+/*
+ * Map an in-memory nc_type to an HDF5 atomic type.
+ */
 static hid_t
 base_hdf_type(nc_type xtype)
 {
@@ -60,7 +68,9 @@ base_hdf_type(nc_type xtype)
     return t;
 }
 
-/** Record an HDF5 datatype in the in-memory type without committing. */
+/*
+ * Record an HDF5 datatype in the in-memory type without committing.
+ */
 static int
 attach_hdf_type(NC_TYPE_INFO_T *type, hid_t hdf)
 {
@@ -74,7 +84,9 @@ attach_hdf_type(NC_TYPE_INFO_T *type, hid_t hdf)
     return NC_NOERR;
 }
 
-/** Commit an HDF5 datatype to its group. */
+/*
+ * Commit an HDF5 datatype to its group.
+ */
 static int
 commit_hdf_type(NC_GRP_INFO_T *grp, NC_TYPE_INFO_T *type, hid_t hdf)
 {
@@ -507,7 +519,9 @@ fail:
     return ret;
 }
 
-/** Commit a single previously-attached (but not committed) type. */
+/*
+ * Commit a single previously-attached (but not committed) type.
+ */
 static int
 commit_one_type(NC_GRP_INFO_T *grp, NC_TYPE_INFO_T *type)
 {
@@ -536,7 +550,9 @@ commit_one_type(NC_GRP_INFO_T *grp, NC_TYPE_INFO_T *type)
     return NC_NOERR;
 }
 
-/** Recursively commit all uncommitted types in a group tree. */
+/*
+ * Recursively commit all uncommitted types in a group tree.
+ */
 static int
 commit_types_in_grp(NC_GRP_INFO_T *grp)
 {

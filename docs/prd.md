@@ -716,7 +716,64 @@ shape 10×45×90.
 
 ---
 
-## 17. Release History
+## 17. NEXTCDF-4 Backend (v4.0.0)
+
+### 18.1 Overview
+
+NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NEP User Defined Format (UDF) expansion pack. It implements the full enhanced NetCDF-4 data model and adds new atomic types while leaving netcdf-c's built-in HDF5 backend unchanged.
+
+### 18.2 Features
+
+- **UDF Backend**: Registered on UDF slot 9 (`NC_UDF9`) with public alias `NC_NEXTCDF4`; selectable via `.ncrc` autoload.
+- **File Lifecycle**: `nc_create`, `nc_open`, `nc_close`, and `nc_abort` for native, classic-model, and `NC_NETCDF4_MODEL` files.
+- **Core Metadata Model**: Dimensions, variables, global/variable attributes, groups, and user-defined types.
+- **Variable I/O and Dimension Scales**: `nc_put_vara`/`nc_get_vara`, `nc_put_var`/`nc_get_var`, `nc_put_var1`/`nc_get_var1`, and `nc_put_vars`/`nc_get_vars`; `nc_put_varm`/`nc_get_varm` are intentionally unimplemented.
+- **Storage Features**: Chunking, fill values, deflate+shuffle, Fletcher32, endianness, and quantization.
+- **Interoperability**: Open files written by NEXTCDF-4 and upstream `NC_NETCDF4` files with dimension-scale fallback discovery.
+- **New Atomic Types**:
+  - Small floating-point: `NC_FLOAT16`, `NC_BFLOAT16`, `NC_FLOAT8_E4M3`, `NC_FLOAT8_E5M2`, `NC_FLOAT6_E2M3`, `NC_FLOAT6_E3M2`, `NC_FLOAT4_E2M1`.
+  - Complex: `NC_COMPLEX`, `NC_DOUBLECOMPLEX`.
+  - Bitfields: `NC_BITFIELD8`, `NC_BITFIELD16`, `NC_BITFIELD32`, `NC_BITFIELD64`.
+  - References: `NC_REF_OBJECT`, `NC_REF_REGION`.
+
+### 18.3 Selection and Compatibility
+
+- Files are selected explicitly with `NC_NEXTCDF4`; there is no magic-number dispatch because HDF5 files are owned by the built-in backend.
+- Native NEXTCDF-4 files use HDF5 Superblock v3.
+- `NC_NETCDF4_MODEL` files use HDF5 Superblock v1 and remain readable by upstream netcdf-c linked against HDF5 1.10.x or later.
+- `NC_CLASSIC_MODEL` files use HDF5 Superblock v3 and enforce the NetCDF-3 data model.
+- New atomic types are forbidden in `NC_NETCDF4_MODEL` and `NC_CLASSIC_MODEL`.
+
+### 18.4 Build Configuration
+
+**CMake:**
+```bash
+cmake -B build -DNEP_ENABLE_NEXTCDF4=ON
+```
+
+### 18.5 Dependencies
+
+- netcdf-c built with UDF plugin and `NC_Dispatch` support.
+- HDF5 1.14.0 or newer (required).
+- HDF5 2.1.1 or newer (recommended for small floating-point and complex types).
+
+### 18.6 Public API Additions
+
+- Format-selection flag: `NC_NEXTCDF4`.
+- Model flag: `NC_NETCDF4_MODEL`.
+- New atomic `nc_type` constants: `NC_FLOAT16`, `NC_BFLOAT16`, `NC_FLOAT8_E4M3`, `NC_FLOAT8_E5M2`, `NC_FLOAT6_E2M3`, `NC_FLOAT6_E3M2`, `NC_FLOAT4_E2M1`, `NC_COMPLEX`, `NC_DOUBLECOMPLEX`, `NC_BITFIELD8`, `NC_BITFIELD16`, `NC_BITFIELD32`, `NC_BITFIELD64`, `NC_REF_OBJECT`, and `NC_REF_REGION`.
+- Reference helper functions: `nc_ref_object`, `nc_deref_object`, `nc_ref_region`, `nc_deref_region`.
+
+### 18.7 Known Limitations
+
+- `NC_NEXTCDF4` remains an explicit selection; there is no magic-number dispatch for HDF5 files.
+- `nc_put_varm`/`nc_get_varm` are not implemented.
+- Object and region reference types round-trip as opaque tokens.
+- Tools (`nextcopy`, `nextdump`) and Fortran bindings are planned for v4.1.0.
+
+---
+
+## 18. Release History
 
 - **v0.1.3** (Nov 2025): Architecture shift from HDF5 VOL to NetCDF UDF, Doxygen documentation
 - **v1.0.0**: LZ4 and BZIP2 compression filters
@@ -735,6 +792,6 @@ shape 10×45×90.
 
 ---
 
-*Document Version: 3.0.0*
-*Last Updated: July 2026*  
-*Status: Reflects features through v3.0.0*
+*Document Version: 4.0.0*
+*Last Updated: August 2026*  
+*Status: Reflects features through v4.0.0*
