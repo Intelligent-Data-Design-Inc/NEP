@@ -96,6 +96,25 @@ int main(void){ return 0; }" NETCDF_VERSION_OK)
         message(FATAL_ERROR "NetCDF-C >= 4.10.1 is required for UDF slots > 2, but the installed headers are older.")
     endif()
 
+    # Detect NetCDF-C logging support. NEP reuses nc_log()/nc_log_level from
+    # the installed NetCDF-C, so LOGGING is enabled only when the host library
+    # was built with --enable-logging / -DNETCDF_ENABLE_LOGGING=ON.
+    set(_saved_cmake_required_includes "${CMAKE_REQUIRED_INCLUDES}")
+    set(CMAKE_REQUIRED_INCLUDES "${NETCDF_INCLUDE_DIRS}")
+    check_c_source_compiles("#include <netcdf_meta.h>
+#if !NC_HAS_LOGGING
+#error NetCDF-C logging is disabled
+#endif
+int main(void){ return 0; }" NETCDF_HAS_LOGGING)
+    set(CMAKE_REQUIRED_INCLUDES "${_saved_cmake_required_includes}")
+    unset(_saved_cmake_required_includes)
+    if(NETCDF_HAS_LOGGING)
+        set(LOGGING 1)
+        message(STATUS "NetCDF-C logging support: enabled")
+    else()
+        message(STATUS "NetCDF-C logging support: disabled")
+    endif()
+
     # Detect parallel NetCDF-C support (needed for matching internal struct layouts).
     find_program(NC_CONFIG nc-config HINTS "${NETCDF_PREFIX}/bin")
     if(NC_CONFIG)
@@ -527,6 +546,11 @@ if(NOT DOCS_ONLY)
         set(NEP_HAS_OPENDAP 1)
     else()
         set(NEP_HAS_OPENDAP 0)
+    endif()
+    if(NETCDF_HAS_LOGGING)
+        set(NEP_HAS_LOGGING 1)
+    else()
+        set(NEP_HAS_LOGGING 0)
     endif()
 
     # Generate the build metadata header (committed source is include/nep_meta.h.in).

@@ -57,5 +57,6 @@
 #define NEP_HAS_BENCHMARKS   @NEP_HAS_BENCHMARKS@ /*!< Benchmark programs. */
 #define NEP_HAS_VIZ_EXAMPLES @NEP_HAS_VIZ_EXAMPLES@ /*!< Python visualization examples. */
 #define NEP_HAS_OPENDAP      @NEP_HAS_OPENDAP@ /*!< OPeNDAP examples. */
+#define NEP_HAS_LOGGING      @NEP_HAS_LOGGING@ /*!< NetCDF-C-style logging support. */
 
 #endif

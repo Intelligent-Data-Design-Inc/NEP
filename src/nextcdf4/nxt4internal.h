@@ -13,6 +13,7 @@
 #include "nep_nc4.h"
 #include "nep.h"
 #include "nextcdf4dispatch.h"
+#include "nxt4err.h"
 
 /** Hidden root attribute identifying a NEXTCDF-4-created file. */
 #define NEXTCDF4_BACKEND_ATT "_Nextcdf4Backend"

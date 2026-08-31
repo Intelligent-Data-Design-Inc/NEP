@@ -70,14 +70,14 @@ NEXTCDF4_free_file(NEXTCDF4_FILE_INFO_T *file)
 
     if (!file)
         return NC_NOERR;
+    LOG((4, "%s: path %s", __func__, file->path ? file->path : ""));
     if (file->rootid >= 0 && H5Gclose(file->rootid) < 0)
         ret = NC_EHDFERR;
     if (file->hdfid >= 0 && H5Fclose(file->hdfid) < 0)
         ret = NC_EHDFERR;
     if (file->hdfid >= 0) {
         int nobj = H5Fget_obj_count(file->hdfid, H5F_OBJ_ALL);
-        fprintf(stderr, "NEXTCDF4_free_file: hdfid=%ld closed? nobj=%d ret=%d\n",
-                (long)file->hdfid, nobj, ret);
+        LOG((3, "%s: hdfid=%ld nobj=%d ret=%d", __func__, (long)file->hdfid, nobj, ret));
     }
     free(file->path);
     free(file);
@@ -94,6 +94,8 @@ NEXTCDF4_add_file(int ncid, const char *path, int mode,
     NC_FILE_INFO_T *h5 = NULL;
     NEXTCDF4_FILE_INFO_T *file = NULL;
     int ret;
+
+    LOG((4, "%s: ncid %d path %s mode 0x%x", __func__, ncid, path ? path : "", mode));
 
     if ((ret = nc4_file_list_add(ncid, path, mode, (void **)&h5)))
         return ret;
@@ -135,6 +137,8 @@ NEXTCDF4_get_file(int ncid, NC_FILE_INFO_T **h5p,
     NC_FILE_INFO_T *h5 = NULL;
     NC_GRP_INFO_T *grp = NULL;
     int ret;
+
+    LOG((4, "%s: ncid %d", __func__, ncid));
 
     if ((ret = nc4_find_grp_h5(ncid, &grp, &h5)))
         return ret;
@@ -184,6 +188,8 @@ done:
 int
 NEXTCDF4_write_markers(NEXTCDF4_FILE_INFO_T *file)
 {
+    LOG((4, "%s", __func__));
+
     hid_t space = -1;
     hid_t attr = -1;
     int one = 1;
@@ -214,6 +220,8 @@ NEXTCDF4_write_markers(NEXTCDF4_FILE_INFO_T *file)
 int
 NEXTCDF4_read_markers(NEXTCDF4_FILE_INFO_T *file)
 {
+    LOG((4, "%s", __func__));
+
     hid_t attr = -1;
     hid_t type = -1;
     char *value = NULL;
@@ -264,6 +272,8 @@ done:
 int
 NEXTCDF4_sync(int ncid)
 {
+    LOG((4, "%s: ncid %d", __func__, ncid));
+
     NEXTCDF4_FILE_INFO_T *file;
     int ret;
 
@@ -280,6 +290,8 @@ NEXTCDF4_sync(int ncid)
 int
 NEXTCDF4_close(int ncid, void *parameters)
 {
+    LOG((2, "%s: ncid %d", __func__, ncid));
+
     NC_FILE_INFO_T *h5;
     NEXTCDF4_FILE_INFO_T *file;
     int ret;
@@ -316,6 +328,8 @@ NEXTCDF4_abort(int ncid)
 int
 NEXTCDF4_inq_format(int ncid, int *formatp)
 {
+    LOG((4, "%s: ncid %d", __func__, ncid));
+
     int ret = NEXTCDF4_get_file(ncid, NULL, NULL);
     if (ret)
         return ret;
@@ -330,6 +344,8 @@ NEXTCDF4_inq_format(int ncid, int *formatp)
 int
 NEXTCDF4_inq_format_extended(int ncid, int *formatp, int *modep)
 {
+    LOG((4, "%s: ncid %d", __func__, ncid));
+
     NEXTCDF4_FILE_INFO_T *file;
     int ret;
 
@@ -349,6 +365,8 @@ int
 NEXTCDF4__enddef(int ncid, size_t h_minfree, size_t v_align,
                  size_t v_minfree, size_t r_align)
 {
+    LOG((3, "%s: ncid %d", __func__, ncid));
+
     NEXTCDF4_FILE_INFO_T *file;
     NC_FILE_INFO_T *h5;
     int ret;
@@ -379,6 +397,8 @@ NEXTCDF4__enddef(int ncid, size_t h_minfree, size_t v_align,
 int
 NEXTCDF4_redef(int ncid)
 {
+    LOG((3, "%s: ncid %d", __func__, ncid));
+
     NEXTCDF4_FILE_INFO_T *file;
     NC_FILE_INFO_T *h5;
     int ret;
