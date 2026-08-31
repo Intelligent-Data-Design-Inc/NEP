@@ -12,7 +12,9 @@
 #include "nclist.h"
 #include "nxt4internal.h"
 
-/** @return The NEXTCDF-4 group info, creating a default one if absent. */
+/*
+ * @return The NEXTCDF-4 group info, creating a default one if absent.
+ */
 static int
 get_grp_hdf(NC_GRP_INFO_T *grp, hid_t *gid)
 {
@@ -33,7 +35,9 @@ get_grp_hdf(NC_GRP_INFO_T *grp, hid_t *gid)
     return NC_NOERR;
 }
 
-/** @return The group info attached to a freshly-added or existing group. */
+/*
+ * @return The group info attached to a freshly-added or existing group.
+ */
 static int
 attach_grp_hdf(NC_GRP_INFO_T *grp, hid_t hdf_group)
 {
@@ -47,7 +51,9 @@ attach_grp_hdf(NC_GRP_INFO_T *grp, hid_t hdf_group)
     return NC_NOERR;
 }
 
-/** Recursively find a group by its in-file id. */
+/*
+ * Recursively find a group by its in-file id.
+ */
 static int
 find_grp_by_id(NC_GRP_INFO_T *root, int grpid, NC_GRP_INFO_T **grpp)
 {
@@ -69,7 +75,9 @@ find_grp_by_id(NC_GRP_INFO_T *root, int grpid, NC_GRP_INFO_T **grpp)
     return NC_EBADID;
 }
 
-/** Resolve a group from a NetCDF ncid, creating root group info on demand. */
+/*
+ * Resolve a group from a NetCDF ncid, creating root group info on demand.
+ */
 static int
 get_grp_from_ncid(int ncid, NC_FILE_INFO_T **h5, NC_GRP_INFO_T **grpp)
 {
@@ -132,7 +140,9 @@ fail:
     return ret;
 }
 
-/** Locate a direct child group by name. */
+/*
+ * Locate a direct child group by name.
+ */
 static int
 find_child_grp(NC_GRP_INFO_T *parent, const char *name, NC_GRP_INFO_T **grpp)
 {

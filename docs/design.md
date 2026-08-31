@@ -82,13 +82,13 @@ NetCDF-C exposes ten UDF slots (0–9). NEP assigns each format handler a perman
 
 Before v2.2.0, CDF and GRIB2 shared UDF slot 2 and were mutually exclusive. v2.2.0 Sprint 2 removes that restriction by moving CDF to its own slot. NEXTCDF-4 occupies UDF9 and has no magic-number registration because HDF5 files already belong to the built-in NetCDF-4 backend; applications select it explicitly with `NC_NEXTCDF4`.
 
-NEXTCDF-4 now supports the Sprint 3 core metadata model. `nc_create()` writes `_Nextcdf4Backend` and, in `NC_NETCDF4_MODEL` mode, `_Nextcdf4Model`; `nc_open()` validates those markers and reconstructs root-group dimensions, fixed-size atomic variables, and global/variable attributes from the HDF5 file. Native and classic-model files use the latest HDF5 format bounds, while `NC_NETCDF4_MODEL` uses the HDF5 1.10 compatibility bounds. The Sprint 3 implementation includes dimension scale creation with `_Netcdf4Dimid`, fixed-size atomic variable datasets, `nc_redef`/`nc_enddef` transitions, and attribute put/get/rename/delete for the supported atomic types. Variable data I/O, dimension-scale attachment, nested groups, and user-defined types remain in later sprints.
+NEXTCDF-4 implements the full v4.0.0 feature set. `nc_create()` writes `_Nextcdf4Backend` and, in `NC_NETCDF4_MODEL` mode, `_Nextcdf4Model`; `nc_open()` validates those markers and reconstructs groups, dimensions, variables, attributes, and user-defined types from the HDF5 file. Native and `NC_CLASSIC_MODEL` files use HDF5 Superblock v3 (latest format bounds), while `NC_NETCDF4_MODEL` files use Superblock v1 for compatibility with upstream netcdf-c and HDF5 1.10.x. The implementation includes dimension-scale creation and attachment with `_Netcdf4Dimid` and `_Netcdf4Coordinates`, fixed-size and unlimited-dimension variable I/O, `nc_redef`/`nc_enddef` transitions, attribute put/get/rename/delete, arbitrarily nested groups, compound/enum/opaque/vlen user-defined types and `NC_STRING`, chunking, compression, filters, fill values, endianness, quantization, correct dimension and variable renaming, small floating-point types (`NC_FLOAT16`, `NC_BFLOAT16`, FP8/FP6/FP4), complex numbers (`NC_COMPLEX`, `NC_DOUBLECOMPLEX`), bitfields (`NC_BITFIELD8/16/32/64`), and HDF5 object/region references (`NC_REF_OBJECT`, `NC_REF_REGION`).
 
 ## Project Structure
 
 The project is structured as follows:
 - `/src` - Core C source code including UDF handlers and compression filters
-- `/src/nextcdf4` - NEXTCDF-4 rewrite of the HDF5 backend (planned, see `docs/plan/NEXTCDF4_plan.md`)
+- `/src/nextcdf4` - NEXTCDF-4 rewrite of the NetCDF-4/HDF5 backend
 - `/fsrc` - Fortran wrappers for compression functions
 - `/include` - Public header files
 - `/test` - C unit tests for all features

@@ -11,7 +11,9 @@
 #include <stdlib.h>
 #include "nxt4internal.h"
 
-/** Return the native HDF5 memory datatype for a standard atomic type. */
+/*
+ * Return the native HDF5 memory datatype for a standard atomic type.
+ */
 static hid_t
 memory_type(nc_type type, int *closep)
 {
@@ -93,7 +95,9 @@ memory_type(nc_type type, int *closep)
     }
 }
 
-/** Common HDF5 hyperslab implementation used by vara and vars dispatch calls. */
+/*
+ * Common HDF5 hyperslab implementation used by vara and vars dispatch calls.
+ */
 static int
 var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
        const ptrdiff_t *stridep, void *data, nc_type memtype, int writing)

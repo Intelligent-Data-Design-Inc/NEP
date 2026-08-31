@@ -11,14 +11,18 @@
 #include <string.h>
 #include "nxt4internal.h"
 
-/** @return The NetCDF error code used for HDF5-layer failures. */
+/*
+ * @return The NetCDF error code used for HDF5-layer failures.
+ */
 int
 NEXTCDF4_hdf_error(void)
 {
     return NC_EHDFERR;
 }
 
-/** Recursively close HDF5 object identifiers for a group. */
+/*
+ * Recursively close HDF5 object identifiers for a group.
+ */
 static void
 close_group_hdf(NC_GRP_INFO_T *grp)
 {
@@ -65,10 +69,8 @@ close_group_hdf(NC_GRP_INFO_T *grp)
         close_group_hdf((NC_GRP_INFO_T *)ncindexith(grp->children, i));
 }
 
-/**
+/*
  * Close owned HDF5 identifiers and release per-file memory.
- * @param file State to release; may be `NULL`.
- * @return `NC_NOERR` or `NC_EHDFERR` if an HDF5 close fails.
  */
 int
 NEXTCDF4_free_file(NEXTCDF4_FILE_INFO_T *file)
@@ -91,13 +93,8 @@ NEXTCDF4_free_file(NEXTCDF4_FILE_INFO_T *file)
     return ret;
 }
 
-/**
+/*
  * Allocate NEXTCDF-4 state and attach it to netcdf-c's file list.
- * @param ncid NetCDF file identifier.
- * @param path File-system path.
- * @param mode Effective NetCDF mode.
- * @param filep Destination for allocated state.
- * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_add_file(int ncid, const char *path, int mode,
@@ -137,12 +134,8 @@ NEXTCDF4_add_file(int ncid, const char *path, int mode,
     return NC_NOERR;
 }
 
-/**
+/*
  * Resolve common and backend-specific state for an open NEXTCDF-4 file.
- * @param ncid NetCDF file identifier.
- * @param h5p Optional destination for common NetCDF-4 state.
- * @param filep Optional destination for NEXTCDF-4 state.
- * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_get_file(int ncid, NC_FILE_INFO_T **h5p,
@@ -163,12 +156,8 @@ NEXTCDF4_get_file(int ncid, NC_FILE_INFO_T **h5p,
     return NC_NOERR;
 }
 
-/**
+/*
  * @internal Write a null-terminated scalar HDF5 string attribute.
- * @param location HDF5 object receiving the attribute.
- * @param name Attribute name.
- * @param value Null-terminated attribute value.
- * @return `NC_NOERR` on success, or `NC_EHDFERR`.
  */
 static int
 write_string_att(hid_t location, const char *name, const char *value)
@@ -198,10 +187,8 @@ done:
     return ret;
 }
 
-/**
+/*
  * Write hidden NEXTCDF-4 provenance and compatibility attributes.
- * @param file Open writable NEXTCDF-4 state.
- * @return `NC_NOERR` on success, or `NC_EHDFERR`.
  */
 int
 NEXTCDF4_write_markers(NEXTCDF4_FILE_INFO_T *file)
@@ -230,10 +217,8 @@ NEXTCDF4_write_markers(NEXTCDF4_FILE_INFO_T *file)
     return ret;
 }
 
-/**
+/*
  * Read and validate hidden NEXTCDF-4 provenance and compatibility attributes.
- * @param file Open NEXTCDF-4 state to update.
- * @return `NC_NOERR` on success, or `NC_EFILEMETA` for invalid metadata.
  */
 int
 NEXTCDF4_read_markers(NEXTCDF4_FILE_INFO_T *file)
@@ -282,10 +267,8 @@ done:
     return ret;
 }
 
-/**
+/*
  * Flush pending writes for a writable NEXTCDF-4 file.
- * @param ncid NetCDF file identifier.
- * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_sync(int ncid)
@@ -300,11 +283,8 @@ NEXTCDF4_sync(int ncid)
     return H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0 ? NC_EHDFERR : NC_NOERR;
 }
 
-/**
+/*
  * Flush, close, and release a NEXTCDF-4 file.
- * @param ncid NetCDF file identifier.
- * @param parameters Optional close parameters; currently ignored.
- * @return `NC_NOERR` on success, or the first cleanup error.
  */
 int
 NEXTCDF4_close(int ncid, void *parameters)
@@ -330,10 +310,8 @@ NEXTCDF4_close(int ncid, void *parameters)
     return close_ret ? close_ret : ret;
 }
 
-/**
+/*
  * Abort a NEXTCDF-4 operation using the normal resource-release path.
- * @param ncid NetCDF file identifier.
- * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_abort(int ncid)
@@ -341,11 +319,8 @@ NEXTCDF4_abort(int ncid)
     return NEXTCDF4_close(ncid, NULL);
 }
 
-/**
+/*
  * Report the public NetCDF-4 format class.
- * @param ncid NetCDF file identifier.
- * @param formatp Optional destination for the format identifier.
- * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_inq_format(int ncid, int *formatp)
@@ -358,12 +333,8 @@ NEXTCDF4_inq_format(int ncid, int *formatp)
     return NC_NOERR;
 }
 
-/**
+/*
  * Report the extended NEXTCDF-4 format identifier and effective mode.
- * @param ncid NetCDF file identifier.
- * @param formatp Optional destination for `NC_FORMATX_NEXTCDF4`.
- * @param modep Optional destination for the effective mode flags.
- * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_inq_format_extended(int ncid, int *formatp, int *modep)
@@ -380,10 +351,8 @@ NEXTCDF4_inq_format_extended(int ncid, int *formatp, int *modep)
     return NC_NOERR;
 }
 
-/**
+/*
  * Materialize pending root-group metadata and exit define mode.
- * @param ncid NetCDF file identifier.
- * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4__enddef(int ncid, size_t h_minfree, size_t v_align,
@@ -413,10 +382,8 @@ NEXTCDF4__enddef(int ncid, size_t h_minfree, size_t v_align,
     return NC_NOERR;
 }
 
-/**
+/*
  * Return the file to define mode.
- * @param ncid NetCDF file identifier.
- * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_redef(int ncid)

@@ -21,6 +21,12 @@ Five NetCDF UDF handlers that expose external scientific formats through the sta
 
 See **[Format Readers](formats.md)** — usage, code examples, and dependency information for each reader.
 
+### NEXTCDF-4 Backend
+
+Optional alternative NetCDF-4/HDF5 backend selected explicitly with `NC_NEXTCDF4` (UDF9). It supports the full enhanced NetCDF-4 data model, variable I/O, chunking, compression, and new atomic types (`NC_FLOAT16`, small floating-point types, complex numbers, bitfields, and HDF5 references) while coexisting with netcdf-c's built-in HDF5 backend. Files written in `NC_NETCDF4_MODEL` compatibility mode remain readable by upstream netcdf-c.
+
+See **[NEXTCDF-4](nextcdf4.md)** — selection flags, compatibility modes, supported types, and examples.
+
 ### Example Programs
 
 Over 55 C and Fortran programs covering classic NetCDF, NetCDF-4, NcZarr, OPeNDAP remote access, performance tuning, and parallel I/O. Companion code for *[The NetCDF Developer's Handbook, Second Edition](https://www.amazon.com/dp/B0H7Q1Z75L)*.

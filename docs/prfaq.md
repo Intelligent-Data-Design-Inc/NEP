@@ -143,6 +143,7 @@ NEP v2.2.0 is available now as open-source software. Installation options includ
 - **GRIB2 files**: Use `nc_open()` to read GRIB2 files directly
 - **FITS files**: Call `NC_FITS_initialize()` (or use `.ncrc` autoload), then `nc_open()` reads FITS files
 - **PDS4 files**: Call `NC_PDS4_initialize()` (or use `.ncrc` autoload), then `nc_open()` reads PDS4 XML labels
+- **NEXTCDF-4 files**: Pass `NC_NEXTCDF4` to `nc_create()` or `nc_open()` to use the optional NEXTCDF-4 backend
 All features integrate seamlessly with the standard NetCDF API.
 
 #### Q: Does NEP provide example programs to help me learn?
@@ -160,6 +161,29 @@ All features integrate seamlessly with the standard NetCDF API.
 #### Q: Does NEP provide visualization examples?
 **A:** Yes. Optional Python examples in `examples/viz/` open enabled FITS, CDF, GeoTIFF, GRIB2, and PDS4 UDF files directly through `netCDF4.Dataset` and create static grayscale PNG plots with companion metadata files. Enable them with `-DNEP_ENABLE_VIZ_EXAMPLES=ON` or `--enable-viz-examples`. Their source-root `.venv` must build `netCDF4` from source against the same NetCDF-C library as NEP; bundled-libnetcdf wheels cannot load the NEP UDF handlers. Tests use the build-tree `.ncrc` configuration and validate output metadata, grayscale pixels, and publication size limits. The plots and metadata remain in the build tree and are not installed.
 
+#### Q: What is NEXTCDF-4?
+**A:** NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NEP UDF expansion pack. It implements the full enhanced NetCDF-4 data model, supports new atomic types (`NC_FLOAT16`, small floating-point types, complex numbers, bitfields, and HDF5 references), and fixes long-standing renaming issues, while coexisting with netcdf-c's built-in HDF5 backend. Files are selected explicitly with `NC_NEXTCDF4`.
+
+#### Q: How do I create or open a NEXTCDF-4 file?
+**A:** Pass `NC_NEXTCDF4` to `nc_create()` or `nc_open()`:
+```c
+nc_create("file.nc", NC_NEXTCDF4 | NC_CLOBBER, &ncid);
+nc_open("file.nc", NC_NEXTCDF4 | NC_NOWRITE, &ncid);
+```
+There is no magic-number dispatch for NEXTCDF-4 because HDF5 files are already owned by the built-in NetCDF-4 backend; you must request it with the mode flag.
+
+#### Q: What new atomic types does NEXTCDF-4 support?
+**A:** NEXTCDF-4 adds small floating-point types (`NC_FLOAT16`, `NC_BFLOAT16`, `NC_FLOAT8_E4M3`, `NC_FLOAT8_E5M2`, `NC_FLOAT6_E2M3`, `NC_FLOAT6_E3M2`, `NC_FLOAT4_E2M1`), complex numbers (`NC_COMPLEX`, `NC_DOUBLECOMPLEX`), bitfields (`NC_BITFIELD8/16/32/64`), and HDF5 object and region references (`NC_REF_OBJECT`, `NC_REF_REGION`). These types require native NEXTCDF-4 mode and are not available in `NC_NETCDF4_MODEL` compatibility mode.
+
+#### Q: Can NEXTCDF-4 files be read by upstream netcdf-c?
+**A:** Files created with the `NC_NETCDF4_MODEL` compatibility flag are written with HDF5 Superblock v1 and can be read by upstream netcdf-c linked against HDF5 1.10.x or later. Native NEXTCDF-4 files use HDF5 Superblock v3 and require HDF5 1.14.x or later; whether upstream netcdf-c can read them depends on the HDF5 version it was built with.
+
+#### Q: Why is NEXTCDF-4 explicit selection only?
+**A:** HDF5 files share a single fixed magic number that is already registered by netcdf-c's built-in NetCDF-4 backend. To avoid modifying netcdf-c's dispatch or model-inference code, NEXTCDF-4 registers only the UDF9 slot and leaves magic-number dispatch unchanged. Applications therefore pass `NC_NEXTCDF4` when they want the NEXTCDF-4 backend.
+
+#### Q: What are `NC_CLASSIC_MODEL` and `NC_NETCDF4_MODEL` compatibility modes?
+**A:** `NC_CLASSIC_MODEL` restricts the file to the NetCDF-3 data model (root group only, one unlimited dimension, classic atomic types). `NC_NETCDF4_MODEL` allows the full enhanced NetCDF-4 data model but forbids NEXTCDF-4-specific atomic types so the file remains readable by upstream netcdf-c. Both modes can be combined with `NC_NEXTCDF4` at create time but are mutually exclusive with each other.
+
 ### Installation and Usage
 
 #### Q: What are the system requirements?
@@ -173,6 +197,7 @@ All features integrate seamlessly with the standard NetCDF API.
 - **GRIB2 Support (optional)**: NOAA NCEPLIBS-g2c (≥ 2.1.0), libjasper (≥ 3.0.0)
 - **FITS Support (optional)**: CFITSIO (≥ 3.0; locally `/usr/local/cfitsio-4.6.4/`; CI: apt `libcfitsio-dev`)
 - **PDS4 Support (optional)**: libxml2 (`libxml2-dev` on Ubuntu)
+- **NEXTCDF-4 Support (optional)**: HDF5 1.14.0+ (required), HDF5 2.1.1+ (recommended); netcdf-c with UDF plugin support
 - **Build Tools**: CMake (v3.9+)
 - **Documentation (optional)**: Doxygen and Graphviz
 
@@ -185,7 +210,7 @@ See the README for detailed instructions.
 
 #### Q: Can I enable only specific features?
 **A:** Yes! Use build options to control which features are compiled. All extended format readers default to **OFF** (v2.2.0+); enable explicitly as needed:
-- **CMake**: `-DNEP_BUILD_LZ4=ON/OFF`, `-DNEP_BUILD_BZIP2=ON/OFF`, `-DNEP_ENABLE_FORTRAN=ON/OFF`, `-DNEP_ENABLE_CDF=ON/OFF`, `-DNEP_ENABLE_GEOTIFF=ON/OFF`, `-DNEP_ENABLE_GRIB2=ON/OFF`, `-DNEP_ENABLE_FITS=ON/OFF`, `-DNEP_ENABLE_PDS4=ON/OFF`, `-DNEP_ENABLE_DICOM=ON/OFF`, `-DNEP_BUILD_EXAMPLES=ON/OFF`
+- **CMake**: `-DNEP_BUILD_LZ4=ON/OFF`, `-DNEP_BUILD_BZIP2=ON/OFF`, `-DNEP_ENABLE_FORTRAN=ON/OFF`, `-DNEP_ENABLE_CDF=ON/OFF`, `-DNEP_ENABLE_GEOTIFF=ON/OFF`, `-DNEP_ENABLE_GRIB2=ON/OFF`, `-DNEP_ENABLE_FITS=ON/OFF`, `-DNEP_ENABLE_PDS4=ON/OFF`, `-DNEP_ENABLE_DICOM=ON/OFF`, `-DNEP_ENABLE_NEXTCDF4=ON/OFF`, `-DNEP_BUILD_EXAMPLES=ON/OFF`
 - All five format readers (CDF, GeoTIFF, GRIB2, FITS, PDS4) can be enabled simultaneously — there are no mutual-exclusivity restrictions as of v2.2.0
 - **Spack**: `spack install nep+lz4+bzip2+fortran` (variants control features)
 
@@ -288,7 +313,7 @@ nc_get_vara_float(grpid, varid, start, count, data);
 **A:** Yes. NEP v1.1.0 added Fortran 90 wrappers (module `nep`) for compression functions. Fortran applications can call `nf90_def_var_lz4`, `nf90_inq_var_lz4`, `nf90_def_var_bzip2`, and `nf90_inq_var_bzip2` to enable and query compression.
 
 #### Q: What is the current version?
-**A:** NEP v3.0.0 is the current release (July 2026), providing:
+**A:** NEP v4.0.0 is the current release (August 2026), providing:
 - LZ4 and BZIP2 compression for HDF5/NetCDF-4 files (C and Fortran APIs)
 - GeoTIFF geospatial raster support via UDF handler (UDF0/UDF1)
 - GRIB2 meteorological/oceanographic data support via UDF handler (UDF2)
@@ -296,27 +321,30 @@ nc_get_vara_float(grpid, varid, start, count, data);
 - NASA CDF space physics data support via UDF handler (UDF4)
 - NASA/ESA PDS4 planetary science data support via UDF handler (UDF5), including New Horizons Alice mission data
 - DICOM medical imaging support via UDF handler (UDF6), including uncompressed and JPEG Baseline multi-frame pixel data
-- All six format readers can be enabled simultaneously
+- NEXTCDF-4 optional NetCDF-4/HDF5 backend (UDF9) with new atomic types and enhanced metadata model
+- All format readers can be enabled simultaneously with the NEXTCDF-4 backend
 - Complete upstream-compatible Spack variants for every reader and utility with available upstream dependencies
 - Comprehensive documentation, CI testing, and example programs.
 
 #### Q: What formats does NEP support?
 **A:** NEP supports multiple scientific data formats through the NetCDF UDF system:
-- **NetCDF-4/HDF5**: Native format with LZ4/BZIP2 compression
+- **NetCDF-4/HDF5**: Native format with LZ4/BZIP2 compression; optional NEXTCDF-4 backend selected with `NC_NEXTCDF4`
 - **GeoTIFF** (v1.5.0, UDF0/UDF1): Geospatial raster imagery via UDF handler
 - **GRIB2** (v1.7.0, UDF2): Meteorological and oceanographic NWP model output via UDF handler
 - **FITS** (v2.0.0, UDF3): Astronomical images and tables from HST, JWST, Chandra via UDF handler
 - **NASA CDF** (v1.3.0, UDF4): Space physics and satellite data via UDF handler
 - **NASA/ESA PDS4** (v2.2.0, UDF5): Planetary science arrays and tables via UDF handler
+- **NEXTCDF-4** (v4.0.0, UDF9): Optional NetCDF-4/HDF5 backend with new atomic types and enhanced metadata model
 All formats accessible through the standard NetCDF API.
 
 #### Q: How stable is NEP?
 **A:** NEP is production-ready and thoroughly tested:
 - **v1.0.0-v2.5.0**: All releases maintain backward compatibility
-- **v2.6.0** is in preparation; no breaking changes are planned
+- **v3.0.0-v4.0.0**: All releases maintain backward compatibility; v4.0.0 adds the optional NEXTCDF-4 backend and new atomic types
+- **v4.1.0** is in preparation; no breaking changes are planned
 - **Breaking change note**: v2.2.0 changed GeoTIFF, GRIB2, and FITS defaults from ON to OFF; explicit enable flags required for these formats
-- **Comprehensive testing**: Extensive test suites and CI validation (ci.yml, ci-fits.yml, ci-formats.yml, ci-parallel.yml)
-- **Real-world data**: Tested with NASA IMAP MAG, MODIS imagery, NOAA GDAS GRIB2, HST WFPC2 FITS, and PDS4 MRO CRISM data
+- **Comprehensive testing**: Extensive test suites and CI validation (ci.yml, ci-fits.yml, ci-formats.yml, ci-parallel.yml, ci-nextcdf4.yml)
+- **Real-world data**: Tested with NASA IMAP MAG, MODIS imagery, NOAA GDAS GRIB2, HST WFPC2 FITS, PDS4 MRO CRISM data, and NEXTCDF-4 round-trip files
 
 ### Use Cases
 
@@ -333,7 +361,8 @@ All formats accessible through the standard NetCDF API.
 - **Planetary science**: Access NASA/ESA PDS4 planetary data archives (e.g., MRO CRISM, Cassini, New Horizons, Voyager) through the NetCDF API
 - **HPC workflows**: Improve I/O performance with fast LZ4 compression
 - **Data archival**: Maximize storage efficiency with BZIP2 compression
-- **Multi-format analysis**: Unified NetCDF API for NetCDF-4, CDF, GeoTIFF, GRIB2, FITS, and PDS4 data
+- **NEXTCDF-4 workflows**: Write NetCDF-4 files with modern HDF5 Superblock v3, new small floating-point and complex types, and corrected dimension/variable renaming
+- **Multi-format analysis**: Unified NetCDF API for NetCDF-4, NEXTCDF-4, CDF, GeoTIFF, GRIB2, FITS, and PDS4 data
 
 #### Q: Can NEP handle real-time data streams?
 **A:** Yes! LZ4's high-speed compression makes it ideal for real-time or near-real-time data processing where low latency is critical.
@@ -381,7 +410,8 @@ For more information:
 - **v2.7.1** (Jul 2026): Documentation cleanup — per-format reference pages extracted from `docs/formats.md`, README PDS4 Tests section moved to `docs/pds4.md`, and design/prd/prfaq updated with New Horizons and v2.7.1 metadata
 - **v2.8.0** (Jul 2026): Optional Python visualization examples with validated grayscale PNG and metadata outputs
 - **v3.0.0** (Jul 2026): DICOM UDF reader for uncompressed, JPEG Baseline, and multi-frame imaging objects
+- **v4.0.0** (Aug 2026): NEXTCDF-4 optional NetCDF-4/HDF5 backend (UDF9) with full enhanced data model, new atomic types (float16, bfloat16, FP8/FP6/FP4, complex, bitfield, reference), Superblock v3 default, and `NC_NETCDF4_MODEL` compatibility mode
 
 ---
 
-*Last Updated: July 2026 (v3.0.0)*
+*Last Updated: August 2026 (v4.0.0)*
