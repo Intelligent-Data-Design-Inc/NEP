@@ -111,6 +111,18 @@ NC_NEXTCDF4_initialize(void)
 {
     NEXTCDF4_dispatch_table = &NEXTCDF4_dispatcher;
     nc_def_user_format(NEP_UDF_NEXTCDF4, (NC_Dispatch *)NEXTCDF4_dispatch_table, NULL);
+
+#ifdef LOGGING
+    {
+        const char *env = getenv("NEP_LOG_LEVEL");
+        if (env) {
+            int level = atoi(env);
+            if (level >= 0)
+                nep_set_log_level(level);
+        }
+    }
+#endif /* LOGGING */
+
     return (NC_Dispatch *)&NEXTCDF4_dispatcher;
 }
 

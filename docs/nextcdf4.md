@@ -44,11 +44,11 @@ NEXTCDF-4 availability is advertised at compile time through `nep_meta.h`:
 
 ## Compatibility Modes
 
-| Mode | Selection | Superblock | Purpose |
-|------|-----------|------------|---------|
-| Native | `NC_NEXTCDF4` | v3 | Full enhanced model and all new types |
-| Classic model | `NC_NEXTCDF4 | NC_CLASSIC_MODEL` | v3 | NetCDF-3 data model on HDF5 |
-| NetCDF-4 model | `NC_NEXTCDF4 | NC_NETCDF4_MODEL` | v1 | Files readable by upstream netcdf-c |
+| Mode | Base flag | Compatibility flag | Superblock | Purpose |
+|------|-----------|--------------------|------------|---------|
+| Native | `NC_NEXTCDF4` | — | v3 | Full enhanced model and all new types |
+| Classic model | `NC_NEXTCDF4` | `NC_CLASSIC_MODEL` | v3 | NetCDF-3 data model on HDF5 |
+| NetCDF-4 model | `NC_NEXTCDF4` | `NC_NETCDF4_MODEL` | v1 | Files readable by upstream netcdf-c |
 
 **Native mode** allows all NEXTCDF-4-specific types and HDF5 1.14+ features.
 
@@ -57,6 +57,25 @@ NEXTCDF-4 availability is advertised at compile time through `nep_meta.h`:
 **`NC_NETCDF4_MODEL`** produces files that upstream netcdf-c linked against HDF5 1.10+ can open. It allows the standard enhanced NetCDF-4 data model (groups, user-defined types, chunking, compression) but forbids NEXTCDF-4-specific atomic types (`NC_FLOAT16`, small floats, complex, bitfield, reference) so the file remains fully compatible with upstream.
 
 `NC_CLASSIC_MODEL` and `NC_NETCDF4_MODEL` are mutually exclusive.
+
+## Diagnostics and Logging
+
+NEXTCDF-4 uses the same `LOG(())` macro convention as netcdf-c's `libsrc4` and `libhdf5`, but NEP logging is independent of the underlying NetCDF-C logging build. It is compiled in by default and can be disabled with `-DNEP_ENABLE_LOGGING=OFF`. Build-time availability is reported in `nep_meta.h`:
+
+```c
+#include <nep_meta.h>
+
+#if NEP_HAS_LOGGING
+/* NEXTCDF-4 is instrumented for diagnostics. */
+#endif
+```
+
+To control diagnostics:
+
+- Set the `NEP_LOG_LEVEL` environment variable before opening a file. The NEXTCDF-4 initialization reads this variable and applies it with `nep_set_log_level()`.
+- Call `nep_set_log_level(level)` directly, where `level` is `0` (errors only), `1` (major messages), `2` (lifecycle events), `3` (metadata operations), or higher for more detail. `nep_set_log_level(-1)` disables all output.
+
+Messages are written to `stderr`. Instrumented NEXTCDF-4 paths include file creation and open, close/abort, define/end-define mode transitions, dimension and variable definition, and the metadata loader. HDF5 failures additionally dump the HDF5 error stack.
 
 ## Supported Atomic Types
 

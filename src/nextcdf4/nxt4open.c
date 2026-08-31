@@ -29,6 +29,9 @@ NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     (void)chunksizehintp;
     (void)parameters;
     (void)dispatch;
+
+    LOG((2, "%s: path %s mode 0x%x ncid %d", __func__, path ? path : "", mode, ncid));
+
     if (!path || !*path)
         return NC_EINVAL;
     if (access(path, F_OK) != 0)
@@ -39,11 +42,9 @@ NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     if (ret <= 0)
         return NC_ENOTNC;
     if ((fapl = H5Pcreate(H5P_FILE_ACCESS)) < 0)
-        return NC_EHDFERR;
-    if (H5Pset_fclose_degree(fapl, H5F_CLOSE_STRONG) < 0) {
-        H5Pclose(fapl);
-        return NC_EHDFERR;
-    }
+        BAIL2(NC_EHDFERR);
+    if (H5Pset_fclose_degree(fapl, H5F_CLOSE_STRONG) < 0)
+        BAIL2(NC_EHDFERR);
     if ((ret = NEXTCDF4_add_file(ncid, path, mode, &file)))
         return ret;
     if ((ret = nc4_find_grp_h5(ncid, NULL, &h5)))
@@ -53,15 +54,12 @@ NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     H5E_BEGIN_TRY {
         file->hdfid = H5Fopen(path, flags, fapl);
     } H5E_END_TRY;
+    if (file->hdfid < 0)
+        BAIL2(NC_EHDFERR);
     H5Pclose(fapl);
-    if (file->hdfid < 0) {
-        ret = NC_EHDFERR;
-        goto fail;
-    }
-    if ((file->rootid = H5Gopen2(file->hdfid, "/", H5P_DEFAULT)) < 0) {
-        ret = NC_EHDFERR;
-        goto fail;
-    }
+    fapl = -1;
+    if ((file->rootid = H5Gopen2(file->hdfid, "/", H5P_DEFAULT)) < 0)
+        BAIL2(NC_EHDFERR);
     if (h5->root_grp->format_grp_info)
         ((NEXTCDF4_GRP_INFO_T *)h5->root_grp->format_grp_info)->hdf_group = file->rootid;
     if ((ret = NEXTCDF4_read_markers(file)))
@@ -72,6 +70,8 @@ NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     return NC_NOERR;
 
 fail:
+    if (fapl >= 0)
+        H5Pclose(fapl);
     NEXTCDF4_free_file(file);
     nc4_file_list_del(ncid);
     return ret;

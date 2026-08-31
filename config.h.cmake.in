@@ -50,6 +50,9 @@
 /* Defined if you have HDF5 support */
 #cmakedefine HAVE_HDF5
 
+/* Defined if NetCDF-C was built with logging support */
+#cmakedefine LOGGING
+
 /* Defined if HDF5 was built with parallel I/O support */
 #cmakedefine HDF5_PARALLEL
 

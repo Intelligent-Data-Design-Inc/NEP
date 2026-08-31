@@ -502,6 +502,140 @@ Use this skill when:
 3. Trace through format-specific implementation
 4. Check I/O layer (ncio, HDF5 VFD, zmap)
 
+## Logging in NetCDF-C
+
+NetCDF-4 code in `libsrc4/` and `libhdf5/` uses a compile-time logging system controlled by the `LOGGING` preprocessor symbol. When logging is disabled, every `LOG((...))` call and its arguments are stripped out by the preprocessor.
+
+### Enabling Logging
+
+- **Autotools**: `./configure --enable-logging` adds `AC_DEFINE([LOGGING], 1, [If true, turn on logging.])`.
+- **CMake**: `option(NETCDF_ENABLE_LOGGING "Enable Logging." OFF)`; when enabled it sets:
+  - `LOGGING`
+  - `NETCDF_ENABLE_SET_LOG_LEVEL`
+  Logging is automatically disabled if `NETCDF_ENABLE_NETCDF4` is OFF.
+- Build meta-header `include/netcdf_meta.h.in` exposes `NC_HAS_LOGGING`.
+
+### Public API
+
+- `int nc_set_log_level(int new_level)` — declared in `include/netcdf.h`.
+- `NC_TURN_OFF_LOGGING` (-1) turns all logging off.
+- `int nc_show_metadata(int ncid)` — dispatches to `NC4_show_metadata()` in `libsrc4/nc4internal.c` and dumps the in-memory metadata tree.
+- At library initialization, `NC4_initialize()` (`libsrc4/nc4dispatch.c`) reads the environment variable `NETCDF_LOG_LEVEL` (defined as `NCLOGLEVELENV` in `include/nc4dispatch.h`) and calls `nc_set_log_level()`.
+
+### Core Implementation Files
+
+- `include/nc_logging.h` — `LOG()`, `BAIL`, `BAILLOG`, `BAIL_QUIET` macros.
+- `libsrc4/nc4internal.c` — global `nc_log_level`, the `nc_log()` printer, `nc_set_log_level()`, parallel log-file helpers, `log_metadata_nc()`, and `NC4_show_metadata()`.
+- `libhdf5/hdf5err.h` — HDF5-specific `BAIL2()` macro.
+- `libhdf5/hdf5internal.c` — `hdf5_set_log_level()` and `nc_log_hdf5()`.
+- `libsrc4/nc4dispatch.c` — runtime `NETCDF_LOG_LEVEL` environment parsing.
+
+### The `LOG(())` Macro
+
+`include/nc_logging.h` defines:
+
+```c
+#ifdef LOGGING
+void nc_log(int severity, const char *fmt, ...);
+#define LOG(e) nc_log e
+#else
+#define LOG(e)
+#endif
+```
+
+Because the macro argument `e` is the *entire* parenthesized argument list, a call like:
+
+```c
+LOG((2, "opening file %s mode 0x%x", path, mode));
+```
+
+expands to:
+
+```c
+nc_log(2, "opening file %s mode 0x%x", path, mode);
+```
+
+If `LOGGING` is not defined, the whole statement disappears.
+
+### Severity/Level Semantics
+
+Inside `nc_log()` (`libsrc4/nc4internal.c`) a message is printed only when `severity <= nc_log_level`:
+
+- `0` — error messages (used by `BAIL`/`BAIL2`).
+- `1` — major messages.
+- `2` — detailed trace.
+- `3`, `4`, `5` — increasingly verbose internals.
+
+`nc_set_log_level(NC_TURN_OFF_LOGGING)` sets `nc_log_level = -1` and suppresses everything.
+
+### Error-Handling Macros
+
+In `include/nc_logging.h`:
+
+- `BAIL(e)` — sets `retval = e`, logs the error (if logging), then `goto exit`.
+- `BAILLOG(e)` — the logging portion used by `BAIL`; writes `file %s, line %d.\n%s` with `__FILE__`, `__LINE__`, and `nc_strerror(e)`.
+- `BAIL_QUIET(e)` — sets `retval = e` and `goto exit` without logging.
+
+In `libhdf5/hdf5err.h`:
+
+- `BAIL2(e)` — same as `BAILLOG(e)` but also calls `nc_log_hdf5()` to print the HDF5 error stack. It is intended only for `libhdf5` code.
+
+### HDF5 Error-Stack Integration
+
+- `hdf5_set_log_level()` in `libhdf5/hdf5internal.c` toggles HDF5’s automatic error printer via `H5Eset_auto2()`:
+  - When logging is active, it registers `H5Eprint1` with `stderr`.
+  - When `nc_log_level == NC_TURN_OFF_LOGGING`, it disables HDF5 error printing.
+- Called from `hdf5create.c` and `hdf5open.c` after `nc4_hdf5_initialize()`.
+- `nc_log_hdf5()` calls `H5Eprint1(NULL)` to dump the current HDF5 error stack.
+
+### In-Memory Metadata Dump
+
+- `log_metadata_nc(NC_FILE_INFO_T *h5)` in `libsrc4/nc4internal.c` recursively walks groups, attributes, dimensions, variables, and user-defined types.
+- `NC4_show_metadata()` temporarily forces `nc_log_level = 2`, calls `log_metadata_nc()`, then restores the previous level.
+
+### Parallel I/O Logging
+
+When `NC_HAS_PARALLEL4` is set:
+
+- `nc4_init_logging()` opens a per-rank log file named `nc4_log_<rank>.log`.
+- `nc_log()` writes to `LOG_FILE` instead of `stderr` when MPI is initialized.
+- `nc4_finalize_logging()` closes the log file; this is triggered by `nc_set_log_level(-1)`.
+
+### Distinction: `nc_log` vs. `nclog`
+
+There is also a newer general-purpose logging facility in `libdispatch/nclog.c` and `include/nclog.h` (functions `nclog()`, `ncvlog()`, `nctrace()`, etc.) controlled by environment variables `NCLOGGING` and `NCTRACING`. The legacy `LOG(())` macro used in `libsrc4`/`libhdf5` calls the older `nc_log()` printer defined in `libsrc4/nc4internal.c`, not the newer `nclog()` family.
+
+### Typical Usage Examples
+
+`libsrc4` function tracing:
+
+```c
+LOG((3, "find_var_dim_max_length varid %d dimid %d", varid, dimid));
+```
+
+`libhdf5` status logging:
+
+```c
+LOG((1, "HDF5 error messages have been turned off."));
+```
+
+HDF5 failure path:
+
+```c
+if ((spaceid = H5Dget_space(datasetid)) < 0)
+    BAIL(NC_EHDFERR);
+```
+
+With logging enabled this logs the netCDF error, dumps the HDF5 error stack, sets `retval`, and jumps to `exit`.
+
+### Key Takeaways for NEP
+
+- Make logging compile-time optional so that disabled builds pay zero runtime cost (`#define LOG(e)`).
+- Use the `LOG(e) nc_log e` trick so callers write `LOG((severity, fmt, ...))` and it expands cleanly.
+- Combine error logging, `retval` assignment, and `goto exit` in a single `BAIL`/`BAIL2` macro.
+- For HDF5-backed code, add a helper that dumps the backend error stack on failure (like `nc_log_hdf5()`).
+- Expose a public `nc_set_log_level()` and read a `NETCDF_LOG_LEVEL` environment variable at initialization so diagnostics can be enabled without recompiling.
+
 ## Additional Resources
 
 See [references/COMPONENTS.md](references/COMPONENTS.md) for detailed component descriptions.

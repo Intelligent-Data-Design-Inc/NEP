@@ -15,7 +15,7 @@ target_include_directories(ncnextcdf4 PRIVATE
     ${NETCDF_INCLUDE_DIRS}
     ${HDF5_INCLUDE_DIRS}
 )
-target_link_libraries(ncnextcdf4 PRIVATE ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
+target_link_libraries(ncnextcdf4 PRIVATE ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES} PUBLIC nep)
 set_target_properties(ncnextcdf4 PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/src"
     VERSION ${PROJECT_VERSION}

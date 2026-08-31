@@ -96,6 +96,16 @@ int main(void){ return 0; }" NETCDF_VERSION_OK)
         message(FATAL_ERROR "NetCDF-C >= 4.10.1 is required for UDF slots > 2, but the installed headers are older.")
     endif()
 
+    # NEP logging support. This is independent of NetCDF-C logging; NEP uses
+    # its own nep_log()/nep_log_level() and exposes a public nep_set_log_level().
+    option(NEP_ENABLE_LOGGING "Enable NEP diagnostic logging (default ON)" ON)
+    if(NEP_ENABLE_LOGGING)
+        set(LOGGING 1)
+        message(STATUS "NEP logging: enabled")
+    else()
+        message(STATUS "NEP logging: disabled")
+    endif()
+
     # Detect parallel NetCDF-C support (needed for matching internal struct layouts).
     find_program(NC_CONFIG nc-config HINTS "${NETCDF_PREFIX}/bin")
     if(NC_CONFIG)
@@ -527,6 +537,11 @@ if(NOT DOCS_ONLY)
         set(NEP_HAS_OPENDAP 1)
     else()
         set(NEP_HAS_OPENDAP 0)
+    endif()
+    if(NEP_ENABLE_LOGGING)
+        set(NEP_HAS_LOGGING 1)
+    else()
+        set(NEP_HAS_LOGGING 0)
     endif()
 
     # Generate the build metadata header (committed source is include/nep_meta.h.in).
