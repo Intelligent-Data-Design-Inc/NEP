@@ -1,6 +1,6 @@
 # NEP Development Roadmap
 
-### V4.1.0 - NEXTCDF4 Tools and Examples
+### V4.1.0 - NEXTCDF4 Docs and Logging
 
 #### Sprint 1: Docs for NEXTCDF4
 **Objective:** Create complete user-facing and developer documentation for the NEXTCDF-4 backend, including a dedicated reference page, Doxygen main-page integration, and updates to design, PRD, FAQ, and release notes so users and downstream developers can understand how to build, select, and use NEXTCDF-4 files and new types.
@@ -102,10 +102,14 @@
 - Per-rank log files for parallel builds; NEP does not yet exercise parallel NEXTCDF-4 I/O.
 - Replacing every existing error path in NEXTCDF-4 with `BAIL` macros; the goal is coverage of the lifecycle and metadata paths, not a wholesale control-flow refactor.
 
-#### Sprint 3: Create Tools and Language Bindings
+#### Sprint 3: SAFE Example with Article for Sentinel-2
+- Just as with NISAR and SWOT, we will examine sentinel 2 data.
+- Build a skill file on this mission. Some input: https://dataspace.copernicus.eu/data-collections/copernicus-sentinel-missions/sentinel-2
+
+#### Sprint 4: Create Tools and Language Bindings
 **Objective:** Create `nextcopy` and `nextdump` with support for all NEXTCDF-4 types and compatibility modes. Expose the new C APIs and datatypes through Fortran and other maintained language bindings.
 
-#### Sprint 4: Validate Compatibility and Prepare the Release
+#### Sprint 5: Validate Compatibility and Prepare the Release
 **Objective:** Run broad NetCDF-C compatibility, interoperability, regression, and representative-file testing across supported HDF5 versions. Complete performance and resource-leak checks, final documentation, examples, release notes, and v4.1.0 release readiness work.
 
 ### V4.0.0 - NEXTCDF4
