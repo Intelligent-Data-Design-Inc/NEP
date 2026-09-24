@@ -1,5 +1,6 @@
 # NEP Development Roadmap
 
+
 ### V4.1.0 - NEXTCDF4 Docs and Logging
 
 #### Sprint 1: Docs for NEXTCDF4
@@ -75,42 +76,83 @@
 
 
 #### Sprint 2: Logging in NEP
-**Objective:** Add an independent NEP logging system for the NEXTCDF-4 backend and future NEP handlers. It uses the same `LOG(())` macro style as netcdf-c's `libsrc4` and `libhdf5`, but routes output through NEP's own `nep_log()` and is controlled by a public `nep_set_log_level()` API. Logging is enabled by default and does not depend on whether the host NetCDF-C was built with logging.
+**Objective:** Add an independent NEP logging system for the NEXTCDF-4 backend and future NEP handlers. It uses the distinct `ELOG(())` macro, patterned after netcdf-c's `LOG(())` in `libsrc4` and `libhdf5`, and routes output through NEP's own `nep_log()` and is controlled by a public `nep_set_log_level()` API. Logging is enabled by default and does not depend on whether the host NetCDF-C was built with logging.
 
 **Detailed Plan:**
-- Add a CMake option `NEP_ENABLE_LOGGING` (default ON). When ON, define the `LOGGING` preprocessor macro; when OFF, `LOG(...)` expands to nothing and `nep_set_log_level()` is a no-op.
+- Add a CMake option `NEP_ENABLE_LOGGING` (default ON). When ON, define the `NEP_LOGGING` preprocessor macro; when OFF, `ELOG(...)` expands to nothing and `nep_set_log_level()` is a no-op.
 - Expose the capability as `NEP_HAS_LOGGING` in `include/nep_meta.h.in`.
-- Create `include/nep_logging.h` with the `LOG(())`, `BAILLOG`, `BAIL`, and `BAIL_QUIET` macros.
+- Create `include/nep_logging.h` with the `ELOG(())`, `EBAILLOG`, `EBAIL`, and `EBAIL_QUIET` macros.
 - Add the public function `nep_set_log_level(int new_level)` to `include/nep.h` and implement it, along with `nep_log()` and the `nep_log_level` global, in `src/nep.c`.
 - Link the NEXTCDF-4 backend (`ncnextcdf4`) against the core `nep` library so it can use the shared logging state.
-- Add `src/nextcdf4/nxt4err.h` with `BAIL`/`BAIL2` macros adapted to the local `ret`/`fail:` style. `BAIL2` dumps the HDF5 error stack directly with `H5Eprint2()` so it does not require NetCDF-C's `nc_log_hdf5()`.
-- Instrument NEXTCDF-4 lifecycle and metadata functions, replacing temporary `fprintf(stderr, ...)` debug prints with `LOG(...)` calls.
+- Add `src/nextcdf4/nxt4err.h` with `EBAIL`/`EBAIL2` macros adapted to the local `ret`/`fail:` style. `EBAIL2` dumps the HDF5 error stack directly with `H5Eprint2()` so it does not require NetCDF-C's `nc_log_hdf5()`.
+- Instrument NEXTCDF-4 lifecycle and metadata functions, replacing temporary `fprintf(stderr, ...)` debug prints with `ELOG(...)` calls.
 - In `NC_NEXTCDF4_initialize()`, read `NEP_LOG_LEVEL` and call `nep_set_log_level()`.
 - Add `test/nextcdf4/tst_nextcdf4_logging.c` to verify output at level 3, suppression at `-1`, and HDF5 failure logging.
 - Update `docs/nextcdf4.md` and `docs/releases/v4.1.0.md`.
 
 **Verification and acceptance criteria:**
 - A default NEP build sets `NEP_HAS_LOGGING=1`; `nep_set_log_level()` controls NEXTCDF-4 diagnostic output.
-- With logging enabled, `LOG((severity, fmt, ...))` calls produce output only when `severity <= nep_log_level`, and output is suppressed after `nep_set_log_level(-1)`.
-- With logging disabled (`-DNEP_ENABLE_LOGGING=OFF`), `LOG(...)` expands to nothing, the logging test skips, and the full C test suite still passes.
+- With logging enabled, `ELOG((severity, fmt, ...))` calls produce output only when `severity <= nep_log_level`, and output is suppressed after `nep_set_log_level(-1)`.
+- With logging disabled (`-DNEP_ENABLE_LOGGING=OFF`), `ELOG(...)` expands to nothing, the logging test skips, and the full C test suite still passes.
 - The temporary `fprintf(stderr, ...)` debug statements in `nxt4create.c`, `nxt4open.c`, and `nxt4file.c` are removed; no unguarded debug output remains in the NEXTCDF-4 backend.
-- `BAIL2` on an injected HDF5 failure emits a severity-0 NetCDF error line and dumps the HDF5 error stack.
+- `EBAIL2` on an injected HDF5 failure emits a severity-0 NetCDF error line and dumps the HDF5 error stack.
 - `cmake --build build` produces no new warnings.
 
 **Out of scope for Sprint 2:**
 - Instrumenting the read-only format handlers (GeoTIFF, GRIB2, FITS, PDS4, DICOM, CDF, PDB, mmCIF) beyond making the shared macro header available; those may be instrumented in later maintenance sprints.
 - Per-rank log files for parallel builds; NEP does not yet exercise parallel NEXTCDF-4 I/O.
-- Replacing every existing error path in NEXTCDF-4 with `BAIL` macros; the goal is coverage of the lifecycle and metadata paths, not a wholesale control-flow refactor.
+- Replacing every existing error path in NEXTCDF-4 with `EBAIL` macros; the goal is coverage of the lifecycle and metadata paths, not a wholesale control-flow refactor.
 
-#### Sprint 3: SAFE Example with Article for Sentinel-2
-- Just as with NISAR and SWOT, we will examine sentinel 2 data.
-- Build a skill file on this mission. Some input: https://dataspace.copernicus.eu/data-collections/copernicus-sentinel-missions/sentinel-2
+#### Sprint 3: Remove Space Mission Examples
+**Objective:** Remove the standalone Earth-observation mission examples and companion articles from NEP so that this repository remains focused on the NEP C/Fortran library, UDF readers, compression filters, NEXTCDF-4 backend, and examples that directly exercise those capabilities. Direct users interested in satellite-data workflows to the dedicated *Earth Observation in Practice* repository and book.
 
-#### Sprint 4: Create Tools and Language Bindings
-**Objective:** Create `nextcopy` and `nextdump` with support for all NEXTCDF-4 types and compatibility modes. Expose the new C APIs and datatypes through Fortran and other maintained language bindings.
+**Background:** The NISAR, SWOT, GOES-R ABI, and Sentinel-3 OLCI examples are self-contained Python applications for products that are already NetCDF-4/HDF5 compatible. They do not exercise NEP dispatch handlers or other NEP library functionality. These examples now live in a dedicated repository where mission-specific code, data-access instructions, figures, and articles can evolve independently of NEP.
 
-#### Sprint 5: Validate Compatibility and Prepare the Release
-**Objective:** Run broad NetCDF-C compatibility, interoperability, regression, and representative-file testing across supported HDF5 versions. Complete performance and resource-leak checks, final documentation, examples, release notes, and v4.1.0 release readiness work.
+**Removal inventory:**
+- Remove the standalone example trees `examples/nisar/`, `examples/swot/`, `examples/abi/`, and `examples/olci/`, including Python packages, requirements files, mission-specific READMEs, fetch helpers, committed figures, and local `.gitignore` files.
+- Remove the companion articles `docs/netCDF_with_NISAR.md`, `docs/netCDF_with_SWOT.md`, `docs/netCDF_with_ABI_CMIP.md`, and `docs/netCDF_with_Sentinel3_OLCI.md`.
+- Remove active links and descriptions for these examples from the top-level `README.md`, `examples/README.md`, Doxygen inputs/navigation, generated-documentation indexes, and any other current user-facing documentation.
+- Audit `CMakeLists.txt`, `examples/CMakeLists.txt`, `examples/viz/CMakeLists.txt`, CTest registration, install rules, packaging manifests, and CI workflows for mission-example references. Remove any references found; document that examples which were already standalone had no build integration rather than adding replacement build logic.
+- Audit project-maintenance configuration for mission-specific example support, including `.devin/skills/nep-satellite-example/` and any mission-specific skills whose only purpose is maintaining the removed examples. Remove or retire those files so project guidance does not instruct contributors to recreate examples in NEP.
+
+**README replacement:**
+- Replace the in-repository mission-example list with a concise "Earth Observation Examples" pointer to [Earth Observation in Practice](https://github.com/captainkirk99/Earth_Observation_in_Practice).
+- Mention the book *Earth Observation in Practice: A Mission-by-Mission Guide to Reading Satellite Data with NetCDF and Python* and link to its [Amazon page](https://www.amazon.com/Earth-Observation-Practice-Mission-Mission/dp/B0HJRZ9F7L/).
+- Explain that the external repository contains the maintained mission-by-mission examples, data-access instructions, and Python visualizations formerly hosted in NEP.
+- Keep the replacement text informational; NEP must not acquire a build-time, run-time, test-time, or packaging dependency on the external repository or book resources.
+
+**Documentation handling:**
+- Preserve historical release records where useful, but remove links that would become broken after deleting the example trees and companion articles. Historical text may state that the examples were introduced in earlier releases and moved out in v4.1.0.
+- Update `docs/releases/v4.1.0.md` with a Sprint 3 migration note listing the removed examples and the new external destination.
+- Do not remove format-reader examples under `examples/viz/` that directly exercise NEP UDF handlers merely because their sample data originates from a satellite. The removal target is the standalone mission-oriented applications and articles, not GeoTIFF, GRIB2, DICOM, PDS4, PDB, mmCIF, or other NEP format demonstrations.
+- Do not remove general NetCDF, NcZarr, OPeNDAP, parallel-I/O, performance, compression, or NEXTCDF-4 examples.
+
+**Implementation sequence:**
+1. Inventory all references to NISAR, SWOT, ABI/GOES-R, OLCI/Sentinel-3, `Earthdata`, and the four `examples/<mission>/` paths across source, build files, documentation, CI, packaging, and project skills.
+2. Remove the four standalone mission example directories and four companion articles.
+3. Remove active documentation, Doxygen, packaging, build, and CI references to the deleted paths.
+4. Replace the satellite-example section in `README.md` with links to the dedicated repository and book.
+5. Update `examples/README.md` so its inventory and Python dependency guidance describe only examples that remain in NEP.
+6. Update v4.1.0 release notes and repair historical references that would otherwise point to deleted files.
+7. Remove or retire project skills dedicated solely to adding or maintaining standalone satellite examples in NEP.
+8. Search the repository again for stale path references and classify any remaining mission names as intentional historical records or errors to fix.
+9. Perform a clean configure, build, CTest run, and Doxygen build to prove that deleting the examples did not leave broken dependencies or links.
+
+**Verification and acceptance criteria:**
+- `examples/nisar/`, `examples/swot/`, `examples/abi/`, and `examples/olci/` no longer exist in NEP.
+- The four `docs/netCDF_with_*.md` mission articles no longer exist.
+- No active CMake, CTest, install, packaging, CI, Doxygen, README, or documentation link references a deleted file or directory.
+- The top-level README contains working links to the dedicated Earth-observation repository and the book, and clearly tells users where the migrated examples are maintained.
+- `examples/README.md` accurately lists only examples still present in the repository and no longer asks users to install mission-specific Python requirements.
+- Remaining references to NISAR, SWOT, ABI, or OLCI are limited to intentional historical release/roadmap records and the v4.1.0 migration notice; none instruct users to run removed code.
+- A clean build in `build/` succeeds, all enabled CTest tests pass, and the Doxygen target completes without warnings or unresolved references.
+- No NEP library API, ABI, UDF dispatch behavior, test data, or format-reader functionality changes in this sprint.
+
+**Out of scope for Sprint 3:**
+- Copying or synchronizing files into the external repository; that repository is treated as the maintained destination.
+- Adding new satellite missions, download clients, credentials, sample granules, plots, or replacement Python packages to NEP.
+- Removing visualization scripts that directly test NEP format readers under `examples/viz/`.
+- Changing the NEP C/Fortran implementation, NEXTCDF-4 backend, UDF slot allocation, or compression-filter behavior.
 
 ### V4.0.0 - NEXTCDF4
 

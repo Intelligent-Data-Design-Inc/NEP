@@ -442,12 +442,12 @@ nc_inq_var_lzf(int ncid, int varid, int *lzfp)
 
 #endif /* BUILD_LZF */
 
-#ifdef LOGGING
+#ifdef NEP_LOGGING
 /**
  * Current severity threshold for NEP diagnostic messages. Messages with
  * severity greater than this value are suppressed. Initialized to
  * NEP_DEFAULT_LOG_LEVEL so that logging is active by default in builds
- * where LOGGING is enabled.
+ * where NEP_LOGGING is enabled.
  */
 static int nep_log_level = NEP_DEFAULT_LOG_LEVEL;
 
@@ -478,7 +478,7 @@ nep_log(int severity, const char *fmt, ...)
     fprintf(stderr, "\n");
     fflush(stderr);
 }
-#endif /* LOGGING */
+#endif /* NEP_LOGGING */
 
 /**
  * Set the NEP logging threshold.
@@ -492,8 +492,8 @@ nep_log(int severity, const char *fmt, ...)
 int
 nep_set_log_level(int new_level)
 {
-#ifdef LOGGING
+#ifdef NEP_LOGGING
     nep_log_level = new_level;
-#endif /* LOGGING */
+#endif /* NEP_LOGGING */
     return NC_NOERR;
 }

@@ -1,5 +1,0 @@
-xarray
-netCDF4
-matplotlib
-cartopy
-earthaccess

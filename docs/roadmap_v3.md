@@ -1,5 +1,7 @@
 # NEP Development Roadmap
 
+> **Archived roadmap:** Standalone Earth-observation mission examples described here were moved to the [Earth Observation in Practice](https://github.com/captainkirk99/Earth_Observation_in_Practice) repository in NEP v4.1.0. Their historical paths are retained below as a record and do not exist in the current NEP tree.
+
 ### V4.1.0 - NEXTCDF4 Tools and Examples
 #### Sprint 1: Create Tools and Language Bindings
 **Objective:** Create `nextcopy` and `nextdump` with support for all NEXTCDF-4 types and compatibility modes. Expose the new C APIs and datatypes through Fortran and other maintained language bindings.

@@ -4,7 +4,15 @@
 
 **[📚 Full Documentation](https://intelligent-data-design-inc.github.io/NEP/)**
 
+**[NEXTCDF-4 Documentation](docs/nextcdf4.md)**
+
 **[📄 NEP Abstract](docs/NEP_abstract.md)**
+
+<a href="https://www.amazon.com/NetCDF-Developers-Handbook-Authoritative-High-Performance/dp/B0H7Q49MPS/">
+  <img src="docs/images/netcdf_developers_handbook_second_edition.png" alt="Cover of The NetCDF Developer's Handbook, Second Edition" width="240">
+</a>
+
+[*The NetCDF Developer's Handbook: The Authoritative Guide to Writing High-Performance Programs for Scientific Data Management, Second Edition*](https://www.amazon.com/NetCDF-Developers-Handbook-Authoritative-High-Performance/dp/B0H7Q49MPS/) provides practical guidance and complete examples for NetCDF programming in C and Fortran.
 
 ---
 
@@ -56,7 +64,7 @@ cmake -B build \
 
 ### Example Programs
 
-NEP includes over 26 C and Fortran example programs, organized by topic. They are companion code for *[The NetCDF Developer's Handbook: The Authoritative Guide to Writing High-Performance Programs for Scientific Data Management, Second Edition](https://www.amazon.com/dp/B0H7Q1Z75L)*.
+NEP includes over 26 C and Fortran example programs, organized by topic. They are companion code for *[The NetCDF Developer's Handbook: The Authoritative Guide to Writing High-Performance Programs for Scientific Data Management, Second Edition](https://www.amazon.com/NetCDF-Developers-Handbook-Authoritative-High-Performance/dp/B0H7Q49MPS/)*.
 
 | Category | Examples |
 |---|---|
@@ -68,25 +76,11 @@ NEP includes over 26 C and Fortran example programs, organized by topic. They ar
 
 Both C and Fortran versions provided for Classic, NetCDF-4, and NcZarr categories.
 
-Standalone Python examples are also included:
+### Earth Observation Examples
 
-- `examples/nisar/` opens a NISAR Level 3 Soil Moisture (SME2) HDF5
-  product and plots it with `xarray`/`cartopy`.
-- `examples/swot/` opens a SWOT Level 2 KaRIn Low Rate Sea Surface
-  Height (L2_LR_SSH) NetCDF-4 product and plots sea surface height
-  anomaly with `xarray`/`cartopy`.
-- `examples/abi/` opens a GOES-R ABI Level 2 Cloud and Moisture
-  Imagery (CMIP) NetCDF-4 product and plots it on the native
-  geostationary projection with `xarray`/`cartopy`.
+Mission-by-mission satellite-data examples, data-access instructions, and Python visualizations formerly hosted in NEP are maintained in the [Earth Observation in Practice](https://github.com/captainkirk99/Earth_Observation_in_Practice) repository.
 
-They are not built by CMake/CTest; see
-[examples/nisar/README.md](examples/nisar/README.md),
-[examples/swot/README.md](examples/swot/README.md), and
-[examples/abi/README.md](examples/abi/README.md) for setup and usage.
-
-They are not built by CMake/CTest; see
-[examples/nisar/README.md](examples/nisar/README.md) and
-[examples/swot/README.md](examples/swot/README.md) for setup and usage.
+The companion book, [*Earth Observation in Practice: A Mission-by-Mission Guide to Reading Satellite Data with NetCDF and Python*](https://www.amazon.com/Earth-Observation-Practice-Mission-Mission/dp/B0HJRZ9F7L/), provides additional background and worked examples. These external resources are informational and are not build-time, run-time, test-time, or packaging dependencies of NEP.
 
 ---
 

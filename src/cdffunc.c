@@ -12,9 +12,9 @@
 #include "cdfdispatch.h"
 
 
-/* Define LOG macro if not already defined (when LOGGING is disabled) */
-#ifndef LOG
-#define LOG(e)
+/* Define ELOG macro if not already defined (when ELOGGING is disabled) */
+#ifndef ELOG
+#define ELOG(e)
 #endif
 
 /* Suppress warnings from external CDF library header */
@@ -65,7 +65,7 @@ NC_CDF_inq_format_extended(int ncid, int *formatp, int *modep)
     NC *nc;
     int retval;
 
-    LOG((2, "%s: ncid 0x%x", __func__, ncid));
+    ELOG((2, "%s: ncid 0x%x", __func__, ncid));
 
     if ((retval = nc4_find_nc_grp_h5(ncid, &nc, NULL, NULL)))
         return NC_EBADID;
