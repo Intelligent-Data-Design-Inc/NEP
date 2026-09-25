@@ -96,7 +96,7 @@ copy_truncated_file(const char *src, const char *dst, size_t bytes)
 int
 main(void)
 {
-#ifndef LOGGING
+#ifndef NEP_LOGGING
     /* NetCDF-C was built without logging; there is nothing to test. */
     return 0;
 #endif

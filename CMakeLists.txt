@@ -100,7 +100,7 @@ int main(void){ return 0; }" NETCDF_VERSION_OK)
     # its own nep_log()/nep_log_level() and exposes a public nep_set_log_level().
     option(NEP_ENABLE_LOGGING "Enable NEP diagnostic logging (default ON)" ON)
     if(NEP_ENABLE_LOGGING)
-        set(LOGGING 1)
+        set(NEP_LOGGING 1)
         message(STATUS "NEP logging: enabled")
     else()
         message(STATUS "NEP logging: disabled")

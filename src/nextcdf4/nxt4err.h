@@ -23,12 +23,12 @@
  * cleanup label. Use this for errors that are not HDF5-specific (for
  * example, invalid arguments or missing state).
  */
-#ifdef BAIL
-#undef BAIL
+#ifdef EBAIL
+#undef EBAIL
 #endif
-#define BAIL(e) \
+#define EBAIL(e) \
    do { \
-      BAILLOG(e); \
+      EBAILLOG(e); \
       ret = e; \
       goto fail; \
    } while (0)
@@ -38,16 +38,16 @@
  * and jump to the `fail:` cleanup label. Use this after an HDF5 API
  * call fails.
  */
-#ifdef LOGGING
-#define BAIL2(e) \
+#ifdef NEP_LOGGING
+#define EBAIL2(e) \
    do { \
-      BAILLOG(e); \
+      EBAILLOG(e); \
       H5Eprint2(H5E_DEFAULT, stderr); \
       ret = e; \
       goto fail; \
    } while (0)
-#else /* LOGGING */
-#define BAIL2(e) BAIL(e)
-#endif /* LOGGING */
+#else /* NEP_LOGGING */
+#define EBAIL2(e) EBAIL(e)
+#endif /* NEP_LOGGING */
 
 #endif /* NXT4ERR_H */

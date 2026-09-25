@@ -57,11 +57,6 @@ Located in `parallelIO/`:
 - **dicom_read.c** (`dicom/`) - Opens a DICOM image via `NC_DICOM_initialize()`/`NC_UDF6`, prints metadata, and reads a slice of pixel data. Built when `-DNEP_ENABLE_DICOM=ON`.
 - **pdb_read.c** (`pdb/`) - Opens a legacy PDB structure via `NC_PDB_initialize()`/`NC_UDF7`, prints metadata, and reads a slice of atom coordinates. Built when `-DNEP_ENABLE_PDB=ON` (default).
 
-### Python Examples
-- **NISAR Soil Moisture** (`nisar/`) - Standalone Python example that opens a NISAR Level 3 Soil Moisture (SME2) HDF5 product and plots it with `xarray`/`cartopy`. Not built/tested by CMake/CTest; see `examples/nisar/README.md`.
-- **SWOT Sea Surface Height** (`swot/`) - Standalone Python example that opens a SWOT Level 2 KaRIn Low Rate Sea Surface Height (L2_LR_SSH) NetCDF-4 product and plots sea surface height anomaly with `xarray`/`cartopy`. Not built/tested by CMake/CTest; see `examples/swot/README.md`.
-- **GOES-R ABI Cloud and Moisture Imagery** (`abi/`) - Standalone Python example that opens a GOES-R ABI Level 2 Cloud and Moisture Imagery (CMIP) NetCDF-4 product and plots it on the native geostationary projection with `xarray`/`cartopy`. Not built/tested by CMake/CTest; see `examples/abi/README.md`.
-
 ### Future Examples
 - `performance/` - Reserved for performance optimization examples
 
@@ -234,4 +229,3 @@ Each C example has a Fortran equivalent that produces identical output. Key diff
 - C99 compiler
 - Fortran 90+ compiler (for Fortran examples)
 - MPI implementation (OpenMPI, MPICH, or Intel MPI - required for parallel I/O examples)
-- Python 3.9+ with the packages in `examples/nisar/requirements.txt`, `examples/swot/requirements.txt`, or `examples/abi/requirements.txt` (required only for the standalone NISAR, SWOT, or ABI examples; not needed to build/test the C and Fortran examples)

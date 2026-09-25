@@ -60,7 +60,7 @@ NEXTCDF-4 availability is advertised at compile time through `nep_meta.h`:
 
 ## Diagnostics and Logging
 
-NEXTCDF-4 uses the same `LOG(())` macro convention as netcdf-c's `libsrc4` and `libhdf5`, but NEP logging is independent of the underlying NetCDF-C logging build. It is compiled in by default and can be disabled with `-DNEP_ENABLE_LOGGING=OFF`. Build-time availability is reported in `nep_meta.h`:
+NEXTCDF-4 uses the distinct `ELOG(())` macro, patterned after netcdf-c's `LOG(())` convention in `libsrc4` and `libhdf5`. NEP logging is independent of the underlying NetCDF-C logging build. It is compiled in by default and can be disabled with `-DNEP_ENABLE_LOGGING=OFF`. Build-time availability is reported in `nep_meta.h`:
 
 ```c
 #include <nep_meta.h>

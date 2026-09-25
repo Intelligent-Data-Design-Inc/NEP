@@ -821,7 +821,7 @@ NEXTCDF4_def_dim(int ncid, const char *name, size_t len, int *idp)
     ginfo = grp->format_grp_info;
     hdf_grp = ginfo ? ginfo->hdf_group : file->rootid;
 
-    LOG((3, "%s: name=%s ncid=%d", __func__, name, ncid));
+    ELOG((3, "%s: name=%s ncid=%d", __func__, name, ncid));
     if (!(dinfo = calloc(1, sizeof(*dinfo))))
         return NC_ENOMEM;
 
@@ -919,7 +919,7 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
     NEXTCDF4_FILE_INFO_T *file;
     NC_GRP_INFO_T *grp;
 
-    LOG((3, "%s: name=%s ncid=%d", __func__, name, ncid));
+    ELOG((3, "%s: name=%s ncid=%d", __func__, name, ncid));
     NC_VAR_INFO_T *var = NULL;
     NEXTCDF4_VAR_INFO_T *vinfo = NULL;
     NEXTCDF4_GRP_INFO_T *ginfo;
@@ -3042,7 +3042,7 @@ load_children(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
 int
 NEXTCDF4_load_metadata(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5)
 {
-    LOG((2, "%s", __func__));
+    ELOG((2, "%s", __func__));
 
     NEXTCDF4_GRP_INFO_T *ginfo;
     hid_t hdf_grp;
