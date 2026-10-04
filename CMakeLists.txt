@@ -59,7 +59,12 @@ endif()
 
 # Find HDF5 (skip if documentation-only build)
 if(NOT DOCS_ONLY)
-    find_package(HDF5 1.14 REQUIRED COMPONENTS C HL)
+    # No version in find_package: HDF5's config-version file rejects requests
+    # whose major version differs, so "1.14" would skip HDF5 2.x installs.
+    find_package(HDF5 REQUIRED COMPONENTS C HL)
+    if(HDF5_VERSION VERSION_LESS "1.14")
+        message(FATAL_ERROR "NEP requires HDF5 1.14 or newer (found ${HDF5_VERSION})")
+    endif()
     if(NOT HDF5_LIBRARY_DIRS)
         list(GET HDF5_LIBRARIES 0 _hdf5_lib)
         get_filename_component(HDF5_LIBRARY_DIRS "${_hdf5_lib}" DIRECTORY)
