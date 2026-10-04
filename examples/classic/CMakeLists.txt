@@ -59,7 +59,7 @@ foreach(example ${CLASSIC_EXAMPLES})
     target_link_directories(${example} PRIVATE ${HDF5_LIB_DIR})
     # nc-config --libs doesn't include HDF5, so we need to add it explicitly
     # NetCDF needs both libhdf5 and libhdf5_hl
-    target_link_libraries(${example} PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl)
+    target_link_libraries(${example} PRIVATE ${NC_LIBS_LIST} ${HDF5_LIBRARIES})
     
     # Add as test (run example only)
     if(BUILD_TESTING)
@@ -73,7 +73,7 @@ endforeach()
 add_executable(dump_classic_metadata dump_classic_metadata.c)
 target_compile_options(dump_classic_metadata PRIVATE ${NC_CFLAGS_LIST})
 target_link_directories(dump_classic_metadata PRIVATE ${HDF5_LIB_DIR})
-target_link_libraries(dump_classic_metadata PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl)
+target_link_libraries(dump_classic_metadata PRIVATE ${NC_LIBS_LIST} ${HDF5_LIBRARIES})
 
 # Add CDL validation tests for examples with expected output
 if(BUILD_TESTING)

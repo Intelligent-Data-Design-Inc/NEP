@@ -173,7 +173,7 @@ if(NEP_ENABLE_FORTRAN AND NetCDF_Fortran_FOUND)
         add_executable(f_nczarr_simple f_nczarr_simple.f90)
         target_compile_options(f_nczarr_simple PRIVATE ${NF_FFLAGS_LIST})
         target_link_directories(f_nczarr_simple PRIVATE ${HDF5_LIB_DIR} ${NF_LIBDIR})
-        target_link_libraries(f_nczarr_simple PRIVATE ${NF_LIBS_F_LIST} ${NETCDF_LIBRARIES} hdf5 hdf5_hl)
+        target_link_libraries(f_nczarr_simple PRIVATE ${NF_LIBS_F_LIST} ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
         set_target_properties(f_nczarr_simple PROPERTIES
             BUILD_RPATH "${HDF5_LIB_DIR};${NC_LIBDIR};${NF_LIBDIR}"
             SKIP_BUILD_RPATH OFF
@@ -201,7 +201,7 @@ if(NEP_ENABLE_FORTRAN AND NetCDF_Fortran_FOUND)
         add_executable(f_nczarr_chunking f_nczarr_chunking.f90)
         target_compile_options(f_nczarr_chunking PRIVATE ${NF_FFLAGS_LIST})
         target_link_directories(f_nczarr_chunking PRIVATE ${HDF5_LIB_DIR} ${NF_LIBDIR})
-        target_link_libraries(f_nczarr_chunking PRIVATE ${NF_LIBS_F_LIST} ${NETCDF_LIBRARIES} hdf5 hdf5_hl)
+        target_link_libraries(f_nczarr_chunking PRIVATE ${NF_LIBS_F_LIST} ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
         set_target_properties(f_nczarr_chunking PROPERTIES
             BUILD_RPATH "${HDF5_LIB_DIR};${NC_LIBDIR};${NF_LIBDIR}"
             SKIP_BUILD_RPATH OFF
@@ -221,7 +221,7 @@ if(NEP_ENABLE_FORTRAN AND NetCDF_Fortran_FOUND)
         add_executable(f_nczarr_compression f_nczarr_compression.f90)
         target_compile_options(f_nczarr_compression PRIVATE ${NF_FFLAGS_LIST})
         target_link_directories(f_nczarr_compression PRIVATE ${HDF5_LIB_DIR} ${NF_LIBDIR})
-        target_link_libraries(f_nczarr_compression PRIVATE ${NF_LIBS_F_LIST} ${NETCDF_LIBRARIES} hdf5 hdf5_hl)
+        target_link_libraries(f_nczarr_compression PRIVATE ${NF_LIBS_F_LIST} ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
         set_target_properties(f_nczarr_compression PROPERTIES
             BUILD_RPATH "${HDF5_LIB_DIR};${NC_LIBDIR};${NF_LIBDIR}"
             SKIP_BUILD_RPATH OFF
@@ -241,7 +241,7 @@ if(NEP_ENABLE_FORTRAN AND NetCDF_Fortran_FOUND)
         add_executable(f_nczarr_enhanced f_nczarr_enhanced.f90)
         target_compile_options(f_nczarr_enhanced PRIVATE ${NF_FFLAGS_LIST})
         target_link_directories(f_nczarr_enhanced PRIVATE ${HDF5_LIB_DIR} ${NF_LIBDIR})
-        target_link_libraries(f_nczarr_enhanced PRIVATE ${NF_LIBS_F_LIST} ${NETCDF_LIBRARIES} hdf5 hdf5_hl)
+        target_link_libraries(f_nczarr_enhanced PRIVATE ${NF_LIBS_F_LIST} ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
         set_target_properties(f_nczarr_enhanced PROPERTIES
             BUILD_RPATH "${HDF5_LIB_DIR};${NC_LIBDIR};${NF_LIBDIR}"
             SKIP_BUILD_RPATH OFF
