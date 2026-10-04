@@ -12,7 +12,7 @@ if(HAVE_GEOTIFF)
          DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
     
     # Derive runtime library path from HDF5 and NetCDF libraries
-    set(_nep_geotiff_lib_dirs "")
+    set(_nep_geotiff_lib_dirs ${HDF5_LIBRARY_DIRS})
     foreach(_lib ${HDF5_LIBRARIES})
         if(IS_ABSOLUTE "${_lib}")
             get_filename_component(_d "${_lib}" DIRECTORY)
