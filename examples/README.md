@@ -54,8 +54,8 @@ Located in `parallelIO/`:
 - **f_square16_par.f90** - Fortran equivalent demonstrating `nf90_create_par()` and collective hyperslab I/O
 
 ### Format Reader Examples (C)
-- **dicom_read.c** (`dicom/`) - Opens a DICOM image via `NC_DICOM_initialize()`/`NC_UDF6`, prints metadata, and reads a slice of pixel data. Built when `-DNEP_ENABLE_DICOM=ON`.
-- **pdb_read.c** (`pdb/`) - Opens a legacy PDB structure via `NC_PDB_initialize()`/`NC_UDF7`, prints metadata, and reads a slice of atom coordinates. Built when `-DNEP_ENABLE_PDB=ON` (default).
+- **dicom_read.c** (`dicom/`) - Opens a DICOM image via `NC_DICOM_initialize()`/`NC_UDF(6)`, prints metadata, and reads a slice of pixel data. Built when `-DNEP_ENABLE_DICOM=ON`.
+- **pdb_read.c** (`pdb/`) - Opens a legacy PDB structure via `NC_PDB_initialize()`/`NC_UDF(7)`, prints metadata, and reads a slice of atom coordinates. Built when `-DNEP_ENABLE_PDB=ON` (default).
 
 ### Future Examples
 - `performance/` - Reserved for performance optimization examples

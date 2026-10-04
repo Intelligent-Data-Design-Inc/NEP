@@ -69,16 +69,16 @@ NetCDF-C exposes ten UDF slots (0–9). NEP assigns each format handler a perman
 
 | Format | UDF Slot | NetCDF-C Constant | Notes |
 |--------|----------|-------------------|-------|
-| GeoTIFF BigTIFF | 0 | `NC_UDF0` | Large TIFF files (>4 GB) |
-| GeoTIFF standard TIFF | 1 | `NC_UDF1` | Regular TIFF/GeoTIFF files |
-| GRIB2 | 2 | `NC_UDF2` | NOAA/ECMWF GRIB2 messages |
-| FITS | 3 | `NC_UDF3` | Astronomical images and tables (v2.0.0) |
-| CDF | 4 | `NC_UDF4` | NASA CDF; moved from UDF2 in v2.2.0 Sprint 2 |
-| PDS4 | 5 | `NC_UDF5` | NASA/ESA planetary data labels (v2.2.0 Sprint 3) |
-| DICOM | 6 | `NC_UDF6` | DICOM medical imaging (v3.0.0 Sprint 3) |
-| Legacy PDB | 7 | `NC_UDF7` | Legacy protein structure data |
-| PDBx/mmCIF | 8 | `NC_UDF8` | Modern protein structure data |
-| NEXTCDF-4 | 9 | `NC_UDF9` | Optional HDF5 backend selected explicitly with `NC_NEXTCDF4` |
+| GeoTIFF BigTIFF | 0 | `NC_UDF(0)` | Large TIFF files (>4 GB) |
+| GeoTIFF standard TIFF | 1 | `NC_UDF(1)` | Regular TIFF/GeoTIFF files |
+| GRIB2 | 2 | `NC_UDF(2)` | NOAA/ECMWF GRIB2 messages |
+| FITS | 3 | `NC_UDF(3)` | Astronomical images and tables (v2.0.0) |
+| CDF | 4 | `NC_UDF(4)` | NASA CDF; moved from UDF2 in v2.2.0 Sprint 2 |
+| PDS4 | 5 | `NC_UDF(5)` | NASA/ESA planetary data labels (v2.2.0 Sprint 3) |
+| DICOM | 6 | `NC_UDF(6)` | DICOM medical imaging (v3.0.0 Sprint 3) |
+| Legacy PDB | 7 | `NC_UDF(7)` | Legacy protein structure data |
+| PDBx/mmCIF | 8 | `NC_UDF(8)` | Modern protein structure data |
+| NEXTCDF-4 | 9 | `NC_UDF(9)` | Optional HDF5 backend selected explicitly with `NC_NEXTCDF4` |
 
 Before v2.2.0, CDF and GRIB2 shared UDF slot 2 and were mutually exclusive. v2.2.0 Sprint 2 removes that restriction by moving CDF to its own slot. NEXTCDF-4 occupies UDF9 and has no magic-number registration because HDF5 files already belong to the built-in NetCDF-4 backend; applications select it explicitly with `NC_NEXTCDF4`.
 
@@ -493,7 +493,7 @@ The GRIB2 UDF handler follows the same NC_Dispatch pattern used for CDF and GeoT
 ### Key Components
 
 #### GRIB2 UDF Handler
-- **Format Detection**: Automatic identification of GRIB2 files via magic number (`GRIB`) registered at UDF slot 2 (`NEP_UDF_GRIB2 = NC_UDF2`)
+- **Format Detection**: Automatic identification of GRIB2 files via magic number (`GRIB`) registered at UDF slot 2 (`NEP_UDF_GRIB2 = NC_UDF(2)`)
 - **NC_Dispatch Implementation**: Complete dispatch table for GRIB2 file operations
 - **File Operations**: `NC_GRIB2_open()` and `NC_GRIB2_close()` with proper resource management
 - **Metadata Mapping**: GRIB2 products mapped to NetCDF variables with shared `y`/`x` dimensions, `NC_FLOAT` type, and per-variable + global attributes
@@ -544,8 +544,8 @@ The GRIB2 UDF handler follows the same NC_Dispatch pattern used for CDF and GeoT
 7. `g2_free(gfld)`, `free(full_buf)`, `free(msgbuf)`
 
 #### UDF Slot and `.ncrc` Registration
-- UDF slot 2 (`NC_UDF2`) used for GRIB2 in `include/nep.h`
-- Starting with v2.2.0, CDF uses UDF slot 4 (`NC_UDF4`) and is no longer mutually exclusive with GRIB2
+- UDF slot 2 (`NC_UDF(2)`) used for GRIB2 in `include/nep.h`
+- Starting with v2.2.0, CDF uses UDF slot 4 (`NC_UDF(4)`) and is no longer mutually exclusive with GRIB2
 - `NC_GRIB2_initialize()` registers dispatch table via `.ncrc` autoload
 - `nep.ncrc` UDF2 block: `NETCDF.UDF2.LIBRARY`, `NETCDF.UDF2.INIT=NC_GRIB2_initialize`, `NETCDF.UDF2.MAGIC=GRIB`
 
@@ -612,8 +612,8 @@ NEP v2.0.0 adds support for FITS (Flexible Image Transport System) files through
 ### Key Components
 
 #### FITS UDF Handler
-- **Format Detection**: Automatic identification via `"SIMPLE"` magic (first 6 bytes of every FITS file); registered at UDF slot 3 (`NEP_UDF_FITS = NC_UDF3`)
-- **NC_Dispatch Implementation**: Complete dispatch table; `NC_FITS_initialize()` calls `nc_def_user_format(NC_UDF3, &FITS_dispatch_table, "SIMPLE")`
+- **Format Detection**: Automatic identification via `"SIMPLE"` magic (first 6 bytes of every FITS file); registered at UDF slot 3 (`NEP_UDF_FITS = NC_UDF(3)`)
+- **NC_Dispatch Implementation**: Complete dispatch table; `NC_FITS_initialize()` calls `nc_def_user_format(NC_UDF(3), &FITS_dispatch_table, "SIMPLE")`
 - **File Operations**: `NC_FITS_open()` calls `fits_open_file()` and stores the CFITSIO file handle; `NC_FITS_close()` calls `fits_close_file()`
 - **Data I/O**: `NC_FITS_get_vara()` reads pixel hyperslabs via `fits_read_subset()` (image path) and table column data via `fits_read_col()` (table path)
 
@@ -708,8 +708,8 @@ NEP v2.2.0 adds support for NASA/ESA Planetary Data System version 4 (PDS4) XML-
 ### Key Components
 
 #### PDS4 UDF Handler
-- **Format Detection**: PDS4 XML label files (`.xml`) identified by `<?xml` / `Product_Observational` root element; registered at UDF slot 5 (`NEP_UDF_PDS4 = NC_UDF5`)
-- **NC_Dispatch Implementation**: `NC_PDS4_initialize()` calls `nc_def_user_format(NC_UDF5, &PDS4_dispatch_table, NULL)`
+- **Format Detection**: PDS4 XML label files (`.xml`) identified by `<?xml` / `Product_Observational` root element; registered at UDF slot 5 (`NEP_UDF_PDS4 = NC_UDF(5)`)
+- **NC_Dispatch Implementation**: `NC_PDS4_initialize()` calls `nc_def_user_format(NC_UDF(5), &PDS4_dispatch_table, NULL)`
 - **XML Parsing**: libxml2 parses `Product_Observational` labels; PDS4 namespace validated on open
 - **Data File Resolution**: Data filenames resolved relative to the XML label directory
 
@@ -829,7 +829,7 @@ The CDF UDF handler follows the same NC_Dispatch pattern used for other format h
 
 #### Build Integration
 - CDF support defaults to **OFF**; enable it with `-DNEP_ENABLE_CDF=ON`.
-- CDF uses **UDF slot 4** (`NC_UDF4`) as of v2.2.0; moved from UDF2 to eliminate mutual-exclusivity with GRIB2
+- CDF uses **UDF slot 4** (`NC_UDF(4)`) as of v2.2.0; moved from UDF2 to eliminate mutual-exclusivity with GRIB2
 
 ## Spack Package Manager Support (v1.4.0)
 

@@ -252,7 +252,7 @@ test_file(const char *path, size_t expected_atoms,
 {
     int ncid, retval;
 
-    if ((retval = nc_open(path, NC_UDF7, &ncid)))
+    if ((retval = nc_open(path, NC_UDF(7), &ncid)))
         ERR(retval);
 
     if ((retval = check_dimlen(ncid, "model", 1)))
@@ -347,7 +347,7 @@ main(void)
         float x_m0, y_m0, z_m0;
         float x_m1, y_m1, z_m1;
 
-        if ((retval = nc_open(PDB_TEST_FILE_3, NC_UDF7, &ncid3)))
+        if ((retval = nc_open(PDB_TEST_FILE_3, NC_UDF(7), &ncid3)))
             ERR(retval);
 
         if ((retval = check_dimlen(ncid3, "model", 20)))
@@ -389,7 +389,7 @@ main(void)
         int ncid4;
         size_t len;
 
-        if ((retval = nc_open(PDB_TEST_FILE_4, NC_UDF7, &ncid4)))
+        if ((retval = nc_open(PDB_TEST_FILE_4, NC_UDF(7), &ncid4)))
             ERR(retval);
 
         if ((retval = check_dimlen(ncid4, "model", 1)))
@@ -427,7 +427,7 @@ main(void)
 
     {
         int ncid2;
-        int ret = nc_open("no_atoms.pdb", NC_UDF7, &ncid2);
+        int ret = nc_open("no_atoms.pdb", NC_UDF(7), &ncid2);
         if (ret != NC_EINVAL)
         {
             fprintf(stderr, "Expected NC_EINVAL for file with no atoms, got %d at line %d\n",

@@ -16,6 +16,9 @@ if(NOT NetCDF_Fortran_FOUND)
 endif()
 
 include_directories(${NetCDF_Fortran_INCLUDE_DIRS})
+if(NETCDF_HAS_UDF_SLOT_FIELD)
+    add_compile_definitions(NEP_NC_UDF_SLOT_FIELD)
+endif()
 link_directories(${NetCDF_Fortran_LIBRARY_DIRS})
 
 # Build the BZIP2 Fortran test if BZIP2 is enabled.

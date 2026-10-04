@@ -188,7 +188,7 @@ test_file(const char *path, size_t expected_atoms,
 {
     int ncid, retval;
 
-    if ((retval = nc_open(path, NC_UDF8, &ncid)))
+    if ((retval = nc_open(path, NC_UDF(8), &ncid)))
         ERR(retval);
 
     if ((retval = check_dimlen(ncid, "model", 1)))
@@ -249,7 +249,7 @@ main(void)
      * a different atom count and no HETATM records to check against). */
     {
         int ncid2;
-        if ((retval = nc_open(MMCIF_TEST_FILE_2, NC_UDF8, &ncid2)))
+        if ((retval = nc_open(MMCIF_TEST_FILE_2, NC_UDF(8), &ncid2)))
             ERR(retval);
         if ((retval = check_dimlen(ncid2, "model", 1)))
             return retval;
@@ -278,7 +278,7 @@ main(void)
 
     {
         int ncid4;
-        int ret = nc_open("no_atom_site.cif", NC_UDF8, &ncid4);
+        int ret = nc_open("no_atom_site.cif", NC_UDF(8), &ncid4);
         if (ret != NC_EINVAL)
         {
             fprintf(stderr, "Expected NC_EINVAL for file with no _atom_site, got %d at line %d\n",

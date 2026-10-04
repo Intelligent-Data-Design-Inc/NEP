@@ -56,12 +56,12 @@ main(int argc, char **argv)
     
     /* Register handlers */
     printf("*** Registering handlers...");
-    if ((ret = nc_def_user_format(NC_UDF0, (NC_Dispatch *)GEOTIFF_dispatch_table, magic_number_tiff)))
+    if ((ret = nc_def_user_format(NC_UDF(0), (NC_Dispatch *)GEOTIFF_dispatch_table, magic_number_tiff)))
     {
         printf("FAILED: %s\n", nc_strerror(ret));
         return 1;
     }
-    if ((ret = nc_def_user_format(NC_UDF1, (NC_Dispatch *)GEOTIFF_dispatch_table, magic_number_bigtiff)))
+    if ((ret = nc_def_user_format(NC_UDF(1), (NC_Dispatch *)GEOTIFF_dispatch_table, magic_number_bigtiff)))
     {
         printf("FAILED: %s\n", nc_strerror(ret));
         return 1;

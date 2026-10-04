@@ -513,7 +513,7 @@ New Horizons, and many others.
 
 - **Format Detection**: Automatic `<?xml` magic-number detection; root namespace
   verified against `http://pds.nasa.gov/pds4/pds/v1`
-- **UDF Registration**: PDS4 assigned to UDF slot 5 (`NC_UDF5`), permanently
+- **UDF Registration**: PDS4 assigned to UDF slot 5 (`NC_UDF(5)`), permanently
   separate from all other NEP format slots
 - **Metadata Mapping**: Full label-to-netCDF model mapping (see §14.3)
 - **Array Support**: `Array`, `Array_1D`, `Array_2D`, `Array_2D_Image`,
@@ -633,7 +633,7 @@ DICOM (Digital Imaging and Communications in Medicine) support via a UDF handler
 ### 15.2 Features
 
 - **File Operations**: `NC_DICOM_open()` and `NC_DICOM_close()` with proper resource management
-- **Format Detection**: Explicit `NC_UDF6` mode; autoload registration via `.ncrc` once NetCDF-C supports magic offsets
+- **Format Detection**: Explicit `NC_UDF(6)` mode; autoload registration via `.ncrc` once NetCDF-C supports magic offsets
 - **Metadata Mapping**: DICOM tags mapped to NetCDF dimensions, variables, and attributes
 - **Data Reading**: `NC_DICOM_get_vara()` reads uncompressed and encapsulated JPEG Baseline pixel data
 - **Multi-frame Support**: Frame, row, column, and sample dimensions expose multi-frame images
@@ -658,7 +658,7 @@ DICOM (Digital Imaging and Communications in Medicine) support via a UDF handler
 
 ### 15.6 UDF Slot
 
-DICOM is assigned UDF slot 6 (`NC_UDF6`).
+DICOM is assigned UDF slot 6 (`NC_UDF(6)`).
 
 ### 15.7 Known Limitations
 
@@ -724,7 +724,7 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 
 ### 18.2 Features
 
-- **UDF Backend**: Registered on UDF slot 9 (`NC_UDF9`) with public alias `NC_NEXTCDF4`; selectable via `.ncrc` autoload.
+- **UDF Backend**: Registered on UDF slot 9 (`NC_UDF(9)`) with public alias `NC_NEXTCDF4`; selectable via `.ncrc` autoload.
 - **File Lifecycle**: `nc_create`, `nc_open`, `nc_close`, and `nc_abort` for native, classic-model, and `NC_NETCDF4_MODEL` files.
 - **Core Metadata Model**: Dimensions, variables, global/variable attributes, groups, and user-defined types.
 - **Variable I/O and Dimension Scales**: `nc_put_vara`/`nc_get_vara`, `nc_put_var`/`nc_get_var`, `nc_put_var1`/`nc_get_var1`, and `nc_put_vars`/`nc_get_vars`; `nc_put_varm`/`nc_get_varm` are intentionally unimplemented.

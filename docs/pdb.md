@@ -26,7 +26,7 @@ cmake -B build -DNEP_ENABLE_PDB=ON   # CMake (default ON)
 ```c
 #include "pdbdispatch.h"
 NC_PDB_initialize();   /* register UDF7; safe to call even if already registered */
-nc_open("structure.pdb", NC_UDF7, &ncid);
+nc_open("structure.pdb", NC_UDF(7), &ncid);
 nc_inq_varid(ncid, "atom_site_Cartn_x", &varid);
 nc_get_vara_float(ncid, varid, start, count, coords);
 nc_close(ncid);

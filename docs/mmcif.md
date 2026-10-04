@@ -27,7 +27,7 @@ cmake -B build -DNEP_ENABLE_MMCIF=ON   # CMake (default OFF)
 ```c
 #include "mmcifdispatch.h"
 NC_MMCIF_initialize();   /* register UDF8; safe to call even if already registered */
-nc_open("structure.cif", NC_UDF8, &ncid);
+nc_open("structure.cif", NC_UDF(8), &ncid);
 nc_inq_varid(ncid, "atom_site_Cartn_x", &varid);
 nc_get_vara_double(ncid, varid, start, count, coords);
 nc_close(ncid);

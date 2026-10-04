@@ -98,7 +98,7 @@ main(void)
     /* Open the native uncompressed DICOM file via the DICOM UDF handler.
      * The DICOM magic is at byte offset 128, so we force the UDF6 slot
      * rather than relying on NetCDF-C's first-byte magic matching. */
-    if ((retval = nc_open(DICOM_UNCOMPRESSED_TEST_FILE, NC_UDF6, &ncid)))
+    if ((retval = nc_open(DICOM_UNCOMPRESSED_TEST_FILE, NC_UDF(6), &ncid)))
         ERR(retval);
     printf("PASS: nc_open %s\n", DICOM_UNCOMPRESSED_TEST_FILE);
 
@@ -292,7 +292,7 @@ main(void)
         size_t comp_start[3] = {0, 256, 256};
         size_t comp_count[3] = {1, 1, 1};
 
-        if ((retval = nc_open(DICOM_COMPRESSED_TEST_FILE, NC_UDF6, &comp_ncid)))
+        if ((retval = nc_open(DICOM_COMPRESSED_TEST_FILE, NC_UDF(6), &comp_ncid)))
             ERR(retval);
         printf("PASS: nc_open %s\n", DICOM_COMPRESSED_TEST_FILE);
 
@@ -382,7 +382,7 @@ main(void)
         char att_buf[NC_MAX_NAME + 1];
         size_t att_len;
 
-        if ((retval = nc_open(DICOM_16BIT_TEST_FILE, NC_UDF6, &mr_ncid)))
+        if ((retval = nc_open(DICOM_16BIT_TEST_FILE, NC_UDF(6), &mr_ncid)))
             ERR(retval);
         printf("PASS: nc_open %s\n", DICOM_16BIT_TEST_FILE);
 
@@ -514,7 +514,7 @@ main(void)
         char att_buf[NC_MAX_NAME + 1];
         size_t att_len;
 
-        if ((retval = nc_open(DICOM_CT_BRAIN_TEST_FILE, NC_UDF6, &ct_ncid)))
+        if ((retval = nc_open(DICOM_CT_BRAIN_TEST_FILE, NC_UDF(6), &ct_ncid)))
             ERR(retval);
         printf("PASS: nc_open %s\n", DICOM_CT_BRAIN_TEST_FILE);
 
@@ -584,7 +584,7 @@ main(void)
         char att_buf[NC_MAX_NAME + 1];
         size_t att_len;
 
-        if ((retval = nc_open(DICOM_MR_HEAD_TEST_FILE, NC_UDF6, &mrh_ncid)))
+        if ((retval = nc_open(DICOM_MR_HEAD_TEST_FILE, NC_UDF(6), &mrh_ncid)))
             ERR(retval);
         printf("PASS: nc_open %s\n", DICOM_MR_HEAD_TEST_FILE);
 
@@ -638,7 +638,7 @@ main(void)
         char att_buf[NC_MAX_NAME + 1];
         size_t att_len;
 
-        if ((retval = nc_open(DICOM_CT_CHEST_LOSSLESS_TEST_FILE, NC_UDF6,
+        if ((retval = nc_open(DICOM_CT_CHEST_LOSSLESS_TEST_FILE, NC_UDF(6),
                               &ctl_ncid)))
             ERR(retval);
         printf("PASS: nc_open %s\n", DICOM_CT_CHEST_LOSSLESS_TEST_FILE);
@@ -704,7 +704,7 @@ main(void)
         char att_buf[NC_MAX_NAME + 1];
         size_t att_len;
 
-        if ((retval = nc_open(DICOM_MR_SHOULDER_LOSSLESS_TEST_FILE, NC_UDF6,
+        if ((retval = nc_open(DICOM_MR_SHOULDER_LOSSLESS_TEST_FILE, NC_UDF(6),
                               &mrl_ncid)))
             ERR(retval);
         printf("PASS: nc_open %s\n", DICOM_MR_SHOULDER_LOSSLESS_TEST_FILE);
@@ -774,7 +774,7 @@ main(void)
     {
         int np_ncid;
 
-        retval = nc_open(DICOM_NO_PREAMBLE_TEST_FILE, NC_UDF6, &np_ncid);
+        retval = nc_open(DICOM_NO_PREAMBLE_TEST_FILE, NC_UDF(6), &np_ncid);
         if (retval != NC_EINVAL)
         {
             fprintf(stderr, "no-preamble file: expected NC_EINVAL, got %d "

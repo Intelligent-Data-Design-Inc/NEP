@@ -908,14 +908,14 @@ main(void)
             printf("ERROR: Failed to initialize GeoTIFF dispatch layer\n");
             return 1;
         }
-        if ((reg_ret = nc_def_user_format(NC_UDF0, (NC_Dispatch *)GEOTIFF_dispatch_table,
+        if ((reg_ret = nc_def_user_format(NC_UDF(0), (NC_Dispatch *)GEOTIFF_dispatch_table,
                                           magic_tiff)) != NC_NOERR)
         {
             printf("ERROR: Failed to register standard TIFF handler: %s\n",
                    nc_strerror(reg_ret));
             return 1;
         }
-        if ((reg_ret = nc_def_user_format(NC_UDF1, (NC_Dispatch *)GEOTIFF_dispatch_table,
+        if ((reg_ret = nc_def_user_format(NC_UDF(1), (NC_Dispatch *)GEOTIFF_dispatch_table,
                                           magic_bigtiff)) != NC_NOERR)
         {
             printf("ERROR: Failed to register BigTIFF handler: %s\n",

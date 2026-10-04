@@ -4,7 +4,7 @@
  * through the NetCDF UDF API.
  *
  * This program demonstrates opening a legacy Protein Data Bank (PDB) file
- * with the PDB UDF handler (UDF slot 7, NC_UDF7), reading the atom/model
+ * with the PDB UDF handler (UDF slot 7, NC_UDF(7)), reading the atom/model
  * dimensions, and extracting a small slice of atom coordinate data.
  *
  * @note Companion code for "The NetCDF Developer's Handbook: The Authoritative
@@ -20,6 +20,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <netcdf.h>
+
+/* netCDF-C releases before the UDF slot-number encoding
+ * (Unidata/netcdf-c#3442) have one mode bit per slot and no NC_UDF(n). */
+#ifndef NC_UDF
+#define NC_UDF(n) ((n) == 0 ? NC_UDF0 : (n) == 1 ? NC_UDF1 : \
+                   (n) == 2 ? NC_UDF2 : (NC_UDF3 << ((n) - 3)))
+#endif
 
 #define FILE_NAME "../test/data/PDB/4HHB.pdb"
 
@@ -45,7 +52,7 @@ main(int argc, char **argv)
 
     (void)NC_PDB_initialize();
 
-    if ((retval = nc_open(file_name, NC_UDF7, &ncid)))
+    if ((retval = nc_open(file_name, NC_UDF(7), &ncid)))
         ERR(retval);
 
     if ((retval = nc_inq(ncid, &ndims, &nvars, &ngatts, &unlimdimid)))

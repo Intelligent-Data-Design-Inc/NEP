@@ -17,11 +17,13 @@ Using User-Defined Formats from C Programs
 A user-defined format can be added dynamically in the case of C programs.
 
 /* Add our test user defined format. */
-if (nc_def_user_format(NC_UDF0, &tst_dispatcher, NULL)) ERR;
+if (nc_def_user_format(NC_UDF(0), &tst_dispatcher, NULL)) ERR;
 The file can now be opened by netCDF:
 
-if (nc_open(FILE_NAME, NC_UDF0, &ncid)) ERR;
-If a magic number is used in the file, that may be passed to nc_def_user_format(). In that case, specifying the NC_UDF0 mode flag to nc_open() is optional. The nc_open() will check the file and find the magic number, and automatically associate the file with NC_UDF0. The user will not need to know the format in order to open the file with nc_open().
+if (nc_open(FILE_NAME, NC_UDF(0), &ncid)) ERR;
+If a magic number is used in the file, that may be passed to nc_def_user_format(). In that case, specifying the NC_UDF(0) mode flag to nc_open() is optional. The nc_open() will check the file and find the magic number, and automatically associate the file with NC_UDF(0). The user will not need to know the format in order to open the file with nc_open().
+
+NEP always selects a slot with `NC_UDF(n)`. netCDF-C with the slot-number mode encoding (Unidata/netcdf-c#3442) defines `NC_UDF(n)` as `NC_UDF_FLAG | (n << 19)` and supports slots 0-63; for older netCDF-C (4.10.x, one mode bit per slot), `nep.h` defines an equivalent `NC_UDF(n)` that maps to `NC_UDF0`-`NC_UDF9`.
 
 Building NetCDF C Library with a User-Defined Format Library
 Once a user-defined format library is created, it may built into a netCDF install. This allows the netCDF Fortran APIs, and the netCDF utilities (ncdump, ncgen, nccopy) to natively use the user-defined format.

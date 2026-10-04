@@ -1,3 +1,5 @@
+#include "nep_udf_mode.h"
+
 program ftst_mmcif_udf
   use netcdf
   use iso_c_binding
@@ -25,8 +27,8 @@ program ftst_mmcif_udf
   print *, "PASS: NC_MMCIF_initialize"
 
   ! Open the mmCIF file read-only, forcing UDF slot 8 so the PDBx/mmCIF
-  ! dispatcher is selected (NC_UDF8 = 0x1000000 = 16777216).
-  retval = nf90_open(FILE_NAME, ior(NF90_NOWRITE, 16777216), ncid)
+  ! dispatcher is selected.
+  retval = nf90_open(FILE_NAME, ior(NF90_NOWRITE, NC_UDF(8)), ncid)
   if (retval /= nf90_noerr) then
      print *, "Error opening mmCIF file: ", trim(nf90_strerror(retval))
      stop 1
