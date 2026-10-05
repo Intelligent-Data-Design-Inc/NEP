@@ -3,7 +3,7 @@
  * @brief Example program that reads a DICOM image through the NetCDF UDF API.
  *
  * This program demonstrates opening a DICOM file with the DICOM UDF handler
- * (UDF slot 6, NC_UDF6), reading the image dimensions, and extracting a small
+ * (UDF slot 6, NC_UDF(6)), reading the image dimensions, and extracting a small
  * slice of pixel data.
  *
  * @note Companion code for "The NetCDF Developer's Handbook: The Authoritative
@@ -19,6 +19,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <netcdf.h>
+
+/* netCDF-C releases before the UDF slot-number encoding
+ * (Unidata/netcdf-c#3442) have one mode bit per slot and no NC_UDF(n). */
+#ifndef NC_UDF
+#define NC_UDF(n) ((n) == 0 ? NC_UDF0 : (n) == 1 ? NC_UDF1 : \
+                   (n) == 2 ? NC_UDF2 : (NC_UDF3 << ((n) - 3)))
+#endif
 
 #define FILE_NAME "../test/data/DICOM/tst_dicom_uncompressed.dcm"
 
@@ -44,7 +51,7 @@ main(int argc, char **argv)
 
     (void)NC_DICOM_initialize();
 
-    if ((retval = nc_open(file_name, NC_UDF6, &ncid)))
+    if ((retval = nc_open(file_name, NC_UDF(6), &ncid)))
         ERR(retval);
 
     if ((retval = nc_inq(ncid, &ndims, &nvars, &ngatts, &unlimdimid)))

@@ -109,6 +109,15 @@ int main(void){ return 0; }" NETCDF_VERSION_OK)
         message(FATAL_ERROR "NetCDF-C >= 4.10.1 is required for UDF slots > 2, but the installed headers are older.")
     endif()
 
+    # NC_UDF_FLAG marks netCDF-C's slot-number UDF mode encoding, NC_UDF(n)
+    # (Unidata/netcdf-c#3442); older releases use one mode bit per slot.
+    include(CheckSymbolExists)
+    set(_saved_cmake_required_includes "${CMAKE_REQUIRED_INCLUDES}")
+    set(CMAKE_REQUIRED_INCLUDES "${NETCDF_INCLUDE_DIRS}")
+    check_symbol_exists(NC_UDF_FLAG "netcdf.h" NETCDF_HAS_UDF_SLOT_FIELD)
+    set(CMAKE_REQUIRED_INCLUDES "${_saved_cmake_required_includes}")
+    unset(_saved_cmake_required_includes)
+
     # NEP logging support. This is independent of NetCDF-C logging; NEP uses
     # its own nep_log()/nep_log_level() and exposes a public nep_set_log_level().
     option(NEP_ENABLE_LOGGING "Enable NEP diagnostic logging (default ON)" ON)
@@ -335,14 +344,17 @@ if(NOT DOCS_ONLY)
         if(HDF5_VERSION VERSION_LESS "1.14.0")
             message(FATAL_ERROR "NEP_ENABLE_NEXTCDF4 requires HDF5 1.14.0 or newer (found ${HDF5_VERSION})")
         endif()
-        include(CheckSymbolExists)
         set(_saved_cmake_required_includes "${CMAKE_REQUIRED_INCLUDES}")
         set(CMAKE_REQUIRED_INCLUDES "${NETCDF_INCLUDE_DIRS}")
-        check_symbol_exists(NC_UDF9 "netcdf.h" NETCDF_HAS_UDF9)
+        check_c_source_compiles("#include <netcdf.h>
+#if !defined(NC_MAX_UDF_FORMATS) || NC_MAX_UDF_FORMATS < 10
+#error UDF slot 9 not available
+#endif
+int main(void){ return 0; }" NETCDF_HAS_UDF9)
         set(CMAKE_REQUIRED_INCLUDES "${_saved_cmake_required_includes}")
         unset(_saved_cmake_required_includes)
         if(NOT NETCDF_HAS_UDF9)
-            message(FATAL_ERROR "NEP_ENABLE_NEXTCDF4 requires NetCDF-C with NC_UDF9 support")
+            message(FATAL_ERROR "NEP_ENABLE_NEXTCDF4 requires NetCDF-C with UDF slot 9 (NC_UDF(9)) support")
         endif()
         set(HAVE_NEXTCDF4 TRUE)
         message(STATUS "NEXTCDF-4 backend: enabled")

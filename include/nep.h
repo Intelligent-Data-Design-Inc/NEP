@@ -30,6 +30,14 @@
 #include <netcdf.h>
 #include <netcdf_filter.h>
 
+/* netCDF-C releases before the UDF slot-number encoding
+ * (Unidata/netcdf-c#3442) have one mode bit per slot (NC_UDF0-NC_UDF9)
+ * and no NC_UDF(n). */
+#ifndef NC_UDF
+#define NC_UDF(n) ((n) == 0 ? NC_UDF0 : (n) == 1 ? NC_UDF1 : \
+                   (n) == 2 ? NC_UDF2 : (NC_UDF3 << ((n) - 3)))
+#endif
+
 /** NEXTCDF-4 16-bit IEEE 754 half-precision floating point type. */
 #define NC_FLOAT16     17
 /** NEXTCDF-4 16-bit bfloat16 floating point type (HDF5 2.1.1+). */
@@ -119,34 +127,34 @@ extern "C" {
  */
 
 /** GeoTIFF BigTIFF format uses UDF0 slot */
-#define NEP_UDF_GEOTIFF_BIGTIFF NC_UDF0
+#define NEP_UDF_GEOTIFF_BIGTIFF NC_UDF(0)
 
 /** GeoTIFF standard TIFF format uses UDF1 slot */
-#define NEP_UDF_GEOTIFF_STANDARD NC_UDF1
+#define NEP_UDF_GEOTIFF_STANDARD NC_UDF(1)
 
 /** GRIB2 meteorological format uses UDF2 slot */
-#define NEP_UDF_GRIB2 NC_UDF2
+#define NEP_UDF_GRIB2 NC_UDF(2)
 
 /** NASA CDF format uses UDF4 slot */
-#define NEP_UDF_CDF NC_UDF4
+#define NEP_UDF_CDF NC_UDF(4)
 
 /** FITS astronomical data format uses UDF3 slot */
-#define NEP_UDF_FITS NC_UDF3
+#define NEP_UDF_FITS NC_UDF(3)
 
 /** PDS4 planetary data system format uses UDF5 slot */
-#define NEP_UDF_PDS4 NC_UDF5
+#define NEP_UDF_PDS4 NC_UDF(5)
 
 /** DICOM medical imaging data format uses UDF6 slot */
-#define NEP_UDF_DICOM NC_UDF6
+#define NEP_UDF_DICOM NC_UDF(6)
 
 /** Legacy PDB protein structure data format uses UDF7 slot */
-#define NEP_UDF_PDB NC_UDF7
+#define NEP_UDF_PDB NC_UDF(7)
 
 /** PDBx/mmCIF protein structure data format uses UDF8 slot */
-#define NEP_UDF_MMCIF NC_UDF8
+#define NEP_UDF_MMCIF NC_UDF(8)
 
 /** NEXTCDF-4 HDF5 backend uses UDF9 slot */
-#define NEP_UDF_NEXTCDF4 NC_UDF9
+#define NEP_UDF_NEXTCDF4 NC_UDF(9)
 
 /** Explicit create/open mode for the NEXTCDF-4 backend */
 #define NC_NEXTCDF4 NEP_UDF_NEXTCDF4

@@ -1,9 +1,9 @@
 """Minimal ctypes helper to read DICOM pixel_data through the NetCDF-C UDF interface.
 
-The netCDF4-python Dataset constructor does not expose the NC_UDF6 mode flag
+The netCDF4-python Dataset constructor does not expose the NC_UDF(6) mode flag
 required to open DICOM files whose magic number is not at byte zero, so this
 helper loads libncdicom, calls NC_DICOM_initialize(), and then uses nc_open()
-with NC_UDF6 and nc_get_var_* to read the "pixel_data" variable.
+with NC_UDF(6) and nc_get_var_* to read the "pixel_data" variable.
 
 Companion code for "The NetCDF Developer's Handbook: The Authoritative Guide to
 Writing High-Performance Programs for Scientific Data Management, Second Edition"
@@ -19,7 +19,9 @@ import numpy as np
 # NetCDF-C constants used by the helper.
 NC_NOERR = 0
 NC_NOWRITE = 0x0000
-NC_UDF6 = 0x400000
+NC_UDF_FLAG = 0x0040
+NC_UDF_NUM_SHIFT = 19
+NC_MAX_MAGIC_NUMBER_LEN = 8
 NC_MAX_NAME = 256
 
 NC_NAT = 0
@@ -55,6 +57,24 @@ def _check(libnc, status):
     """Raise RuntimeError on a non-zero NetCDF status."""
     if status != NC_NOERR:
         raise RuntimeError(f"NetCDF error {status}: {_nc_strerror(libnc, status)}")
+
+
+def NC_UDF(libnc, n):
+    """Return the nc_open() mode flag for UDF slot *n*, as NC_UDF(n) in netcdf.h.
+
+    netCDF-C with Unidata/netcdf-c#3442 encodes the slot number
+    (NC_UDF_FLAG | n << 19); older releases use one mode bit per slot. Only
+    the encoding the loaded library understands lets nc_inq_user_format()
+    find the handler registered in slot *n*.
+    """
+    mode = NC_UDF_FLAG | (n << NC_UDF_NUM_SHIFT)
+    dispatch = c_void_p()
+    magic = ctypes.create_string_buffer(NC_MAX_MAGIC_NUMBER_LEN + 1)
+    libnc.nc_inq_user_format.argtypes = [c_int, ctypes.POINTER(c_void_p), c_char_p]
+    libnc.nc_inq_user_format.restype = c_int
+    if libnc.nc_inq_user_format(mode, ctypes.byref(dispatch), magic) == NC_NOERR and dispatch.value:
+        return mode
+    return {0: 0x0040, 1: 0x0080, 2: 0x10000}.get(n, 0x80000 << (n - 3))
 
 
 def _ensure_dicom_handler(libdicom):
@@ -107,7 +127,7 @@ def read_pixel_data(path):
     _ensure_dicom_handler(libdicom)
 
     ncid = c_int()
-    _check(libnc, libnc.nc_open(str(path).encode("utf-8"), NC_UDF6 | NC_NOWRITE, ctypes.byref(ncid)))
+    _check(libnc, libnc.nc_open(str(path).encode("utf-8"), NC_UDF(libnc, 6) | NC_NOWRITE, ctypes.byref(ncid)))
     try:
         varid = c_int()
         _check(libnc, libnc.nc_inq_varid(ncid.value, b"pixel_data", ctypes.byref(varid)))

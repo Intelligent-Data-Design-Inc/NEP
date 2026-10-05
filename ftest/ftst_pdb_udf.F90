@@ -1,3 +1,5 @@
+#include "nep_udf_mode.h"
+
 program ftst_pdb_udf
   use netcdf
   use iso_c_binding
@@ -26,8 +28,8 @@ program ftst_pdb_udf
   print *, "PASS: NC_PDB_initialize"
 
   ! Open the PDB file read-only, forcing UDF slot 7 so the legacy PDB
-  ! dispatcher is selected (NC_UDF7 = 0x800000 = 8388608).
-  retval = nf90_open(FILE_NAME, ior(NF90_NOWRITE, 8388608), ncid)
+  ! dispatcher is selected.
+  retval = nf90_open(FILE_NAME, ior(NF90_NOWRITE, NC_UDF(7)), ncid)
   if (retval /= nf90_noerr) then
      print *, "Error opening PDB file: ", trim(nf90_strerror(retval))
      stop 1

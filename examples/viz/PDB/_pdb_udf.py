@@ -1,9 +1,9 @@
 """Minimal ctypes helper to read legacy PDB atom coordinates through the NetCDF-C UDF interface.
 
-The netCDF4-python Dataset constructor does not expose the NC_UDF7 mode flag
+The netCDF4-python Dataset constructor does not expose the NC_UDF(7) mode flag
 required to open legacy PDB files whose magic string ("HEADER") is checked by
 the NEP dispatch layer, so this helper loads libncpdb, calls
-NC_PDB_initialize(), and then uses nc_open() with NC_UDF7 and nc_get_vara_*
+NC_PDB_initialize(), and then uses nc_open() with NC_UDF(7) and nc_get_vara_*
 to read the atom_site_Cartn_x/y/z and atom_site_group_PDB variables.
 
 Companion code for "The NetCDF Developer's Handbook: The Authoritative Guide to
@@ -20,7 +20,9 @@ import numpy as np
 # NetCDF-C constants used by the helper.
 NC_NOERR = 0
 NC_NOWRITE = 0x0000
-NC_UDF7 = 0x800000
+NC_UDF_FLAG = 0x0040
+NC_UDF_NUM_SHIFT = 19
+NC_MAX_MAGIC_NUMBER_LEN = 8
 NC_MAX_NAME = 256
 
 GROUP_FIELD_LEN = 6
@@ -48,6 +50,24 @@ def _check(libnc, status):
     """Raise RuntimeError on a non-zero NetCDF status."""
     if status != NC_NOERR:
         raise RuntimeError(f"NetCDF error {status}: {_nc_strerror(libnc, status)}")
+
+
+def NC_UDF(libnc, n):
+    """Return the nc_open() mode flag for UDF slot *n*, as NC_UDF(n) in netcdf.h.
+
+    netCDF-C with Unidata/netcdf-c#3442 encodes the slot number
+    (NC_UDF_FLAG | n << 19); older releases use one mode bit per slot. Only
+    the encoding the loaded library understands lets nc_inq_user_format()
+    find the handler registered in slot *n*.
+    """
+    mode = NC_UDF_FLAG | (n << NC_UDF_NUM_SHIFT)
+    dispatch = c_void_p()
+    magic = ctypes.create_string_buffer(NC_MAX_MAGIC_NUMBER_LEN + 1)
+    libnc.nc_inq_user_format.argtypes = [c_int, ctypes.POINTER(c_void_p), c_char_p]
+    libnc.nc_inq_user_format.restype = c_int
+    if libnc.nc_inq_user_format(mode, ctypes.byref(dispatch), magic) == NC_NOERR and dispatch.value:
+        return mode
+    return {0: 0x0040, 1: 0x0080, 2: 0x10000}.get(n, 0x80000 << (n - 3))
 
 
 def _ensure_pdb_handler(libpdb):
@@ -81,7 +101,7 @@ def read_structure(path):
     _ensure_pdb_handler(libpdb)
 
     ncid = c_int()
-    _check(libnc, libnc.nc_open(str(path).encode("utf-8"), NC_UDF7 | NC_NOWRITE, ctypes.byref(ncid)))
+    _check(libnc, libnc.nc_open(str(path).encode("utf-8"), NC_UDF(libnc, 7) | NC_NOWRITE, ctypes.byref(ncid)))
     try:
         model_dimid = c_int()
         atom_dimid = c_int()

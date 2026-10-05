@@ -65,8 +65,8 @@ nc_open("satellite_image.tif",                  NC_NOWRITE, &ncid);  /* GeoTIFF 
 nc_open("data.cdf",                             NC_NOWRITE, &ncid);  /* CDF */
 nc_open("gdaswave.t00z.wcoast.0p16.f000.grib2", NC_NOWRITE, &ncid);  /* GRIB2 */
 nc_open("image.fits",                           NC_NOWRITE, &ncid);  /* FITS */
-nc_open("image.dcm",                            NC_UDF6,    &ncid);  /* DICOM */
-nc_open("structure.pdb",                        NC_UDF7,    &ncid);  /* Legacy PDB */
+nc_open("image.dcm",                            NC_UDF(6),    &ncid);  /* DICOM */
+nc_open("structure.pdb",                        NC_UDF(7),    &ncid);  /* Legacy PDB */
 nc_open("example.nc",                           NC_NEXTCDF4 | NC_NOWRITE, &ncid);  /* NEXTCDF-4 */
 ```
 

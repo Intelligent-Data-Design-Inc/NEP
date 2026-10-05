@@ -1,3 +1,5 @@
+#include "nep_udf_mode.h"
+
 program ftst_dicom_udf
   use netcdf
   use iso_c_binding
@@ -34,7 +36,7 @@ program ftst_dicom_udf
 
   ! Open the DICOM file read-only, forcing UDF slot 6 because the DICOM
   ! magic offset is not yet honored by this NetCDF-C build.
-  retval = nf90_open(FILE_NAME, ior(NF90_NOWRITE, 4194304), ncid)
+  retval = nf90_open(FILE_NAME, ior(NF90_NOWRITE, NC_UDF(6)), ncid)
   if (retval /= nf90_noerr) then
      print *, "Error opening DICOM file: ", trim(nf90_strerror(retval))
      stop 1
@@ -152,7 +154,7 @@ program ftst_dicom_udf
   ! public-domain samples added in v3.1.0 Sprint 1 (native uncompressed,
   ! Explicit VR Little Endian). Deep validation of this and the other new
   ! samples is covered by test/tst_dicom_udf.c.
-  retval = nf90_open(CT_BRAIN_FILE_NAME, ior(NF90_NOWRITE, 4194304), ncid)
+  retval = nf90_open(CT_BRAIN_FILE_NAME, ior(NF90_NOWRITE, NC_UDF(6)), ncid)
   if (retval /= nf90_noerr) then
      print *, "Error opening CT brain DICOM file: ", trim(nf90_strerror(retval))
      stop 1

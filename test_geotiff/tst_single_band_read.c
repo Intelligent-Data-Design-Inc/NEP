@@ -47,15 +47,15 @@ main(int argc, char **argv)
     /* Register GeoTIFF UDF handlers for both standard TIFF and BigTIFF */
     printf("*** Registering handlers (II* and II+)...");
     
-    /* NC_UDF0: Standard TIFF */
-    if ((ret = nc_def_user_format(NC_UDF0, (NC_Dispatch *)GEOTIFF_dispatch_table, magic_number_tiff)))
+    /* NC_UDF(0): Standard TIFF */
+    if ((ret = nc_def_user_format(NC_UDF(0), (NC_Dispatch *)GEOTIFF_dispatch_table, magic_number_tiff)))
     {
         printf("FAILED (II*): %s\n", nc_strerror(ret));
         return 1;
     }
     
-    /* NC_UDF1: BigTIFF */
-    if ((ret = nc_def_user_format(NC_UDF1, (NC_Dispatch *)GEOTIFF_dispatch_table, magic_number_bigtiff)))
+    /* NC_UDF(1): BigTIFF */
+    if ((ret = nc_def_user_format(NC_UDF(1), (NC_Dispatch *)GEOTIFF_dispatch_table, magic_number_bigtiff)))
     {
         printf("FAILED (II+): %s\n", nc_strerror(ret));
         return 1;

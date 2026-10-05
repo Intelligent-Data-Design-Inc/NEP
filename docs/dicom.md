@@ -40,7 +40,7 @@ cmake -S . -B build -DNEP_ENABLE_DICOM=ON
 
 **Example:**
 ```c
-nc_open("MRBRAIN.DCM", NC_UDF6, &ncid);
+nc_open("MRBRAIN.DCM", NC_UDF(6), &ncid);
 nc_inq_varid(ncid, "pixel_data", &varid);
 nc_get_vara_ushort(ncid, varid, start, count, buf);
 nc_close(ncid);
@@ -62,6 +62,6 @@ cmake -S . -B build -DNEP_BUILD_EXAMPLES=ON -DNEP_ENABLE_VIZ_EXAMPLES=ON -DNEP_E
 
 Run only the DICOM visualizations with `ctest --test-dir build -R viz_dicom --output-on-failure`. Generated artifacts are `dicom_mrbrain_image.png` + `_metadata.txt` and `dicom_xa_frame_montage.png` + `_metadata.txt` in the visualization build directory.
 
-Because DICOM magic is at byte offset 128, `netCDF4.Dataset` cannot pass the `NC_UDF6` mode flag required for direct open. The scripts load `libncdicom.so` and call `NC_DICOM_initialize()` via `examples/viz/_dicom_udf.py`, then read `pixel_data` through the NetCDF-C UDF API. Make sure `LD_LIBRARY_PATH` includes the directory containing `libncdicom.so` (the build systems set this automatically).
+Because DICOM magic is at byte offset 128, `netCDF4.Dataset` cannot pass the `NC_UDF(6)` mode flag required for direct open. The scripts load `libncdicom.so` and call `NC_DICOM_initialize()` via `examples/viz/_dicom_udf.py`, then read `pixel_data` through the NetCDF-C UDF API. Make sure `LD_LIBRARY_PATH` includes the directory containing `libncdicom.so` (the build systems set this automatically).
 
-DICOM files are read-only and are opened via UDF slot 6 (`NC_UDF6`).
+DICOM files are read-only and are opened via UDF slot 6 (`NC_UDF(6)`).

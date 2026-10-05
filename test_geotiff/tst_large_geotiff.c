@@ -62,15 +62,15 @@ main(int argc, char **argv)
     /* Register GeoTIFF handlers for little-endian TIFF variants */
     printf("*** Registering GeoTIFF handlers (II* and II+)...");
     
-    /* NC_UDF0: Standard TIFF little-endian (II*) */
-    if ((ret = nc_def_user_format(NC_UDF0, (NC_Dispatch *)GEOTIFF_dispatch_table, magic_number_tiff)))
+    /* NC_UDF(0): Standard TIFF little-endian (II*) */
+    if ((ret = nc_def_user_format(NC_UDF(0), (NC_Dispatch *)GEOTIFF_dispatch_table, magic_number_tiff)))
     {
         printf("FAILED (II*): %s\n", nc_strerror(ret));
         return 1;
     }
     
-    /* NC_UDF1: BigTIFF little-endian (II+) */
-    if ((ret = nc_def_user_format(NC_UDF1, (NC_Dispatch *)GEOTIFF_dispatch_table, magic_number_bigtiff)))
+    /* NC_UDF(1): BigTIFF little-endian (II+) */
+    if ((ret = nc_def_user_format(NC_UDF(1), (NC_Dispatch *)GEOTIFF_dispatch_table, magic_number_bigtiff)))
     {
         printf("FAILED (II+): %s\n", nc_strerror(ret));
         return 1;
