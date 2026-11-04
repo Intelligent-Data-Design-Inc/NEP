@@ -1,12 +1,12 @@
-{% set version = "3.0.0" %}
+{% set version = "4.2.0.dev0" %}
 
 package:
   name: nep
   version: {{ version }}
 
 source:
-  url: https://github.com/Intelligent-Data-Design-Inc/NEP/archive/refs/tags/v{{ version }}.tar.gz
-  sha256: fda88f1b9c16864623a9c446b07396ab5cf9e3a579a44da8b616b6b606616bc6
+  # Build the format-only checkout until v4.2.0 has a release tarball.
+  path: ..
 
 build:
   number: 0
@@ -21,31 +21,29 @@ requirements:
     - make
     - pkg-config
   host:
-    - hdf5
+    - hdf5 >=1.14
     - libnetcdf >=4.10.1
     - netcdf-fortran
-    - lz4-c
   run:
     - hdf5
     - libnetcdf
     - netcdf-fortran
-    - lz4-c
 
 test:
   commands:
-    - test -f $PREFIX/lib/plugin/libh5lz4.so           # [linux]
-    - test -f $PREFIX/lib/plugin/libh5lz4.dylib        # [osx]
-    - test -f $PREFIX/include/nep.mod
+    - test -f $PREFIX/include/nep.h
+    - test -f $PREFIX/lib/libncpdb.so                   # [linux]
+    - test -f $PREFIX/lib/libncpdb.dylib                # [osx]
 
 about:
   home: https://github.com/Intelligent-Data-Design-Inc/NEP
   license: Apache-2.0
   license_file: LICENSE.txt
   summary: >
-    NEP extends NetCDF-4 with an LZ4 compression filter and Fortran wrappers.
+    NEP adds scientific format readers and the NEXTCDF-4 backend to NetCDF-C.
   description: >
-    NEP (NetCDF Expansion Pack) provides an LZ4 compression filter and
-    Fortran wrappers for HDF5/NetCDF-4 files through the standard NetCDF API.
+    NEP (NetCDF Expansion Pack) provides scientific format readers through
+    the NetCDF User Defined Format API. For LZ4/BZIP2 use nep-compress.
   dev_url: https://github.com/Intelligent-Data-Design-Inc/NEP
 
 extra:

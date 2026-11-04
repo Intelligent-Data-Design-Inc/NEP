@@ -1,5 +1,11 @@
 # NEP (NetCDF Expansion Pack) - Skill File
 
+**v4.2.0 note:** This file documents the historical combined NEP package.
+LZ4/BZIP2 filters and C/Fortran wrappers moved to
+[nep-compress](https://github.com/captainkirk99/nep-compress).
+The build flags and compression test paths below apply only to older
+releases. NEP's current build focuses on format readers and NEXTCDF-4.
+
 ## Overview
 
 NEP extends NetCDF-4 with high-performance compression filters and User Defined Format (UDF) handlers for accessing diverse scientific data formats through the standard NetCDF API. It provides:

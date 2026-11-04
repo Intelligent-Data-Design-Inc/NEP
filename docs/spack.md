@@ -19,21 +19,18 @@ spack install nep
 spack install nep~docs
 ```
 
-### Compression Filter Options
-```bash
-# Only LZ4
-spack install nep+lz4~bzip2
+### Compression
 
-# Only BZIP2
-spack install nep~lz4+bzip2
-```
+NEP no longer ships LZ4/BZIP2 filters. See
+[nep-compress](https://github.com/captainkirk99/nep-compress) for their
+separate C/Fortran APIs and HDF5 plugin installation.
 
-### Fortran Wrappers
+### Fortran Format Tests
 ```bash
-# With Fortran wrappers (default)
+# With Fortran format-reader tests (default)
 spack install nep+fortran
 
-# Without Fortran wrappers
+# Without Fortran format-reader tests
 spack install nep~fortran
 ```
 
@@ -44,10 +41,8 @@ Load NEP into your environment:
 spack load nep
 ```
 
-Set HDF5 plugin path:
-```bash
-export HDF5_PLUGIN_PATH=$(spack location -i nep)/lib/plugin
-```
+Only set `HDF5_PLUGIN_PATH` if another project, such as nep-compress,
+provides plugins for your application.
 
 ## Integration with Other Packages
 
@@ -78,11 +73,8 @@ The CI workflows test:
 ## Troubleshooting
 
 ### Plugin Not Found
-Ensure HDF5_PLUGIN_PATH is set correctly:
-```bash
-echo $HDF5_PLUGIN_PATH
-ls $HDF5_PLUGIN_PATH
-```
+NEP does not install HDF5 compression plugins. Check the installation
+and `HDF5_PLUGIN_PATH` instructions for the separate plugin provider.
 
 ### Build Failures
 Check Spack build log:

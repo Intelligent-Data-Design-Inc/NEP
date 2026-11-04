@@ -5,8 +5,6 @@ cmake -B build \
   -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
   -DCMAKE_PREFIX_PATH="${PREFIX}" \
   -DCMAKE_BUILD_TYPE=Release \
-  -DNEP_BUILD_LZ4=ON \
-  -DNEP_BUILD_BZIP2=OFF \
   -DNEP_ENABLE_FORTRAN=ON \
   -DNEP_ENABLE_GEOTIFF=OFF \
   -DNEP_ENABLE_GRIB2=OFF \
@@ -22,4 +20,3 @@ cmake -B build \
 cmake --build build -- -j${CPU_COUNT}
 ctest --test-dir build --output-on-failure
 cmake --install build
-install -m 644 build/fsrc/nep.mod "${PREFIX}/include/nep.mod"

@@ -3,6 +3,11 @@
 Edward Hartnett, Intelligent Data Design, Inc.
 2026-07-17
 
+*Historical v2.7.1 abstract. From v4.2.0 onward, LZ4/BZIP2 filters and
+wrappers are distributed by [nep-compress](https://github.com/captainkirk99/nep-compress),
+and NEP uses CMake as its only build system. The text below describes the
+earlier combined package.*
+
 # Abstract
 
 The NetCDF Expansion Pack (NEP) extends the netCDF scientific-data library with additional lossless compression filters, read-only User Defined Format (UDF) handlers for common scientific binary formats, and comprehensive examples of advanced netCDF programming in C and Fortran. NEP uses two existing extension points in netCDF-C: HDF5 filter plugins for per-variable compression, and the NC_Dispatch layer for format-specific readers. The package adds LZ4 compression for speed-critical workflows and BZIP2 compression for archival storage; both are exposed through the standard `nc_def_var_*` API and loaded transparently by HDF5 at runtime. For multi-format access, NEP registers UDF dispatch tables that map GeoTIFF, GRIB2, FITS, NASA CDF, and NASA/ESA PDS4 files into the netCDF in-memory model. Existing netCDF applications can open these files with `nc_open()` and read them with `nc_get_vara()` without modification or recompilation. Native metadata are translated to netCDF attributes, preferably following the CF convention. NEP builds with CMake or Autotools, installs through Spack or Conda, and is released as open source.

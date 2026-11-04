@@ -2,8 +2,8 @@
  * @file nep.h
  * @brief NetCDF Expansion Pack (NEP) - Public API
  *
- * Defines compression filter IDs and API, and the centralized mapping of
- * file formats to NetCDF User-Defined Format (UDF) slot numbers.
+ * Defines NEP logging and the centralized mapping of file formats to
+ * NetCDF User-Defined Format (UDF) slot numbers.
  *
  * @section udf_slots UDF Slot Allocation
  *
@@ -61,27 +61,11 @@
 /** NEXTCDF-4 dataset region reference type. */
 #define NC_REF_REGION  31
 
-/** The filter ID for BZIP2 compression. */
-#define BZIP2_ID 307
-
-/** The filter ID for LZ4 compression. */
-#define LZ4_ID 32004
-
-/** The filter ID for LZF compression. */
-#define LZF_ID 32000
-
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
     /* Library prototypes... */
-    int nc_def_var_bzip2(int ncid, int varid, int level);
-    int nc_inq_var_bzip2(int ncid, int varid, int *bzip2p, int *levelp);
-    int nc_def_var_lz4(int ncid, int varid, int level);
-    int nc_inq_var_lz4(int ncid, int varid, int *lz4p, int *levelp);
-    int nc_def_var_lzf(int ncid, int varid);
-    int nc_inq_var_lzf(int ncid, int varid, int *lzfp);
-
     /** Set the NEP logging level (0=errors, higher=more verbose, -1=off). */
     int nep_set_log_level(int new_level);
 #if defined(__cplusplus)

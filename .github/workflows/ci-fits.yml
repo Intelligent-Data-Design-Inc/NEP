@@ -109,8 +109,6 @@ jobs:
             -DNEP_ENABLE_GRIB2=OFF \
             -DNEP_ENABLE_CDF=OFF \
             -DNEP_ENABLE_GEOTIFF=OFF \
-            -DNEP_BUILD_LZ4=OFF \
-            -DNEP_BUILD_BZIP2=OFF \
             -DNEP_BUILD_DOCUMENTATION=OFF \
             -DNEP_BUILD_EXAMPLES=OFF \
             -DBUILD_TESTING=ON

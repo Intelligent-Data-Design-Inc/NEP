@@ -61,19 +61,21 @@ See `examples/viz/README.md` for setup, build, test, and direct-execution instru
 
 ## Performance and Compression Benchmarking (`examples/performance/`)
 
-C only. Built with `-DENABLE_BENCHMARKS=ON` (CMake) or `--enable-benchmarks` (Autotools).
+C only. General benchmarks run with `-DNEP_ENABLE_BENCHMARKS=ON` (CMake).
 
 - `cache_tuning.c` — Chunk cache size and slots effect on read performance
 - `chunking.c` — Row-optimized, column-optimized, and balanced chunk shape comparison
 - `deflate.c` — Deflate compression levels 1–9 speed and ratio benchmarking
-- `lz4.c` — LZ4 compression performance vs deflate
-- `bzip2.c` — BZIP2 compression performance vs deflate
 - `zstandard.c` — Zstandard (ZSTD) compression benchmarking
 - `szip.c` — SZIP compression benchmarking
-- `lossless.c` — Lossless compression algorithm comparison
-- `quantize.c` — Quantization for lossy compression and storage reduction
 - `endianness.c` — Byte order effects on I/O performance
 - `fill_values.c` — Fill value storage and read performance
+
+LZ4/BZIP2-specific benchmark programs, CSVs and plotters are maintained by
+[nep-compress](https://github.com/captainkirk99/nep-compress).
+The mixed-filter `lossless.c` and `quantize.c` sources remain in NEP but are
+not built or run until a future release adds nep-compress as a dependency.
+Zstandard, zlib/DEFLATE and SZIP examples continue to use NetCDF-C/HDF5.
 
 ## Parallel I/O (`examples/parallelIO/`)
 

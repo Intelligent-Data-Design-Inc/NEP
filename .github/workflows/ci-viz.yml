@@ -85,8 +85,6 @@ jobs:
             -DNEP_ENABLE_FITS=ON \
             -DNEP_ENABLE_PDS4=ON \
             -DNEP_ENABLE_FORTRAN=OFF \
-            -DNEP_BUILD_LZ4=OFF \
-            -DNEP_BUILD_BZIP2=OFF \
             -DNEP_BUILD_DOCUMENTATION=OFF
           cmake --build build -j"$(nproc)"
           ctest --test-dir build -R '^viz_' --output-on-failure

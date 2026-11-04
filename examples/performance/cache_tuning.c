@@ -380,7 +380,8 @@ int main(int argc, char **argv)
          * 512MB fits ~873 chunks (most of 800 chunk dataset fits)
          * 1GB fits ~1747 chunks (full dataset fits with margin)
          * 2GB fits ~3495 chunks (oversized but demonstrates diminishing returns) */
-        size_t cache_sizes[] = {256*1024*1024, 512*1024*1024, 1024*1024*1024, 2048*1024*1024};
+        size_t cache_sizes[] = {(size_t)256*1024*1024, (size_t)512*1024*1024,
+                                (size_t)1024*1024*1024, (size_t)2048*1024*1024};
         double default_time = t_end - t_start;  /* Baseline from Test 1 */
         int c;
 
@@ -468,6 +469,8 @@ int main(int argc, char **argv)
         /* Read the 50-chunk working set 100 times
          * Each iteration reads chunks 0-49, then repeats
          * With 16MB cache (holds ~27 chunks), thrashing will occur */
+        for (iter = 0; iter < 100; iter++) {
+            for (k = 0; k < thrash_chunks * CHUNK_Z && k < NZ; k += CHUNK_Z) {
                 start[0] = k; start[1] = 0; start[2] = 0;
                 count[0] = CHUNK_Z; count[1] = CHUNK_Y; count[2] = CHUNK_X;
                 if ((retval = nc_get_vara_float(ncid, varid, start, count, data)))

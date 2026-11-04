@@ -94,8 +94,6 @@ cmake -S . -B build \
   -DNEP_ENABLE_GEOTIFF=OFF \
   -DNEP_ENABLE_CDF=OFF \
   -DNEP_ENABLE_GRIB2=OFF \
-  -DNEP_BUILD_LZ4=OFF \
-  -DNEP_BUILD_BZIP2=OFF \
   -DNEP_BUILD_EXAMPLES=ON \
   -DCMAKE_EXE_LINKER_FLAGS="-Wl,-rpath,$HDF5_ROOT/lib -Wl,-rpath,$NETCDF_C_ROOT/lib -Wl,-rpath,$NETCDF_FORTRAN_ROOT/lib"
 make -j$(nproc) -C build && ctest --test-dir build --verbose

@@ -18,19 +18,16 @@
 
 ## Summary
 
-NEP extends NetCDF-4 with powerful new capabilities:
-* more compression filters
-* read layers for different data formats
-* extra examples covering advanced netCDF use
+NEP extends NetCDF-C with scientific format readers, the NEXTCDF-4 backend,
+and examples covering advanced NetCDF use. LZ4/BZIP2 compression lives in
+[nep-compress](https://github.com/captainkirk99/nep-compress).
 
 ### Compression
 
-Additional compression options for netCDF data.
-
-| Algorithm | Description | Best For |
-|---|---|---|
-| **LZ4** | Faster than zstandard | Real-time processing, HPC I/O |
-| **BZIP2** | Very slow writes but best compression | Long-term archives, bandwidth-limited |
+For LZ4 or BZIP2 with NetCDF-4/HDF5, install
+[nep-compress](https://github.com/captainkirk99/nep-compress) separately.
+NEP continues to support generic HDF5 filters through NEXTCDF-4 but does
+not build or install compression plugins or filter-specific APIs.
 
 ### Multi-Format Readers
 
@@ -71,7 +68,7 @@ NEP includes over 26 C and Fortran example programs, organized by topic. They ar
 | **Classic NetCDF** | Quickstart, 2D arrays, coord vars, format variants, unlimited dims |
 | **NetCDF-4** | Compression, chunking, groups, compound/enum types, multiple unlimited dims |
 | **NcZarr** | Local store create/read/write, chunking, deflate compression |
-| **Performance** | Chunk cache tuning, chunking strategy comparison, compression benchmarking |
+| **Performance** | Chunk cache tuning, chunking strategy comparison, standard NetCDF compression examples |
 | **Parallel I/O** | MPI-based parallel write and read |
 
 Both C and Fortran versions provided for Classic, NetCDF-4, and NcZarr categories.
@@ -86,7 +83,11 @@ The companion book, [*Earth Observation in Practice: A Mission-by-Mission Guide 
 
 ## Compression
 
-NEP adds LZ4 and BZIP2 HDF5 filter plugins for NetCDF-4 files, enabled by default. LZ4 favors speed (2–3× faster than DEFLATE); BZIP2 favors maximum compression ratio (up to 6.7× on typical scientific datasets). See [docs/compression.md](docs/compression.md) for algorithm details, C/Fortran API reference, and performance benchmarks.
+LZ4/BZIP2 plugins, C/Fortran APIs, tests, and documentation moved to
+[nep-compress](https://github.com/captainkirk99/nep-compress). See its
+[compression guide](https://github.com/captainkirk99/nep-compress/blob/main/docs/compression.md)
+when upgrading an application that previously used NEP's `<nep.h>`,
+`libnep`, or Fortran `use nep`.
 
 ---
 
@@ -107,10 +108,8 @@ NetCDF-C and HDF5 should usually be built from source to guarantee matching vers
 | Feature | Install command | Notes |
 |---|---|---|
 | Core build tools | `sudo apt-get install build-essential cmake pkg-config` | Required for every build |
-| Fortran wrappers / examples | `sudo apt-get install gfortran` | Also requires a matching NetCDF-Fortran installation |
+| Fortran format tests / examples | `sudo apt-get install gfortran` | Also requires a matching NetCDF-Fortran installation |
 | Documentation | `sudo apt-get install doxygen graphviz` | Optional |
-| LZ4 compression filter | `sudo apt-get install liblz4-dev` | Builds `libh5lz4.so` |
-| BZIP2 compression filter | `sudo apt-get install libbz2-dev` | Also needs an `h5bzip2` plugin at runtime |
 | GeoTIFF reader | `sudo apt-get install libgeotiff-dev libtiff-dev` | |
 | FITS reader | `sudo apt-get install libcfitsio-dev` | |
 | GRIB2 reader | `sudo apt-get install libjasper-dev` | NCEPLIBS-g2c must be built separately |
@@ -156,9 +155,7 @@ cmake -B build -DHDF5_ROOT=/usr/local/hdf5-2.1.1 -DCMAKE_INSTALL_PREFIX=/usr/loc
 
 | CMake Option | Default | Purpose |
 |---|---|---|
-| `-DNEP_BUILD_LZ4` | ON | LZ4 compression filter |
-| `-DNEP_BUILD_BZIP2` | ON | BZIP2 compression filter |
-| `-DNEP_ENABLE_FORTRAN` | ON | Fortran wrappers and tests |
+| `-DNEP_ENABLE_FORTRAN` | ON | Fortran format-reader tests |
 | `-DNEP_ENABLE_GEOTIFF` | **OFF** | GeoTIFF UDF handler (UDF0/UDF1) |
 | `-DNEP_ENABLE_GRIB2` | **OFF** | GRIB2 UDF handler (UDF2) |
 | `-DNEP_ENABLE_FITS` | **OFF** | FITS UDF handler (UDF3) |
@@ -173,12 +170,15 @@ cmake -B build -DHDF5_ROOT=/usr/local/hdf5-2.1.1 -DCMAKE_INSTALL_PREFIX=/usr/loc
 
 #### Compression
 
-- **LZ4** (`-DNEP_BUILD_LZ4`, default ON): builds `libh5lz4.so` HDF5 filter plugin; provides `nc_def_var_lz4()` / `nf90_def_var_lz4()`. Requires liblz4.
-- **BZIP2** (`-DNEP_BUILD_BZIP2`, default ON): builds `libh5bzip2.so` HDF5 filter plugin; provides `nc_def_var_bzip2()` / `nf90_def_var_bzip2()`. Requires libbz2.
+Use [nep-compress](https://github.com/captainkirk99/nep-compress) for
+LZ4/BZIP2. The old `NEP_BUILD_LZ4` / `NEP_BUILD_BZIP2` CMake options
+no longer build filters in NEP and produce a migration warning.
 
 #### Fortran
 
-`-DNEP_ENABLE_FORTRAN` (default ON): builds Fortran wrappers in `fsrc/`, Fortran tests in `ftest/`, and Fortran examples in `examples/f_*/`. Requires NetCDF-Fortran and a Fortran 90+ compiler.
+`-DNEP_ENABLE_FORTRAN` (default ON): enables Fortran format-reader tests
+in `ftest/` and Fortran examples in `examples/f_*/`. NEP no longer
+installs `nepf` or `nep.mod`. Requires NetCDF-Fortran and a Fortran compiler.
 
 #### Format Readers
 
@@ -200,7 +200,7 @@ All format readers are independent — any combination can be enabled simultaneo
 #### Examples and Benchmarks
 
 - **`-DNEP_BUILD_EXAMPLES`** (default OFF): builds all example programs and registers them as tests.
-- **`-DNEP_ENABLE_BENCHMARKS`** (default OFF): builds compression benchmark programs in `examples/performance/`.
+- **`-DNEP_ENABLE_BENCHMARKS`** (default OFF): runs general NetCDF performance benchmarks in `examples/performance/`.
 - **`-DNEP_ENABLE_PARALLEL_TESTS`** (default OFF): builds `examples/parallelIO/` and runs tests via `mpiexec -n 4`. Requires MPI and NetCDF-C with `NC_HAS_PARALLEL4`.
 
 #### Documentation
@@ -209,11 +209,9 @@ All format readers are independent — any combination can be enabled simultaneo
 
 ### Using NEP in Your Project
 
-LZ4 and BZIP2 compression are provided as HDF5 filter plugins. Simply set the `HDF5_PLUGIN_PATH` environment variable to the NEP installation directory, and use standard NetCDF-4 compression APIs.
-
-```bash
-export HDF5_PLUGIN_PATH=/usr/local/lib/plugin
-```
+For LZ4/BZIP2, use nep-compress's installation and
+[`HDF5_PLUGIN_PATH` instructions](https://github.com/captainkirk99/nep-compress#build-and-test).
+NEP format readers do not require these compression plugins.
 
 ### Spack Installation
 
@@ -229,16 +227,15 @@ spack install nep@3.0.0
 spack install nep
 ```
 
-This builds NEP with LZ4, BZIP2, Fortran wrappers, and documentation — no format readers.
+This installs NEP's enabled format readers and optional documentation;
+legacy PDB support is enabled by default. Compression requires nep-compress.
 
 #### Variant reference
 
 | Variant | Default | Description |
 |---------|---------|-------------|
 | `docs` | ON | Build Doxygen documentation (requires Doxygen) |
-| `lz4` | ON | LZ4 compression filter (requires liblz4) |
-| `bzip2` | ON | BZIP2 compression filter (requires libbz2) |
-| `fortran` | ON | Fortran wrappers and tests (requires NetCDF-Fortran) |
+| `fortran` | ON | Fortran format-reader tests (requires NetCDF-Fortran) |
 | `fits` | OFF | FITS reader — HST, JWST, Chandra (requires CFITSIO) |
 | `geotiff` | OFF | GeoTIFF reader — CF-1.8 CRS metadata (requires libgeotiff) |
 | `grib2` | OFF | GRIB2 reader — NWP model output (requires NCEPLIBS-g2c) |
@@ -273,10 +270,10 @@ Install the minimal v3.0.0 package from conda-forge:
 conda install -c conda-forge nep
 ```
 
-This first Conda package includes the LZ4 HDF5 compression filter and Fortran
-wrappers. BZIP2 compression and all UDF format readers are disabled; use a
-source build when those features are required. The in-repository recipe remains
-available for local validation with `conda build conda/`.
+For format readers, use NEP; for LZ4/BZIP2 compression, install
+nep-compress separately. The in-repository recipe targets format-only
+NEP. Check the published Conda package version before assuming it
+contains the v4.2.0 split; older releases still include compression.
 
 ---
 

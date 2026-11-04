@@ -1,10 +1,7 @@
 # GitHub Actions CI workflow for building and testing the NEP project with CMake.
 #
-# NEP CI Pipeline - v1.3.0 Configuration
-#
-# v1.3.0 Scope: LZ4/BZIP2 Compression + CDF Library Detection
-# This CI configuration includes LZ4/BZIP2 compression for HDF5/NetCDF-4 files
-# and adds NASA CDF library detection (library location only, no UDF yet).
+# NEP CI builds the format readers and NEXTCDF-4 backend.
+# Compression filters are tested independently in nep-compress.
 #
 # Compiler Warnings (Issue #86):
 # CMake builds automatically add -Wall -Werror flags for GNU compilers,
@@ -141,8 +138,6 @@ jobs:
             -DNEP_ENABLE_CDF=OFF \
             -DNEP_ENABLE_GEOTIFF=OFF \
             -DBUILD_TESTING=ON \
-            -DNEP_BUILD_LZ4=OFF \
-            -DNEP_BUILD_BZIP2=OFF \
             -DNEP_ENABLE_FITS=OFF \
             -DNEP_BUILD_DOCUMENTATION=OFF
           echo "=== Checking config.h for HAVE_GRIB2 ==="
@@ -168,7 +163,7 @@ jobs:
           echo "g2c version: 2.3.0"
 
   build:
-    name: build (CMake, Fortran ${{ matrix.fortran }}, compression ${{ matrix.compression }})
+    name: build (CMake, Fortran ${{ matrix.fortran }})
     runs-on: ubuntu-latest
     env:
       HDF5_PLUGIN_PATH: ${{ github.workspace }}/netcdf-c-install/hdf5/lib/plugin
@@ -178,22 +173,21 @@ jobs:
       fail-fast: false
       matrix:
         fortran: [on, off]
-        compression: [all, no-bzip2, no-lz4]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Install base dependencies
         run: |
-          sudo apt-get install -y cmake make wget zlib1g-dev libjpeg-dev libjpeg-turbo8-dev liblz4-dev libbz2-dev liblzf-dev libzstd-dev meson ninja-build
+          sudo apt-get install -y cmake make wget zlib1g-dev libjpeg-dev libjpeg-turbo8-dev liblzf-dev libzstd-dev meson ninja-build
 
       - name: Install DICOM JPEG Lossless dependency
-        if: matrix.fortran == 'on' && matrix.compression == 'all'
+        if: matrix.fortran == 'on'
         run: |
           sudo apt-get install -y libgdcm-dev
 
       - name: Install documentation dependencies
-        if: matrix.fortran == 'on' && matrix.compression == 'all'
+        if: matrix.fortran == 'on'
         run: |
           sudo apt-get install -y doxygen graphviz
 
@@ -273,27 +267,6 @@ jobs:
           make -j$(nproc)
           make install
 
-      - name: Download and build hdf5_plugins
-        if: steps.cache-netcdf-c.outputs.cache-hit != 'true'
-        run: |
-          export HDF5_PLUGIN_PATH=$GITHUB_WORKSPACE/netcdf-c-install/hdf5/lib/plugin
-          export PATH="$GITHUB_WORKSPACE/hdf5-install/bin:$PATH"
-          export CPPFLAGS="-I$GITHUB_WORKSPACE/hdf5-install/include -I/usr/include/liblzf"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/hdf5-install/lib"
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$LD_LIBRARY_PATH"
-          # Clone and build hdf5_plugins
-          rm -rf hdf5_plugins
-          git clone https://github.com/captainkirk99/hdf5_plugins hdf5_plugins
-          pushd hdf5_plugins
-          git checkout e1
-          autoreconf -i
-          ./configure --with-hdf5-plugin-path=$HDF5_PLUGIN_PATH --prefix=$GITHUB_WORKSPACE/netcdf-c-install 
-          make 
-          make install
-          ls -l $GITHUB_WORKSPACE/netcdf-c-install
-          ls -l $HDF5_PLUGIN_PATH
-          popd
-
       # Cache NetCDF-Fortran install
       - name: Cache NetCDF-Fortran install
         id: cache-netcdf-fortran
@@ -318,7 +291,7 @@ jobs:
 
       # Cache libdicom install for DICOM-enabled builds
       - name: Cache libdicom install
-        if: matrix.fortran == 'on' && matrix.compression == 'all'
+        if: matrix.fortran == 'on'
         id: cache-libdicom
         uses: actions/cache@v4
         with:
@@ -326,7 +299,7 @@ jobs:
           key: libdicom-main-ci-${{ runner.os }}-refresh-1
 
       - name: Clone and build libdicom
-        if: matrix.fortran == 'on' && matrix.compression == 'all' && steps.cache-libdicom.outputs.cache-hit != 'true'
+        if: matrix.fortran == 'on' && steps.cache-libdicom.outputs.cache-hit != 'true'
         run: |
           git clone --depth 1 https://github.com/ImagingDataCommons/libdicom.git libdicom-main
           cd libdicom-main
@@ -341,9 +314,9 @@ jobs:
       - name: Configure with CMake and custom HDF5
         working-directory: build
         run: |
-          echo "Building NEP v1.3.0 - LZ4/BZIP2 compression + CDF library detection"
+          echo "Building NEP format readers and NEXTCDF-4"
           DOC_FLAG="-DNEP_BUILD_DOCUMENTATION=OFF"
-          if [ "${{ matrix.fortran }}" = "on" ] && [ "${{ matrix.compression }}" = "all" ]; then
+          if [ "${{ matrix.fortran }}" = "on" ]; then
             DOC_FLAG="-DNEP_BUILD_DOCUMENTATION=ON"
           fi
           FORTRAN_FLAG="-DNEP_ENABLE_FORTRAN=ON"
@@ -355,7 +328,7 @@ jobs:
             CDF_FLAG="-DNEP_ENABLE_CDF=ON"
           fi
           DICOM_FLAG="-DNEP_ENABLE_DICOM=OFF"
-          if [ "${{ matrix.fortran }}" = "on" ] && [ "${{ matrix.compression }}" = "all" ]; then
+          if [ "${{ matrix.fortran }}" = "on" ]; then
             DICOM_FLAG="-DNEP_ENABLE_DICOM=ON"
           fi
           export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
@@ -374,7 +347,7 @@ jobs:
           make -j$(nproc)
 
       - name: Build Documentation (CMake)
-        if: matrix.fortran == 'on' && matrix.compression == 'all'
+        if: matrix.fortran == 'on'
         working-directory: build
         run: |
           set -x
@@ -401,9 +374,9 @@ jobs:
           sudo make install
 
       - name: Upload Documentation Artifacts (CMake)
-        if: matrix.fortran == 'on' && matrix.compression == 'all'
+        if: matrix.fortran == 'on'
         uses: actions/upload-artifact@v4
         with:
-          name: documentation-cmake-lz4
+          name: documentation-cmake-formats
           path: build/docs/html/
           retention-days: 30

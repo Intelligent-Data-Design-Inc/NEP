@@ -1,15 +1,15 @@
 # NEP – NetCDF Expansion Pack v2.7.1
 ## Project Overview
 
-The NetCDF Expansion Pack (NEP) v2.7.1 extends NetCDF-4 with high-performance compression filters and User Defined Format (UDF) handlers for accessing diverse scientific data formats through the standard NetCDF API. NEP provides flexible lossless compression with two complementary algorithms (LZ4 and BZIP2) and transparent access to GeoTIFF, GRIB2, FITS, NASA CDF, and NASA/ESA PDS4 files.
+NEP provides NetCDF User Defined Format (UDF) readers and the NEXTCDF-4 backend. LZ4 and BZIP2 filter plugins and wrappers moved to [nep-compress](https://github.com/captainkirk99/nep-compress). Older releases also bundled those filters.
 
 ## Architecture
 
-NEP consists of two primary architectural components:
+The format handlers and NEXTCDF-4 backend remain in NEP; compression is independently distributed.
 
 ### 1. HDF5 Filter Plugin Architecture
 
-NEP uses the HDF5 filter plugin architecture to provide transparent compression for NetCDF-4 files:
+Historical NEP releases bundled HDF5 filter plugins. In v4.2.0, nep-compress owns them; NEP's NEXTCDF-4 backend still supports generic HDF5 filters supplied by the application environment:
 
 1. **Core NetCDF API**: Standard API used by applications
 2. **HDF5 Filter Pipeline**: Compression filters integrated into HDF5 I/O operations
@@ -87,9 +87,9 @@ NEXTCDF-4 implements the full v4.0.0 feature set. `nc_create()` writes `_Nextcdf
 ## Project Structure
 
 The project is structured as follows:
-- `/src` - Core C source code including UDF handlers and compression filters
+- `/src` - Core C source code including UDF handlers and logging
 - `/src/nextcdf4` - NEXTCDF-4 rewrite of the NetCDF-4/HDF5 backend
-- `/fsrc` - Fortran wrappers for compression functions
+- `/ftest` - Fortran format-reader tests
 - `/include` - Public header files
 - `/test` - C unit tests for all features
 - `/ftest` - Fortran unit tests
@@ -101,47 +101,10 @@ The project is structured as follows:
 
 ## Compression Filter Design
 
-### LZ4 Compression Filter
-
-**Purpose**: High-speed lossless compression for real-time and HPC workflows
-
-**Technical Details**:
-- LZ4 is a lossless data compression algorithm from the LZ77 family
-- Focused on compression and decompression speed rather than maximum compression ratio
-- Provides excellent trade-off between speed and compression ratio for scientific data
-
-**Performance Characteristics**:
-- Compression speed 2-3x faster than DEFLATE
-- Decompression speed significantly faster than DEFLATE
-- Compression ratio typically smaller than DEFLATE but sufficient for most scientific datasets
-- Optimized for speed-critical workflows in HPC environments
-
-**Implementation**:
-- HDF5 filter plugin with unique filter ID
-- Transparent integration with NetCDF-4 API
-- Automatic discovery via HDF5_PLUGIN_PATH
-- Lossless compression guarantee
-
-### BZIP2 Compression Filter
-
-**Purpose**: High-ratio lossless compression for archival storage
-
-**Technical Details**:
-- BZIP2 uses the Burrows-Wheeler block sorting algorithm
-- Focused on achieving high compression ratios for storage optimization
-- Block-sorting algorithm particularly effective for repetitive scientific data patterns
-
-**Performance Characteristics**:
-- Compression ratios typically better than DEFLATE and significantly better than LZ4
-- Slower compression/decompression than LZ4 but better than most high-ratio algorithms
-- Ideal for archival storage where compression ratio is prioritized over speed
-- Effective for datasets with repetitive patterns common in scientific data
-
-**Implementation**:
-- HDF5 filter plugin with unique filter ID
-- Transparent integration with NetCDF-4 API
-- Automatic discovery via HDF5_PLUGIN_PATH
-- Lossless compression guarantee
+Compression filter implementation, C/Fortran wrappers, build options and
+HDF5 plugin deployment are maintained by
+[nep-compress](https://github.com/captainkirk99/nep-compress).
+NEP does not install an LZ4 or BZIP2 plugin.
 
 ## Visualization Example Architecture
 
@@ -155,10 +118,10 @@ The project uses GitHub Actions for CI/CD with comprehensive documentation integ
 
 ### Build and Test Pipeline
 - Automatic CMake builds on Ubuntu
-- Installation of dependencies (HDF5, NetCDF-C, LZ4, BZIP2, Doxygen)
+- Installation of dependencies (HDF5, NetCDF-C, optional format libraries, Doxygen)
 - Custom dependency builds with caching for performance
 - Test execution via CTest
-- Compression performance benchmarking
+- Format-reader testing and optional general NetCDF benchmarks
 
 ### Documentation Integration
 - **Doxygen Build System Integration**: Documentation generation integrated with CMake
@@ -177,32 +140,24 @@ The project uses GitHub Actions for CI/CD with comprehensive documentation integ
 
 NEP uses CMake as its sole supported build system.
 - **Modern CMake 3.9+**: Leverages contemporary CMake features and best practices
-- **Modular Compilation**: Each filter builds as an independent shared library
+- **Modular Compilation**: Each enabled format handler builds as an independent shared library
 - **Advanced Dependency Detection**: Automatic discovery with comprehensive Find modules
-- **Configurable Build Options**: Fine-grained control over compression filter inclusion
+- **Configurable Build Options**: Fine-grained control over optional format readers
 - **Cross-Platform Support**: Unified build configuration across Linux and Unix
 - **Installation Integration**: Complete install/uninstall target implementation
 - **Build Metadata Header**: `include/nep_meta.h` is generated from `include/nep_meta.h.in` at configure time and reports the NEP version, build date, compiler, and enabled features (`NEP_HAS_*` macros) to consuming projects.
 
 ### HDF5 Filter Plugin Integration
 
-Each compression filter is compiled as a separate HDF5 filter plugin:
-
-```
-hdf5_plugins/
-├── LZ4/
-│   └── src/
-│       └── H5Zlz4.c          # LZ4 filter plugin → libh5lz4.so
-└── BZIP2/
-    └── src/
-        └── H5Zbzip2.c        # BZIP2 filter plugin → libh5bzip2.so
-```
+NEP does not compile or install LZ4/BZIP2 plugins. HDF5 may load
+application-provided plugins for NetCDF-4/NEXTCDF-4 I/O, including
+plugins installed by nep-compress.
 
 ### HDF5 Filter Plugin Architecture
 
 #### Dynamic Loading Framework
 - **Runtime Discovery**: Filters discovered via HDF5_PLUGIN_PATH environment variable
-- **Separate Compilation Units**: Each filter compiles to independent `.so` files
+- **Separate Compilation Units**: External filter plugins are not NEP targets
 - **Automatic Registration**: HDF5 automatically registers filters when needed
 - **Filter ID Management**: Unique filter IDs for each compression algorithm
 - **Memory Management**: Proper cleanup and resource management
@@ -226,8 +181,6 @@ cmake -S . -B build -DNEP_BUILD_DOCUMENTATION=ON
 |-----------|------------------|---------|--------|------------------|
 | Core | NetCDF-C | v4.10.1+ | Unidata | pkg-config, FindNetCDF.cmake |
 | Core | HDF5 | v2.1.1+ | HDF Group | pkg-config, FindHDF5.cmake |
-| LZ4 Filter | LZ4 | Latest | https://github.com/lz4/lz4 | pkg-config, FindLZ4.cmake |
-| BZIP2 Filter | BZIP2 | Latest | System library | FindBZip2.cmake |
 | DICOM Reader | libdicom + libjpeg | Latest | https://github.com/ImagingLib/libdicom + system | CMake `find_library`, `find_path`, and `find_package(JPEG)` |
 | Docs | Doxygen | Latest | Optional | find_package(Doxygen) |
 
@@ -241,15 +194,15 @@ cmake -S . -B build -DNEP_BUILD_DOCUMENTATION=ON
 
 #### Installation Architecture
 - **Single Installation Path**: All components install to unified, configurable location
-- **HDF5 Plugin Installation**: Filters installed to HDF5 plugin directory
+- **Format Library Installation**: Enabled UDF dispatch libraries installed to `${CMAKE_INSTALL_LIBDIR}`
 - **Proper RPATH Configuration**: Shared libraries configured with correct runtime paths
 - **Standard Paths**: Follows platform conventions for library installation
-- **HDF5_PLUGIN_PATH**: Filters installed to location discoverable by HDF5
+- **Plugin Independence**: HDF5 filters are supplied separately by nep-compress or other providers
 
 #### Installation Configuration
 **CMake:**
 ```bash
-cmake -DCMAKE_INSTALL_PREFIX=/usr/local
+cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr/local
 cmake --build build
 cmake --install build
 ```
@@ -258,12 +211,10 @@ cmake --install build
 ```
 ${PREFIX}/
 ├── lib/
-│   └── plugin/
-│       ├── libh5lz4.so
-│       └── libh5bzip2.so
+│   ├── libnep.so             # NEP logging for NEXTCDF-4
+│   └── libnc*.so             # Enabled UDF format handlers
 ├── include/
-│   └── nep/
-│       └── [header files]
+│   └── nep.h
 └── share/doc/nep/
     └── html/
         └── [Doxygen generated documentation]
@@ -277,43 +228,12 @@ cmake --build build --target uninstall  # Removes all installed files
 
 ## Usage
 
-### Setting Up HDF5 Plugin Path
+### Compression supplied separately
 
-To use NEP compression filters, set the HDF5_PLUGIN_PATH environment variable:
-
-```bash
-export HDF5_PLUGIN_PATH=/usr/local/lib/plugin
-```
-
-### Using Compression in NetCDF-4 Applications
-
-Compression filters are used transparently through the standard NetCDF-4 API. The HDF5 library automatically loads the appropriate filter when reading or writing compressed data.
-
-## Requirements and Performance Considerations
-
-The implementation must maintain:
-- **LZ4 Compression Performance**: >2x speed improvement over DEFLATE compression
-- **BZIP2 Compression Ratio**: Better compression ratios than DEFLATE
-- **Memory Efficiency**: Support for large datasets up to available system memory
-- **NetCDF API Compatibility**: 100% compatibility with existing NetCDF-4 applications
-- **Transparent Operation**: Compression filters work seamlessly with standard NetCDF-4 API
-- **Data Integrity**: 100% lossless compression guarantee
-
-## Performance Benchmarks
-
-Based on a 150 MB NetCDF-4 dataset:
-
-| Method | Write Time (s) | File Size (MB) | Read Time (s) | Compression Ratio |
-|--------|----------------|----------------|---------------|-------------------|
-| none   | 0.27          | 150.01         | 0.14          | 1.0×              |
-| lz4    | 0.34          | 68.95          | 0.16          | 2.2×              |
-| zstd   | 0.66          | 34.94          | 0.26          | 4.3×              |
-| zlib   | 1.83          | 41.78          | 0.59          | 3.6×              |
-| bzip2  | 22.14         | 22.39          | 5.90          | 6.7×              |
-
-**Key Findings**:
-- LZ4 offers minimal performance impact (79% write speed, 88% read speed) with 2.2× compression
-- BZIP2 achieves highest compression ratio (6.7×) at the cost of performance (1% write speed, 2% read speed)
+Set `HDF5_PLUGIN_PATH` to the plugin directories installed by
+[nep-compress](https://github.com/captainkirk99/nep-compress) when using
+LZ4/BZIP2. NEP's format readers and NEXTCDF-4 do not build or install
+those plugins. Historical benchmark data remains in prior releases.
 
 ## GeoTIFF Read Layer (v1.6.0)
 
@@ -841,8 +761,8 @@ NEP v1.4.0 added Spack package manager support for simplified installation and d
 
 - **NEP Spack Package**: Complete Spack package recipe with CMake build system
 - **CDF Spack Package**: Separate package for NASA CDF library v3.9.1
-- **Variant Support**: `+fortran/-fortran`, `+lz4/-lz4`, `+bzip2/-bzip2`, `+docs/-docs`
-- **Dependency Management**: Automatic resolution of NetCDF-C, HDF5, LZ4, BZIP2, and NetCDF-Fortran
+- **Variant Support**: `+fortran/-fortran`, format-reader variants, `+docs/-docs`; filter variants belonged to pre-v4.2.0 releases
+- **Dependency Management**: Automatic resolution of NetCDF-C, HDF5, optional reader libraries, and NetCDF-Fortran
 - **CI Integration**: Dedicated GitHub Actions workflows for testing Spack packages
 
 ### Installation
@@ -926,7 +846,7 @@ examples/
 ├── nczarr/           # NcZarr (local Zarr store) examples in C and Fortran
 ├── opendap/          # OPeNDAP remote access examples in C and Fortran
 ├── parallelIO/       # MPI parallel I/O examples in C and Fortran
-└── performance/      # Compression benchmark examples (ENABLE_BENCHMARKS)
+└── performance/      # General NetCDF benchmarks (NEP_ENABLE_BENCHMARKS)
 ```
 
 ### Example Categories
@@ -991,10 +911,8 @@ Located in `examples/performance/`:
 - **deflate.c**: Deflate levels 0–9 × shuffle (20 combinations)
 - **zstandard.c**: Zstandard levels × shuffle (24 combinations)
 - **szip.c**: SZIP `pixels_per_block` values with NC_SZIP_NN
-- **lz4.c**: LZ4 levels × shuffle (18 combinations)
-- **bzip2.c**: BZIP2 levels × shuffle (18 combinations)
-- **lossless.c**: Head-to-head best-setting comparison of all lossless filters
-- Built only when `ENABLE_BENCHMARKS=ON` / `--enable-benchmarks` (default OFF)
+- LZ4/BZIP2 benchmarks are maintained by [nep-compress](https://github.com/captainkirk99/nep-compress).
+- General benchmarks are run only with `NEP_ENABLE_BENCHMARKS=ON` (default OFF).
 
 ### Build System Integration
 

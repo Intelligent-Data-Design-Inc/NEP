@@ -131,8 +131,6 @@ jobs:
             -DNEP_ENABLE_GEOTIFF=OFF \
             -DNEP_ENABLE_PDS4=OFF \
             -DNEP_ENABLE_DICOM=OFF \
-            -DNEP_BUILD_LZ4=OFF \
-            -DNEP_BUILD_BZIP2=OFF \
             -DNEP_BUILD_DOCUMENTATION=OFF \
             -DNEP_BUILD_EXAMPLES=ON \
             -DNEP_ENABLE_VIZ_EXAMPLES=ON \

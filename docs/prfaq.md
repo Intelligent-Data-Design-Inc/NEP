@@ -85,12 +85,13 @@ NEP v2.2.0 is available now as open-source software. Installation options includ
 ### General Questions
 
 #### Q: What is NEP?
-**A:** NEP (NetCDF Expansion Pack) is an open-source framework that extends NetCDF-4 with:
-- High-performance compression (LZ4 and BZIP2) for HDF5/NetCDF-4 files
+**A:** NEP (NetCDF Expansion Pack) extends NetCDF-C with:
 - User Defined Format (UDF) handlers for GeoTIFF, GRIB2, FITS, NASA CDF, and NASA/ESA PDS4 files
-- C and Fortran APIs for all features
+- The optional NEXTCDF-4 backend and format support for C/Fortran applications
 - Spack package manager support for simplified HPC deployment
 - Comprehensive example programs as companion code to *The NetCDF Developer's Handbook, Second Edition*
+
+LZ4/BZIP2 compression lives in [nep-compress](https://github.com/captainkirk99/nep-compress).
 
 #### Q: Who should use NEP?
 **A:** NEP is designed for:
@@ -106,16 +107,16 @@ NEP v2.2.0 is available now as open-source software. Installation options includ
 
 #### Q: What problem does NEP solve?
 **A:** NEP addresses key challenges in scientific data management:
-1. **Limited compression options**: NetCDF-4 traditionally relies on DEFLATE, which is slow for large datasets
-2. **Format fragmentation**: Scientists must convert between NetCDF, CDF, GeoTIFF, GRIB2, FITS, and PDS4 formats
-3. **Speed vs ratio trade-offs**: No easy way to choose between fast compression and high compression ratios
-4. **I/O bottlenecks**: Compression overhead can limit performance in HPC environments
-5. **Complex workflows**: Multiple tools required for different scientific data formats
+1. **Format fragmentation**: Scientists must convert between NetCDF, CDF, GeoTIFF, GRIB2, FITS, and PDS4 formats
+2. **Complex workflows**: Multiple tools required for different scientific data formats
+3. **Backend limitations**: NEXTCDF-4 extends type and metadata support
 
 ### Technical Questions
 
 #### Q: What compression algorithms does NEP support?
-**A:** NEP supports two complementary lossless compression algorithms:
+**A:** NEP no longer bundles compression plugins or LZ4/BZIP2 wrappers.
+Use [nep-compress](https://github.com/captainkirk99/nep-compress)
+for the following algorithms:
 
 **LZ4 Compression:**
 - **Purpose**: Speed-optimized for real-time and HPC workflows
@@ -136,8 +137,8 @@ NEP v2.2.0 is available now as open-source software. Installation options includ
 - **Both are lossless**: Choose based on your workflow priorities—speed or compression ratio
 
 #### Q: Do I need to modify my existing NetCDF code?
-**A:** No! NEP features work transparently with existing NetCDF applications:
-- **Compression**: Set HDF5_PLUGIN_PATH and use standard NetCDF compression APIs
+**A:** Format readers work with standard NetCDF applications once enabled. For the LZ4/BZIP2 wrapper APIs, update the include/module and link settings to use nep-compress:
+- **Compression**: Install nep-compress and set `HDF5_PLUGIN_PATH` to its plugin directory (and the external BZIP2 plugin directory if used)
 - **CDF files**: Use `nc_open()` to read CDF files directly
 - **GeoTIFF files**: Use `nc_open()` to read GeoTIFF files directly
 - **GRIB2 files**: Use `nc_open()` to read GRIB2 files directly
@@ -153,7 +154,7 @@ All features integrate seamlessly with the standard NetCDF API.
 - **NcZarr examples**: Local NcZarr stores, chunking, compression, enhanced data model with hierarchical groups
 - **OPeNDAP examples**: Remote data access with constraint expressions and timing instrumentation
 - **Parallel I/O examples**: MPI collective I/O with domain decomposition (C and Fortran)
-- **Performance examples**: Benchmarking compression algorithms (gated by `NEP_ENABLE_BENCHMARKS`)
+- **Performance examples**: General NetCDF benchmarks (`NEP_ENABLE_BENCHMARKS`); LZ4/BZIP2 benchmarks moved to nep-compress
 - **Dual language support**: All examples available in both C and Fortran
 - **Built and tested**: Examples build with NEP and run as tests
 - **Location**: All examples in the `examples/` directory with detailed README
@@ -190,7 +191,6 @@ There is no magic-number dispatch for NEXTCDF-4 because HDF5 files are already o
 **A:** 
 - **Operating System**: Linux or Unix
 - **Core Libraries**: NetCDF-C (v4.9+), HDF5 (v1.12+)
-- **Compression (optional)**: LZ4, BZIP2
 - **Fortran Support (optional)**: NetCDF-Fortran (v4.6.2+; zstd API requires 4.6.0+)
 - **CDF Support (optional)**: NASA CDF Library (v3.9.x)
 - **GeoTIFF Support (optional)**: libgeotiff, libtiff
@@ -204,18 +204,18 @@ There is no magic-number dispatch for NEXTCDF-4 because HDF5 files are already o
 #### Q: How do I install NEP?
 **A:** Multiple installation methods:
 - **Spack** (recommended for HPC): `spack install nep`
-- **Conda**: `conda install -c conda-forge nep` installs the minimal LZ4 and Fortran-wrapper package; BZIP2 and UDF readers require a source build
+- **Conda**: Check the published package version; pre-v4.2 packages may include LZ4, but the v4.2 recipe is format-only
 - **CMake**: `cmake -B build && cmake --build build && cmake --install build`
 See the README for detailed instructions.
 
 #### Q: Can I enable only specific features?
 **A:** Yes! Use build options to control which features are compiled. All extended format readers default to **OFF** (v2.2.0+); enable explicitly as needed:
-- **CMake**: `-DNEP_BUILD_LZ4=ON/OFF`, `-DNEP_BUILD_BZIP2=ON/OFF`, `-DNEP_ENABLE_FORTRAN=ON/OFF`, `-DNEP_ENABLE_CDF=ON/OFF`, `-DNEP_ENABLE_GEOTIFF=ON/OFF`, `-DNEP_ENABLE_GRIB2=ON/OFF`, `-DNEP_ENABLE_FITS=ON/OFF`, `-DNEP_ENABLE_PDS4=ON/OFF`, `-DNEP_ENABLE_DICOM=ON/OFF`, `-DNEP_ENABLE_NEXTCDF4=ON/OFF`, `-DNEP_BUILD_EXAMPLES=ON/OFF`
+- **CMake**: `-DNEP_ENABLE_FORTRAN=ON/OFF`, `-DNEP_ENABLE_CDF=ON/OFF`, `-DNEP_ENABLE_GEOTIFF=ON/OFF`, `-DNEP_ENABLE_GRIB2=ON/OFF`, `-DNEP_ENABLE_FITS=ON/OFF`, `-DNEP_ENABLE_PDS4=ON/OFF`, `-DNEP_ENABLE_DICOM=ON/OFF`, `-DNEP_ENABLE_NEXTCDF4=ON/OFF`, `-DNEP_BUILD_EXAMPLES=ON/OFF`
 - All five format readers (CDF, GeoTIFF, GRIB2, FITS, PDS4) can be enabled simultaneously — there are no mutual-exclusivity restrictions as of v2.2.0
-- **Spack**: `spack install nep+lz4+bzip2+fortran` (variants control features)
+- **Spack**: Reader variants control formats; install nep-compress separately for LZ4/BZIP2
 
 #### Q: How do I use LZ4 compression in my NetCDF files?
-**A:** LZ4 compression is available as an HDF5 filter. Once NEP is installed, set HDF5_PLUGIN_PATH and use the NEP compression API:
+**A:** Install [nep-compress](https://github.com/captainkirk99/nep-compress), set `HDF5_PLUGIN_PATH` to its LZ4 plugin directory, include `<nep_compress.h>` and link `libnepcompress` (or use `module nep_compress` and `libnepcompressf` in Fortran). NEP v4.2 no longer provides these wrapper functions:
 ```c
 nc_def_var_lz4(ncid, varid, level);  // C API
 nf90_def_var_lz4(ncid, varid, level) ! Fortran API
@@ -269,13 +269,12 @@ nc_get_vara_float(grpid, varid, start, count, data);
 ### Compatibility and Performance
 
 #### Q: Is NEP compatible with existing NetCDF applications?
-**A:** Yes! NEP maintains 100% API compatibility with NetCDF-C. Existing applications work without modification.
+**A:** Format-reader and NEXTCDF-4 APIs remain available. Applications using the former NEP LZ4/BZIP2 wrapper APIs must migrate to nep-compress.
 
 #### Q: What is the performance overhead?
 **A:** 
-- **LZ4 Compression**: 2-3x faster than DEFLATE—actually improves I/O performance
-- **BZIP2 Compression**: Slower than LZ4 but provides better compression ratios
-- **Overall**: Performance improvements from reduced I/O time typically outweigh any overhead
+- NEP's performance depends on the enabled format reader and workload.
+- LZ4/BZIP2 compression performance benchmarks are maintained by nep-compress.
 
 #### Q: Does NEP support parallel I/O?
 **A:** Yes, NEP is designed to work in HPC environments with parallel I/O operations. LZ4 compression is particularly well-suited for parallel workflows.
@@ -310,11 +309,11 @@ nc_get_vara_float(grpid, varid, start, count, data);
 **A:** Check the project documentation, GitHub issues, and community forums. File bug reports and feature requests through the GitHub issue tracker.
 
 #### Q: Does NEP support Fortran applications?
-**A:** Yes. NEP v1.1.0 added Fortran 90 wrappers (module `nep`) for compression functions. Fortran applications can call `nf90_def_var_lz4`, `nf90_inq_var_lz4`, `nf90_def_var_bzip2`, and `nf90_inq_var_bzip2` to enable and query compression.
+**A:** Yes. NEP's format handlers work with NetCDF-Fortran applications. The old `module nep` compression wrappers moved to `module nep_compress`; install nep-compress for `nf90_def_var_lz4`, `nf90_inq_var_lz4`, `nf90_def_var_bzip2`, and `nf90_inq_var_bzip2`.
 
 #### Q: What is the current version?
 **A:** NEP v4.0.0 is the current release (August 2026), providing:
-- LZ4 and BZIP2 compression for HDF5/NetCDF-4 files (C and Fortran APIs)
+- LZ4 and BZIP2 compression shipped in earlier releases; v4.2 moves their APIs to nep-compress
 - GeoTIFF geospatial raster support via UDF handler (UDF0/UDF1)
 - GRIB2 meteorological/oceanographic data support via UDF handler (UDF2)
 - FITS astronomical data support via UDF handler (UDF3)
@@ -328,7 +327,7 @@ nc_get_vara_float(grpid, varid, start, count, data);
 
 #### Q: What formats does NEP support?
 **A:** NEP supports multiple scientific data formats through the NetCDF UDF system:
-- **NetCDF-4/HDF5**: Native format with LZ4/BZIP2 compression; optional NEXTCDF-4 backend selected with `NC_NEXTCDF4`
+- **NetCDF-4/HDF5**: Native format; optional NEXTCDF-4 backend selected with `NC_NEXTCDF4` (LZ4/BZIP2 plugins come from nep-compress)
 - **GeoTIFF** (v1.5.0, UDF0/UDF1): Geospatial raster imagery via UDF handler
 - **GRIB2** (v1.7.0, UDF2): Meteorological and oceanographic NWP model output via UDF handler
 - **FITS** (v2.0.0, UDF3): Astronomical images and tables from HST, JWST, Chandra via UDF handler
@@ -342,6 +341,7 @@ All formats accessible through the standard NetCDF API.
 - **v1.0.0-v2.5.0**: All releases maintain backward compatibility
 - **v3.0.0-v4.0.0**: All releases maintain backward compatibility; v4.0.0 adds the optional NEXTCDF-4 backend and new atomic types
 - **v4.1.0** is in preparation; no breaking changes are planned
+- **v4.2.0** moves LZ4/BZIP2 APIs and plugins to nep-compress; applications using those APIs must update their build configuration
 - **Breaking change note**: v2.2.0 changed GeoTIFF, GRIB2, and FITS defaults from ON to OFF; explicit enable flags required for these formats
 - **Comprehensive testing**: Extensive test suites and CI validation (ci.yml, ci-fits.yml, ci-formats.yml, ci-parallel.yml, ci-nextcdf4.yml)
 - **Real-world data**: Tested with NASA IMAP MAG, MODIS imagery, NOAA GDAS GRIB2, HST WFPC2 FITS, PDS4 MRO CRISM data, and NEXTCDF-4 round-trip files
@@ -371,7 +371,7 @@ All formats accessible through the standard NetCDF API.
 **A:** Yes! BZIP2 provides excellent compression ratios ideal for archival storage. LZ4 provides good compression ratios suitable for many scenarios. NEP allows you to choose the right algorithm based on your priorities—speed or compression ratio.
 
 #### Q: How does NEP benefit HPC environments?
-**A:** NEP reduces I/O bottlenecks through fast compression, supports parallel I/O operations, and is designed for exascale computing environments. The performance improvements can significantly reduce job completion times.
+**A:** NEP supports scientific format access and parallel I/O examples. For fast LZ4 compression use nep-compress alongside NEP.
 
 ---
 

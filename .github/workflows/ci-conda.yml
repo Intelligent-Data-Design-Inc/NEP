@@ -54,8 +54,8 @@ jobs:
           echo "Package: $PKG_PATH"
           test -f "$PKG_PATH"
           conda create -y -p "$RUNNER_TEMP/nep-smoke" "$PKG_PATH"
-          test -f "$RUNNER_TEMP/nep-smoke/lib/plugin/libh5lz4.so"
-          test -f "$RUNNER_TEMP/nep-smoke/include/nep.mod"
+          test -f "$RUNNER_TEMP/nep-smoke/include/nep.h"
+          test -f "$RUNNER_TEMP/nep-smoke/lib/libncpdb.so"
 
       - name: Show build log on failure
         if: failure()

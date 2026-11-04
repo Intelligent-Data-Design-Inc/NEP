@@ -59,11 +59,6 @@
 /* Defined if NetCDF-C was built with parallel I/O support (matches internal struct layouts) */
 #cmakedefine USE_PARALLEL
 
-/* Define to 1 if LZ4 compression is enabled */
-#cmakedefine01 BUILD_LZ4
-
-/* Define to 1 if BZIP2 compression is enabled */
-#cmakedefine01 BUILD_BZIP2
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #cmakedefine HAVE_INTTYPES_H @HAVE_INTTYPES_H@

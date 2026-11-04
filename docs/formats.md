@@ -36,8 +36,8 @@ dependencies, resources, and examples:
 | PDBx/mmCIF | UDF8 | [mmCIF](mmcif.md) |
 | NEXTCDF-4 | UDF9 | [NEXTCDF-4](nextcdf4.md) |
 
-See also the native NetCDF-4 compression documentation:
-[LZ4/BZIP2 HDF5 filters](compression.md).
+For NetCDF-4 LZ4/BZIP2 compression, see the separate
+[nep-compress guide](https://github.com/captainkirk99/nep-compress/blob/main/docs/compression.md).
 
 
 ---
