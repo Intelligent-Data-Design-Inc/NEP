@@ -1,9 +1,7 @@
 # Build file for the ftest directory of the NEP project.
 # Edward Hartnett 2026-06-28
 
-# Include directories to find the generated nep.mod and netcdf-fortran modules.
-include_directories(${CMAKE_BINARY_DIR}/fsrc)
-include_directories(${CMAKE_SOURCE_DIR}/fsrc)
+# Include directories for format reader tests and netcdf-fortran modules.
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # Find NetCDF-Fortran for Fortran tests.
@@ -18,24 +16,10 @@ endif()
 include_directories(${NetCDF_Fortran_INCLUDE_DIRS})
 link_directories(${NetCDF_Fortran_LIBRARY_DIRS})
 
-# Build the BZIP2 Fortran test if BZIP2 is enabled.
-if(NEP_BUILD_BZIP2)
-    add_executable(ftst_nep_bzip2 ftst_nep_bzip2.F90)
-    target_link_libraries(ftst_nep_bzip2 PRIVATE nepf nep ${NetCDF_Fortran_LIBRARIES})
-    target_include_directories(ftst_nep_bzip2 PRIVATE ${NetCDF_Fortran_INCLUDE_DIRS})
-endif()
-
-# Build the LZ4 Fortran test if LZ4 is enabled.
-if(NEP_BUILD_LZ4)
-    add_executable(ftst_nep_lz4 ftst_nep_lz4.F90)
-    target_link_libraries(ftst_nep_lz4 PRIVATE nepf nep ${NetCDF_Fortran_LIBRARIES})
-    target_include_directories(ftst_nep_lz4 PRIVATE ${NetCDF_Fortran_INCLUDE_DIRS})
-endif()
-
 # Build the FITS Fortran test if FITS is enabled.
 if(HAVE_FITS)
     add_executable(ftst_fits_udf ftst_fits_udf.F90)
-    target_link_libraries(ftst_fits_udf PRIVATE ncfits nepf nep ${NetCDF_Fortran_LIBRARIES} ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
+    target_link_libraries(ftst_fits_udf PRIVATE ncfits nep ${NetCDF_Fortran_LIBRARIES} ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
     target_include_directories(ftst_fits_udf PRIVATE ${NetCDF_Fortran_INCLUDE_DIRS} ${CFITSIO_INCLUDE_DIR})
     add_dependencies(ftst_fits_udf ncfits)
     add_test(NAME ftst_fits_udf COMMAND ftst_fits_udf)
@@ -46,7 +30,7 @@ endif()
 # Build the DICOM Fortran test if DICOM is enabled.
 if(HAVE_DICOM)
     add_executable(ftst_dicom_udf ftst_dicom_udf.F90)
-    target_link_libraries(ftst_dicom_udf PRIVATE ncdicom nepf nep ${NetCDF_Fortran_LIBRARIES} ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
+    target_link_libraries(ftst_dicom_udf PRIVATE ncdicom nep ${NetCDF_Fortran_LIBRARIES} ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
     target_include_directories(ftst_dicom_udf PRIVATE ${NetCDF_Fortran_INCLUDE_DIRS} ${DICOM_INCLUDE_DIR})
     add_dependencies(ftst_dicom_udf ncdicom)
     add_test(NAME ftst_dicom_udf COMMAND ftst_dicom_udf)
@@ -57,7 +41,7 @@ endif()
 # Build the legacy PDB Fortran smoke test if PDB is enabled.
 if(HAVE_PDB)
     add_executable(ftst_pdb_udf ftst_pdb_udf.F90)
-    target_link_libraries(ftst_pdb_udf PRIVATE ncpdb nepf nep ${NetCDF_Fortran_LIBRARIES} ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
+    target_link_libraries(ftst_pdb_udf PRIVATE ncpdb nep ${NetCDF_Fortran_LIBRARIES} ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
     target_include_directories(ftst_pdb_udf PRIVATE ${NetCDF_Fortran_INCLUDE_DIRS})
     add_dependencies(ftst_pdb_udf ncpdb)
     add_test(NAME ftst_pdb_udf COMMAND ftst_pdb_udf)
@@ -68,7 +52,7 @@ endif()
 # Build the PDBx/mmCIF Fortran smoke test if mmCIF is enabled.
 if(HAVE_MMCIF)
     add_executable(ftst_mmcif_udf ftst_mmcif_udf.F90)
-    target_link_libraries(ftst_mmcif_udf PRIVATE ncmmcif nepf nep ${NetCDF_Fortran_LIBRARIES} ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
+    target_link_libraries(ftst_mmcif_udf PRIVATE ncmmcif nep ${NetCDF_Fortran_LIBRARIES} ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
     target_include_directories(ftst_mmcif_udf PRIVATE ${NetCDF_Fortran_INCLUDE_DIRS})
     add_dependencies(ftst_mmcif_udf ncmmcif)
     add_test(NAME ftst_mmcif_udf COMMAND ftst_mmcif_udf)
@@ -76,17 +60,7 @@ if(HAVE_MMCIF)
         ENVIRONMENT "NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
 endif()
 
-# Configure run_tests.sh script with proper paths.
-if(NEP_BUILD_LZ4)
-    set(BUILD_LZ4 "yes")
-else()
-    set(BUILD_LZ4 "no")
-endif()
-if(NEP_BUILD_BZIP2)
-    set(BUILD_BZIP2 "yes")
-else()
-    set(BUILD_BZIP2 "no")
-endif()
+# Configure run_tests.sh script with format reader paths.
 if(HAVE_FITS)
     set(BUILD_FITS "yes")
 else()
@@ -107,11 +81,6 @@ if(HAVE_MMCIF)
 else()
     set(BUILD_MMCIF "no")
 endif()
-
-# Set the HDF5 plugin path for the generated test script. This must include
-# the NetCDF-C plugin directory (for bzip2/zstd) and the locally-built LZ4
-# plugin directory used by the CMake build.
-set(MY_HDF5_PLUGIN_PATH "${NETCDF_PREFIX}/hdf5/lib/plugin:${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin")
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/run_tests.sh.in
                ${CMAKE_CURRENT_BINARY_DIR}/run_tests.sh @ONLY)

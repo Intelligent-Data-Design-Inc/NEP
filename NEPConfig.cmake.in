@@ -40,7 +40,7 @@ set(NEP_LIBRARIES "")
 # endif()
 
 # Provide summary information
-message(STATUS "Found NEP version ${NEP_VERSION} - LZ4/BZIP2 compression support")
+message(STATUS "Found NEP version ${NEP_VERSION} - format handler support")
 # GRIB2 UDF Handler - Disabled for v1.0.0
 # if(NEP_HAVE_GRIB2)
 #     message(STATUS "NEP GRIB2 UDF support available")

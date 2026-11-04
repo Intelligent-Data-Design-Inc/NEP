@@ -102,8 +102,6 @@ jobs:
             -DNEP_ENABLE_GRIB2=OFF \
             -DNEP_ENABLE_FORTRAN=OFF \
             -DBUILD_TESTING=OFF \
-            -DNEP_BUILD_LZ4=OFF \
-            -DNEP_BUILD_BZIP2=OFF \
             -DNEP_ENABLE_FITS=OFF \
             -DNEP_BUILD_DOCUMENTATION=OFF
           echo "=== Checking config.h for HAVE_GEOTIFF ==="
@@ -130,8 +128,6 @@ jobs:
             -DNEP_ENABLE_GRIB2=OFF \
             -DNEP_ENABLE_FORTRAN=OFF \
             -DBUILD_TESTING=OFF \
-            -DNEP_BUILD_LZ4=OFF \
-            -DNEP_BUILD_BZIP2=OFF \
             -DNEP_ENABLE_FITS=OFF \
             -DNEP_BUILD_DOCUMENTATION=OFF
           echo "=== Checking that HAVE_GEOTIFF is not defined ==="
@@ -250,8 +246,6 @@ jobs:
             -DNEP_ENABLE_GRIB2=OFF \
             -DNEP_ENABLE_FORTRAN=OFF \
             -DBUILD_TESTING=ON \
-            -DNEP_BUILD_LZ4=OFF \
-            -DNEP_BUILD_BZIP2=OFF \
             -DNEP_ENABLE_FITS=OFF \
             -DNEP_BUILD_DOCUMENTATION=OFF
           make -j$(nproc)
@@ -363,8 +357,6 @@ jobs:
             -DNEP_ENABLE_GRIB2=OFF \
             -DNEP_ENABLE_FORTRAN=OFF \
             -DBUILD_TESTING=ON \
-            -DNEP_BUILD_LZ4=OFF \
-            -DNEP_BUILD_BZIP2=OFF \
             -DNEP_ENABLE_FITS=OFF \
             -DNEP_BUILD_DOCUMENTATION=OFF \
             -DCMAKE_C_FLAGS="--coverage -fprofile-arcs -ftest-coverage" \

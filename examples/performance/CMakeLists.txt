@@ -36,7 +36,7 @@ execute_process(
 separate_arguments(NC_CFLAGS_LIST UNIX_COMMAND "${NC_CFLAGS}")
 separate_arguments(NC_LIBS_LIST UNIX_COMMAND "${NC_LIBS}")
 
-# Check for SZIP library (optional - needed for szip, lossless, quantize examples)
+# Check for SZIP library (optional for the szip example)
 find_library(SZIP_LIBRARY sz
     HINTS ${HDF5_LIB_DIR} ${NETCDF_LIBRARY_DIRS}
     PATHS /usr/lib /usr/local/lib
@@ -45,13 +45,9 @@ if(SZIP_LIBRARY)
     message(STATUS "SZIP library found: ${SZIP_LIBRARY}")
     set(HAVE_SZIP ON)
 else()
-    message(STATUS "SZIP library not found - skipping szip, lossless, quantize examples")
+    message(STATUS "SZIP library not found - skipping szip example")
     set(HAVE_SZIP OFF)
 endif()
-
-# Add NEP include directories for examples that use NEP functions (e.g., lossless.c)
-include_directories(${CMAKE_BINARY_DIR}/include)
-include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # Get HDF5 library directory from HDF5_INCLUDE_DIR (parent scope)
 get_filename_component(HDF5_LIB_DIR "${HDF5_INCLUDE_DIR}/../lib" ABSOLUTE)
@@ -99,28 +95,19 @@ add_executable(zstandard zstandard.c)
 perf_target(zstandard)
 target_link_libraries(zstandard PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl m)
 
-# SZIP-dependent examples (only if SZIP library is available)
+# Zstandard, zlib/DEFLATE and SZIP use NetCDF-C/HDF5 APIs; keep them in NEP.
+# lossless.c and quantize.c also call the moved LZ4/BZIP2 wrappers. Preserve
+# their sources but leave their targets and tests disabled until a later release
+# explicitly adds nep-compress as a dependency:
+# add_executable(lossless lossless.c)
+# add_executable(quantize quantize.c)
+
+# SZIP-dependent example (only if SZIP library is available)
 if(HAVE_SZIP)
     add_executable(szip szip.c)
     perf_target(szip)
     target_link_libraries(szip PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl sz m)
-
-    add_executable(lossless lossless.c)
-    perf_target(lossless)
-    target_link_libraries(lossless PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl sz nep m)
-
-    add_executable(quantize quantize.c)
-    perf_target(quantize)
-    target_link_libraries(quantize PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl sz nep m)
 endif()
-
-add_executable(lz4 lz4.c)
-perf_target(lz4)
-target_link_libraries(lz4 PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl m)
-
-add_executable(bzip2 bzip2.c)
-perf_target(bzip2)
-target_link_libraries(bzip2 PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl m)
 
 # Performance examples run as tests only when NEP_ENABLE_BENCHMARKS=ON (slow; not for regular CI)
 if(NEP_ENABLE_BENCHMARKS)
@@ -133,17 +120,11 @@ if(NEP_ENABLE_BENCHMARKS)
     if(HAVE_SZIP)
         target_compile_definitions(szip PRIVATE ENABLE_BENCHMARKS=1)
     endif()
-    target_compile_definitions(lz4 PRIVATE ENABLE_BENCHMARKS=1)
-    target_compile_definitions(bzip2 PRIVATE ENABLE_BENCHMARKS=1)
-    if(HAVE_SZIP)
-        target_compile_definitions(lossless PRIVATE ENABLE_BENCHMARKS=1)
-        target_compile_definitions(quantize PRIVATE ENABLE_BENCHMARKS=1)
-    endif()
     if(BUILD_TESTING)
         set(_bench_tests cache_tuning chunking deflate fill_values
-                         endianness zstandard lz4 bzip2)
+                         endianness zstandard)
         if(HAVE_SZIP)
-            list(APPEND _bench_tests szip lossless quantize)
+            list(APPEND _bench_tests szip)
         endif()
         foreach(_t ${_bench_tests})
             add_test(NAME ${_t}

@@ -2,13 +2,13 @@
 
 ## Overview
 
-NEP (NetCDF Expansion Pack) extends NetCDF-4 with high-performance compression and multi-format data access.
+NEP (NetCDF Expansion Pack) provides scientific format readers and the NEXTCDF-4 backend through the NetCDF API.
 
 ### Compression Filters
 
-LZ4 and BZIP2 HDF5 filter plugins for NetCDF-4 files, both enabled by default. LZ4 targets speed (2–3× faster than DEFLATE); BZIP2 targets ratio (ideal for archival).
+LZ4 and BZIP2 HDF5 filter plugins and their C/Fortran wrappers are provided by the separate [nep-compress](https://github.com/captainkirk99/nep-compress) project; NEP no longer ships them.
 
-See **[Compression Filters](compression.md)** — algorithm details, C/Fortran API reference, and performance benchmarks.
+See the **[nep-compress compression guide](https://github.com/captainkirk99/nep-compress/blob/main/docs/compression.md)** for the package/API move.
 
 ### Format Readers
 
@@ -38,8 +38,6 @@ See **[Example Programs](examples.md)** — complete program listing by category
 NEP requires:
 - NetCDF-C library (v4.10.1+) (required for UDF slots > 2 used by FITS, CDF, and PDS4)
 - HDF5 library (v1.10+) and its dependencies
-- LZ4 library
-- BZIP2 library
 - NetCDF-Fortran library (optional, for Fortran support)
 - NASA CDF library v3.9+ (optional, for CDF file reading)
 - libgeotiff and libtiff (optional, for GeoTIFF file reading; `--enable-geotiff`)
@@ -47,7 +45,7 @@ NEP requires:
 - CFITSIO >= 3.0 (optional, for FITS file reading; `--enable-fits`)
 - libxml2 >= 2.9 (optional, for PDS4 file reading; `--enable-pds4`)
 
-Build with CMake or Autotools:
+Build with CMake:
 
 ```bash
 # CMake
@@ -55,22 +53,17 @@ cmake -B build -DCMAKE_INSTALL_PREFIX=/usr/local
 cmake --build build
 cmake --install build
 
-# Autotools
-./configure --prefix=/usr/local
-make
-make install
 ```
 
 ## Build Options
 
-See the [Configuration Options](https://github.com/Intelligent-Data-Design-Inc/NEP#configuration-options) section of the README for the full CMake and Autotools option reference.
+See the [Configuration Options](https://github.com/Intelligent-Data-Design-Inc/NEP#configuration-options) section of the README for the CMake option reference.
 
 ## API Documentation
 
 Key API reference pages:
 
 - [C API (nep.c)](nep_8c.html)
-- [Fortran API (nep.F90)](nep_8F90.html)
 
 Refer to the documentation header for the exact version of NEP corresponding to this build.
 

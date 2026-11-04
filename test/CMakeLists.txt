@@ -15,25 +15,6 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(NETCDF REQUIRED netcdf)
 pkg_get_variable(NETCDF_PREFIX netcdf prefix)
 
-# Build LZ4 test
-if(NEP_BUILD_LZ4)
-    add_executable(tst_lz4 tst_lz4.c)
-    target_link_libraries(tst_lz4 PRIVATE nep ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
-    target_include_directories(tst_lz4 PRIVATE ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
-endif()
-
-# Build BZIP2 test
-if(NEP_BUILD_BZIP2)
-    add_executable(tst_bzip2 tst_bzip2.c)
-    target_link_libraries(tst_bzip2 PRIVATE nep ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
-    target_include_directories(tst_bzip2 PRIVATE ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
-endif()
-
-# Build performance test
-add_executable(tst_perf tst_perf.c tst_utils.c)
-target_link_libraries(tst_perf PRIVATE nep ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
-target_include_directories(tst_perf PRIVATE ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
-
 # Build build metadata header test
 add_executable(tst_meta tst_meta.c)
 add_test(NAME tst_meta COMMAND tst_meta)
@@ -340,65 +321,7 @@ if(HAVE_PDS4)
                    COPYONLY)
 endif()
 
-# Configure run_tests.sh script with proper paths
-# For CMake builds, point to the installed plugin location
-set(MY_HDF5_PLUGIN_PATH "${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin:${NETCDF_PREFIX}/hdf5/lib/plugin:${NETCDF_PREFIX}/lib/plugin:${NETCDF_PREFIX}/lib/hdf5/plugin")
-set(MY_LZ4_PLUGIN_PATH "${CMAKE_BINARY_DIR}/hdf5_plugins_install/lib/plugin")
-
-# Provide a runtime library search path for the selected HDF5.
-# FindHDF5.cmake does not always populate HDF5_LIBRARY_DIRS, so derive it.
-set(_nep_hdf5_lib_dirs "")
-if(HDF5_LIBRARY_DIRS)
-    list(APPEND _nep_hdf5_lib_dirs ${HDF5_LIBRARY_DIRS})
-else()
-    foreach(_nep_lib ${HDF5_LIBRARIES})
-        if(IS_ABSOLUTE "${_nep_lib}")
-            get_filename_component(_nep_lib_dir "${_nep_lib}" DIRECTORY)
-            list(APPEND _nep_hdf5_lib_dirs "${_nep_lib_dir}")
-        endif()
-    endforeach()
-endif()
-if(NOT _nep_hdf5_lib_dirs AND DEFINED HDF5_ROOT)
-    list(APPEND _nep_hdf5_lib_dirs "${HDF5_ROOT}/lib" "${HDF5_ROOT}/lib64")
-endif()
-list(REMOVE_DUPLICATES _nep_hdf5_lib_dirs)
-list(APPEND _nep_hdf5_lib_dirs "${NETCDF_PREFIX}/lib")
-list(REMOVE_DUPLICATES _nep_hdf5_lib_dirs)
-string(REPLACE ";" ":" MY_LD_LIBRARY_PATH "${_nep_hdf5_lib_dirs}")
-
-if(NEP_BUILD_LZ4)
-    set(BUILD_LZ4 "yes")
-else()
-    set(BUILD_LZ4 "no")
-endif()
-if(NEP_BUILD_BZIP2)
-    set(BUILD_BZIP2 "yes")
-else()
-    set(BUILD_BZIP2 "no")
-endif()
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/run_tests.sh.in 
-               ${CMAKE_CURRENT_BINARY_DIR}/run_tests.sh @ONLY)
-
-# Make the script executable
-file(CHMOD ${CMAKE_CURRENT_BINARY_DIR}/run_tests.sh 
-     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-
-# Add single test that runs the test script (like autotools)
-# The script sets HDF5_PLUGIN_PATH itself from MY_HDF5_PLUGIN_PATH
-add_test(NAME run_tests 
-         COMMAND ${CMAKE_CURRENT_BINARY_DIR}/run_tests.sh
-         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-set_tests_properties(run_tests PROPERTIES
-    ENVIRONMENT "LD_LIBRARY_PATH=${MY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}")
-
-# Make test script depend on hdf5_plugins being built
-set(_test_exe_deps tst_perf tst_meta)
-if(NEP_BUILD_LZ4)
-    list(APPEND _test_exe_deps tst_lz4)
-endif()
-if(NEP_BUILD_BZIP2)
-    list(APPEND _test_exe_deps tst_bzip2)
-endif()
+set(_test_exe_deps tst_meta)
 if(HAVE_CDF)
     list(APPEND _test_exe_deps tst_cdf_udf tst_imap_mag)
 endif()
@@ -421,4 +344,3 @@ if(HAVE_MMCIF)
     list(APPEND _test_exe_deps tst_mmcif_udf)
 endif()
 add_custom_target(test_executables ALL DEPENDS ${_test_exe_deps})
-add_dependencies(test_executables hdf5_plugins)

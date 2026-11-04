@@ -3,15 +3,15 @@
 ## 1. Executive Summary
 
 ### 1.2 Business Objectives
-- Provide high-performance compression for NetCDF-4/HDF5 files
+- Provide scientific format readers; point LZ4/BZIP2 users to nep-compress
 - Enable seamless access to multiple scientific data formats without conversion
 - Support meteorological, geospatial, and space physics workflows
-- Maintain full backward compatibility across all releases
+- Preserve format-reader and NEXTCDF-4 behavior; document the v4.2.0 compression package/API migration
 - Simplify installation and deployment in HPC environments
 
 ### 1.3 Success Metrics
-- Zero breaking changes across all releases, with one documented exception: NEXTCDF-4's structural detection of `NC_COMPLEX`/`NC_DOUBLECOMPLEX` (see NEXTCDF-4 plan) may reinterpret a pre-existing user-defined compound type as a complex number if it exactly matches the `{r, i}` two-member float/double layout; this is called out explicitly in release notes
-- High-performance compression with minimal overhead
+- Preserve NEP format APIs; v4.2.0 moves LZ4/BZIP2 calls to a separately linked library. NEXTCDF-4's structural detection of `NC_COMPLEX`/`NC_DOUBLECOMPLEX` may also reinterpret an exactly matching two-member user-defined compound; document both exceptions in release notes
+- Compression is independently tested in nep-compress
 - Successful integration with scientific data workflows
 - Comprehensive test coverage and CI validation
 
@@ -27,14 +27,15 @@
 - **Error Handling**: Native NetCDF error codes for consistent error reporting
 
 ### 2.2 HDF5 Filter Plugin System
-- **Compression Filters**: LZ4 and BZIP2 filters as HDF5 plugins
-- **Transparent Integration**: Works with existing NetCDF-4 applications
-- **Runtime Loading**: Filters loaded via `HDF5_PLUGIN_PATH`
-- **Standard API**: NetCDF compression API for filter configuration
+- **Ownership**: LZ4/BZIP2 plugins and wrappers live in [nep-compress](https://github.com/captainkirk99/nep-compress)
+- **NEP**: NEXTCDF-4 retains generic HDF5 filter handling; NEP builds no compression plugin
 
 ---
 
-## 3. Compression Features (v1.0.0, v1.1.0)
+## 3. Historical Compression Features (v1.0.0, v1.1.0)
+
+These APIs shipped in earlier NEP releases and move to nep-compress in
+v4.2.0; the options below describe the old NEP build, not current build flags.
 
 ### 3.1 LZ4 Compression
 - **High-Performance**: 2-3x faster compression/decompression than DEFLATE
@@ -106,10 +107,10 @@ NASA Common Data Format (CDF) support via UDF handler enables transparent access
 Spack package recipes enable simplified installation and dependency management in HPC environments.
 
 ### 5.2 Features
-- **NEP Spack Package**: CMake-based package with Fortran and compression variants
+- **NEP Spack Package**: CMake-based package with format and Fortran test variants
 - **CDF Spack Package**: Standalone package for NASA CDF library v3.9.1
-- **Automatic Dependencies**: Resolves NetCDF-C, HDF5, LZ4, BZIP2, NetCDF-Fortran
-- **Variant Support**: `+fortran/-fortran`, `+lz4/-lz4`, `+bzip2/-bzip2`, `+docs/-docs`
+- **Automatic Dependencies**: Resolves NetCDF-C, HDF5, optional format libraries and NetCDF-Fortran
+- **Variant Support**: `+fortran/-fortran`, format-reader variants, `+docs/-docs`
 
 ### 5.3 Installation
 ```bash
@@ -129,6 +130,8 @@ spack install cdf
 - Installation testing with verbose logging
 
 ### 5.5 Conda Package (v3.0.1)
+Historical v3.0.1 recipe behavior; the v4.2.0 in-repository recipe is
+format-only. Older published packages may still bundle compression.
 - **In-repo recipe**: `conda/meta.yaml` (conda-build format) packages the v3.0.0 source tag for conda-forge
 - **Build script**: `conda/build.sh` passes existing CMake options only for the Conda package; local CMake builds are unchanged
 - **Enabled features**: LZ4 and Fortran wrappers
@@ -456,7 +459,7 @@ Parallel I/O builds are tested in a separate CI workflow (`ci-parallel.yml`) wit
 ## 12. Testing and Quality Assurance
 
 ### 12.1 Test Coverage
-- **Compression Tests**: C and Fortran tests for LZ4 and BZIP2
+- **Compression Tests**: C, HDF5 and Fortran tests for LZ4/BZIP2 run in nep-compress
 - **CDF Tests**: Basic file operations and IMAP MAG L1B calibration data
 - **GeoTIFF Tests**: 10 comprehensive test programs covering edge cases, errors, performance
 - **Example Programs**: All examples run as tests to validate correctness
@@ -465,7 +468,7 @@ Parallel I/O builds are tested in a separate CI workflow (`ci-parallel.yml`) wit
 
 ### 12.2 CI Matrix
 - CMake builds
-- Compression combinations (all, no-bzip2, no-lz4)
+- Format-reader combinations; compression combinations are in nep-compress CI
 - Fortran on/off configurations
 - Documentation validation
 - Format-specific tests (CDF, GeoTIFF, GRIB2)
@@ -486,9 +489,7 @@ Parallel I/O builds are tested in a separate CI workflow (`ci-parallel.yml`) wit
 - CMake v3.9+ (build)
 
 ### 13.2 Optional Dependencies
-- LZ4 library (for LZ4 compression)
-- BZIP2 library (for BZIP2 compression)
-- NetCDF-Fortran v4.6.2+ (for Fortran wrappers; zstd API requires 4.6.0+)
+- NetCDF-Fortran v4.6.2+ (for optional Fortran format tests/examples)
 - NASA CDF Library v3.9.x (for CDF support)
 - libgeotiff (for GeoTIFF support)
 - libtiff (transitive, for GeoTIFF support)
@@ -698,21 +699,9 @@ shape 10×45×90.
   NC_SZIP_EC coding methods across pixels_per_block {2, 4, 8, 16, 32} (10
   combinations); outputs CSV
   (`coding,pixels_per_block,compressed_bytes,ratio,write_s,read_s`)
-- `lz4.c` — LZ4 compression performance: demonstrates LZ4 levels 1–9 with
-  and without the shuffle filter (18 combinations); outputs CSV
-  (`lz4_level,shuffle,compressed_bytes,ratio,write_s,read_s`)
-- `bzip2.c` — BZIP2 compression performance: demonstrates BZIP2 levels 1–9 with
-  and without the shuffle filter (18 combinations); outputs CSV
-  (`bzip2_level,shuffle,compressed_bytes,ratio,write_s,read_s`)
-- `lossless.c` — Lossless compression comparison: compares the best-performing
-  settings of all available filters (DEFLATE, Zstandard, SZIP, LZ4, BZIP2) with
-  shuffle enabled; outputs CSV
-  (`filter,level_or_pixels,compressed_bytes,ratio,write_s,read_s`)
-- `quantize.c` — Quantization + compression performance: demonstrates all three
-  quantization algorithms (BitGroom, GranularBitRound, BitRound) at each NSD/NSB
-  level paired with all five lossless filters at their optimal settings; includes
-  baseline lossless rows and max absolute error per combination; outputs CSV
-  (`quantize_alg,nsd_or_nsb,filter,compressed_bytes,ratio,write_s,read_s,max_abs_err`)
+- LZ4/BZIP2 benchmarks and their CSV/plot scripts are maintained in
+  [nep-compress](https://github.com/captainkirk99/nep-compress).
+  General NetCDF performance examples remain in NEP.
 
 ---
 

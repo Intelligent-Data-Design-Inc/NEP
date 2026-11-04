@@ -52,8 +52,8 @@ int main(int argc, char **argv)
         fprintf(stderr, "Error: NEP_HAS_PDB is %d, expected 0 or 1.\n", NEP_HAS_PDB);
         return 1;
     }
-    if (NEP_HAS_LZ4 != 0 && NEP_HAS_LZ4 != 1) {
-        fprintf(stderr, "Error: NEP_HAS_LZ4 is %d, expected 0 or 1.\n", NEP_HAS_LZ4);
+    if (NEP_HAS_FORTRAN != 0 && NEP_HAS_FORTRAN != 1) {
+        fprintf(stderr, "Error: NEP_HAS_FORTRAN is %d, expected 0 or 1.\n", NEP_HAS_FORTRAN);
         return 1;
     }
     if (NEP_HAS_HDF5 != 1) {
