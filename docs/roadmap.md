@@ -1,5 +1,67 @@
 # NEP Development Roadmap
 
+### V4.2.0 - Move Compression Filters to nep-compress
+
+**Goal:** Move ownership of the LZ4 and BZIP2 compression APIs, HDF5 filter integration, tests, and documentation to `/fast/ed/nep-compress/`. NEP remains the home of the format UDF readers and NEXTCDF-4 backend. Complete and verify the new project before removing compression from NEP.
+
+#### Sprint 1: Inventory and Define the Compatibility Contract
+**Objective:** Establish exactly what moves and what must continue to work for existing compression users.
+
+**Detailed Plan:** See `docs/plan/v4.2.0-sprint1-compression-inventory.md` for the sprint plan and `docs/plan/v4.2.0-sprint1-results.md` for the inventory, migration decisions, local baseline and open gates.
+
+**Deliverables:**
+- Inventory compression-specific code and build configuration: `src/nep.c`, `include/nep.h`, `fsrc/nep.F90`, `include/nep_meta.h.in`, root and subdirectory CMake files, `hdf5_plugins/LZ4/`, C/Fortran and HDF5 tests, compression examples, Spack recipes, CI, and docs. Separate shared logging, metadata, and format-reader code from compression-only code.
+- Record the existing public C and Fortran API names, argument conventions, filter IDs, plugin names and discovery path, build defaults, and read/write behavior for existing LZ4/BZIP2 files. Decide how users migrate their includes, libraries, Fortran module, and build options without changing on-disk filter IDs or breaking file readability.
+- Identify the BZIP2 plugin provider: NEP currently builds an LZ4 plugin but expects BZIP2 from the NetCDF/HDF5 installation. Specify whether nep-compress will build BZIP2 itself or require an external plugin, and make the requirement testable and documented.
+- Inventory compression-related references in `README.md`, `docs/compression.md`, `docs/design.md`, `docs/prd.md`, `docs/prfaq.md`, Doxygen inputs, release notes, and examples. Distinguish historical release records from current installation instructions.
+
+**Acceptance criteria:**
+- A migration checklist identifies what will move, what stays in NEP, and the expected behavior when both projects are installed.
+- No format-reader, NEXTCDF-4, or NEP logging dependency is assigned to nep-compress; logging statements in extracted compression code may be commented out for now without changing error handling.
+
+#### Sprint 2: Build and Test nep-compress Locally
+**Objective:** Make `/fast/ed/nep-compress/` independently buildable and testable before changing NEP.
+
+**Detailed Plan:** See `docs/plan/v4.2.0-sprint2-nep-compress-build.md` for dependency gates, standalone targets, local verification, and bidirectional file tests. Local implementation status and remaining gates are in `docs/plan/v4.2.0-sprint2-results.md`.
+
+**Deliverables:**
+- Move the compression C APIs, Fortran wrappers, LZ4 plugin source and build rules, and compression-only tests into nep-compress. Provide standalone CMake options, dependency detection, install rules, and an HDF5 plugin installation path; handle BZIP2 according to the Sprint 1 decision. Do not copy NEP's unrelated UDF or NEXTCDF-4 code.
+- Port C and Fortran tests for valid/invalid levels, filter inquiry, round-trip I/O, and reopening existing compressed files. Test both filters when their dependencies are available; clearly report unavailable optional dependencies instead of silently skipping required coverage.
+- Build and run tests against `/usr/local/netcdf-c`, `/usr/local/netcdf-fortran`, and `/usr/local/hdf5-2.1.1`, using an isolated `build` directory and the built plugin directory in `HDF5_PLUGIN_PATH`. Check that library and module resolution uses those installations rather than system copies.
+- Verify compressed files created by the original NEP setup can be read with nep-compress, and vice versa, without changing filter IDs or file contents.
+
+**Acceptance criteria:**
+- Standalone configure, build, install, and CTest pass for the enabled filters; Fortran tests pass when NetCDF-Fortran is enabled.
+- No NEP checkout or NEP library is needed to build, test, or use nep-compress.
+
+#### Sprint 3: Documentation and Independent CI
+**Objective:** Make nep-compress usable and verifiable as a separate GitHub project.
+
+**Detailed Plan:** See `docs/plan/v4.2.0-sprint3-docs-ci.md` for docs ownership, external BZIP2 provisioning, CI verification and open gates. Local implementation status is in `docs/plan/v4.2.0-sprint3-results.md`.
+
+**Deliverables:**
+- Transfer and correct compression documentation, including C/Fortran examples, filter discovery with `HDF5_PLUGIN_PATH`, dependencies, build options and defaults, existing-file compatibility, and BZIP2 plugin provisioning. Keep benchmark artifacts with their generating code or link to their maintained location.
+- Write the nep-compress `README.md` to explain that compression was separated from NEP to make installation and use easier, with standalone build/test/install instructions and a pointer back to NEP for format readers.
+- Add a basic GitHub Actions workflow that installs or builds required dependencies, configures and builds nep-compress, and runs CTest for compression code. Exercise both filters where available and report skipped optional coverage explicitly.
+
+**Acceptance criteria:**
+- A new user can build and test nep-compress from its README without NEP; CI passes independently on GitHub.
+- Documentation and CI describe the same dependency and plugin-discovery behavior as the local build.
+
+#### Sprint 4: Remove Compression Ownership from NEP
+**Objective:** Leave NEP building and testing its format code, not shipping duplicate compression implementations.
+
+**Prerequisite:** Sprints 2 and 3 pass, including the cross-project file compatibility tests; do not remove the working NEP path before this gate.
+
+**Deliverables:**
+- Remove compression-only C/Fortran APIs, module contents, plugin build and install rules, build options and generated feature flags, compression tests, and compression-specific examples from NEP. Retain `src/nep.c` and any shared library functionality still required by UDF handlers and NEXTCDF-4, or refactor those dependencies explicitly before removal.
+- Update NEP's CMake targets, packaging/Spack recipes, workflows, Doxygen configuration, and active documentation so they no longer promise or build bundled filters. Remove stale `NEP_BUILD_LZ4`/`NEP_BUILD_BZIP2` flags from format-only CI configurations. NEP uses CMake; do not add Autotools work for this migration.
+- Update `README.md`, `docs/design.md`, `docs/prd.md`, `docs/prfaq.md`, and release notes to point compression users to nep-compress and describe the packaging/API migration. Preserve useful historical release notes without leaving broken links.
+- Run a clean NEP format-only build and CTest with the local NetCDF-C/HDF5 installations; verify enabled UDF readers and NEXTCDF-4 still build independently of nep-compress. Verify nep-compress remains usable alongside the installed NEP format libraries.
+
+**Acceptance criteria:**
+- NEP no longer builds or installs compression filters or compression-only APIs/tests, and its active docs no longer advertise bundled compression.
+- NEP's supported format tests pass without LZ4/BZIP2 development packages; existing compressed files remain readable through nep-compress, with migration instructions for former NEP users.
 
 ### V4.1.0 - NEXTCDF4 Docs and Logging
 
