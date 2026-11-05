@@ -237,7 +237,7 @@ legacy PDB support is enabled by default. Compression requires nep-compress.
 | `docs` | ON | Build Doxygen documentation (requires Doxygen) |
 | `fortran` | ON | Fortran format-reader tests (requires NetCDF-Fortran) |
 | `fits` | OFF | FITS reader — HST, JWST, Chandra (requires CFITSIO) |
-| `geotiff` | OFF | GeoTIFF reader — CF-1.8 CRS metadata (requires libgeotiff) |
+| `geotiff` | OFF | GeoTIFF reader — CF-1.8 CRS metadata (requires libgeotiff); needs `nep@main` or a release after 4.2.0 |
 | `grib2` | OFF | GRIB2 reader — NWP model output (requires NCEPLIBS-g2c) |
 | `pds4` | OFF | PDS4 reader — planetary science (requires libxml2) |
 | `pdb` | ON | Legacy PDB reader — protein structures (no external library required) |

@@ -27,6 +27,10 @@ separate C/Fortran APIs and HDF5 plugin installation.
 
 ### Format Readers
 
+The `+geotiff` variant requires `nep@main` or a release after 4.2.0
+(4.2.0 needs libgeotiff headers under `include/geotiff/`, which the
+Spack `libgeotiff` package does not install).
+
 ```bash
 # All Spack-supported format readers
 spack install nep+geotiff+grib2+fits+pds4+pdb+mmcif

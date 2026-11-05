@@ -76,6 +76,13 @@ class Nep(CMakePackage):
     depends_on("libtiff", when="+geotiff", type=("build", "link"))
     depends_on("doxygen", when="+docs", type="build")
 
+    conflicts(
+        "+geotiff",
+        when="@4.2.0",
+        msg="NEP 4.2.0 requires libgeotiff headers under include/geotiff/, "
+        "which Spack does not provide",
+    )
+
     def cmake_args(self):
         args = [
             self.define("CMAKE_INSTALL_LIBDIR", "lib"),

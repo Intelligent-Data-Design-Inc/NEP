@@ -16,7 +16,7 @@
 
 #ifdef HAVE_GEOTIFF
 #include <tiffio.h>
-#include <geotiff/geotiff.h>
+#include <geotiff.h>
 #endif
 
 #define TEST_DATA_DIR "data/"

@@ -15,8 +15,8 @@
 #include "nep.h"
 
 #ifdef HAVE_GEOTIFF
-#include <geotiff/geotiff.h>
-#include <geotiff/geo_normalize.h>
+#include <geotiff.h>
+#include <geo_normalize.h>
 #endif
 
 /** GeoTIFF format uses UDF1 slot for dispatch table model field (see NEP.h for slot allocation) */

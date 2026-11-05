@@ -201,7 +201,7 @@ if(NOT DOCS_ONLY)
     # GeoTIFF library detection (v1.5.0)
     if(NEP_ENABLE_GEOTIFF)
         find_library(GEOTIFF_LIBRARY NAMES geotiff)
-        find_path(GEOTIFF_INCLUDE_DIR geotiff/geotiff.h)
+        find_path(GEOTIFF_INCLUDE_DIR geotiff.h PATH_SUFFIXES geotiff)
         find_library(TIFF_LIBRARY NAMES tiff)
         find_path(TIFF_INCLUDE_DIR tiff.h)
         
