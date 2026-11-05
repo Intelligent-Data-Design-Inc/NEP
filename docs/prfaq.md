@@ -197,7 +197,7 @@ There is no magic-number dispatch for NEXTCDF-4 because HDF5 files are already o
 - **GRIB2 Support (optional)**: NOAA NCEPLIBS-g2c (≥ 2.1.0), libjasper (≥ 3.0.0)
 - **FITS Support (optional)**: CFITSIO (≥ 3.0; locally `/usr/local/cfitsio-4.6.4/`; CI: apt `libcfitsio-dev`)
 - **PDS4 Support (optional)**: libxml2 (`libxml2-dev` on Ubuntu)
-- **NEXTCDF-4 Support (optional)**: HDF5 1.14.0+ (required), HDF5 2.1.1+ (recommended); netcdf-c with UDF plugin support
+- **NEXTCDF-4 Support (optional)**: HDF5 2.1.1+ (required); netcdf-c 4.10.1+ with UDF plugin and `NC_UDF9` support
 - **Build Tools**: CMake (v3.9+)
 - **Documentation (optional)**: Doxygen and Graphviz
 
