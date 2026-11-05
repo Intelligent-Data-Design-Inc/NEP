@@ -63,6 +63,20 @@
 - NEP no longer builds or installs compression filters or compression-only APIs/tests, and its active docs no longer advertise bundled compression.
 - NEP's supported format tests pass without LZ4/BZIP2 development packages; existing compressed files remain readable through nep-compress, with migration instructions for former NEP users.
 
+#### Sprint 6: Spack
+- Prerequisite: tag v4.2.0. Recipe offers only `main` and `4.2.0`; no compression variants; HDF5 `@1.14:`.
+- Move the recipe to the overlay `spack/repos/spack_repo/nep/`. Variants: `fits`, `geotiff`, `grib2`, `pds4`, `pdb`, and new `mmcif` and `nextcdf4`. `dicom` is removed (no `gdcm` package in Spack); `cdf` is a commented-out variant waiting on spack/spack-packages#2797.
+- Rewrite `spack.yml` on the nep-compress pattern: pinned `setup-spack`, the `spack/ci` environment, `install --test=root` on push and PR, and upstream ruff/vermin style checks.
+- Update spack/spack-packages#5557 in place to 4.2.0, removing 1.3.0. It keeps `netcdf-c@4.10.1:` and depends on #6569; CI uses `^netcdf-c@main` until #6569 merges.
+- Update the Spack sections of the README, `docs/spack.md`, `docs/prd.md` and `docs/design.md`.
+- Out of scope: Spack DICOM/`gdcm`, enabling `cdf`, the local `spack/cdf` recipe, and run-environment `.ncrc` wiring.
+
+Plan: [docs/plan/v4.2.0-sprint6-spack.md](plan/v4.2.0-sprint6-spack.md)
+
+#### Sprint 7: Conda
+- As with spack.
+- need to add to condaforge.
+
 ### V4.1.0 - NEXTCDF4 Docs and Logging
 
 #### Sprint 1: Docs for NEXTCDF4

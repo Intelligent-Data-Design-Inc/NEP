@@ -221,7 +221,7 @@ NEP can be installed using the [Spack](https://spack.io) package manager.
 
 ```bash
 # Latest stable release
-spack install nep@3.0.0
+spack install nep@4.2.0
 
 # Or install from the main branch
 spack install nep
@@ -240,11 +240,18 @@ legacy PDB support is enabled by default. Compression requires nep-compress.
 | `geotiff` | OFF | GeoTIFF reader — CF-1.8 CRS metadata (requires libgeotiff) |
 | `grib2` | OFF | GRIB2 reader — NWP model output (requires NCEPLIBS-g2c) |
 | `pds4` | OFF | PDS4 reader — planetary science (requires libxml2) |
-| `dicom` | OFF | DICOM reader — medical imaging (requires libdicom, libjpeg-turbo) |
 | `pdb` | ON | Legacy PDB reader — protein structures (no external library required) |
+| `mmcif` | OFF | PDBx/mmCIF reader — macromolecular structures (no external library required) |
+| `nextcdf4` | OFF | NEXTCDF-4 UDF backend (requires HDF5 2.1.1+) |
 | `parallel` | OFF | Parallel I/O tests (requires MPI, HDF5+mpi, netcdf-c+mpi) |
 | `examples` | OFF | Example programs |
 | `benchmarks` | OFF | Performance benchmark programs |
+
+The CDF and DICOM readers are not available through Spack: there is no
+`cdf` package yet ([spack/spack-packages#2797](https://github.com/spack/spack-packages/pull/2797))
+and no `gdcm` package for the DICOM dependencies.
+
+Enabled readers are registered by the `share/.ncrc` file the package installs.
 
 #### Common combinations
 
@@ -253,7 +260,7 @@ legacy PDB support is enabled by default. Compression requires nep-compress.
 spack install nep+geotiff+grib2
 
 # All format readers
-spack install nep+geotiff+grib2+fits+pds4+dicom+pdb
+spack install nep+geotiff+grib2+fits+pds4+pdb+mmcif
 
 # Minimal build (no docs, no Fortran) for CI/containers
 spack install nep~docs~fortran

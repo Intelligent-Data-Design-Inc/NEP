@@ -761,9 +761,9 @@ NEP v1.4.0 added Spack package manager support for simplified installation and d
 
 - **NEP Spack Package**: Complete Spack package recipe with CMake build system
 - **CDF Spack Package**: Separate package for NASA CDF library v3.9.1
-- **Variant Support**: `+fortran/-fortran`, format-reader variants, `+docs/-docs`; filter variants belonged to pre-v4.2.0 releases
+- **Variant Support**: `+fortran/-fortran`, format-reader variants, `+docs/-docs`; filter variants belonged to pre-v4.2.0 releases. The recipe starts at NEP 4.2.0; the CDF and DICOM readers are not available through Spack (no `cdf` or `gdcm` package)
 - **Dependency Management**: Automatic resolution of NetCDF-C, HDF5, optional reader libraries, and NetCDF-Fortran
-- **CI Integration**: Dedicated GitHub Actions workflows for testing Spack packages
+- **CI Integration**: Dedicated GitHub Actions workflows for testing Spack packages; the NEP workflow runs upstream ruff/vermin checks plus `spack audit`, and a pinned `spack/ci` environment (Spack v1.2.2, spack-packages v2026.10.0) that builds the checked-out source with `spack install --test=root` on every push and pull request
 
 ### Installation
 

@@ -126,8 +126,13 @@ spack install cdf
 
 ### 5.4 CI Integration
 - Dedicated workflows for NEP and CDF packages
-- Style validation with `spack style` and `spack audit`
-- Installation testing with verbose logging
+- Style validation with upstream ruff/vermin checks and `spack audit`
+- Installation testing on every push and pull request: a pinned
+  `spack/ci` environment (Spack v1.2.2, spack-packages v2026.10.0)
+  builds the checked-out source with `spack install --test=root`
+- The NEP recipe offers only `main` and `4.2.0` (pre-4.2.0 releases
+  bundled compression filters that now live in nep-compress); the CDF
+  and DICOM readers are not available through Spack
 
 ### 5.5 Conda Package (v3.0.1)
 Historical v3.0.1 recipe behavior; the v4.2.0 in-repository recipe is

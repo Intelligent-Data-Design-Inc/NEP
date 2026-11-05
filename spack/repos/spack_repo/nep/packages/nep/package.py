@@ -1,5 +1,4 @@
-# Copyright 2013-2024 Lawrence Livermore National Security, LLC and other
-# Spack Project Developers. See the top-level COPYRIGHT file for details.
+# Copyright Spack Project Developers. See COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
@@ -16,7 +15,7 @@ class Nep(CMakePackage):
     Compression filters are provided separately by nep-compress."""
 
     homepage = "https://github.com/Intelligent-Data-Design-Inc/NEP"
-    url = "https://github.com/Intelligent-Data-Design-Inc/NEP/archive/v1.0.0.tar.gz"
+    url = "https://github.com/Intelligent-Data-Design-Inc/NEP/archive/refs/tags/v4.2.0.tar.gz"
     git = "https://github.com/Intelligent-Data-Design-Inc/NEP.git"
 
     maintainers("edhartnett")
@@ -24,54 +23,7 @@ class Nep(CMakePackage):
     license("Apache-2.0")
 
     version("main", branch="main")
-
-    version(
-        "3.0.0",
-        sha256="fda88f1b9c16864623a9c446b07396ab5cf9e3a579a44da8b616b6b606616bc6",
-        url="https://github.com/Intelligent-Data-Design-Inc/NEP/archive/v3.0.0.tar.gz",
-    )
-
-    version(
-        "2.8.0",
-        sha256="edb5ed3ae995ec42e2956f0d4c9f904990869453424ae4ddf29d7aecd0fbd714",
-        url="https://github.com/Intelligent-Data-Design-Inc/NEP/archive/v2.8.0.tar.gz",
-    )
-
-    version(
-        "2.7.1",
-        sha256="a3e19847938815b70c4de72c8de0a87f18822efbec2b89227bc0b3b861b3da98",
-        url="https://github.com/Intelligent-Data-Design-Inc/NEP/archive/v2.7.1.tar.gz",
-    )
-
-    version(
-        "2.7.0",
-        sha256="3c23214143d11086f23f6335f5426966c7fb11371450a339c1021d614ec6d136",
-        url="https://github.com/Intelligent-Data-Design-Inc/NEP/archive/v2.7.0.tar.gz",
-    )
-
-    version(
-        "2.6.1",
-        sha256="ea37f6b86c5be99fc87d92fc039c4ff5c7c52a99b3e38668fb75a8af9a8fee12",
-        url="https://github.com/Intelligent-Data-Design-Inc/NEP/archive/v2.6.1.tar.gz",
-    )
-
-    version(
-        "2.6.0",
-        sha256="33d985bae41d77ca302738b264eec35f1fe4e0b27ddc78d11d3a2b428bc52b45",
-        url="https://github.com/Intelligent-Data-Design-Inc/NEP/archive/v2.6.0.tar.gz",
-    )
-
-    version(
-        "2.5.0",
-        sha256="fbc160eb8333b2b34c49119c07947f5fa2f526c3ba747d482c8578be8b8c97ef",
-        url="https://github.com/Intelligent-Data-Design-Inc/NEP/archive/v2.5.0.tar.gz",
-    )
-
-    version(
-        "2.4.0",
-        sha256="d4144894ed5f7f544bd68252fdd905b5e8f8b27f8829049a9a344f226278c84b",
-        url="https://github.com/Intelligent-Data-Design-Inc/NEP/archive/v2.4.0.tar.gz",
-    )
+    version("4.2.0", sha256="18656ce4f7095f3e52234645224144d2558ff001a7444fcc9b6ed7b7e718eccd")
 
     variant("docs", default=True, description="Build documentation with Doxygen")
     variant("fortran", default=True, description="Build Fortran format reader tests")
@@ -79,8 +31,24 @@ class Nep(CMakePackage):
     variant("geotiff", default=False, description="Enable GeoTIFF reader support via libgeotiff")
     variant("grib2", default=False, description="Enable GRIB2 reader support via NCEPLIBS-g2c")
     variant("pds4", default=False, description="Enable PDS4 reader support via libxml2")
-    variant("dicom", default=False, description="Enable DICOM reader support via libdicom")
-    variant("pdb", default=True, description="Enable legacy PDB reader support (no external library required)")
+    # cdf: the NASA CDF reader needs the cdf package, which is not yet in
+    # spack-packages (https://github.com/spack/spack-packages/pull/2797).
+    # Enable once it merges:
+    # variant("cdf", default=False, description="Enable NASA CDF reader support")
+    # depends_on("cdf", when="+cdf")
+    # dicom: omitted because NEP's DICOM reader requires GDCM's lossless
+    # JPEG libraries, which Spack does not package.
+    variant(
+        "pdb",
+        default=True,
+        description="Enable legacy PDB reader support (no external library required)",
+    )
+    variant(
+        "mmcif",
+        default=False,
+        description="Enable PDBx/mmCIF reader support (no external library required)",
+    )
+    variant("nextcdf4", default=False, description="Enable the NEXTCDF-4 UDF backend")
     variant(
         "parallel",
         default=False,
@@ -91,55 +59,69 @@ class Nep(CMakePackage):
 
     depends_on("c", type="build")
     depends_on("fortran", when="+fortran", type="build")
+    depends_on("pkgconfig", type="build")
 
     depends_on("netcdf-c@4.10.1:", type=("build", "link"))
     depends_on("netcdf-c +mpi", when="+parallel", type=("build", "link"))
-    depends_on("hdf5@1.12:+hl~mpi", when="~parallel", type=("build", "link"))
-    depends_on("hdf5@1.12:+hl+mpi", when="+parallel", type=("build", "link"))
+    depends_on("hdf5@1.14:+hl~mpi", when="~parallel", type=("build", "link"))
+    depends_on("hdf5@1.14:+hl+mpi", when="+parallel", type=("build", "link"))
+    # NEXTCDF-4 uses the HDF5 2.1 small floating-point and complex types.
+    depends_on("hdf5@2.1.1:", when="+nextcdf4", type=("build", "link"))
     depends_on("netcdf-fortran", when="+fortran", type=("build", "link"))
     depends_on("cfitsio", when="+fits", type=("build", "link"))
     depends_on("libgeotiff", when="+geotiff", type=("build", "link"))
     depends_on("g2c", when="+grib2", type=("build", "link"))
     depends_on("libxml2", when="+pds4", type=("build", "link"))
-    depends_on("libdicom", when="+dicom", type=("build", "link"))
-    depends_on("libjpeg-turbo", when="+dicom", type=("build", "link"))
     depends_on("mpi", when="+parallel", type=("build", "link", "run"))
     depends_on("libtiff", when="+geotiff", type=("build", "link"))
     depends_on("doxygen", when="+docs", type="build")
 
     def cmake_args(self):
         args = [
+            self.define("CMAKE_INSTALL_LIBDIR", "lib"),
+            # HDF5 2.x CMake config files only accept requests for major
+            # version 2, and NEP asks for 1.14, so use the spec's HDF5
+            # compiler wrapper instead of any HDF5 config file CMake finds.
+            self.define("HDF5_NO_FIND_PACKAGE_CONFIG_FILE", True),
+            self.define("HDF5_C_COMPILER_EXECUTABLE", self._hdf5_wrapper()),
             self.define_from_variant("NEP_BUILD_DOCUMENTATION", "docs"),
             self.define_from_variant("NEP_ENABLE_FORTRAN", "fortran"),
             self.define_from_variant("NEP_ENABLE_FITS", "fits"),
             self.define_from_variant("NEP_ENABLE_GEOTIFF", "geotiff"),
             self.define_from_variant("NEP_ENABLE_GRIB2", "grib2"),
             self.define_from_variant("NEP_ENABLE_PDS4", "pds4"),
-            self.define_from_variant("NEP_ENABLE_DICOM", "dicom"),
             self.define_from_variant("NEP_ENABLE_PDB", "pdb"),
+            self.define_from_variant("NEP_ENABLE_MMCIF", "mmcif"),
+            self.define_from_variant("NEP_ENABLE_NEXTCDF4", "nextcdf4"),
+            self.define("NEP_ENABLE_DICOM", False),
+            self.define("NEP_ENABLE_CDF", False),
             self.define_from_variant("NEP_ENABLE_PARALLEL_TESTS", "parallel"),
             self.define_from_variant("NEP_BUILD_EXAMPLES", "examples"),
             self.define_from_variant("NEP_ENABLE_BENCHMARKS", "benchmarks"),
         ]
         return args
 
-    def check(self):
-        """Run tests to verify build."""
-        with working_dir(self.build_directory):
-            make("test")
+    def _hdf5_wrapper(self):
+        name = "h5pcc" if self.spec.satisfies("^hdf5+mpi") else "h5cc"
+        return join_path(self.spec["hdf5"].prefix.bin, name)
 
     @run_after("install")
     def check_install(self):
         """Verify that enabled format libraries are installed."""
-        if "+geotiff" in self.spec:
-            assert os.path.exists(join_path(self.prefix.lib, "libncgeotiff.so"))
-        if "+grib2" in self.spec:
-            assert os.path.exists(join_path(self.prefix.lib, "libncgrib2.so"))
-        if "+pds4" in self.spec:
-            assert os.path.exists(join_path(self.prefix.lib, "libncpds4.so"))
-        if "+dicom" in self.spec:
-            assert os.path.exists(join_path(self.prefix.lib, "libncdicom.so"))
-        if "+pdb" in self.spec:
-            assert os.path.exists(join_path(self.prefix.lib, "libncpdb.so"))
-        if "+fits" in self.spec:
-            assert os.path.exists(join_path(self.prefix.lib, "libncfits.so"))
+        assert os.path.exists(join_path(self.prefix.lib, "libnep.so"))
+        reader_libs = {
+            "geotiff": "libncgeotiff.so",
+            "grib2": "libncgrib2.so",
+            "pds4": "libncpds4.so",
+            "fits": "libncfits.so",
+            "pdb": "libncpdb.so",
+            "mmcif": "libncmmcif.so",
+            "nextcdf4": "libncnextcdf4.so",
+        }
+        any_reader = False
+        for variant_name, lib_name in reader_libs.items():
+            if self.spec.satisfies(f"+{variant_name}"):
+                any_reader = True
+                assert os.path.exists(join_path(self.prefix.lib, lib_name))
+        if any_reader:
+            assert os.path.exists(join_path(self.prefix.share, ".ncrc"))
