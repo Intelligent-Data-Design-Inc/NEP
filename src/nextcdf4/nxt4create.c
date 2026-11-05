@@ -62,7 +62,7 @@ NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
         return ret;
     if (H5get_libversion(&major, &minor, &release) < 0)
         return NC_EHDFERR;
-    if (major < 1 || (major == 1 && minor < 14))
+    if (major < 2 || (major == 2 && minor < 1) || (major == 2 && minor == 1 && release < 1))
         return NC_ENOTBUILT;
 
     existed = access(path, F_OK) == 0;

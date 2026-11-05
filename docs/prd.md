@@ -742,9 +742,8 @@ cmake -B build -DNEP_ENABLE_NEXTCDF4=ON
 
 ### 18.5 Dependencies
 
-- netcdf-c built with UDF plugin and `NC_Dispatch` support.
-- HDF5 1.14.0 or newer (required).
-- HDF5 2.1.1 or newer (recommended for small floating-point and complex types).
+- netcdf-c 4.10.1 or newer built with UDF plugin and `NC_Dispatch` support (`NC_UDF9`).
+- HDF5 2.1.1 or newer (required).
 
 ### 18.6 Public API Additions
 
