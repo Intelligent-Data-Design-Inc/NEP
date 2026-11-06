@@ -74,8 +74,14 @@
 Plan: [docs/plan/v4.2.0-sprint6-spack.md](plan/v4.2.0-sprint6-spack.md)
 
 #### Sprint 7: Conda
-- As with spack.
-- need to add to condaforge.
+- Replace `conda/meta.yaml` with a v1 `conda/recipe/recipe.yaml` (rattler-build) on the nep-compress pattern, plus `conda/make_staged_recipe.py` and `docs/conda-plan.md`.
+- Linux-only, format-only 4.2.0 package with PDB, mmCIF, FITS and PDS4 readers against conda-forge `libnetcdf` 4.10.1 (nompi, HDF5 1.14.6); maintainer `captainkirk99`.
+- Readers are registered by appending `$CONDA_PREFIX/share/.ncrc` to `~/.ncrc`; there is no activation script.
+- Replace `ci-conda.yml` with `conda.yml`: rattler-build with conda-forge pinnings, package tests that `ncdump` each reader, and `conda-smithy` lint of the staged copy.
+- Update staged-recipes#34309 in place to `Add nep` (4.2.0); update the README, `docs/prd.md`, `docs/prfaq.md` and `docs/formats.md`.
+- Out of scope: GeoTIFF (4.2.0 lacks `4d920c5`; enable in the next release), DICOM (`gdcm` is built per Python version), GRIB2/CDF (no packages), NEXTCDF-4 (HDF5 pin 1.14.6), macOS, MPI builds.
+
+Plan: [docs/plan/v4.2.0-sprint7-conda.md](plan/v4.2.0-sprint7-conda.md)
 
 ### V4.1.0 - NEXTCDF4 Docs and Logging
 
