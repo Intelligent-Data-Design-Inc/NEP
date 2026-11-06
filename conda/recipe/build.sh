@@ -1,8 +1,6 @@
 #!/bin/bash
 set -euxo pipefail
 
-# 4.2.0 cannot find conda-forge's flat geotiff.h; enable GeoTIFF with
-# the first release containing 4d920c5 and add geotiff/libtiff to host.
 cmake -S . -B build -G Ninja ${CMAKE_ARGS} \
   -DCMAKE_INSTALL_LIBDIR=lib \
   -DHDF5_ROOT="${PREFIX}" \
@@ -16,7 +14,7 @@ cmake -S . -B build -G Ninja ${CMAKE_ARGS} \
   -DNEP_ENABLE_MMCIF=ON \
   -DNEP_ENABLE_FITS=ON \
   -DNEP_ENABLE_PDS4=ON \
-  -DNEP_ENABLE_GEOTIFF=OFF \
+  -DNEP_ENABLE_GEOTIFF=ON \
   -DNEP_ENABLE_GRIB2=OFF \
   -DNEP_ENABLE_CDF=OFF \
   -DNEP_ENABLE_DICOM=OFF \

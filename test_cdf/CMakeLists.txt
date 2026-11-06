@@ -8,7 +8,7 @@ include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_SOURCE_DIR})
 
 # Add HDF5 include directories to match AM_CPPFLAGS += $(HDF5_CPPFLAGS)
-include_directories(${HDF5_INCLUDE_DIR})
+include_directories(${HDF5_INCLUDE_DIRS})
 
 # Build the test program (matches check_PROGRAMS = tst_cdf_basic)
 # Test creates its own CDF file at runtime, no test data needed
@@ -36,7 +36,7 @@ add_executable(tst_cdf_self_load tst_cdf_self_load.c)
 target_link_libraries(tst_cdf_self_load 
     nccdf
     ${NETCDF_LIBRARIES}
-    ${HDF5_LIBRARIES}
+    ${NEP_HDF5_LIBRARIES}
     ${CDF_LIBRARY})
 target_include_directories(tst_cdf_self_load PRIVATE ${CDF_INCLUDE_DIR})
 # Pass library path to test at compile time for .ncrc generation
@@ -55,7 +55,7 @@ add_executable(tst_cdf_ncrc_autoload tst_cdf_ncrc_autoload.c)
 target_link_libraries(tst_cdf_ncrc_autoload
     nccdf
     ${NETCDF_LIBRARIES}
-    ${HDF5_LIBRARIES}
+    ${NEP_HDF5_LIBRARIES}
     ${CDF_LIBRARY})
 target_include_directories(tst_cdf_ncrc_autoload PRIVATE ${CDF_INCLUDE_DIR})
 target_compile_definitions(tst_cdf_ncrc_autoload PRIVATE

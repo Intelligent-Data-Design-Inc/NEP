@@ -13,12 +13,7 @@ if(HAVE_GEOTIFF)
     
     # Derive runtime library path from HDF5 and NetCDF libraries
     set(_nep_geotiff_lib_dirs "")
-    foreach(_lib ${HDF5_LIBRARIES})
-        if(IS_ABSOLUTE "${_lib}")
-            get_filename_component(_d "${_lib}" DIRECTORY)
-            list(APPEND _nep_geotiff_lib_dirs "${_d}")
-        endif()
-    endforeach()
+    list(APPEND _nep_geotiff_lib_dirs "${NEP_HDF5_LIBRARY_DIR}")
     if(NETCDF_LIBRARY_DIRS)
         list(APPEND _nep_geotiff_lib_dirs ${NETCDF_LIBRARY_DIRS})
     endif()
@@ -39,7 +34,7 @@ if(HAVE_GEOTIFF)
     target_link_libraries(tst_geotiff_handle 
         ncgeotiff
         ${NETCDF_LIBRARIES} 
-        ${HDF5_LIBRARIES}
+        ${NEP_HDF5_LIBRARIES}
         ${GEOTIFF_LIBRARY} 
         ${TIFF_LIBRARY})
     add_test(NAME tst_geotiff_handle COMMAND tst_geotiff_handle)
@@ -52,7 +47,7 @@ if(HAVE_GEOTIFF)
     target_link_libraries(tst_geotiff_metadata 
         ncgeotiff
         ${NETCDF_LIBRARIES} 
-        ${HDF5_LIBRARIES}
+        ${NEP_HDF5_LIBRARIES}
         ${GEOTIFF_LIBRARY} 
         ${TIFF_LIBRARY})
     add_test(NAME tst_geotiff_metadata COMMAND tst_geotiff_metadata)
@@ -65,7 +60,7 @@ if(HAVE_GEOTIFF)
     target_link_libraries(tst_geotiff_errors 
         ncgeotiff
         ${NETCDF_LIBRARIES} 
-        ${HDF5_LIBRARIES}
+        ${NEP_HDF5_LIBRARIES}
         ${GEOTIFF_LIBRARY} 
         ${TIFF_LIBRARY})
     add_test(NAME tst_geotiff_errors COMMAND tst_geotiff_errors)
@@ -78,7 +73,7 @@ if(HAVE_GEOTIFF)
     target_link_libraries(tst_geotiff_edge_cases 
         ncgeotiff
         ${NETCDF_LIBRARIES} 
-        ${HDF5_LIBRARIES}
+        ${NEP_HDF5_LIBRARIES}
         ${GEOTIFF_LIBRARY} 
         ${TIFF_LIBRARY})
     add_test(NAME tst_geotiff_edge_cases COMMAND tst_geotiff_edge_cases)
@@ -91,7 +86,7 @@ if(HAVE_GEOTIFF)
     target_link_libraries(tst_simple_geotiff 
         ncgeotiff
         ${NETCDF_LIBRARIES} 
-        ${HDF5_LIBRARIES}
+        ${NEP_HDF5_LIBRARIES}
         ${GEOTIFF_LIBRARY} 
         ${TIFF_LIBRARY})
     add_test(NAME tst_simple_geotiff COMMAND tst_simple_geotiff)
@@ -104,7 +99,7 @@ if(HAVE_GEOTIFF)
     target_link_libraries(test_netcdf_crs 
         ncgeotiff
         ${NETCDF_LIBRARIES} 
-        ${HDF5_LIBRARIES}
+        ${NEP_HDF5_LIBRARIES}
         ${GEOTIFF_LIBRARY} 
         ${TIFF_LIBRARY})
     add_test(NAME test_netcdf_crs COMMAND test_netcdf_crs)
@@ -117,7 +112,7 @@ if(HAVE_GEOTIFF)
     target_link_libraries(bench_geotiff_performance 
         ncgeotiff
         ${NETCDF_LIBRARIES} 
-        ${HDF5_LIBRARIES}
+        ${NEP_HDF5_LIBRARIES}
         ${GEOTIFF_LIBRARY} 
         ${TIFF_LIBRARY})
     # Note: benchmark is not added to tests - run manually for performance analysis
@@ -127,7 +122,7 @@ if(HAVE_GEOTIFF)
     target_link_libraries(tst_geotiff_self_load 
         ncgeotiff
         ${NETCDF_LIBRARIES} 
-        ${HDF5_LIBRARIES}
+        ${NEP_HDF5_LIBRARIES}
         ${GEOTIFF_LIBRARY} 
         ${TIFF_LIBRARY})
     # Pass library path to test at compile time for .ncrc generation
@@ -143,7 +138,7 @@ if(HAVE_GEOTIFF)
     target_link_libraries(tst_geotiff_ncrc_autoload
         ncgeotiff
         ${NETCDF_LIBRARIES}
-        ${HDF5_LIBRARIES}
+        ${NEP_HDF5_LIBRARIES}
         ${GEOTIFF_LIBRARY}
         ${TIFF_LIBRARY})
     target_compile_definitions(tst_geotiff_ncrc_autoload PRIVATE

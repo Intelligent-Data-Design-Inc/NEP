@@ -26,6 +26,15 @@ Located in `netcdf-4/`:
 - **groups.c** - Hierarchical groups, nested groups, and dimension visibility
 - **dump_nc4_metadata.c** - Read any NetCDF-4 file and print all metadata including user-defined types and groups
 
+### NEXTCDF-4 Examples (C)
+Located in `nextcdf4/`:
+- **bfloat16.c** - Store real GDAS temperature data as NC_BFLOAT16
+- **bfloat16_perf.c** - float32 vs bfloat16 size and I/O benchmark, CSV output
+- **plot_bfloat16.py** - Plot the benchmark CSV (size and speed PNGs)
+
+Build with `-DNEP_ENABLE_NEXTCDF4=ON -DNEP_BUILD_EXAMPLES=ON -DNEP_ZSTD_PLUGIN_DIR=<dir>`;
+add `-DNEP_ENABLE_BENCHMARKS=ON` to register the benchmark test.
+
 ### Classic NetCDF Examples (Fortran)
 Located in `f_classic/`:
 - **f_quickstart.f90** - Fortran version of quickstart - minimal introduction to NetCDF from Fortran

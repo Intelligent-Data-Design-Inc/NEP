@@ -27,11 +27,11 @@ endif()
 # Build CDF UDF test if CDF is enabled
 if(HAVE_CDF)
     # Get HDF5 library directory
-    get_filename_component(HDF5_LIB_DIR "${HDF5_INCLUDE_DIR}/../lib" ABSOLUTE)
+    set(HDF5_LIB_DIR "${NEP_HDF5_LIBRARY_DIR}")
     
     add_executable(tst_cdf_udf tst_cdf_udf.c)
     target_link_directories(tst_cdf_udf PRIVATE ${HDF5_LIB_DIR})
-    target_link_libraries(tst_cdf_udf PRIVATE nccdf nep ${NETCDF_LIBRARIES} hdf5 hdf5_hl ${CDF_LIBRARY})
+    target_link_libraries(tst_cdf_udf PRIVATE nccdf nep ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES} ${CDF_LIBRARY})
     target_include_directories(tst_cdf_udf PRIVATE ${NETCDF_INCLUDE_DIRS} ${CDF_INCLUDE_DIR})
     
     # Set rpath so the executable can find CDF library at runtime
@@ -48,7 +48,7 @@ if(HAVE_CDF)
     # Build IMAP MAG CDF test
     add_executable(tst_imap_mag tst_imap_mag.c)
     target_link_directories(tst_imap_mag PRIVATE ${HDF5_LIB_DIR})
-    target_link_libraries(tst_imap_mag PRIVATE nccdf nep ${NETCDF_LIBRARIES} hdf5 hdf5_hl ${CDF_LIBRARY})
+    target_link_libraries(tst_imap_mag PRIVATE nccdf nep ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES} ${CDF_LIBRARY})
     target_include_directories(tst_imap_mag PRIVATE ${NETCDF_INCLUDE_DIRS} ${CDF_INCLUDE_DIR})
     
     # Set rpath so the executable can find CDF library at runtime
@@ -88,11 +88,11 @@ endif()
 # Build FITS UDF test if FITS is enabled
 if(HAVE_FITS)
     # Get HDF5 library directory
-    get_filename_component(HDF5_LIB_DIR "${HDF5_INCLUDE_DIR}/../lib" ABSOLUTE)
+    set(HDF5_LIB_DIR "${NEP_HDF5_LIBRARY_DIR}")
 
     add_executable(tst_fits_udf tst_fits_udf.c)
     target_link_directories(tst_fits_udf PRIVATE ${HDF5_LIB_DIR})
-    target_link_libraries(tst_fits_udf PRIVATE ncfits nep ${NETCDF_LIBRARIES} hdf5 hdf5_hl)
+    target_link_libraries(tst_fits_udf PRIVATE ncfits nep ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
     target_include_directories(tst_fits_udf PRIVATE ${NETCDF_INCLUDE_DIRS} ${CFITSIO_INCLUDE_DIR})
     add_test(NAME tst_fits_udf COMMAND tst_fits_udf)
     set_tests_properties(tst_fits_udf PROPERTIES
@@ -112,7 +112,7 @@ if(HAVE_DICOM)
     file(TOUCH ${CMAKE_BINARY_DIR}/.ncrc)
 
     add_executable(tst_dicom_udf tst_dicom_udf.c)
-    target_link_libraries(tst_dicom_udf PRIVATE ncdicom nep ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
+    target_link_libraries(tst_dicom_udf PRIVATE ncdicom nep ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
     target_include_directories(tst_dicom_udf PRIVATE ${NETCDF_INCLUDE_DIRS} ${DICOM_INCLUDE_DIR})
     add_test(NAME tst_dicom_udf COMMAND tst_dicom_udf)
     set_tests_properties(tst_dicom_udf PROPERTIES
@@ -149,7 +149,7 @@ endif()
 # Build legacy PDB UDF test if PDB is enabled
 if(HAVE_PDB)
     add_executable(tst_pdb_udf tst_pdb_udf.c)
-    target_link_libraries(tst_pdb_udf PRIVATE ncpdb nep ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
+    target_link_libraries(tst_pdb_udf PRIVATE ncpdb nep ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
     target_include_directories(tst_pdb_udf PRIVATE ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
     add_test(NAME tst_pdb_udf COMMAND tst_pdb_udf)
     set_tests_properties(tst_pdb_udf PROPERTIES
@@ -174,7 +174,7 @@ endif()
 # Build PDBx/mmCIF UDF test if mmCIF is enabled
 if(HAVE_MMCIF)
     add_executable(tst_mmcif_udf tst_mmcif_udf.c)
-    target_link_libraries(tst_mmcif_udf PRIVATE ncmmcif nep ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
+    target_link_libraries(tst_mmcif_udf PRIVATE ncmmcif nep ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
     target_include_directories(tst_mmcif_udf PRIVATE ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
     add_test(NAME tst_mmcif_udf COMMAND tst_mmcif_udf)
     set_tests_properties(tst_mmcif_udf PROPERTIES
@@ -196,7 +196,7 @@ endif()
 # Build PDS4 UDF test if PDS4 is enabled
 if(HAVE_PDS4)
     add_executable(tst_pds4_udf tst_pds4_udf.c)
-    target_link_libraries(tst_pds4_udf PRIVATE ncpds4 nep ${NETCDF_LIBRARIES} ${HDF5_LIBRARIES})
+    target_link_libraries(tst_pds4_udf PRIVATE ncpds4 nep ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
     target_include_directories(tst_pds4_udf PRIVATE ${NETCDF_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR})
     add_test(NAME tst_pds4_udf COMMAND tst_pds4_udf)
     set_tests_properties(tst_pds4_udf PROPERTIES

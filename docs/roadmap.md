@@ -1,5 +1,35 @@
 # NEP Development Roadmap
 
+### V4.3.0 -
+
+#### Sprint 1 - Fix Issues 372 and 374
+- #372: find HDF5 without a version in new `cmake/NEPFindHDF5.cmake` (1.14.0 minimum enforced, NEXTCDF-4 2.1.1 check kept); link every target through FindHDF5's `hdf5::hdf5_hl`/`HDF5::HDF5` imported targets; CMake minimum 3.19.
+- Configure fails if the `libhdf5.so.N` that `libnetcdf.so` needs differs from the HDF5 found (readelf SONAME check; skipped with a status line when undeterminable).
+- Spack overlay: the `h5cc` workaround is gated to `@:4.2.0`; `depends_on("cmake@3.19:", when="@4.3.0:")`.
+- #374 part 1: GeoTIFF enabled in `conda/recipe/` (`geotiff`/`libtiff` host deps, `libncgeotiff` and `.tif` `ncdump` tests), `context.version` `4.3.0.dev0`; `docs/conda-plan.md` updated, including #34309's current title.
+- Verification is manual (no new CTest test or CI job); all existing workflows must pass.
+- Out of scope (Sprint 2): tag, release notes, Spack 4.3.0 and #5557, conda-forge submission, user-facing conda wording.
+
+Plan: [docs/plan/v4.3.0-sprint1-fix-issues-372-374.md](plan/v4.3.0-sprint1-fix-issues-372-374.md)
+
+#### Sprint 1A - Add NEXTCDF4 float16 Examples and Documentation
+- `NC_BFLOAT16` only. Commit `test/data/netCDF-4/gdas_sfc_sample.nc` (`.gitignore` exception) and its README, which points at nep-compress's `make_gdas_sample.sh`.
+- New `examples/nextcdf4/`: `bfloat16.c` (tutorial, tmp2m), `bfloat16_perf.c` (4 GDAS fields x float/bfloat16 x contiguous/shuffle+deflate 1, min of 3, CSV with size, speed and error; fails if a contiguous bfloat16 file is not smaller), `plot_bfloat16.py` (size and speed PNGs).
+- Conversion is round-to-nearest-even in user code; I/O uses `nc_put_vara`/`nc_get_vara` with `uint16_t`; no fill value.
+- New `NEP_ZSTD_PLUGIN_DIR` gates the `nxt4_bfloat16` ctest, plus `nxt4_bfloat16_perf` under `NEP_ENABLE_BENCHMARKS`; no CI changes.
+- Commit the reference CSV, machine record and plots; document in `docs/nextcdf4.md`, `examples/examples.dox` and `examples/README.md`.
+- Out of scope: other small floats, the NEXTCDF-4 defects found (#376 typed `nc_get_vara_float` no-op, #377 bfloat16 fill not recovered, #378 `nextcdf4dispatch.h` includes `config.h`), re-enabling disabled reopen tests (#379), CI for these tests, release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1A-bfloat16-examples.md](plan/v4.3.0-sprint1A-bfloat16-examples.md)
+
+#### Sprint 2 - 
+- Tag v4.3.0 and write `docs/releases/v4.3.0.md` (HDF5 detection change, CMake 3.19 minimum, conda GeoTIFF, Sprint 1A NEXTCDF-4 bfloat16 examples and `NEP_ZSTD_PLUGIN_DIR`).
+- Spack: add `version("4.3.0")` with its sha256; update spack/spack-packages#5557 in place per `docs/spack.md` "Updating the upstream PR".
+- Conda (#374 part 2): if #34309 is still open, regenerate the staged copy for 4.3.0, push it to `nep-3.0.0` and update the PR body; if merged, make the GeoTIFF change on the feedstock and drop the staged lint/micromamba steps. Move the `conda.yml` lint step to the 4.3.0 tarball and set `context.version` to `4.3.1.dev0`.
+- Update the README "Conda Installation", `docs/prd.md` section 5.5, `docs/prfaq.md` and the `docs/conda-plan.md` Status table for GeoTIFF in 4.3.0.
+- Close #372 and #374.
+
+
 ### V4.2.0 - Move Compression Filters to nep-compress
 
 **Goal:** Move ownership of the LZ4 and BZIP2 compression APIs, HDF5 filter integration, tests, and documentation to `/fast/ed/nep-compress/`. NEP remains the home of the format UDF readers and NEXTCDF-4 backend. Complete and verify the new project before removing compression from NEP.

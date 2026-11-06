@@ -60,6 +60,7 @@ class Nep(CMakePackage):
     depends_on("c", type="build")
     depends_on("fortran", when="+fortran", type="build")
     depends_on("pkgconfig", type="build")
+    depends_on("cmake@3.19:", type="build", when="@4.3.0:")
 
     depends_on("netcdf-c@4.10.1:", type=("build", "link"))
     depends_on("netcdf-c +mpi", when="+parallel", type=("build", "link"))
@@ -86,11 +87,6 @@ class Nep(CMakePackage):
     def cmake_args(self):
         args = [
             self.define("CMAKE_INSTALL_LIBDIR", "lib"),
-            # HDF5 2.x CMake config files only accept requests for major
-            # version 2, and NEP asks for 1.14, so use the spec's HDF5
-            # compiler wrapper instead of any HDF5 config file CMake finds.
-            self.define("HDF5_NO_FIND_PACKAGE_CONFIG_FILE", True),
-            self.define("HDF5_C_COMPILER_EXECUTABLE", self._hdf5_wrapper()),
             self.define_from_variant("NEP_BUILD_DOCUMENTATION", "docs"),
             self.define_from_variant("NEP_ENABLE_FORTRAN", "fortran"),
             self.define_from_variant("NEP_ENABLE_FITS", "fits"),
@@ -106,6 +102,16 @@ class Nep(CMakePackage):
             self.define_from_variant("NEP_BUILD_EXAMPLES", "examples"),
             self.define_from_variant("NEP_ENABLE_BENCHMARKS", "benchmarks"),
         ]
+        if self.spec.satisfies("@:4.2.0"):
+            # NEP 4.2.0 asks for HDF5 1.14, which HDF5 2.x CMake config
+            # files reject, so use the spec's HDF5 compiler wrapper
+            # instead of any HDF5 config file CMake finds.
+            args.extend(
+                [
+                    self.define("HDF5_NO_FIND_PACKAGE_CONFIG_FILE", True),
+                    self.define("HDF5_C_COMPILER_EXECUTABLE", self._hdf5_wrapper()),
+                ]
+            )
         return args
 
     def _hdf5_wrapper(self):
