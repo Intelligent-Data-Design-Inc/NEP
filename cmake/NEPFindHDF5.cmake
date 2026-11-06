@@ -3,6 +3,12 @@
 
 find_package(HDF5 REQUIRED COMPONENTS C HL)
 
+# HDF5 2.x CMake config files set HDF5_PROVIDES_PARALLEL instead of the
+# HDF5_ENABLE_PARALLEL that FindHDF5 copies into HDF5_IS_PARALLEL.
+if(NOT HDF5_IS_PARALLEL AND HDF5_PROVIDES_PARALLEL)
+    set(HDF5_IS_PARALLEL TRUE)
+endif()
+
 if(NOT HDF5_VERSION OR HDF5_VERSION VERSION_LESS "1.14.0")
     message(FATAL_ERROR "NEP requires HDF5 1.14.0 or newer (found ${HDF5_VERSION})")
 endif()
