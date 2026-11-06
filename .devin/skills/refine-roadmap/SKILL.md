@@ -1,6 +1,6 @@
 ---
 name: refine-roadmap
-description: Turn one sprint of docs/roadmap.md into a researched, decision-complete plan in docs/plans/ and tighten the roadmap entry
+description: Turn one sprint of docs/roadmap.md into a researched, decision-complete plan in docs/plan/ and tighten the roadmap entry
 argument-hint: "<version> sprint <N>   e.g. v1.1.0 sprint 2"
 triggers:
   - user
@@ -23,11 +23,13 @@ decisions and not facts you could have looked up.
 
 - Read `docs/roadmap.md`. Note the sprint's text, the other sprints in
   the same version, and any later versions that depend on it.
-- Read every existing plan in `docs/plans/`, especially earlier sprints
+- Read every existing plan in `docs/plan/`, especially earlier sprints
   of the same version. Carry over their decisions, their "Out of scope"
   items aimed at this sprint, and any notes that hand work to this sprint.
 - For each GitHub issue the sprint references, run
-  `gh issue view <n> --repo captainkirk99/nep-compress --comments`.
+  `gh issue view <n> --repo Intelligent-Data-Design-Inc/NEP --comments`.
+  If that prints nothing, use
+  `gh issue view <n> --repo Intelligent-Data-Design-Inc/NEP --json title,body,comments`.
   Record the title, the reported problem, and any proposed fix.
 - Read the code, build files, tests, CI workflows, and docs the sprint
   will touch. Record what exists now, with file paths.
@@ -36,13 +38,17 @@ decisions and not facts you could have looked up.
   API claim against it and the installed `netcdf_filter.h`.
 - Check the tools and versions the work needs (compilers, doxygen, CMake,
   libraries) and whether `ubuntu-latest` CI provides them.
-- Read the Spack recipe
-  `spack/repos/spack_repo/nepcompress/packages/nep_compress/package.py`
-  (if it exists) and `docs/spack-plan.md`. Note which of the sprint's
+- Read the Spack recipe `spack/repos/spack_repo/nep/packages/nep/package.py`,
+  the CI environment `spack/ci/spack.yaml`, `.github/workflows/spack.yml`
+  and `docs/spack.md`. Note which of the sprint's
   changes the recipe would have to follow: new or renamed CMake options
   or cache paths, new or changed dependencies and minimum versions, new
   plugins or installed files, install-layout changes, and test
   requirements such as plugin directories.
+- If the sprint touches the conda package, read `conda/recipe/`,
+  `conda/make_staged_recipe.py`, `.github/workflows/conda.yml` and
+  `docs/conda-plan.md`, and check the state of the staged-recipes PR
+  or feedstock with `gh`.
 
 Mark anything you could not verify as an open question, not a fact.
 
@@ -61,7 +67,7 @@ Wait for the answers before writing anything.
 
 ## 3. Write the plan
 
-Create `docs/plans/<version>-sprint<N>-<slug>.md`, where `<slug>` is a
+Create `docs/plan/<version>-sprint<N>-<slug>.md`, where `<slug>` is a
 short kebab-case form of the sprint title (for example
 `v1.1.0-sprint1-documentation.md`). Use these sections, in this order:
 
@@ -94,12 +100,13 @@ Project conventions the plan must follow:
   recipe. That item says whether the change needs a new variant, a
   `depends_on` change, or a version-gated `when=` condition, so older
   release versions in the recipe still build. Its Verification runs
-  `spack audit packages nep-compress`, `spack spec`, and upstream's
+  `spack audit packages nep`, `spack spec`, and upstream's
   style checks (`ruff format --diff`, `ruff check --no-fix` and
-  `vermin`, as in `docs/spack-plan.md` section 2), and expects the
-  `spack` CI job to pass. If the change also has to
-  reach `spack/spack-packages`, the plan says it ships in the next
-  version-bump PR, following `docs/spack-plan.md`. If the sprint
+  `vermin`, as in the `style` job of `.github/workflows/spack.yml`),
+  and expects the `style` and `spack` CI jobs to pass. If the change
+  also has to reach `spack/spack-packages`, the plan says it ships in
+  the next version-bump PR, following "Updating the upstream PR" in
+  `docs/spack.md`. If the sprint
   changes nothing the recipe depends on, the plan's Current state says
   so in one line.
 
@@ -107,7 +114,7 @@ Project conventions the plan must follow:
 
 In `docs/roadmap.md`, replace the sprint's text with a short, refined
 summary of 3-8 lines: the scope as decided and the items now out of
-scope. Then add a line `Plan: [docs/plans/<file>](plans/<file>)`. Do not
+scope. Then add a line `Plan: [docs/plan/<file>](plan/<file>)`. Do not
 edit other sprints, except to add an item this sprint moved out of
 scope to the sprint that now owns it.
 
