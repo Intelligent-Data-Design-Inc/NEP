@@ -221,7 +221,7 @@ NEP can be installed using the [Spack](https://spack.io) package manager.
 
 ```bash
 # Latest stable release
-spack install nep@3.0.0
+spack install nep@4.2.0
 
 # Or install from the main branch
 spack install nep
@@ -237,14 +237,21 @@ legacy PDB support is enabled by default. Compression requires nep-compress.
 | `docs` | ON | Build Doxygen documentation (requires Doxygen) |
 | `fortran` | ON | Fortran format-reader tests (requires NetCDF-Fortran) |
 | `fits` | OFF | FITS reader — HST, JWST, Chandra (requires CFITSIO) |
-| `geotiff` | OFF | GeoTIFF reader — CF-1.8 CRS metadata (requires libgeotiff) |
+| `geotiff` | OFF | GeoTIFF reader — CF-1.8 CRS metadata (requires libgeotiff); needs `nep@main` or a release after 4.2.0 |
 | `grib2` | OFF | GRIB2 reader — NWP model output (requires NCEPLIBS-g2c) |
 | `pds4` | OFF | PDS4 reader — planetary science (requires libxml2) |
-| `dicom` | OFF | DICOM reader — medical imaging (requires libdicom, libjpeg-turbo) |
 | `pdb` | ON | Legacy PDB reader — protein structures (no external library required) |
+| `mmcif` | OFF | PDBx/mmCIF reader — macromolecular structures (no external library required) |
+| `nextcdf4` | OFF | NEXTCDF-4 UDF backend (requires HDF5 2.1.1+) |
 | `parallel` | OFF | Parallel I/O tests (requires MPI, HDF5+mpi, netcdf-c+mpi) |
 | `examples` | OFF | Example programs |
 | `benchmarks` | OFF | Performance benchmark programs |
+
+The CDF and DICOM readers are not available through Spack: there is no
+`cdf` package yet ([spack/spack-packages#2797](https://github.com/spack/spack-packages/pull/2797))
+and no `gdcm` package for the DICOM dependencies.
+
+Enabled readers are registered by the `share/.ncrc` file the package installs.
 
 #### Common combinations
 
@@ -253,7 +260,7 @@ legacy PDB support is enabled by default. Compression requires nep-compress.
 spack install nep+geotiff+grib2
 
 # All format readers
-spack install nep+geotiff+grib2+fits+pds4+dicom+pdb
+spack install nep+geotiff+grib2+fits+pds4+pdb+mmcif
 
 # Minimal build (no docs, no Fortran) for CI/containers
 spack install nep~docs~fortran
@@ -264,16 +271,38 @@ spack install nep+parallel
 
 ### Conda Installation
 
-Install the minimal v3.0.0 package from conda-forge:
+Install the 4.2.0 package from conda-forge (Linux only):
 
 ```bash
 conda install -c conda-forge nep
 ```
 
-For format readers, use NEP; for LZ4/BZIP2 compression, install
-nep-compress separately. The in-repository recipe targets format-only
-NEP. Check the published Conda package version before assuming it
-contains the v4.2.0 split; older releases still include compression.
+The package includes the PDB, mmCIF, FITS and PDS4 readers. GeoTIFF
+arrives in the next release; DICOM, GRIB2, CDF and NEXTCDF-4 are
+excluded because they need packages or versions conda-forge does not
+provide.
+
+Register the readers with NetCDF-C by appending the installed `.ncrc`
+to your own:
+
+```bash
+cat "$CONDA_PREFIX/share/.ncrc" >> ~/.ncrc
+```
+
+Or, for a per-session override, set `NCRCENV_RC` — note this makes
+NetCDF-C ignore `~/.ncrc` entirely:
+
+```bash
+export NCRCENV_RC="$CONDA_PREFIX/share/.ncrc"
+```
+
+For LZ4/BZIP2 compression, install
+[nep-compress](https://github.com/captainkirk99/nep-compress)
+separately.
+
+The package is pending until
+[staged-recipes#34309](https://github.com/conda-forge/staged-recipes/pull/34309)
+merges.
 
 ---
 

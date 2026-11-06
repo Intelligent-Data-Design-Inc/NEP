@@ -204,7 +204,7 @@ There is no magic-number dispatch for NEXTCDF-4 because HDF5 files are already o
 #### Q: How do I install NEP?
 **A:** Multiple installation methods:
 - **Spack** (recommended for HPC): `spack install nep`
-- **Conda**: Check the published package version; pre-v4.2 packages may include LZ4, but the v4.2 recipe is format-only
+- **Conda**: `conda install -c conda-forge nep` (Linux; PDB, mmCIF, FITS and PDS4 readers; compression is in `nep-compress`)
 - **CMake**: `cmake -B build && cmake --build build && cmake --install build`
 See the README for detailed instructions.
 

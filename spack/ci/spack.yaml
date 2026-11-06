@@ -1,0 +1,21 @@
+spack:
+  # ^netcdf-c@main changes to ^netcdf-c@4.10.1 once
+  # https://github.com/spack/spack-packages/pull/6569 merges.
+  specs:
+  - nep@main ~docs +fortran +fits +geotiff +grib2 +pds4 +pdb +mmcif +nextcdf4 ^netcdf-c@main~mpi
+  repos:
+    nep: ../repos/spack_repo/nep
+  develop:
+    nep:
+      spec: nep@=main
+      path: ../..
+  view: false
+  concretizer:
+    unify: true
+  config:
+    install_tree:
+      root: /opt/spack
+      padded_length: 128
+  packages:
+    all:
+      require: target=x86_64_v3

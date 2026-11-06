@@ -63,6 +63,26 @@
 - NEP no longer builds or installs compression filters or compression-only APIs/tests, and its active docs no longer advertise bundled compression.
 - NEP's supported format tests pass without LZ4/BZIP2 development packages; existing compressed files remain readable through nep-compress, with migration instructions for former NEP users.
 
+#### Sprint 6: Spack
+- Prerequisite: tag v4.2.0. Recipe offers only `main` and `4.2.0`; no compression variants; HDF5 `@1.14:`.
+- Move the recipe to the overlay `spack/repos/spack_repo/nep/`. Variants: `fits`, `geotiff`, `grib2`, `pds4`, `pdb`, and new `mmcif` and `nextcdf4`. `dicom` is removed (no `gdcm` package in Spack); `cdf` is a commented-out variant waiting on spack/spack-packages#2797.
+- Rewrite `spack.yml` on the nep-compress pattern: pinned `setup-spack`, the `spack/ci` environment, `install --test=root` on push and PR, and upstream ruff/vermin style checks.
+- Update spack/spack-packages#5557 in place to 4.2.0, removing 1.3.0. It keeps `netcdf-c@4.10.1:` and depends on #6569; CI uses `^netcdf-c@main` until #6569 merges.
+- Update the Spack sections of the README, `docs/spack.md`, `docs/prd.md` and `docs/design.md`.
+- Out of scope: Spack DICOM/`gdcm`, enabling `cdf`, the local `spack/cdf` recipe, and run-environment `.ncrc` wiring.
+
+Plan: [docs/plan/v4.2.0-sprint6-spack.md](plan/v4.2.0-sprint6-spack.md)
+
+#### Sprint 7: Conda
+- Replace `conda/meta.yaml` with a v1 `conda/recipe/recipe.yaml` (rattler-build) on the nep-compress pattern, plus `conda/make_staged_recipe.py` and `docs/conda-plan.md`.
+- Linux-only, format-only 4.2.0 package with PDB, mmCIF, FITS and PDS4 readers against conda-forge `libnetcdf` 4.10.1 (nompi, HDF5 1.14.6); maintainer `captainkirk99`.
+- Readers are registered by appending `$CONDA_PREFIX/share/.ncrc` to `~/.ncrc`; there is no activation script.
+- Replace `ci-conda.yml` with `conda.yml`: rattler-build with conda-forge pinnings, package tests that `ncdump` each reader, and `conda-smithy` lint of the staged copy.
+- Update staged-recipes#34309 in place to `Add nep` (4.2.0); update the README, `docs/prd.md`, `docs/prfaq.md` and `docs/formats.md`.
+- Out of scope: GeoTIFF (4.2.0 lacks `4d920c5`; enable in the next release), DICOM (`gdcm` is built per Python version), GRIB2/CDF (no packages), NEXTCDF-4 (HDF5 pin 1.14.6), macOS, MPI builds.
+
+Plan: [docs/plan/v4.2.0-sprint7-conda.md](plan/v4.2.0-sprint7-conda.md)
+
 ### V4.1.0 - NEXTCDF4 Docs and Logging
 
 #### Sprint 1: Docs for NEXTCDF4

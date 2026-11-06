@@ -1,301 +1,116 @@
-# Spack CI workflow for NEP package validation
-#
-# This workflow validates the NEP Spack package by:
-# - Running lint/style checks on all PRs
-# - Running concretization (spec) checks on all PRs
-# - Running full install tests on pushes to main
-#
-# Edward Hartnett, Intelligent Data Design, Inc.
-
 name: Spack CI
 
 on:
   push:
-    branches: [main]
   pull_request:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
-  # Lint and style checks - runs on all PRs and pushes
-  lint:
-    name: Spack Lint & Style
+  style:
     runs-on: ubuntu-latest
+    name: style
     steps:
-      - name: Checkout NEP
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Show system info
+      - name: Set up Spack
+        uses: spack/setup-spack@v3
+        with:
+          spack_path: .ci-spack
+          packages_path: .ci-spack-packages
+          spack_ref: v1.2.2
+          packages_ref: v2026.10.0
+          buildcache: true
+
+      - name: Install style tools
+        run: pip install ruff==0.15.11 vermin==1.8.0
+
+      - name: Check style
         run: |
-          echo "=== System Information ==="
-          uname -a
-          echo "=== Python Version ==="
-          python3 --version
-          echo "=== Working Directory ==="
-          pwd
-          ls -la
+          set -euo pipefail
+          recipe="${GITHUB_WORKSPACE}/spack/repos/spack_repo/nep/packages/nep/package.py"
+          cd .ci-spack-packages
+          ruff format --diff "${recipe}"
+          ruff check --no-fix "${recipe}"
+          vermin --backport importlib --backport argparse --violations --backport typing --eval-annotations -t=3.6- -vvv "${recipe}"
 
-      - name: Clone Spack
-        run: |
-          echo "=== Cloning Spack ==="
-          git clone --depth=1 https://github.com/spack/spack.git $HOME/spack
-          echo "=== Spack directory contents ==="
-          ls -la $HOME/spack
-
-      - name: Setup Spack
-        run: |
-          echo "=== Setting up Spack ==="
-          . $HOME/spack/share/spack/setup-env.sh
-          echo "=== Spack Version ==="
-          spack --version
-          echo "=== Spack Config ==="
-          spack config get config
-
-      - name: Add NEP package to Spack
-        run: |
-          echo "=== Creating local Spack repository for NEP ==="
-          mkdir -p $HOME/nep-repo/packages/nep
-          cp spack/NEP/package.py $HOME/nep-repo/packages/nep/
-          cat > $HOME/nep-repo/repo.yaml << 'EOF'
-          repo:
-            namespace: nep-local
-          EOF
-          echo "=== repo.yaml contents ==="
-          cat $HOME/nep-repo/repo.yaml
-          echo "=== NEP package.py contents ==="
-          cat $HOME/nep-repo/packages/nep/package.py
-          echo "=== Adding repository to Spack ==="
-          . $HOME/spack/share/spack/setup-env.sh
-          spack repo add $HOME/nep-repo
-          spack repo list
-
-      - name: Run Spack style check
-        run: |
-          echo "=== Running Spack style check ==="
-          . $HOME/spack/share/spack/setup-env.sh
-          # Run style check - F405 warnings are expected for Spack packages using star imports
-          # Only check ruff formatting and imports, skip full lint which complains about star imports
-          echo "=== Running ruff import check ==="
-          spack style --tool ruff-check spack/NEP/package.py || true
-          echo "=== Running ruff format check ==="
-          spack style --tool ruff-format spack/NEP/package.py || true
-          echo "=== Style check complete (F405 warnings from star imports are expected) ==="
-
-  # Concretization check - runs on all PRs and pushes
-  spec:
-    name: Spack Spec Check
+  spack:
     runs-on: ubuntu-latest
+    name: spack
     steps:
-      - name: Checkout NEP
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Show system info
-        run: |
-          echo "=== System Information ==="
-          uname -a
-          echo "=== Available compilers ==="
-          which gcc && gcc --version || echo "gcc not found"
-          which gfortran && gfortran --version || echo "gfortran not found"
+      - name: Set up Spack
+        uses: spack/setup-spack@v3
+        with:
+          # The default ./spack would overwrite this repo's spack/ directory.
+          spack_path: .ci-spack
+          packages_path: .ci-spack-packages
+          spack_ref: v1.2.2
+          packages_ref: v2026.10.0
+          buildcache: true
 
-      - name: Clone Spack
+      - name: Audit package
+        shell: spack-bash {0}
         run: |
-          echo "=== Cloning Spack ==="
-          git clone --depth=1 https://github.com/spack/spack.git $HOME/spack
+          set -euo pipefail
+          spack -e spack/ci repo list
+          spack audit packages nep
 
-      - name: Setup Spack
+      - name: Check specs
+        shell: spack-bash {0}
         run: |
-          echo "=== Setting up Spack ==="
-          . $HOME/spack/share/spack/setup-env.sh
-          echo "=== Spack Version ==="
-          spack --version
-          echo "=== Finding compilers ==="
+          set -euo pipefail
+          spack repo add spack/repos/spack_repo/nep
+          spack spec nep@4.2.0 ^netcdf-c@main
+          spack spec nep@main+docs+parallel ^netcdf-c@main+mpi ^mpich
+
+      - name: Concretize
+        shell: spack-bash {0}
+        run: |
+          set -euo pipefail
           spack compiler find
-          echo "=== Available compilers ==="
-          spack compilers
+          spack -e spack/ci concretize -f
+          spack -e spack/ci find -c
 
-      - name: Add NEP package to Spack
+      - name: Restore dependency cache
+        id: deps-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: /opt/spack
+          key: spack-deps-${{ hashFiles('spack/ci/spack.lock') }}
+          restore-keys: spack-deps-
+
+      - name: Install dependencies
+        shell: spack-bash {0}
+        run: spack -e spack/ci install --fail-fast --only dependencies
+
+      - name: Save dependency cache
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: /opt/spack
+          key: spack-deps-${{ hashFiles('spack/ci/spack.lock') }}
+
+      - name: Build and test nep
+        shell: spack-bash {0}
         run: |
-          echo "=== Creating local Spack repository for NEP ==="
-          mkdir -p $HOME/nep-repo/packages/nep
-          cp spack/NEP/package.py $HOME/nep-repo/packages/nep/
-          cat > $HOME/nep-repo/repo.yaml << 'EOF'
-          repo:
-            namespace: nep-local
-          EOF
-          echo "=== repo.yaml contents ==="
-          cat $HOME/nep-repo/repo.yaml
-          echo "=== Adding repository to Spack ==="
-          . $HOME/spack/share/spack/setup-env.sh
-          spack repo add $HOME/nep-repo
-          spack repo list
-          echo "=== Verifying package info ==="
-          spack info nep
+          set -euo pipefail
+          spack -e spack/ci install --test=root --verbose nep
+          prefix="$(spack -e spack/ci location -i nep)"
+          log="${RUNNER_TEMP}/spack-build-out.txt"
+          gzip -dc "${prefix}/.spack/spack-build-out.txt.gz" > "${log}"
+          test -f "${prefix}/lib/libncmmcif.so"
+          test -f "${prefix}/lib/libncnextcdf4.so"
+          test -f "${prefix}/share/.ncrc"
+          grep -q 'tst_mmcif_udf' "${log}"
+          grep -q 'tst_pdb_udf' "${log}"
+          grep -q 'ftst_pdb_udf' "${log}"
 
-      - name: Check package concretization
-        run: |
-          . $HOME/spack/share/spack/setup-env.sh
-          spack spec -I nep@3.0.0
-          spack spec -I nep@3.0.0~docs~fortran
-          spack spec -I nep@3.0.0+dicom
-          spack spec -I nep@3.0.0+geotiff+grib2+fits+pds4+dicom~docs~fortran
-          spack spec -I nep@main
-
-  # Full install test - only runs on pushes to main
-  install:
-    name: Spack Install Test
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout NEP
-        uses: actions/checkout@v4
-
-      - name: Install system dependencies
-        run: |
-          echo "=== Installing system dependencies ==="
-          sudo apt-get update
-          sudo apt-get install -y build-essential gfortran cmake pkg-config \
-            libz-dev libbz2-dev liblz4-dev libcurl4-openssl-dev libssl-dev \
-            m4 autoconf automake libtool
-          echo "=== Verifying installed packages ==="
-          echo "GCC version:" && gcc --version
-          echo "G++ version:" && g++ --version
-          echo "GFortran version:" && gfortran --version
-          echo "CMake version:" && cmake --version
-          echo "pkg-config version:" && pkg-config --version
-          echo "=== Checking library locations ==="
-          echo "zlib:" && dpkg -L zlib1g-dev | grep -E '\.h$|\.so$|\.a$' | head -5
-          echo "bzip2:" && dpkg -L libbz2-dev | grep -E '\.h$|\.so$|\.a$' | head -5
-          echo "lz4:" && dpkg -L liblz4-dev | grep -E '\.h$|\.so$|\.a$' | head -5
-
-      - name: Clone Spack
-        run: git clone --depth=1 https://github.com/spack/spack.git $HOME/spack
-
-      - name: Setup Spack with system compilers and packages
-        run: |
-          echo "=== Setting up Spack ==="
-          . $HOME/spack/share/spack/setup-env.sh
-          echo "=== Spack Version ==="
-          spack --version
-          echo "=== Finding system compilers ==="
-          spack compiler find
-          echo "=== Available compilers ==="
-          spack compilers
-          echo "=== Compiler config ==="
-          spack config get compilers
-          echo "=== Configuring external packages ==="
-          # Configure Spack to use system packages instead of building from scratch
-          mkdir -p ~/.spack
-          cat > ~/.spack/packages.yaml << 'EOF'
-          packages:
-            all:
-              compiler: [gcc@11.4.0]
-            cmake:
-              buildable: false
-              externals:
-              - spec: cmake@3.22.1
-                prefix: /usr
-            pkgconf:
-              buildable: false
-              externals:
-              - spec: pkgconf@1.8.0
-                prefix: /usr
-            pkg-config:
-              buildable: false
-              externals:
-              - spec: pkg-config@0.29.2
-                prefix: /usr
-            m4:
-              buildable: false
-              externals:
-              - spec: m4@1.4.18
-                prefix: /usr
-            autoconf:
-              buildable: false
-              externals:
-              - spec: autoconf@2.71
-                prefix: /usr
-            automake:
-              buildable: false
-              externals:
-              - spec: automake@1.16.5
-                prefix: /usr
-            libtool:
-              buildable: false
-              externals:
-              - spec: libtool@2.4.6
-                prefix: /usr
-            zlib:
-              buildable: false
-              externals:
-              - spec: zlib@1.2.11
-                prefix: /usr
-            bzip2:
-              buildable: false
-              externals:
-              - spec: bzip2@1.0.8
-                prefix: /usr
-            lz4:
-              buildable: false
-              externals:
-              - spec: lz4@1.9.3
-                prefix: /usr
-            curl:
-              buildable: false
-              externals:
-              - spec: curl@7.81.0
-                prefix: /usr
-            openssl:
-              buildable: false
-              externals:
-              - spec: openssl@3.0.2
-                prefix: /usr
-          EOF
-          echo "=== Configured packages.yaml ==="
-          cat ~/.spack/packages.yaml
-          echo "=== Verifying external package detection ==="
-          . $HOME/spack/share/spack/setup-env.sh
-          spack external find cmake
-          spack config get packages
-
-      - name: Add NEP package to Spack
-        run: |
-          echo "=== Creating local Spack repository for NEP ==="
-          mkdir -p $HOME/nep-repo/packages/nep
-          cp spack/NEP/package.py $HOME/nep-repo/packages/nep/
-          cat > $HOME/nep-repo/repo.yaml << 'EOF'
-          repo:
-            namespace: nep-local
-          EOF
-          echo "=== repo.yaml contents ==="
-          cat $HOME/nep-repo/repo.yaml
-          echo "=== NEP package.py contents ==="
-          cat $HOME/nep-repo/packages/nep/package.py
-          echo "=== Adding repository to Spack ==="
-          . $HOME/spack/share/spack/setup-env.sh
-          spack repo add $HOME/nep-repo
-          spack repo list
-          echo "=== Verifying package is recognized ==="
-          spack info nep
-
-      - name: Show minimal install concretization
-        run: |
-          . $HOME/spack/share/spack/setup-env.sh
-          spack spec -t nep@3.0.0~docs~fortran
-
-      - name: Install NEP v3.0.0 (minimal)
-        run: |
-          set -o pipefail
-          . $HOME/spack/share/spack/setup-env.sh
-          spack install -v --fail-fast nep@3.0.0~docs~fortran 2>&1 | tee spack_install_minimal.log
-
-      - name: Install NEP v3.0.0 (all supported readers)
-        run: |
-          set -o pipefail
-          . $HOME/spack/share/spack/setup-env.sh
-          spack install -v --fail-fast nep@3.0.0+geotiff+grib2+fits+pds4+dicom~docs~fortran 2>&1 | tee spack_install_all_readers.log
-
-      - name: Show build logs
-        if: always()
-        run: |
-          tail -200 spack_install_minimal.log || true
-          tail -200 spack_install_all_readers.log || true
+      - name: Upload Spack logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spack-logs
+          path: |
+            /opt/spack/**/.spack/spack-build-*.txt*
+            /tmp/runner/spack-stage/**/spack-build-*.txt*

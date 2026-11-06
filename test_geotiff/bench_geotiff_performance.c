@@ -25,8 +25,8 @@
 #ifdef HAVE_GEOTIFF
 #include "geotiffdispatch.h"
 #include <tiffio.h>
-#include <geotiff/geotiff.h>
-#include <geotiff/xtiffio.h>
+#include <geotiff.h>
+#include <xtiffio.h>
 #endif
 
 #define FILE_SMALL "MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif"

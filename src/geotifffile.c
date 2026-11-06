@@ -22,10 +22,10 @@
 
 #ifdef HAVE_GEOTIFF
 #include <tiffio.h>
-#include <geotiff/geotiff.h>
-#include <geotiff/geo_normalize.h>
-#include <geotiff/geotiffio.h>
-#include <geotiff/xtiffio.h>
+#include <geotiff.h>
+#include <geo_normalize.h>
+#include <geotiffio.h>
+#include <xtiffio.h>
 #endif
 
 /** GeoTIFF key directory tag */
