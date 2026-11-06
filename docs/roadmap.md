@@ -1,5 +1,14 @@
 # NEP Development Roadmap
 
+### V4.3.0 -
+
+#### Sprint 1 - Fix Issues 372 and 374
+- Fix 372
+- Fix 374
+
+#### Sprint 2 - 
+
+
 ### V4.2.0 - Move Compression Filters to nep-compress
 
 **Goal:** Move ownership of the LZ4 and BZIP2 compression APIs, HDF5 filter integration, tests, and documentation to `/fast/ed/nep-compress/`. NEP remains the home of the format UDF readers and NEXTCDF-4 backend. Complete and verify the new project before removing compression from NEP.
