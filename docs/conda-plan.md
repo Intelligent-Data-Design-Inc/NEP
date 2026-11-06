@@ -131,10 +131,10 @@ not planned.
 | Step | Date | Link |
 | --- | --- | --- |
 | Recipe in `conda/recipe/` | 2026-11-05 | `conda/recipe/` |
-| First green `conda` CI run on `main` | pending | |
+| First green `conda` CI run (branch `c110426`, PR #373) | 2026-11-06 | https://github.com/Intelligent-Data-Design-Inc/NEP/actions/runs/42232572182 |
 | Local build of the checkout recipe (section 1) | 2026-11-05 | ctest pass, package tests pass; `libnetcdf 4.10.1`, `hdf5 1.14.6` |
 | Staged 4.2.0 recipe built and linted (section 2) | 2026-11-05 | package tests pass, `recipe-lint` clean |
-| staged-recipes PR #34309 updated | pending | https://github.com/conda-forge/staged-recipes/pull/34309 |
+| staged-recipes PR #34309 updated to 4.2.0, retitled `Add nep` | 2026-11-06 | `2bcf29af98` on `upstream/main` `3611b91e38`; https://github.com/conda-forge/staged-recipes/pull/34309 |
 | staged-recipes PR merged | pending | |
 | Feedstock created | pending | |
 | 4.2.0 published on conda-forge | pending | |
