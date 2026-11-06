@@ -27,8 +27,8 @@ execute_process(
 separate_arguments(NF_FFLAGS_LIST UNIX_COMMAND "${NF_FFLAGS}")
 separate_arguments(NF_LIBS_LIST UNIX_COMMAND "${NF_LIBS}")
 
-# Get HDF5 library directory from HDF5_INCLUDE_DIR (parent scope)
-get_filename_component(HDF5_LIB_DIR "${HDF5_INCLUDE_DIR}/../lib" ABSOLUTE)
+# Get HDF5 library directory (parent scope)
+set(HDF5_LIB_DIR "${NEP_HDF5_LIBRARY_DIR}")
 
 # List of Fortran NetCDF-4 example programs
 set(F_NETCDF4_EXAMPLES
@@ -53,7 +53,7 @@ foreach(example ${F_NETCDF4_EXAMPLES})
     target_link_directories(${example} PRIVATE ${HDF5_LIB_DIR})
     # nf-config --flibs may not include all transitive dependencies, add them explicitly
     # NetCDF needs both libhdf5 and libhdf5_hl
-    target_link_libraries(${example} PRIVATE ${NF_LIBS_LIST} ${NETCDF_LIBRARIES} hdf5 hdf5_hl)
+    target_link_libraries(${example} PRIVATE ${NF_LIBS_LIST} ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
     
     # Add as test (run example only)
     if(BUILD_TESTING)
@@ -66,7 +66,7 @@ endforeach()
 add_executable(f_dump_nc4_metadata f_dump_nc4_metadata.f90)
 target_compile_options(f_dump_nc4_metadata PRIVATE ${NF_FFLAGS_LIST})
 target_link_directories(f_dump_nc4_metadata PRIVATE ${HDF5_LIB_DIR})
-target_link_libraries(f_dump_nc4_metadata PRIVATE ${NF_LIBS_LIST} ${NETCDF_LIBRARIES} hdf5 hdf5_hl)
+target_link_libraries(f_dump_nc4_metadata PRIVATE ${NF_LIBS_LIST} ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
 
 # Add CDL validation tests for single-file examples
 if(BUILD_TESTING)

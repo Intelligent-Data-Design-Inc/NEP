@@ -49,8 +49,8 @@ else()
     set(HAVE_SZIP OFF)
 endif()
 
-# Get HDF5 library directory from HDF5_INCLUDE_DIR (parent scope)
-get_filename_component(HDF5_LIB_DIR "${HDF5_INCLUDE_DIR}/../lib" ABSOLUTE)
+# Get HDF5 library directory (parent scope)
+set(HDF5_LIB_DIR "${NEP_HDF5_LIBRARY_DIR}")
 
 # Get NetCDF library directory for rpath
 execute_process(
@@ -73,27 +73,27 @@ endmacro()
 # Build performance examples unconditionally (fast to compile)
 add_executable(cache_tuning cache_tuning.c)
 perf_target(cache_tuning)
-target_link_libraries(cache_tuning PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl m)
+target_link_libraries(cache_tuning PRIVATE ${NC_LIBS_LIST} ${NEP_HDF5_LIBRARIES} m)
 
 add_executable(chunking chunking.c)
 perf_target(chunking)
-target_link_libraries(chunking PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl m)
+target_link_libraries(chunking PRIVATE ${NC_LIBS_LIST} ${NEP_HDF5_LIBRARIES} m)
 
 add_executable(deflate deflate.c)
 perf_target(deflate)
-target_link_libraries(deflate PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl m)
+target_link_libraries(deflate PRIVATE ${NC_LIBS_LIST} ${NEP_HDF5_LIBRARIES} m)
 
 add_executable(fill_values fill_values.c)
 perf_target(fill_values)
-target_link_libraries(fill_values PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl m)
+target_link_libraries(fill_values PRIVATE ${NC_LIBS_LIST} ${NEP_HDF5_LIBRARIES} m)
 
 add_executable(endianness endianness.c)
 perf_target(endianness)
-target_link_libraries(endianness PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl m)
+target_link_libraries(endianness PRIVATE ${NC_LIBS_LIST} ${NEP_HDF5_LIBRARIES} m)
 
 add_executable(zstandard zstandard.c)
 perf_target(zstandard)
-target_link_libraries(zstandard PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl m)
+target_link_libraries(zstandard PRIVATE ${NC_LIBS_LIST} ${NEP_HDF5_LIBRARIES} m)
 
 # Zstandard, zlib/DEFLATE and SZIP use NetCDF-C/HDF5 APIs; keep them in NEP.
 # lossless.c and quantize.c also call the moved LZ4/BZIP2 wrappers. Preserve
@@ -106,7 +106,7 @@ target_link_libraries(zstandard PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl m)
 if(HAVE_SZIP)
     add_executable(szip szip.c)
     perf_target(szip)
-    target_link_libraries(szip PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl sz m)
+    target_link_libraries(szip PRIVATE ${NC_LIBS_LIST} ${NEP_HDF5_LIBRARIES} sz m)
 endif()
 
 # Performance examples run as tests only when NEP_ENABLE_BENCHMARKS=ON (slow; not for regular CI)

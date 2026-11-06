@@ -1,7 +1,9 @@
 # This is the build file for the root directory of the NEP project.
 # Edward Hartnett 8/27/25
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.19)
 project (NEP VERSION 0.1.1 DESCRIPTION "NetCDF Expansion Pack" LANGUAGES C)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 # Read documentation/package version from version.txt so that documentation
 # and installed package metadata reflect the release version configured there.
@@ -60,15 +62,9 @@ endif()
 
 # Find HDF5 (skip if documentation-only build)
 if(NOT DOCS_ONLY)
-    find_package(HDF5 1.14 REQUIRED COMPONENTS C HL)
-    if(NOT HDF5_LIBRARY_DIRS)
-        list(GET HDF5_LIBRARIES 0 _hdf5_lib)
-        get_filename_component(HDF5_LIBRARY_DIRS "${_hdf5_lib}" DIRECTORY)
-    endif()
-    list(APPEND HDF5_LIBRARIES hdf5_hl)
-    link_directories (${HDF5_LIBRARY_DIRS})
-    include_directories (${HDF5_INCLUDE_DIR})
-    set (LINK_LIBS ${LINK_LIBS} ${HDF5_LIBRARIES})
+    include(NEPFindHDF5)
+    include_directories(${HDF5_INCLUDE_DIRS})
+    set (LINK_LIBS ${LINK_LIBS} ${NEP_HDF5_LIBRARIES})
     if(HDF5_IS_PARALLEL)
         set(HDF5_PARALLEL 1)
     endif()
@@ -81,6 +77,7 @@ if(NOT DOCS_ONLY)
     link_directories(${NETCDF_LIBRARY_DIRS})
     set (LINK_LIBS ${LINK_LIBS} ${NETCDF_LIBRARIES})
     message(STATUS "Found NetCDF-C: ${NETCDF_VERSION}")
+    nep_check_netcdf_hdf5()
 
     # Sanity-check the installed NetCDF-C headers are at least 4.10.1.
     include(CheckCSourceCompiles)
@@ -148,7 +145,7 @@ int main(void){ return 0; }" NETCDF_VERSION_OK)
     # Ensure runtime can locate the exact HDF5/NetCDF shared libraries selected at configure time.
     # This avoids mixing system HDF5 with a custom HDF5 prefix and fixes missing libhdf5_hl.so at runtime.
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-    set(CMAKE_BUILD_RPATH "${HDF5_LIBRARY_DIRS};${NETCDF_LIBRARY_DIRS}")
+    set(CMAKE_BUILD_RPATH "${NEP_HDF5_LIBRARY_DIR};${NETCDF_LIBRARY_DIRS}")
 endif()
 
 # FITS reader support (v2.0.0) - default OFF; enable with -DNEP_ENABLE_FITS=ON
@@ -547,19 +544,7 @@ if(NOT DOCS_ONLY)
     # This ensures all CTest tests find shared libraries without needing
     # LD_LIBRARY_PATH to be set in the shell.
     set(_nep_test_lib_dirs "")
-    if(HDF5_LIBRARY_DIRS)
-        list(APPEND _nep_test_lib_dirs ${HDF5_LIBRARY_DIRS})
-    elseif(HDF5_DIR)
-        # HDF5 found via CMake config package; derive lib dir from config dir.
-        get_filename_component(_hdf5_root "${HDF5_DIR}" DIRECTORY)
-        list(APPEND _nep_test_lib_dirs "${_hdf5_root}/lib")
-    endif()
-    foreach(_lib ${HDF5_LIBRARIES})
-        if(IS_ABSOLUTE "${_lib}")
-            get_filename_component(_d "${_lib}" DIRECTORY)
-            list(APPEND _nep_test_lib_dirs "${_d}")
-        endif()
-    endforeach()
+    list(APPEND _nep_test_lib_dirs "${NEP_HDF5_LIBRARY_DIR}")
     if(NETCDF_LIBRARY_DIRS)
         list(APPEND _nep_test_lib_dirs ${NETCDF_LIBRARY_DIRS})
     elseif(DEFINED NETCDF_PREFIX)

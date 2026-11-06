@@ -12,6 +12,14 @@
 
 Plan: [docs/plan/v4.3.0-sprint1-fix-issues-372-374.md](plan/v4.3.0-sprint1-fix-issues-372-374.md)
 
+#### Sprint 1A - Add NEXTCDF4 float16 Examples and Documentation
+- In NEXTCDF4, two different float16 types are supported, this sprint will focus on NC_BFLOAT16.
+- There is a test data file in test/data/netCDF-4/. See the README in that dir for more info.
+- We need an example program for NC_BFLOAT16 in C. Have it use some data from the test file.
+- We need to measure file size and confirm that the float16 version is smaller.
+- We need to measure read/write performance and output the result as a CSV file.
+- We need a python script to generate plot(s) from the CSV file.
+
 #### Sprint 2 - 
 - Tag v4.3.0 and write `docs/releases/v4.3.0.md` (HDF5 detection change, CMake 3.19 minimum, conda GeoTIFF).
 - Spack: add `version("4.3.0")` with its sha256; update spack/spack-packages#5557 in place per `docs/spack.md` "Updating the upstream PR".

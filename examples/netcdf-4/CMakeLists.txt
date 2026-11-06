@@ -27,8 +27,8 @@ execute_process(
 separate_arguments(NC_CFLAGS_LIST UNIX_COMMAND "${NC_CFLAGS}")
 separate_arguments(NC_LIBS_LIST UNIX_COMMAND "${NC_LIBS}")
 
-# Get HDF5 library directory from HDF5_INCLUDE_DIR (parent scope)
-get_filename_component(HDF5_LIB_DIR "${HDF5_INCLUDE_DIR}/../lib" ABSOLUTE)
+# Get HDF5 library directory (parent scope)
+set(HDF5_LIB_DIR "${NEP_HDF5_LIBRARY_DIR}")
 execute_process(
     COMMAND ${NC_CONFIG} --libdir
     OUTPUT_VARIABLE NC_LIBDIR
@@ -54,7 +54,7 @@ foreach(example ${NETCDF4_EXAMPLES})
     target_link_directories(${example} PRIVATE ${HDF5_LIB_DIR})
     # nc-config --libs doesn't include HDF5, so we need to add it explicitly
     # NetCDF needs both libhdf5 and libhdf5_hl
-    target_link_libraries(${example} PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl m)
+    target_link_libraries(${example} PRIVATE ${NC_LIBS_LIST} ${NEP_HDF5_LIBRARIES} m)
     
     # Add as test
     if(BUILD_TESTING)
@@ -68,7 +68,7 @@ endforeach()
 add_executable(dump_nc4_metadata dump_nc4_metadata.c)
 target_compile_options(dump_nc4_metadata PRIVATE ${NC_CFLAGS_LIST})
 target_link_directories(dump_nc4_metadata PRIVATE ${HDF5_LIB_DIR})
-target_link_libraries(dump_nc4_metadata PRIVATE ${NC_LIBS_LIST} hdf5 hdf5_hl m)
+target_link_libraries(dump_nc4_metadata PRIVATE ${NC_LIBS_LIST} ${NEP_HDF5_LIBRARIES} m)
 
 # Configure validation script with ncdump path from top-level CMakeLists.txt
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../validate_cdl.sh.in

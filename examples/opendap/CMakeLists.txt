@@ -5,13 +5,13 @@
 
 # C Examples
 add_executable(opendap_simple opendap_simple.c)
-target_link_libraries(opendap_simple netcdf ${HDF5_LIBRARIES})
+target_link_libraries(opendap_simple netcdf ${NEP_HDF5_LIBRARIES})
 
 add_executable(opendap_constraint opendap_constraint.c)
-target_link_libraries(opendap_constraint netcdf ${HDF5_LIBRARIES})
+target_link_libraries(opendap_constraint netcdf ${NEP_HDF5_LIBRARIES})
 
 add_executable(opendap_subset opendap_subset.c)
-target_link_libraries(opendap_subset netcdf ${HDF5_LIBRARIES})
+target_link_libraries(opendap_subset netcdf ${NEP_HDF5_LIBRARIES})
 
 # Group all OPeNDAP examples
 set(OPENDAP_EXAMPLE_TARGETS
@@ -47,8 +47,8 @@ if(NEP_ENABLE_FORTRAN)
       separate_arguments(NF_FFLAGS_LIST UNIX_COMMAND "${NF_FFLAGS}")
       separate_arguments(NF_LIBS_LIST UNIX_COMMAND "${NF_LIBS}")
 
-      # Get HDF5 library directory from HDF5_INCLUDE_DIR (parent scope)
-      get_filename_component(HDF5_LIB_DIR "${HDF5_INCLUDE_DIR}/../lib" ABSOLUTE)
+      # Get HDF5 library directory (parent scope)
+      set(HDF5_LIB_DIR "${NEP_HDF5_LIBRARY_DIR}")
 
       # Build each Fortran example
       set(FORTRAN_OPENDAP_EXAMPLES
@@ -61,7 +61,7 @@ if(NEP_ENABLE_FORTRAN)
           add_executable(${example} ${example}.f90)
           target_compile_options(${example} PRIVATE ${NF_FFLAGS_LIST})
           target_link_directories(${example} PRIVATE ${HDF5_LIB_DIR})
-          target_link_libraries(${example} PRIVATE ${NF_LIBS_LIST} ${NETCDF_LIBRARIES} hdf5 hdf5_hl)
+          target_link_libraries(${example} PRIVATE ${NF_LIBS_LIST} ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
           list(APPEND OPENDAP_EXAMPLE_TARGETS ${example})
       endforeach()
   endif()

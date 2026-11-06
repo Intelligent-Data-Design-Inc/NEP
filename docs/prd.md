@@ -489,7 +489,7 @@ Parallel I/O builds are tested in a separate CI workflow (`ci-parallel.yml`) wit
 ### 13.1 Core Dependencies
 - NetCDF-C v4.10.1+ (required)
 - HDF5 v2.1.1+ (required)
-- CMake v3.9+ (build)
+- CMake v3.19+ (build)
 
 ### 13.2 Optional Dependencies
 - NetCDF-Fortran v4.6.2+ (for optional Fortran format tests/examples)

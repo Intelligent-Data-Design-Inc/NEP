@@ -149,6 +149,10 @@ For example, if HDF5 2.1.1 is installed in `/usr/local/hdf5-2.1.1`:
 cmake -B build -DHDF5_ROOT=/usr/local/hdf5-2.1.1 -DCMAKE_INSTALL_PREFIX=/usr/local
 ```
 
+NEP must use the same HDF5 as NetCDF-C. Configure stops if the
+`libhdf5.so` version that `libnetcdf.so` needs differs from the HDF5
+that CMake found; set `HDF5_ROOT` to NetCDF-C's HDF5 to fix it.
+
 ### Configuration Options
 
 #### Quick Reference

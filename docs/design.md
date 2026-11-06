@@ -139,7 +139,7 @@ The project uses GitHub Actions for CI/CD with comprehensive documentation integ
 ### CMake Build System
 
 NEP uses CMake as its sole supported build system.
-- **Modern CMake 3.9+**: Leverages contemporary CMake features and best practices
+- **Modern CMake 3.19+**: Leverages contemporary CMake features and best practices
 - **Modular Compilation**: Each enabled format handler builds as an independent shared library
 - **Advanced Dependency Detection**: Automatic discovery with comprehensive Find modules
 - **Configurable Build Options**: Fine-grained control over optional format readers
@@ -956,7 +956,9 @@ Each example:
 
 - **C Examples**: NetCDF-C library, C99 compiler
 - **Fortran Examples**: NetCDF-Fortran library, Fortran 90+ compiler
-- **Build System**: CMake 3.9+
+- **Build System**: CMake 3.19+
+
+HDF5 is found by `cmake/NEPFindHDF5.cmake` (any version 1.14.0 or newer, linked through FindHDF5's imported targets, with a SONAME check against `libnetcdf`).
 
 Fortran examples are automatically skipped if:
 - Fortran support is disabled (`NEP_ENABLE_FORTRAN=OFF`)
