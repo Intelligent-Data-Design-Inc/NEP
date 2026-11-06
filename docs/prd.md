@@ -134,15 +134,13 @@ spack install cdf
   bundled compression filters that now live in nep-compress); the CDF
   and DICOM readers are not available through Spack
 
-### 5.5 Conda Package (v3.0.1)
-Historical v3.0.1 recipe behavior; the v4.2.0 in-repository recipe is
-format-only. Older published packages may still bundle compression.
-- **In-repo recipe**: `conda/meta.yaml` (conda-build format) packages the v3.0.0 source tag for conda-forge
-- **Build script**: `conda/build.sh` passes existing CMake options only for the Conda package; local CMake builds are unchanged
-- **Enabled features**: LZ4 and Fortran wrappers
-- **Excluded**: BZIP2 and all UDF readers, including CDF, GeoTIFF, GRIB2, FITS, PDS4, and DICOM
-- **CI workflow**: `.github/workflows/ci-conda.yml` renders, validates, builds, and clean-environment-tests the package on every PR
-- **Publication**: Initial submission uses `conda-forge/staged-recipes`; reader support may be added in future Conda updates
+### 5.5 Conda Package (v4.2.0)
+- **In-repo recipe**: `conda/recipe/recipe.yaml` (v1 rattler-build format) builds the checkout; `conda/recipe/build.sh` passes the CMake options for the Conda package; local CMake builds are unchanged
+- **Staged copy**: `conda/make_staged_recipe.py` generates the staged-recipes recipe for the release tarball, so the two cannot drift; submission is tracked in `docs/conda-plan.md`
+- **Enabled features**: PDB, mmCIF, FITS and PDS4 readers, Fortran tests, and the `share/.ncrc` that registers the readers with conda-forge's `libnetcdf` 4.10.1
+- **Excluded**: GeoTIFF (needs `4d920c5`, post-4.2.0), DICOM, GRIB2, CDF and NEXTCDF-4 (need packages or versions conda-forge does not provide); Linux only
+- **CI workflow**: `.github/workflows/conda.yml` builds and tests the recipe against conda-forge pinnings and lints the staged copy on every push and PR
+- **Publication**: staged-recipes PR #34309, updated in place; the old v3.0.0 submission was LZ4-only and has been superseded
 
 ---
 

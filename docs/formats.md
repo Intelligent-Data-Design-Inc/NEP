@@ -49,13 +49,21 @@ NEP installs a `.ncrc` configuration file that enables NetCDF-C's UDF self-loadi
 **Setup** — merge the installed file into `~/.ncrc`:
 
 ```bash
-cat /usr/local/share/nep/.ncrc >> ~/.ncrc
+cat /usr/local/share/.ncrc >> ~/.ncrc
 ```
 
-Or point `NETCDF_RC` to the directory for a per-session override:
+For the conda package, the installed file is
+`$CONDA_PREFIX/share/.ncrc`:
 
 ```bash
-export NETCDF_RC=/usr/local/share/nep
+cat "$CONDA_PREFIX/share/.ncrc" >> ~/.ncrc
+```
+
+Or point `NCRCENV_RC` at the installed file for a per-session
+override (this makes NetCDF-C ignore `~/.ncrc`):
+
+```bash
+export NCRCENV_RC=/usr/local/share/.ncrc
 ```
 
 Then open any supported format transparently:
@@ -74,8 +82,8 @@ nc_open("example.nc",                           NC_NEXTCDF4 | NC_NOWRITE, &ncid)
 
 | Build system | Default | Override |
 |---|---|---|
-| CMake | `${prefix}/share/nep/.ncrc` | `-DNEP_NCRC_INSTALL_DIR=<path>` |
+| CMake | `${prefix}/share/.ncrc` | `-DNEP_NCRC_INSTALL_DIR=<path>` |
 
-**Note**: `.ncrc` autoload requires NetCDF-C built from the main branch. With NetCDF-C 4.10.0, call `NC_*_initialize()` explicitly before `nc_open()`.
+**Note**: `.ncrc` autoload works with NetCDF-C 4.10.1, which NEP already requires.
 
 See the [NetCDF UDF documentation](https://docs.unidata.ucar.edu/netcdf/NUG/user_defined_formats.html) for the full RC file format reference.

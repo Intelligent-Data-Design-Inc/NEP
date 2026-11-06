@@ -271,16 +271,38 @@ spack install nep+parallel
 
 ### Conda Installation
 
-Install the minimal v3.0.0 package from conda-forge:
+Install the 4.2.0 package from conda-forge (Linux only):
 
 ```bash
 conda install -c conda-forge nep
 ```
 
-For format readers, use NEP; for LZ4/BZIP2 compression, install
-nep-compress separately. The in-repository recipe targets format-only
-NEP. Check the published Conda package version before assuming it
-contains the v4.2.0 split; older releases still include compression.
+The package includes the PDB, mmCIF, FITS and PDS4 readers. GeoTIFF
+arrives in the next release; DICOM, GRIB2, CDF and NEXTCDF-4 are
+excluded because they need packages or versions conda-forge does not
+provide.
+
+Register the readers with NetCDF-C by appending the installed `.ncrc`
+to your own:
+
+```bash
+cat "$CONDA_PREFIX/share/.ncrc" >> ~/.ncrc
+```
+
+Or, for a per-session override, set `NCRCENV_RC` — note this makes
+NetCDF-C ignore `~/.ncrc` entirely:
+
+```bash
+export NCRCENV_RC="$CONDA_PREFIX/share/.ncrc"
+```
+
+For LZ4/BZIP2 compression, install
+[nep-compress](https://github.com/captainkirk99/nep-compress)
+separately.
+
+The package is pending until
+[staged-recipes#34309](https://github.com/conda-forge/staged-recipes/pull/34309)
+merges.
 
 ---
 
