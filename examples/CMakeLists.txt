@@ -6,6 +6,10 @@ add_subdirectory(classic)
 add_subdirectory(netcdf-4)
 add_subdirectory(performance)
 
+if(HAVE_NEXTCDF4)
+    add_subdirectory(nextcdf4)
+endif()
+
 if(HAVE_DICOM)
     add_subdirectory(dicom)
 endif()

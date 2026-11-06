@@ -176,6 +176,10 @@ option(NEP_ENABLE_PARALLEL_TESTS "Enable parallel I/O test programs" OFF)
 # Performance benchmark support (v1.10.0) - default OFF; slow programs not for regular CI
 option(NEP_ENABLE_BENCHMARKS "Enable performance benchmark programs (slow, not for regular CI)" OFF)
 
+# Directory with exactly one HDF5 zstd (filter 32015) plugin; needed to read
+# test/data/netCDF-4/gdas_sfc_sample.nc in the NEXTCDF-4 bfloat16 example tests
+set(NEP_ZSTD_PLUGIN_DIR "" CACHE PATH "Directory holding one HDF5 zstd (32015) plugin for the bfloat16 example tests")
+
 # OPeNDAP examples (v1.10.0) - default OFF; requires network access
 option(NEP_ENABLE_OPENDAP_EXAMPLES "Enable OPeNDAP remote data access examples (requires network)" OFF)
 
@@ -388,6 +392,7 @@ if(NEP_ENABLE_VIZ_EXAMPLES)
 endif()
 
 message(STATUS "Performance benchmarks: ${NEP_ENABLE_BENCHMARKS}")
+message(STATUS "zstd plugin dir for bfloat16 examples: ${NEP_ZSTD_PLUGIN_DIR}")
 message(STATUS "OPeNDAP examples: ${NEP_ENABLE_OPENDAP_EXAMPLES}")
 message(STATUS "Visualization examples: ${NEP_ENABLE_VIZ_EXAMPLES}")
 message(STATUS "PDBx/mmCIF reader: ${NEP_ENABLE_MMCIF}")

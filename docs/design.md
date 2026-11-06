@@ -842,6 +842,7 @@ examples/
 ├── classic/          # Classic NetCDF examples in C
 ├── f_classic/        # Classic NetCDF examples in Fortran
 ├── netcdf-4/         # NetCDF-4 examples in C
+├── nextcdf4/         # NEXTCDF-4 bfloat16 example and benchmark in C
 ├── f_netcdf-4/       # NetCDF-4 examples in Fortran
 ├── nczarr/           # NcZarr (local Zarr store) examples in C and Fortran
 ├── opendap/          # OPeNDAP remote access examples in C and Fortran

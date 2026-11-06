@@ -16,13 +16,16 @@ filter plus zstd level 19 (filter 32015). Reading the file requires a
 zstd HDF5 plugin on `HDF5_PLUGIN_PATH`; without one, the file opens and
 its metadata is readable, but reading the data fields fails.
 
+NEP uses it in the NEXTCDF-4 bfloat16 examples in `examples/nextcdf4/`.
+
 Regenerate it from the full source file with:
 
 ```sh
 mkdir -p "$HOME/plugins/zstd-only"
 ln -sf /usr/local/netcdf-c/hdf5/lib/plugin/lib__nch5zstd.so "$HOME/plugins/zstd-only/"
 HDF5_PLUGIN_PATH=$HOME/plugins/zstd-only \
-  performance/make_gdas_sample.sh /home/ed/Downloads/gdas.t00z.sfcf003.nc test/data/gdas_sfc_sample.nc
+  /path/to/nep-compress/performance/make_gdas_sample.sh \
+  /path/to/gdas.t00z.sfcf003.nc test/data/netCDF-4/gdas_sfc_sample.nc
 ```
 
 Author: Edward Hartnett, Intelligent Data Design, Inc.
