@@ -968,6 +968,7 @@ INPUT                  = @abs_top_srcdir@/src/nep.c \
                          @abs_top_srcdir@/docs/examples.md \
                          @abs_top_srcdir@/docs/nextcdf4.md \
                          @abs_top_srcdir@/docs/NEXTCDF4_float16.md \
+                         @abs_top_srcdir@/docs/float16.md \
                          @abs_top_srcdir@/examples \
                          @abs_top_srcdir@/src/nextcdf4 \
                          @abs_top_srcdir@/include/nextcdf4dispatch.h

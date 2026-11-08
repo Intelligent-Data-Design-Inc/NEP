@@ -65,6 +65,8 @@
  *
  * @note The program is intended for local performance profiling. It is
  *       registered as a ctest test only when NEP_ENABLE_BENCHMARKS=ON.
+ *       Reference results are measured with
+ *       `-DCMAKE_BUILD_TYPE=RelWithDebInfo` (-O2).
  *
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
@@ -387,6 +389,11 @@ main(int argc, char **argv)
 
     /* Silence NEXTCDF-4 lifecycle messages on stderr. */
     nep_set_log_level(-1);
+
+#ifndef __OPTIMIZE__
+    fprintf(stderr, "warning: built without compiler optimization; "
+            "timings are not representative (use -DCMAKE_BUILD_TYPE=RelWithDebInfo)\n");
+#endif
 
     fdata = (float *)malloc(NVALS * sizeof(float));
     bdata = (uint16_t *)malloc(NVALS * sizeof(uint16_t));

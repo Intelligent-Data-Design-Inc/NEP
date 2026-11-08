@@ -30,10 +30,17 @@ Located in `netcdf-4/`:
 Located in `nextcdf4/`:
 - **bfloat16.c** - Store real GDAS temperature data as NC_BFLOAT16 with the nc_*_bfloat16() functions
 - **bfloat16_perf.c** - float32 vs bfloat16 (user-code and HDF5 conversion) size and I/O benchmark, CSV output
-- **plot_bfloat16.py** - Plot the benchmark CSV (size and speed PNGs)
+- **bfloat16_io_perf.c** - float32 vs bfloat16 write/read benchmark with data already in bfloat16 (no conversion), CSV output
+- **make_bfloat16_sample.c** - Convert the GDAS sample to a NEXTCDF-4 NC_BFLOAT16 file (used with make_bfloat16_sample.sh)
+- **make_bfloat16_sample.sh** - Run make_bfloat16_sample, then h5repack to apply shuffle+zstd chunking
+- **plot_bfloat16.py** - Plot the benchmark CSV (size, speed and HDF5-conversion PNGs)
+- **plot_bfloat16_io.py** - Plot the no-conversion I/O benchmark CSV (bfloat16_io.png)
 
 Build with `-DNEP_ENABLE_NEXTCDF4=ON -DNEP_BUILD_EXAMPLES=ON -DNEP_ZSTD_PLUGIN_DIR=<dir>`;
-add `-DNEP_ENABLE_BENCHMARKS=ON` to register the benchmark test.
+add `-DNEP_ENABLE_BENCHMARKS=ON` to register the benchmark tests.
+Benchmarks should be built with `-DCMAKE_BUILD_TYPE=RelWithDebInfo` for
+representative timings; the benchmark programs warn when built without
+optimization.
 
 ### Classic NetCDF Examples (Fortran)
 Located in `f_classic/`:

@@ -955,6 +955,7 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
 
     if (!(vinfo = calloc(1, sizeof(*vinfo))))
         return NC_ENOMEM;
+    vinfo->deflate_level = -1;
 
     if ((ret = nc4_var_list_add(grp, name, ndims, &var)))
         goto fail;
@@ -992,6 +993,12 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
         if (n_unlim == 1 && ndims > 0 && !var->dim[0]->unlimited)
             return NC_EINVAL;
     }
+
+    /* -1 marks "storage not specified": the dataset is created
+     * chunked when it has an unlimited dimension and contiguous
+     * otherwise, and a later def-var setter must not change that
+     * layout (#382). */
+    var->storage = has_unlimited ? NC_CHUNKED : -1;
 
     coordinate = ndims == 1 && !strcmp(name, var->dim[0]->hdr.name);
     if ((ret = NEXTCDF4_map_hdf_type(xtype, &hdf_type)))
@@ -1159,9 +1166,9 @@ create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
     }
 
     if (var->storage == NC_CHUNKED ||
-        (var->storage == 0 && (has_unlimited || (vinfo && vinfo->deflate_level >= 0) ||
-                               (vinfo && vinfo->fletcher32) ||
-                               (vinfo && vinfo->shuffle)))) {
+        (var->storage < 0 && (has_unlimited || (vinfo && vinfo->deflate_level >= 0) ||
+                              (vinfo && vinfo->fletcher32) ||
+                              (vinfo && vinfo->shuffle)))) {
         for (i = 0; i < (int)var->ndims; i++) {
             if (var->chunksizes && var->chunksizes[i])
                 chunks[i] = var->chunksizes[i];
@@ -1174,7 +1181,7 @@ create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
             ret = NC_EHDFERR;
             goto fail;
         }
-        if (var->storage == 0)
+        if (var->storage < 0)
             var->storage = NC_CHUNKED;
     }
 
@@ -1509,7 +1516,7 @@ NEXTCDF4_inq_var_all(int ncid, int varid, char *name, nc_type *xtypep,
     if (fletcher32p)
         *fletcher32p = vinfo ? vinfo->fletcher32 : 0;
     if (contiguousp)
-        *contiguousp = var->storage;
+        *contiguousp = (var->storage < 0) ? NC_CONTIGUOUS : var->storage;
     if (chunksizesp && var->storage == NC_CHUNKED) {
         for (i = 0; i < (int)var->ndims; i++)
             chunksizesp[i] = (var->chunksizes && var->chunksizes[i]) ?
@@ -2598,6 +2605,7 @@ load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
         free(vinfo);
         goto done;
     }
+    vinfo->deflate_level = -1;
     var->format_var_info = vinfo;
     (void)varid;
     vinfo->hdf_dataset = dset;

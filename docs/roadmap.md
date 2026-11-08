@@ -32,8 +32,23 @@ Plan: [docs/plan/v4.3.0-sprint1A-bfloat16-examples.md](plan/v4.3.0-sprint1A-bflo
 
 Plan: [docs/plan/v4.3.0-sprint1B-fix-float-conversion.md](plan/v4.3.0-sprint1B-fix-float-conversion.md)
 
+#### Sprint 1C - Refine Performance Graphs
+- Reference results come from a `-DCMAKE_BUILD_TYPE=RelWithDebInfo` (-O2) build. `record_machine.sh` records the build type and flags, and the benchmarks warn when built without optimization. Project defaults stay unchanged.
+- `bfloat16_size.png`/`bfloat16_speed.png` show only float32 and bfloat16 (NEP). The new `bfloat16_hdf5_speed.png` adds the HDF5-conversion rows. The `bfloat16_perf` CSV is unchanged.
+- New `test/data/NEXTCDF4/gdas_sfc_sample_bfloat16.nc` (4 fields as `NC_BFLOAT16`, shuffle+zstd 19 applied by `h5repack`), generated once by `make_bfloat16_sample.c`/`.sh` and committed with a README and a `.gitignore` exception.
+- New `bfloat16_io_perf.c` times write+read of float32 against data already in bfloat16, with no conversion timed (4 fields x contiguous/deflate1). `plot_bfloat16_io.py` makes `docs/images/bfloat16_io.png`. Its ctest runs under `NEP_ENABLE_BENCHMARKS`.
+- Update `docs/float16.md` (new HDF5 and I/O sections) and `docs/NEXTCDF4_float16.md`, and commit the pending `float16.md` work.
+- #382 (found here): def-var setters made contiguous variables chunked with deflate 0. `deflate_level` now starts at -1, with a test in `tst_nextcdf4_chunking`, and the benchmarks were rerun.
+- Out of scope: dataset recreation on setters (rest of #382), NEXTCDF-4 `nc_def_var_filter`, #377/#380, CI for the benchmarks, release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1C-refine-performance-graphs.md](plan/v4.3.0-sprint1C-refine-performance-graphs.md)
+
+#### Sprint 1D - Documentation
+- Change NEXTCDF-4 doxygen docs to make clear that it is still experimental and not all features are implemented.
+
+
 #### Sprint 2 - 
-- Tag v4.3.0 and write `docs/releases/v4.3.0.md` (HDF5 detection change, CMake 3.19 minimum, conda GeoTIFF, Sprint 1A NEXTCDF-4 bfloat16 examples and `NEP_ZSTD_PLUGIN_DIR`, Sprint 1B typed small-float I/O and the `nc_*_bfloat16` functions, #376, and the fix for untyped `nc_put_var`/`nc_get_var`/`var1`/`vars` failing with `NC_EBADTYPE` on NEXTCDF-4).
+- Tag v4.3.0 and write `docs/releases/v4.3.0.md` (HDF5 detection change, CMake 3.19 minimum, conda GeoTIFF, Sprint 1A NEXTCDF-4 bfloat16 examples and `NEP_ZSTD_PLUGIN_DIR`, Sprint 1B typed small-float I/O and the `nc_*_bfloat16` functions, #376, Sprint 1C optimized benchmark results, the bfloat16 GDAS sample and `bfloat16_io_perf`, the #382 contiguous-layout fix, and the fix for untyped `nc_put_var`/`nc_get_var`/`var1`/`vars` failing with `NC_EBADTYPE` on NEXTCDF-4).
 - Spack: add `version("4.3.0")` with its sha256; update spack/spack-packages#5557 in place per `docs/spack.md` "Updating the upstream PR".
 - Conda (#374 part 2): if #34309 is still open, regenerate the staged copy for 4.3.0, push it to `nep-3.0.0` and update the PR body; if merged, make the GeoTIFF change on the feedstock and drop the staged lint/micromamba steps. Move the `conda.yml` lint step to the 4.3.0 tarball and set `context.version` to `4.3.1.dev0`.
 - Update the README "Conda Installation", `docs/prd.md` section 5.5, `docs/prfaq.md` and the `docs/conda-plan.md` Status table for GeoTIFF in 4.3.0.

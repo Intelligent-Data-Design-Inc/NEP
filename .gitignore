@@ -232,6 +232,7 @@ valgrind*.log
 *.nc
 examples/**/*.nc
 !test/data/netCDF-4/*.nc
+!test/data/NEXTCDF4/*.nc
 
 # Generated plot images
 *.jpg

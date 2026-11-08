@@ -184,6 +184,7 @@ nc_ref_region(ncid, varid, start, count, NULL, &region);
 - Typed calls on FP8/FP6/FP4 variables, and integer/text/string typed calls on any small float, return `NC_EBADTYPE` (`NC_ECHAR` for text).
 - NEXTCDF-4 does not return `NC_ERANGE` for out-of-range conversions ([issue #381](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/381)).
 - `NC_BFLOAT16` fill values are not supported: `_FillValue` attributes are rejected, and a fill value set with `nc_def_var_fill` is not recovered on reopen ([issue #377](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/377)).
+- Def-var setters (`nc_def_var_fill`, `nc_def_var_chunking`, `nc_def_var_deflate`, `nc_def_var_endian`, `nc_def_var_fletcher32`) recreate the HDF5 dataset, which leaves an orphaned dataset object and an extra dimension-scale reference in the file ([issue #382](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/382)).
 
 ## Resources
 
