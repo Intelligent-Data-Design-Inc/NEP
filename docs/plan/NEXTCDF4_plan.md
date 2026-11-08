@@ -299,7 +299,7 @@ Memory representation is the raw bit pattern:
 - `NC_FLOAT8_*` → `uint8_t`
 - `NC_FLOAT6_*`, `NC_FLOAT4_*` → `uint8_t` (HDF5 stores 6-bit and 4-bit floats in 1-byte datatypes)
 
-These types are software-emulated in HDF5 and implicit conversions are unreliable, so callers must use the matching raw type for I/O.
+These types are software-emulated in HDF5 and implicit conversions are unreliable, so callers must use the matching raw type for I/O. (v4.3.0 Sprint 1B: `NC_FLOAT16`/`NC_BFLOAT16` also accept `NC_FLOAT`/`NC_DOUBLE` memtypes, converted by HDF5; FP8/FP6/FP4 still require the matching type, enforced by `check_memtype` in `nxt4io.c`.)
 
 ### Compatibility
 
@@ -822,6 +822,7 @@ Sprint 9 adds `NC_FLOAT16` and, when HDF5 2.1.1+ is available, `NC_BFLOAT16` and
 
 - `src/nextcdf4/nxt4io.c`:
   - Ensure `var_io` uses the correct HDF5 memory/file type for the new small floats. For the initial implementation, require `memtype` to match the variable's file type to avoid incomplete HDF5 conversions.
+  (v4.3.0 Sprint 1B: `NC_FLOAT16`/`NC_BFLOAT16` also accept `NC_FLOAT`/`NC_DOUBLE` memtypes, converted by HDF5; FP8/FP6/FP4 still require the matching type, enforced by `check_memtype` in `nxt4io.c`.)
 
 - `test/tst_nextcdf4_float16.c`:
   - Round-trip `NC_FLOAT16` data using `nc_def_var`, `nc_put_vara`, and `nc_get_vara`.

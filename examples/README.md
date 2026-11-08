@@ -28,8 +28,8 @@ Located in `netcdf-4/`:
 
 ### NEXTCDF-4 Examples (C)
 Located in `nextcdf4/`:
-- **bfloat16.c** - Store real GDAS temperature data as NC_BFLOAT16
-- **bfloat16_perf.c** - float32 vs bfloat16 size and I/O benchmark, CSV output
+- **bfloat16.c** - Store real GDAS temperature data as NC_BFLOAT16 with the nc_*_bfloat16() functions
+- **bfloat16_perf.c** - float32 vs bfloat16 (user-code and HDF5 conversion) size and I/O benchmark, CSV output
 - **plot_bfloat16.py** - Plot the benchmark CSV (size and speed PNGs)
 
 Build with `-DNEP_ENABLE_NEXTCDF4=ON -DNEP_BUILD_EXAMPLES=ON -DNEP_ZSTD_PLUGIN_DIR=<dir>`;

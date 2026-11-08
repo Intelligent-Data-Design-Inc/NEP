@@ -16,7 +16,11 @@ Outputs:
     <prefix>_speed.png  two stacked panels of write/read throughput (MB/s)
 
 Both figures are black and white with hatched bars, matching the style
-of the other example plot scripts.
+of the other example plot scripts. Six configurations are plotted:
+float32 and two bfloat16 conversion paths (user code and HDF5 typed
+calls), each contiguous and deflate1. The bfloat16_hdf5 rows come from
+typed nc_put_vara_float/nc_get_vara_float I/O, where HDF5 does the
+conversion.
 
 Author: Edward Hartnett, Intelligent Data Design, Inc.
 """
@@ -32,13 +36,15 @@ FIELDS = ["tmp2m", "prate_ave", "soilw1", "land"]
 CONFIGS = [
     ("float", "contiguous"),
     ("bfloat16", "contiguous"),
+    ("bfloat16_hdf5", "contiguous"),
     ("float", "deflate1"),
     ("bfloat16", "deflate1"),
+    ("bfloat16_hdf5", "deflate1"),
 ]
-LABELS = ["float32 contiguous", "bfloat16 contiguous",
-          "float32 deflate1", "bfloat16 deflate1"]
-COLORS = ["white", "white", "white", "white"]
-HATCHES = ["", "///", "...", "xxx"]
+LABELS = ["float32 contiguous", "bfloat16 contiguous", "bfloat16 (HDF5) contiguous",
+          "float32 deflate1", "bfloat16 deflate1", "bfloat16 (HDF5) deflate1"]
+COLORS = ["white", "white", "white", "white", "white", "white"]
+HATCHES = ["", "///", "\\\\\\", "...", "xxx", "+++"]
 
 
 def read_rows(path):
@@ -51,7 +57,7 @@ def read_rows(path):
 
 
 def grouped_bars(ax, rows, column, scale=1.0):
-    """Draw the 4-fields x 4-configs grouped bar chart on ax."""
+    """Draw the 4-fields x 6-configs grouped bar chart on ax."""
     group_w = 0.8
     bar_w = group_w / len(CONFIGS)
     for c, (typ, storage) in enumerate(CONFIGS):
@@ -85,9 +91,9 @@ def main():
     ax.set_ylabel("file size (MB)")
     ax.set_title("NEXTCDF-4 file size: float32 vs bfloat16")
     handles, labels = ax.get_legend_handles_labels()
-    fig.legend(handles, labels, loc="lower center", ncol=4,
+    fig.legend(handles, labels, loc="lower center", ncol=3,
                frameon=True, edgecolor="black")
-    fig.tight_layout(rect=(0, 0.06, 1, 1))
+    fig.tight_layout(rect=(0, 0.10, 1, 1))
     size_png = f"{prefix}_size.png"
     fig.savefig(size_png, dpi=150)
     print(f"Saved {size_png}")
@@ -100,9 +106,9 @@ def main():
     ax_r.set_ylabel("read (MB/s of float32 data)")
     fig.suptitle("NEXTCDF-4 write/read throughput: float32 vs bfloat16")
     handles, labels = ax_w.get_legend_handles_labels()
-    fig.legend(handles, labels, loc="lower center", ncol=4,
+    fig.legend(handles, labels, loc="lower center", ncol=3,
                frameon=True, edgecolor="black")
-    fig.tight_layout(rect=(0, 0.06, 1, 0.95))
+    fig.tight_layout(rect=(0, 0.10, 1, 0.95))
     speed_png = f"{prefix}_speed.png"
     fig.savefig(speed_png, dpi=150)
     print(f"Saved {speed_png}")

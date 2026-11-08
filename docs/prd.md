@@ -754,11 +754,14 @@ cmake -B build -DNEP_ENABLE_NEXTCDF4=ON
 - Model flag: `NC_NETCDF4_MODEL`.
 - New atomic `nc_type` constants: `NC_FLOAT16`, `NC_BFLOAT16`, `NC_FLOAT8_E4M3`, `NC_FLOAT8_E5M2`, `NC_FLOAT6_E2M3`, `NC_FLOAT6_E3M2`, `NC_FLOAT4_E2M1`, `NC_COMPLEX`, `NC_DOUBLECOMPLEX`, `NC_BITFIELD8`, `NC_BITFIELD16`, `NC_BITFIELD32`, `NC_BITFIELD64`, `NC_REF_OBJECT`, and `NC_REF_REGION`.
 - Reference helper functions: `nc_ref_object`, `nc_deref_object`, `nc_ref_region`, `nc_deref_region`.
+- bfloat16 I/O functions: `nc_get_var_bfloat16`, `nc_put_var_bfloat16`, `nc_get_var1_bfloat16`, `nc_put_var1_bfloat16`, `nc_get_vara_bfloat16`, `nc_put_vara_bfloat16`, `nc_get_vars_bfloat16`, `nc_put_vars_bfloat16`, and the `nc_bfloat16_t` memory type.
 
 ### 18.7 Known Limitations
 
 - `NC_NEXTCDF4` remains an explicit selection; there is no magic-number dispatch for HDF5 files.
 - `nc_put_varm`/`nc_get_varm` are not implemented.
+- Typed calls on FP8/FP6/FP4 variables, and integer/text/string typed calls on any small float, return `NC_EBADTYPE` (`NC_ECHAR` for text).
+- NEXTCDF-4 does not return `NC_ERANGE` for out-of-range conversions (#381).
 - Object and region reference types round-trip as opaque tokens.
 - Tools (`nextcopy`, `nextdump`) and Fortran bindings are planned for v4.1.0.
 

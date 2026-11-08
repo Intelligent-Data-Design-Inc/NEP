@@ -65,8 +65,8 @@
  * @subsection nextcdf4_c NEXTCDF-4 (C)
  *
  * Located in `examples/nextcdf4/`:
- * - @ref bfloat16.c - Store real GDAS temperature data as NC_BFLOAT16
- * - @ref bfloat16_perf.c - float32 vs bfloat16 size and I/O benchmark, CSV output
+ * - @ref bfloat16.c - Store real GDAS temperature data as NC_BFLOAT16 with the nc_*_bfloat16() functions
+ * - @ref bfloat16_perf.c - float32 vs bfloat16 (user-code and HDF5 conversion) size and I/O benchmark, CSV output
  *
  * @subsection classic_fortran Classic NetCDF (Fortran)
  * 

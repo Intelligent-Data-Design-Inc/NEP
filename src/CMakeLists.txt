@@ -8,7 +8,7 @@ include_directories(${CMAKE_BINARY_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR})
 
 # Build the main nep library
-add_library(nep SHARED nep.c)
+add_library(nep SHARED nep.c nep_bfloat16.c)
 target_link_libraries(nep PRIVATE ${NEP_HDF5_LIBRARIES} ${NETCDF_LIBRARIES})
 set_target_properties(nep PROPERTIES 
     VERSION ${PROJECT_VERSION}

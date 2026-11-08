@@ -104,7 +104,7 @@ Messages are written to `stderr`. Instrumented NEXTCDF-4 paths include file crea
 | `NC_REF_OBJECT` | `H5T_STD_REF_OBJ` | Native only |
 | `NC_REF_REGION` | `H5T_STD_REF_DSETREG` | Native only |
 
-Small floating-point and bitfield types round-trip as raw bit patterns. Complex numbers use the memory layout `{ float r; float i; }` or `{ double r; double i; }`. Reference-typed variables are read and written as opaque tokens; no NetCDF dereferencing API is provided for them.
+Small floating-point and bitfield types are exchanged as raw bit patterns by the untyped calls; `NC_FLOAT16` and `NC_BFLOAT16` also accept typed `float`/`double` calls (see [NEXTCDF4_float16.md](NEXTCDF4_float16.md)). Complex numbers use the memory layout `{ float r; float i; }` or `{ double r; double i; }`. Reference-typed variables are read and written as opaque tokens; no NetCDF dereferencing API is provided for them.
 
 ## Storage and Metadata
 
@@ -141,11 +141,10 @@ nc_close(ncid);
 
 bfloat16 (brain floating point) is a 16-bit floating-point format with 1 sign bit, 8 exponent bits and 7 mantissa bits. It has the same range as float32 — the exponent width is identical — but only about 2-3 significant decimal digits of precision, and takes half the storage. `NC_BFLOAT16` halves the file size for data where a relative error of up to 2^-8 (about 0.4%) is acceptable.
 
-NEXTCDF-4 stores bfloat16 as raw bit patterns; conversion between float32 and bfloat16 is done in user code. The rules for `NC_BFLOAT16` variables:
+NEXTCDF-4 stores bfloat16 as raw bit patterns; conversion between float32 and bfloat16 can be done in user code or by HDF5 through the typed calls. The rules for `NC_BFLOAT16` variables:
 
-- Use `nc_put_vara`/`nc_get_vara` (or `nc_put_var`/`nc_get_var`) with a `uint16_t` buffer.
-- Typed calls like `nc_get_vara_float` return `NC_NOERR` without converting or reading data — do not use them.
-- Do not define a fill value: `_FillValue` attributes are rejected, and a value set with `nc_def_var_fill` is not recovered on reopen.
+- Use `nc_put_vara_bfloat16`/`nc_get_vara_bfloat16` (or the untyped `nc_put_vara`/`nc_get_vara`) with a `uint16_t` buffer, or the typed float/double calls, which convert through HDF5 (ties away from zero; finite float input past the largest bfloat16 saturates). The `nc_*_bfloat16` functions also convert to and from `NC_FLOAT`/`NC_DOUBLE` variables with round-to-nearest-even (see [NEXTCDF4_float16.md](NEXTCDF4_float16.md)).
+- Do not define a fill value: `_FillValue` attributes are rejected, and a value set with `nc_def_var_fill` is not recovered on reopen ([issue #377](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/377)).
 
 See **[NEXTCDF4_float16.md](NEXTCDF4_float16.md)** for the full float16/bfloat16 user guide, a walkthrough of the `examples/nextcdf4/bfloat16.c` example, and the benchmark results.
 
@@ -182,7 +181,8 @@ nc_ref_region(ncid, varid, start, count, NULL, &region);
 - Object and region references round-trip as opaque tokens; no NetCDF dereferencing API is provided beyond `nc_deref_object` and `nc_deref_region`.
 - Reference-typed variables cannot be coordinate variables and cannot be nested inside compound types.
 - Small floating-point types (`NC_FLOAT6_E2M3`, `NC_FLOAT4_E2M1`) have no default fill value because their value spaces are too small for a useful sentinel.
-- Typed read calls such as `nc_get_vara_float` on `NC_BFLOAT16` variables return `NC_NOERR` without converting or reading any data; use the untyped `nc_get_vara`/`nc_get_var` with a `uint16_t` buffer instead ([issue #376](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/376)).
+- Typed calls on FP8/FP6/FP4 variables, and integer/text/string typed calls on any small float, return `NC_EBADTYPE` (`NC_ECHAR` for text).
+- NEXTCDF-4 does not return `NC_ERANGE` for out-of-range conversions ([issue #381](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/381)).
 - `NC_BFLOAT16` fill values are not supported: `_FillValue` attributes are rejected, and a fill value set with `nc_def_var_fill` is not recovered on reopen ([issue #377](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/377)).
 
 ## Resources

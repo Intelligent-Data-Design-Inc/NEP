@@ -5,10 +5,22 @@
  *
  * Reads @c tmp2m, @c prate_ave, @c soilw1 and @c land from the GDAS
  * sample file @c test/data/netCDF-4/gdas_sfc_sample.nc and, for each
- * field, writes and reads a NEXTCDF-4 file in four configurations:
- * (float, contiguous), (bfloat16, contiguous), (float, deflate level 1
- * with shuffle) and (bfloat16, deflate level 1 with shuffle). Each
- * configuration is repeated 3 times and the minimum times are kept.
+ * field, writes and reads a NEXTCDF-4 file in six configurations:
+ * (float, contiguous), (bfloat16, contiguous), (bfloat16_hdf5,
+ * contiguous), (float, deflate level 1 with shuffle), (bfloat16,
+ * deflate level 1 with shuffle) and (bfloat16_hdf5, deflate level 1
+ * with shuffle). Each configuration is repeated 3 times and the
+ * minimum times are kept.
+ *
+ * The @c bfloat16 rows convert float32 to bfloat16 in user code and
+ * exchange raw uint16_t bits through nc_put_vara_bfloat16() and
+ * nc_get_vara_bfloat16(). The
+ * @c bfloat16_hdf5 rows define the same NC_BFLOAT16 variable but write
+ * the float data with nc_put_vara_float() and read with
+ * nc_get_vara_float(), so the conversion happens inside HDF5 and
+ * @c wconv_s and @c rconv_s are 0. For each bfloat16_hdf5 row a
+ * @c #-prefixed line is printed to stdout (not to the CSV) with the
+ * number of stored values that differ from round-to-nearest-even.
  *
  * Write time runs from just before the float32 to bfloat16 conversion
  * (bfloat16 only) through nc_close(). Read time runs from nc_open()
@@ -24,7 +36,8 @@
  *   @endcode
  *   @c wconv_s is the minimum float32-to-bfloat16 conversion time (part
  *   of @c write_s) and @c rconv_s the minimum bfloat16-to-float32
- *   conversion time (part of @c read_s); both are 0 for float rows.
+ *   conversion time (part of @c read_s); both are 0 for float and
+ *   bfloat16_hdf5 rows.
  *   Each row is also printed to stdout.
  *
  * **Typical workflow:**
@@ -40,7 +53,8 @@
  *
  * **Key Concepts:**
  * - **Raw bit patterns**: bfloat16 data is written and read as
- *   uint16_t through the untyped nc_put_vara()/nc_get_vara()
+ *   uint16_t through nc_put_vara_bfloat16()/nc_get_vara_bfloat16(), or
+ *   converted inside HDF5 by the typed float calls
  * - **Minimum of 3 runs**: reduces timing noise
  * - **Gates**: every contiguous bfloat16 file must be smaller than its
  *   float file, and the maximum relative error must not exceed 2^-8
@@ -96,12 +110,19 @@ get_time(void)
     return ts.tv_sec + ts.tv_nsec * 1e-9;
 }
 
+/** Which conversion path a configuration uses. */
+typedef enum {
+    CFG_FLOAT,     /**< NC_FLOAT variable, no conversion. */
+    CFG_BF16_USER, /**< NC_BFLOAT16 variable, conversion in user code. */
+    CFG_BF16_HDF5  /**< NC_BFLOAT16 variable, conversion inside HDF5. */
+} cfg_type_t;
+
 /**
  * @brief One benchmark row for one field/type/storage configuration.
  */
 typedef struct {
     const char *field;       /**< Field name. */
-    const char *type;        /**< "float" or "bfloat16". */
+    const char *type;        /**< "float", "bfloat16" or "bfloat16_hdf5". */
     const char *storage;     /**< "contiguous" or "deflate1". */
     size_t uncompressed;     /**< NY*NX*sizeof(element). */
     long long file_bytes;    /**< File size from the last repetition. */
@@ -120,34 +141,39 @@ typedef struct {
  * nc_create(NC_NEXTCDF4 | NC_CLOBBER), defines fixed dims
  * @c time = 1, @c grid_yt = NY, @c grid_xt = NX and one variable of the
  * field name, optionally chunked 1x768x1536 with shuffle and deflate
- * level 1, writes the data with nc_put_vara(), closes the file, stats
- * it, reopens it, reads the data back with nc_get_vara() and checks
- * the bits match what was written. The minimum write and read times
+ * level 1, writes the data, closes the file, stats it, reopens it,
+ * reads the data back and checks it. @c CFG_FLOAT and @c CFG_BF16_USER
+ * use the untyped calls and check the raw bits; @c CFG_BF16_HDF5 uses
+ * the typed float calls and checks the read floats against the stored
+ * raw bits on the last repetition. The minimum write and read times
  * and the last repetition's file size and error metrics are returned
  * in @p row.
  *
  * @param field   Field name (used as the variable name).
  * @param fdata   Input float data (NVALS elements).
- * @param use_bf16 Non-zero for bfloat16, 0 for float.
+ * @param type    Conversion path (CFG_FLOAT, CFG_BF16_USER or
+ *                CFG_BF16_HDF5).
  * @param deflate  Non-zero for shuffle+deflate level 1, 0 for contiguous.
  * @param row     Result row to fill in.
  * @param bdata   Scratch buffer of NVALS uint16_t.
  * @param rdata   Scratch buffer of at least NVALS*4 bytes.
  * @param back    Scratch buffer of NVALS floats for the bfloat16 to
  *                float32 conversion.
- * @return 0 on success, 1 on bit mismatch, exits on NetCDF error.
+ * @return 0 on success, 1 on verification failure, exits on NetCDF error.
  */
 static int
-run_config(const char *field, const float *fdata, int use_bf16, int deflate,
+run_config(const char *field, const float *fdata, cfg_type_t type, int deflate,
            row_t *row, uint16_t *bdata, uint16_t *rdata, float *back)
 {
     int rep;
+    int is_bf16 = (type != CFG_FLOAT);
     struct stat st;
 
     row->field = field;
-    row->type = use_bf16 ? "bfloat16" : "float";
+    row->type = type == CFG_FLOAT ? "float"
+              : type == CFG_BF16_USER ? "bfloat16" : "bfloat16_hdf5";
     row->storage = deflate ? "deflate1" : "contiguous";
-    row->uncompressed = NVALS * (use_bf16 ? sizeof(uint16_t) : sizeof(float));
+    row->uncompressed = NVALS * (is_bf16 ? sizeof(uint16_t) : sizeof(float));
     row->write_s = 1e30;
     row->read_s = 1e30;
     row->file_bytes = 0;
@@ -168,10 +194,10 @@ run_config(const char *field, const float *fdata, int use_bf16, int deflate,
         size_t i;
         int ret;
 
-        /* --- Write pass: conversion (bfloat16 only) is timed. ----- */
+        /* --- Write pass: user conversion (bfloat16 only) is timed. - */
         t0 = get_time();
 
-        if (use_bf16)
+        if (type == CFG_BF16_USER)
         {
             tc0 = get_time();
             for (i = 0; i < NVALS; i++)
@@ -190,7 +216,7 @@ run_config(const char *field, const float *fdata, int use_bf16, int deflate,
         if ((ret = nc_def_dim(ncid, "time", 1, &dimids[0]))) ERR(ret);
         if ((ret = nc_def_dim(ncid, "grid_yt", NY, &dimids[1]))) ERR(ret);
         if ((ret = nc_def_dim(ncid, "grid_xt", NX, &dimids[2]))) ERR(ret);
-        if ((ret = nc_def_var(ncid, field, use_bf16 ? NC_BFLOAT16 : NC_FLOAT,
+        if ((ret = nc_def_var(ncid, field, is_bf16 ? NC_BFLOAT16 : NC_FLOAT,
                              3, dimids, &varid))) ERR(ret);
         if (deflate)
         {
@@ -198,16 +224,25 @@ run_config(const char *field, const float *fdata, int use_bf16, int deflate,
             if ((ret = nc_def_var_deflate(ncid, varid, 1, 1, 1))) ERR(ret);
         }
         if ((ret = nc_enddef(ncid))) ERR(ret);
-        /* Typed calls such as nc_put_vara_float must not be used on
-         * NC_BFLOAT16 variables; the untyped nc_put_vara passes the
-         * raw bits through unchanged. */
-        if ((ret = nc_put_vara(ncid, varid, start, count, wdata))) ERR(ret);
+        /* nc_put_vara_bfloat16 stores the raw bits on the NC_BFLOAT16
+         * variable; nc_put_vara_float (CFG_BF16_HDF5) lets HDF5
+         * convert, which rounds ties away from zero while
+         * float_to_bfloat16() rounds ties to even. */
+        if (type == CFG_BF16_USER)
+        {
+            if ((ret = nc_put_vara_bfloat16(ncid, varid, start, count,
+                                            (nc_bfloat16_t *)(void *)bdata))) ERR(ret);
+        }
+        else
+        {
+            if ((ret = nc_put_vara_float(ncid, varid, start, count, wdata))) ERR(ret);
+        }
         if ((ret = nc_close(ncid))) ERR(ret);
 
         write_s = get_time() - t0;
         if (write_s < row->write_s)
             row->write_s = write_s;
-        if (use_bf16 && (rep == 0 || wconv_s < row->wconv_s))
+        if (type == CFG_BF16_USER && (rep == 0 || wconv_s < row->wconv_s))
             row->wconv_s = wconv_s;
 
         if (stat(TMP_FILE, &st) != 0)
@@ -222,13 +257,26 @@ run_config(const char *field, const float *fdata, int use_bf16, int deflate,
 
         if ((ret = nc_open(TMP_FILE, NC_NEXTCDF4 | NC_NOWRITE, &ncid))) ERR(ret);
         if ((ret = nc_inq_varid(ncid, field, &varid))) ERR(ret);
-        /* Typed calls such as nc_get_vara_float must not be used on
-         * NC_BFLOAT16 variables; the untyped nc_get_vara returns the
-         * raw stored bits. */
-        if ((ret = nc_get_vara(ncid, varid, start, count, rdata_typed))) ERR(ret);
+        /* nc_get_vara_bfloat16 returns the raw stored bits.
+         * nc_get_vara_float on the NC_BFLOAT16 variable
+         * (CFG_BF16_HDF5) returns the same values converted to float
+         * by HDF5. */
+        if (type == CFG_BF16_HDF5)
+        {
+            if ((ret = nc_get_vara_float(ncid, varid, start, count, back))) ERR(ret);
+        }
+        else if (type == CFG_BF16_USER)
+        {
+            if ((ret = nc_get_vara_bfloat16(ncid, varid, start, count,
+                                            (nc_bfloat16_t *)(void *)rdata_typed))) ERR(ret);
+        }
+        else
+        {
+            if ((ret = nc_get_vara_float(ncid, varid, start, count, rdata_typed))) ERR(ret);
+        }
         if ((ret = nc_close(ncid))) ERR(ret);
 
-        if (use_bf16)
+        if (type == CFG_BF16_USER)
         {
             tc0 = get_time();
             for (i = 0; i < NVALS; i++)
@@ -239,11 +287,40 @@ run_config(const char *field, const float *fdata, int use_bf16, int deflate,
         read_s = get_time() - t0;
         if (read_s < row->read_s)
             row->read_s = read_s;
-        if (use_bf16 && (rep == 0 || rconv_s < row->rconv_s))
+        if (type == CFG_BF16_USER && (rep == 0 || rconv_s < row->rconv_s))
             row->rconv_s = rconv_s;
 
+        /* For CFG_BF16_HDF5, reopen and read the raw bits so the typed
+         * read can be checked and compared to round-to-nearest-even. */
+        if (type == CFG_BF16_HDF5 && rep == NREPS - 1)
+        {
+            size_t n_diff = 0;
+
+            if ((ret = nc_open(TMP_FILE, NC_NEXTCDF4 | NC_NOWRITE, &ncid))) ERR(ret);
+            if ((ret = nc_inq_varid(ncid, field, &varid))) ERR(ret);
+            if ((ret = nc_get_vara_bfloat16(ncid, varid, start, count,
+                                            (nc_bfloat16_t *)(void *)rdata))) ERR(ret);
+            if ((ret = nc_close(ncid))) ERR(ret);
+            for (i = 0; i < NVALS; i++)
+            {
+                uint32_t fbits;
+
+                memcpy(&fbits, &back[i], sizeof(fbits));
+                if (fbits != (uint32_t)rdata[i] << 16)
+                {
+                    fprintf(stderr, "%s: bfloat16_hdf5 %s typed read does not match stored bits\n",
+                            field, row->storage);
+                    return 1;
+                }
+                if (rdata[i] != float_to_bfloat16(fdata[i]))
+                    n_diff++;
+            }
+            printf("# %s %s: %zu of %zu values differ from round-to-nearest-even\n",
+                   field, row->storage, n_diff, NVALS);
+        }
+
         /* Error metrics are computed outside the timed regions. */
-        if (use_bf16 && rep == NREPS - 1)
+        if (is_bf16 && rep == NREPS - 1)
         {
             row->max_abs_err = 0.0;
             row->max_rel_err = 0.0;
@@ -268,7 +345,8 @@ run_config(const char *field, const float *fdata, int use_bf16, int deflate,
         }
 
         /* Check the bits read against the bits written. */
-        if (memcmp(wdata, rdata_typed, NVALS * (use_bf16 ? 2 : 4)))
+        if (type != CFG_BF16_HDF5 &&
+            memcmp(wdata, rdata_typed, NVALS * (is_bf16 ? 2 : 4)))
         {
             fprintf(stderr, "%s: %s %s bits did not round-trip\n",
                     field, row->type, row->storage);
@@ -281,8 +359,8 @@ run_config(const char *field, const float *fdata, int use_bf16, int deflate,
 /**
  * @brief Main entry point.
  *
- * For each of the four GDAS fields, runs the four configurations
- * (float/bfloat16 x contiguous/deflate1), appends one CSV row per
+ * For each of the four GDAS fields, runs the six configurations
+ * (float/bfloat16/bfloat16_hdf5 x contiguous/deflate1), appends one CSV row per
  * configuration to the output file and prints it to stdout.
  *
  * @param argc Argument count; must be 3.
@@ -296,7 +374,7 @@ main(int argc, char **argv)
 {
     float *fdata, *back;
     uint16_t *bdata, *rdata;
-    row_t rows[4];
+    row_t rows[6];
     FILE *fp;
     int f, c;
     int fail = 0;
@@ -342,21 +420,22 @@ main(int argc, char **argv)
         if ((ret = nc_close(ncid))) ERR(ret);
 
         /* Run (float, contiguous), (bfloat16, contiguous),
-         * (float, deflate1), (bfloat16, deflate1) in that order. */
-        for (c = 0; c < 4; c++)
+         * (bfloat16_hdf5, contiguous), (float, deflate1), (bfloat16,
+         * deflate1), (bfloat16_hdf5, deflate1) in that order. */
+        for (c = 0; c < 6; c++)
         {
-            int use_bf16 = (c % 2 == 1);
-            int deflate = (c >= 2);
+            cfg_type_t type = (cfg_type_t)(c % 3);
+            int deflate = (c >= 3);
             double ratio, write_mbps, read_mbps;
             char line[256];
 
-            if (run_config(FIELDS[f], fdata, use_bf16, deflate, &rows[c],
+            if (run_config(FIELDS[f], fdata, type, deflate, &rows[c],
                            bdata, rdata, back))
             {
                 fclose(fp);
                 return 1;
             }
-            if (!use_bf16)
+            if (type == CFG_FLOAT)
                 float_bytes[deflate] = rows[c].file_bytes;
 
             ratio = (double)float_bytes[deflate] / (double)rows[c].file_bytes;
@@ -375,10 +454,10 @@ main(int argc, char **argv)
             /* Gates: contiguous bfloat16 must be smaller than
              * contiguous float; relative error must not exceed 2^-8.
              * Deflate rows are only reported. */
-            if (use_bf16 && !deflate &&
+            if (type != CFG_FLOAT && !deflate &&
                 rows[c].file_bytes >= float_bytes[0])
                 fail = 1;
-            if (use_bf16 && rows[c].max_rel_err > BF16_REL_ERR_MAX)
+            if (type != CFG_FLOAT && rows[c].max_rel_err > BF16_REL_ERR_MAX)
                 fail = 1;
         }
     }

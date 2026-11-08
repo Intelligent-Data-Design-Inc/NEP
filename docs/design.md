@@ -211,7 +211,7 @@ cmake --install build
 ```
 ${PREFIX}/
 ├── lib/
-│   ├── libnep.so             # NEP logging for NEXTCDF-4
+│   ├── libnep.so             # NEP logging and bfloat16 I/O functions
 │   └── libnc*.so             # Enabled UDF format handlers
 ├── include/
 │   └── nep.h

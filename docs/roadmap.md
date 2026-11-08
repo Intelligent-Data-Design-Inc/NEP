@@ -22,8 +22,18 @@ Plan: [docs/plan/v4.3.0-sprint1-fix-issues-372-374.md](plan/v4.3.0-sprint1-fix-i
 
 Plan: [docs/plan/v4.3.0-sprint1A-bfloat16-examples.md](plan/v4.3.0-sprint1A-bfloat16-examples.md)
 
+#### Sprint 1B - Fix Issue of Float Conversion
+- #376 doesn't reproduce: HDF5 already converts typed calls. Define the behavior in `var_io()` (`check_memtype`): `NC_FLOAT16`/`NC_BFLOAT16` accept `NC_FLOAT`/`NC_DOUBLE` through HDF5 (exact reads; HDF5 write rounding documented). FP8/FP6/FP4 are untyped only (HDF5 2.1.1 Known Problem). Other memtypes return `NC_EBADTYPE`, and text returns `NC_ECHAR`.
+- New enabled test `tst_nextcdf4_conv` (exhaustive 16-bit widening, pinned HDF5 write bits, the #376 reproduction, rejections).
+- `bfloat16.c` cross-checks a typed read; `bfloat16_perf` adds `bfloat16_hdf5` rows (24 total); reference CSV, machine record and plots regenerated.
+- Fix the Sprint 1A "typed calls are a no-op" text in `docs/nextcdf4.md`, `docs/NEXTCDF4_float16.md`, `NEXTCDF4_plan.md`, `prd.md` and `nep.h`. Comment on and close #376.
+- New `libnep` functions `nc_{get,put}_{var,var1,vara,vars}_bfloat16` with `nc_bfloat16_t` (`__bf16` when available, else `uint16_t`): raw bits for `NC_BFLOAT16`, NEP round-to-nearest-even conversion for `NC_FLOAT`/`NC_DOUBLE` with `NC_ERANGE` on overflow; new test `tst_nep_bfloat16`. The bfloat16 examples use them; benchmarks rerun and plots regenerated.
+- Out of scope: `NC_ERANGE` for standard typed calls (#381), typed FP8/FP6/FP4 I/O, NEP-side rounding for standard typed calls, complex/bitfield/reference typed calls, `varm`/attribute/Fortran bfloat16 functions, #377-#379, release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1B-fix-float-conversion.md](plan/v4.3.0-sprint1B-fix-float-conversion.md)
+
 #### Sprint 2 - 
-- Tag v4.3.0 and write `docs/releases/v4.3.0.md` (HDF5 detection change, CMake 3.19 minimum, conda GeoTIFF, Sprint 1A NEXTCDF-4 bfloat16 examples and `NEP_ZSTD_PLUGIN_DIR`).
+- Tag v4.3.0 and write `docs/releases/v4.3.0.md` (HDF5 detection change, CMake 3.19 minimum, conda GeoTIFF, Sprint 1A NEXTCDF-4 bfloat16 examples and `NEP_ZSTD_PLUGIN_DIR`, Sprint 1B typed small-float I/O and the `nc_*_bfloat16` functions, #376, and the fix for untyped `nc_put_var`/`nc_get_var`/`var1`/`vars` failing with `NC_EBADTYPE` on NEXTCDF-4).
 - Spack: add `version("4.3.0")` with its sha256; update spack/spack-packages#5557 in place per `docs/spack.md` "Updating the upstream PR".
 - Conda (#374 part 2): if #34309 is still open, regenerate the staged copy for 4.3.0, push it to `nep-3.0.0` and update the PR body; if merged, make the GeoTIFF change on the feedstock and drop the staged lint/micromamba steps. Move the `conda.yml` lint step to the 4.3.0 tarball and set `context.version` to `4.3.1.dev0`.
 - Update the README "Conda Installation", `docs/prd.md` section 5.5, `docs/prfaq.md` and the `docs/conda-plan.md` Status table for GeoTIFF in 4.3.0.
