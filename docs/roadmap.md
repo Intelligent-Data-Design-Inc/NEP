@@ -44,10 +44,8 @@ Plan: [docs/plan/v4.3.0-sprint1B-fix-float-conversion.md](plan/v4.3.0-sprint1B-f
 
 Plan: [docs/plan/v4.3.0-sprint1C-refine-performance-graphs.md](plan/v4.3.0-sprint1C-refine-performance-graphs.md)
 
-#### Sprint 1D - Documentation
+#### Sprint 1D - Disk-Bound Timing in All Performance Programs
 - Change NEXTCDF-4 doxygen docs to make clear that it is still experimental and not all features are implemented.
-
-#### Sprint 1E - Disk-Bound Timing in All Performance Programs
 - Use `examples/perf_disk.h` (from Sprint 1C) in the other 10 timing programs: `examples/performance/{cache_tuning,chunking,deflate,endianness,fill_values,lossless,quantize,szip,zstandard}.c` and `examples/netcdf-4/chunking_performance.c`. Write time includes `fsync`, and each read starts after the file is dropped from the page cache.
 - Rerun them on an `-O2` build, regenerate their results CSVs, metadata and plots, and update the docs that quote their numbers.
 
