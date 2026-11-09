@@ -40,9 +40,11 @@ Build with `-DNEP_ENABLE_NEXTCDF4=ON -DNEP_BUILD_EXAMPLES=ON -DNEP_ZSTD_PLUGIN_D
 add `-DNEP_ENABLE_BENCHMARKS=ON` to register the benchmark tests.
 Benchmarks should be built with `-DCMAKE_BUILD_TYPE=RelWithDebInfo` for
 representative timings; the benchmark programs warn when built without
-optimization. The bfloat16 benchmarks use `examples/perf_disk.h` to
-`fsync()` each file inside the write time and drop it from the page
-cache before each read, so their times are disk-bound.
+optimization. The bfloat16 and `performance/` benchmarks use
+`examples/perf_disk.h` to `fsync()` each file inside the write time and
+drop it from the page cache before each read, so their times are
+disk-bound. The disabled `lossless`/`quantize` results predate this
+timing change.
 
 ### Classic NetCDF Examples (Fortran)
 Located in `f_classic/`:

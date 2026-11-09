@@ -94,6 +94,10 @@
  *       Build with ENABLE_BENCHMARKS=ON (CMake) or --enable-benchmarks
  *       (Autotools); it is excluded from regular CI.
  *
+ * @note Write time includes fsync; each read starts with the file
+ *       dropped from the page cache. Reference results are measured
+ *       with -DCMAKE_BUILD_TYPE=RelWithDebInfo (-O2).
+ *
  * @note Companion code for "The NetCDF Developer's Handbook: The Authoritative Guide to Writing
  * High-Performance Programs for Scientific Data Management, Second Edition"
  * (https://www.amazon.com/dp/B0H7Q1Z75L)
@@ -110,6 +114,8 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+
+#include "perf_disk.h"
 
 /** Time dimension: 500 time steps. */
 #define NZ 500
@@ -231,7 +237,8 @@ apply_filter(int ncid, int varid, const filter_config_t *filter)
  * Creates @c quantize_tmp.nc with shuffle + lossless filter + (optionally)
  * quantization, writes a 500×180×360 NC_FLOAT temperature variable, stats
  * the file to obtain the compressed size, reads the variable back to compute
- * max absolute error, then removes the file.
+ * max absolute error, then removes the file.  Write time includes fsync;
+ * the read pass starts after the file is dropped from the page cache.
  *
  * When @p quantize_mode is -1 (baseline), no quantization is applied and
  * @c max_abs_err is reported as 0.000000.
@@ -304,6 +311,12 @@ run_one(float *orig, float *read_buf,
     if ((ret = nc_put_var_float(ncid, varid, orig))) ERR(ret);
     if ((ret = nc_close(ncid))) ERR(ret);
 
+    /* Write time ends after the data is flushed to the device. */
+    if (nep_perf_sync_file(TMP_FILE))
+    {
+        perror("nep_perf_sync_file");
+        return 1;
+    }
     write_s = get_time() - t_write_start;
 
     /* --- Get compressed size ------------------------------------------- */
@@ -316,6 +329,12 @@ run_one(float *orig, float *read_buf,
     ratio = UNCOMPRESSED_BYTES / (double)compressed_bytes;
 
     /* --- Read pass ----------------------------------------------------- */
+    /* Start the read with the file dropped from the page cache. */
+    if (nep_perf_drop_cache(TMP_FILE))
+    {
+        perror("nep_perf_drop_cache");
+        return 1;
+    }
     t_read_start = get_time();
 
     if ((ret = nc_open(TMP_FILE, NC_NOWRITE, &ncid))) ERR(ret);

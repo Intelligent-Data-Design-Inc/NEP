@@ -109,7 +109,7 @@ LZ4/BZIP2 compression lives in [nep-compress](https://github.com/captainkirk99/n
 **A:** NEP addresses key challenges in scientific data management:
 1. **Format fragmentation**: Scientists must convert between NetCDF, CDF, GeoTIFF, GRIB2, FITS, and PDS4 formats
 2. **Complex workflows**: Multiple tools required for different scientific data formats
-3. **Backend limitations**: NEXTCDF-4 extends type and metadata support
+3. **Backend limitations**: NEXTCDF-4 (experimental) extends type and metadata support
 
 ### Technical Questions
 
