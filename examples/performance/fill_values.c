@@ -70,6 +70,10 @@
  *       Build with ENABLE_BENCHMARKS=ON (CMake) or --enable-benchmarks
  *       (Autotools); it is excluded from regular CI.
  *
+ * @note Write time includes fsync; each read starts with the file
+ *       dropped from the page cache. Reference results are measured
+ *       with -DCMAKE_BUILD_TYPE=RelWithDebInfo (-O2).
+ *
  * @note Companion code for "The NetCDF Developer's Handbook: The Authoritative Guide to Writing
  * High-Performance Programs for Scientific Data Management, Second Edition"
  * (https://www.amazon.com/dp/B0H7Q1Z75L)
@@ -83,6 +87,8 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+
+#include "perf_disk.h"
 
 /** Time dimension: 500 time steps. */
 #define NZ 500
@@ -140,7 +146,8 @@ generate_data(float *data)
  * Creates a file with the given format and fill mode, writes a
  * 500×180×360 NC_FLOAT temperature variable, stats the file to
  * obtain the on-disk size, reads the variable back, then removes
- * the file.
+ * the file.  Write time includes fsync; the read pass starts after
+ * the file is dropped from the page cache.
  *
  * @param path       Path for temporary file (will be created and removed).
  * @param format     File format: NC_CLOBBER (classic) or NC_NETCDF4|NC_CLOBBER.
@@ -209,6 +216,13 @@ run_test(const char *path, int format, int fill_mode, const char *format_name)
     if ((ret = nc_close(ncid)))
         ERR(ret);
 
+    /* Write time ends after the data is flushed to the device. */
+    if (nep_perf_sync_file(path))
+    {
+        perror("nep_perf_sync_file");
+        free(data);
+        return 1;
+    }
     write_s = get_time() - t_write_start;
 
     /* --- Get file size ------------------------------------------------- */
@@ -221,6 +235,13 @@ run_test(const char *path, int format, int fill_mode, const char *format_name)
     file_bytes = (long long)st.st_size;
 
     /* --- Read pass ----------------------------------------------------- */
+    /* Start the read with the file dropped from the page cache. */
+    if (nep_perf_drop_cache(path))
+    {
+        perror("nep_perf_drop_cache");
+        free(data);
+        return 1;
+    }
     t_read_start = get_time();
 
     if ((ret = nc_open(path, NC_NOWRITE, &ncid)))

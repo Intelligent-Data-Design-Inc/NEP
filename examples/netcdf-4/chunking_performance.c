@@ -68,6 +68,10 @@
  * - chunking_performance_balanced.nc (mixed access)
  * Displays performance comparison and chunking recommendations.
  *
+ * @note Write time includes fsync; each read starts with the file
+ *       dropped from the page cache. Reference results are measured
+ *       with -DCMAKE_BUILD_TYPE=RelWithDebInfo (-O2).
+ *
  * @note Companion code for "The NetCDF Developer's Handbook: The Authoritative Guide to Writing
  * High-Performance Programs for Scientific Data Management, Second Edition"
  * (https://www.amazon.com/dp/B0H7Q1Z75L)
@@ -81,6 +85,8 @@
 #include <string.h>
 #include <time.h>
 #include <netcdf.h>
+
+#include "perf_disk.h"
 
 #define NTIME 100
 #define NLAT 180
@@ -155,7 +161,14 @@ double create_chunked_file(const char *filename, const char *strategy_name,
     /* Close file */
     if ((retval = nc_close(ncid)))
         ERR(retval);
-    
+
+    /* Write time ends after the data is flushed to the device. */
+    if (nep_perf_sync_file(filename))
+    {
+        perror("nep_perf_sync_file");
+        exit(ERRCODE);
+    }
+
     /* End timing */
     clock_gettime(CLOCK_MONOTONIC, &end);
     double write_time = get_time_diff(start, end);
@@ -194,9 +207,16 @@ double read_and_validate(const char *filename, const char *test_name) {
         exit(ERRCODE);
     }
     
+    /* Start the read with the file dropped from the page cache. */
+    if (nep_perf_drop_cache(filename))
+    {
+        perror("nep_perf_drop_cache");
+        exit(ERRCODE);
+    }
+
     /* Start timing */
     clock_gettime(CLOCK_MONOTONIC, &start);
-    
+
     /* Open file */
     if ((retval = nc_open(filename, NC_NOWRITE, &ncid)))
         ERR(retval);

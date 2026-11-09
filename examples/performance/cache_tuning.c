@@ -136,6 +136,12 @@
  * $ gnuplot -e "set datafile separator ','; plot 'cache_results.csv' using 1:2 with lines title 'Time vs Cache Size'"
  * @endcode
  *
+ * @note With ENABLE_BENCHMARKS, each timed read starts with the file
+ *       dropped from the page cache (which fsyncs it first), so reads
+ *       not served by the HDF5 chunk cache come from the storage device.
+ *       Reference results are measured with
+ *       -DCMAKE_BUILD_TYPE=RelWithDebInfo (-O2).
+ *
  * @note Companion code for "The NetCDF Developer's Handbook: The Authoritative Guide to Writing
  * High-Performance Programs for Scientific Data Management, Second Edition"
  * (https://www.amazon.com/dp/B0H7Q1Z75L)
@@ -148,6 +154,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
+
+#include "perf_disk.h"
 
 #define NDIMS 3
 #define NX 360
@@ -336,6 +344,13 @@ int main(int argc, char **argv)
      * ========================================================================= */
     printf("# Test 1: Default cache - 5 full passes through dataset\n");
 
+    /* Start the timed reads with the file dropped from the page cache. */
+    if (nep_perf_drop_cache("cache_test.nc"))
+    {
+        perror("nep_perf_drop_cache");
+        return 1;
+    }
+
     t_start = get_time();
     /* Read all chunks in the dataset 5 times sequentially
      * Each iteration reads the complete dataset from start to finish */
@@ -408,7 +423,14 @@ int main(int argc, char **argv)
             }
 
             /* Timed run: Read all chunks 5 times to measure performance
-             * With larger cache, more chunks remain in memory between reads */
+             * With larger cache, more chunks remain in memory between reads.
+             * Drop the page cache first so reads not served by the HDF5
+             * chunk cache come from the device. */
+            if (nep_perf_drop_cache("cache_test.nc"))
+            {
+                perror("nep_perf_drop_cache");
+                return 1;
+            }
             t_start = get_time();
             for (iter = 0; iter < 5; iter++) {
                 for (k = 0; k < NZ; k += CHUNK_Z) {
@@ -465,6 +487,11 @@ int main(int argc, char **argv)
         double thrash_time_small, thrash_time_large;
         double thrash_cache_large_mb;
 
+        if (nep_perf_drop_cache("cache_test.nc"))
+        {
+            perror("nep_perf_drop_cache");
+            return 1;
+        }
         t_start = get_time();
         /* Read the 50-chunk working set 100 times
          * Each iteration reads chunks 0-49, then repeats
@@ -488,6 +515,11 @@ int main(int argc, char **argv)
                                        1009, 0.75f)))
             ERR(retval);
 
+        if (nep_perf_drop_cache("cache_test.nc"))
+        {
+            perror("nep_perf_drop_cache");
+            return 1;
+        }
         t_start = get_time();
         /* Same workload: read 50 chunks 100 times
          * But now all 50 chunks fit in cache, so no disk reads after warmup */

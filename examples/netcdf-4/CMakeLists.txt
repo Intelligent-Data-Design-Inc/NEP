@@ -52,6 +52,7 @@ foreach(example ${NETCDF4_EXAMPLES})
     add_executable(${example} ${example}.c)
     target_compile_options(${example} PRIVATE ${NC_CFLAGS_LIST})
     target_link_directories(${example} PRIVATE ${HDF5_LIB_DIR})
+    target_include_directories(${example} PRIVATE ${CMAKE_SOURCE_DIR}/examples)
     # nc-config --libs doesn't include HDF5, so we need to add it explicitly
     # NetCDF needs both libhdf5 and libhdf5_hl
     target_link_libraries(${example} PRIVATE ${NC_LIBS_LIST} ${NEP_HDF5_LIBRARIES} m)

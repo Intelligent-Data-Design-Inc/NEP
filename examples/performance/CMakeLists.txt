@@ -145,8 +145,10 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../validate_cdl.sh.in
 
 # CDL validation for cache_tuning (only when benchmarks enabled)
 if(NEP_ENABLE_BENCHMARKS AND BUILD_TESTING)
+    # Compare metadata only: ncdump -s shows the storage attributes; the
+    # version-specific global attributes are stripped before diffing.
     add_test(NAME cache_tuning_validate
-             COMMAND bash -c "cp /dev/null /dev/null; TMPFILE=cache_validate_$$.nc; ./cache_tuning && mv cache_test.nc \$TMPFILE && bash validate_cdl.sh cache_tuning \$TMPFILE ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/cache_tuning_expected.cdl; STATUS=$?; rm -f \$TMPFILE; exit \$STATUS"
+             COMMAND bash -c "./cache_tuning && ${NCDUMP} -h -s cache_test.nc | awk 'NF==0{next} index(\$0,\"//\")==1{print \"}\"; exit} {print}' > cache_validate.cdl && diff -u ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/cache_tuning_expected.cdl cache_validate.cdl; STATUS=\$?; rm -f cache_validate.cdl; exit \$STATUS"
              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     set_tests_properties(cache_tuning_validate PROPERTIES
         ENVIRONMENT "LD_LIBRARY_PATH=${HDF5_LIB_DIR}:${NC_LIBDIR}:$ENV{LD_LIBRARY_PATH}"

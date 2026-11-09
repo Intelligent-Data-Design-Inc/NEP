@@ -66,6 +66,11 @@
  * - nc_inq_var_chunking()     Query chunk shape on an open variable
  * - nc_get_vara_float()       Read a hyperslab (both access patterns)
  *
+ * @note Each timed read starts with the file dropped from the page
+ *       cache (which fsyncs it first), so the times are disk-bound.
+ *       Reference results are measured with
+ *       -DCMAKE_BUILD_TYPE=RelWithDebInfo (-O2).
+ *
  * @note Companion code for "The NetCDF Developer's Handbook: The Authoritative Guide to Writing
  * High-Performance Programs for Scientific Data Management, Second Edition"
  * (https://www.amazon.com/dp/B0H7Q1Z75L)
@@ -78,6 +83,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+
+#include "perf_disk.h"
 
 /* Dataset dimensions: 100 time steps × 36 lats × 72 lons (~10 MB total) */
 #define NZ 100   /**< Time dimension size */
@@ -201,7 +208,9 @@ write_file(const char *path, size_t chunk_z, size_t chunk_y, size_t chunk_x)
  *
  * Issues NZ separate nc_get_vara_float() calls, each requesting one complete
  * [1, NY, NX] slab. With time-optimized chunks this loads one chunk per call;
- * with column-optimized chunks each call must load NY×NX chunks.
+ * with column-optimized chunks each call must load NY×NX chunks. The file is
+ * dropped from the page cache before the timed loop so the reads come from
+ * the storage device.
  *
  * @param path        Path to the NetCDF file to read.
  * @param shape_label Short string identifying the chunk shape (for CSV output).
@@ -221,6 +230,14 @@ time_access_time_slab(const char *path, const char *shape_label)
     if (!slab)
     {
         fprintf(stderr, "Memory allocation failed\n");
+        return 1;
+    }
+
+    /* Start the read with the file dropped from the page cache. */
+    if (nep_perf_drop_cache(path))
+    {
+        perror("nep_perf_drop_cache");
+        free(slab);
         return 1;
     }
 
@@ -256,7 +273,9 @@ time_access_time_slab(const char *path, const char *shape_label)
  *
  * Issues NY×NX nc_get_vara_float() calls, each requesting one complete [NZ, 1, 1]
  * column. With column-optimized chunks this loads one chunk per call; with
- * time-optimized chunks each call must touch NZ chunks.
+ * time-optimized chunks each call must touch NZ chunks. The file is dropped
+ * from the page cache before the timed loop so the reads come from the
+ * storage device.
  *
  * @param path        Path to the NetCDF file to read.
  * @param shape_label Short string identifying the chunk shape (for CSV output).
@@ -276,6 +295,14 @@ time_access_column(const char *path, const char *shape_label)
     if (!col)
     {
         fprintf(stderr, "Memory allocation failed\n");
+        return 1;
+    }
+
+    /* Start the read with the file dropped from the page cache. */
+    if (nep_perf_drop_cache(path))
+    {
+        perror("nep_perf_drop_cache");
+        free(col);
         return 1;
     }
 

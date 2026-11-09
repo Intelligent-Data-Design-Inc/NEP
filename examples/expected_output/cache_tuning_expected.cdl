@@ -5,7 +5,7 @@ dimensions:
 	lon = 360 ;
 variables:
 	float temperature(time, lat, lon) ;
-		temperature:_ChunkSizes = 10, 45, 90 ;
 		temperature:_Storage = "chunked" ;
+		temperature:_ChunkSizes = 10, 45, 90 ;
 		temperature:_Endianness = "little" ;
 }
