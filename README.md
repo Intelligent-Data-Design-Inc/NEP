@@ -149,6 +149,10 @@ For example, if HDF5 2.1.1 is installed in `/usr/local/hdf5-2.1.1`:
 cmake -B build -DHDF5_ROOT=/usr/local/hdf5-2.1.1 -DCMAKE_INSTALL_PREFIX=/usr/local
 ```
 
+NEP must use the same HDF5 as NetCDF-C. Configure stops if the
+`libhdf5.so` version that `libnetcdf.so` needs differs from the HDF5
+that CMake found; set `HDF5_ROOT` to NetCDF-C's HDF5 to fix it.
+
 ### Configuration Options
 
 #### Quick Reference
@@ -165,6 +169,7 @@ cmake -B build -DHDF5_ROOT=/usr/local/hdf5-2.1.1 -DCMAKE_INSTALL_PREFIX=/usr/loc
 | `-DNEP_ENABLE_PDB` | ON | Legacy PDB UDF handler (UDF7) |
 | `-DNEP_BUILD_EXAMPLES` | ON | Example programs |
 | `-DNEP_ENABLE_BENCHMARKS` | OFF | Performance benchmark examples |
+| `-DNEP_ZSTD_PLUGIN_DIR` | (empty) | Directory with one HDF5 zstd plugin; enables the NEXTCDF-4 bfloat16 example tests |
 | `-DNEP_ENABLE_PARALLEL_TESTS` | OFF | MPI parallel I/O tests |
 | `-DNEP_BUILD_DOCUMENTATION` | ON | Doxygen API docs |
 

@@ -8,6 +8,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <netcdf.h>
+#include <hdf5.h>
 #include "nep.h"
 #include "nextcdf4dispatch.h"
 
@@ -362,6 +363,129 @@ test_reopen(void)
     return 0;
 }
 
+/** @return Zero when a variable reports contiguous with no filters. */
+static int
+check_contig(int ncid, int varid, const char *name)
+{
+    int storage_in, shuffle_in, deflate_in, level_in;
+    size_t nfilters = 99;
+    unsigned int ids[4];
+    int ret;
+
+    /* The variable must be contiguous and carry no filters. */
+    if (nc_inq_var_chunking(ncid, varid, &storage_in, NULL))
+        return 1;
+    if (storage_in != NC_CONTIGUOUS)
+        { fprintf(stderr, "%s: storage %d\n", name, storage_in); return 1; }
+    if (nc_inq_var_deflate(ncid, varid, &shuffle_in, &deflate_in, &level_in))
+        return 1;
+    if (deflate_in)
+        { fprintf(stderr, "%s: deflate %d level %d\n", name, deflate_in, level_in); return 1; }
+    ret = nc_inq_var_filter_ids(ncid, varid, &nfilters, ids);
+    if (ret != NC_ENOFILTER && (ret || nfilters != 0))
+        { fprintf(stderr, "%s: nfilters %zu\n", name, nfilters); return 1; }
+    return 0;
+}
+
+/** @return Zero when def-var setters keep a variable contiguous. */
+static int
+test_setter_keeps_contiguous(void)
+{
+    int ncid, dimid[2], varid_nf, varid_ne;
+    int no_fill_in;
+    float data[4][6], data_in[4][6];
+    int i, j;
+
+    unlink(FILE_NAME);
+    if (nc_create(FILE_NAME, NC_NEXTCDF4 | NC_CLOBBER, &ncid))
+        return 1;
+    if (nc_def_dim(ncid, "x", 4, &dimid[0]))
+        return 1;
+    if (nc_def_dim(ncid, "y", 6, &dimid[1]))
+        return 1;
+    if (nc_def_var(ncid, "nf", NC_FLOAT, 2, dimid, &varid_nf))
+        return 1;
+    if (nc_def_var(ncid, "ne", NC_FLOAT, 2, dimid, &varid_ne))
+        return 1;
+    if (nc_def_var_fill(ncid, varid_nf, NC_NOFILL, NULL))
+        return 1;
+    if (nc_def_var_endian(ncid, varid_ne, NC_ENDIAN_LITTLE))
+        return 1;
+
+    if (check_contig(ncid, varid_nf, "nf"))
+        return 1;
+    if (check_contig(ncid, varid_ne, "ne"))
+        return 1;
+
+    if (nc_enddef(ncid))
+        return 1;
+
+    for (i = 0; i < 4; i++)
+        for (j = 0; j < 6; j++)
+            data[i][j] = (float)(i * 6 + j);
+    if (nc_put_var_float(ncid, varid_nf, &data[0][0]))
+        return 1;
+    if (nc_put_var_float(ncid, varid_ne, &data[0][0]))
+        return 1;
+    if (nc_close(ncid))
+        return 1;
+
+    /* The HDF5 datasets must be contiguous with no filters. */
+    {
+        hid_t fid, dset, dcpl;
+        const char *names[2] = {"nf", "ne"};
+        int v, bad = 0;
+
+        if ((fid = H5Fopen(FILE_NAME, H5F_ACC_RDONLY, H5P_DEFAULT)) < 0)
+            return 1;
+        for (v = 0; v < 2; v++)
+        {
+            if ((dset = H5Dopen2(fid, names[v], H5P_DEFAULT)) < 0)
+                { bad = 1; break; }
+            if ((dcpl = H5Dget_create_plist(dset)) < 0)
+                { bad = 1; }
+            else
+            {
+                if (H5Pget_layout(dcpl) != H5D_CONTIGUOUS)
+                    { fprintf(stderr, "%s: not contiguous\n", names[v]); bad = 1; }
+                if (H5Pget_nfilters(dcpl) != 0)
+                    { fprintf(stderr, "%s: has filters\n", names[v]); bad = 1; }
+                H5Pclose(dcpl);
+            }
+            H5Dclose(dset);
+        }
+        if (H5Fclose(fid) < 0)
+            bad = 1;
+        if (bad)
+            return 1;
+    }
+
+    if (nc_open(FILE_NAME, NC_NEXTCDF4 | NC_NOWRITE, &ncid))
+        return 1;
+    if (nc_inq_varid(ncid, "nf", &varid_nf))
+        return 1;
+    if (nc_inq_varid(ncid, "ne", &varid_ne))
+        return 1;
+    if (check_contig(ncid, varid_nf, "nf"))
+        return 1;
+    if (check_contig(ncid, varid_ne, "ne"))
+        return 1;
+    if (nc_inq_var_fill(ncid, varid_nf, &no_fill_in, NULL))
+        return 1;
+    if (!no_fill_in)
+        return 1;
+    if (nc_get_var_float(ncid, varid_ne, &data_in[0][0]))
+        return 1;
+    for (i = 0; i < 4; i++)
+        for (j = 0; j < 6; j++)
+            if (data_in[i][j] != data[i][j])
+                return 1;
+    if (nc_close(ncid))
+        return 1;
+    unlink(FILE_NAME);
+    return 0;
+}
+
 /** @return Zero when all Sprint 6 checks pass. */
 int
 main(void)
@@ -376,6 +500,7 @@ main(void)
     if ((ret = test_endian()) != 0) { fprintf(stderr, "test_endian failed: %d\n", ret); failed = 1; }
     if ((ret = test_quantize()) != 0) { fprintf(stderr, "test_quantize failed: %d\n", ret); failed = 1; }
     if ((ret = test_reopen()) != 0) { fprintf(stderr, "test_reopen failed: %d\n", ret); failed = 1; }
+    if ((ret = test_setter_keeps_contiguous()) != 0) { fprintf(stderr, "test_setter_keeps_contiguous failed: %d\n", ret); failed = 1; }
 
     if (failed) {
         fprintf(stderr, "FAILED\n");

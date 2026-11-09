@@ -25,7 +25,7 @@ See **[Format Readers](formats.md)** — usage, code examples, and dependency in
 
 Optional alternative NetCDF-4/HDF5 backend selected explicitly with `NC_NEXTCDF4` (UDF9). It supports the full enhanced NetCDF-4 data model, variable I/O, chunking, compression, and new atomic types (`NC_FLOAT16`, small floating-point types, complex numbers, bitfields, and HDF5 references) while coexisting with netcdf-c's built-in HDF5 backend. Files written in `NC_NETCDF4_MODEL` compatibility mode remain readable by upstream netcdf-c.
 
-See **[NEXTCDF-4](nextcdf4.md)** — selection flags, compatibility modes, supported types, and examples.
+See **[NEXTCDF-4](nextcdf4.md)** — selection flags, compatibility modes, supported types, and examples — and **[NEXTCDF-4 float16 storage](NEXTCDF4_float16.md)** — the `NC_FLOAT16`/`NC_BFLOAT16` user guide with examples and benchmark results. For an overview of bfloat16 support and the `nc_*_bfloat16` functions, with performance charts, see **[bfloat16 in NEP](float16.md)**.
 
 ### Example Programs
 

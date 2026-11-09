@@ -1,6 +1,6 @@
 /**
  * @file nxt4io.c
- * @brief Hyperslab variable I/O for fixed-size NEXTCDF-4 atomic types.
+ * @brief Hyperslab variable I/O and memtype checks for fixed-size NEXTCDF-4 atomic types.
  *
  * @author Edward Hartnett
  * @date 2026-08-29
@@ -95,6 +95,73 @@ memory_type(nc_type type, int *closep)
     }
 }
 
+/**
+ * Return non-zero if xtype is one of the NEXTCDF-4 small floating-point
+ * types (NC_FLOAT16, NC_BFLOAT16, FP8, FP6 or FP4).
+ *
+ * @param xtype The netCDF type.
+ *
+ * @return 1 for a small floating-point type, 0 otherwise.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+static int
+is_small_float(nc_type xtype)
+{
+    switch (xtype) {
+    case NC_FLOAT16: case NC_BFLOAT16:
+    case NC_FLOAT8_E4M3: case NC_FLOAT8_E5M2:
+    case NC_FLOAT6_E2M3: case NC_FLOAT6_E3M2: case NC_FLOAT4_E2M1:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
+/**
+ * Check that memtype may be used for I/O on a variable of type xtype.
+ * NC_FLOAT16 and NC_BFLOAT16 convert to and from NC_FLOAT and NC_DOUBLE
+ * through HDF5; the FP8/FP6/FP4 types allow only their own type, because
+ * HDF5 2.1.1 converts them incorrectly. Other variable types are unchanged.
+ *
+ * @param xtype The variable's type in the file.
+ * @param memtype The memory type of the I/O call.
+ *
+ * @return NC_NOERR The memtype is allowed.
+ * @return NC_ECHAR A text call on a small floating-point variable.
+ * @return NC_EBADTYPE Any other memtype not allowed for xtype.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+static int
+check_memtype(nc_type xtype, nc_type memtype)
+{
+    /* Raw I/O: the memory type is the file type, so HDF5 does no
+     * conversion. */
+    if (memtype == xtype || memtype == NC_NAT)
+        return NC_NOERR;
+
+    /* Neither side is a small float: leave the existing behavior for
+     * the standard types (HDF5 converts) unchanged. */
+    if (!is_small_float(xtype) && !is_small_float(memtype))
+        return NC_NOERR;
+
+    /* A text call involving a small float; NetCDF-C uses NC_ECHAR for
+     * char/non-char mismatches. */
+    if (memtype == NC_CHAR)
+        return NC_ECHAR;
+
+    /* float16 and bfloat16 widen exactly into float and double, and
+     * HDF5's conversion back is usable (its rounding is documented in
+     * NEXTCDF4_float16.md). */
+    if ((xtype == NC_FLOAT16 || xtype == NC_BFLOAT16) &&
+        (memtype == NC_FLOAT || memtype == NC_DOUBLE))
+        return NC_NOERR;
+
+    /* Everything else: integer, string or a different small float, and
+     * any typed call on FP8/FP6/FP4, which HDF5 2.1.1 converts
+     * incorrectly. */
+    return NC_EBADTYPE;
+}
+
 /*
  * Common HDF5 hyperslab implementation used by vara and vars dispatch calls.
  */
@@ -122,6 +189,13 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
     if (writing && file->define_mode) return NC_EINDEFINE;
     if (!writing && file->define_mode) return NC_EINDEFINE;
     if (!data) return NC_EINVAL;
+    /* The untyped nc_put_var/nc_get_var, var1 and vars calls pass
+     * NC_NAT, meaning "the variable's own type"; resolve it so
+     * memory_type() gets a real type. */
+    if (memtype == NC_NAT) memtype = (nc_type)var->type_info->hdr.id;
+    /* Reject memtypes not allowed for small-float variables before any
+     * HDF5 call, so a rejected call touches neither buffer nor file. */
+    if ((ret = check_memtype((nc_type)var->type_info->hdr.id, memtype))) return ret;
     if ((mtype = memory_type(memtype, &close_mtype)) < 0) return NC_EBADTYPE;
     ndims = (int)var->ndims;
     if ((fspace = H5Dget_space(vinfo->hdf_dataset)) < 0) return NC_EHDFERR;

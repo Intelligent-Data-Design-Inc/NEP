@@ -41,7 +41,7 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 
 add_executable(dicom_read dicom_read.c)
 target_compile_options(dicom_read PRIVATE ${NC_CFLAGS_LIST})
-get_filename_component(HDF5_LIB_DIR "${HDF5_INCLUDE_DIR}/../lib" ABSOLUTE)
+set(HDF5_LIB_DIR "${NEP_HDF5_LIBRARY_DIR}")
 target_link_directories(dicom_read PRIVATE ${HDF5_LIB_DIR})
 target_link_libraries(dicom_read PRIVATE ${NC_LIBS_LIST} ncdicom nep)
 set_target_properties(dicom_read PROPERTIES

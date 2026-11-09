@@ -5,7 +5,7 @@ The source of truth for the recipe is `conda/recipe/recipe.yaml` and
 directly. `conda/make_staged_recipe.py` generates the staged-recipes
 copy (release tarball source and version), so the two cannot drift.
 The checkout recipe carries the next development version
-(`4.2.1.dev0`); the script substitutes the release version.
+(`4.3.0.dev0`); the script substitutes the release version.
 `.github/workflows/conda.yml` builds and tests the recipe and lints
 the generated staged copy on every push and PR.
 
@@ -36,9 +36,13 @@ curl -sSfL -o /fast/ed/tmp-conda/conda_build_config.yaml \
 
 A clean result: the build log's ctest summary is 100% passed
 (including `tst_pdb_udf`, `tst_mmcif_udf`, `tst_fits_udf`,
-`tst_pds4_udf`, `ftst_pdb_udf`, `ftst_mmcif_udf` and `ftst_fits_udf`),
-every package test passes including the four `ncdump -h` lines (PDB, mmCIF, FITS, PDS4), and
-the `.conda` contains no `.a` files and no `libncgeotiff`.
+`tst_pds4_udf`, `ftst_pdb_udf`, `ftst_mmcif_udf`, `ftst_fits_udf` and
+the GeoTIFF tests `tst_simple_geotiff`, `tst_geotiff_errors`,
+`tst_geotiff_metadata`, `tst_geotiff_self_load`,
+`tst_geotiff_edge_cases`, `tst_geotiff_handle`,
+`tst_geotiff_ncrc_autoload` and `test_netcdf_crs`),
+every package test passes including the five `ncdump -h` lines (PDB, mmCIF, FITS, PDS4, GeoTIFF), and
+the `.conda` contains no `.a` files and contains `libncgeotiff`.
 
 ## 2. Generate the staged recipe
 
@@ -82,7 +86,7 @@ GitHub cannot change a PR's head branch.
 
 ## 4. Edit the PR
 
-- Retitle it `Add nep`.
+- Title: "Add the NetCDF Expansion Pack (NEP) - allowing netCDF to read additional data formats as if they were netCDF".
 - Body: the template checklist, all ticked; state that the package
   contains the PDB, mmCIF, FITS and PDS4 readers; why GeoTIFF (needs
   `4d920c5`, post-4.2.0), DICOM (conda-forge `gdcm` is built per
@@ -113,11 +117,8 @@ GitHub cannot change a PR's head branch.
 
 ## 6. New releases
 
-For the first release that contains `4d920c5`, turn on GeoTIFF: add
-`geotiff` and `libtiff` to the host requirements, set
-`-DNEP_ENABLE_GEOTIFF=ON`, and add a `libncgeotiff` test plus a `.tif`
-`ncdump` test. Otherwise the autotick bot's version PR needs no
-recipe changes unless a dependency or CMake option changed.
+GeoTIFF is on in the checkout recipe from 4.3.0. Later autotick PRs
+need no recipe change unless a dependency or CMake option changes.
 
 ## 7. Adding macOS
 
@@ -134,7 +135,8 @@ not planned.
 | First green `conda` CI run (branch `c110426`, PR #373) | 2026-11-06 | https://github.com/Intelligent-Data-Design-Inc/NEP/actions/runs/42232572182 |
 | Local build of the checkout recipe (section 1) | 2026-11-05 | ctest pass, package tests pass; `libnetcdf 4.10.1`, `hdf5 1.14.6` |
 | Staged 4.2.0 recipe built and linted (section 2) | 2026-11-05 | package tests pass, `recipe-lint` clean |
-| staged-recipes PR #34309 updated to 4.2.0, retitled `Add nep` | 2026-11-06 | `2bcf29af98` on `upstream/main` `3611b91e38`; https://github.com/conda-forge/staged-recipes/pull/34309 |
+| staged-recipes PR #34309 updated to 4.2.0, retitled "Add the NetCDF Expansion Pack (NEP) - allowing netCDF to read additional data formats as if they were netCDF" | 2026-11-06 | `2bcf29af98` on `upstream/main` `3611b91e38`; https://github.com/conda-forge/staged-recipes/pull/34309 |
+| GeoTIFF enabled in checkout recipe | 2026-11-06 | ctest/package tests |
 | staged-recipes PR merged | pending | |
 | Feedstock created | pending | |
 | 4.2.0 published on conda-forge | pending | |

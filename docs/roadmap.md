@@ -1,5 +1,63 @@
 # NEP Development Roadmap
 
+### V4.3.0 -
+
+#### Sprint 1 - Fix Issues 372 and 374
+- #372: find HDF5 without a version in new `cmake/NEPFindHDF5.cmake` (1.14.0 minimum enforced, NEXTCDF-4 2.1.1 check kept); link every target through FindHDF5's `hdf5::hdf5_hl`/`HDF5::HDF5` imported targets; CMake minimum 3.19.
+- Configure fails if the `libhdf5.so.N` that `libnetcdf.so` needs differs from the HDF5 found (readelf SONAME check; skipped with a status line when undeterminable).
+- Spack overlay: the `h5cc` workaround is gated to `@:4.2.0`; `depends_on("cmake@3.19:", when="@4.3.0:")`.
+- #374 part 1: GeoTIFF enabled in `conda/recipe/` (`geotiff`/`libtiff` host deps, `libncgeotiff` and `.tif` `ncdump` tests), `context.version` `4.3.0.dev0`; `docs/conda-plan.md` updated, including #34309's current title.
+- Verification is manual (no new CTest test or CI job); all existing workflows must pass.
+- Out of scope (Sprint 2): tag, release notes, Spack 4.3.0 and #5557, conda-forge submission, user-facing conda wording.
+
+Plan: [docs/plan/v4.3.0-sprint1-fix-issues-372-374.md](plan/v4.3.0-sprint1-fix-issues-372-374.md)
+
+#### Sprint 1A - Add NEXTCDF4 float16 Examples and Documentation
+- `NC_BFLOAT16` only. Commit `test/data/netCDF-4/gdas_sfc_sample.nc` (`.gitignore` exception) and its README, which points at nep-compress's `make_gdas_sample.sh`.
+- New `examples/nextcdf4/`: `bfloat16.c` (tutorial, tmp2m), `bfloat16_perf.c` (4 GDAS fields x float/bfloat16 x contiguous/shuffle+deflate 1, min of 3, CSV with size, speed and error; fails if a contiguous bfloat16 file is not smaller), `plot_bfloat16.py` (size and speed PNGs).
+- Conversion is round-to-nearest-even in user code; I/O uses `nc_put_vara`/`nc_get_vara` with `uint16_t`; no fill value.
+- New `NEP_ZSTD_PLUGIN_DIR` gates the `nxt4_bfloat16` ctest, plus `nxt4_bfloat16_perf` under `NEP_ENABLE_BENCHMARKS`; no CI changes.
+- Commit the reference CSV, machine record and plots; document in `docs/nextcdf4.md`, `examples/examples.dox` and `examples/README.md`.
+- Out of scope: other small floats, the NEXTCDF-4 defects found (#376 typed `nc_get_vara_float` no-op, #377 bfloat16 fill not recovered, #378 `nextcdf4dispatch.h` includes `config.h`), re-enabling disabled reopen tests (#379), CI for these tests, release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1A-bfloat16-examples.md](plan/v4.3.0-sprint1A-bfloat16-examples.md)
+
+#### Sprint 1B - Fix Issue of Float Conversion
+- #376 doesn't reproduce: HDF5 already converts typed calls. Define the behavior in `var_io()` (`check_memtype`): `NC_FLOAT16`/`NC_BFLOAT16` accept `NC_FLOAT`/`NC_DOUBLE` through HDF5 (exact reads; HDF5 write rounding documented). FP8/FP6/FP4 are untyped only (HDF5 2.1.1 Known Problem). Other memtypes return `NC_EBADTYPE`, and text returns `NC_ECHAR`.
+- New enabled test `tst_nextcdf4_conv` (exhaustive 16-bit widening, pinned HDF5 write bits, the #376 reproduction, rejections).
+- `bfloat16.c` cross-checks a typed read; `bfloat16_perf` adds `bfloat16_hdf5` rows (24 total); reference CSV, machine record and plots regenerated.
+- Fix the Sprint 1A "typed calls are a no-op" text in `docs/nextcdf4.md`, `docs/NEXTCDF4_float16.md`, `NEXTCDF4_plan.md`, `prd.md` and `nep.h`. Comment on and close #376.
+- New `libnep` functions `nc_{get,put}_{var,var1,vara,vars}_bfloat16` with `nc_bfloat16_t` (`__bf16` when available, else `uint16_t`): raw bits for `NC_BFLOAT16`, NEP round-to-nearest-even conversion for `NC_FLOAT`/`NC_DOUBLE` with `NC_ERANGE` on overflow; new test `tst_nep_bfloat16`. The bfloat16 examples use them; benchmarks rerun and plots regenerated.
+- Out of scope: `NC_ERANGE` for standard typed calls (#381), typed FP8/FP6/FP4 I/O, NEP-side rounding for standard typed calls, complex/bitfield/reference typed calls, `varm`/attribute/Fortran bfloat16 functions, #377-#379, release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1B-fix-float-conversion.md](plan/v4.3.0-sprint1B-fix-float-conversion.md)
+
+#### Sprint 1C - Refine Performance Graphs
+- Reference results come from a `-DCMAKE_BUILD_TYPE=RelWithDebInfo` (-O2) build. `record_machine.sh` records the build type and flags, and the benchmarks warn when built without optimization. Project defaults stay unchanged.
+- `bfloat16_size.png`/`bfloat16_speed.png` show only float32 and bfloat16 (NEP). The new `bfloat16_hdf5_speed.png` adds the HDF5-conversion rows. The `bfloat16_perf` CSV is unchanged.
+- New `test/data/NEXTCDF4/gdas_sfc_sample_bfloat16.nc` (4 fields as `NC_BFLOAT16`, shuffle+zstd 19 applied by `h5repack`), generated once by `make_bfloat16_sample.c`/`.sh` and committed with a README and a `.gitignore` exception.
+- New `bfloat16_io_perf.c` times write+read of float32 against data already in bfloat16, with no conversion timed (4 fields x contiguous/deflate1). `plot_bfloat16_io.py` makes `docs/images/bfloat16_io.png`. Its ctest runs under `NEP_ENABLE_BENCHMARKS`.
+- Update `docs/float16.md` (new HDF5 and I/O sections) and `docs/NEXTCDF4_float16.md`, and commit the pending `float16.md` work.
+- #382 (found here): def-var setters made contiguous variables chunked with deflate 0. `deflate_level` now starts at -1, with a test in `tst_nextcdf4_chunking`, and the benchmarks were rerun.
+- Disk-bound timing: new `examples/perf_disk.h` (`nep_perf_sync_file`, `nep_perf_drop_cache`). Write time includes `fsync`, and each read starts after `posix_fadvise(DONTNEED)`. Each file holds 10 copies of the field (`NCOPIES`) to spread the fixed open/close cost, each configuration runs 10 times (`NREPS`), and speeds are in MB/s of float32 data. Both bfloat16 benchmarks are rerun, and `record_machine.sh` records the storage device.
+- Out of scope: fsync/cache drop for the other timing programs (Sprint 1E), dataset recreation on setters (rest of #382), NEXTCDF-4 `nc_def_var_filter`, #377/#380, CI for the benchmarks, release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1C-refine-performance-graphs.md](plan/v4.3.0-sprint1C-refine-performance-graphs.md)
+
+#### Sprint 1D - Disk-Bound Timing in All Performance Programs
+- Change NEXTCDF-4 doxygen docs to make clear that it is still experimental and not all features are implemented.
+- Use `examples/perf_disk.h` (from Sprint 1C) in the other 10 timing programs: `examples/performance/{cache_tuning,chunking,deflate,endianness,fill_values,lossless,quantize,szip,zstandard}.c` and `examples/netcdf-4/chunking_performance.c`. Write time includes `fsync`, and each read starts after the file is dropped from the page cache.
+- Rerun them on an `-O2` build, regenerate their results CSVs, metadata and plots, and update the docs that quote their numbers.
+
+
+#### Sprint 2 - 
+- Tag v4.3.0 and write `docs/releases/v4.3.0.md` (HDF5 detection change, CMake 3.19 minimum, conda GeoTIFF, Sprint 1A NEXTCDF-4 bfloat16 examples and `NEP_ZSTD_PLUGIN_DIR`, Sprint 1B typed small-float I/O and the `nc_*_bfloat16` functions, #376, Sprint 1C optimized benchmark results, the bfloat16 GDAS sample and `bfloat16_io_perf`, the #382 contiguous-layout fix, and the fix for untyped `nc_put_var`/`nc_get_var`/`var1`/`vars` failing with `NC_EBADTYPE` on NEXTCDF-4).
+- Spack: add `version("4.3.0")` with its sha256; update spack/spack-packages#5557 in place per `docs/spack.md` "Updating the upstream PR".
+- Conda (#374 part 2): if #34309 is still open, regenerate the staged copy for 4.3.0, push it to `nep-3.0.0` and update the PR body; if merged, make the GeoTIFF change on the feedstock and drop the staged lint/micromamba steps. Move the `conda.yml` lint step to the 4.3.0 tarball and set `context.version` to `4.3.1.dev0`.
+- Update the README "Conda Installation", `docs/prd.md` section 5.5, `docs/prfaq.md` and the `docs/conda-plan.md` Status table for GeoTIFF in 4.3.0.
+- Close #372 and #374.
+
+
 ### V4.2.0 - Move Compression Filters to nep-compress
 
 **Goal:** Move ownership of the LZ4 and BZIP2 compression APIs, HDF5 filter integration, tests, and documentation to `/fast/ed/nep-compress/`. NEP remains the home of the format UDF readers and NEXTCDF-4 backend. Complete and verify the new project before removing compression from NEP.

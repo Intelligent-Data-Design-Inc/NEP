@@ -62,6 +62,14 @@
  * - @ref groups.c - Hierarchical groups, nested groups, and dimension visibility
  * - @ref dump_nc4_metadata.c - Read any NetCDF-4 file and print all metadata including user-defined types and groups
  * 
+ * @subsection nextcdf4_c NEXTCDF-4 (C)
+ *
+ * Located in `examples/nextcdf4/`:
+ * - @ref bfloat16.c - Store real GDAS temperature data as NC_BFLOAT16 with the nc_*_bfloat16() functions
+ * - @ref bfloat16_perf.c - float32 vs bfloat16 (user-code and HDF5 conversion) size and I/O benchmark, CSV output
+ * - @ref bfloat16_io_perf.c - float32 vs bfloat16 write/read benchmark with data already in bfloat16 (no conversion), CSV output
+ * - @ref make_bfloat16_sample.c - Convert the GDAS sample to a NEXTCDF-4 NC_BFLOAT16 file (used with make_bfloat16_sample.sh)
+ *
  * @subsection classic_fortran Classic NetCDF (Fortran)
  * 
  * Located in `examples/f_classic/`:

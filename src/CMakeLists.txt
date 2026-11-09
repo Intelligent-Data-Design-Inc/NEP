@@ -8,8 +8,8 @@ include_directories(${CMAKE_BINARY_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR})
 
 # Build the main nep library
-add_library(nep SHARED nep.c)
-target_link_libraries(nep PRIVATE ${HDF5_LIBRARIES} ${NETCDF_LIBRARIES})
+add_library(nep SHARED nep.c nep_bfloat16.c)
+target_link_libraries(nep PRIVATE ${NEP_HDF5_LIBRARIES} ${NETCDF_LIBRARIES})
 set_target_properties(nep PROPERTIES 
     VERSION ${PROJECT_VERSION}
     SOVERSION 1
@@ -34,7 +34,7 @@ if(HAVE_CDF)
         cdfdispatch.c cdffile.c cdffunc.c cdfvar.c)
     target_include_directories(${CDF_LIB_NAME} PRIVATE ${CDF_INCLUDE_DIR})
     target_link_libraries(${CDF_LIB_NAME} PRIVATE 
-        ${HDF5_LIBRARIES} ${NETCDF_LIBRARIES} ${CDF_LIBRARY})
+        ${NEP_HDF5_LIBRARIES} ${NETCDF_LIBRARIES} ${CDF_LIBRARY})
     set_target_properties(${CDF_LIB_NAME} PROPERTIES 
         VERSION ${PROJECT_VERSION}
         SOVERSION 1
@@ -56,7 +56,7 @@ if(HAVE_GEOTIFF)
         geotiffdispatch.c geotifffile.c)
     target_include_directories(${GEOTIFF_LIB_NAME} PRIVATE ${GEOTIFF_INCLUDE_DIR} ${TIFF_INCLUDE_DIR})
     target_link_libraries(${GEOTIFF_LIB_NAME} PRIVATE 
-        ${HDF5_LIBRARIES} ${NETCDF_LIBRARIES} ${GEOTIFF_LIBRARY} ${TIFF_LIBRARY})
+        ${NEP_HDF5_LIBRARIES} ${NETCDF_LIBRARIES} ${GEOTIFF_LIBRARY} ${TIFF_LIBRARY})
     set_target_properties(${GEOTIFF_LIB_NAME} PROPERTIES 
         VERSION ${PROJECT_VERSION}
         SOVERSION 1
@@ -88,7 +88,7 @@ if(HAVE_GRIB2)
         grib2dispatch.c grib2file.c)
     target_include_directories(${GRIB2_LIB_NAME} PRIVATE ${G2C_INCLUDE_DIR})
     target_link_libraries(${GRIB2_LIB_NAME} PRIVATE
-        ${HDF5_LIBRARIES} ${NETCDF_LIBRARIES} ${G2C_LIBRARY} ${JASPER_LIBRARY})
+        ${NEP_HDF5_LIBRARIES} ${NETCDF_LIBRARIES} ${G2C_LIBRARY} ${JASPER_LIBRARY})
     set_target_properties(${GRIB2_LIB_NAME} PROPERTIES
         VERSION ${PROJECT_VERSION}
         SOVERSION 1
@@ -115,7 +115,7 @@ if(HAVE_FITS)
         fitsdispatch.c fitsfile.c)
     target_include_directories(${FITS_LIB_NAME} PRIVATE ${CFITSIO_INCLUDE_DIR})
     target_link_libraries(${FITS_LIB_NAME} PRIVATE
-        ${HDF5_LIBRARIES} ${NETCDF_LIBRARIES} ${CFITSIO_LIBRARY})
+        ${NEP_HDF5_LIBRARIES} ${NETCDF_LIBRARIES} ${CFITSIO_LIBRARY})
     set_target_properties(${FITS_LIB_NAME} PROPERTIES
         VERSION ${PROJECT_VERSION}
         SOVERSION 1
@@ -142,7 +142,7 @@ if(HAVE_PDS4)
         pds4dispatch.c pds4file.c)
     target_include_directories(${PDS4_LIB_NAME} PRIVATE ${LIBXML2_INCLUDE_DIR})
     target_link_libraries(${PDS4_LIB_NAME} PRIVATE
-        ${HDF5_LIBRARIES} ${NETCDF_LIBRARIES} ${LIBXML2_LIBRARIES})
+        ${NEP_HDF5_LIBRARIES} ${NETCDF_LIBRARIES} ${LIBXML2_LIBRARIES})
     set_target_properties(${PDS4_LIB_NAME} PROPERTIES
         VERSION ${PROJECT_VERSION}
         SOVERSION 1
@@ -172,7 +172,7 @@ if(HAVE_DICOM)
         dicomjpeglosslessprecision.c)
     target_include_directories(${DICOM_LIB_NAME} PRIVATE ${DICOM_INCLUDE_DIR})
     target_link_libraries(${DICOM_LIB_NAME} PRIVATE
-        ${HDF5_LIBRARIES} ${NETCDF_LIBRARIES} ${DICOM_LIBRARY} ${JPEG_LIBRARIES})
+        ${NEP_HDF5_LIBRARIES} ${NETCDF_LIBRARIES} ${DICOM_LIBRARY} ${JPEG_LIBRARIES})
     set(DICOM_RPATH_DIRS "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR};${DICOM_LIBRARY_DIR};${JPEG_LIBRARY_DIR}")
     set(DICOM_BUILD_RPATH_DIRS "${DICOM_LIBRARY_DIR};${JPEG_LIBRARY_DIR}")
 
@@ -225,7 +225,7 @@ if(HAVE_PDB)
     add_library(${PDB_LIB_NAME} SHARED
         pdbdispatch.c pdbfile.c)
     target_link_libraries(${PDB_LIB_NAME} PRIVATE
-        ${HDF5_LIBRARIES} ${NETCDF_LIBRARIES})
+        ${NEP_HDF5_LIBRARIES} ${NETCDF_LIBRARIES})
     set_target_properties(${PDB_LIB_NAME} PROPERTIES
         VERSION ${PROJECT_VERSION}
         SOVERSION 1
@@ -250,7 +250,7 @@ if(HAVE_MMCIF)
     add_library(${MMCIF_LIB_NAME} SHARED
         mmcifdispatch.c mmciffile.c)
     target_link_libraries(${MMCIF_LIB_NAME} PRIVATE
-        ${HDF5_LIBRARIES} ${NETCDF_LIBRARIES})
+        ${NEP_HDF5_LIBRARIES} ${NETCDF_LIBRARIES})
     set_target_properties(${MMCIF_LIB_NAME} PROPERTIES
         VERSION ${PROJECT_VERSION}
         SOVERSION 1
