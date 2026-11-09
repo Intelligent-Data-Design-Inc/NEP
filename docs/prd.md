@@ -676,7 +676,9 @@ DICOM is assigned UDF slot 6 (`NC_UDF6`).
 
 Performance benchmark programs gated by `NEP_ENABLE_BENCHMARKS=ON`. Not run in regular CI. Dataset for all
 examples: 500×180×360 NC_FLOAT temperature (~129 MB uncompressed), chunk
-shape 10×45×90.
+shape 10×45×90. All benchmark numbers are disk-bound: write time includes
+`fsync`, and each read starts with the file dropped from the page cache;
+reference results are measured with `-DCMAKE_BUILD_TYPE=RelWithDebInfo` (-O2).
 
 - `cache_tuning.c` — HDF5 chunk cache configuration: demonstrates
   `nc_set_chunk_cache()` and `nc_set_var_chunk_cache()` with measurable
@@ -712,7 +714,7 @@ shape 10×45×90.
 
 ### 18.1 Overview
 
-NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NEP User Defined Format (UDF) expansion pack. It implements the full enhanced NetCDF-4 data model and adds new atomic types while leaving netcdf-c's built-in HDF5 backend unchanged.
+NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NEP User Defined Format (UDF) expansion pack. It implements the full enhanced NetCDF-4 data model and adds new atomic types while leaving netcdf-c's built-in HDF5 backend unchanged. NEXTCDF-4 is experimental; feature coverage is incomplete and under active development.
 
 ### 18.2 Features
 

@@ -62,6 +62,7 @@ execute_process(
 # Helper to apply common settings to every performance target
 macro(perf_target _name)
     target_compile_options(${_name} PRIVATE ${NC_CFLAGS_LIST})
+    target_include_directories(${_name} PRIVATE ${CMAKE_SOURCE_DIR}/examples)
     target_link_directories(${_name} PRIVATE ${HDF5_LIB_DIR})
     set_target_properties(${_name} PROPERTIES
         BUILD_RPATH "${HDF5_LIB_DIR};${NC_LIBDIR}"

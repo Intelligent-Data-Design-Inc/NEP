@@ -70,6 +70,10 @@
  * - @ref bfloat16_io_perf.c - float32 vs bfloat16 write/read benchmark with data already in bfloat16 (no conversion), CSV output
  * - @ref make_bfloat16_sample.c - Convert the GDAS sample to a NEXTCDF-4 NC_BFLOAT16 file (used with make_bfloat16_sample.sh)
  *
+ * All NEP benchmark numbers are disk-bound: write time includes fsync,
+ * and each read starts with the file dropped from the page cache.
+ * Reference results are measured with -DCMAKE_BUILD_TYPE=RelWithDebInfo (-O2).
+ *
  * @subsection classic_fortran Classic NetCDF (Fortran)
  * 
  * Located in `examples/f_classic/`:

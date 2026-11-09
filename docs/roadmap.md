@@ -40,14 +40,26 @@ Plan: [docs/plan/v4.3.0-sprint1B-fix-float-conversion.md](plan/v4.3.0-sprint1B-f
 - Update `docs/float16.md` (new HDF5 and I/O sections) and `docs/NEXTCDF4_float16.md`, and commit the pending `float16.md` work.
 - #382 (found here): def-var setters made contiguous variables chunked with deflate 0. `deflate_level` now starts at -1, with a test in `tst_nextcdf4_chunking`, and the benchmarks were rerun.
 - Disk-bound timing: new `examples/perf_disk.h` (`nep_perf_sync_file`, `nep_perf_drop_cache`). Write time includes `fsync`, and each read starts after `posix_fadvise(DONTNEED)`. Each file holds 10 copies of the field (`NCOPIES`) to spread the fixed open/close cost, each configuration runs 10 times (`NREPS`), and speeds are in MB/s of float32 data. Both bfloat16 benchmarks are rerun, and `record_machine.sh` records the storage device.
-- Out of scope: fsync/cache drop for the other timing programs (Sprint 1E), dataset recreation on setters (rest of #382), NEXTCDF-4 `nc_def_var_filter`, #377/#380, CI for the benchmarks, release notes (Sprint 2).
+- Out of scope: fsync/cache drop for the other timing programs (Sprints 1D-1E), dataset recreation on setters (rest of #382), NEXTCDF-4 `nc_def_var_filter`, #377/#380, CI for the benchmarks, release notes (Sprint 2).
 
 Plan: [docs/plan/v4.3.0-sprint1C-refine-performance-graphs.md](plan/v4.3.0-sprint1C-refine-performance-graphs.md)
 
-#### Sprint 1D - Disk-Bound Timing in All Performance Programs
-- Change NEXTCDF-4 doxygen docs to make clear that it is still experimental and not all features are implemented.
-- Use `examples/perf_disk.h` (from Sprint 1C) in the other 10 timing programs: `examples/performance/{cache_tuning,chunking,deflate,endianness,fill_values,lossless,quantize,szip,zstandard}.c` and `examples/netcdf-4/chunking_performance.c`. Write time includes `fsync`, and each read starts after the file is dropped from the page cache.
-- Rerun them on an `-O2` build, regenerate their results CSVs, metadata and plots, and update the docs that quote their numbers.
+#### Sprint 1D - Disk-Bound Timing in the Compression Benchmarks
+- `deflate.c`, `zstandard.c` and `szip.c` use `examples/perf_disk.h` (Sprint 1C): write time includes `fsync`, each read starts after `posix_fadvise(DONTNEED)`. Structure, CSV columns and one-measurement-per-config stay unchanged.
+- `lossless.c`/`quantize.c` get the source edits but no rerun (targets disabled since v4.2.0).
+- Rerun on `RelWithDebInfo`, regenerate committed CSVs, plot PNGs and `_metadata.txt` captions; add a disk-bound-timing note to `docs/examples.md`, `docs/prd.md` and `examples/README.md`/`examples.dox`.
+- NEXTCDF-4 docs (`docs/nextcdf4.md`, `docs/mainpage.md`, `docs/prd.md`, `docs/prfaq.md`) state the backend is experimental with unimplemented features.
+- Out of scope (Sprint 1E): `cache_tuning.c`, `chunking.c`, `endianness.c`, `fill_values.c`, `examples/netcdf-4/chunking_performance.c`. Also out: min-of-N repetitions, `NCOPIES` files, MB/s columns, re-enabling lossless/quantize, CI for benchmarks, release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1D-disk-bound-timing.md](plan/v4.3.0-sprint1D-disk-bound-timing.md)
+
+#### Sprint 1E - Disk-Bound Timing in the Storage-Behavior Benchmarks
+- `cache_tuning.c`, `chunking.c`, `endianness.c`, `fill_values.c` (in `examples/performance/`) and `examples/netcdf-4/chunking_performance.c` get the same `perf_disk.h` fsync + page-cache-drop timing as Sprint 1D.
+- Rerun on `RelWithDebInfo`, regenerate committed CSVs, plot PNGs and `_metadata.txt` captions; `cache_tuning_validate` and the `cache_test.nc` lifecycle are preserved.
+- `chunking_performance.c` keeps its stdout tutorial output; nothing committed.
+- Out of scope: min-of-N repetitions, `NCOPIES` files, MB/s columns, CI for benchmarks, release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1E-disk-bound-timing-storage.md](plan/v4.3.0-sprint1E-disk-bound-timing-storage.md)
 
 
 #### Sprint 2 - 
