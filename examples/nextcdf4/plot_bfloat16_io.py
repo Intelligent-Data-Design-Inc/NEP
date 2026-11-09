@@ -6,12 +6,13 @@ Usage:
 
 Input CSV columns (written by examples/nextcdf4/bfloat16_io_perf):
 
-    field,type,storage,uncompressed_bytes,file_bytes,ratio_vs_float,
-    write_s,read_s,write_speedup,read_speedup
+    field,type,storage,copies,uncompressed_bytes,file_bytes,ratio_vs_float,
+    write_s,read_s,write_MBps,read_MBps,write_speedup,read_speedup
 
 Output:
 
-    <prefix>_io.png  two stacked panels of write/read time (ms)
+    <prefix>_io.png  two stacked panels of write/read throughput
+                     (MB/s of float32 data)
 
 The figure is black and white with hatched bars, matching the style of
 the other example plot scripts. Four configurations are plotted:
@@ -79,14 +80,14 @@ def main():
         print(f"error: {e}", file=sys.stderr)
         return 1
 
-    # Write/read time chart: the minimum time to write or read one
-    # field (1179648 values) with data already in bfloat16.
+    # Write/read throughput chart, in MB/s of float32 data, with data
+    # already in bfloat16.
     fig, (ax_w, ax_r) = plt.subplots(2, 1, figsize=(8, 8), sharex=True)
-    grouped_bars(ax_w, rows, "write_s", scale=1e3)
-    ax_w.set_ylabel("write time (ms)")
-    grouped_bars(ax_r, rows, "read_s", scale=1e3)
-    ax_r.set_ylabel("read time (ms)")
-    fig.suptitle("NEXTCDF-4 write/read time: float32 vs data already in bfloat16")
+    grouped_bars(ax_w, rows, "write_MBps")
+    ax_w.set_ylabel("write (MB/s of float32 data)")
+    grouped_bars(ax_r, rows, "read_MBps")
+    ax_r.set_ylabel("read (MB/s of float32 data)")
+    fig.suptitle("NEXTCDF-4 disk write/read throughput: float32 vs data already in bfloat16")
     handles, labels = ax_w.get_legend_handles_labels()
     fig.legend(handles, labels, loc="lower center", ncol=2,
                frameon=True, edgecolor="black")

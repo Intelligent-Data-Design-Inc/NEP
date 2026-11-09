@@ -50,6 +50,14 @@ if [ -n "$build_type" ]; then
     type_flags=$(awk -F= -v name="CMAKE_C_FLAGS_$type_upper" '$0 ~ "^" name ":" {print $2; exit}' "$cache")
 fi
 cflags_line=$(echo "$cflags $type_flags" | tr -s '[:space:]' ' ' | sed 's/^ //; s/ $//')
+fstype=$(df --output=fstype "$BUILD_DIR" | tail -1 | tr -d ' ')
+fsdev=$(df --output=source "$BUILD_DIR" | tail -1 | tr -d ' ')
+disk="$fsdev"
+parent=$(lsblk -no PKNAME "$fsdev" 2>/dev/null | head -1 | tr -d ' ' || true)
+[ -n "$parent" ] && disk="/dev/$parent"
+disk_model=$(lsblk -dno MODEL "$disk" 2>/dev/null | sed 's/ *$//' || true)
+disk_rota=$(lsblk -dno ROTA "$disk" 2>/dev/null | tr -d ' ' || true)
+[ "$disk_rota" = "1" ] && disk_kind=HDD || disk_kind=SSD
 git_rev=$(git -C "$SRC_DIR" rev-parse --short HEAD)
 git -C "$SRC_DIR" diff --quiet HEAD || git_rev="$git_rev-dirty"
 
@@ -59,6 +67,8 @@ git -C "$SRC_DIR" diff --quiet HEAD || git_rev="$git_rev-dirty"
     echo "CPU: $cpu"
     echo "Cores: $(nproc)"
     echo "OS: $(uname -sr)"
+    echo "Storage: $fstype on $fsdev ($disk_model, $disk_kind)"
+    echo "Timing: write includes fsync; reads after posix_fadvise(DONTNEED)"
     echo "Compiler: $(cc --version | head -1)"
     echo "Build type: ${build_type:-(none)}"
     echo "C flags: $cflags_line"
@@ -72,7 +82,8 @@ git -C "$SRC_DIR" diff --quiet HEAD || git_rev="$git_rev-dirty"
         hdf5_link=$(ldd "$target" | awk '/libhdf5\.so/ {print "libhdf5.so => " $3; exit}')
         echo "zstd provider: $so$link sha256 $sha links $hdf5_link"
     done
-    echo "NREPS: 3"
+    echo "NREPS: $(awk '/^#define NREPS/ {print $3; exit}' "$SRC_DIR/examples/nextcdf4/bfloat16_perf.c")"
+    echo "NCOPIES: $(awk '/^#define NCOPIES/ {print $3; exit}' "$SRC_DIR/examples/nextcdf4/bfloat16_perf.c")"
     echo "Sample: test/data/netCDF-4/gdas_sfc_sample.nc sha256 $sample_sha"
     echo "Sample: test/data/NEXTCDF4/gdas_sfc_sample_bfloat16.nc sha256 $bf16_sample_sha"
     echo "Plotting: Python $py_ver, matplotlib $mpl_ver"

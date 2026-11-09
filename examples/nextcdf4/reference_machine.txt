@@ -1,15 +1,18 @@
-Run date: 2026-11-08 20:33 UTC
-NEP: 4.3.0 (14c2c74-dirty)
+Run date: 2026-11-09 15:26 UTC
+NEP: 4.3.0 (616e212-dirty)
 CPU: Intel(R) Core(TM) i7-6800K CPU @ 3.40GHz
 Cores: 12
 OS: Linux 6.8.0-137-generic
+Storage: ext4 on /dev/sda1 (KINGSTON SH103S3240G, SSD)
+Timing: write includes fsync; reads after posix_fadvise(DONTNEED)
 Compiler: cc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
 Build type: RelWithDebInfo
 C flags: -O2 -g -DNDEBUG
 NetCDF-C: netCDF 4.10.2-development (/usr/local/netcdf-c/lib/libnetcdf.so.22)
 HDF5: /usr/local/hdf5-2.1.1/lib/libhdf5.so.320
 zstd provider: /home/ed/plugins/zstd-only/lib__nch5zstd.so -> /usr/local/netcdf-c/hdf5/lib/plugin/lib__nch5zstd.so sha256 0c1cc9d1abff8aae42751e41498f094b2b0fc39b16af9304e7e0280d14057ccf links libhdf5.so => /usr/local/hdf5-2.1.1/lib/libhdf5.so.320
-NREPS: 3
+NREPS: 10
+NCOPIES: 10
 Sample: test/data/netCDF-4/gdas_sfc_sample.nc sha256 4954bda3b4cf7893748a9cee5f870043690141505cdcb9d7551c747372c2b36f
 Sample: test/data/NEXTCDF4/gdas_sfc_sample_bfloat16.nc sha256 ab9074ebf31ff88ecef08cf912fcf98de69bb3726b6d1049741ca88957ff55fd
 Plotting: Python 3.13.9, matplotlib 3.10.9

@@ -39,12 +39,17 @@ Plan: [docs/plan/v4.3.0-sprint1B-fix-float-conversion.md](plan/v4.3.0-sprint1B-f
 - New `bfloat16_io_perf.c` times write+read of float32 against data already in bfloat16, with no conversion timed (4 fields x contiguous/deflate1). `plot_bfloat16_io.py` makes `docs/images/bfloat16_io.png`. Its ctest runs under `NEP_ENABLE_BENCHMARKS`.
 - Update `docs/float16.md` (new HDF5 and I/O sections) and `docs/NEXTCDF4_float16.md`, and commit the pending `float16.md` work.
 - #382 (found here): def-var setters made contiguous variables chunked with deflate 0. `deflate_level` now starts at -1, with a test in `tst_nextcdf4_chunking`, and the benchmarks were rerun.
-- Out of scope: dataset recreation on setters (rest of #382), NEXTCDF-4 `nc_def_var_filter`, #377/#380, CI for the benchmarks, release notes (Sprint 2).
+- Disk-bound timing: new `examples/perf_disk.h` (`nep_perf_sync_file`, `nep_perf_drop_cache`). Write time includes `fsync`, and each read starts after `posix_fadvise(DONTNEED)`. Each file holds 10 copies of the field (`NCOPIES`) to spread the fixed open/close cost, each configuration runs 10 times (`NREPS`), and speeds are in MB/s of float32 data. Both bfloat16 benchmarks are rerun, and `record_machine.sh` records the storage device.
+- Out of scope: fsync/cache drop for the other timing programs (Sprint 1E), dataset recreation on setters (rest of #382), NEXTCDF-4 `nc_def_var_filter`, #377/#380, CI for the benchmarks, release notes (Sprint 2).
 
 Plan: [docs/plan/v4.3.0-sprint1C-refine-performance-graphs.md](plan/v4.3.0-sprint1C-refine-performance-graphs.md)
 
 #### Sprint 1D - Documentation
 - Change NEXTCDF-4 doxygen docs to make clear that it is still experimental and not all features are implemented.
+
+#### Sprint 1E - Disk-Bound Timing in All Performance Programs
+- Use `examples/perf_disk.h` (from Sprint 1C) in the other 10 timing programs: `examples/performance/{cache_tuning,chunking,deflate,endianness,fill_values,lossless,quantize,szip,zstandard}.c` and `examples/netcdf-4/chunking_performance.c`. Write time includes `fsync`, and each read starts after the file is dropped from the page cache.
+- Rerun them on an `-O2` build, regenerate their results CSVs, metadata and plots, and update the docs that quote their numbers.
 
 
 #### Sprint 2 - 

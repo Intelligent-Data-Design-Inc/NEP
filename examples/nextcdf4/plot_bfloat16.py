@@ -6,14 +6,16 @@ Usage:
 
 Input CSV columns (written by examples/nextcdf4/bfloat16_perf):
 
-    field,type,storage,uncompressed_bytes,file_bytes,ratio_vs_float,
+    field,type,storage,copies,uncompressed_bytes,file_bytes,ratio_vs_float,
     write_s,read_s,write_MBps,read_MBps,max_abs_err,max_rel_err,
     wconv_s,rconv_s
 
 Outputs:
 
     <prefix>_size.png        grouped bar chart of file size (MB) per field
-    <prefix>_speed.png       two stacked panels of write/read time (ms)
+                             (each file holds `copies` copies of the field)
+    <prefix>_speed.png       two stacked panels of write/read throughput
+                             (MB/s of float32 data)
     <prefix>_hdf5_speed.png  the same two panels with all six
                              configurations, adding bfloat16 (HDF5)
 
@@ -94,10 +96,12 @@ def main():
         print(f"error: {e}", file=sys.stderr)
         return 1
 
+    copies = next(iter(rows.values()))["copies"]
+
     # File size chart (main configurations only).
     fig, ax = plt.subplots(figsize=(8, 5))
     grouped_bars(ax, rows, "file_bytes", scale=1e-6, configs=MAIN)
-    ax.set_ylabel("file size (MB)")
+    ax.set_ylabel(f"file size (MB, {copies} copies of the field)")
     ax.set_title("NEXTCDF-4 file size: float32 vs bfloat16")
     handles, labels = ax.get_legend_handles_labels()
     fig.legend(handles, labels, loc="lower center", ncol=2,
@@ -107,15 +111,14 @@ def main():
     fig.savefig(size_png, dpi=150)
     print(f"Saved {size_png}")
 
-    # Write/read time chart (main configurations only): the minimum
-    # time to write or read one field (1179648 values), including any
-    # conversion.
+    # Write/read throughput chart (main configurations only), in MB/s
+    # of float32 data, including any conversion.
     fig, (ax_w, ax_r) = plt.subplots(2, 1, figsize=(8, 8), sharex=True)
-    grouped_bars(ax_w, rows, "write_s", scale=1e3, configs=MAIN)
-    ax_w.set_ylabel("write time (ms)")
-    grouped_bars(ax_r, rows, "read_s", scale=1e3, configs=MAIN)
-    ax_r.set_ylabel("read time (ms)")
-    fig.suptitle("NEXTCDF-4 write/read time per field: float32 vs bfloat16")
+    grouped_bars(ax_w, rows, "write_MBps", configs=MAIN)
+    ax_w.set_ylabel("write (MB/s of float32 data)")
+    grouped_bars(ax_r, rows, "read_MBps", configs=MAIN)
+    ax_r.set_ylabel("read (MB/s of float32 data)")
+    fig.suptitle("NEXTCDF-4 disk write/read throughput: float32 vs bfloat16")
     handles, labels = ax_w.get_legend_handles_labels()
     fig.legend(handles, labels, loc="lower center", ncol=2,
                frameon=True, edgecolor="black")
@@ -127,11 +130,11 @@ def main():
     # The same chart with all six configurations, adding the HDF5
     # conversion path.
     fig, (ax_w, ax_r) = plt.subplots(2, 1, figsize=(8, 8), sharex=True)
-    grouped_bars(ax_w, rows, "write_s", scale=1e3)
-    ax_w.set_ylabel("write time (ms)")
-    grouped_bars(ax_r, rows, "read_s", scale=1e3)
-    ax_r.set_ylabel("read time (ms)")
-    fig.suptitle("bfloat16 conversion: NEP vs HDF5 (write/read time per field)")
+    grouped_bars(ax_w, rows, "write_MBps")
+    ax_w.set_ylabel("write (MB/s of float32 data)")
+    grouped_bars(ax_r, rows, "read_MBps")
+    ax_r.set_ylabel("read (MB/s of float32 data)")
+    fig.suptitle("bfloat16 conversion: NEP vs HDF5 (disk write/read throughput)")
     handles, labels = ax_w.get_legend_handles_labels()
     fig.legend(handles, labels, loc="lower center", ncol=3,
                frameon=True, edgecolor="black")

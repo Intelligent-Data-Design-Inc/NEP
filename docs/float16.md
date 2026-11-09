@@ -141,44 +141,46 @@ The bfloat16 file is half the size, and the largest error is 1 K out of about 22
 - **bfloat16**: an `NC_BFLOAT16` variable. The program converts with `float_to_bfloat16()`/`bfloat16_to_float()` and does the I/O with `nc_put_vara_bfloat16`/`nc_get_vara_bfloat16`. The conversion time is included in the write and read times.
 - **bfloat16 (HDF5)**: the same `NC_BFLOAT16` variable, written with `nc_put_vara_float` and read with `nc_get_vara_float`, so HDF5 does the conversion.
 
-Each is run with **contiguous** storage and with **deflate1** (shuffle plus deflate level 1, one 768 x 1536 chunk). Every configuration runs 3 times and the minimum time is kept. The results below come from a `RelWithDebInfo` (`-O2`) build on the machine (Intel i7-6800K, HDF5 2.1.1, NetCDF-C 4.10.2-development) recorded in `examples/nextcdf4/reference_machine.txt`, and the full results are in `examples/nextcdf4/reference_results.csv`.
+Each is run with **contiguous** storage and with **deflate1** (shuffle plus deflate level 1, one 768 x 1536 chunk per time step). Each file holds 10 copies of the field as time steps (`NCOPIES` in the source), written and read one step at a time, so the fixed cost of creating, opening and closing a file is spread over 10 fields' worth of data. Every configuration runs 10 times and the minimum time is kept. The times are disk-bound: each write ends with an `fsync()` of the file, and before each read the file is dropped from the operating system's page cache, so every byte is written to and read from the storage device (see `examples/perf_disk.h`). This is the case that matters when processing more data than fits in memory. Speeds are given in MB/s of float32 data (10 x 4.72 MB per file), so every configuration is measured against the same user data. The results below come from a `RelWithDebInfo` (`-O2`) build on the machine (Intel i7-6800K, a Kingston SATA SSD with ext4, HDF5 2.1.1, NetCDF-C 4.10.2-development) recorded in `examples/nextcdf4/reference_machine.txt`, and the full results are in `examples/nextcdf4/reference_results.csv`.
 
 ### File size
 
 ![File size of each GDAS field in the four main configurations](images/bfloat16_size.png)
 
-**Figure 1.** File size in MB for each field, in the four main configurations (float32/bfloat16 x contiguous/deflate1). Contiguous bfloat16 files are 2.37 MB against 4.72 MB for float32 (ratio 1.997), whichever way the data was converted. With deflate1, bfloat16 compresses much better than float32, because rounding to 7 mantissa bits leaves far fewer distinct values: `tmp2m` drops from 858,874 distinct values to 68, and its file from 2.51 MB to 0.20 MB (12.3x smaller); `prate_ave` is 2.5x smaller and `soilw1` 2.8x. `land` has only 3 distinct values, all exact in bfloat16, so both versions compress to well under 0.1 MB (1.16x).
+**Figure 1.** Size in MB of each 10-copy file, in the four main configurations (float32/bfloat16 x contiguous/deflate1). Contiguous bfloat16 files are 23.6 MB against 47.2 MB for float32 (ratio 2.00), whichever way the data was converted. With deflate1, bfloat16 compresses much better than float32, because rounding to 7 mantissa bits leaves far fewer distinct values: `tmp2m` drops from 858,874 distinct values to 68, and its file from 25.0 MB to 2.0 MB (12.7x smaller); `prate_ave` is 2.5x smaller and `soilw1` 2.8x. `land` has only 3 distinct values, all exact in bfloat16, so both versions compress to under 1 MB (1.17x).
 
-### Write and read time
+### Write and read speed
 
-![Write and read time of each GDAS field in the four main configurations](images/bfloat16_speed.png)
+![Write and read speed of each GDAS field in the four main configurations](images/bfloat16_speed.png)
 
-**Figure 2.** Time in milliseconds to write (top) or read (bottom) one field, 1,179,648 values, in the four main configurations. Write time runs from the start of any conversion through `nc_close`; read time from `nc_open` through `nc_close` plus any conversion back to float. Each bar is the fastest of 3 runs. Shorter is better.
+**Figure 2.** Write (top) and read (bottom) speed in MB/s of float32 data, in the four main configurations. Write time runs from `nc_create` through `nc_close` and the `fsync()`, including the conversion of each step to bfloat16; read time runs from `nc_open` (with the file out of the page cache) through `nc_close`, including the conversion of each step back to float. Each bar is the fastest of 10 runs. Taller is better.
 
-- Contiguous bfloat16 is faster than float32: 2.4-2.9 ms to write and 1.3-1.5 ms to read, against 2.5-3.4 ms and 1.1-1.7 ms for float32. The optimized `float_to_bfloat16()`/`bfloat16_to_float()` loops cost only 0.6-0.8 ms per field, less than the time saved by writing and reading half as many bytes.
-- With deflate1, bfloat16 is faster for every field, conversion included, because the compressor has less and simpler data to handle: `tmp2m` writes in 15.5 ms against 74.7 ms for float32 and reads in 5.0 ms against 12.9 ms. The smallest gain is on `land` (12.0 ms against 22.5 ms to write, 4.1 against 7.0 ms to read), which float32 already compresses to 81 KB.
+- Contiguous reads are limited by the SSD, which delivers about 500-530 MB/s: float32 reads at 515-528 MB/s and bfloat16 at 918-996 MB/s of float32 data, 1.7-1.9x faster, conversion included.
+- Contiguous writes are 1.6-2.0x faster: float32 writes at 272-415 MB/s and bfloat16 at 533-674 MB/s. Write speed differs between fields because this SSD's write speed depends on the data: written with `dd` and `fsync`, zeros go at 377-395 MB/s and random bytes at 246-253 MB/s. `soilw1` and `land` (many repeated values) write faster than `tmp2m` and `prate_ave`. The optimized `float_to_bfloat16()`/`bfloat16_to_float()` loops take 6-16 ms for the 10 copies, a small part of the 70-89 ms bfloat16 write and 47-51 ms read.
+- With deflate1, bfloat16 is faster for every field, because there is less to compress and less to write: `tmp2m` writes at 302 MB/s against 58 MB/s for float32 (5.2x) and reads at 880 against 316 MB/s (2.8x). The smallest gain is on `land` (405 against 221 MB/s to write, 1160 against 901 MB/s to read), which float32 already compresses to 0.76 MB.
 
 ### Converting in HDF5
 
-The same `NC_BFLOAT16` variable can also be written with `nc_put_vara_float` and read with `nc_get_vara_float`, letting HDF5 do the conversion inside `H5Dwrite`/`H5Dread`. Figure 3 adds those bars to the same write/read time chart.
+The same `NC_BFLOAT16` variable can also be written with `nc_put_vara_float` and read with `nc_get_vara_float`, letting HDF5 do the conversion inside `H5Dwrite`/`H5Dread`. Figure 3 adds those bars to the same chart.
 
-![Write and read time including the HDF5 conversion path](images/bfloat16_hdf5_speed.png)
+![Write and read speed including the HDF5 conversion path](images/bfloat16_hdf5_speed.png)
 
-**Figure 3.** The same write (top) and read (bottom) times with the bfloat16 (HDF5) configurations added.
+**Figure 3.** The same write (top) and read (bottom) speeds with the bfloat16 (HDF5) configurations added.
 
-- Converting in HDF5 is slow in every case: 80.2-143.4 ms to write and 67.0-90.7 ms to read. For `tmp2m` contiguous that is 110.7 ms to write against 2.8 ms with NEP's conversion (about 40x slower) and 78.6 ms to read against 1.5 ms. HDF5 has no compiled conversion for bfloat16 and uses its generic software path, value by value.
-- The files are the same size, and only a few stored values differ from round-to-nearest-even in the last bit — 9 of 1,179,648 for `tmp2m`, 8 for `prate_ave`, 3 for `soilw1` and 0 for `land` — because HDF5 rounds ties away from zero while `float_to_bfloat16()` and the `nc_*_bfloat16` functions round ties to even.
+- Converting in HDF5 is slow in every case: 31-58 MB/s to write and 51-67 MB/s to read, far below what the disk can do. For `tmp2m` contiguous that is 1.18 s to write the 10 copies against 0.082 s with NEP's conversion (about 14x slower), and 0.87 s to read them against 0.051 s. HDF5 has no compiled conversion for bfloat16 and uses its generic software path, value by value.
+- The files are the same size, and only a few stored values differ from round-to-nearest-even in the last bit — 9 of 1,179,648 per copy for `tmp2m`, 8 for `prate_ave`, 3 for `soilw1` and 0 for `land` — because HDF5 rounds ties away from zero while `float_to_bfloat16()` and the `nc_*_bfloat16` functions round ties to even.
 
 ### Writing and reading data already in bfloat16
 
-A second benchmark, `examples/nextcdf4/bfloat16_io_perf.c`, measures pure I/O with no conversion at all. It uses `test/data/NEXTCDF4/gdas_sfc_sample_bfloat16.nc`, a bfloat16 copy of the GDAS sample made by `make_bfloat16_sample` (the values come from `nc_get_var_bfloat16` on the source `NC_FLOAT` variables; `time` is a fixed dimension of length 1, and the data variables carry no `_FillValue`/`missing_value`, so fill points hold the bfloat16 rounding of 9.99e+20). The benchmark checks that the sample's bits are exactly `float_to_bfloat16()` of the float sample, then times writing and reading the float32 data and the bfloat16 bits in the four configurations. Write and read times cover `nc_create`/`nc_open` through `nc_close` only.
+A second benchmark, `examples/nextcdf4/bfloat16_io_perf.c`, measures pure I/O with no conversion at all. It uses `test/data/NEXTCDF4/gdas_sfc_sample_bfloat16.nc`, a bfloat16 copy of the GDAS sample made by `make_bfloat16_sample` (the values come from `nc_get_var_bfloat16` on the source `NC_FLOAT` variables; `time` is a fixed dimension of length 1, and the data variables carry no `_FillValue`/`missing_value`, so fill points hold the bfloat16 rounding of 9.99e+20). The benchmark checks that the sample's bits are exactly `float_to_bfloat16()` of the float sample, then times writing and reading 10 copies of the float32 data and of the bfloat16 bits in the four configurations, disk-bound as above.
 
-![Write and read time for data already in bfloat16](images/bfloat16_io.png)
+![Write and read speed for data already in bfloat16](images/bfloat16_io.png)
 
-**Figure 4.** Pure I/O time in milliseconds to write (top) or read (bottom) one field held as float32 or as bfloat16 bits, in each configuration. Speedups are the float32 time of the same storage configuration divided by the bfloat16 time.
+**Figure 4.** Pure I/O write (top) and read (bottom) speed in MB/s of float32 data, with each field held as float32 or as bfloat16 bits, in each configuration. Speedups are the float32 time of the same storage configuration divided by the bfloat16 time.
 
-- With deflate1, reading data already stored as bfloat16 is 2.0-3.2x faster than float32 (`tmp2m` 5.1 ms against 16.1 ms) and writing is 1.9-5.5x faster (`tmp2m` 18.0 ms against 99.2 ms). The gains track the compression ratios: largest for `tmp2m` (12.3x smaller file), smallest for `land` (1.16x).
-- Contiguous bfloat16 is faster too: writes are 1.5-1.9x faster (1.6-1.9 ms against 2.9-3.6 ms for float32) and reads 1.5-2.1x faster (0.65-0.75 ms against 1.07-1.57 ms), because there are half as many bytes to move.
+- Contiguous reads are 1.88-1.97x faster for bfloat16 (995-1038 MB/s of float32 data against 516-529 MB/s): both read the disk at about 500-530 MB/s, and bfloat16 has half as many bytes. With 10 copies per file the fixed cost of opening and closing the file is small, so the speedup is close to 2x.
+- Contiguous writes are 1.7-2.6x faster (506-787 against 289-427 MB/s). The spread comes from the SSD, whose write speed depends on the data (see above), not from timing noise: the fastest of 10 runs keeps the same per-field pattern.
+- With deflate1, reading data already stored as bfloat16 is 1.6-3.4x faster than float32 (`tmp2m` 46 ms against 154 ms for the 10 copies) and writing is 2.0-5.3x faster (`tmp2m` 150 ms against 802 ms). The gains track the compression ratios: largest for `tmp2m` (12.7x smaller file), smallest for `land` (1.17x).
 
 ### Accuracy
 
@@ -187,6 +189,6 @@ The maximum relative error is 0.00389 for `tmp2m`, `prate_ave` and `soilw1` in e
 ## Summary
 
 - Store data as `NC_BFLOAT16` in a NEXTCDF-4 file when about 2-3 significant digits are enough. Files are half the size uncompressed, and with compression they are often several times smaller.
-- Data already stored as bfloat16 is also faster to write and read: 1.9-5.5x faster writes and 2.0-3.2x faster reads than float32 with deflate1, and 1.5-2.1x contiguous, with no conversion cost at all.
+- Data already stored as bfloat16 is also faster to write and read from disk: contiguous reads are nearly 2x faster (1.88-1.97x) and writes 1.7-2.6x, and with deflate1 writes are 2.0-5.3x and reads 1.6-3.4x faster than float32, with no conversion cost at all.
 - Use the `nc_*_bfloat16` functions for I/O. On `NC_BFLOAT16` variables they pass the bits through with no conversion cost; on `NC_FLOAT`/`NC_DOUBLE` variables they convert correctly and quickly, and report overflow with `NC_ERANGE`.
 - Avoid the typed `float`/`double` calls on `NC_BFLOAT16` variables when speed or exact round-to-even results matter, since they use HDF5's slow conversion.

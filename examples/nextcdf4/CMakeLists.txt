@@ -3,7 +3,7 @@
 
 foreach(_target bfloat16 bfloat16_perf bfloat16_io_perf make_bfloat16_sample)
     add_executable(${_target} ${_target}.c)
-    target_include_directories(${_target} PRIVATE ${CMAKE_SOURCE_DIR}/include ${NETCDF_INCLUDE_DIRS})
+    target_include_directories(${_target} PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/examples ${NETCDF_INCLUDE_DIRS})
     target_link_libraries(${_target} PRIVATE nep ${NETCDF_LIBRARIES} m)
     add_dependencies(${_target} ncnextcdf4)
     set_target_properties(${_target} PROPERTIES BUILD_RPATH "${CMAKE_BINARY_DIR}/src;${NEP_HDF5_LIBRARY_DIR};${NETCDF_LIBRARY_DIRS}")

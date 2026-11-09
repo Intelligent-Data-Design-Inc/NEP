@@ -150,7 +150,7 @@ nc_get_var_bfloat16 vs float_to_bfloat16: 0 mismatches
 
 ## Benchmark: `bfloat16_perf` and `plot_bfloat16.py`
 
-`bfloat16_perf.c` runs all four GDAS fields (`tmp2m`, `prate_ave`, `soilw1`, `land`) through six configurations — `float`/`bfloat16`/`bfloat16_hdf5` x `contiguous`/`deflate1` (shuffle + deflate level 1, chunks of 1x768x1536) — with 3 repetitions each, keeping the minimum times. The `bfloat16` rows convert in user code and use the untyped calls; the `bfloat16_hdf5` rows define the same `NC_BFLOAT16` variable but write with `nc_put_vara_float` and read with `nc_get_vara_float`, so HDF5 does the conversion inside the timed I/O and `wconv_s`/`rconv_s` are 0. For each `bfloat16_hdf5` row a `#`-prefixed line is printed to stdout (not to the CSV) counting the stored values that differ from round-to-nearest-even, because HDF5 rounds bfloat16 ties away from zero:
+`bfloat16_perf.c` runs all four GDAS fields (`tmp2m`, `prate_ave`, `soilw1`, `land`) through six configurations — `float`/`bfloat16`/`bfloat16_hdf5` x `contiguous`/`deflate1` (shuffle + deflate level 1, chunks of 1x768x1536) — with 10 repetitions each, keeping the minimum times. Each file holds 10 copies of the field as time steps (`NCOPIES`), written and read one step at a time, so the fixed cost of creating, opening and closing a file is spread over more data. The `bfloat16` rows convert in user code and use the untyped calls; the `bfloat16_hdf5` rows define the same `NC_BFLOAT16` variable but write with `nc_put_vara_float` and read with `nc_get_vara_float`, so HDF5 does the conversion inside the timed I/O and `wconv_s`/`rconv_s` are 0. For each `bfloat16_hdf5` row a `#`-prefixed line is printed to stdout (not to the CSV) counting, for one copy, the stored values that differ from round-to-nearest-even, because HDF5 rounds bfloat16 ties away from zero:
 
 ```
 # tmp2m contiguous: 9 of 1179648 values differ from round-to-nearest-even
@@ -163,15 +163,15 @@ nc_get_var_bfloat16 vs float_to_bfloat16: 0 mismatches
 # land deflate1: 0 of 1179648 values differ from round-to-nearest-even
 ```
 
-Write time runs from just before conversion (bfloat16 only) through `nc_close`; read time runs from `nc_open` through `nc_close` plus the conversion back to float. The `bfloat16` rows are checked bit-exact and the `bfloat16_hdf5` rows are checked against the stored raw bits; the program fails if any contiguous bfloat16 file is not smaller than its float file, or if any relative error exceeds 2^-8.
+Write time runs from just before conversion (bfloat16 only) through `nc_close` and an `fsync()` of the file; before each read the file is dropped from the page cache with `posix_fadvise(POSIX_FADV_DONTNEED)` (untimed), and read time runs from `nc_open` through `nc_close` plus the conversion back to float. Both times cover all 10 copies. Both helpers are in `examples/perf_disk.h`, so the times are disk-bound. The `bfloat16` rows are checked bit-exact and the `bfloat16_hdf5` rows are checked against the stored raw bits; the program fails if any contiguous bfloat16 file is not smaller than its float file, or if any relative error exceeds 2^-8.
 
 The CSV written has columns:
 
 ```
-field,type,storage,uncompressed_bytes,file_bytes,ratio_vs_float,write_s,read_s,write_MBps,read_MBps,max_abs_err,max_rel_err,wconv_s,rconv_s
+field,type,storage,copies,uncompressed_bytes,file_bytes,ratio_vs_float,write_s,read_s,write_MBps,read_MBps,max_abs_err,max_rel_err,wconv_s,rconv_s
 ```
 
-(`ratio_vs_float` is the matching float row's `file_bytes` divided by this row's; throughput is measured in MB/s of float32 data for every row. `wconv_s`/`rconv_s` are the minimum float32-to-bfloat16 and bfloat16-to-float32 conversion times — parts of `write_s`/`read_s`; 0 for float and `bfloat16_hdf5` rows.)
+(`copies` is `NCOPIES`; `uncompressed_bytes`, `file_bytes`, `write_s` and `read_s` cover all copies. `ratio_vs_float` is the matching float row's `file_bytes` divided by this row's; throughput is measured in MB/s of float32 data (10 x 4718592 bytes) for every row. `wconv_s`/`rconv_s` are the minimum float32-to-bfloat16 and bfloat16-to-float32 conversion times — parts of `write_s`/`read_s`; 0 for float and `bfloat16_hdf5` rows.)
 
 ```sh
 HDF5_PLUGIN_PATH=$HOME/plugins/zstd-only \
@@ -182,32 +182,32 @@ python3 ../../../examples/nextcdf4/plot_bfloat16.py bfloat16_results.csv bfloat1
 
 ### Results
 
-Measured on the machine recorded in `examples/nextcdf4/reference_machine.txt`; the full CSV is `examples/nextcdf4/reference_results.csv`. File sizes are in bytes.
+Measured on the machine recorded in `examples/nextcdf4/reference_machine.txt`; the full CSV is `examples/nextcdf4/reference_results.csv`. File sizes are in bytes, for files holding 10 copies of the field.
 
 | Field | float contiguous | bfloat16 contiguous | bfloat16 (HDF5) contiguous | float deflate1 | bfloat16 deflate1 | bfloat16 (HDF5) deflate1 | max rel err | max rel err (HDF5) |
 |-------|-----------------:|--------------------:|---------------------------:|---------------:|------------------:|-------------------------:|------------:|-------------------:|
-| `tmp2m` | 4724931 | 2365635 | 2365635 | 2507866 | 203408 | 203550 | 0.00389105 | 0.00389105 |
-| `prate_ave` | 4724931 | 2365635 | 2365635 | 3359982 | 1321355 | 1321355 | 0.00389081 | 0.00389081 |
-| `soilw1` | 4724931 | 2365635 | 2365635 | 859442 | 307824 | 307825 | 0.00388914 | 0.00388914 |
-| `land` | 4724931 | 2365635 | 2365635 | 81474 | 70249 | 70249 | 0 | 0 |
+| `tmp2m` | 47192259 | 23599299 | 23599299 | 25022289 | 1977709 | 1979129 | 0.00389105 | 0.00389105 |
+| `prate_ave` | 47192259 | 23599299 | 23599299 | 33543449 | 13157179 | 13157179 | 0.00389081 | 0.00389081 |
+| `soilw1` | 47192259 | 23599299 | 23599299 | 8538049 | 3021869 | 3021879 | 0.00388914 | 0.00388914 |
+| `land` | 47192259 | 23599299 | 23599299 | 758369 | 646119 | 646119 | 0 | 0 |
 
 ![NEXTCDF-4 file size: float32 vs bfloat16 (4 configurations)](images/bfloat16_size.png)
 
-![NEXTCDF-4 write/read time per field (ms): float32 vs bfloat16 (4 configurations)](images/bfloat16_speed.png)
+![NEXTCDF-4 disk write/read throughput (MB/s of float32 data): float32 vs bfloat16 (4 configurations)](images/bfloat16_speed.png)
 
-![bfloat16 conversion: NEP vs HDF5, write/read time per field (all 6 configurations)](images/bfloat16_hdf5_speed.png)
+![bfloat16 conversion: NEP vs HDF5, disk write/read throughput (all 6 configurations)](images/bfloat16_hdf5_speed.png)
 
 What the numbers show:
 
-- Every contiguous bfloat16 file is 2365635 bytes, 50.1% of its float file (ratio 1.997) — essentially the 2:1 element-size ratio plus fixed metadata. The bfloat16 (HDF5) files are byte-identical in size contiguous, and within a few bytes deflate1.
-- With shuffle+deflate level 1, bfloat16 compresses much better than float32, because rounding collapses the number of distinct values the filters see. The four fields contain 858874 (`tmp2m`), 954856 (`prate_ave`), 202809 (`soilw1`) and 3 (`land`) distinct float32 values; after bfloat16 rounding only 68, 6114, 594 and 3 distinct values remain. Compressed sizes drop accordingly: 203408 vs 2507866 bytes for `tmp2m` (12.3x smaller), 1321355 vs 3359982 for `prate_ave` (2.5x), and 307824 vs 859442 for `soilw1` (2.8x). `land` already has only 3 distinct values, so rounding changes nothing and the compressed files are close in size (70249 vs 81474 bytes, 1.16x).
+- Every contiguous bfloat16 file is 23599299 bytes, 50.0% of its float file (ratio 2.00) — essentially the 2:1 element-size ratio plus fixed metadata. The bfloat16 (HDF5) files are byte-identical in size contiguous, and within a few bytes deflate1.
+- With shuffle+deflate level 1, bfloat16 compresses much better than float32, because rounding collapses the number of distinct values the filters see. The four fields contain 858874 (`tmp2m`), 954856 (`prate_ave`), 202809 (`soilw1`) and 3 (`land`) distinct float32 values; after bfloat16 rounding only 68, 6114, 594 and 3 distinct values remain. Compressed sizes drop accordingly: 1977709 vs 25022289 bytes for `tmp2m` (12.7x smaller), 13157179 vs 33543449 for `prate_ave` (2.5x), and 3021869 vs 8538049 for `soilw1` (2.8x). `land` already has only 3 distinct values, so rounding changes nothing and the compressed files are close in size (646119 vs 758369 bytes, 1.17x).
 - The maximum relative error is 0.00389 across all fields, just under the 2^-8 = 0.00390625 round-to-nearest bound; `land` is exact because its three values are representable in bfloat16. The HDF5-converted rows show the same maximum errors — ties away from zero stays within the same bound.
-- With `-O2`, the in-memory conversion is cheap and bfloat16 total times are at or below the float times. For `tmp2m` contiguous, `write_s` is 0.002797 s of which `wconv_s` is 0.000711 s — the actual write I/O (~0.0021 s) is faster than the float write (0.003367 s), as expected for half the bytes. The same holds for reads: `read_s` 0.001543 s minus `rconv_s` 0.000727 s leaves ~0.0008 s against 0.001682 s for float. With deflate1 the I/O savings grow with the compression gain: `tmp2m` bfloat16 write is 0.015490 s versus 0.074657 s for float, so even including conversion the total is 4.8x faster.
-- HDF5 conversion is much slower than the user-code conversion on this data. For `tmp2m` contiguous, `bfloat16_hdf5` write is 0.110667 s and read 0.078588 s, against 0.002797 s and 0.001543 s for user conversion — HDF5's generic software conversion inside `H5Dwrite`/`H5Dread` costs about two orders of magnitude more than `float_to_bfloat16()`/`bfloat16_to_float()`. Stored file sizes are nearly identical (2365635 bytes contiguous for both paths; 203550 vs 203408 bytes deflate1 for `tmp2m`, 307825 vs 307824 for `soilw1`), and only a handful of stored values differ from round-to-nearest-even: 9 of 1179648 for `tmp2m`, 8 for `prate_ave`, 3 for `soilw1` and 0 for `land`.
+- With `-O2` the in-memory conversion is cheap, and the disk time is halved, so bfloat16 total times are well below the float times. For `tmp2m` contiguous, `write_s` is 0.082047 s, of which `wconv_s` is 0.012499 s, against 0.166828 s for float; `read_s` is 0.051379 s, of which `rconv_s` is 0.015501 s, against 0.089417 s for float. With deflate1 the savings grow with the compression gain: `tmp2m` bfloat16 write is 0.156095 s versus 0.807080 s for float, so even including conversion the total is 5.2x faster.
+- HDF5 conversion is much slower than the user-code conversion on this data. For `tmp2m` contiguous, `bfloat16_hdf5` write is 1.180582 s and read 0.865629 s, against 0.082047 s and 0.051379 s for user conversion — HDF5's generic software conversion inside `H5Dwrite`/`H5Dread` costs far more than the disk I/O. Stored file sizes are nearly identical (23599299 bytes contiguous for both paths; 1979129 vs 1977709 bytes deflate1 for `tmp2m`, 3021879 vs 3021869 for `soilw1`), and only a handful of stored values differ from round-to-nearest-even: 9 of 1179648 per copy for `tmp2m`, 8 for `prate_ave`, 3 for `soilw1` and 0 for `land`.
 
 ### Benchmark: `bfloat16_io_perf`
 
-`bfloat16_io_perf.c` times pure I/O with no conversion, using the committed bfloat16 copy of the GDAS sample `test/data/NEXTCDF4/gdas_sfc_sample_bfloat16.nc` (see `test/data/NEXTCDF4/README.md` for how it is made). It checks that the sample's stored bits are exactly `float_to_bfloat16()` of the float sample, then writes and reads each field as float32 and as bfloat16 bits, contiguous and deflate1, 3 repetitions each, minimum kept:
+`bfloat16_io_perf.c` times pure I/O with no conversion, using the committed bfloat16 copy of the GDAS sample `test/data/NEXTCDF4/gdas_sfc_sample_bfloat16.nc` (see `test/data/NEXTCDF4/README.md` for how it is made). It checks that the sample's stored bits are exactly `float_to_bfloat16()` of the float sample, then writes and reads 10 copies of each field (as time steps) as float32 and as bfloat16 bits, contiguous and deflate1, 10 repetitions each, minimum kept. Timing is disk-bound in the same way as `bfloat16_perf` (`fsync()` in the write time, page cache dropped before each read):
 
 ```sh
 HDF5_PLUGIN_PATH=$HOME/plugins/zstd-only \
@@ -220,7 +220,7 @@ python3 ../../../examples/nextcdf4/plot_bfloat16_io.py bfloat16_io_results.csv b
 The CSV written has columns:
 
 ```
-field,type,storage,uncompressed_bytes,file_bytes,ratio_vs_float,write_s,read_s,write_speedup,read_speedup
+field,type,storage,copies,uncompressed_bytes,file_bytes,ratio_vs_float,write_s,read_s,write_MBps,read_MBps,write_speedup,read_speedup
 ```
 
-(`ratio_vs_float` is the matching float row's `file_bytes` divided by this row's; `write_speedup`/`read_speedup` are the matching float row's times divided by this row's — 1.000 on the float rows.) Results are discussed in [float16.md](float16.md), and the reference CSV is `examples/nextcdf4/reference_io_results.csv`.
+(`copies` is `NCOPIES`; sizes and times cover all copies, and `write_MBps`/`read_MBps` are MB/s of float32 data for every row. `ratio_vs_float` is the matching float row's `file_bytes` divided by this row's; `write_speedup`/`read_speedup` are the matching float row's times divided by this row's — 1.000 on the float rows.) Results are discussed in [float16.md](float16.md), and the reference CSV is `examples/nextcdf4/reference_io_results.csv`.

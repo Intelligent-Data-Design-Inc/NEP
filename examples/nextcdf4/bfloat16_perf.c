@@ -9,8 +9,11 @@
  * (float, contiguous), (bfloat16, contiguous), (bfloat16_hdf5,
  * contiguous), (float, deflate level 1 with shuffle), (bfloat16,
  * deflate level 1 with shuffle) and (bfloat16_hdf5, deflate level 1
- * with shuffle). Each configuration is repeated 3 times and the
- * minimum times are kept.
+ * with shuffle). Each file holds @c NCOPIES (10) copies of the field
+ * as time steps, written and read one step at a time, so the fixed
+ * cost of creating, opening and closing a file is spread over more
+ * data. Each configuration is repeated 10 times and the minimum times
+ * are kept.
  *
  * The @c bfloat16 rows convert float32 to bfloat16 in user code and
  * exchange raw uint16_t bits through nc_put_vara_bfloat16() and
@@ -23,17 +26,24 @@
  * number of stored values that differ from round-to-nearest-even.
  *
  * Write time runs from just before the float32 to bfloat16 conversion
- * (bfloat16 only) through nc_close(). Read time runs from nc_open()
- * through nc_close() plus the conversion back to float for bfloat16.
- * Timing uses clock_gettime(CLOCK_MONOTONIC). Throughput is reported in
- * MB/s of float32 data for every row so the speeds compare the same
- * user data.
+ * (bfloat16 only) through nc_close() and an fsync() of the file
+ * (nep_perf_sync_file()), so the data has reached the storage device.
+ * Before each read the file is dropped from the page cache
+ * (nep_perf_drop_cache(), untimed), so every read comes from the
+ * device. Read time runs from nc_open() through nc_close() plus the
+ * conversion back to float for bfloat16. Both times cover the whole
+ * file (all @c NCOPIES steps). Timing uses
+ * clock_gettime(CLOCK_MONOTONIC). Throughput is reported in MB/s of
+ * float32 data (@c NCOPIES x 4718592 bytes) for every row so the
+ * speeds compare the same user data.
  *
  * **Output:** CSV written to the path given on the command line, with
  * columns:
  *   @code
- *   field,type,storage,uncompressed_bytes,file_bytes,ratio_vs_float,write_s,read_s,write_MBps,read_MBps,max_abs_err,max_rel_err,wconv_s,rconv_s
+ *   field,type,storage,copies,uncompressed_bytes,file_bytes,ratio_vs_float,write_s,read_s,write_MBps,read_MBps,max_abs_err,max_rel_err,wconv_s,rconv_s
  *   @endcode
+ *   @c copies is @c NCOPIES; @c uncompressed_bytes, @c file_bytes,
+ *   @c write_s and @c read_s cover all copies.
  *   @c wconv_s is the minimum float32-to-bfloat16 conversion time (part
  *   of @c write_s) and @c rconv_s the minimum bfloat16-to-float32
  *   conversion time (part of @c read_s); both are 0 for float and
@@ -55,7 +65,7 @@
  * - **Raw bit patterns**: bfloat16 data is written and read as
  *   uint16_t through nc_put_vara_bfloat16()/nc_get_vara_bfloat16(), or
  *   converted inside HDF5 by the typed float calls
- * - **Minimum of 3 runs**: reduces timing noise
+ * - **Minimum of 10 runs**: reduces timing noise
  * - **Gates**: every contiguous bfloat16 file must be smaller than its
  *   float file, and the maximum relative error must not exceed 2^-8
  *
@@ -80,6 +90,7 @@
 #include <sys/stat.h>
 
 #include "bfloat16_conv.h"
+#include "perf_disk.h"
 
 /** Number of GDAS fields benchmarked. */
 #define NFIELDS 4
@@ -92,7 +103,11 @@ static const char *FIELDS[NFIELDS] = {"tmp2m", "prate_ave", "soilw1", "land"};
 /** Number of values in one field. */
 #define NVALS ((size_t)NY * NX)
 /** Repetitions per configuration; the minimum time is kept. */
-#define NREPS 3
+#define NREPS 10
+/** Copies of the field written to (and read from) each file, as time
+ * steps, so the fixed cost of opening and closing a file is spread over
+ * more data. */
+#define NCOPIES 10
 /** Temporary NetCDF file created for each measurement. */
 #define TMP_FILE "bfloat16_perf_tmp.nc"
 
@@ -141,15 +156,17 @@ typedef struct {
  *
  * For each repetition: creates @c TMP_FILE with
  * nc_create(NC_NEXTCDF4 | NC_CLOBBER), defines fixed dims
- * @c time = 1, @c grid_yt = NY, @c grid_xt = NX and one variable of the
- * field name, optionally chunked 1x768x1536 with shuffle and deflate
- * level 1, writes the data, closes the file, stats it, reopens it,
- * reads the data back and checks it. @c CFG_FLOAT and @c CFG_BF16_USER
- * use the untyped calls and check the raw bits; @c CFG_BF16_HDF5 uses
- * the typed float calls and checks the read floats against the stored
- * raw bits on the last repetition. The minimum write and read times
- * and the last repetition's file size and error metrics are returned
- * in @p row.
+ * @c time = NCOPIES, @c grid_yt = NY, @c grid_xt = NX and one variable
+ * of the field name, optionally chunked 1x768x1536 with shuffle and
+ * deflate level 1, writes the field once per time step (converting it
+ * again for each step in the @c CFG_BF16_USER case), closes and fsyncs
+ * the file (timed), stats it, drops it from the page cache (untimed),
+ * reopens it, reads every time step back and checks it. @c CFG_FLOAT
+ * and @c CFG_BF16_USER use nc_put_vara_float()/nc_put_vara_bfloat16()
+ * and check the raw bits; @c CFG_BF16_HDF5 uses the typed float calls
+ * and checks the read floats against the stored raw bits on the last
+ * repetition. The minimum write and read times and the last
+ * repetition's file size and error metrics are returned in @p row.
  *
  * @param field   Field name (used as the variable name).
  * @param fdata   Input float data (NVALS elements).
@@ -158,9 +175,9 @@ typedef struct {
  * @param deflate  Non-zero for shuffle+deflate level 1, 0 for contiguous.
  * @param row     Result row to fill in.
  * @param bdata   Scratch buffer of NVALS uint16_t.
- * @param rdata   Scratch buffer of at least NVALS*4 bytes.
- * @param back    Scratch buffer of NVALS floats for the bfloat16 to
- *                float32 conversion.
+ * @param rdata   Scratch buffer of at least NCOPIES*NVALS*4 bytes.
+ * @param back    Scratch buffer of NCOPIES*NVALS floats for the
+ *                bfloat16 to float32 conversion.
  * @return 0 on success, 1 on verification failure, exits on NetCDF error.
  */
 static int
@@ -169,13 +186,14 @@ run_config(const char *field, const float *fdata, cfg_type_t type, int deflate,
 {
     int rep;
     int is_bf16 = (type != CFG_FLOAT);
+    size_t esize = is_bf16 ? sizeof(uint16_t) : sizeof(float);
     struct stat st;
 
     row->field = field;
     row->type = type == CFG_FLOAT ? "float"
               : type == CFG_BF16_USER ? "bfloat16" : "bfloat16_hdf5";
     row->storage = deflate ? "deflate1" : "contiguous";
-    row->uncompressed = NVALS * (is_bf16 ? sizeof(uint16_t) : sizeof(float));
+    row->uncompressed = NCOPIES * NVALS * esize;
     row->write_s = 1e30;
     row->read_s = 1e30;
     row->file_bytes = 0;
@@ -190,32 +208,16 @@ run_config(const char *field, const float *fdata, cfg_type_t type, int deflate,
         size_t chunksizes[3] = {1, NY, NX};
         size_t start[3] = {0, 0, 0};
         size_t count[3] = {1, NY, NX};
-        const void *wdata;
-        void *rdata_typed;
         double t0, tc0, write_s, read_s, wconv_s = 0.0, rconv_s = 0.0;
-        size_t i;
+        size_t i, step;
+        float *last;
         int ret;
 
         /* --- Write pass: user conversion (bfloat16 only) is timed. - */
         t0 = get_time();
 
-        if (type == CFG_BF16_USER)
-        {
-            tc0 = get_time();
-            for (i = 0; i < NVALS; i++)
-                bdata[i] = float_to_bfloat16(fdata[i]);
-            wconv_s = get_time() - tc0;
-            wdata = bdata;
-            rdata_typed = rdata;
-        }
-        else
-        {
-            wdata = fdata;
-            rdata_typed = rdata;
-        }
-
         if ((ret = nc_create(TMP_FILE, NC_NEXTCDF4 | NC_CLOBBER, &ncid))) ERR(ret);
-        if ((ret = nc_def_dim(ncid, "time", 1, &dimids[0]))) ERR(ret);
+        if ((ret = nc_def_dim(ncid, "time", NCOPIES, &dimids[0]))) ERR(ret);
         if ((ret = nc_def_dim(ncid, "grid_yt", NY, &dimids[1]))) ERR(ret);
         if ((ret = nc_def_dim(ncid, "grid_xt", NX, &dimids[2]))) ERR(ret);
         if ((ret = nc_def_var(ncid, field, is_bf16 ? NC_BFLOAT16 : NC_FLOAT,
@@ -226,20 +228,33 @@ run_config(const char *field, const float *fdata, cfg_type_t type, int deflate,
             if ((ret = nc_def_var_deflate(ncid, varid, 1, 1, 1))) ERR(ret);
         }
         if ((ret = nc_enddef(ncid))) ERR(ret);
-        /* nc_put_vara_bfloat16 stores the raw bits on the NC_BFLOAT16
-         * variable; nc_put_vara_float (CFG_BF16_HDF5) lets HDF5
-         * convert, which rounds ties away from zero while
-         * float_to_bfloat16() rounds ties to even. */
-        if (type == CFG_BF16_USER)
+        for (step = 0; step < NCOPIES; step++)
         {
-            if ((ret = nc_put_vara_bfloat16(ncid, varid, start, count,
-                                            (nc_bfloat16_t *)(void *)bdata))) ERR(ret);
-        }
-        else
-        {
-            if ((ret = nc_put_vara_float(ncid, varid, start, count, wdata))) ERR(ret);
+            start[0] = step;
+            /* nc_put_vara_bfloat16 stores the raw bits on the
+             * NC_BFLOAT16 variable; nc_put_vara_float (CFG_BF16_HDF5)
+             * lets HDF5 convert, which rounds ties away from zero while
+             * float_to_bfloat16() rounds ties to even. */
+            if (type == CFG_BF16_USER)
+            {
+                tc0 = get_time();
+                for (i = 0; i < NVALS; i++)
+                    bdata[i] = float_to_bfloat16(fdata[i]);
+                wconv_s += get_time() - tc0;
+                if ((ret = nc_put_vara_bfloat16(ncid, varid, start, count,
+                                                (nc_bfloat16_t *)(void *)bdata))) ERR(ret);
+            }
+            else
+            {
+                if ((ret = nc_put_vara_float(ncid, varid, start, count, fdata))) ERR(ret);
+            }
         }
         if ((ret = nc_close(ncid))) ERR(ret);
+        if (nep_perf_sync_file(TMP_FILE))
+        {
+            perror("fsync");
+            return 1;
+        }
 
         write_s = get_time() - t0;
         if (write_s < row->write_s)
@@ -254,37 +269,48 @@ run_config(const char *field, const float *fdata, cfg_type_t type, int deflate,
         }
         row->file_bytes = (long long)st.st_size;
 
+        /* Start the read from the device, not the page cache. */
+        if (nep_perf_drop_cache(TMP_FILE))
+        {
+            perror("drop cache");
+            return 1;
+        }
+
         /* --- Read pass: includes conversion back to float. -------- */
         t0 = get_time();
 
         if ((ret = nc_open(TMP_FILE, NC_NEXTCDF4 | NC_NOWRITE, &ncid))) ERR(ret);
         if ((ret = nc_inq_varid(ncid, field, &varid))) ERR(ret);
-        /* nc_get_vara_bfloat16 returns the raw stored bits.
-         * nc_get_vara_float on the NC_BFLOAT16 variable
-         * (CFG_BF16_HDF5) returns the same values converted to float
-         * by HDF5. */
-        if (type == CFG_BF16_HDF5)
+        for (step = 0; step < NCOPIES; step++)
         {
-            if ((ret = nc_get_vara_float(ncid, varid, start, count, back))) ERR(ret);
-        }
-        else if (type == CFG_BF16_USER)
-        {
-            if ((ret = nc_get_vara_bfloat16(ncid, varid, start, count,
-                                            (nc_bfloat16_t *)(void *)rdata_typed))) ERR(ret);
-        }
-        else
-        {
-            if ((ret = nc_get_vara_float(ncid, varid, start, count, rdata_typed))) ERR(ret);
+            start[0] = step;
+            /* nc_get_vara_bfloat16 returns the raw stored bits.
+             * nc_get_vara_float on the NC_BFLOAT16 variable
+             * (CFG_BF16_HDF5) returns the same values converted to
+             * float by HDF5. */
+            if (type == CFG_BF16_HDF5)
+            {
+                if ((ret = nc_get_vara_float(ncid, varid, start, count,
+                                             back + step * NVALS))) ERR(ret);
+            }
+            else if (type == CFG_BF16_USER)
+            {
+                uint16_t *r = rdata + step * NVALS;
+
+                if ((ret = nc_get_vara_bfloat16(ncid, varid, start, count,
+                                                (nc_bfloat16_t *)(void *)r))) ERR(ret);
+                tc0 = get_time();
+                for (i = 0; i < NVALS; i++)
+                    back[step * NVALS + i] = bfloat16_to_float(r[i]);
+                rconv_s += get_time() - tc0;
+            }
+            else
+            {
+                if ((ret = nc_get_vara_float(ncid, varid, start, count,
+                                             (float *)(void *)rdata + step * NVALS))) ERR(ret);
+            }
         }
         if ((ret = nc_close(ncid))) ERR(ret);
-
-        if (type == CFG_BF16_USER)
-        {
-            tc0 = get_time();
-            for (i = 0; i < NVALS; i++)
-                back[i] = bfloat16_to_float(rdata[i]);
-            rconv_s = get_time() - tc0;
-        }
 
         read_s = get_time() - t0;
         if (read_s < row->read_s)
@@ -300,10 +326,14 @@ run_config(const char *field, const float *fdata, cfg_type_t type, int deflate,
 
             if ((ret = nc_open(TMP_FILE, NC_NEXTCDF4 | NC_NOWRITE, &ncid))) ERR(ret);
             if ((ret = nc_inq_varid(ncid, field, &varid))) ERR(ret);
-            if ((ret = nc_get_vara_bfloat16(ncid, varid, start, count,
-                                            (nc_bfloat16_t *)(void *)rdata))) ERR(ret);
+            for (step = 0; step < NCOPIES; step++)
+            {
+                start[0] = step;
+                if ((ret = nc_get_vara_bfloat16(ncid, varid, start, count,
+                                                (nc_bfloat16_t *)(void *)(rdata + step * NVALS)))) ERR(ret);
+            }
             if ((ret = nc_close(ncid))) ERR(ret);
-            for (i = 0; i < NVALS; i++)
+            for (i = 0; i < NCOPIES * NVALS; i++)
             {
                 uint32_t fbits;
 
@@ -314,14 +344,17 @@ run_config(const char *field, const float *fdata, cfg_type_t type, int deflate,
                             field, row->storage);
                     return 1;
                 }
+            }
+            for (i = 0; i < NVALS; i++)
                 if (rdata[i] != float_to_bfloat16(fdata[i]))
                     n_diff++;
-            }
             printf("# %s %s: %zu of %zu values differ from round-to-nearest-even\n",
                    field, row->storage, n_diff, NVALS);
         }
 
-        /* Error metrics are computed outside the timed regions. */
+        /* Error metrics are computed outside the timed regions, on the
+         * last time step (every step holds the same data). */
+        last = back + (NCOPIES - 1) * NVALS;
         if (is_bf16 && rep == NREPS - 1)
         {
             row->max_abs_err = 0.0;
@@ -332,7 +365,7 @@ run_config(const char *field, const float *fdata, cfg_type_t type, int deflate,
 
                 if (fdata[i] == BF16_FILL_IN)
                     continue;
-                err = (double)back[i] - (double)fdata[i];
+                err = (double)last[i] - (double)fdata[i];
                 if (err < 0.0)
                     err = -err;
                 if (err > row->max_abs_err)
@@ -346,13 +379,23 @@ run_config(const char *field, const float *fdata, cfg_type_t type, int deflate,
             }
         }
 
-        /* Check the bits read against the bits written. */
-        if (type != CFG_BF16_HDF5 &&
-            memcmp(wdata, rdata_typed, NVALS * (is_bf16 ? 2 : 4)))
+        /* Check the bits read against the bits written, every step. */
+        if (type != CFG_BF16_HDF5)
         {
-            fprintf(stderr, "%s: %s %s bits did not round-trip\n",
-                    field, row->type, row->storage);
-            return 1;
+            const void *wdata = fdata;
+
+            if (type == CFG_BF16_USER)
+                wdata = bdata;
+            for (step = 0; step < NCOPIES; step++)
+            {
+                if (memcmp(wdata, (const char *)rdata + step * NVALS * esize,
+                           NVALS * esize))
+                {
+                    fprintf(stderr, "%s: %s %s bits did not round-trip\n",
+                            field, row->type, row->storage);
+                    return 1;
+                }
+            }
         }
     }
     return 0;
@@ -397,8 +440,8 @@ main(int argc, char **argv)
 
     fdata = (float *)malloc(NVALS * sizeof(float));
     bdata = (uint16_t *)malloc(NVALS * sizeof(uint16_t));
-    rdata = (uint16_t *)malloc(NVALS * sizeof(float));
-    back = (float *)malloc(NVALS * sizeof(float));
+    rdata = (uint16_t *)malloc(NCOPIES * NVALS * sizeof(float));
+    back = (float *)malloc(NCOPIES * NVALS * sizeof(float));
     if (!fdata || !bdata || !rdata || !back)
     {
         fprintf(stderr, "Memory allocation failed\n");
@@ -411,8 +454,8 @@ main(int argc, char **argv)
         fprintf(stderr, "cannot open %s for writing\n", argv[2]);
         return 1;
     }
-    fprintf(fp, "field,type,storage,uncompressed_bytes,file_bytes,ratio_vs_float,write_s,read_s,write_MBps,read_MBps,max_abs_err,max_rel_err,wconv_s,rconv_s\n");
-    printf("field,type,storage,uncompressed_bytes,file_bytes,ratio_vs_float,write_s,read_s,write_MBps,read_MBps,max_abs_err,max_rel_err,wconv_s,rconv_s\n");
+    fprintf(fp, "field,type,storage,copies,uncompressed_bytes,file_bytes,ratio_vs_float,write_s,read_s,write_MBps,read_MBps,max_abs_err,max_rel_err,wconv_s,rconv_s\n");
+    printf("field,type,storage,copies,uncompressed_bytes,file_bytes,ratio_vs_float,write_s,read_s,write_MBps,read_MBps,max_abs_err,max_rel_err,wconv_s,rconv_s\n");
 
     for (f = 0; f < NFIELDS; f++)
     {
@@ -446,11 +489,11 @@ main(int argc, char **argv)
                 float_bytes[deflate] = rows[c].file_bytes;
 
             ratio = (double)float_bytes[deflate] / (double)rows[c].file_bytes;
-            write_mbps = (double)NVALS * 4.0 / 1e6 / rows[c].write_s;
-            read_mbps = (double)NVALS * 4.0 / 1e6 / rows[c].read_s;
+            write_mbps = (double)NCOPIES * NVALS * 4.0 / 1e6 / rows[c].write_s;
+            read_mbps = (double)NCOPIES * NVALS * 4.0 / 1e6 / rows[c].read_s;
             snprintf(line, sizeof(line),
-                     "%s,%s,%s,%zu,%lld,%.3f,%.6f,%.6f,%.3f,%.3f,%.6g,%.6g,%.6f,%.6f",
-                     rows[c].field, rows[c].type, rows[c].storage,
+                     "%s,%s,%s,%d,%zu,%lld,%.3f,%.6f,%.6f,%.3f,%.3f,%.6g,%.6g,%.6f,%.6f",
+                     rows[c].field, rows[c].type, rows[c].storage, NCOPIES,
                      rows[c].uncompressed, rows[c].file_bytes, ratio,
                      rows[c].write_s, rows[c].read_s, write_mbps, read_mbps,
                      rows[c].max_abs_err, rows[c].max_rel_err,
