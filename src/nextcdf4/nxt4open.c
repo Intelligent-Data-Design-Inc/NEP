@@ -1,7 +1,7 @@
 /**
  * @file nxt4open.c
  * @brief Empty-file open and validation for the NEXTCDF-4 backend.
- *
+
  * @author Edward Hartnett
  * @date 2026-08-28
  * @copyright Intelligent Data Design, Inc. All rights reserved.
@@ -10,9 +10,9 @@
 #include <unistd.h>
 #include "nxt4internal.h"
 
-/*
+/**
  * Open and validate an empty NEXTCDF-4 HDF5 file.
- *
+
  * The file must be HDF5, contain a valid `_Nextcdf4Backend` marker, and have
  * no root-group links. Read/write access is selected from `NC_WRITE`.*/
 int

@@ -946,6 +946,19 @@ INPUT                  = @abs_top_srcdir@/src/nep.c \
                          @abs_top_srcdir@/src/cdffile.c \
                          @abs_top_srcdir@/src/cdffunc.c \
                          @abs_top_srcdir@/src/cdfvar.c \
+                         @abs_top_srcdir@/src/dicomdispatch.c \
+                         @abs_top_srcdir@/src/dicomfile.c \
+                         @abs_top_srcdir@/src/dicomjpeglossless.h \
+                         @abs_top_srcdir@/src/dicomjpeglossless8.c \
+                         @abs_top_srcdir@/src/dicomjpeglossless12.c \
+                         @abs_top_srcdir@/src/dicomjpeglossless16.c \
+                         @abs_top_srcdir@/src/dicomjpeglosslessimpl.inc.c \
+                         @abs_top_srcdir@/src/dicomjpeglosslessprecision.c \
+                         @abs_top_srcdir@/src/mmcifdispatch.c \
+                         @abs_top_srcdir@/src/mmciffile.c \
+                         @abs_top_srcdir@/src/nep_bfloat16.c \
+                         @abs_top_srcdir@/src/pdbdispatch.c \
+                         @abs_top_srcdir@/src/pdbfile.c \
                          @abs_top_srcdir@/include/nep.h \
                          @abs_top_srcdir@/include/pds4dispatch.h \
                          @abs_top_srcdir@/include/geotiffdispatch.h \
@@ -955,6 +968,7 @@ INPUT                  = @abs_top_srcdir@/src/nep.c \
                          @abs_top_srcdir@/include/pdbdispatch.h \
                          @abs_top_srcdir@/include/mmcifdispatch.h \
                          @abs_top_srcdir@/include/cdfdispatch.h \
+                         @abs_top_srcdir@/include/nep_logging.h \
                          @abs_top_srcdir@/docs/mainpage.md \
                          @abs_top_srcdir@/docs/formats.md \
                          @abs_top_srcdir@/docs/cdf.md \

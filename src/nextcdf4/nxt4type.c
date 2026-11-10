@@ -1,7 +1,7 @@
 /**
  * @file nxt4type.c
  * @brief NEXTCDF-4 user-defined types and NC_STRING support.
- *
+
  * @author Edward Hartnett
  * @date 2026-08-29
  * @copyright Intelligent Data Design, Inc. All rights reserved.
@@ -12,7 +12,9 @@
 #include <assert.h>
 #include "nxt4internal.h"
 
-/*
+/**
+ * @param xtype NetCDF atomic type.
+ * @param sizep Destination for the size.
  * @return The in-memory type size for any base nc_type.
  */
 int
@@ -21,8 +23,11 @@ NEXTCDF4_get_type_size(nc_type xtype, size_t *sizep)
     return NEXTCDF4_type_size(xtype, sizep);
 }
 
-/*
+/**
  * Validate a type for definition.
+ * @param file NEXTCDF-4 file state.
+ * @param grp Group.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 static int
 check_type_write(NEXTCDF4_FILE_INFO_T *file, NC_GRP_INFO_T *grp)
@@ -41,7 +46,11 @@ check_type_write(NEXTCDF4_FILE_INFO_T *file, NC_GRP_INFO_T *grp)
     return NC_NOERR;
 }
 
-/*
+/**
+ * @param ncid NetCDF file identifier.
+ * @param h5 NetCDF-4 file state.
+ * @param grp Group.
+ * @param filep Destination for the NEXTCDF-4 file state.
  * @return The group associated with an ncid.
  */
 static int
@@ -56,8 +65,10 @@ get_grp_and_file(int ncid, NC_FILE_INFO_T **h5, NC_GRP_INFO_T **grp,
     return NC_NOERR;
 }
 
-/*
+/**
  * Map an in-memory nc_type to an HDF5 atomic type.
+ * @param xtype NetCDF atomic type.
+ * @return HDF5 datatype, or negative on unsupported type.
  */
 static hid_t
 base_hdf_type(nc_type xtype)
@@ -68,8 +79,11 @@ base_hdf_type(nc_type xtype)
     return t;
 }
 
-/*
+/**
  * Record an HDF5 datatype in the in-memory type without committing.
+ * @param type HDF5 datatype.
+ * @param hdf HDF5 datatype identifier to attach.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 static int
 attach_hdf_type(NC_TYPE_INFO_T *type, hid_t hdf)
@@ -84,8 +98,12 @@ attach_hdf_type(NC_TYPE_INFO_T *type, hid_t hdf)
     return NC_NOERR;
 }
 
-/*
+/**
  * Commit an HDF5 datatype to its group.
+ * @param grp Group.
+ * @param type HDF5 datatype.
+ * @param hdf HDF5 datatype to commit.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 static int
 commit_hdf_type(NC_GRP_INFO_T *grp, NC_TYPE_INFO_T *type, hid_t hdf)
@@ -113,6 +131,8 @@ commit_hdf_type(NC_GRP_INFO_T *grp, NC_TYPE_INFO_T *type, hid_t hdf)
     return NC_NOERR;
 }
 
+/** Define a compound type.
+ */
 int
 NEXTCDF4_def_compound(int ncid, size_t size, const char *name, nc_type *typeidp)
 {
@@ -154,6 +174,8 @@ fail:
     return ret;
 }
 
+/** Insert a scalar field into a compound type.
+ */
 int
 NEXTCDF4_insert_compound(int ncid, nc_type typeid, const char *name,
                          size_t offset, nc_type xtype)
@@ -194,6 +216,8 @@ NEXTCDF4_insert_compound(int ncid, nc_type typeid, const char *name,
     return NC_NOERR;
 }
 
+/** Insert an array field into a compound type.
+ */
 int
 NEXTCDF4_insert_array_compound(int ncid, nc_type typeid, const char *name,
                                size_t offset, nc_type xtype, int ndims,
@@ -204,6 +228,8 @@ NEXTCDF4_insert_array_compound(int ncid, nc_type typeid, const char *name,
     return NC_ENOTBUILT;
 }
 
+/** Inquire a field of a compound type.
+ */
 int
 NEXTCDF4_inq_compound_field(int ncid, nc_type typeid, int fieldid, char *name,
                             size_t *offsetp, nc_type *fieldtypep, int *ndimsp,
@@ -238,6 +264,8 @@ NEXTCDF4_inq_compound_field(int ncid, nc_type typeid, int fieldid, char *name,
     return NC_NOERR;
 }
 
+/** Get a compound field's index by name.
+ */
 int
 NEXTCDF4_inq_compound_fieldindex(int ncid, nc_type typeid, const char *name,
                                  int *fieldidxp)
@@ -264,6 +292,8 @@ NEXTCDF4_inq_compound_fieldindex(int ncid, nc_type typeid, const char *name,
     return NC_EBADFIELD;
 }
 
+/** Define a variable-length type.
+ */
 int
 NEXTCDF4_def_vlen(int ncid, const char *name, nc_type base_typeid, nc_type *typeidp)
 {
@@ -316,6 +346,8 @@ fail:
     return ret;
 }
 
+/** Write a vlen element value.
+ */
 int
 NEXTCDF4_put_vlen_element(int ncid, int typeid, void *vlen_element,
                           size_t len, const void *data)
@@ -324,6 +356,8 @@ NEXTCDF4_put_vlen_element(int ncid, int typeid, void *vlen_element,
     return NC_ENOTBUILT;
 }
 
+/** Read a vlen element value.
+ */
 int
 NEXTCDF4_get_vlen_element(int ncid, int typeid, const void *vlen_element,
                           size_t *lenp, void *data)
@@ -332,6 +366,8 @@ NEXTCDF4_get_vlen_element(int ncid, int typeid, const void *vlen_element,
     return NC_ENOTBUILT;
 }
 
+/** Define an enum type.
+ */
 int
 NEXTCDF4_def_enum(int ncid, nc_type base_typeid, const char *name, nc_type *typeidp)
 {
@@ -385,6 +421,8 @@ fail:
     return ret;
 }
 
+/** Insert a member into an enum type.
+ */
 int
 NEXTCDF4_insert_enum(int ncid, nc_type typeid, const char *name, const void *value)
 {
@@ -424,6 +462,8 @@ NEXTCDF4_insert_enum(int ncid, nc_type typeid, const char *name, const void *val
     return NC_NOERR;
 }
 
+/** Inquire an enum member by index.
+ */
 int
 NEXTCDF4_inq_enum_member(int ncid, nc_type typeid, int idx, char *name, void *value)
 {
@@ -450,6 +490,8 @@ NEXTCDF4_inq_enum_member(int ncid, nc_type typeid, int idx, char *name, void *va
     return NC_NOERR;
 }
 
+/** Get an enum member name by value.
+ */
 int
 NEXTCDF4_inq_enum_ident(int ncid, nc_type typeid, long long value, char *identifier)
 {
@@ -479,6 +521,8 @@ NEXTCDF4_inq_enum_ident(int ncid, nc_type typeid, long long value, char *identif
     return NC_EINVAL;
 }
 
+/** Define an opaque type.
+ */
 int
 NEXTCDF4_def_opaque(int ncid, size_t size, const char *name, nc_type *typeidp)
 {
@@ -519,8 +563,11 @@ fail:
     return ret;
 }
 
-/*
+/**
  * Commit a single previously-attached (but not committed) type.
+ * @param grp Group.
+ * @param type HDF5 datatype.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 static int
 commit_one_type(NC_GRP_INFO_T *grp, NC_TYPE_INFO_T *type)
@@ -550,8 +597,10 @@ commit_one_type(NC_GRP_INFO_T *grp, NC_TYPE_INFO_T *type)
     return NC_NOERR;
 }
 
-/*
+/**
  * Recursively commit all uncommitted types in a group tree.
+ * @param grp Group.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 static int
 commit_types_in_grp(NC_GRP_INFO_T *grp)
@@ -575,12 +624,16 @@ commit_types_in_grp(NC_GRP_INFO_T *grp)
     return NC_NOERR;
 }
 
+/** Commit all user-defined types to the file.
+ */
 int
 NEXTCDF4_write_types(NC_FILE_INFO_T *h5)
 {
     return commit_types_in_grp(h5->root_grp);
 }
 
+/** Inquire a user-defined type.
+ */
 int
 NEXTCDF4_inq_user_type(int ncid, nc_type typeid, char *name, size_t *sizep,
                        nc_type *base_typep, size_t *nfieldsp, int *classp)
@@ -610,6 +663,8 @@ NEXTCDF4_inq_user_type(int ncid, nc_type typeid, char *name, size_t *sizep,
     return NC_NOERR;
 }
 
+/** Get a type's id by name.
+ */
 int
 NEXTCDF4_inq_typeid(int ncid, const char *name, nc_type *typeidp)
 {
@@ -628,6 +683,8 @@ NEXTCDF4_inq_typeid(int ncid, const char *name, nc_type *typeidp)
     return NC_NOERR;
 }
 
+/** Compare two types for equality.
+ */
 int
 NEXTCDF4_inq_type_equal(int ncid1, nc_type typeid1, int ncid2, nc_type typeid2,
                         int *equalp)
@@ -654,6 +711,8 @@ NEXTCDF4_inq_type_equal(int ncid1, nc_type typeid1, int ncid2, nc_type typeid2,
     return NC_NOERR;
 }
 
+/** Get the typeids of user-defined types in a group.
+ */
 int
 NEXTCDF4_inq_typeids(int ncid, int *ntypes, int *typeids)
 {

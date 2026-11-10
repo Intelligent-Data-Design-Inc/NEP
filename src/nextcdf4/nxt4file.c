@@ -1,7 +1,7 @@
 /**
  * @file nxt4file.c
  * @brief File state, markers, synchronization, and cleanup for NEXTCDF-4.
- *
+
  * @author Edward Hartnett
  * @date 2026-08-28
  * @copyright Intelligent Data Design, Inc. All rights reserved.
@@ -11,8 +11,9 @@
 #include <string.h>
 #include "nxt4internal.h"
 
-/*
+/**
  * Recursively close HDF5 object identifiers for a group.
+ * @param grp Group.
  */
 static void
 close_group_hdf(NC_GRP_INFO_T *grp)
@@ -60,7 +61,7 @@ close_group_hdf(NC_GRP_INFO_T *grp)
         close_group_hdf((NC_GRP_INFO_T *)ncindexith(grp->children, i));
 }
 
-/*
+/**
  * Close owned HDF5 identifiers and release per-file memory.
  */
 int
@@ -84,7 +85,7 @@ NEXTCDF4_free_file(NEXTCDF4_FILE_INFO_T *file)
     return ret;
 }
 
-/*
+/**
  * Allocate NEXTCDF-4 state and attach it to netcdf-c's file list.
  */
 int
@@ -127,7 +128,7 @@ NEXTCDF4_add_file(int ncid, const char *path, int mode,
     return NC_NOERR;
 }
 
-/*
+/**
  * Resolve common and backend-specific state for an open NEXTCDF-4 file.
  */
 int
@@ -151,8 +152,12 @@ NEXTCDF4_get_file(int ncid, NC_FILE_INFO_T **h5p,
     return NC_NOERR;
 }
 
-/*
+/**
  * @internal Write a null-terminated scalar HDF5 string attribute.
+ * @param location HDF5 location identifier.
+ * @param name Name.
+ * @param value Data buffer.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 static int
 write_string_att(hid_t location, const char *name, const char *value)
@@ -182,7 +187,7 @@ done:
     return ret;
 }
 
-/*
+/**
  * Write hidden NEXTCDF-4 provenance and compatibility attributes.
  */
 int
@@ -198,6 +203,9 @@ NEXTCDF4_write_markers(NEXTCDF4_FILE_INFO_T *file)
     if ((ret = write_string_att(file->rootid, NEXTCDF4_BACKEND_ATT,
                                 NEXTCDF4_BACKEND_VALUE)))
         return ret;
+    /* The model marker is only written when the file was created in
+     * NC_NETCDF4_MODEL compatibility mode; a plain NEXTCDF-4 file gets
+     * just the backend attribute. */
     if (!file->netcdf4_model)
         return NC_NOERR;
     if ((space = H5Screate(H5S_SCALAR)) < 0 ||
@@ -214,7 +222,7 @@ NEXTCDF4_write_markers(NEXTCDF4_FILE_INFO_T *file)
     return ret;
 }
 
-/*
+/**
  * Read and validate hidden NEXTCDF-4 provenance and compatibility attributes.
  */
 int
@@ -266,7 +274,7 @@ done:
     return ret;
 }
 
-/*
+/**
  * Flush pending writes for a writable NEXTCDF-4 file.
  */
 int
@@ -284,7 +292,7 @@ NEXTCDF4_sync(int ncid)
     return H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0 ? NC_EHDFERR : NC_NOERR;
 }
 
-/*
+/**
  * Flush, close, and release a NEXTCDF-4 file.
  */
 int
@@ -313,7 +321,7 @@ NEXTCDF4_close(int ncid, void *parameters)
     return close_ret ? close_ret : ret;
 }
 
-/*
+/**
  * Abort a NEXTCDF-4 operation using the normal resource-release path.
  */
 int
@@ -322,7 +330,7 @@ NEXTCDF4_abort(int ncid)
     return NEXTCDF4_close(ncid, NULL);
 }
 
-/*
+/**
  * Report the public NetCDF-4 format class.
  */
 int
@@ -338,7 +346,7 @@ NEXTCDF4_inq_format(int ncid, int *formatp)
     return NC_NOERR;
 }
 
-/*
+/**
  * Report the extended NEXTCDF-4 format identifier and effective mode.
  */
 int
@@ -358,7 +366,7 @@ NEXTCDF4_inq_format_extended(int ncid, int *formatp, int *modep)
     return NC_NOERR;
 }
 
-/*
+/**
  * Materialize pending root-group metadata and exit define mode.
  */
 int
@@ -391,7 +399,7 @@ NEXTCDF4__enddef(int ncid, size_t h_minfree, size_t v_align,
     return NC_NOERR;
 }
 
-/*
+/**
  * Return the file to define mode.
  */
 int

@@ -1,7 +1,7 @@
 /**
  * @file nxt4io.c
  * @brief Hyperslab variable I/O and memtype checks for fixed-size NEXTCDF-4 atomic types.
- *
+
  * @author Edward Hartnett
  * @date 2026-08-29
  * @copyright Intelligent Data Design, Inc. All rights reserved.
@@ -11,8 +11,11 @@
 #include <stdlib.h>
 #include "nxt4internal.h"
 
-/*
+/**
  * Return the native HDF5 memory datatype for a standard atomic type.
+ * @param type HDF5 datatype.
+ * @param closep Set nonzero when the returned type must be closed.
+ * @return HDF5 memory datatype, or negative on error.
  */
 static hid_t
 memory_type(nc_type type, int *closep)
@@ -98,9 +101,9 @@ memory_type(nc_type type, int *closep)
 /**
  * Return non-zero if xtype is one of the NEXTCDF-4 small floating-point
  * types (NC_FLOAT16, NC_BFLOAT16, FP8, FP6 or FP4).
- *
+
  * @param xtype The netCDF type.
- *
+
  * @return 1 for a small floating-point type, 0 otherwise.
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
@@ -122,10 +125,10 @@ is_small_float(nc_type xtype)
  * NC_FLOAT16 and NC_BFLOAT16 convert to and from NC_FLOAT and NC_DOUBLE
  * through HDF5; the FP8/FP6/FP4 types allow only their own type, because
  * HDF5 2.1.1 converts them incorrectly. Other variable types are unchanged.
- *
+
  * @param xtype The variable's type in the file.
  * @param memtype The memory type of the I/O call.
- *
+
  * @return NC_NOERR The memtype is allowed.
  * @return NC_ECHAR A text call on a small floating-point variable.
  * @return NC_EBADTYPE Any other memtype not allowed for xtype.
@@ -162,8 +165,17 @@ check_memtype(nc_type xtype, nc_type memtype)
     return NC_EBADTYPE;
 }
 
-/*
+/**
  * Common HDF5 hyperslab implementation used by vara and vars dispatch calls.
+ * @param ncid NetCDF file identifier.
+ * @param varid Variable identifier.
+ * @param startp Hyperslab start indices.
+ * @param countp Hyperslab counts.
+ * @param stridep Hyperslab strides, or NULL.
+ * @param data Data buffer.
+ * @param memtype NetCDF atomic memory type.
+ * @param writing Nonzero for a write, zero for a read.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 static int
 var_io(int ncid, int varid, const size_t *startp, const size_t *countp,

@@ -1,7 +1,7 @@
 /**
  * @file nxt4group.c
  * @brief NEXTCDF-4 group creation and inquiry.
- *
+
  * @author Edward Hartnett
  * @date 2026-08-29
  * @copyright Intelligent Data Design, Inc. All rights reserved.
@@ -12,7 +12,9 @@
 #include "nclist.h"
 #include "nxt4internal.h"
 
-/*
+/**
+ * @param grp Group.
+ * @param gid Destination for the HDF5 group identifier.
  * @return The NEXTCDF-4 group info, creating a default one if absent.
  */
 static int
@@ -35,7 +37,9 @@ get_grp_hdf(NC_GRP_INFO_T *grp, hid_t *gid)
     return NC_NOERR;
 }
 
-/*
+/**
+ * @param grp Group.
+ * @param hdf_group HDF5 group identifier to attach.
  * @return The group info attached to a freshly-added or existing group.
  */
 static int
@@ -51,8 +55,12 @@ attach_grp_hdf(NC_GRP_INFO_T *grp, hid_t hdf_group)
     return NC_NOERR;
 }
 
-/*
+/**
  * Recursively find a group by its in-file id.
+ * @param root Group tree root.
+ * @param grpid HDF5 group identifier.
+ * @param grpp Destination for the matching group.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 static int
 find_grp_by_id(NC_GRP_INFO_T *root, int grpid, NC_GRP_INFO_T **grpp)
@@ -75,8 +83,12 @@ find_grp_by_id(NC_GRP_INFO_T *root, int grpid, NC_GRP_INFO_T **grpp)
     return NC_EBADID;
 }
 
-/*
+/**
  * Resolve a group from a NetCDF ncid, creating root group info on demand.
+ * @param ncid NetCDF file identifier.
+ * @param h5 NetCDF-4 file state.
+ * @param grpp Destination for the group.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 static int
 get_grp_from_ncid(int ncid, NC_FILE_INFO_T **h5, NC_GRP_INFO_T **grpp)
@@ -93,6 +105,8 @@ get_grp_from_ncid(int ncid, NC_FILE_INFO_T **h5, NC_GRP_INFO_T **grpp)
     return find_grp_by_id(root, ncid & 0xffff, grpp);
 }
 
+/** Create a subgroup below a group.
+ */
 int
 NEXTCDF4_def_grp(int ncid, const char *name, int *grpidp)
 {
@@ -140,8 +154,12 @@ fail:
     return ret;
 }
 
-/*
+/**
  * Locate a direct child group by name.
+ * @param parent Parent group.
+ * @param name Name.
+ * @param grpp Destination for the child group.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 static int
 find_child_grp(NC_GRP_INFO_T *parent, const char *name, NC_GRP_INFO_T **grpp)
@@ -157,6 +175,8 @@ find_child_grp(NC_GRP_INFO_T *parent, const char *name, NC_GRP_INFO_T **grpp)
     return NC_ENOTNC;
 }
 
+/** Get the ncid of a named subgroup.
+ */
 int
 NEXTCDF4_inq_ncid(int ncid, const char *name, int *grpidp)
 {
@@ -198,6 +218,8 @@ NEXTCDF4_inq_ncid(int ncid, const char *name, int *grpidp)
     return NC_NOERR;
 }
 
+/** Get the ncids of all subgroups.
+ */
 int
 NEXTCDF4_inq_grps(int ncid, int *numgrps, int *grpidsp)
 {
@@ -220,6 +242,8 @@ NEXTCDF4_inq_grps(int ncid, int *numgrps, int *grpidsp)
     return NC_NOERR;
 }
 
+/** Get a group's name.
+ */
 int
 NEXTCDF4_inq_grpname(int ncid, char *name)
 {
@@ -233,6 +257,8 @@ NEXTCDF4_inq_grpname(int ncid, char *name)
     return NC_NOERR;
 }
 
+/** Get a group's full path name.
+ */
 int
 NEXTCDF4_inq_grpname_full(int ncid, size_t *lenp, char *name)
 {
@@ -275,6 +301,8 @@ NEXTCDF4_inq_grpname_full(int ncid, size_t *lenp, char *name)
     return NC_NOERR;
 }
 
+/** Get a group's parent ncid.
+ */
 int
 NEXTCDF4_inq_grp_parent(int ncid, int *parentidp)
 {
@@ -290,6 +318,8 @@ NEXTCDF4_inq_grp_parent(int ncid, int *parentidp)
     return NC_NOERR;
 }
 
+/** Get the ncid of a group given its full path.
+ */
 int
 NEXTCDF4_inq_grp_full_ncid(int ncid, const char *full_name, int *grpidp)
 {

@@ -14,6 +14,18 @@
 #include "config.h"
 #include "dicomjpeglossless.h"
 
+/**
+ * Determine the sample bit precision of a JPEG Lossless frame by scanning
+ * for its Start-Of-Frame marker.
+ *
+ * @param src Raw JPEG Lossless stream.
+ * @param src_len Length of @p src in bytes.
+ *
+ * @return Sample precision in bits (8, 12 or 16), or -1 if no SOF marker
+ * is found.
+ *
+ * @author Edward Hartnett
+ */
 int
 dicom_jpeg_lossless_precision(const void *src, size_t src_len)
 {

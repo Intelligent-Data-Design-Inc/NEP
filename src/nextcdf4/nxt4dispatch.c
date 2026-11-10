@@ -1,7 +1,7 @@
 /**
  * @file nxt4dispatch.c
  * @brief UDF9 dispatch table registration for the NEXTCDF-4 backend.
- *
+
  * @author Edward Hartnett
  * @date 2026-08-28
  * @copyright Intelligent Data Design, Inc. All rights reserved.
@@ -13,7 +13,7 @@
 #include "netcdf_filter.h"
 #include "nxt4internal.h"
 
-/*
+/**
  * Complete NetCDF dispatch table for NEXTCDF-4 UDF slot 9.
  */
 static const NC_Dispatch NEXTCDF4_dispatcher = {
@@ -98,12 +98,12 @@ static const NC_Dispatch NEXTCDF4_dispatcher = {
     NC_NOOP_inq_filter_avail
 };
 
-/*
+/**
  * Active NEXTCDF-4 dispatch table, populated during initialization.
  */
 const NC_Dispatch *NEXTCDF4_dispatch_table = NULL;
 
-/*
+/**
  * Register the NEXTCDF-4 dispatch table in NetCDF UDF slot 9.
  */
 NC_Dispatch *
@@ -126,7 +126,7 @@ NC_NEXTCDF4_initialize(void)
     return (NC_Dispatch *)&NEXTCDF4_dispatcher;
 }
 
-/*
+/**
  * Finalize process-wide NEXTCDF-4 dispatch state.
  */
 int

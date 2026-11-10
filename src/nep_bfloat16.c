@@ -251,15 +251,6 @@ bf16_io(int ncid, int varid, const size_t *startp, const size_t *countp,
  * Read a strided hyperslab of a variable as bfloat16. See nep.h for
  * the variable types accepted and the conversion rules.
  *
- * @param ncid NetCDF file ID.
- * @param varid Variable ID.
- * @param startp Start index in each dimension.
- * @param countp Edge count in each dimension.
- * @param stridep Stride in each dimension (NULL means 1).
- * @param ip Returned bfloat16 values.
- *
- * @return NC_NOERR No error, or an error code as for
- * nc_get_vara_bfloat16().
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
 int
@@ -274,15 +265,6 @@ nc_get_vars_bfloat16(int ncid, int varid, const size_t *startp,
  * Write a strided hyperslab of a variable from bfloat16 values. See
  * nep.h for the variable types accepted and the conversion rules.
  *
- * @param ncid NetCDF file ID.
- * @param varid Variable ID.
- * @param startp Start index in each dimension.
- * @param countp Edge count in each dimension.
- * @param stridep Stride in each dimension (NULL means 1).
- * @param op The bfloat16 values to write.
- *
- * @return NC_NOERR No error, or an error code as for
- * nc_put_vara_bfloat16().
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
 int
@@ -299,14 +281,6 @@ nc_put_vars_bfloat16(int ncid, int varid, const size_t *startp,
  * Read a hyperslab of a variable as bfloat16. See nep.h for the
  * variable types accepted and the conversion rules.
  *
- * @param ncid NetCDF file ID.
- * @param varid Variable ID.
- * @param startp Start index in each dimension.
- * @param countp Edge count in each dimension.
- * @param ip Returned bfloat16 values.
- *
- * @return NC_NOERR No error, or an error code as for
- * nc_get_vara_bfloat16().
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
 int
@@ -321,14 +295,6 @@ nc_get_vara_bfloat16(int ncid, int varid, const size_t *startp,
  * Write a hyperslab of a variable from bfloat16 values. See nep.h for
  * the variable types accepted and the conversion rules.
  *
- * @param ncid NetCDF file ID.
- * @param varid Variable ID.
- * @param startp Start index in each dimension.
- * @param countp Edge count in each dimension.
- * @param op The bfloat16 values to write.
- *
- * @return NC_NOERR No error, or an error code as for
- * nc_put_vara_bfloat16().
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
 int
@@ -343,13 +309,6 @@ nc_put_vara_bfloat16(int ncid, int varid, const size_t *startp,
  * Read one value from a variable as bfloat16. See nep.h for the
  * variable types accepted and the conversion rules.
  *
- * @param ncid NetCDF file ID.
- * @param varid Variable ID.
- * @param indexp Element coordinates (NULL reads element 0).
- * @param ip Returned bfloat16 value.
- *
- * @return NC_NOERR No error, or an error code as for
- * nc_get_vara_bfloat16().
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
 int
@@ -373,13 +332,6 @@ nc_get_var1_bfloat16(int ncid, int varid, const size_t *indexp,
  * Write one value to a variable as bfloat16. See nep.h for the
  * variable types accepted and the conversion rules.
  *
- * @param ncid NetCDF file ID.
- * @param varid Variable ID.
- * @param indexp Element coordinates (NULL writes element 0).
- * @param op The bfloat16 value to write.
- *
- * @return NC_NOERR No error, or an error code as for
- * nc_put_vara_bfloat16().
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
 int
@@ -404,12 +356,6 @@ nc_put_var1_bfloat16(int ncid, int varid, const size_t *indexp,
  * Read a whole variable as bfloat16. See nep.h for the variable types
  * accepted and the conversion rules.
  *
- * @param ncid NetCDF file ID.
- * @param varid Variable ID.
- * @param ip Returned bfloat16 values, one per element.
- *
- * @return NC_NOERR No error, or an error code as for
- * nc_get_vara_bfloat16().
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
 int
@@ -435,12 +381,6 @@ nc_get_var_bfloat16(int ncid, int varid, nc_bfloat16_t *ip)
  * Write a whole variable from bfloat16 values. See nep.h for the
  * variable types accepted and the conversion rules.
  *
- * @param ncid NetCDF file ID.
- * @param varid Variable ID.
- * @param op The bfloat16 values to write, one per element.
- *
- * @return NC_NOERR No error, or an error code as for
- * nc_put_vara_bfloat16().
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
 int

@@ -50,12 +50,22 @@ struct dicom_ll_mem_source_mgr
     struct jpeg_source_mgr pub;
 };
 
+/** @internal Source-manager init callback; the whole frame is already in
+ * memory, so there is nothing to do.
+ * @param cinfo libjpeg decompressor state (unused).
+ */
 static void
 dicom_ll_init_source(j_decompress_ptr cinfo)
 {
     (void)cinfo;
 }
 
+/** @internal Feed the decoder a synthetic End-Of-Image marker when it asks
+ * for more data than the buffer holds; this is the classic jdatasrc.c
+ * trick for truncated streams.
+ * @param cinfo libjpeg decompressor state.
+ * @return Always TRUE, as required by the source-manager contract.
+ */
 static boolean
 dicom_ll_fill_input_buffer(j_decompress_ptr cinfo)
 {
@@ -68,6 +78,11 @@ dicom_ll_fill_input_buffer(j_decompress_ptr cinfo)
     return TRUE;
 }
 
+/** @internal Advance the read position past bytes the decoder skips,
+ * refilling with the synthetic EOI marker when the skip runs off the end.
+ * @param cinfo libjpeg decompressor state.
+ * @param num_bytes Number of input bytes to discard.
+ */
 static void
 dicom_ll_skip_input_data(j_decompress_ptr cinfo, long num_bytes)
 {
@@ -86,12 +101,22 @@ dicom_ll_skip_input_data(j_decompress_ptr cinfo, long num_bytes)
     src->pub.bytes_in_buffer -= (size_t)num_bytes;
 }
 
+/** @internal Source-manager teardown callback; no resources to release
+ * because the caller owns the compressed buffer.
+ * @param cinfo libjpeg decompressor state (unused).
+ */
 static void
 dicom_ll_term_source(j_decompress_ptr cinfo)
 {
     (void)cinfo;
 }
 
+/** @internal Attach a memory source manager to the decompressor,
+ * allocating it from the libjpeg permanent pool on first use.
+ * @param cinfo libjpeg decompressor state.
+ * @param buf Compressed JPEG Lossless frame.
+ * @param len Length of @p buf in bytes.
+ */
 static void
 dicom_ll_mem_src(j_decompress_ptr cinfo, const unsigned char *buf, size_t len)
 {
@@ -112,6 +137,19 @@ dicom_ll_mem_src(j_decompress_ptr cinfo, const unsigned char *buf, size_t len)
     src->pub.next_input_byte = (const JOCTET *)buf;
 }
 
+/** @internal Decompress one JPEG Lossless frame at this wrapper's bit
+ * precision into a freshly allocated buffer.
+ * @param src Compressed JPEG Lossless frame.
+ * @param src_len Length of @p src in bytes.
+ * @param width Expected image width in pixels.
+ * @param height Expected image height in pixels.
+ * @param components Expected number of components per pixel.
+ * @param sample_size Bytes per sample for this precision's output.
+ * @param bufp Destination for the decoded buffer; caller frees.
+ * @param buf_lenp Destination for the decoded buffer length in bytes.
+ * @return 0 on success, -1 on a libjpeg error, -2 on a dimension
+ * mismatch, or -3 on an allocation failure.
+ */
 int
 DICOM_LL_DECODE_FUNC_NAME(const void *src, size_t src_len,
                           size_t width, size_t height, size_t components,
