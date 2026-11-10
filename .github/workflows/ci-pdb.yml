@@ -51,7 +51,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-2.1.1-pdb-${{ runner.os }}-refresh-1
+          key: hdf5-2.1.1-pdb-${{ runner.os }}-refresh-2
 
       - name: Download and build HDF5 2.1.1
         if: steps.cache-hdf5-pdb.outputs.cache-hit != 'true'
@@ -69,7 +69,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-c-install
-          key: netcdf-c-4.10.1-hdf5-2.1.1-pdb-${{ runner.os }}-refresh-1
+          key: netcdf-c-4.10.1-hdf5-2.1.1-pdb-${{ runner.os }}-refresh-2
 
       - name: Download and build NetCDF-C 4.10.1
         if: steps.cache-netcdf-c-pdb.outputs.cache-hit != 'true'
@@ -90,7 +90,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-fortran-install
-          key: netcdf-fortran-main-hdf5-2.1.1-netcdf-c-4.10.1-pdb-${{ runner.os }}-refresh-1
+          key: netcdf-fortran-main-hdf5-2.1.1-netcdf-c-4.10.1-pdb-${{ runner.os }}-refresh-2
 
       - name: Clone and build NetCDF-Fortran (main branch)
         if: steps.cache-netcdf-fortran-pdb.outputs.cache-hit != 'true'
