@@ -37,7 +37,7 @@ jobs:
       - name: Install base dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake make wget zlib1g-dev pkg-config gfortran libzstd-dev meson ninja-build libjpeg-dev libgdcm-dev python3-venv python3-pip
+          sudo apt-get install -y cmake make wget zlib1g-dev pkg-config gfortran libzstd-dev libxml2-dev meson ninja-build libjpeg-dev libgdcm-dev python3-venv python3-pip
 
       - name: Cache HDF5 install
         id: cache-hdf5-dicom

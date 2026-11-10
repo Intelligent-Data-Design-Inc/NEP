@@ -29,7 +29,7 @@ jobs:
       - name: Install base dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake make wget zlib1g-dev pkg-config
+          sudo apt-get install -y cmake make wget zlib1g-dev pkg-config libxml2-dev
 
       - name: Install GeoTIFF and TIFF libraries
         run: |
@@ -164,7 +164,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake make wget zlib1g-dev valgrind libgeotiff-dev libtiff-dev
+          sudo apt-get install -y cmake make wget zlib1g-dev valgrind libgeotiff-dev libtiff-dev libxml2-dev
 
       - name: Cache HDF5 install
         id: cache-hdf5
@@ -305,7 +305,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake make wget zlib1g-dev lcov libgeotiff-dev libtiff-dev
+          sudo apt-get install -y cmake make wget zlib1g-dev lcov libgeotiff-dev libtiff-dev libxml2-dev
 
       - name: Cache HDF5 install
         id: cache-hdf5
