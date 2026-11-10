@@ -106,6 +106,10 @@ get_grp_from_ncid(int ncid, NC_FILE_INFO_T **h5, NC_GRP_INFO_T **grpp)
 }
 
 /** Create a subgroup below a group.
+ * @param ncid NetCDF file identifier of the parent group.
+ * @param name Subgroup name.
+ * @param grpidp Destination for the new subgroup ncid.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_def_grp(int ncid, const char *name, int *grpidp)
@@ -176,6 +180,10 @@ find_child_grp(NC_GRP_INFO_T *parent, const char *name, NC_GRP_INFO_T **grpp)
 }
 
 /** Get the ncid of a named subgroup.
+ * @param ncid NetCDF file identifier.
+ * @param name Subgroup name.
+ * @param grpidp Destination for the subgroup ncid.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_inq_ncid(int ncid, const char *name, int *grpidp)
@@ -219,6 +227,10 @@ NEXTCDF4_inq_ncid(int ncid, const char *name, int *grpidp)
 }
 
 /** Get the ncids of all subgroups.
+ * @param ncid NetCDF file identifier.
+ * @param numgrps Destination for the number of subgroups.
+ * @param grpidsp Destination for the subgroup ncids.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_inq_grps(int ncid, int *numgrps, int *grpidsp)
@@ -243,6 +255,9 @@ NEXTCDF4_inq_grps(int ncid, int *numgrps, int *grpidsp)
 }
 
 /** Get a group's name.
+ * @param ncid NetCDF file identifier.
+ * @param name Destination for the group name.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_inq_grpname(int ncid, char *name)
@@ -258,6 +273,10 @@ NEXTCDF4_inq_grpname(int ncid, char *name)
 }
 
 /** Get a group's full path name.
+ * @param ncid NetCDF file identifier.
+ * @param lenp Destination for the name length.
+ * @param name Destination for the full group name.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_inq_grpname_full(int ncid, size_t *lenp, char *name)
@@ -302,6 +321,9 @@ NEXTCDF4_inq_grpname_full(int ncid, size_t *lenp, char *name)
 }
 
 /** Get a group's parent ncid.
+ * @param ncid NetCDF file identifier.
+ * @param parentidp Destination for the parent ncid.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_inq_grp_parent(int ncid, int *parentidp)
@@ -319,6 +341,10 @@ NEXTCDF4_inq_grp_parent(int ncid, int *parentidp)
 }
 
 /** Get the ncid of a group given its full path.
+ * @param ncid NetCDF file identifier.
+ * @param full_name Full group path.
+ * @param grpidp Destination for the group ncid.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_inq_grp_full_ncid(int ncid, const char *full_name, int *grpidp)

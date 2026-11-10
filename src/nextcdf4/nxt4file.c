@@ -63,6 +63,8 @@ close_group_hdf(NC_GRP_INFO_T *grp)
 
 /**
  * Close owned HDF5 identifiers and release per-file memory.
+ * @param file State to release; may be `NULL`.
+ * @return `NC_NOERR` or `NC_EHDFERR` if an HDF5 close fails.
  */
 int
 NEXTCDF4_free_file(NEXTCDF4_FILE_INFO_T *file)
@@ -87,6 +89,11 @@ NEXTCDF4_free_file(NEXTCDF4_FILE_INFO_T *file)
 
 /**
  * Allocate NEXTCDF-4 state and attach it to netcdf-c's file list.
+ * @param ncid NetCDF file identifier.
+ * @param path File-system path.
+ * @param mode Effective NetCDF mode.
+ * @param filep Destination for the allocated state.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_add_file(int ncid, const char *path, int mode,
@@ -130,6 +137,10 @@ NEXTCDF4_add_file(int ncid, const char *path, int mode,
 
 /**
  * Resolve common and backend-specific state for an open NEXTCDF-4 file.
+ * @param ncid NetCDF file identifier.
+ * @param h5p Optional destination for common NetCDF-4 state.
+ * @param filep Optional destination for NEXTCDF-4 state.
+ * @return `NC_NOERR` on success, or `NC_EBADID` for invalid state.
  */
 int
 NEXTCDF4_get_file(int ncid, NC_FILE_INFO_T **h5p,
@@ -189,6 +200,8 @@ done:
 
 /**
  * Write hidden NEXTCDF-4 provenance and compatibility attributes.
+ * @param file Open writable NEXTCDF-4 state.
+ * @return `NC_NOERR` on success, or `NC_EHDFERR`.
  */
 int
 NEXTCDF4_write_markers(NEXTCDF4_FILE_INFO_T *file)
@@ -224,6 +237,8 @@ NEXTCDF4_write_markers(NEXTCDF4_FILE_INFO_T *file)
 
 /**
  * Read and validate hidden NEXTCDF-4 provenance and compatibility attributes.
+ * @param file Open NEXTCDF-4 state.
+ * @return `NC_NOERR` on success, or `NC_EFILEMETA` for invalid markers.
  */
 int
 NEXTCDF4_read_markers(NEXTCDF4_FILE_INFO_T *file)
@@ -276,6 +291,8 @@ done:
 
 /**
  * Flush pending writes for a writable NEXTCDF-4 file.
+ * @param ncid NetCDF file identifier.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_sync(int ncid)
@@ -294,6 +311,9 @@ NEXTCDF4_sync(int ncid)
 
 /**
  * Flush, close, and release a NEXTCDF-4 file.
+ * @param ncid NetCDF file identifier.
+ * @param parameters Optional close parameters; currently ignored.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_close(int ncid, void *parameters)
@@ -323,6 +343,8 @@ NEXTCDF4_close(int ncid, void *parameters)
 
 /**
  * Abort a NEXTCDF-4 operation using the normal resource-release path.
+ * @param ncid NetCDF file identifier.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_abort(int ncid)
@@ -332,6 +354,9 @@ NEXTCDF4_abort(int ncid)
 
 /**
  * Report the public NetCDF-4 format class.
+ * @param ncid NetCDF file identifier.
+ * @param formatp Optional destination for `NC_FORMAT_NETCDF4`.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_inq_format(int ncid, int *formatp)
@@ -348,6 +373,10 @@ NEXTCDF4_inq_format(int ncid, int *formatp)
 
 /**
  * Report the extended NEXTCDF-4 format identifier and effective mode.
+ * @param ncid NetCDF file identifier.
+ * @param formatp Optional destination for `NC_FORMATX_NEXTCDF4`.
+ * @param modep Optional destination for the effective open/create mode.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_inq_format_extended(int ncid, int *formatp, int *modep)
@@ -368,6 +397,12 @@ NEXTCDF4_inq_format_extended(int ncid, int *formatp, int *modep)
 
 /**
  * Materialize pending root-group metadata and exit define mode.
+ * @param ncid NetCDF file identifier.
+ * @param h_minfree Ignored (reserved for future alignment control).
+ * @param v_align Ignored (reserved for future alignment control).
+ * @param v_minfree Ignored (reserved for future alignment control).
+ * @param r_align Ignored (reserved for future alignment control).
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4__enddef(int ncid, size_t h_minfree, size_t v_align,
@@ -401,6 +436,8 @@ NEXTCDF4__enddef(int ncid, size_t h_minfree, size_t v_align,
 
 /**
  * Return the file to define mode.
+ * @param ncid NetCDF file identifier.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_redef(int ncid)

@@ -72,6 +72,8 @@ free_name_list(char **names, size_t n)
 
 /**
  * @brief Check that a file is writable and currently in define mode.
+ * @param file NEXTCDF-4 file state.
+ * @return `NC_NOERR` or an appropriate NetCDF error code.
  */
 int
 NEXTCDF4_check_write_define(NEXTCDF4_FILE_INFO_T *file)
@@ -85,6 +87,9 @@ NEXTCDF4_check_write_define(NEXTCDF4_FILE_INFO_T *file)
 
 /**
  * @brief Map an atomic nc_type to its on-disk HDF5 datatype.
+ * @param xtype NetCDF atomic type.
+ * @param typep Destination for an HDF5 datatype identifier.
+ * @return `NC_NOERR` or `NC_EBADTYPE`.
  */
 int
 NEXTCDF4_map_hdf_type(nc_type xtype, hid_t *typep)
@@ -188,6 +193,9 @@ NEXTCDF4_map_hdf_type(nc_type xtype, hid_t *typep)
 
 /**
  * @brief Return the in-memory size, in bytes, of an atomic nc_type.
+ * @param xtype NetCDF atomic type.
+ * @param sizep Destination for the size in bytes.
+ * @return `NC_NOERR` or `NC_EBADTYPE`.
  */
 int
 NEXTCDF4_type_size(nc_type xtype, size_t *sizep)
@@ -263,6 +271,10 @@ NEXTCDF4_type_size(nc_type xtype, size_t *sizep)
  * @brief Return the short name for an atomic nc_type.
  */
 const char *
+/** 
+ * @param xtype NetCDF atomic type.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
 NEXTCDF4_type_name(nc_type xtype)
 {
     switch (xtype) {
@@ -299,6 +311,9 @@ NEXTCDF4_type_name(nc_type xtype)
 
 /**
  * @brief Check whether an atomic type is allowed for the current file mode.
+ * @param file NEXTCDF-4 file state.
+ * @param xtype Candidate NetCDF type.
+ * @return `NC_NOERR` or `NC_EBADTYPE`/`NC_ENOTNC4`.
  */
 int
 NEXTCDF4_check_atomic_type(NEXTCDF4_FILE_INFO_T *file, nc_type xtype)
@@ -820,6 +835,11 @@ done:
 
 /**
  * @brief Define a dimension in the current group.
+ * @param ncid NetCDF file identifier.
+ * @param name Dimension name.
+ * @param len Dimension length, or 0 for unlimited.
+ * @param idp Destination for the assigned dimension id.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_def_dim(int ncid, const char *name, size_t len, int *idp)
@@ -931,6 +951,11 @@ fail:
 
 /**
  * @brief Inquire about a dimension.
+ * @param ncid NetCDF file identifier.
+ * @param dimid Dimension id.
+ * @param name Destination for the dimension name.
+ * @param lenp Destination for the dimension length.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_inq_dim(int ncid, int dimid, char *name, size_t *lenp)
@@ -953,6 +978,13 @@ NEXTCDF4_inq_dim(int ncid, int dimid, char *name, size_t *lenp)
 
 /**
  * @brief Define a variable in the current group.
+ * @param ncid NetCDF file identifier.
+ * @param name Variable name.
+ * @param xtype NetCDF atomic type.
+ * @param ndims Number of dimensions.
+ * @param dimidsp Array of dimension ids.
+ * @param varidp Destination for the assigned variable id.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
@@ -1391,6 +1423,12 @@ NEXTCDF4_def_var_chunking(int ncid, int varid, int storage,
 
 /**
  * @brief Set the deflate compression parameters for a variable.
+ * @param ncid NetCDF file identifier.
+ * @param varid Variable id.
+ * @param shuffle Nonzero to enable the shuffle filter.
+ * @param deflate Nonzero to enable deflate compression.
+ * @param deflate_level Deflate level (0-9).
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
@@ -1419,6 +1457,10 @@ NEXTCDF4_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
 
 /**
  * @brief Enable or disable the Fletcher32 checksum filter for a variable.
+ * @param ncid NetCDF file identifier.
+ * @param varid Variable id.
+ * @param fletcher32 `NC_FLETCHER32` to enable the checksum, `NC_NOCHECKSUM` to disable.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_def_var_fletcher32(int ncid, int varid, int fletcher32)
@@ -1443,6 +1485,11 @@ NEXTCDF4_def_var_fletcher32(int ncid, int varid, int fletcher32)
 
 /**
  * @brief Set the fill value behavior for a variable.
+ * @param ncid NetCDF file identifier.
+ * @param varid Variable id.
+ * @param no_fill Nonzero to suppress fill values.
+ * @param fill_value Fill value, or NULL for the type default.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
@@ -1476,6 +1523,10 @@ NEXTCDF4_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
 
 /**
  * @brief Set the byte order for a variable's data.
+ * @param ncid NetCDF file identifier.
+ * @param varid Variable id.
+ * @param endianness `NC_ENDIAN_NATIVE`, `NC_ENDIAN_LITTLE` or `NC_ENDIAN_BIG`.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_def_var_endian(int ncid, int varid, int endianness)
@@ -1498,6 +1549,11 @@ NEXTCDF4_def_var_endian(int ncid, int varid, int endianness)
 
 /**
  * @brief Set the quantization mode for a variable.
+ * @param ncid NetCDF file identifier.
+ * @param varid Variable id.
+ * @param quantize_mode `NC_NOQUANTIZE`, `NC_QUANTIZE_BITGROOM`, `NC_QUANTIZE_GRANULARBR` or `NC_QUANTIZE_BITROUND`.
+ * @param nsd Number of significant digits.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_def_var_quantize(int ncid, int varid, int quantize_mode, int nsd)
@@ -1525,6 +1581,12 @@ NEXTCDF4_def_var_quantize(int ncid, int varid, int quantize_mode, int nsd)
 
 /**
  * @brief Stub for user-defined variable filters (not implemented).
+ * @param ncid NetCDF file identifier.
+ * @param varid Variable id.
+ * @param id HDF5 filter identifier.
+ * @param nparams Number of filter parameters.
+ * @param params Filter parameter values.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_def_var_filter(int ncid, int varid, unsigned int id, size_t nparams,
@@ -1536,6 +1598,26 @@ NEXTCDF4_def_var_filter(int ncid, int varid, unsigned int id, size_t nparams,
 
 /**
  * @brief Inquire about all supported properties of a variable.
+ * @param ncid NetCDF file identifier.
+ * @param varid Variable id.
+ * @param name Destination for the variable name.
+ * @param xtypep Destination for the variable type.
+ * @param ndimsp Destination for the rank.
+ * @param dimidsp Destination for the dimension ids.
+ * @param nattsp Destination for the number of attributes.
+ * @param shufflep Destination for the shuffle flag.
+ * @param deflatep Destination for the deflate flag.
+ * @param deflate_levelp Destination for the deflate level.
+ * @param fletcher32p Destination for the Fletcher32 flag.
+ * @param contiguousp Destination for the contiguous-storage flag.
+ * @param chunksizesp Destination for the chunk sizes.
+ * @param no_fillp Destination for the no-fill flag.
+ * @param fill_valuep Destination for the fill value.
+ * @param endiannessp Destination for the endianness.
+ * @param idp Destination for the filter ids.
+ * @param nparamsp Destination for the filter parameter count.
+ * @param params Destination for the filter parameters.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_inq_var_all(int ncid, int varid, char *name, nc_type *xtypep,
@@ -1598,6 +1680,14 @@ NEXTCDF4_inq_var_all(int ncid, int varid, char *name, nc_type *xtypep,
 
 /**
  * @brief Inquire about a variable's name, type, dimensions, and attributes.
+ * @param ncid NetCDF file identifier.
+ * @param varid Variable id.
+ * @param name Destination for the variable name.
+ * @param xtypep Destination for the variable type.
+ * @param ndimsp Destination for the rank.
+ * @param dimidsp Destination for the dimension ids.
+ * @param nattsp Destination for the number of attributes.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_inq_var(int ncid, int varid, char *name, nc_type *xtypep,
@@ -1628,6 +1718,11 @@ NEXTCDF4_inq_var(int ncid, int varid, char *name, nc_type *xtypep,
 
 /**
  * @brief Inquire about the filter ids applied to a variable.
+ * @param ncid NetCDF file identifier.
+ * @param varid Variable id.
+ * @param nfiltersp Destination for the number of filters.
+ * @param ids Destination for the filter ids.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_inq_var_filter_ids(int ncid, int varid, size_t *nfiltersp,
@@ -1660,6 +1755,12 @@ NEXTCDF4_inq_var_filter_ids(int ncid, int varid, size_t *nfiltersp,
 
 /**
  * @brief Inquire about the parameters of a variable filter.
+ * @param ncid NetCDF file identifier.
+ * @param varid Variable id.
+ * @param id Filter identifier to inquire about.
+ * @param nparamsp Destination for the number of filter parameters.
+ * @param params Destination for the filter parameter values.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_inq_var_filter_info(int ncid, int varid, unsigned int id,
@@ -1698,6 +1799,14 @@ NEXTCDF4_inq_var_filter_info(int ncid, int varid, unsigned int id,
 
 /**
  * @brief Create or replace an attribute on a group or variable.
+ * @param ncid NetCDF file identifier.
+ * @param varid Variable id or `NC_GLOBAL`.
+ * @param name Attribute name.
+ * @param datatype NetCDF atomic type.
+ * @param len Number of elements.
+ * @param value Attribute data.
+ * @param memtype In-memory type for the attribute value.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type datatype,
@@ -1828,6 +1937,12 @@ fail:
 
 /**
  * @brief Read the value of an attribute.
+ * @param ncid NetCDF file identifier.
+ * @param varid Variable id or `NC_GLOBAL`.
+ * @param name Attribute name.
+ * @param value Destination buffer.
+ * @param memtype Requested in-memory type.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_get_att(int ncid, int varid, const char *name, void *value,
@@ -1888,6 +2003,11 @@ NEXTCDF4_get_att(int ncid, int varid, const char *name, void *value,
 
 /**
  * @brief Rename an attribute on a group or variable.
+ * @param ncid NetCDF file identifier.
+ * @param varid Variable id or `NC_GLOBAL`.
+ * @param name Current attribute name.
+ * @param newname New attribute name.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_rename_att(int ncid, int varid, const char *name, const char *newname)
@@ -1988,6 +2108,10 @@ coord_var_dim(NC_VAR_INFO_T *var)
 
 /**
  * @brief Rename a dimension and update its HDF5 link.
+ * @param ncid NetCDF file identifier.
+ * @param dimid Dimension id.
+ * @param name New dimension name.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_rename_dim(int ncid, int dimid, const char *name)
@@ -2052,6 +2176,10 @@ NEXTCDF4_rename_dim(int ncid, int dimid, const char *name)
 
 /**
  * @brief Rename a variable and update its HDF5 link.
+ * @param ncid NetCDF file identifier.
+ * @param varid Variable id.
+ * @param name New variable name.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_rename_var(int ncid, int varid, const char *name)
@@ -2160,6 +2288,10 @@ NEXTCDF4_rename_var(int ncid, int varid, const char *name)
 
 /**
  * @brief Delete an attribute from a group or variable.
+ * @param ncid NetCDF file identifier.
+ * @param varid Variable id or `NC_GLOBAL`.
+ * @param name Attribute name.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_del_att(int ncid, int varid, const char *name)
@@ -3191,6 +3323,9 @@ load_children(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
 
 /**
  * @brief Load all metadata for an open NEXTCDF-4 file.
+ * @param file Open NEXTCDF-4 state.
+ * @param h5 Common NetCDF-4 file metadata.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_load_metadata(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5)

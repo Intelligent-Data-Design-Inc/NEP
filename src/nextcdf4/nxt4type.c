@@ -132,6 +132,11 @@ commit_hdf_type(NC_GRP_INFO_T *grp, NC_TYPE_INFO_T *type, hid_t hdf)
 }
 
 /** Define a compound type.
+ * @param ncid NetCDF file identifier.
+ * @param size Size of the compound type in bytes.
+ * @param name Type name.
+ * @param typeidp Destination for the new type id.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_def_compound(int ncid, size_t size, const char *name, nc_type *typeidp)
@@ -175,6 +180,12 @@ fail:
 }
 
 /** Insert a scalar field into a compound type.
+ * @param ncid NetCDF file identifier.
+ * @param typeid Compound type id.
+ * @param name Field name.
+ * @param offset Field offset in bytes.
+ * @param xtype NetCDF type of the field.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_insert_compound(int ncid, nc_type typeid, const char *name,
@@ -217,6 +228,14 @@ NEXTCDF4_insert_compound(int ncid, nc_type typeid, const char *name,
 }
 
 /** Insert an array field into a compound type.
+ * @param ncid NetCDF file identifier.
+ * @param typeid Compound type id.
+ * @param name Field name.
+ * @param offset Field offset in bytes.
+ * @param xtype NetCDF type of the field elements.
+ * @param ndims Number of array dimensions.
+ * @param dim_sizesp Array dimension sizes.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_insert_array_compound(int ncid, nc_type typeid, const char *name,
@@ -229,6 +248,15 @@ NEXTCDF4_insert_array_compound(int ncid, nc_type typeid, const char *name,
 }
 
 /** Inquire a field of a compound type.
+ * @param ncid NetCDF file identifier.
+ * @param typeid Compound type id.
+ * @param fieldid Field index.
+ * @param name Destination for the field name.
+ * @param offsetp Destination for the field offset.
+ * @param fieldtypep Destination for the field type.
+ * @param ndimsp Destination for the field rank.
+ * @param dim_sizesp Destination for the field dimension sizes.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_inq_compound_field(int ncid, nc_type typeid, int fieldid, char *name,
@@ -265,6 +293,11 @@ NEXTCDF4_inq_compound_field(int ncid, nc_type typeid, int fieldid, char *name,
 }
 
 /** Get a compound field's index by name.
+ * @param ncid NetCDF file identifier.
+ * @param typeid Compound type id.
+ * @param name Field name.
+ * @param fieldidxp Destination for the field index.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_inq_compound_fieldindex(int ncid, nc_type typeid, const char *name,
@@ -293,6 +326,11 @@ NEXTCDF4_inq_compound_fieldindex(int ncid, nc_type typeid, const char *name,
 }
 
 /** Define a variable-length type.
+ * @param ncid NetCDF file identifier.
+ * @param name Type name.
+ * @param base_typeid Base type of the vlen elements.
+ * @param typeidp Destination for the new type id.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_def_vlen(int ncid, const char *name, nc_type base_typeid, nc_type *typeidp)
@@ -347,6 +385,12 @@ fail:
 }
 
 /** Write a vlen element value.
+ * @param ncid NetCDF file identifier.
+ * @param typeid Vlen type id.
+ * @param vlen_element Destination for the vlen element.
+ * @param len Number of elements.
+ * @param data Element data.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_put_vlen_element(int ncid, int typeid, void *vlen_element,
@@ -357,6 +401,12 @@ NEXTCDF4_put_vlen_element(int ncid, int typeid, void *vlen_element,
 }
 
 /** Read a vlen element value.
+ * @param ncid NetCDF file identifier.
+ * @param typeid Vlen type id.
+ * @param vlen_element Vlen element to read.
+ * @param lenp Destination for the element count.
+ * @param data Destination for the element data.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_get_vlen_element(int ncid, int typeid, const void *vlen_element,
@@ -367,6 +417,11 @@ NEXTCDF4_get_vlen_element(int ncid, int typeid, const void *vlen_element,
 }
 
 /** Define an enum type.
+ * @param ncid NetCDF file identifier.
+ * @param base_typeid Integer base type id.
+ * @param name Type name.
+ * @param typeidp Destination for the new type id.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_def_enum(int ncid, nc_type base_typeid, const char *name, nc_type *typeidp)
@@ -422,6 +477,11 @@ fail:
 }
 
 /** Insert a member into an enum type.
+ * @param ncid NetCDF file identifier.
+ * @param typeid Enum type id.
+ * @param name Member name.
+ * @param value Member value.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_insert_enum(int ncid, nc_type typeid, const char *name, const void *value)
@@ -463,6 +523,12 @@ NEXTCDF4_insert_enum(int ncid, nc_type typeid, const char *name, const void *val
 }
 
 /** Inquire an enum member by index.
+ * @param ncid NetCDF file identifier.
+ * @param typeid Enum type id.
+ * @param idx Member index.
+ * @param name Destination for the member name.
+ * @param value Destination for the member value.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_inq_enum_member(int ncid, nc_type typeid, int idx, char *name, void *value)
@@ -491,6 +557,11 @@ NEXTCDF4_inq_enum_member(int ncid, nc_type typeid, int idx, char *name, void *va
 }
 
 /** Get an enum member name by value.
+ * @param ncid NetCDF file identifier.
+ * @param typeid Enum type id.
+ * @param value Member value.
+ * @param identifier Destination for the member name.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_inq_enum_ident(int ncid, nc_type typeid, long long value, char *identifier)
@@ -522,6 +593,11 @@ NEXTCDF4_inq_enum_ident(int ncid, nc_type typeid, long long value, char *identif
 }
 
 /** Define an opaque type.
+ * @param ncid NetCDF file identifier.
+ * @param size Size of the opaque data in bytes.
+ * @param name Type name.
+ * @param typeidp Destination for the new type id.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_def_opaque(int ncid, size_t size, const char *name, nc_type *typeidp)
@@ -625,6 +701,8 @@ commit_types_in_grp(NC_GRP_INFO_T *grp)
 }
 
 /** Commit all user-defined types to the file.
+ * @param h5 NetCDF-4 file state.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_write_types(NC_FILE_INFO_T *h5)
@@ -633,6 +711,14 @@ NEXTCDF4_write_types(NC_FILE_INFO_T *h5)
 }
 
 /** Inquire a user-defined type.
+ * @param ncid NetCDF file identifier.
+ * @param typeid Type id.
+ * @param name Destination for the type name.
+ * @param sizep Destination for the type size.
+ * @param base_typep Destination for the base type id.
+ * @param nfieldsp Destination for the number of fields/members.
+ * @param classp Destination for the type class.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_inq_user_type(int ncid, nc_type typeid, char *name, size_t *sizep,
@@ -664,6 +750,10 @@ NEXTCDF4_inq_user_type(int ncid, nc_type typeid, char *name, size_t *sizep,
 }
 
 /** Get a type's id by name.
+ * @param ncid NetCDF file identifier.
+ * @param name Type name.
+ * @param typeidp Destination for the type id.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_inq_typeid(int ncid, const char *name, nc_type *typeidp)
@@ -684,6 +774,12 @@ NEXTCDF4_inq_typeid(int ncid, const char *name, nc_type *typeidp)
 }
 
 /** Compare two types for equality.
+ * @param ncid1 NetCDF file identifier of the first type.
+ * @param typeid1 First type id.
+ * @param ncid2 NetCDF file identifier of the second type.
+ * @param typeid2 Second type id.
+ * @param equalp Destination for the nonzero-if-equal flag.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_inq_type_equal(int ncid1, nc_type typeid1, int ncid2, nc_type typeid2,
@@ -712,6 +808,10 @@ NEXTCDF4_inq_type_equal(int ncid1, nc_type typeid1, int ncid2, nc_type typeid2,
 }
 
 /** Get the typeids of user-defined types in a group.
+ * @param ncid NetCDF file identifier.
+ * @param ntypes Destination for the number of types.
+ * @param typeids Destination for the type ids.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_inq_typeids(int ncid, int *ntypes, int *typeids)

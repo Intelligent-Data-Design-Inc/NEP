@@ -105,6 +105,7 @@ const NC_Dispatch *NEXTCDF4_dispatch_table = NULL;
 
 /**
  * Register the NEXTCDF-4 dispatch table in NetCDF UDF slot 9.
+ * @return Pointer to the NEXTCDF-4 dispatch table.
  */
 NC_Dispatch *
 NC_NEXTCDF4_initialize(void)
@@ -128,6 +129,7 @@ NC_NEXTCDF4_initialize(void)
 
 /**
  * Finalize process-wide NEXTCDF-4 dispatch state.
+ * @return `NC_NOERR`.
  */
 int
 NC_NEXTCDF4_finalize(void)
