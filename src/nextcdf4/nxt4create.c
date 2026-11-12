@@ -1,7 +1,7 @@
 /**
  * @file nxt4create.c
  * @brief Empty-file creation for the NEXTCDF-4 backend.
- *
+
  * @author Edward Hartnett
  * @date 2026-08-28
  * @copyright Intelligent Data Design, Inc. All rights reserved.
@@ -12,8 +12,10 @@
 #include <errno.h>
 #include "nxt4internal.h"
 
-/*
+/**
  * @internal Validate NEXTCDF-4 create-mode combinations.
+ * @param mode NetCDF mode flags.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 static int
 valid_create_mode(int mode)
@@ -26,12 +28,22 @@ valid_create_mode(int mode)
     return NC_NOERR;
 }
 
-/*
+/**
  * Create an empty NEXTCDF-4 HDF5 file and register its in-memory state.
- *
+
  * Native and classic-model files use the latest HDF5 format bounds;
  * `NC_NETCDF4_MODEL` files use HDF5 1.10 compatibility bounds. The function
- * writes backend markers before returning a valid ncid.*/
+ * writes backend markers before returning a valid ncid.
+ * @param path File-system path to create.
+ * @param cmode NetCDF create-mode flags.
+ * @param initialsz Requested initial file size; currently ignored.
+ * @param basepe Base processing element; currently ignored.
+ * @param chunksizehintp Chunk-size hint; currently ignored.
+ * @param parameters Optional dispatch parameters; currently ignored.
+ * @param dispatch Dispatch table selected by netcdf-c.
+ * @param ncid NetCDF file identifier allocated by netcdf-c.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+*/
 int
 NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
                 size_t *chunksizehintp, void *parameters,

@@ -29,7 +29,7 @@ jobs:
       - name: Install base dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake make wget zlib1g-dev pkg-config
+          sudo apt-get install -y cmake make wget zlib1g-dev pkg-config libxml2-dev
 
       - name: Install GeoTIFF and TIFF libraries
         run: |
@@ -52,7 +52,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-2.1.1-${{ runner.os }}-geotiff-refresh-1
+          key: hdf5-2.1.1-${{ runner.os }}-geotiff-refresh-2
       
       - name: Download and build HDF5 2.1.1
         if: steps.cache-hdf5.outputs.cache-hit != 'true'
@@ -71,7 +71,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-c-install
-          key: netcdf-c-4.10.1-hdf5-2.1.1-${{ runner.os }}-geotiff-refresh-1
+          key: netcdf-c-4.10.1-hdf5-2.1.1-${{ runner.os }}-geotiff-refresh-2
 
       - name: Download and build NetCDF-C
         if: steps.cache-netcdf-c.outputs.cache-hit != 'true'
@@ -164,14 +164,14 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake make wget zlib1g-dev valgrind libgeotiff-dev libtiff-dev
+          sudo apt-get install -y cmake make wget zlib1g-dev valgrind libgeotiff-dev libtiff-dev libxml2-dev
 
       - name: Cache HDF5 install
         id: cache-hdf5
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-2.1.1-${{ runner.os }}-geotiff-refresh-1
+          key: hdf5-2.1.1-${{ runner.os }}-geotiff-refresh-2
       
       - name: Download and build HDF5 2.1.1
         if: steps.cache-hdf5.outputs.cache-hit != 'true'
@@ -189,7 +189,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-c-install
-          key: netcdf-c-4.10.1-hdf5-2.1.1-${{ runner.os }}-geotiff-refresh-1
+          key: netcdf-c-4.10.1-hdf5-2.1.1-${{ runner.os }}-geotiff-refresh-2
 
       - name: Download and build NetCDF-C
         if: steps.cache-netcdf-c.outputs.cache-hit != 'true'
@@ -305,14 +305,14 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake make wget zlib1g-dev lcov libgeotiff-dev libtiff-dev
+          sudo apt-get install -y cmake make wget zlib1g-dev lcov libgeotiff-dev libtiff-dev libxml2-dev
 
       - name: Cache HDF5 install
         id: cache-hdf5
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-2.1.1-${{ runner.os }}-geotiff-refresh-1
+          key: hdf5-2.1.1-${{ runner.os }}-geotiff-refresh-2
       
       - name: Download and build HDF5 2.1.1
         if: steps.cache-hdf5.outputs.cache-hit != 'true'
@@ -330,7 +330,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-c-install
-          key: netcdf-c-4.10.1-hdf5-2.1.1-${{ runner.os }}-geotiff-refresh-1
+          key: netcdf-c-4.10.1-hdf5-2.1.1-${{ runner.os }}-geotiff-refresh-2
 
       - name: Download and build NetCDF-C
         if: steps.cache-netcdf-c.outputs.cache-hit != 'true'

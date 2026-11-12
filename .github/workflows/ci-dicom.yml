@@ -37,14 +37,14 @@ jobs:
       - name: Install base dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake make wget zlib1g-dev pkg-config gfortran libzstd-dev meson ninja-build libjpeg-dev libgdcm-dev python3-venv python3-pip
+          sudo apt-get install -y cmake make wget zlib1g-dev pkg-config gfortran libzstd-dev libxml2-dev meson ninja-build libjpeg-dev libgdcm-dev python3-venv python3-pip
 
       - name: Cache HDF5 install
         id: cache-hdf5-dicom
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hdf5-install
-          key: hdf5-2.1.1-dicom-${{ runner.os }}-refresh-1
+          key: hdf5-2.1.1-dicom-${{ runner.os }}-refresh-2
 
       - name: Download and build HDF5 2.1.1
         if: steps.cache-hdf5-dicom.outputs.cache-hit != 'true'
@@ -62,7 +62,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-c-install
-          key: netcdf-c-4.10.1-hdf5-2.1.1-dicom-${{ runner.os }}-refresh-1
+          key: netcdf-c-4.10.1-hdf5-2.1.1-dicom-${{ runner.os }}-refresh-2
 
       - name: Download and build NetCDF-C 4.10.1
         if: steps.cache-netcdf-c-dicom.outputs.cache-hit != 'true'
@@ -83,7 +83,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/netcdf-fortran-install
-          key: netcdf-fortran-4.6.2-hdf5-2.1.1-netcdf-c-4.10.1-dicom-${{ runner.os }}-refresh-1
+          key: netcdf-fortran-4.6.2-hdf5-2.1.1-netcdf-c-4.10.1-dicom-${{ runner.os }}-refresh-2
 
       - name: Download and build NetCDF-Fortran
         if: steps.cache-netcdf-fortran-dicom.outputs.cache-hit != 'true'
@@ -104,7 +104,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/libdicom-install
-          key: libdicom-main-dicom-${{ runner.os }}-refresh-1
+          key: libdicom-main-dicom-${{ runner.os }}-refresh-2
 
       - name: Clone and build libdicom (main branch)
         if: steps.cache-libdicom-dicom.outputs.cache-hit != 'true'
