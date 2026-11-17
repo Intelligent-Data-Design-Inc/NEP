@@ -5,6 +5,7 @@ add_library(ncnextcdf4 SHARED
     nxt4file.c
     nxt4meta.c
     nxt4io.c
+    nxt4convert.c
     nxt4group.c
     nxt4type.c
 )
@@ -15,7 +16,7 @@ target_include_directories(ncnextcdf4 PRIVATE
     ${NETCDF_INCLUDE_DIRS}
     ${HDF5_INCLUDE_DIRS}
 )
-target_link_libraries(ncnextcdf4 PRIVATE ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES} PUBLIC nep)
+target_link_libraries(ncnextcdf4 PRIVATE ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES} m PUBLIC nep)
 set_target_properties(ncnextcdf4 PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/src"
     VERSION ${PROJECT_VERSION}

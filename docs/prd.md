@@ -17,6 +17,10 @@
 
 ---
 
+## NEXTCDF-4 experimental conversion requirement
+
+`NEP_INTERNAL_CONVERT` defaults OFF and must preserve the existing default conversion behavior. ON uses private NEP-owned numeric conversion for variables, attributes and quantized writes, with nearest/even bfloat16 narrowing and a temporary HDF5 exception for IEEE float16. `NEP_HAS_INTERNAL_CONVERT` is 1 only when the experiment and NEXTCDF-4 are both enabled. Both configurations have dedicated correctness CI; unsupported FP8/FP6/FP4 conversions and the public bfloat16-wrapper contract remain unchanged. Range reporting, comparative performance artifacts, the permanent-path decision and option removal belong to Sprint 1H. No temporary Spack variant or new public conversion API is required.
+
 ## 2. Core Architecture
 
 ### 2.1 NetCDF User Defined Format (UDF) System

@@ -6,6 +6,14 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 
 > **Experimental**: NEXTCDF-4 is experimental and under active development. Not all NetCDF-4 features are implemented; see the Known Limitations section below.
 
+## Experimental internal conversion
+
+Configure with `-DNEP_ENABLE_NEXTCDF4=ON -DNEP_INTERNAL_CONVERT=ON` to compare the NEP-owned numeric conversion engine with the default HDF5 path. The temporary option defaults OFF; without NEXTCDF-4 it is inactive. `NEP_HAS_INTERNAL_CONVERT` in `nep_meta.h` reports the effective setting. The option and marker will be removed after the Sprint 1H correctness/performance decision. There is no runtime or file-format switch, and Spack has no temporary variant.
+
+With ON, `nx4_convert_type()` handles standard numeric variable and attribute conversions and quantized writes. Standard float/double calls on bfloat16 use round-to-nearest-even, with single rounding from double and signed infinity on finite overflow. For example, 449 narrows to 448 instead of HDF5's 450. IEEE float16 conversion is the explicit HDF5 exception until Sprint 1I; its results do not change. HDF5 still handles file byte order and storage representation.
+
+Matching-type raw-bit I/O, FP8/FP6/FP4 typed-call restrictions and the independent `nc_*_bfloat16` wrappers are unchanged. ON also supports float/double conversion for bfloat16 attributes; fill-value limitations still apply. Range flags are recorded internally but NEXTCDF-4 still does not report `NC_ERANGE` (#381, Sprint 1H). Out-of-range output need not match between engines. Existing rounding descriptions below apply to OFF unless stated otherwise. No ON performance measurements are claimed by the existing charts.
+
 ## Creating and Opening Files
 
 ```c

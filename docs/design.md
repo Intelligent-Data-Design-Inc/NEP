@@ -3,6 +3,10 @@
 
 NEP provides NetCDF User Defined Format (UDF) readers and the NEXTCDF-4 backend. LZ4 and BZIP2 filter plugins and wrappers moved to [nep-compress](https://github.com/captainkirk99/nep-compress). Older releases also bundled those filters.
 
+## NEXTCDF-4 conversion experiment
+
+The temporary, default-OFF `NEP_INTERNAL_CONVERT` CMake option selects NEP-owned `nx4_convert_type()` for supported numeric variable/attribute conversion and quantization. HDF5 receives the matching native numeric type; IEEE float16 conversion remains an explicit HDF5 exception until Sprint 1I. ON bfloat16 narrowing uses round-to-nearest-even. `NEP_HAS_INTERNAL_CONVERT` reports the effective build setting. The independent `libnep` bfloat16 API, on-disk types and compatibility flags are unchanged. Sprint 1H owns range reporting, separate performance comparisons, the permanent decision and removal of this switch; Spack changes are deferred until then.
+
 ## Architecture
 
 The format handlers and NEXTCDF-4 backend remain in NEP; compression is independently distributed.

@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <netcdf.h>
 #include "nep.h"
+#include "nep_meta.h"
 
 #define FILE_NAME "tst_nextcdf4_conv.h5"
 #define NPAT 65536
@@ -230,9 +231,15 @@ test_pinned_writes(void)
     static const uint16_t hexp[13] = {0x3e00, 0xc000, 0x2e66, 0x6800, 0x6802,
                                       0x7bff, 0x7c00, 0x7c00, 0xfc00, 0x7c00,
                                       0x8000, 0x0000, 0};
+#if NEP_HAS_INTERNAL_CONVERT
+    static const uint16_t bexp[13] = {0x3fc0, 0xc000, 0x3dcd, 0x43e0, 0x3f80,
+                                      0x0000, 0x0da2, 0x7f80, 0xff80, 0x7f80,
+                                      0xff80, 0x8000, 0};
+#else
     static const uint16_t bexp[13] = {0x3fc0, 0xc000, 0x3dcd, 0x43e1, 0x3f81,
                                       0x0001, 0x0da2, 0x7f7f, 0xff7f, 0x7f80,
                                       0xff80, 0x8000, 0};
+#endif
     static const uint16_t bexp3[3] = {0x3fc0, 0x3dcd, 0x7f80};
     uint32_t u;
     int i, ret;

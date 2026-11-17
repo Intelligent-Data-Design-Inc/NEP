@@ -10,6 +10,10 @@ The goals are:
 - Maintain full read compatibility with existing NetCDF-4/HDF5 files.
 - Produce files that netcdf-c can still open when the `NC_NETCDF4_MODEL` compatibility flag is used.
 
+## Sprint 1G conversion experiment
+
+The temporary CMake option `NEP_INTERNAL_CONVERT` defaults OFF. ON routes supported numeric variable/attribute conversion and quantization through NEP-owned `nx4_convert_type()` in `nxt4convert.c`; it is not an upstream converter wrapper. The common native-memory mapper is `NEXTCDF4_memory_type()`. Numeric conversion precedes quantization; HDF5 retains byte-order/storage work and the explicit IEEE float16 exception until Sprint 1I. Bfloat16 narrowing uses NEP nearest/even rounding. `NEP_HAS_INTERNAL_CONVERT` reports the effective build setting. The standalone public bfloat16 functions remain in `libnep`, independent of this backend. OFF/ON CI tests the experiment. Sprint 1H owns range reporting, separate performance comparisons, the permanent decision, switch removal and deferred packaging review. On-disk formats and model flags do not change.
+
 ## Goals and Non-Goals
 
 ### Goals

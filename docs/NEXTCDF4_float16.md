@@ -13,6 +13,12 @@ NEXTCDF-4 supports two 16-bit floating-point atomic types: `NC_FLOAT16` (IEEE 75
 
 Even smaller floats exist — `NC_FLOAT8_E4M3`, `NC_FLOAT8_E5M2`, `NC_FLOAT6_E2M3`, `NC_FLOAT6_E3M2` and `NC_FLOAT4_E2M1` are stored as raw `uint8_t` patterns; see the type table in [nextcdf4.md](nextcdf4.md).
 
+## Internal-conversion experiment
+
+`NEP_INTERNAL_CONVERT` is a temporary, default-OFF CMake option for NEXTCDF-4. With ON, standard float/double calls on `NC_BFLOAT16` use NEP round-to-nearest-even (449 becomes 448), double narrows once, and finite overflow produces signed infinity. Supported bfloat16 attributes use the same rules. `NEP_HAS_INTERNAL_CONVERT` reports the effective build setting. IEEE float16 still uses HDF5 conversion in both builds until Sprint 1I. Raw-bit I/O and the independent `nc_*_bfloat16` functions do not change. NEXTCDF-4 range reporting remains deferred to Sprint 1H.
+
+The HDF5 rounding descriptions and committed benchmark results on this page describe the default OFF path, not measured ON performance. Sprint 1H will produce separate comparison artifacts and choose the permanent path before removing the option. See [nextcdf4.md](nextcdf4.md) for the conversion experiment's scope.
+
 ## Rules
 
 - **Native mode only.** Small floating-point types are rejected with `NC_ENOTNC4` in `NC_NETCDF4_MODEL` and `NC_CLASSIC_MODEL` mode (`NEXTCDF4_check_atomic_type` in `src/nextcdf4/nxt4meta.c`).

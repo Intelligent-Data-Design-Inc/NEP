@@ -1,0 +1,78 @@
+name: NEXTCDF-4 Conversion
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  nextcdf4:
+    name: nextcdf4 (${{ matrix.internal_convert }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        internal_convert: ['OFF', 'ON']
+    env:
+      NETCDF_SHA: 5baa62e6966d3e505b895574dafbd531a4aed360
+      DEPS: ${{ github.workspace }}/deps
+      PKG_CONFIG_PATH: ${{ github.workspace }}/deps/lib/pkgconfig
+      LD_LIBRARY_PATH: ${{ github.workspace }}/deps/lib
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        id: tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake make gcc pkg-config zlib1g-dev doxygen graphviz
+          gcc --version
+          echo "compiler=$(gcc -dumpfullversion)" >> "$GITHUB_OUTPUT"
+          cmake --version
+          doxygen --version
+      - name: Cache dependencies
+        id: dependencies
+        uses: actions/cache@v4
+        with:
+          path: deps
+          key: nextcdf4-${{ runner.os }}-${{ runner.arch }}-gcc-${{ steps.tools.outputs.compiler }}-hdf5-2.1.1-netcdf-${{ env.NETCDF_SHA }}-1
+      - name: Build HDF5 and NetCDF-C
+        if: steps.dependencies.outputs.cache-hit != 'true'
+        run: |
+          curl --head --max-time 10 --retry 2 --retry-delay 5 https://github.com
+          curl -L --fail --max-time 120 --retry 2 --retry-delay 5 https://github.com/HDFGroup/hdf5/archive/refs/tags/2.1.1.tar.gz -o hdf5.tar.gz
+          tar -xzf hdf5.tar.gz
+          cmake -S hdf5-2.1.1 -B hdf5-2.1.1/build -DCMAKE_INSTALL_PREFIX="$DEPS" -DCMAKE_INSTALL_LIBDIR=lib -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DHDF5_BUILD_HL_LIB=ON -DHDF5_ENABLE_ZLIB_SUPPORT=ON
+          cmake --build hdf5-2.1.1/build --parallel 2
+          cmake --install hdf5-2.1.1/build
+          curl -L --fail --max-time 120 --retry 2 --retry-delay 5 "https://github.com/Unidata/netcdf-c/archive/$NETCDF_SHA.tar.gz" -o netcdf.tar.gz
+          tar -xzf netcdf.tar.gz
+          cmake -S "netcdf-c-$NETCDF_SHA" -B "netcdf-c-$NETCDF_SHA/build" -DCMAKE_INSTALL_PREFIX="$DEPS" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_PREFIX_PATH="$DEPS" -DBUILD_SHARED_LIBS=ON -DNETCDF_ENABLE_HDF5=ON -DNETCDF_ENABLE_DAP=OFF -DNETCDF_ENABLE_NCZARR=OFF -DNETCDF_ENABLE_BYTERANGE=OFF -DNETCDF_ENABLE_TESTS=OFF -DNETCDF_ENABLE_EXAMPLES=OFF -DNETCDF_ENABLE_PLUGINS=ON
+          cmake --build "netcdf-c-$NETCDF_SHA/build" --parallel 2
+          cmake --install "netcdf-c-$NETCDF_SHA/build"
+      - name: Configure
+        run: |
+          "$DEPS/bin/nc-config" --all
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_PREFIX_PATH="$DEPS" -DHDF5_ROOT="$DEPS" -DNEP_ENABLE_NEXTCDF4=ON -DNEP_INTERNAL_CONVERT=${{ matrix.internal_convert }} -DNEP_ENABLE_FORTRAN=OFF -DNEP_BUILD_EXAMPLES=OFF -DNEP_ENABLE_BENCHMARKS=OFF -DNEP_BUILD_DOCUMENTATION=ON 2>&1 | tee configure.log
+          expected=0
+          if [ '${{ matrix.internal_convert }}' = ON ]; then expected=1; fi
+          grep -E "^#define NEP_HAS_INTERNAL_CONVERT +$expected " build/include/nep_meta.h
+      - name: Build and test
+        run: |
+          cmake --build build --parallel 2
+          ctest --test-dir build -R 'tst_nextcdf4_(internal_convert|conv)|tst_nep_bfloat16' --output-on-failure
+          ctest --test-dir build --output-on-failure
+      - name: Documentation
+        run: |
+          set -o pipefail
+          cmake --build build --target docs 2>&1 | tee build/doc_build.log
+          ! grep -i warning build/doc_build.log
+      - name: Failure logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nextcdf4-${{ matrix.internal_convert }}-logs
+          path: |
+            configure.log
+            build/CMakeCache.txt
+            build/Testing/Temporary/
+            build/doc_build.log

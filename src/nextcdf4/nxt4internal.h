@@ -103,6 +103,15 @@ int NEXTCDF4_map_hdf_type(nc_type xtype, hid_t *typep);
  */
 int NEXTCDF4_type_size(nc_type xtype, size_t *sizep);
 
+/** Map an atomic memory type to HDF5. */
+hid_t NEXTCDF4_memory_type(nc_type type, int *closep);
+
+/** Convert numeric buffers using the experimental internal engine. */
+int nx4_convert_type(const void *src, void *dest, nc_type src_type,
+                     nc_type dest_type, size_t len, int *range_error,
+                     const void *fill_value, int strict_nc3,
+                     int quantize_mode, int nsd);
+
 /** Return a display name for a fixed-size NetCDF atomic type.
  */
 const char *NEXTCDF4_type_name(nc_type xtype);

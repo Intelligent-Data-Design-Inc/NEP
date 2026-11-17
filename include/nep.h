@@ -37,7 +37,8 @@
 #define NC_FLOAT16     17
 /** NEXTCDF-4 16-bit bfloat16 floating point type (HDF5 2.1.1+).
  *  Untyped I/O uses raw uint16_t; typed float/double I/O converts
- *  through HDF5. */
+ *  through HDF5 by default. NEP_INTERNAL_CONVERT builds instead use
+ *  NEP round-to-nearest-even, with single rounding from double. */
 #define NC_BFLOAT16    18
 /** NEXTCDF-4 8-bit E4M3 floating point type (HDF5 2.1.1+).
  *  Untyped I/O (raw uint8_t) only. */

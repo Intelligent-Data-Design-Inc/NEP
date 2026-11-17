@@ -366,6 +366,7 @@ NEXTCDF4_check_atomic_type(NEXTCDF4_FILE_INFO_T *file, nc_type xtype)
  * @param xtype NetCDF atomic type.
  * @return The native in-memory HDF5 type that corresponds to an nc_type.
  */
+#if !NEP_INTERNAL_CONVERT
 static hid_t
 native_hdf_type(nc_type xtype)
 {
@@ -395,6 +396,7 @@ native_hdf_type(nc_type xtype)
         return -1;
     }
 }
+#endif
 
 /**
  * Build an NC_TYPE_INFO_T for a fixed-size atomic variable.
@@ -779,8 +781,11 @@ read_hdf5_att(hid_t loc, const char *name, NCindex *list, NC_OBJ *container)
     hid_t ftype = -1;
     hid_t fspace = -1;
     hid_t ntype = -1;
-    nc_type xtype;
-    hsize_t npoints;
+    nc_type xtype = NC_NAT;
+#if NEP_INTERNAL_CONVERT
+    int close_ntype = 0;
+#endif
+    hssize_t npoints;
     size_t size;
     size_t len;
     void *data = NULL;
@@ -800,15 +805,23 @@ read_hdf5_att(hid_t loc, const char *name, NCindex *list, NC_OBJ *container)
         goto done;
     len = (size_t)npoints;
     if (len > 0) {
+        if (len > SIZE_MAX / size) { ret = NC_EINVAL; goto done; }
         if (!(data = malloc(len * size)))
             goto done;
         if (xtype == NC_CHAR) {
             if ((ntype = H5Tcopy(H5T_C_S1)) < 0)
                 goto done;
+#if NEP_INTERNAL_CONVERT
+            close_ntype = 1;
+#endif
             H5Tset_size(ntype, 1);
             H5Tset_strpad(ntype, H5T_STR_NULLPAD);
         } else {
+#if NEP_INTERNAL_CONVERT
+            ntype = NEXTCDF4_memory_type(xtype, &close_ntype);
+#else
             ntype = native_hdf_type(xtype);
+#endif
         }
         if (ntype < 0)
             goto done;
@@ -820,10 +833,14 @@ read_hdf5_att(hid_t loc, const char *name, NCindex *list, NC_OBJ *container)
     ret = NC_NOERR;
 
 done:
-    if (data && ret)
-        free(data);
+    free(data);
+#if NEP_INTERNAL_CONVERT
+    if (close_ntype && ntype >= 0)
+        H5Tclose(ntype);
+#else
     if (xtype == NC_CHAR && ntype >= 0)
         H5Tclose(ntype);
+#endif
     if (fspace >= 0)
         H5Sclose(fspace);
     if (ftype >= 0)
@@ -1823,7 +1840,8 @@ NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type datatype,
     void *data = NULL;
     hid_t hdf_type = -1;
     hid_t space = -1;
-    hid_t attr = -1;
+    hid_t attr = -1, mem_type = -1;
+    int close_mem = 0;
     hsize_t hlen = len;
     int range_error;
     int ret;
@@ -1851,15 +1869,33 @@ NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type datatype,
     if ((ret = get_att_context(grp, var, &list, &loc)))
         return ret;
 
+#if NEP_INTERNAL_CONVERT
+    if (memtype == NC_NAT) memtype = datatype;
+    if ((ret = nx4_convert_type(NULL, NULL, memtype, datatype, 0, &range_error,
+                                NULL, 0, NC_NOQUANTIZE, 0)) && datatype != memtype)
+        return ret;
+    if (len && !value) return NC_EINVAL;
+    if ((ret = NEXTCDF4_type_size(datatype, &size))) return ret;
+    if (len > SIZE_MAX / size) return NC_EINVAL;
+    if (len) {
+        if (!(data = malloc(len * size))) return NC_ENOMEM;
+        if (datatype == memtype) memcpy(data, value, len * size);
+        else if ((ret = nx4_convert_type(value, data, memtype, datatype, len,
+                                         &range_error, NULL, 0, NC_NOQUANTIZE, 0))) {
+            free(data);
+            return ret;
+        }
+    }
+#endif
     /* Replace an existing attribute of the same name. */
     if ((att = find_att(list, name))) {
         nc4_att_list_del(list, att);
-        nc4_att_free(att);
         H5E_BEGIN_TRY {
             H5Adelete(loc, name);
         } H5E_END_TRY;
     }
 
+#if !NEP_INTERNAL_CONVERT
     if (len > 0) {
         if ((ret = NEXTCDF4_type_size(datatype, &size)))
             return ret;
@@ -1876,6 +1912,7 @@ NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type datatype,
         }
     }
 
+#endif
     if ((ret = add_att(list, var ? &var->hdr : &grp->hdr, name, datatype,
                        len, data, &att)))
         goto fail;
@@ -1888,15 +1925,17 @@ NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type datatype,
     if ((ret = NEXTCDF4_map_hdf_type(datatype, &hdf_type)))
         goto fail;
     if (len == 0) {
-        if ((space = H5Screate(H5S_NULL)) < 0)
+        if ((space = H5Screate(H5S_NULL)) < 0) {
+            ret = NC_EHDFERR;
             goto fail;
+        }
     } else {
-        if ((space = H5Screate_simple(1, &hlen, NULL)) < 0)
+        if ((space = H5Screate_simple(1, &hlen, NULL)) < 0) {
+            ret = NC_EHDFERR;
             goto fail;
+        }
     }
     {
-        hid_t mem_type = -1;
-        int close_mem = 0;
         if (datatype == NC_CHAR) {
             mem_type = hdf_type;
         } else if (datatype == NC_STRING) {
@@ -1907,15 +1946,24 @@ NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type datatype,
             }
             close_mem = 1;
         } else {
+#if NEP_INTERNAL_CONVERT
+            mem_type = NEXTCDF4_memory_type(datatype, &close_mem);
+#else
             mem_type = native_hdf_type(datatype);
+#endif
+            if (mem_type < 0) { ret = NC_EBADTYPE; goto fail; }
         }
         if ((attr = H5Acreate2(loc, name, hdf_type, space, H5P_DEFAULT,
-                               H5P_DEFAULT)) < 0)
+                               H5P_DEFAULT)) < 0) {
+            ret = NC_EHDFERR;
             goto fail;
+        }
         if (len > 0 && H5Awrite(attr, mem_type, att->data) < 0)
-            { if (close_mem) H5Tclose(mem_type); ret = NC_EHDFERR; goto fail; }
-        if (close_mem)
+            { ret = NC_EHDFERR; goto fail; }
+        if (close_mem) {
             H5Tclose(mem_type);
+            close_mem = 0;
+        }
     }
 
     H5Aclose(attr);
@@ -1924,6 +1972,8 @@ NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type datatype,
     return NC_NOERR;
 
 fail:
+    if (close_mem && mem_type >= 0)
+        H5Tclose(mem_type);
     if (data)
         free(data);
     if (attr >= 0)
@@ -1974,6 +2024,12 @@ NEXTCDF4_get_att(int ncid, int varid, const char *name, void *value,
     if (!(att = find_att(list, name)))
         return NC_ENOTATT;
 
+#if NEP_INTERNAL_CONVERT
+    if (memtype == NC_NAT) memtype = att->nc_typeid;
+    if (att->nc_typeid != memtype &&
+        (ret = nx4_convert_type(NULL, NULL, att->nc_typeid, memtype, 0,
+                                &range_error, NULL, 0, NC_NOQUANTIZE, 0))) return ret;
+#endif
     if (att->nc_typeid == memtype && att->len > 0) {
         if (memtype == NC_STRING) {
             char **src = (char **)att->data;
@@ -1997,8 +2053,13 @@ NEXTCDF4_get_att(int ncid, int varid, const char *name, void *value,
     if (att->len == 0)
         return NC_NOERR;
 
+#if NEP_INTERNAL_CONVERT
+    return nx4_convert_type(att->data, value, att->nc_typeid, memtype,
+                            att->len, &range_error, NULL, 0, NC_NOQUANTIZE, 0);
+#else
     return nc4_convert_type(att->data, value, att->nc_typeid, memtype,
                             att->len, &range_error, NULL, 0, 0, 0);
+#endif
 }
 
 /**

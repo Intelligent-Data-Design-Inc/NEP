@@ -9,6 +9,12 @@ NEP supports bfloat16 in two ways:
 
 This page gives an overview with code from `examples/nextcdf4/bfloat16.c` and the benchmark results. The full reference, including `NC_FLOAT16` and the HDF5 conversion details, is [NEXTCDF4_float16.md](NEXTCDF4_float16.md).
 
+## Temporary conversion experiment
+
+NEXTCDF-4 can be built with `-DNEP_INTERNAL_CONVERT=ON` to use NEP round-to-nearest-even for standard float/double calls on bfloat16 variables and supported attributes. The option defaults OFF; `NEP_HAS_INTERNAL_CONVERT` reports whether it is active. IEEE float16 remains an HDF5 exception. The independent `nc_*_bfloat16` API is unchanged. See [nextcdf4.md](nextcdf4.md).
+
+The committed charts and benchmark numbers here describe the existing default path, not measured internal-conversion performance. No benchmark artifacts are regenerated in Sprint 1G; Sprint 1H will compare the paths separately and remove the temporary option after choosing the permanent behavior.
+
 ## Capabilities
 
 ### The `NC_BFLOAT16` type

@@ -70,12 +70,23 @@ Plan: [docs/plan/v4.3.0-sprint1E-disk-bound-timing-storage.md](plan/v4.3.0-sprin
 
 Plan: [docs/plan/v4.3.0-sprint1F-doxygen-nextcdf4.md](plan/v4.3.0-sprint1F-doxygen-nextcdf4.md)
 
-#### Sprint 1F - Convert Data Types in One Function
-- Look in /fast/ed/netcdf-c/nc4var.c function nc4_convert_type(), note how all data conversions happen in this function.
-- NEXTCDF4 needs the same approach. We can have an nx4_convert_type() which does the type conversions.
-- Convert existing code to this approach.
+#### Sprint 1G - Convert Data Types in One Function
+- Temporary CMake option `NEP_INTERNAL_CONVERT` defaults OFF (existing behavior); `NEP_HAS_INTERNAL_CONVERT` reports the effective build setting.
+- ON routes supported variable/attribute numeric conversions and quantized writes through private, NEP-owned `nx4_convert_type()`, modeled on netCDF-C's `libsrc4/nc4var.c`; standard bfloat16 calls use NEP round-to-nearest-even.
+- IEEE float16 conversion remains an explicit HDF5 exception until Sprint 1I; raw-bit I/O, FP8/FP6/FP4 restrictions and the independent `nc_*_bfloat16` API stay intact.
+- Add enabled mode-aware conversion tests and dedicated NEXTCDF-4 OFF/ON CI; update affected API/build/rounding docs and keep CTest passing and Doxygen warning-free.
+- Out of scope (Sprint 1H): #381, all benchmark reruns/artifacts, the permanent conversion-path decision, removal of the temporary switch and deferred Spack review. No temporary Spack variant or recipe changes.
 
-#### Sprint 1H - Support IEEE 754 Float16
+Plan: [docs/plan/v4.3.0-sprint1G-convert-data-types.md](plan/v4.3.0-sprint1G-convert-data-types.md)
+
+#### Sprint 1H - Continued Conversion Changes
+- Fix `NC_ERANGE` reporting (#381) for variable, attribute and quantized-write conversions, including the retained HDF5/float16 exceptions; preserve the independent bfloat16 API's existing range contract.
+- Rerun OFF/ON conversion benchmarks with the same optimized build and disk-bound timing; keep internal-conversion CSVs, machine records and charts separate from existing reference artifacts. Update comparison docs with measured results.
+- Use correctness and performance results to choose the permanent conversion path, then remove `NEP_INTERNAL_CONVERT`, its temporary capability marker and the obsolete conditional code/test/docs/CI branches; retain regression coverage for the chosen path.
+- Review deferred Spack implications after that decision: no temporary variant; update the overlay only for actual option/dependency/install/test-contract changes, preserving old-version builds and running the audit/spec/upstream style checks. Carry any upstream recipe change in the next version-bump PR per `docs/spack.md`.
+- IEEE float16 implementation remains Sprint 1I; release notes and publication remain Sprint 2, incorporating the final conversion decision.
+
+#### Sprint 1I - Support IEEE 754 Float16
 
 #### Sprint 2 - 
 - Tag v4.3.0 and write `docs/releases/v4.3.0.md` (HDF5 detection change, CMake 3.19 minimum, conda GeoTIFF, Sprint 1A NEXTCDF-4 bfloat16 examples and `NEP_ZSTD_PLUGIN_DIR`, Sprint 1B typed small-float I/O and the `nc_*_bfloat16` functions, #376, Sprint 1C optimized benchmark results, the bfloat16 GDAS sample and `bfloat16_io_perf`, the #382 contiguous-layout fix, and the fix for untyped `nc_put_var`/`nc_get_var`/`var1`/`vars` failing with `NC_EBADTYPE` on NEXTCDF-4).
