@@ -71,6 +71,9 @@ Plan: [docs/plan/v4.3.0-sprint1E-disk-bound-timing-storage.md](plan/v4.3.0-sprin
 Plan: [docs/plan/v4.3.0-sprint1F-doxygen-nextcdf4.md](plan/v4.3.0-sprint1F-doxygen-nextcdf4.md)
 
 #### Sprint 1F - Convert Data Types in One Function
+- Look in /fast/ed/netcdf-c/nc4var.c function nc4_convert_type(), note how all data conversions happen in this function.
+- NEXTCDF4 needs the same approach. We can have an nx4_convert_type() which does the type conversions.
+- Convert existing code to this approach.
 
 #### Sprint 1H - Support IEEE 754 Float16
 
@@ -85,7 +88,6 @@ Plan: [docs/plan/v4.3.0-sprint1F-doxygen-nextcdf4.md](plan/v4.3.0-sprint1F-doxyg
 ### V4.2.0 - Move Compression Filters to nep-compress
 
 **Goal:** Move ownership of the LZ4 and BZIP2 compression APIs, HDF5 filter integration, tests, and documentation to `/fast/ed/nep-compress/`. NEP remains the home of the format UDF readers and NEXTCDF-4 backend. Complete and verify the new project before removing compression from NEP.
-
 #### Sprint 1: Inventory and Define the Compatibility Contract
 **Objective:** Establish exactly what moves and what must continue to work for existing compression users.
 
@@ -181,7 +183,7 @@ Plan: [docs/plan/v4.2.0-sprint7-conda.md](plan/v4.2.0-sprint7-conda.md)
 **Deliverables:**
 1. **`docs/nextcdf4.md`** — dedicated user reference page covering:
    - Overview and relationship to the built-in NetCDF-4/HDF5 backend.
-   - Build configuration (`NEP_ENABLE_NEXTCDF4`), HDF5 version requirements (1.14.0+ required, 2.1.1+ recommended), and `nep_meta.h` feature macros.
+   - Build configuration (`NEP_ENABLE_NEXTCDF4`), HDF5 version requirements (2.1.1+ required), and `nep_meta.h` feature macros.
    - Creating and opening files with `NC_NEXTCDF4` and the `.ncrc` UDF9 autoload path.
    - Compatibility modes: native NEXTCDF-4, `NC_CLASSIC_MODEL`, and `NC_NETCDF4_MODEL`.
    - Supported atomic types table (classic, small floating-point, complex, bitfield, reference) and their HDF5 mappings.
@@ -330,7 +332,7 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 **Prerequisites:**
 - Complete the v3.5.0 `nep_meta.h` work so NEXTCDF-4 availability can be advertised as `NEP_HAS_NEXTCDF4`.
 - Build against a netcdf-c version that provides `NC_UDF9`, supports UDF plugin autoloading, and exposes the `NC_Dispatch` interface required by the backend.
-- Detect HDF5 1.14.0 or newer. If the dependency is unavailable, keep NEXTCDF-4 disabled without affecting the existing NEP handlers or the built-in NetCDF-4 backend.
+- Detect HDF5 2.1.1 or newer. If the dependency is unavailable, keep NEXTCDF-4 disabled without affecting the existing NEP handlers or the built-in NetCDF-4 backend.
 
 **Deliverables:**
 - Reserve UDF9 permanently in `include/nep.h` with `NEP_UDF_NEXTCDF4` and the public alias `NC_NEXTCDF4`; update the UDF allocation documentation so the slot is no longer described as reserved.
@@ -347,7 +349,7 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 - An enabled build with supported dependencies compiles and links the NEXTCDF-4 plugin without unresolved dispatch symbols or compiler warnings introduced by this sprint.
 - A focused unit test initializes the plugin, confirms UDF9 registration, verifies repeated initialization/finalization is safe, and confirms a representative unimplemented operation returns the documented error without creating a file.
 - Autoload verification confirms the installed plugin can be discovered through the UDF9 `.ncrc` keys without an explicit initialization call.
-- Configuration with HDF5 older than 1.14.0 either disables NEXTCDF-4 with a clear status message or fails only when the user explicitly requires the feature; all unrelated NEP features remain buildable.
+- Configuration with HDF5 older than 2.1.1 fails with a clear message only when the user explicitly enables NEXTCDF-4 (`-DNEP_ENABLE_NEXTCDF4=ON`); with NEXTCDF-4 off (the default) all unrelated NEP features remain buildable.
 - Public UDF constants, generated feature macros, installed configuration, and user-facing documentation agree on whether NEXTCDF-4 is available.
 
 **Out of scope for Sprint 1:**
@@ -848,7 +850,7 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 
 **Scope decisions:**
 - Primary deliverable is `NC_FLOAT16` (IEEE 754 binary16). It maps to `H5T_IEEE_F16LE/BE` and is stored as 2-byte `uint16_t` in memory.
-- If the build links HDF5 2.1.1 or later, also add `NC_BFLOAT16`, `NC_FLOAT8_E4M3`, `NC_FLOAT8_E5M2`, `NC_FLOAT6_E2M3`, `NC_FLOAT6_E3M2`, and `NC_FLOAT4_E2M1` with the mappings and memory types from the HDF5 2.x small-floating-point datatypes.
+- Because NEXTCDF-4 requires HDF5 2.1.1 or later, also add `NC_BFLOAT16`, `NC_FLOAT8_E4M3`, `NC_FLOAT8_E5M2`, `NC_FLOAT6_E2M3`, `NC_FLOAT6_E3M2`, and `NC_FLOAT4_E2M1` with the mappings and memory types from the HDF5 2.x small-floating-point datatypes.
 - Small floating-point types are atomic NetCDF types, not user-defined types. They use the same `nc_def_var`/`nc_put_vara`/`nc_get_vara` dispatch path as other atomic types.
 - `NC_FLOAT16` and the other small floats are only allowed in native NEXTCDF-4 mode; they are rejected in `NC_NETCDF4_MODEL` and `NC_CLASSIC_MODEL`.
 - They cannot be used as coordinate variables because they do not support a total ordering suitable for dimension coordinates.
@@ -856,8 +858,7 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 
 **Prerequisites and constraints:**
 - Build on `NEXTCDF4_map_hdf_type`, `map_nc_type`, `NEXTCDF4_type_size`, and `NEXTCDF4_check_atomic_type`.
-- `NC_FLOAT16` requires HDF5 1.14.0 or later; the other small floats require HDF5 2.1.1 or later.
-- The CMake/autotools checks must detect HDF5 version and the presence of the small-float predefined datatypes (`H5T_IEEE_F16LE`, `H5T_FLOAT_BFLOAT16LE`, etc.) before enabling them.
+- NEXTCDF-4 requires HDF5 2.1.1 or later, which provides all the small-float predefined datatypes (`H5T_IEEE_F16LE`, `H5T_FLOAT_BFLOAT16LE`, etc.), so no per-type HDF5 version checks are needed.
 - `ncindex` and `NC_TYPE_INFO_T` do not need to change; the new types are atomic.
 
 **API and type-model architecture:**
@@ -871,11 +872,11 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 - `var_io` in `nxt4io.c` must use the correct HDF5 memory and file types when the variable or `memtype` is one of the new small floats. For now, require `memtype` equal to the file type to avoid conversion edge cases.
 
 **Implementation sequence:**
-1. Add `NC_FLOAT16` constant to `include/nep.h` and guard the optional small-float constants with `HAVE_HDF5_2_1_1` or similar.
+1. Add the `NC_FLOAT16` and small-float constants to `include/nep.h`.
 2. Update `NEXTCDF4_map_hdf_type`, `map_nc_type`, `NEXTCDF4_type_size`, and `NEXTCDF4_type_name` for `NC_FLOAT16`.
 3. Update `NEXTCDF4_check_atomic_type` and `set_var_type` to permit `NC_FLOAT16`.
 4. Add `test/tst_nextcdf4_float16.c` that creates a `NC_FLOAT16` variable, writes/reads `uint16_t` values with `nc_put_vara`/`nc_get_vara`, and verifies round-trip.
-5. If HDF5 2.1.1 is available, repeat step 2-4 for bfloat16/FP8/FP6/FP4.
+5. Repeat steps 2-4 for bfloat16/FP8/FP6/FP4.
 6. Add documentation notes in `docs/roadmap.md` and `docs/plan/NEXTCDF4_plan.md`.
 7. Run the full `tst_nextcdf4_*` test suite and the full C test suite.
 
@@ -885,7 +886,7 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 - `nc_inq_var` reports `xtype == NC_FLOAT16` for a float16 variable.
 - `nc_def_var` with `NC_FLOAT16` fails with `NC_EBADTYPE` in `NC_NETCDF4_MODEL` and `NC_CLASSIC_MODEL`.
 - Reopening a file with a float16 variable recovers the type correctly.
-- (Optional, if HDF5 >= 2.1.1) bfloat16 and FP8/FP6/FP4 pass the same round-trip tests.
+- bfloat16 and FP8/FP6/FP4 pass the same round-trip tests.
 - All existing NEXTCDF-4 C tests continue to pass.
 
 **Sprint 9 status:**
@@ -899,7 +900,7 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 - Automatic conversion between `NC_FLOAT16`/small floats and `NC_FLOAT`/`NC_DOUBLE`; users must supply the correct in-memory type.
 - Complex numbers, bitfields, and reference types (Sprint 10).
 - Coordinate variables and unlimited dimensions using small floats.
-- Support for HDF5 versions older than 1.14.0.
+- Support for HDF5 versions older than 2.1.1.
 
 #### Sprint 10: Add Complex, Bitfield, and Reference Types
 **Objective:** Add complex-number compounds, fixed-width HDF5 bitfields, and object and region references. Include structural type detection, reference creation and dereference APIs, validity checks, storage restrictions, and interoperability with existing HDF5 files.

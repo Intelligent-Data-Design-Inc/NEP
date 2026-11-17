@@ -2,7 +2,7 @@
 
 ## Overview
 
-NEXTCDF-4 is a clean rewrite from scratch of netcdf-c's `libhdf5` HDF5 backend, implemented in a new `src/nextcdf4/` directory. No code will be reused from the existing `libhdf5/` implementation, although it may be consulted as a reference. The rewrite takes advantage of new features in HDF5 1.14.x and HDF5 2.1.1+, such as Superblock v3, float16, and the new small floating-point types. It adds support for HDF5 reference types, and also fixes some long-standing bugs relating to renaming vars and dims.
+NEXTCDF-4 is a clean rewrite from scratch of netcdf-c's `libhdf5` HDF5 backend, implemented in a new `src/nextcdf4/` directory. No code will be reused from the existing `libhdf5/` implementation, although it may be consulted as a reference. NEXTCDF-4 requires HDF5 2.1.1 or later. The rewrite takes advantage of new HDF5 features such as Superblock v3, float16, and the new small floating-point types. It adds support for HDF5 reference types, and also fixes some long-standing bugs relating to renaming vars and dims.
 
 The goals are:
 
@@ -127,7 +127,7 @@ Attempts to use these features with `NC_NETCDF4_MODEL` will return `NC_EINVAL` o
 
 Before any other NEXTCDF-4 work begins, NEP will add a `nep_meta.h` build-generated header, following the same pattern netcdf-c already uses for `include/netcdf_meta.h` (generated from `include/netcdf_meta.h.in` via `configure_file(... @ONLY)` in `CMakeLists.txt`).
 
-This addresses the need for downstream code (`nextcopy`, `nextdump`, third-party applications, and NEP's own test suite) to feature-detect NEXTCDF-4 capabilities at compile time, rather than guessing based on HDF5 or NEP version numbers alone, since availability of individual features depends on the HDF5 version NEP was built against (1.14.x vs. 2.1.1+) as well as whether NEXTCDF-4 was enabled at all.
+This addresses the need for downstream code (`nextcopy`, `nextdump`, third-party applications, and NEP's own test suite) to feature-detect NEXTCDF-4 capabilities at compile time, rather than guessing based on HDF5 or NEP version numbers alone, since availability of these features depends on whether NEXTCDF-4 was enabled at all (which requires HDF5 2.1.1 or later).
 
 ### Why This Comes First
 
@@ -194,15 +194,15 @@ NEXTCDF-4 will use HDF5 Superblock v3 for files by default, and Superblock v1 fo
 
 ### Requirements
 
-- Build-time HDF5 version must be 1.14.0 or later; HDF5 2.1.1+ is the recommended modern target. If the detected HDF5 version is older than 1.14.x, NEXTCDF-4 is not built.
+- Build-time HDF5 version must be 2.1.1 or later. Enabling NEXTCDF-4 (`-DNEP_ENABLE_NEXTCDF4=ON`) against an older HDF5 is a fatal configure error.
 - All files created by NEXTCDF-4 are written with Superblock v3 by default. Files created with the `NC_NETCDF4_MODEL` compatibility flag are written with Superblock v1 and remain readable by HDF5 1.10.x and later; all other files require HDF5 1.14.x or later to read.
 
 ### Implementation Notes
 
 - Use `H5Pset_libver_bounds(fapl_id, H5F_LIBVER_LATEST, H5F_LIBVER_LATEST)` when creating files in native and `NC_CLASSIC_MODEL` modes.
 - Use `H5Pset_libver_bounds(fapl_id, H5F_LIBVER_V110, H5F_LIBVER_V110)` when creating files with `NC_NETCDF4_MODEL`, which produces a Superblock v1 file compatible with older netcdf-c/HDF5 releases.
-- At NEP configure time, check that the detected HDF5 version is 1.14.x or better. If it is not, disable NEXTCDF-4 entirely (`NEP_HAS_NEXTCDF4=0`).
-- At create time, assert that the linked HDF5 library is 1.14.x or later and refuse to create files if it is too old to write Superblock v3. This is a defensive runtime check in addition to the configure-time gate.
+- At NEP configure time, check that the detected HDF5 version is 2.1.1 or later. If it is not and NEXTCDF-4 was requested, stop with a fatal error; with NEXTCDF-4 off, `NEP_HAS_NEXTCDF4=0`.
+- At create time, assert that the linked HDF5 library is 2.1.1 or later and refuse to create files if it is too old. This is a defensive runtime check in addition to the configure-time gate.
 
 ## Correct Renaming of Dims and Vars
 
@@ -304,8 +304,7 @@ These types are software-emulated in HDF5 and implicit conversions are unreliabl
 ### Compatibility
 
 - All new floating-point types (`NC_FLOAT16`, `NC_BFLOAT16`, `NC_FLOAT8_*`, `NC_FLOAT6_*`, `NC_FLOAT4_*`) are only available when `NC_NETCDF4_MODEL` is **not** set.
-- `NC_FLOAT16` requires HDF5 1.14.x or later.
-- `NC_BFLOAT16` and the FP8/FP6/FP4 types require HDF5 2.1.1 or later.
+- NEXTCDF-4 requires HDF5 2.1.1 or later, which provides all of these types, so every NEXTCDF-4 build has them.
 - Reading an existing float16, bfloat16, or FP8/FP6/FP4 dataset from a non-NEXTCDF-4 HDF5 file is supported.
 - These types cannot be coordinate variables.
 
@@ -637,7 +636,7 @@ Bitfield variables are defined with the standard `nc_def_var` using an `NC_BITFI
 
 | Risk | Mitigation |
 |------|------------|
-| HDF5 1.14.x not available on all target systems | Provide a configure-time fallback that disables NEXTCDF-4 and falls back to classic backend. |
+| HDF5 2.1.1 not available on all target systems | NEXTCDF-4 is off by default; NEP builds without it and users keep netcdf-c's built-in HDF5 backend. |
 | Reference types expose HDF5-specific semantics | Provide explicit `nc_ref_object`/`nc_deref_object` and `nc_ref_region`/`nc_deref_region` APIs; document that reference tokens are file-local and that region references are limited to strided hyperslabs. |
 | Float16 precision surprises users | Document precision limits; consider fill-value and default-conversion behavior carefully. |
 | Rename bug fixes break existing workarounds | Add tests for the exact bug scenarios and announce behavioral changes. |
@@ -807,13 +806,13 @@ Sprint 7 is implemented and tested. The key changes are in `src/nextcdf4/nxt4met
 
 ## Sprint 9: Add Small Floating-Point Types
 
-Sprint 9 adds `NC_FLOAT16` and, when HDF5 2.1.1+ is available, `NC_BFLOAT16` and the FP8/FP6/FP4 small floating-point types to the NEXTCDF-4 backend.
+Sprint 9 adds `NC_FLOAT16`, `NC_BFLOAT16`, and the FP8/FP6/FP4 small floating-point types to the NEXTCDF-4 backend.
 
 - `include/nep.h`:
-  - Define `NC_FLOAT16` (and optionally `NC_BFLOAT16`, `NC_FLOAT8_E4M3`, `NC_FLOAT8_E5M2`, `NC_FLOAT6_E2M3`, `NC_FLOAT6_E3M2`, `NC_FLOAT4_E2M1`) with non-colliding `nc_type` values.
+  - Define `NC_FLOAT16` (and `NC_BFLOAT16`, `NC_FLOAT8_E4M3`, `NC_FLOAT8_E5M2`, `NC_FLOAT6_E2M3`, `NC_FLOAT6_E3M2`, `NC_FLOAT4_E2M1`) with non-colliding `nc_type` values.
 
 - `src/nextcdf4/nxt4type.c`:
-  - Extend `NEXTCDF4_map_hdf_type` to map `NC_FLOAT16` to `H5T_IEEE_F16LE/BE` and the 2.1.1+ small floats to their HDF5 predefined datatypes.
+  - Extend `NEXTCDF4_map_hdf_type` to map `NC_FLOAT16` to `H5T_IEEE_F16LE/BE` and the other small floats to their HDF5 2.1.1 predefined datatypes.
   - Extend `NEXTCDF4_type_size` and `NEXTCDF4_type_name` for the new types.
 
 - `src/nextcdf4/nxt4meta.c`:

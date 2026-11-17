@@ -959,7 +959,7 @@ Each example:
 - **Fortran Examples**: NetCDF-Fortran library, Fortran 90+ compiler
 - **Build System**: CMake 3.19+
 
-HDF5 is found by `cmake/NEPFindHDF5.cmake` (any version 1.14.0 or newer, linked through FindHDF5's imported targets, with a SONAME check against `libnetcdf`).
+HDF5 is found by `cmake/NEPFindHDF5.cmake` (any version 1.14.0 or newer, linked through FindHDF5's imported targets, with a SONAME check against `libnetcdf`). NEXTCDF-4 requires HDF5 2.1.1 or newer: configuring with `-DNEP_ENABLE_NEXTCDF4=ON` against an older HDF5 is a fatal configure error.
 
 Fortran examples are automatically skipped if:
 - Fortran support is disabled (`NEP_ENABLE_FORTRAN=OFF`)

@@ -51,7 +51,7 @@ NEXTCDF-4 availability is advertised at compile time through `nep_meta.h`:
 | Classic model | `NC_NEXTCDF4` | `NC_CLASSIC_MODEL` | v3 | NetCDF-3 data model on HDF5 |
 | NetCDF-4 model | `NC_NEXTCDF4` | `NC_NETCDF4_MODEL` | v1 | Files readable by upstream netcdf-c |
 
-**Native mode** allows all NEXTCDF-4-specific types and HDF5 1.14+ features.
+**Native mode** allows all NEXTCDF-4-specific types and HDF5 2.1.1 features.
 
 **`NC_CLASSIC_MODEL`** restricts the file to the classic NetCDF-3 data model: root group only, one unlimited dimension, classic atomic types, no chunking, compression, filters, or user-defined types.
 
