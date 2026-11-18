@@ -7,12 +7,8 @@ on:
 
 jobs:
   nextcdf4:
-    name: nextcdf4 (${{ matrix.internal_convert }})
+    name: nextcdf4
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        internal_convert: ['OFF', 'ON']
     env:
       NETCDF_SHA: 5baa62e6966d3e505b895574dafbd531a4aed360
       DEPS: ${{ github.workspace }}/deps
@@ -52,14 +48,12 @@ jobs:
       - name: Configure
         run: |
           "$DEPS/bin/nc-config" --all
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_PREFIX_PATH="$DEPS" -DHDF5_ROOT="$DEPS" -DNEP_ENABLE_NEXTCDF4=ON -DNEP_INTERNAL_CONVERT=${{ matrix.internal_convert }} -DNEP_ENABLE_FORTRAN=OFF -DNEP_BUILD_EXAMPLES=OFF -DNEP_ENABLE_BENCHMARKS=OFF -DNEP_BUILD_DOCUMENTATION=ON 2>&1 | tee configure.log
-          expected=0
-          if [ '${{ matrix.internal_convert }}' = ON ]; then expected=1; fi
-          grep -E "^#define NEP_HAS_INTERNAL_CONVERT +$expected " build/include/nep_meta.h
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_PREFIX_PATH="$DEPS" -DHDF5_ROOT="$DEPS" -DNEP_ENABLE_NEXTCDF4=ON -DNEP_ENABLE_FORTRAN=OFF -DNEP_BUILD_EXAMPLES=OFF -DNEP_ENABLE_BENCHMARKS=OFF -DNEP_BUILD_DOCUMENTATION=ON 2>&1 | tee configure.log
+          ! grep -q "NEP_HAS_INTERNAL_CONVERT" build/include/nep_meta.h
       - name: Build and test
         run: |
           cmake --build build --parallel 2
-          ctest --test-dir build -R 'tst_nextcdf4_(internal_convert|conv)|tst_nep_bfloat16' --output-on-failure
+          ctest --test-dir build -R 'tst_nextcdf4_(range|internal_convert|conv)|tst_nep_bfloat16' --output-on-failure
           ctest --test-dir build --output-on-failure
       - name: Documentation
         run: |
@@ -70,7 +64,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: nextcdf4-${{ matrix.internal_convert }}-logs
+          name: nextcdf4-logs
           path: |
             configure.log
             build/CMakeCache.txt

@@ -35,6 +35,17 @@ Located in `nextcdf4/`:
 - **make_bfloat16_sample.sh** - Run make_bfloat16_sample, then h5repack to apply shuffle+zstd chunking
 - **plot_bfloat16.py** - Plot the benchmark CSV (size, speed and HDF5-conversion PNGs)
 - **plot_bfloat16_io.py** - Plot the no-conversion I/O benchmark CSV (bfloat16_io.png)
+- **conversion_perf.c** - `conversion_perf RESULTS.csv`: representative standard numeric and quantized-write cases, without an external plugin; 10 copies, minimum of 10 repetitions, both storage layouts
+- **plot_conversion_compare.py** - Plot paired engine-labeled GDAS measurements or `--numeric` standard-conversion measurements; validates complete, unique matrices and never overwrites historical charts
+
+Typed bfloat16 benchmark rows were `bfloat16_hdf5` with internal conversion OFF and `bfloat16_internal` with ON; the internal engine is now permanent, so new runs are labeled `bfloat16_internal`. The legacy plot scripts describe historical OFF results; use the comparison plotter for paired runs:
+
+```sh
+python3 examples/nextcdf4/plot_conversion_compare.py OFF.csv ON.csv OFF_IO.csv ON_IO.csv PREFIX
+python3 examples/nextcdf4/plot_conversion_compare.py --numeric OFF_NUMERIC.csv ON_NUMERIC.csv PREFIX
+```
+
+The first form writes `PREFIX_typed.png` and `PREFIX_io.png`; the second writes `PREFIX_numeric.png`. The synthetic CSV columns are `engine,case,storage,copies,nvalues,memory_bytes,file_bytes,write_s,read_s,write_MBps,read_MBps`. Its throughput counts memory bytes per case; the GDAS programs count float32-equivalent bytes. Raw-I/O rows are controls, not converting-path measurements.
 
 Build with `-DNEP_ENABLE_NEXTCDF4=ON -DNEP_BUILD_EXAMPLES=ON -DNEP_ZSTD_PLUGIN_DIR=<dir>`;
 add `-DNEP_ENABLE_BENCHMARKS=ON` to register the benchmark tests.

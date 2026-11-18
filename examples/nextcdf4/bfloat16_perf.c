@@ -18,10 +18,12 @@
  * The @c bfloat16 rows convert float32 to bfloat16 in user code and
  * exchange raw uint16_t bits through nc_put_vara_bfloat16() and
  * nc_get_vara_bfloat16(). The
- * @c bfloat16_hdf5 rows define the same NC_BFLOAT16 variable but write
+ * @c bfloat16_internal rows define the same NC_BFLOAT16 variable but write
  * the float data with nc_put_vara_float() and read with
- * nc_get_vara_float(), so the conversion happens inside HDF5 and
- * @c wconv_s and @c rconv_s are 0. For each bfloat16_hdf5 row a
+ * nc_get_vara_float(). Internal conversion is now permanent, so NEP
+ * performs the conversion; historical runs labeled @c bfloat16_hdf5
+ * used the HDF5 engine.
+ * @c wconv_s and @c rconv_s are 0. For each typed-conversion row a
  * @c #-prefixed line is printed to stdout (not to the CSV) with the
  * number of stored values that differ from round-to-nearest-even.
  *
@@ -83,6 +85,7 @@
 
 #include <netcdf.h>
 #include <nep.h>
+#include "nep_meta.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -131,7 +134,7 @@ get_time(void)
 typedef enum {
     CFG_FLOAT,     /**< NC_FLOAT variable, no conversion. */
     CFG_BF16_USER, /**< NC_BFLOAT16 variable, conversion in user code. */
-    CFG_BF16_HDF5  /**< NC_BFLOAT16 variable, conversion inside HDF5. */
+    CFG_BF16_TYPED  /**< NC_BFLOAT16 variable, conversion inside HDF5. */
 } cfg_type_t;
 
 /**
@@ -163,7 +166,7 @@ typedef struct {
  * the file (timed), stats it, drops it from the page cache (untimed),
  * reopens it, reads every time step back and checks it. @c CFG_FLOAT
  * and @c CFG_BF16_USER use nc_put_vara_float()/nc_put_vara_bfloat16()
- * and check the raw bits; @c CFG_BF16_HDF5 uses the typed float calls
+ * and check the raw bits; @c CFG_BF16_TYPED uses the typed float calls
  * and checks the read floats against the stored raw bits on the last
  * repetition. The minimum write and read times and the last
  * repetition's file size and error metrics are returned in @p row.
@@ -171,7 +174,7 @@ typedef struct {
  * @param field   Field name (used as the variable name).
  * @param fdata   Input float data (NVALS elements).
  * @param type    Conversion path (CFG_FLOAT, CFG_BF16_USER or
- *                CFG_BF16_HDF5).
+ *                CFG_BF16_TYPED).
  * @param deflate  Non-zero for shuffle+deflate level 1, 0 for contiguous.
  * @param row     Result row to fill in.
  * @param bdata   Scratch buffer of NVALS uint16_t.
@@ -191,7 +194,7 @@ run_config(const char *field, const float *fdata, cfg_type_t type, int deflate,
 
     row->field = field;
     row->type = type == CFG_FLOAT ? "float"
-              : type == CFG_BF16_USER ? "bfloat16" : "bfloat16_hdf5";
+              : type == CFG_BF16_USER ? "bfloat16" : "bfloat16_internal";
     row->storage = deflate ? "deflate1" : "contiguous";
     row->uncompressed = NCOPIES * NVALS * esize;
     row->write_s = 1e30;
@@ -232,7 +235,7 @@ run_config(const char *field, const float *fdata, cfg_type_t type, int deflate,
         {
             start[0] = step;
             /* nc_put_vara_bfloat16 stores the raw bits on the
-             * NC_BFLOAT16 variable; nc_put_vara_float (CFG_BF16_HDF5)
+             * NC_BFLOAT16 variable; nc_put_vara_float (CFG_BF16_TYPED)
              * lets HDF5 convert, which rounds ties away from zero while
              * float_to_bfloat16() rounds ties to even. */
             if (type == CFG_BF16_USER)
@@ -286,9 +289,9 @@ run_config(const char *field, const float *fdata, cfg_type_t type, int deflate,
             start[0] = step;
             /* nc_get_vara_bfloat16 returns the raw stored bits.
              * nc_get_vara_float on the NC_BFLOAT16 variable
-             * (CFG_BF16_HDF5) returns the same values converted to
+             * (CFG_BF16_TYPED) returns the same values converted to
              * float by HDF5. */
-            if (type == CFG_BF16_HDF5)
+            if (type == CFG_BF16_TYPED)
             {
                 if ((ret = nc_get_vara_float(ncid, varid, start, count,
                                              back + step * NVALS))) ERR(ret);
@@ -318,9 +321,9 @@ run_config(const char *field, const float *fdata, cfg_type_t type, int deflate,
         if (type == CFG_BF16_USER && (rep == 0 || rconv_s < row->rconv_s))
             row->rconv_s = rconv_s;
 
-        /* For CFG_BF16_HDF5, reopen and read the raw bits so the typed
+        /* For CFG_BF16_TYPED, reopen and read the raw bits so the typed
          * read can be checked and compared to round-to-nearest-even. */
-        if (type == CFG_BF16_HDF5 && rep == NREPS - 1)
+        if (type == CFG_BF16_TYPED && rep == NREPS - 1)
         {
             size_t n_diff = 0;
 
@@ -380,7 +383,7 @@ run_config(const char *field, const float *fdata, cfg_type_t type, int deflate,
         }
 
         /* Check the bits read against the bits written, every step. */
-        if (type != CFG_BF16_HDF5)
+        if (type != CFG_BF16_TYPED)
         {
             const void *wdata = fdata;
 

@@ -1,4 +1,4 @@
-/* Test the temporary NEXTCDF-4 internal conversion experiment.
+/* Test the NEXTCDF-4 internal conversion engine.
  * Author: Edward Hartnett, Intelligent Data Design, Inc.
  */
 #include <float.h>
@@ -112,17 +112,11 @@ public_io(int mode)
     }
     REQUIRE(nc_put_att_text(ncid, NC_GLOBAL, "attribute", 1, "x") == NC_NOERR);
     CHECK(nc_put_att_double(ncid, NC_GLOBAL, "attribute", NC_SHORT, 4, input));
-#if NEP_HAS_INTERNAL_CONVERT
     e = nc_put_att_double(ncid, NC_GLOBAL, "attribute", NC_CHAR, 1, input);
     REQUIRE(e == NC_ECHAR);
-#else
-    (void)e;
-#endif
     if (!mode) {
         CHECK(nc_def_var(ncid, "b", NC_BFLOAT16, 0, NULL, &b));
-#if NEP_HAS_INTERNAL_CONVERT
         CHECK(nc_put_att_double(ncid, v, "bf", NC_BFLOAT16, 1, &value));
-#endif
     }
     CHECK(nc_enddef(ncid));
     CHECK(nc_put_var_double(ncid, v, input));
@@ -141,19 +135,17 @@ public_io(int mode)
     if (!mode) {
         CHECK(nc_put_var_double(ncid, b, &value));
         CHECK(nc_get_var(ncid, b, &bits));
-        REQUIRE(bits == (NEP_HAS_INTERNAL_CONVERT ? 0x43e0 : 0x43e1));
+        REQUIRE(bits == 0x43e0);
     }
     CHECK(nc_close(ncid));
     CHECK(nc_open(filename, NC_NEXTCDF4 | NC_NOWRITE, &ncid));
     CHECK(nc_get_att_double(ncid, NC_GLOBAL, "attribute", output));
     REQUIRE(!memcmp(input, output, sizeof(input)));
     CHECK(nc_inq_varid(ncid, "v", &ids[0]));
-#if NEP_HAS_INTERNAL_CONVERT
     if (!mode) {
         CHECK(nc_get_att_double(ncid, ids[0], "bf", output));
         REQUIRE(output[0] == 448);
     }
-#endif
     CHECK(nc_close(ncid));
     unlink(filename);
     return 0;
@@ -210,11 +202,9 @@ edge_io(void)
     REQUIRE(nc_put_vars_double(ncid, v, start, count, stride, input) == NC_ESTRIDE);
     CHECK(nc_inq_dimlen(ncid, dims[0], &length));
     REQUIRE(length == 0);
-#if NEP_HAS_INTERNAL_CONVERT
     REQUIRE(nc_put_vara_text(ncid, v, start, count, "abcd") == NC_ECHAR);
     CHECK(nc_inq_dimlen(ncid, dims[0], &length));
     REQUIRE(length == 0);
-#endif
     CHECK(nc_put_vara_double(ncid, v, start, count, input));
     CHECK(nc_get_vara_double(ncid, v, start, count, back));
     REQUIRE(back[0] == 1 && back[1] == -7 && back[3] == 42);
@@ -230,10 +220,8 @@ edge_io(void)
         CHECK(nc_get_var_float(ncid, quantized, actual));
         CHECK(nc4_convert_type(input, expected, NC_DOUBLE, NC_FLOAT, 4, &range, NULL, 0, mode, 3));
         REQUIRE(!memcmp(expected, actual, sizeof(actual)));
-#if NEP_HAS_INTERNAL_CONVERT
         CHECK(nc_get_var_float(ncid, scalar, actual));
         REQUIRE(actual[0] == expected[0]);
-#endif
     }
     CHECK(nc_close(ncid));
     CHECK(nc_open(FILE_NAME, NC_NEXTCDF4 | NC_NOWRITE, &ncid));
@@ -249,7 +237,6 @@ main(void)
 {
     int failed;
     nep_set_log_level(-1);
-    if (NEP_HAS_INTERNAL_CONVERT != (NEP_INTERNAL_CONVERT != 0)) return 1;
     failed = matrix();
     failed |= public_io(0);
     failed |= public_io(NC_NETCDF4_MODEL);

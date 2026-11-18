@@ -1,0 +1,103 @@
+Start testing: Nov 17 16:45 MST
+----------------------------------------------------------
+56/65 Testing: nxt4_conversion_perf
+56/65 Test: nxt4_conversion_perf
+Command: "/fast/ed/NEP/build/examples/nextcdf4/conversion_perf" "/fast/ed/NEP/build/examples/nextcdf4/conversion_results.csv"
+Directory: /fast/ed/NEP/build/examples/nextcdf4
+"nxt4_conversion_perf" start time: Nov 17 16:45 MST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =  50.78 sec
+----------------------------------------------------------
+Test Passed.
+"nxt4_conversion_perf" end time: Nov 17 16:46 MST
+"nxt4_conversion_perf" time elapsed: 00:00:50
+----------------------------------------------------------
+
+58/65 Testing: nxt4_bfloat16_perf
+58/65 Test: nxt4_bfloat16_perf
+Command: "/fast/ed/NEP/build/examples/nextcdf4/bfloat16_perf" "/fast/ed/NEP/test/data/netCDF-4/gdas_sfc_sample.nc" "/fast/ed/NEP/build/examples/nextcdf4/bfloat16_results.csv"
+Directory: /fast/ed/NEP/build/examples/nextcdf4
+"nxt4_bfloat16_perf" start time: Nov 17 16:46 MST
+Output:
+----------------------------------------------------------
+field,type,storage,copies,uncompressed_bytes,file_bytes,ratio_vs_float,write_s,read_s,write_MBps,read_MBps,max_abs_err,max_rel_err,wconv_s,rconv_s
+tmp2m,float,contiguous,10,47185920,47192259,1.000,0.163577,0.089078,288.463,529.712,0,0,0.000000,0.000000
+tmp2m,bfloat16,contiguous,10,23592960,23599299,2.000,0.067189,0.049327,702.289,956.597,1,0.00389105,0.007130,0.014236
+# tmp2m contiguous: 9 of 1179648 values differ from round-to-nearest-even
+tmp2m,bfloat16_hdf5,contiguous,10,23592960,23599299,2.000,1.152041,0.818472,40.959,57.651,1,0.00389105,0.000000,0.000000
+tmp2m,float,deflate1,10,47185920,25022289,1.000,0.779637,0.165229,60.523,285.580,0,0,0.000000,0.000000
+tmp2m,bfloat16,deflate1,10,23592960,1977709,12.652,0.152647,0.051641,309.117,913.724,1,0.00389105,0.005917,0.006994
+# tmp2m deflate1: 9 of 1179648 values differ from round-to-nearest-even
+tmp2m,bfloat16_hdf5,deflate1,10,23592960,1979129,12.643,1.239006,0.822893,38.084,57.341,1,0.00389105,0.000000,0.000000
+prate_ave,float,contiguous,10,47185920,47192259,1.000,0.149510,0.088577,315.603,532.709,0,0,0.000000,0.000000
+prate_ave,bfloat16,contiguous,10,23592960,23599299,2.000,0.090186,0.047042,523.209,1003.060,3.02969e-05,0.00389081,0.007141,0.010524
+# prate_ave contiguous: 8 of 1179648 values differ from round-to-nearest-even
+prate_ave,bfloat16_hdf5,contiguous,10,23592960,23599299,2.000,1.122529,0.849958,42.035,55.516,3.02969e-05,0.00389081,0.000000,0.000000
+prate_ave,float,deflate1,10,47185920,33543449,1.000,1.033369,0.233205,45.662,202.336,0,0,0.000000,0.000000
+prate_ave,bfloat16,deflate1,10,23592960,13157179,2.549,0.437220,0.107499,107.923,438.944,3.02969e-05,0.00389081,0.005981,0.007073
+# prate_ave deflate1: 8 of 1179648 values differ from round-to-nearest-even
+prate_ave,bfloat16_hdf5,deflate1,10,23592960,13157179,2.549,1.477328,0.902267,31.940,52.297,3.02969e-05,0.00389081,0.000000,0.000000
+soilw1,float,contiguous,10,47185920,47192259,1.000,0.111254,0.092737,424.128,508.816,0,0,0.000000,0.000000
+soilw1,bfloat16,contiguous,10,23592960,23599299,2.000,0.082544,0.051337,571.647,919.145,0.000976562,0.00388914,0.012719,0.015017
+# soilw1 contiguous: 3 of 1179648 values differ from round-to-nearest-even
+soilw1,bfloat16_hdf5,contiguous,10,23592960,23599299,2.000,1.106491,0.859639,42.645,54.890,0.000976562,0.00388914,0.000000,0.000000
+soilw1,float,deflate1,10,47185920,8538049,1.000,0.392893,0.094349,120.099,500.120,0,0,0.000000,0.000000
+soilw1,bfloat16,deflate1,10,23592960,3021869,2.825,0.167138,0.050106,282.317,941.720,0.000976562,0.00388914,0.005927,0.006986
+# soilw1 deflate1: 3 of 1179648 values differ from round-to-nearest-even
+soilw1,bfloat16_hdf5,deflate1,10,23592960,3021879,2.825,1.208835,0.866309,39.034,54.468,0.000976562,0.00388914,0.000000,0.000000
+land,float,contiguous,10,47185920,47192259,1.000,0.110539,0.091958,426.871,513.126,0,0,0.000000,0.000000
+land,bfloat16,contiguous,10,23592960,23599299,2.000,0.070907,0.047768,665.459,987.822,0,0,0.008575,0.009292
+# land contiguous: 0 of 1179648 values differ from round-to-nearest-even
+land,bfloat16_hdf5,contiguous,10,23592960,23599299,2.000,0.802114,0.683400,58.827,69.046,0,0,0.000000,0.000000
+land,float,deflate1,10,47185920,758369,1.000,0.208213,0.050292,226.624,938.235,0,0,0.000000,0.000000
+land,bfloat16,deflate1,10,23592960,646119,1.174,0.112800,0.039378,418.315,1198.268,0,0,0.005906,0.007041
+# land deflate1: 0 of 1179648 values differ from round-to-nearest-even
+land,bfloat16_hdf5,deflate1,10,23592960,646119,1.174,0.847511,0.677554,55.676,69.642,0,0,0.000000,0.000000
+<end of output>
+Test time = 218.20 sec
+----------------------------------------------------------
+Test Passed.
+"nxt4_bfloat16_perf" end time: Nov 17 16:50 MST
+"nxt4_bfloat16_perf" time elapsed: 00:03:38
+----------------------------------------------------------
+
+59/65 Testing: nxt4_bfloat16_io_perf
+59/65 Test: nxt4_bfloat16_io_perf
+Command: "/fast/ed/NEP/build/examples/nextcdf4/bfloat16_io_perf" "/fast/ed/NEP/test/data/netCDF-4/gdas_sfc_sample.nc" "/fast/ed/NEP/test/data/NEXTCDF4/gdas_sfc_sample_bfloat16.nc" "/fast/ed/NEP/build/examples/nextcdf4/bfloat16_io_results.csv"
+Directory: /fast/ed/NEP/build/examples/nextcdf4
+"nxt4_bfloat16_io_perf" start time: Nov 17 16:50 MST
+Output:
+----------------------------------------------------------
+field,type,storage,copies,uncompressed_bytes,file_bytes,ratio_vs_float,write_s,read_s,write_MBps,read_MBps,write_speedup,read_speedup
+tmp2m,float,contiguous,10,47185920,47192259,1.000,0.161341,0.089291,292.461,528.448,1.000,1.000
+tmp2m,bfloat16,contiguous,10,23592960,23599299,2.000,0.075817,0.048001,622.367,983.021,2.128,1.860
+tmp2m,float,deflate1,10,47185920,25022279,1.000,0.781256,0.165911,60.397,284.405,1.000,1.000
+tmp2m,bfloat16,deflate1,10,23592960,1977699,12.652,0.146465,0.044505,322.165,1060.249,5.334,3.728
+prate_ave,float,contiguous,10,47185920,47192259,1.000,0.157020,0.088636,300.509,532.355,1.000,1.000
+prate_ave,bfloat16,contiguous,10,23592960,23599299,2.000,0.089105,0.045530,529.552,1036.359,1.762,1.947
+prate_ave,float,deflate1,10,47185920,33543439,1.000,1.036741,0.261689,45.514,180.313,1.000,1.000
+prate_ave,bfloat16,deflate1,10,23592960,13157169,2.549,0.427562,0.098941,110.360,476.909,2.425,2.645
+soilw1,float,contiguous,10,47185920,47192259,1.000,0.109021,0.090477,432.814,521.523,1.000,1.000
+soilw1,bfloat16,contiguous,10,23592960,23599299,2.000,0.071835,0.046359,656.863,1017.846,1.518,1.952
+soilw1,float,deflate1,10,47185920,8538039,1.000,0.389399,0.092321,121.176,511.108,1.000,1.000
+soilw1,bfloat16,deflate1,10,23592960,3021859,2.825,0.158470,0.042987,297.760,1097.674,2.457,2.148
+land,float,contiguous,10,47185920,47192259,1.000,0.109563,0.090042,430.675,524.044,1.000,1.000
+land,bfloat16,contiguous,10,23592960,23599299,2.000,0.062032,0.045861,760.676,1028.888,1.766,1.963
+land,float,deflate1,10,47185920,758359,1.000,0.206042,0.050402,229.011,936.188,1.000,1.000
+land,bfloat16,deflate1,10,23592960,646109,1.174,0.105073,0.032433,449.077,1454.888,1.961,1.554
+<end of output>
+Test time =  59.57 sec
+----------------------------------------------------------
+Test Passed.
+"nxt4_bfloat16_io_perf" end time: Nov 17 16:51 MST
+"nxt4_bfloat16_io_perf" time elapsed: 00:00:59
+----------------------------------------------------------
+
+End testing: Nov 17 16:51 MST
+
+nextcdf4 = 328.55 sec*proc
+
+performance = 328.55 sec*proc
+

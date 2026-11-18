@@ -50,8 +50,6 @@
 /* Defined if you have HDF5 support */
 #cmakedefine HAVE_HDF5
 
-#cmakedefine01 NEP_INTERNAL_CONVERT
-
 /* Defined if NetCDF-C was built with logging support */
 #cmakedefine NEP_LOGGING
 

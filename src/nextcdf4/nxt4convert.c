@@ -12,6 +12,80 @@
 #include <string.h>
 #include "nxt4internal.h"
 
+/** Observe conversion exceptions without changing HDF5's result.
+ * @param exception Conversion exception.
+ * @param src_id Source datatype.
+ * @param dst_id Destination datatype.
+ * @param src_buf Source value.
+ * @param dst_buf Destination value.
+ * @param user_data Per-operation boolean range flag.
+ * @return H5T_CONV_UNHANDLED to retain HDF5 conversion.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+static H5T_conv_ret_t
+nx4_conversion_exception(H5T_conv_except_t exception, hid_t src_id,
+                         hid_t dst_id, void *src_buf, void *dst_buf,
+                         void *user_data)
+{
+    int range = exception == H5T_CONV_EXCEPT_RANGE_HI ||
+        exception == H5T_CONV_EXCEPT_RANGE_LOW;
+    H5T_class_t target = H5Tget_class(dst_id);
+    (void)dst_buf;
+    if (target == H5T_INTEGER &&
+        (exception == H5T_CONV_EXCEPT_NAN || exception == H5T_CONV_EXCEPT_PINF ||
+         exception == H5T_CONV_EXCEPT_NINF))
+        range = 1;
+    if (range && H5Tget_class(src_id) == H5T_FLOAT) {
+        size_t size = H5Tget_size(src_id), i;
+        unsigned char bytes[sizeof(double)];
+        long double value;
+        if (size == sizeof(float) || size == sizeof(double)) {
+            int swap = H5Tget_order(src_id) != H5Tget_order(H5T_NATIVE_DOUBLE);
+            for (i = 0; i < size; i++)
+                bytes[i] = ((const unsigned char *)src_buf)[swap ? size - i - 1 : i];
+            if (size == sizeof(float)) {
+                float f;
+                memcpy(&f, bytes, size);
+                value = f;
+            } else {
+                double d;
+                memcpy(&d, bytes, size);
+                value = d;
+            }
+            if (target == H5T_INTEGER) {
+                size_t bits = H5Tget_precision(dst_id);
+                int sign = H5Tget_sign(dst_id) == H5T_SGN_2;
+                long double limit = ldexpl(1.0L, (int)bits - sign);
+                value = truncl(value);
+                range = !isfinite(value) || value < (sign ? -limit : 0) || value >= limit;
+            } else
+                range = isfinite(value) && fabsl(value) >= 1;
+        }
+    }
+    if (range) *(int *)user_data = 1;
+    return H5T_CONV_UNHANDLED;
+}
+
+/** Create an owned transfer property list observing conversion range errors.
+ * @param dxplp Receives the property list, or -1 on failure.
+ * @param range_error Per-operation flag, reset to zero.
+ * @return NC_NOERR or NC_EHDFERR.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+nx4_conversion_dxpl(hid_t *dxplp, int *range_error)
+{
+    *range_error = 0;
+    *dxplp = H5Pcreate(H5P_DATASET_XFER);
+    if (*dxplp < 0) return NC_EHDFERR;
+    if (H5Pset_type_conv_cb(*dxplp, nx4_conversion_exception, range_error) < 0) {
+        H5Pclose(*dxplp);
+        *dxplp = -1;
+        return NC_EHDFERR;
+    }
+    return NC_NOERR;
+}
+
 /** Test whether a type is a standard numeric atomic type.
  * @param t NetCDF type.
  * @return Nonzero for a standard numeric type.
@@ -255,16 +329,18 @@ nx4_convert_type(const void *src, void *dest, nc_type src_type,
         memcpy(dest, src, len * src_size);
     } else if (half) {
         int close_src = 0, close_dest = 0, ret = NC_NOERR;
+        hid_t dxpl = -1;
         hid_t s = NEXTCDF4_memory_type(src_type, &close_src);
         hid_t d = NEXTCDF4_memory_type(dest_type, &close_dest);
         void *tmp = malloc(len * (src_size > dest_size ? src_size : dest_size));
         if (!tmp) ret = NC_ENOMEM;
         else if (s < 0 || d < 0) ret = NC_EBADTYPE;
-        else {
+        else if (!(ret = nx4_conversion_dxpl(&dxpl, range_error))) {
             memcpy(tmp, src, len * src_size);
-            if (H5Tconvert(s, d, len, tmp, NULL, H5P_DEFAULT) < 0) ret = NC_EHDFERR;
+            if (H5Tconvert(s, d, len, tmp, NULL, dxpl) < 0) ret = NC_EHDFERR;
             else memcpy(dest, tmp, len * dest_size);
         }
+        if (dxpl >= 0) H5Pclose(dxpl);
         free(tmp);
         if (close_src && s >= 0) H5Tclose(s);
         if (close_dest && d >= 0) H5Tclose(d);

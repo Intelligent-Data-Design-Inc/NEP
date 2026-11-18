@@ -166,9 +166,8 @@ option(NEP_ENABLE_MMCIF "Enable PDBx/mmCIF reader support" OFF)
 
 # NEXTCDF-4 backend (v4.0.0) - default OFF while the backend is under development
 option(NEP_ENABLE_NEXTCDF4 "Enable the NEXTCDF-4 UDF backend" OFF)
-option(NEP_INTERNAL_CONVERT "Use experimental internal NEXTCDF-4 type conversion" OFF)
-if(NEP_INTERNAL_CONVERT AND NOT NEP_ENABLE_NEXTCDF4)
-    message(STATUS "NEP_INTERNAL_CONVERT is inactive without NEXTCDF-4")
+if(DEFINED NEP_INTERNAL_CONVERT)
+    message(FATAL_ERROR "NEP_INTERNAL_CONVERT was removed in v4.3.0: internal conversion is now the permanent NEXTCDF-4 engine")
 endif()
 
 # GRIB2 library detection (v1.7.0) - default OFF; enable with -DNEP_ENABLE_GRIB2=ON
@@ -506,11 +505,6 @@ if(NOT DOCS_ONLY)
     else()
         set(NEP_HAS_NEXTCDF4 0)
     endif()
-    set(NEP_HAS_INTERNAL_CONVERT 0)
-    if(HAVE_NEXTCDF4 AND NEP_INTERNAL_CONVERT)
-        set(NEP_HAS_INTERNAL_CONVERT 1)
-    endif()
-    message(STATUS "Internal NEXTCDF-4 conversion: ${NEP_HAS_INTERNAL_CONVERT}")
     if(HAVE_NCZARR)
         set(NEP_HAS_NCZARR 1)
     else()

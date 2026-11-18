@@ -1,6 +1,12 @@
 # Build file for the NEXTCDF-4 test directory.
 
 if(HAVE_NEXTCDF4)
+    add_executable(tst_nextcdf4_range tst_nextcdf4_range.c)
+    target_link_libraries(tst_nextcdf4_range PRIVATE ncnextcdf4 ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES} m)
+    target_include_directories(tst_nextcdf4_range PRIVATE ${NETCDF_INCLUDE_DIRS})
+    add_test(NAME tst_nextcdf4_range COMMAND tst_nextcdf4_range)
+    set_tests_properties(tst_nextcdf4_range PROPERTIES
+        ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
     add_executable(tst_nextcdf4_internal_convert tst_nextcdf4_internal_convert.c)
     target_link_libraries(tst_nextcdf4_internal_convert PRIVATE ncnextcdf4 ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES} m)
     target_include_directories(tst_nextcdf4_internal_convert PRIVATE ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})

@@ -1,0 +1,22 @@
+Start testing: Nov 18 04:19 MST
+----------------------------------------------------------
+64/65 Testing: nczarr_compression
+64/65 Test: nczarr_compression
+Command: "/fast/ed/NEP/build/examples/nczarr/nczarr_compression"
+Directory: /fast/ed/NEP/build/examples/nczarr
+"nczarr_compression" start time: Nov 18 04:19 MST
+Output:
+----------------------------------------------------------
+Created file://nczarr_compression.zarr#mode=nczarr with deflate=1, shuffle=on
+Dataset: 2 dims, 1 vars, y=4, x=5
+Compression: shuffle=on, deflate=on, level=1
+Read 20 values, all correct. Done.
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"nczarr_compression" end time: Nov 18 04:19 MST
+"nczarr_compression" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Nov 18 04:19 MST

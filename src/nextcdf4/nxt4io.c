@@ -50,12 +50,10 @@ NEXTCDF4_memory_type(nc_type type, int *closep)
             *closep = 1;
         {
             hid_t t = H5Tcopy(H5T_FLOAT_BFLOAT16LE);
-#if NEP_INTERNAL_CONVERT
             if (t >= 0 && H5Tset_order(t, H5Tget_order(H5T_NATIVE_USHORT)) < 0) {
                 H5Tclose(t);
                 return -1;
             }
-#endif
             return t;
         }
     case NC_FLOAT8_E4M3:
@@ -201,13 +199,11 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
     hsize_t dims[NC_MAX_VAR_DIMS], newdims[NC_MAX_VAR_DIMS];
     hsize_t start[NC_MAX_VAR_DIMS], count[NC_MAX_VAR_DIMS], stride[NC_MAX_VAR_DIMS];
     hsize_t total = 1;
-    int ndims, i, extend = 0, ret;
-#if NEP_INTERNAL_CONVERT
+    int ndims, i, extend = 0, ret, range_error = 0;
     void *converted = NULL, *io_data = data;
     nc_type xtype, io_type;
-    int converting, range_error;
+    int converting;
     size_t xtype_size;
-#endif
 
     if ((ret = NEXTCDF4_get_file(ncid, &h5, &file))) return ret;
     if ((ret = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var))) return ret;
@@ -222,22 +218,12 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
     if (memtype == NC_NAT) memtype = (nc_type)var->type_info->hdr.id;
     /* Reject memtypes not allowed for small-float variables before any
      * HDF5 call, so a rejected call touches neither buffer nor file. */
+    if ((memtype == NC_CHAR) != (var->type_info->hdr.id == NC_CHAR)) return NC_ECHAR;
     if ((ret = check_memtype((nc_type)var->type_info->hdr.id, memtype))) return ret;
     if ((mtype = NEXTCDF4_memory_type(memtype, &close_mtype)) < 0) return NC_EBADTYPE;
     ndims = (int)var->ndims;
     if ((fspace = H5Dget_space(vinfo->hdf_dataset)) < 0) { ret = NC_EHDFERR; goto done; }
-#if NEP_INTERNAL_CONVERT
     if (!ndims) goto prepare;
-#endif
-    if (ndims == 0) {
-        if (writing)
-            ret = H5Dwrite(vinfo->hdf_dataset, mtype, H5S_ALL, H5S_ALL,
-                           H5P_DEFAULT, data) < 0 ? NC_EHDFERR : NC_NOERR;
-        else
-            ret = H5Dread(vinfo->hdf_dataset, mtype, H5S_ALL, H5S_ALL,
-                          H5P_DEFAULT, data) < 0 ? NC_EHDFERR : NC_NOERR;
-        goto done;
-    }
     if (!startp || !countp) { ret = NC_EINVAL; goto done; }
     if (H5Sget_simple_extent_dims(fspace, dims, NULL) < 0) { ret = NC_EHDFERR; goto done; }
     for (i = 0; i < ndims; i++) {
@@ -257,7 +243,6 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
         total *= countp[i];
     }
     if (!total) { ret = NC_NOERR; goto done; }
-#if NEP_INTERNAL_CONVERT
 prepare:
     xtype = (nc_type)var->type_info->hdr.id;
     converting = memtype != xtype || (writing && var->quantize_mode != NC_NOQUANTIZE);
@@ -277,7 +262,6 @@ prepare:
         if (close_mtype) { H5Tclose(mtype); close_mtype = 0; }
         if ((mtype = NEXTCDF4_memory_type(io_type, &close_mtype)) < 0) { ret = NC_EBADTYPE; goto done; }
     }
-#endif
     if (extend) {
         if (H5Dset_extent(vinfo->hdf_dataset, newdims) < 0) { ret = NC_EHDFERR; goto done; }
         H5Sclose(fspace);
@@ -288,7 +272,6 @@ prepare:
     }
     if (ndims && (H5Sselect_hyperslab(fspace, H5S_SELECT_SET, start, stride, count, NULL) < 0 ||
         (mspace = H5Screate_simple(ndims, count, NULL)) < 0)) { ret = NC_EHDFERR; goto done; }
-#if NEP_INTERNAL_CONVERT
     if (writing)
         ret = H5Dwrite(vinfo->hdf_dataset, mtype, ndims ? mspace : H5S_ALL,
                        fspace, H5P_DEFAULT, io_data) < 0 ? NC_EHDFERR : NC_NOERR;
@@ -299,45 +282,12 @@ prepare:
             ret = nx4_convert_type(converted, data, xtype, memtype, (size_t)total,
                                     &range_error, NULL, 0, NC_NOQUANTIZE, 0);
     }
-#else
-    if (writing) {
-        void *wdata = data;
-        if (var->quantize_mode != NC_NOQUANTIZE) {
-            nc_type file_xtype = var->type_info->hdr.id;
-            nc_type src_type = (memtype == NC_NAT) ? file_xtype : memtype;
-            size_t xtype_size;
-            void *conv = NULL;
-            int range_error;
-            if ((ret = NEXTCDF4_type_size(file_xtype, &xtype_size))) goto done;
-            if (!(conv = malloc(total * xtype_size))) { ret = NC_ENOMEM; goto done; }
-            if ((ret = nc4_convert_type(data, conv, src_type, file_xtype, total,
-                                        &range_error, var->fill_value, 0,
-                                        var->quantize_mode, var->nsd))) {
-                free(conv);
-                goto done;
-            }
-            if (close_mtype) { H5Tclose(mtype); close_mtype = 0; }
-            if ((mtype = NEXTCDF4_memory_type(file_xtype, &close_mtype)) < 0) { free(conv); ret = NC_EBADTYPE; goto done; }
-            wdata = conv;
-            if (H5Dwrite(vinfo->hdf_dataset, mtype, mspace, fspace, H5P_DEFAULT, wdata) < 0)
-                ret = NC_EHDFERR;
-            else
-                ret = NC_NOERR;
-            free(conv);
-        } else {
-            ret = H5Dwrite(vinfo->hdf_dataset, mtype, mspace, fspace, H5P_DEFAULT, data) < 0 ? NC_EHDFERR : NC_NOERR;
-        }
-    } else
-        ret = H5Dread(vinfo->hdf_dataset, mtype, mspace, fspace, H5P_DEFAULT, data) < 0 ? NC_EHDFERR : NC_NOERR;
-#endif
 done:
-#if NEP_INTERNAL_CONVERT
     free(converted);
-#endif
     if (mspace >= 0) H5Sclose(mspace);
     if (fspace >= 0) H5Sclose(fspace);
     if (mtype >= 0 && close_mtype) H5Tclose(mtype);
-    return ret;
+    return ret ? ret : range_error ? NC_ERANGE : NC_NOERR;
 }
 
 /** Read a hyperslab of a variable through var_io().

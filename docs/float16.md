@@ -9,11 +9,11 @@ NEP supports bfloat16 in two ways:
 
 This page gives an overview with code from `examples/nextcdf4/bfloat16.c` and the benchmark results. The full reference, including `NC_FLOAT16` and the HDF5 conversion details, is [NEXTCDF4_float16.md](NEXTCDF4_float16.md).
 
-## Temporary conversion experiment
+## Internal conversion engine
 
-NEXTCDF-4 can be built with `-DNEP_INTERNAL_CONVERT=ON` to use NEP round-to-nearest-even for standard float/double calls on bfloat16 variables and supported attributes. The option defaults OFF; `NEP_HAS_INTERNAL_CONVERT` reports whether it is active. IEEE float16 remains an HDF5 exception. The independent `nc_*_bfloat16` API is unchanged. See [nextcdf4.md](nextcdf4.md).
+NEXTCDF-4 uses the private `nx4_convert_type()` engine — made permanent in Sprint 1H — for standard float/double calls on bfloat16 variables and supported attributes, with NEP round-to-nearest-even. The temporary `NEP_INTERNAL_CONVERT` option and `NEP_HAS_INTERNAL_CONVERT` marker were removed after the engine decision; passing the option now fails at configure time. IEEE float16 remains an HDF5 exception until Sprint 1I. The independent `nc_*_bfloat16` API is unchanged. See [nextcdf4.md](nextcdf4.md).
 
-The committed charts and benchmark numbers here describe the existing default path, not measured internal-conversion performance. No benchmark artifacts are regenerated in Sprint 1G; Sprint 1H will compare the paths separately and remove the temporary option after choosing the permanent behavior.
+The committed charts and benchmark numbers in `examples/nextcdf4/conversion_*.csv` record the Sprint 1H OFF/ON comparison; the internal engine is now the only conversion path.
 
 ## Capabilities
 
@@ -67,7 +67,7 @@ The functions use only the public netCDF API, so they work on any file netCDF ca
 ### Other ways to read and write bfloat16
 
 - The untyped `nc_get_vara`/`nc_put_vara` calls on an `NC_BFLOAT16` variable also exchange raw bits, in a `uint16_t` buffer.
-- The typed `float` and `double` calls (`nc_get_vara_float`, `nc_put_vara_double`, ...) on an `NC_BFLOAT16` variable convert through HDF5. Reads are exact. Writes round ties away from zero rather than to even, saturate finite float input past the bfloat16 maximum instead of giving infinity, and don't return `NC_ERANGE` ([#381](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/381)). HDF5's conversion is also much slower (see the benchmark below).
+- The typed `float` and `double` calls (`nc_get_vara_float`, `nc_put_vara_double`, ...) on an `NC_BFLOAT16` variable convert through HDF5. Reads are exact. Writes round ties away from zero rather than to even, saturate finite float input past the bfloat16 maximum instead of giving infinity, and return `NC_ERANGE` after completing out-of-range conversions ([#381](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/381)). HDF5's conversion is also much slower (see the benchmark below).
 
 ## Example: `examples/nextcdf4/bfloat16.c`
 

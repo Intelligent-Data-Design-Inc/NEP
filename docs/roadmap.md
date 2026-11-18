@@ -80,11 +80,13 @@ Plan: [docs/plan/v4.3.0-sprint1F-doxygen-nextcdf4.md](plan/v4.3.0-sprint1F-doxyg
 Plan: [docs/plan/v4.3.0-sprint1G-convert-data-types.md](plan/v4.3.0-sprint1G-convert-data-types.md)
 
 #### Sprint 1H - Continued Conversion Changes
-- Fix `NC_ERANGE` reporting (#381) for variable, attribute and quantized-write conversions, including the retained HDF5/float16 exceptions; preserve the independent bfloat16 API's existing range contract.
-- Rerun OFF/ON conversion benchmarks with the same optimized build and disk-bound timing; keep internal-conversion CSVs, machine records and charts separate from existing reference artifacts. Update comparison docs with measured results.
-- Use correctness and performance results to choose the permanent conversion path, then remove `NEP_INTERNAL_CONVERT`, its temporary capability marker and the obsolete conditional code/test/docs/CI branches; retain regression coverage for the chosen path.
-- Review deferred Spack implications after that decision: no temporary variant; update the overlay only for actual option/dependency/install/test-contract changes, preserving old-version builds and running the audit/spec/upstream style checks. Carry any upstream recipe change in the next version-bump PR per `docs/spack.md`.
-- IEEE float16 implementation remains Sprint 1I; release notes and publication remain Sprint 2, incorporating the final conversion decision.
+- Fix #381 in variable, attribute and quantized-write conversions, including retained HDF5/float16 paths: complete I/O, then return `NC_ERANGE` for overflow/integer range errors; precision loss, fractional truncation and floating underflow are not range errors.
+- Compare corrected OFF/ON engines using both GDAS benchmarks plus representative integer, float/double and quantized-write cases; optimized, disk-bound runs with separate CSVs, machine records and charts, preserving historical reference artifacts.
+- Ed selected the internal engine after the OFF/ON review: `NEP_INTERNAL_CONVERT`, its capability marker and the OFF code/test/docs/CI branches are removed; setting the option now fails at configure time. Regression coverage and warning-free docs are retained.
+- Close the deferred Spack review: no temporary variant; change the overlay only for an approved actual packaging-contract change, version-gated for old releases and verified with audit/spec/upstream style checks. Upstream changes ship with Sprint 2's version bump.
+- Out of scope: internal IEEE float16 (Sprint 1I), independent bfloat16 API changes, other small-float conversions and unrelated defects (backlog), release notes/publication (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1H-continued-conversion-changes.md](plan/v4.3.0-sprint1H-continued-conversion-changes.md)
 
 #### Sprint 1I - Support IEEE 754 Float16
 

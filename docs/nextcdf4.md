@@ -6,13 +6,13 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 
 > **Experimental**: NEXTCDF-4 is experimental and under active development. Not all NetCDF-4 features are implemented; see the Known Limitations section below.
 
-## Experimental internal conversion
+## Internal conversion engine
 
-Configure with `-DNEP_ENABLE_NEXTCDF4=ON -DNEP_INTERNAL_CONVERT=ON` to compare the NEP-owned numeric conversion engine with the default HDF5 path. The temporary option defaults OFF; without NEXTCDF-4 it is inactive. `NEP_HAS_INTERNAL_CONVERT` in `nep_meta.h` reports the effective setting. The option and marker will be removed after the Sprint 1H correctness/performance decision. There is no runtime or file-format switch, and Spack has no temporary variant.
+NEXTCDF-4 converts all supported numeric variable and attribute data with the private, NEP-owned `nx4_convert_type()` engine, selected as the permanent engine after Sprint 1H's OFF/ON comparison. It replaced the temporary `NEP_INTERNAL_CONVERT` CMake option; passing that option now fails at configure time. There is no runtime or file-format switch.
 
-With ON, `nx4_convert_type()` handles standard numeric variable and attribute conversions and quantized writes. Standard float/double calls on bfloat16 use round-to-nearest-even, with single rounding from double and signed infinity on finite overflow. For example, 449 narrows to 448 instead of HDF5's 450. IEEE float16 conversion is the explicit HDF5 exception until Sprint 1I; its results do not change. HDF5 still handles file byte order and storage representation.
+Standard float/double calls on bfloat16 use round-to-nearest-even, with single rounding from double and signed infinity on finite overflow. For example, 449 narrows to 448 instead of HDF5's 450. IEEE float16 conversion is the explicit HDF5 exception until Sprint 1I; its results do not change. HDF5 still handles file byte order and storage representation.
 
-Matching-type raw-bit I/O, FP8/FP6/FP4 typed-call restrictions and the independent `nc_*_bfloat16` wrappers are unchanged. ON also supports float/double conversion for bfloat16 attributes; fill-value limitations still apply. Range flags are recorded internally but NEXTCDF-4 still does not report `NC_ERANGE` (#381, Sprint 1H). Out-of-range output need not match between engines. Existing rounding descriptions below apply to OFF unless stated otherwise. No ON performance measurements are claimed by the existing charts.
+Matching-type raw-bit I/O, FP8/FP6/FP4 typed-call restrictions and the independent `nc_*_bfloat16` wrappers are unchanged. Float/double conversion for bfloat16 attributes is supported; fill-value limitations still apply. Variable/attribute conversions and quantized writes complete all values, then return `NC_ERANGE` on finite overflow, integer range violations or nonfinite-to-integer conversion (#381). A range warning does not roll back writes: every value is processed, attributes may be replaced and unlimited dimensions may grow. Ordinary precision loss, fractional truncation and floating underflow do not cause range errors; floating NaN/infinity inputs remain valid for floating destinations. Structural, permission and HDF5 failures take precedence over range warnings. Historical HDF5-engine benchmark artifacts are kept for comparison in `examples/nextcdf4/conversion_*.csv`; new measurements use the internal engine.
 
 ## Creating and Opening Files
 
@@ -192,7 +192,7 @@ nc_ref_region(ncid, varid, start, count, NULL, &region);
 - Reference-typed variables cannot be coordinate variables and cannot be nested inside compound types.
 - Small floating-point types (`NC_FLOAT6_E2M3`, `NC_FLOAT4_E2M1`) have no default fill value because their value spaces are too small for a useful sentinel.
 - Typed calls on FP8/FP6/FP4 variables, and integer/text/string typed calls on any small float, return `NC_EBADTYPE` (`NC_ECHAR` for text).
-- NEXTCDF-4 does not return `NC_ERANGE` for out-of-range conversions ([issue #381](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/381)).
+- Out-of-range conversion results can differ between engines even though both return `NC_ERANGE` after completing the operation; see the conversion experiment above ([issue #381](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/381)).
 - `NC_BFLOAT16` fill values are not supported: `_FillValue` attributes are rejected, and a fill value set with `nc_def_var_fill` is not recovered on reopen ([issue #377](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/377)).
 - Def-var setters (`nc_def_var_fill`, `nc_def_var_chunking`, `nc_def_var_deflate`, `nc_def_var_endian`, `nc_def_var_fletcher32`) recreate the HDF5 dataset, which leaves an orphaned dataset object and an extra dimension-scale reference in the file ([issue #382](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/382)).
 
