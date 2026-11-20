@@ -12,13 +12,29 @@
 #include "nxt4internal.h"
 
 /**
- * Return the native HDF5 memory datatype for a standard atomic type.
- * @param type HDF5 datatype.
- * @param closep Set nonzero when the returned type must be closed.
+ * @brief Map a netCDF atomic type to the HDF5 datatype describing the
+ * caller's memory buffer.
+ *
+ * `H5Dread`/`H5Dwrite` take a "memory datatype" describing the layout
+ * of the buffer in RAM — this is what lets HDF5 convert on the fly
+ * (for example `nc_get_vara_float` on an `NC_SHORT` variable). Most
+ * netCDF types map to a predefined `H5T_NATIVE_*` constant that must
+ * not be closed; types with no native constant (`NC_CHAR`, small
+ * floats, strings, references) are produced by `H5Tcopy` of a base
+ * type, and the caller owns the copy — @p closep says which.
+ *
+ * `NC_BFLOAT16` copies little-endian bfloat16 and then adopts the
+ * machine's uint16 byte order, because HDF5 2.1.1 has no native-order
+ * bfloat16 constant. `NC_CHAR` is a fixed-length 1-byte string;
+ * `NC_STRING` is a variable-length string.
+ *
+ * @param type NetCDF atomic type (the `nc_type` of the memory buffer).
+ * @param closep Set nonzero when the returned type must be closed
+ * with `H5Tclose()`; may be NULL.
  * @return HDF5 memory datatype, or negative on error.
  */
-static hid_t
-memory_type(nc_type type, int *closep)
+hid_t
+NEXTCDF4_memory_type(nc_type type, int *closep)
 {
     if (closep)
         *closep = 0;
@@ -48,7 +64,14 @@ memory_type(nc_type type, int *closep)
     case NC_BFLOAT16:
         if (closep)
             *closep = 1;
-        return H5Tcopy(H5T_FLOAT_BFLOAT16LE);
+        {
+            hid_t t = H5Tcopy(H5T_FLOAT_BFLOAT16LE);
+            if (t >= 0 && H5Tset_order(t, H5Tget_order(H5T_NATIVE_USHORT)) < 0) {
+                H5Tclose(t);
+                return -1;
+            }
+            return t;
+        }
     case NC_FLOAT8_E4M3:
         if (closep)
             *closep = 1;
@@ -99,11 +122,15 @@ memory_type(nc_type type, int *closep)
 }
 
 /**
- * Return non-zero if xtype is one of the NEXTCDF-4 small floating-point
- * types (NC_FLOAT16, NC_BFLOAT16, FP8, FP6 or FP4).
-
+ * @brief Return non-zero if @p xtype is a NEXTCDF-4 small
+ * floating-point type.
+ *
+ * Small floats are `NC_FLOAT16`, `NC_BFLOAT16`, and the HDF5 2.x
+ * sub-16-bit types `NC_FLOAT8_E4M3`/`E5M2`, `NC_FLOAT6_E2M3`/`E3M2`
+ * and `NC_FLOAT4_E2M1`. They get special memtype rules in
+ * check_memtype().
+ *
  * @param xtype The netCDF type.
-
  * @return 1 for a small floating-point type, 0 otherwise.
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
@@ -121,14 +148,25 @@ is_small_float(nc_type xtype)
 }
 
 /**
- * Check that memtype may be used for I/O on a variable of type xtype.
- * NC_FLOAT16 and NC_BFLOAT16 convert to and from NC_FLOAT and NC_DOUBLE
- * through HDF5; the FP8/FP6/FP4 types allow only their own type, because
- * HDF5 2.1.1 converts them incorrectly. Other variable types are unchanged.
-
+ * @brief Decide whether a typed I/O call is allowed on a variable.
+ *
+ * netCDF lets users read/write a variable with a buffer of a
+ * different (compatible) type — "the memory type" — and the library
+ * converts. NEXTCDF-4's rules:
+ *
+ * - Untyped or same-type calls always pass (raw bit patterns, no
+ *   conversion).
+ * - Standard types keep netcdf-c behavior: anything goes, HDF5
+ *   converts.
+ * - `NC_FLOAT16`/`NC_BFLOAT16` additionally accept `NC_FLOAT` and
+ *   `NC_DOUBLE` buffers via HDF5 conversion.
+ * - The FP8/FP6/FP4 types accept only their own type, because HDF5
+ *   2.1.1 converts them incorrectly (an HDF5 Known Problem).
+ * - Text (`NC_CHAR`) calls on small floats return `NC_ECHAR`,
+ *   matching netcdf-c's char/non-char convention.
+ *
  * @param xtype The variable's type in the file.
  * @param memtype The memory type of the I/O call.
-
  * @return NC_NOERR The memtype is allowed.
  * @return NC_ECHAR A text call on a small floating-point variable.
  * @return NC_EBADTYPE Any other memtype not allowed for xtype.
@@ -166,16 +204,33 @@ check_memtype(nc_type xtype, nc_type memtype)
 }
 
 /**
- * Common HDF5 hyperslab implementation used by vara and vars dispatch calls.
+ * @brief Common hyperslab I/O behind the `nc_get/put_vara` and
+ * `nc_get/put_vars` dispatch entries.
+ *
+ * A hyperslab is the rectangular (possibly strided) region of a
+ * variable an I/O call touches. This function resolves the variable's
+ * HDF5 dataset, validates the memtype against check_memtype(),
+ * bounds-checks the selection (extending unlimited dimensions on
+ * writes past the current extent), performs any type conversion or
+ * quantization through the internal engine nx4_convert_type(), and
+ * runs `H5Dread`/`H5Dwrite` with a matching memory dataspace.
+ *
+ * When a conversion overflows (`NC_ERANGE` semantics, issue #381),
+ * the I/O still completes — the engine records the range error and
+ * the function returns `NC_ERANGE` after the data lands.
+ *
  * @param ncid NetCDF file identifier.
  * @param varid Variable identifier.
  * @param startp Hyperslab start indices.
  * @param countp Hyperslab counts.
- * @param stridep Hyperslab strides, or NULL.
+ * @param stridep Hyperslab strides, or NULL for contiguous.
  * @param data Data buffer.
- * @param memtype NetCDF atomic memory type.
+ * @param memtype NetCDF atomic memory type (`NC_NAT` resolves to the
+ * variable's own type for the untyped `nc_get_var`/`nc_put_var`,
+ * `var1` and `vars` calls).
  * @param writing Nonzero for a write, zero for a read.
- * @return `NC_NOERR` on success, or a NetCDF error code.
+ * @return `NC_NOERR` on success, `NC_ERANGE` when data landed but a
+ * conversion overflowed, or another NetCDF error code.
  */
 static int
 var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
@@ -192,8 +247,16 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
     hsize_t dims[NC_MAX_VAR_DIMS], newdims[NC_MAX_VAR_DIMS];
     hsize_t start[NC_MAX_VAR_DIMS], count[NC_MAX_VAR_DIMS], stride[NC_MAX_VAR_DIMS];
     hsize_t total = 1;
-    int ndims, i, extend = 0, ret;
+    int ndims, i, extend = 0, ret, range_error = 0;
+    void *converted = NULL, *io_data = data;
+    nc_type xtype, io_type;
+    int converting;
+    size_t xtype_size;
 
+    /* Resolve state, validate mode and memtype, bounds-check and
+     * select the hyperslab, convert if needed, run the HDF5 I/O, then
+     * convert on the way out for reads. All errors funnel to `done`
+     * so every HDF5 handle is closed exactly once. */
     if ((ret = NEXTCDF4_get_file(ncid, &h5, &file))) return ret;
     if ((ret = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var))) return ret;
     if (!var || !(vinfo = var->format_var_info) || vinfo->hdf_dataset < 0) return NC_ENOTVAR;
@@ -203,26 +266,18 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
     if (!data) return NC_EINVAL;
     /* The untyped nc_put_var/nc_get_var, var1 and vars calls pass
      * NC_NAT, meaning "the variable's own type"; resolve it so
-     * memory_type() gets a real type. */
+     * NEXTCDF4_memory_type() gets a real type. */
     if (memtype == NC_NAT) memtype = (nc_type)var->type_info->hdr.id;
     /* Reject memtypes not allowed for small-float variables before any
      * HDF5 call, so a rejected call touches neither buffer nor file. */
+    if ((memtype == NC_CHAR) != (var->type_info->hdr.id == NC_CHAR)) return NC_ECHAR;
     if ((ret = check_memtype((nc_type)var->type_info->hdr.id, memtype))) return ret;
-    if ((mtype = memory_type(memtype, &close_mtype)) < 0) return NC_EBADTYPE;
+    if ((mtype = NEXTCDF4_memory_type(memtype, &close_mtype)) < 0) return NC_EBADTYPE;
     ndims = (int)var->ndims;
-    if ((fspace = H5Dget_space(vinfo->hdf_dataset)) < 0) return NC_EHDFERR;
-    if (ndims == 0) {
-        if (writing)
-            ret = H5Dwrite(vinfo->hdf_dataset, mtype, H5S_ALL, H5S_ALL,
-                           H5P_DEFAULT, data) < 0 ? NC_EHDFERR : NC_NOERR;
-        else
-            ret = H5Dread(vinfo->hdf_dataset, mtype, H5S_ALL, H5S_ALL,
-                          H5P_DEFAULT, data) < 0 ? NC_EHDFERR : NC_NOERR;
-        H5Sclose(fspace);
-        return ret;
-    }
-    if (!startp || !countp) { H5Sclose(fspace); return NC_EINVAL; }
-    if (H5Sget_simple_extent_dims(fspace, dims, NULL) < 0) { H5Sclose(fspace); return NC_EHDFERR; }
+    if ((fspace = H5Dget_space(vinfo->hdf_dataset)) < 0) { ret = NC_EHDFERR; goto done; }
+    if (!ndims) goto prepare;
+    if (!startp || !countp) { ret = NC_EINVAL; goto done; }
+    if (H5Sget_simple_extent_dims(fspace, dims, NULL) < 0) { ret = NC_EHDFERR; goto done; }
     for (i = 0; i < ndims; i++) {
         size_t last;
         if (stridep && stridep[i] <= 0) { ret = NC_ESTRIDE; goto done; }
@@ -231,61 +286,68 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
         if (!countp[i]) { total = 0; continue; }
         if (countp[i] - 1 > (SIZE_MAX - startp[i]) / (size_t)stride[i]) { ret = NC_EEDGE; goto done; }
         last = startp[i] + (countp[i] - 1) * (size_t)stride[i];
+        if (last == SIZE_MAX) { ret = NC_EEDGE; goto done; }
         if (last >= dims[i]) {
             if (!writing || !var->dim[i]->unlimited) { ret = NC_EEDGE; goto done; }
             newdims[i] = (hsize_t)last + 1; extend = 1;
         }
-        if (countp[i] > SIZE_MAX / total) { ret = NC_EINVAL; goto done; }
+        if (total && countp[i] > SIZE_MAX / total) { ret = NC_EINVAL; goto done; }
         total *= countp[i];
     }
     if (!total) { ret = NC_NOERR; goto done; }
+prepare:
+    xtype = (nc_type)var->type_info->hdr.id;
+    converting = memtype != xtype || (writing && var->quantize_mode != NC_NOQUANTIZE);
+    io_type = converting ? xtype : memtype;
+    if ((ret = NEXTCDF4_type_size(xtype, &xtype_size))) goto done;
+    if (total > SIZE_MAX / xtype_size) { ret = NC_EINVAL; goto done; }
+    if (converting) {
+        /* A dry-run call with no buffers lets the engine report
+         * NC_EBADTYPE etc. before the (possibly large) scratch buffer
+         * is allocated; the real call fills `converted` on writes or
+         * after the read below. */
+        nc_type source = writing ? memtype : xtype;
+        nc_type target = writing ? xtype : memtype;
+        int mode = writing ? var->quantize_mode : NC_NOQUANTIZE;
+        if ((ret = nx4_convert_type(NULL, NULL, source, target, 0, &range_error,
+                                    NULL, 0, mode, var->nsd))) goto done;
+        if (!(converted = malloc((size_t)total * xtype_size))) { ret = NC_ENOMEM; goto done; }
+        io_data = converted;
+        if (writing && (ret = nx4_convert_type(data, converted, source, target, (size_t)total,
+                                               &range_error, var->fill_value, 0, mode, var->nsd))) goto done;
+        if (close_mtype) { H5Tclose(mtype); close_mtype = 0; }
+        if ((mtype = NEXTCDF4_memory_type(io_type, &close_mtype)) < 0) { ret = NC_EBADTYPE; goto done; }
+    }
     if (extend) {
         if (H5Dset_extent(vinfo->hdf_dataset, newdims) < 0) { ret = NC_EHDFERR; goto done; }
         H5Sclose(fspace);
-        if ((fspace = H5Dget_space(vinfo->hdf_dataset)) < 0) return NC_EHDFERR;
+        if ((fspace = H5Dget_space(vinfo->hdf_dataset)) < 0) { ret = NC_EHDFERR; goto done; }
         for (i = 0; i < ndims; i++)
             if (var->dim[i]->unlimited && newdims[i] > var->dim[i]->len)
                 var->dim[i]->len = (size_t)newdims[i];
     }
-    if (H5Sselect_hyperslab(fspace, H5S_SELECT_SET, start, stride, count, NULL) < 0 ||
-        (mspace = H5Screate_simple(ndims, count, NULL)) < 0) { ret = NC_EHDFERR; goto done; }
-    if (writing) {
-        void *wdata = data;
-        if (var->quantize_mode != NC_NOQUANTIZE) {
-            nc_type file_xtype = var->type_info->hdr.id;
-            nc_type src_type = (memtype == NC_NAT) ? file_xtype : memtype;
-            size_t xtype_size;
-            void *conv = NULL;
-            int range_error;
-            if ((ret = NEXTCDF4_type_size(file_xtype, &xtype_size))) goto done;
-            if (!(conv = malloc(total * xtype_size))) { ret = NC_ENOMEM; goto done; }
-            if ((ret = nc4_convert_type(data, conv, src_type, file_xtype, total,
-                                        &range_error, var->fill_value, 0,
-                                        var->quantize_mode, var->nsd))) {
-                free(conv);
-                goto done;
-            }
-            if (close_mtype) { H5Tclose(mtype); close_mtype = 0; }
-            if ((mtype = memory_type(file_xtype, &close_mtype)) < 0) { free(conv); ret = NC_EBADTYPE; goto done; }
-            wdata = conv;
-            if (H5Dwrite(vinfo->hdf_dataset, mtype, mspace, fspace, H5P_DEFAULT, wdata) < 0)
-                ret = NC_EHDFERR;
-            else
-                ret = NC_NOERR;
-            free(conv);
-        } else {
-            ret = H5Dwrite(vinfo->hdf_dataset, mtype, mspace, fspace, H5P_DEFAULT, data) < 0 ? NC_EHDFERR : NC_NOERR;
-        }
-    } else
-        ret = H5Dread(vinfo->hdf_dataset, mtype, mspace, fspace, H5P_DEFAULT, data) < 0 ? NC_EHDFERR : NC_NOERR;
+    if (ndims && (H5Sselect_hyperslab(fspace, H5S_SELECT_SET, start, stride, count, NULL) < 0 ||
+        (mspace = H5Screate_simple(ndims, count, NULL)) < 0)) { ret = NC_EHDFERR; goto done; }
+    if (writing)
+        ret = H5Dwrite(vinfo->hdf_dataset, mtype, ndims ? mspace : H5S_ALL,
+                       fspace, H5P_DEFAULT, io_data) < 0 ? NC_EHDFERR : NC_NOERR;
+    else {
+        ret = H5Dread(vinfo->hdf_dataset, mtype, ndims ? mspace : H5S_ALL,
+                      fspace, H5P_DEFAULT, io_data) < 0 ? NC_EHDFERR : NC_NOERR;
+        if (!ret && converting)
+            ret = nx4_convert_type(converted, data, xtype, memtype, (size_t)total,
+                                    &range_error, NULL, 0, NC_NOQUANTIZE, 0);
+    }
 done:
+    free(converted);
     if (mspace >= 0) H5Sclose(mspace);
     if (fspace >= 0) H5Sclose(fspace);
     if (mtype >= 0 && close_mtype) H5Tclose(mtype);
-    return ret;
+    return ret ? ret : range_error ? NC_ERANGE : NC_NOERR;
 }
 
-/** Read a hyperslab of a variable through var_io().
+/**
+ * @brief Read a hyperslab — the `nc_get_vara_*` dispatch entry.
  * @param ncid NetCDF file identifier.
  * @param varid Variable id.
  * @param start Hyperslab start indices.
@@ -297,7 +359,8 @@ done:
 int NEXTCDF4_get_vara(int ncid, int varid, const size_t *start, const size_t *count,
                       void *value, nc_type memtype)
 { return var_io(ncid, varid, start, count, NULL, value, memtype, 0); }
-/** Write a hyperslab of a variable through var_io().
+/**
+ * @brief Write a hyperslab — the `nc_put_vara_*` dispatch entry.
  * @param ncid NetCDF file identifier.
  * @param varid Variable id.
  * @param start Hyperslab start indices.
@@ -309,7 +372,9 @@ int NEXTCDF4_get_vara(int ncid, int varid, const size_t *start, const size_t *co
 int NEXTCDF4_put_vara(int ncid, int varid, const size_t *start, const size_t *count,
                       const void *value, nc_type memtype)
 { return var_io(ncid, varid, start, count, NULL, (void *)value, memtype, 1); }
-/** Read a strided hyperslab of a variable through var_io().
+/**
+ * @brief Read a strided hyperslab — the `nc_get_vars_*` dispatch
+ * entry.
  * @param ncid NetCDF file identifier.
  * @param varid Variable id.
  * @param start Hyperslab start indices.
@@ -322,7 +387,9 @@ int NEXTCDF4_put_vara(int ncid, int varid, const size_t *start, const size_t *co
 int NEXTCDF4_get_vars(int ncid, int varid, const size_t *start, const size_t *count,
                       const ptrdiff_t *stride, void *value, nc_type memtype)
 { return var_io(ncid, varid, start, count, stride, value, memtype, 0); }
-/** Write a strided hyperslab of a variable through var_io().
+/**
+ * @brief Write a strided hyperslab — the `nc_put_vars_*` dispatch
+ * entry.
  * @param ncid NetCDF file identifier.
  * @param varid Variable id.
  * @param start Hyperslab start indices.
@@ -335,7 +402,13 @@ int NEXTCDF4_get_vars(int ncid, int varid, const size_t *start, const size_t *co
 int NEXTCDF4_put_vars(int ncid, int varid, const size_t *start, const size_t *count,
                       const ptrdiff_t *stride, const void *value, nc_type memtype)
 { return var_io(ncid, varid, start, count, stride, (void *)value, memtype, 1); }
-/** Mapped hyperslab read; not yet implemented.
+/**
+ * @brief Mapped hyperslab read (`nc_get_varm_*`); not implemented.
+ *
+ * varm calls add a memory-layout mapping to the strided selection.
+ * The feature is deprecated upstream and deliberately unimplemented
+ * here; every call returns `NC_ENOTBUILT`.
+ *
  * @param ncid NetCDF file identifier.
  * @param varid Variable id.
  * @param s Hyperslab start indices.
@@ -349,7 +422,11 @@ int NEXTCDF4_put_vars(int ncid, int varid, const size_t *start, const size_t *co
 int NEXTCDF4_get_varm(int ncid, int varid, const size_t *s, const size_t *c,
                       const ptrdiff_t *st, const ptrdiff_t *im, void *v, nc_type t)
 { (void)ncid;(void)varid;(void)s;(void)c;(void)st;(void)im;(void)v;(void)t; return NC_ENOTBUILT; }
-/** Mapped hyperslab write; not yet implemented.
+/**
+ * @brief Mapped hyperslab write (`nc_put_varm_*`); not implemented.
+ *
+ * See NEXTCDF4_get_varm(): always returns `NC_ENOTBUILT`.
+ *
  * @param ncid NetCDF file identifier.
  * @param varid Variable id.
  * @param s Hyperslab start indices.

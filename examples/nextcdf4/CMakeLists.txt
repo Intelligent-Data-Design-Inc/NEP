@@ -1,15 +1,22 @@
 # CMakeLists.txt for NEXTCDF-4 examples
 # Edward Hartnett, Intelligent Data Design, Inc.
 
-foreach(_target bfloat16 bfloat16_perf bfloat16_io_perf make_bfloat16_sample)
+foreach(_target bfloat16 bfloat16_perf bfloat16_io_perf make_bfloat16_sample conversion_perf)
     add_executable(${_target} ${_target}.c)
-    target_include_directories(${_target} PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/examples ${NETCDF_INCLUDE_DIRS})
+    target_include_directories(${_target} PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_BINARY_DIR}/include ${CMAKE_SOURCE_DIR}/examples ${NETCDF_INCLUDE_DIRS})
     target_link_libraries(${_target} PRIVATE nep ${NETCDF_LIBRARIES} m)
     add_dependencies(${_target} ncnextcdf4)
     set_target_properties(${_target} PROPERTIES BUILD_RPATH "${CMAKE_BINARY_DIR}/src;${NEP_HDF5_LIBRARY_DIR};${NETCDF_LIBRARY_DIRS}")
 endforeach()
+target_include_directories(conversion_perf PRIVATE ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${CMAKE_BINARY_DIR} ${HDF5_INCLUDE_DIRS})
 
 if(BUILD_TESTING)
+    if(NEP_ENABLE_BENCHMARKS)
+        add_test(NAME nxt4_conversion_perf COMMAND conversion_perf ${CMAKE_CURRENT_BINARY_DIR}/conversion_results.csv WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+        set_tests_properties(nxt4_conversion_perf PROPERTIES
+            ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}"
+            LABELS "nextcdf4;performance" TIMEOUT 900 RUN_SERIAL TRUE)
+    endif()
     if(NEP_ZSTD_PLUGIN_DIR STREQUAL "")
         message(STATUS "NEP_ZSTD_PLUGIN_DIR not set; skipping NEXTCDF-4 bfloat16 example tests")
         return()

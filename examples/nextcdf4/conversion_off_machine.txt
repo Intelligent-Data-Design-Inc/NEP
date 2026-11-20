@@ -1,0 +1,23 @@
+Run date: 2026-11-18 11:09 UTC
+NEP: 4.3.0 (82e3e05-dirty)
+CPU: Intel(R) Core(TM) i7-6800K CPU @ 3.40GHz
+Cores: 12
+OS: Linux 6.8.0-137-generic
+Storage: ext4 on /dev/sda1 (KINGSTON SH103S3240G, SSD)
+Timing: write includes fsync; reads after posix_fadvise(DONTNEED)
+Compiler: cc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+Build type: Debug
+C flags: -g
+Internal conversion: 0
+c8329ae9ee2c4450e7e6aa545b2b24a6cd5a67fecc60de2809786208e203bc67  /fast/ed/NEP/build/examples/nextcdf4/bfloat16_perf
+23614f1e47a174d2739f37644564a55fe0badca89a0783ca47ea1d34642f68de  /fast/ed/NEP/build/examples/nextcdf4/bfloat16_io_perf
+ca7c3bba14ce111ff981a7c694a9d7c74795fb823261f779000b73b8b26ba3c4  /fast/ed/NEP/build/examples/nextcdf4/conversion_perf
+8049b8fe8dd53c16adbe7e9b44b8ddcd16b9f97da0f85976fab2a314d0deea3d  /fast/ed/NEP/build/src/libncnextcdf4.so
+NetCDF-C: netCDF 4.10.2-development (/usr/local/netcdf-c/lib/libnetcdf.so.22)
+HDF5: /usr/local/hdf5-2.1.1/lib/libhdf5.so.320
+zstd provider: /home/ed/plugins/zstd-only/lib__nch5zstd.so -> /usr/local/netcdf-c/hdf5/lib/plugin/lib__nch5zstd.so sha256 0c1cc9d1abff8aae42751e41498f094b2b0fc39b16af9304e7e0280d14057ccf links libhdf5.so => /usr/local/hdf5-2.1.1/lib/libhdf5.so.320
+NREPS: 10
+NCOPIES: 10
+Sample: test/data/netCDF-4/gdas_sfc_sample.nc sha256 4954bda3b4cf7893748a9cee5f870043690141505cdcb9d7551c747372c2b36f
+Sample: test/data/NEXTCDF4/gdas_sfc_sample_bfloat16.nc sha256 ab9074ebf31ff88ecef08cf912fcf98de69bb3726b6d1049741ca88957ff55fd
+Plotting: Python 3.13.9, matplotlib 3.10.9

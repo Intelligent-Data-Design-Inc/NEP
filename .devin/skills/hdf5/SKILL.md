@@ -13,7 +13,7 @@ This skill covers the HDF5 features that NEXTCDF-4 depends on: Superblock v3, th
 
 ## Overview
 
-**HDF5** is the storage format behind NetCDF-4. NEXTCDF-4 is a rewrite of the NetCDF-C HDF5 backend (`libhdf5/`) that targets HDF5 1.14.x and HDF5 2.1.1+. The rewrite exploits newer HDF5 capabilities while preserving read access to existing NetCDF-4 files.
+**HDF5** is the storage format behind NetCDF-4. NEXTCDF-4 is a rewrite of the NetCDF-C HDF5 backend (`libhdf5/`) that requires HDF5 2.1.1 or later. The rewrite exploits newer HDF5 capabilities while preserving read access to existing NetCDF-4 files.
 
 Key areas covered here:
 
@@ -66,7 +66,7 @@ H5Fget_info2(file_id, &info);
 
 - Files created with `H5F_LIBVER_LATEST` (Superblock v3) require **HDF5 1.14.0 or later** to read.
 - Older HDF5 1.12.x and 1.10.x libraries cannot open Superblock v3 files.
-- NEXTCDF-4 therefore requires HDF5 1.14.x or newer when creating any NEXTCDF-4 files, including compatibility-mode files.
+- NEXTCDF-4 itself requires HDF5 2.1.1 or newer (for the small floating-point and complex types), which also covers Superblock v3.
 
 ### Compatibility Mode in NEXTCDF-4
 
@@ -80,8 +80,8 @@ Two compatibility flags are supported:
 
 - Set the file access property list bounds to `H5F_LIBVER_LATEST` for both lower and upper bound in all create modes (native, `NC_NETCDF4_MODEL`, and `NC_CLASSIC_MODEL`).
 - Do not create any of the new NEXTCDF-4 types when `NC_NETCDF4_MODEL` is set.
-- At NEP configure time, disable NEXTCDF-4 entirely (`NEP_HAS_NEXTCDF4=0`) if the detected HDF5 version is older than 1.14.x.
-- Add a runtime check that refuses to create files when the linked HDF5 library is too old to write Superblock v3.
+- At NEP configure time, `-DNEP_ENABLE_NEXTCDF4=ON` with HDF5 older than 2.1.1 is a fatal error (top-level `CMakeLists.txt`); with NEXTCDF-4 off, `NEP_HAS_NEXTCDF4=0`.
+- Add a runtime check that refuses to create files when the linked HDF5 library is older than 2.1.1.
 
 ## Float16
 

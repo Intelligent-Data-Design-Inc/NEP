@@ -14,7 +14,19 @@
 #include "nxt4internal.h"
 
 /**
- * Complete NetCDF dispatch table for NEXTCDF-4 UDF slot 9.
+ * @brief The complete netCDF dispatch table for NEXTCDF-4.
+ *
+ * A dispatch table is a struct of function pointers, one per netCDF
+ * API operation; netcdf-c routes every `nc_*` call through the table
+ * of the file it was called on. Entries fall into three groups:
+ * functions implemented by NEXTCDF-4 itself (`NEXTCDF4_*`), shared
+ * netcdf-c helpers that work on the common `NC_*_INFO_T` metadata
+ * (`NC4_*`), and stubs for unsupported operations (`NC_NOTNC4_*`,
+ * `NC_NOOP_*`, `NC_RO_set_fill`).
+ *
+ * The struct has no designated initializers, so entries must appear
+ * in the exact positional order netcdf-c defines. See
+ * @ref nextcdf4_architecture.
  */
 static const NC_Dispatch NEXTCDF4_dispatcher = {
     NC_FORMATX_NEXTCDF4,
@@ -99,12 +111,22 @@ static const NC_Dispatch NEXTCDF4_dispatcher = {
 };
 
 /**
- * Active NEXTCDF-4 dispatch table, populated during initialization.
+ * @brief The active NEXTCDF-4 dispatch table.
+ *
+ * Set by NC_NEXTCDF4_initialize(); `NULL` until the backend has been
+ * registered.
  */
 const NC_Dispatch *NEXTCDF4_dispatch_table = NULL;
 
 /**
- * Register the NEXTCDF-4 dispatch table in NetCDF UDF slot 9.
+ * @brief Register the NEXTCDF-4 dispatch table with netcdf-c.
+ *
+ * Installs #NEXTCDF4_dispatcher into UDF slot 9 by calling
+ * netcdf-c's `nc_def_user_format()`. Applications must call this once
+ * before using `NC_NEXTCDF4` (unless the backend is autoloaded via
+ * `.ncrc`). Also reads the `NEP_LOG_LEVEL` environment variable to
+ * set the initial log level when logging is compiled in.
+ *
  * @return Pointer to the NEXTCDF-4 dispatch table.
  */
 NC_Dispatch *
@@ -128,7 +150,12 @@ NC_NEXTCDF4_initialize(void)
 }
 
 /**
- * Finalize process-wide NEXTCDF-4 dispatch state.
+ * @brief Finalize process-wide NEXTCDF-4 dispatch state.
+ *
+ * NEXTCDF-4 currently keeps no state that needs teardown, so this is
+ * a placeholder for symmetry with NC_NEXTCDF4_initialize() and the
+ * other NEP backends.
+ *
  * @return `NC_NOERR`.
  */
 int

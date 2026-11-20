@@ -66,8 +66,10 @@
  *
  * Located in `examples/nextcdf4/`:
  * - @ref bfloat16.c - Store real GDAS temperature data as NC_BFLOAT16 with the nc_*_bfloat16() functions
- * - @ref bfloat16_perf.c - float32 vs bfloat16 (user-code and HDF5 conversion) size and I/O benchmark, CSV output
+ * - @ref bfloat16_perf.c - float32 vs bfloat16 (user-code and internal conversion) size and I/O benchmark, CSV output
  * - @ref bfloat16_io_perf.c - float32 vs bfloat16 write/read benchmark with data already in bfloat16 (no conversion), CSV output
+ * - @ref conversion_perf.c - Standard numeric conversion and quantized writes, ten copies and ten repetitions, CSV output; no external plugin required
+ * - `plot_conversion_compare.py OFF.csv ON.csv OFF_IO.csv ON_IO.csv PREFIX` plots paired GDAS results; `--numeric OFF.csv ON.csv PREFIX` plots standard conversions. Typed row labels identify HDF5 (OFF) or internal (ON); internal conversion is now permanent and historical CSVs/charts remain unchanged.
  * - @ref make_bfloat16_sample.c - Convert the GDAS sample to a NEXTCDF-4 NC_BFLOAT16 file (used with make_bfloat16_sample.sh)
  *
  * All NEP benchmark numbers are disk-bound: write time includes fsync,

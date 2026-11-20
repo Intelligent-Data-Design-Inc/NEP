@@ -3,6 +3,10 @@
 
 NEP provides NetCDF User Defined Format (UDF) readers and the NEXTCDF-4 backend. LZ4 and BZIP2 filter plugins and wrappers moved to [nep-compress](https://github.com/captainkirk99/nep-compress). Older releases also bundled those filters.
 
+## NEXTCDF-4 conversion engine
+
+NEP-owned `nx4_convert_type()` is the permanent engine for supported numeric variable/attribute conversion and quantization, selected after Sprint 1H's OFF/ON comparison. The temporary `NEP_INTERNAL_CONVERT` option and `NEP_HAS_INTERNAL_CONVERT` marker were removed; setting the option fails at configure time. HDF5 receives the matching native numeric type; IEEE float16 conversion remains an explicit HDF5 exception until Sprint 1I. Bfloat16 narrowing uses round-to-nearest-even. The independent `libnep` bfloat16 API, on-disk types and compatibility flags are unchanged. The engine reports `NC_ERANGE` after completed conversion/I/O, without rolling back attributes or dimension growth. HDF5 transfer callbacks observe exceptions on the retained float16 path; a source check catches silent bfloat16 saturation, and explicit float16 attribute conversion uses an observing transfer list. Invalid real-to-integer attribute casts use guarded conversion, and quantization preserves nonfinite values. No Spack contract changes are required.
+
 ## Architecture
 
 The format handlers and NEXTCDF-4 backend remain in NEP; compression is independently distributed.
@@ -65,7 +69,7 @@ NEP implements NetCDF's UDF system to provide transparent access to various scie
 
 #### UDF Slot Allocation
 
-NetCDF-C exposes ten UDF slots (0–9). NEP assigns each format handler a permanent slot:
+Current netcdf-c `main` exposes 64 UDF slots (UDF0–UDF63). NEP assigns each format handler a permanent slot in UDF0–UDF9:
 
 | Format | UDF Slot | NetCDF-C Constant | Notes |
 |--------|----------|-------------------|-------|
@@ -959,7 +963,7 @@ Each example:
 - **Fortran Examples**: NetCDF-Fortran library, Fortran 90+ compiler
 - **Build System**: CMake 3.19+
 
-HDF5 is found by `cmake/NEPFindHDF5.cmake` (any version 1.14.0 or newer, linked through FindHDF5's imported targets, with a SONAME check against `libnetcdf`).
+HDF5 is found by `cmake/NEPFindHDF5.cmake` (any version 1.14.0 or newer, linked through FindHDF5's imported targets, with a SONAME check against `libnetcdf`). NEXTCDF-4 requires HDF5 2.1.1 or newer: configuring with `-DNEP_ENABLE_NEXTCDF4=ON` against an older HDF5 is a fatal configure error.
 
 Fortran examples are automatically skipped if:
 - Fortran support is disabled (`NEP_ENABLE_FORTRAN=OFF`)

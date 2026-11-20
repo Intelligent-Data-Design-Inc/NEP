@@ -72,6 +72,9 @@ git -C "$SRC_DIR" diff --quiet HEAD || git_rev="$git_rev-dirty"
     echo "Compiler: $(cc --version | head -1)"
     echo "Build type: ${build_type:-(none)}"
     echo "C flags: $cflags_line"
+    marker=$(awk '/^#define NEP_HAS_INTERNAL_CONVERT / {print $3; exit}' "$BUILD_DIR/include/nep_meta.h")
+    echo "Internal conversion: ${marker:-permanent}"
+    sha256sum "$PERF" "$IO_PERF" "$BUILD_DIR/examples/nextcdf4/conversion_perf" "$BUILD_DIR/src/libncnextcdf4.so"
     echo "NetCDF-C: $("$nc_config" --version) ($netcdf_lib)"
     echo "HDF5: $hdf5_lib"
     for so in "$HDF5_PLUGIN_PATH"/*.so; do

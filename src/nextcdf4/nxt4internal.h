@@ -15,25 +15,38 @@
 #include "nextcdf4dispatch.h"
 #include "nxt4err.h"
 
-/** Hidden root attribute identifying a NEXTCDF-4-created file. */
+/** @brief Hidden root attribute identifying a NEXTCDF-4-created file.
+ *
+ * Written at create; checked by NEXTCDF4_read_markers() at open to
+ * distinguish NEXTCDF-4 files from upstream netCDF-4/HDF5 files. */
 #define NEXTCDF4_BACKEND_ATT "_Nextcdf4Backend"
-/** Hidden root attribute identifying NetCDF-4 compatibility mode. */
+/** @brief Hidden root attribute marking `NC_NETCDF4_MODEL`
+ * compatibility mode, so the mode survives reopen. */
 #define NEXTCDF4_MODEL_ATT "_Nextcdf4Model"
-/** Backend version stored in the NEXTCDF-4 provenance attribute. */
+/** @brief Backend version string stored in #NEXTCDF4_BACKEND_ATT. */
 #define NEXTCDF4_BACKEND_VALUE "NEXTCDF-4/1.0"
 
-/** Hidden attribute storing a dimension's stable NetCDF dimid. */
+/** @brief Hidden attribute on a dimension scale storing its stable
+ * NetCDF dimid, so ids survive reopen independent of link order. */
 #define NEXTCDF4_DIMID_ATT "_Netcdf4Dimid"
-/** Hidden attribute storing a variable's stable NetCDF varid. */
+/** @brief Hidden attribute on a variable dataset storing its stable
+ * NetCDF varid. */
 #define NEXTCDF4_VARID_ATT "_Nextcdf4Varid"
-/** Hidden attribute storing a variable's dimension id list. */
+/** @brief Hidden attribute on a variable dataset storing its dimid
+ * list — the fast path for recovering a variable's dimensions at
+ * open; attached dimension scales are the fallback. */
 #define NEXTCDF4_VARDIMIDS_ATT "_Netcdf4Coordinates"
-/** HDF5 dimension scale class marker. */
+/** @brief HDF5 dimension scale class marker written on every
+ * dimension's scale dataset. */
 #define NEXTCDF4_DIMCLASS "DIMENSION_SCALE"
 /** Optional dimension scale name attribute. */
 #define NEXTCDF4_DIMNAME_ATT "NAME"
 
-/** Per-file state owned by the NEXTCDF-4 dispatch layer. */
+/** @brief Per-file state owned by the NEXTCDF-4 dispatch layer.
+ *
+ * Hung off netcdf-c's `NC_FILE_INFO_T::format_file_info` by
+ * NEXTCDF4_add_file(); holds the open HDF5 handles and the mode flags
+ * the dispatch entries consult. See @ref nextcdf4_architecture. */
 typedef struct NEXTCDF4_FILE_INFO
 {
     hid_t hdfid;        /**< Open HDF5 file identifier, or a negative value. */
@@ -46,19 +59,25 @@ typedef struct NEXTCDF4_FILE_INFO
     int backend_marked; /**< Nonzero when the NEXTCDF-4 backend marker is present. */
 } NEXTCDF4_FILE_INFO_T;
 
-/** Format-specific information attached to an NC_GRP_INFO_T. */
+/** @brief NEXTCDF-4-private state hung off
+ * `NC_GRP_INFO_T::format_grp_info`: the group's open HDF5 handle. */
 typedef struct NEXTCDF4_GRP_INFO
 {
     hid_t hdf_group;    /**< Open HDF5 group identifier, or a negative value. */
 } NEXTCDF4_GRP_INFO_T;
 
-/** Format-specific information attached to an NC_DIM_INFO_T. */
+/** @brief NEXTCDF-4-private state hung off
+ * `NC_DIM_INFO_T::format_dim_info`: the dimension's scale dataset
+ * handle. */
 typedef struct NEXTCDF4_DIM_INFO
 {
     hid_t hdf_dataset;  /**< HDF5 dimension scale dataset identifier. */
 } NEXTCDF4_DIM_INFO_T;
 
-/** Format-specific information attached to an NC_VAR_INFO_T. */
+/** @brief NEXTCDF-4-private state hung off
+ * `NC_VAR_INFO_T::format_var_info`: the variable's dataset handle
+ * plus its cached filter settings (rebuilt when the dataset is
+ * recreated by a def-var setter). */
 typedef struct NEXTCDF4_VAR_INFO
 {
     hid_t hdf_dataset;  /**< HDF5 variable dataset identifier. */
@@ -67,7 +86,9 @@ typedef struct NEXTCDF4_VAR_INFO
     int fletcher32;     /**< Non-zero if the fletcher32 checksum filter is enabled. */
 } NEXTCDF4_VAR_INFO_T;
 
-/** Format-specific information attached to an NC_TYPE_INFO_T. */
+/** @brief NEXTCDF-4-private state hung off
+ * `NC_TYPE_INFO_T::format_type_info`: the user-defined type's HDF5
+ * datatype handle (transient until committed). */
 typedef struct NEXTCDF4_TYPE_INFO
 {
     hid_t hdf_type;     /**< Open committed HDF5 datatype identifier, or a negative value. */
@@ -102,6 +123,18 @@ int NEXTCDF4_map_hdf_type(nc_type xtype, hid_t *typep);
 /** Return the in-memory size of a fixed-size NetCDF atomic type.
  */
 int NEXTCDF4_type_size(nc_type xtype, size_t *sizep);
+
+/** Map an atomic memory type to HDF5. */
+hid_t NEXTCDF4_memory_type(nc_type type, int *closep);
+
+/** Create a transfer property list observing conversion range errors. */
+int nx4_conversion_dxpl(hid_t *dxplp, int *range_error);
+
+/** Convert numeric buffers using the internal engine. */
+int nx4_convert_type(const void *src, void *dest, nc_type src_type,
+                     nc_type dest_type, size_t len, int *range_error,
+                     const void *fill_value, int strict_nc3,
+                     int quantize_mode, int nsd);
 
 /** Return a display name for a fixed-size NetCDF atomic type.
  */

@@ -17,6 +17,10 @@
 
 ---
 
+## NEXTCDF-4 internal conversion requirement
+
+NEXTCDF-4 uses the private, NEP-owned `nx4_convert_type()` engine for all supported variable, attribute and quantized-write numeric conversions, made permanent in Sprint 1H after measured comparison with the HDF5 engine. The temporary `NEP_INTERNAL_CONVERT` option and `NEP_HAS_INTERNAL_CONVERT` marker were removed; setting the option fails at configure time, and a single NEXTCDF-4 CI job covers correctness. Conversion uses nearest/even bfloat16 narrowing, with a temporary HDF5 exception for IEEE float16 until Sprint 1I. Unsupported FP8/FP6/FP4 conversions and the public bfloat16-wrapper contract remain unchanged. The engine reports completed-conversion `NC_ERANGE` for overflow/integer range errors (including nonfinite-to-integer), not precision loss, fractional truncation or floating underflow. Range-warning writes finish all values and may replace attributes/extend dimensions; structural and I/O errors take precedence. No Spack variant or new public conversion API is required.
+
 ## 2. Core Architecture
 
 ### 2.1 NetCDF User Defined Format (UDF) System
@@ -763,7 +767,7 @@ cmake -B build -DNEP_ENABLE_NEXTCDF4=ON
 - `NC_NEXTCDF4` remains an explicit selection; there is no magic-number dispatch for HDF5 files.
 - `nc_put_varm`/`nc_get_varm` are not implemented.
 - Typed calls on FP8/FP6/FP4 variables, and integer/text/string typed calls on any small float, return `NC_EBADTYPE` (`NC_ECHAR` for text).
-- NEXTCDF-4 does not return `NC_ERANGE` for out-of-range conversions (#381).
+- Conversion engines can produce different exceptional output values; `NC_ERANGE` reports completed conversion, not transactional rejection (#381).
 - Object and region reference types round-trip as opaque tokens.
 - Tools (`nextcopy`, `nextdump`) and Fortran bindings are planned for v4.1.0.
 

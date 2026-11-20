@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <netcdf.h>
 #include "nep.h"
+#include "nep_meta.h"
 
 #define FILE_NAME "tst_nextcdf4_conv.h5"
 #define NPAT 65536
@@ -230,8 +231,8 @@ test_pinned_writes(void)
     static const uint16_t hexp[13] = {0x3e00, 0xc000, 0x2e66, 0x6800, 0x6802,
                                       0x7bff, 0x7c00, 0x7c00, 0xfc00, 0x7c00,
                                       0x8000, 0x0000, 0};
-    static const uint16_t bexp[13] = {0x3fc0, 0xc000, 0x3dcd, 0x43e1, 0x3f81,
-                                      0x0001, 0x0da2, 0x7f7f, 0xff7f, 0x7f80,
+    static const uint16_t bexp[13] = {0x3fc0, 0xc000, 0x3dcd, 0x43e0, 0x3f80,
+                                      0x0000, 0x0da2, 0x7f80, 0xff80, 0x7f80,
                                       0xff80, 0x8000, 0};
     static const uint16_t bexp3[3] = {0x3fc0, 0x3dcd, 0x7f80};
     uint32_t u;
@@ -252,8 +253,8 @@ test_pinned_writes(void)
         nc_close(ncid);
         return 1;
     }
-    if ((ret = nc_put_vara_float(ncid, hvar, start, count, hin)) ||
-        (ret = nc_put_vara_float(ncid, bvar, start, count, bin))) {
+    if ((ret = nc_put_vara_float(ncid, hvar, start, count, hin)) != NC_ERANGE ||
+        (ret = nc_put_vara_float(ncid, bvar, start, count, bin)) != NC_ERANGE) {
         fprintf(stderr, "pinned: nc_put_vara_float failed %d\n", ret);
         nc_close(ncid);
         return 1;
@@ -281,7 +282,7 @@ test_pinned_writes(void)
             return 1;
         }
     }
-    if ((ret = nc_put_vara_double(ncid, bvar, start, count3, din))) {
+    if ((ret = nc_put_vara_double(ncid, bvar, start, count3, din)) != NC_ERANGE) {
         fprintf(stderr, "pinned: nc_put_vara_double failed %d\n", ret);
         nc_close(ncid);
         return 1;

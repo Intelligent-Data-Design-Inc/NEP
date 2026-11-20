@@ -1,10 +1,18 @@
 # NEXTCDF-4 Backend
 
-NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NEP User Defined Format (UDF) expansion pack. It provides the full NetCDF-4 enhanced data model, variable I/O, storage features, and a set of new atomic types while coexisting with netcdf-c's built-in HDF5 backend.
+NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NEP User Defined Format (UDF) expansion pack. A UDF is a plug-in file format registered with netcdf-c's dispatch mechanism; current netcdf-c `main` provides 64 UDF slots (UDF0–UDF63), and NEXTCDF-4 occupies slot 9 (`NC_UDF9`). The backend provides the full NetCDF-4 enhanced data model, variable I/O, storage features, and a set of new atomic types while coexisting with netcdf-c's built-in HDF5 backend. See [NEXTCDF-4 Architecture](nextcdf4_architecture.md) for how the dispatch table, per-object state, and hidden attributes fit together.
 
 **Explicit selection required**: because HDF5 files already belong to netcdf-c's built-in NetCDF-4 backend, NEXTCDF-4 does not register the HDF5 magic number. Open and create NEXTCDF-4 files by passing `NC_NEXTCDF4`.
 
 > **Experimental**: NEXTCDF-4 is experimental and under active development. Not all NetCDF-4 features are implemented; see the Known Limitations section below.
+
+## Internal conversion engine
+
+NEXTCDF-4 converts all supported numeric variable and attribute data with the private, NEP-owned `nx4_convert_type()` engine, selected as the permanent engine after Sprint 1H's OFF/ON comparison. It replaced the temporary `NEP_INTERNAL_CONVERT` CMake option; passing that option now fails at configure time. There is no runtime or file-format switch.
+
+Standard float/double calls on bfloat16 use round-to-nearest-even, with single rounding from double and signed infinity on finite overflow. For example, 449 narrows to 448 instead of HDF5's 450. IEEE float16 conversion is the one explicit exception: it still converts through HDF5. HDF5 also handles file byte order and storage representation.
+
+Matching-type raw-bit I/O, FP8/FP6/FP4 typed-call restrictions and the independent `nc_*_bfloat16` wrappers are unchanged. Float/double conversion for bfloat16 attributes is supported; fill-value limitations still apply. Variable/attribute conversions and quantized writes complete all values, then return `NC_ERANGE` on finite overflow, integer range violations or nonfinite-to-integer conversion (#381). A range warning does not roll back writes: every value is processed, attributes may be replaced and unlimited dimensions may grow. Ordinary precision loss, fractional truncation and floating underflow do not cause range errors; floating NaN/infinity inputs remain valid for floating destinations. Structural, permission and HDF5 failures take precedence over range warnings. Historical HDF5-engine benchmark artifacts are kept for comparison in `examples/nextcdf4/conversion_*.csv`; new measurements use the internal engine.
 
 ## Creating and Opening Files
 
@@ -51,7 +59,7 @@ NEXTCDF-4 availability is advertised at compile time through `nep_meta.h`:
 | Classic model | `NC_NEXTCDF4` | `NC_CLASSIC_MODEL` | v3 | NetCDF-3 data model on HDF5 |
 | NetCDF-4 model | `NC_NEXTCDF4` | `NC_NETCDF4_MODEL` | v1 | Files readable by upstream netcdf-c |
 
-**Native mode** allows all NEXTCDF-4-specific types and HDF5 1.14+ features.
+**Native mode** allows all NEXTCDF-4-specific types and HDF5 2.1.1 features.
 
 **`NC_CLASSIC_MODEL`** restricts the file to the classic NetCDF-3 data model: root group only, one unlimited dimension, classic atomic types, no chunking, compression, filters, or user-defined types.
 
@@ -117,6 +125,7 @@ NEXTCDF-4 stores NetCDF dimensions as HDF5 dimension scales and attaches them to
 | `_Nextcdf4Backend` | root group | Identifies the file as created by NEXTCDF-4 |
 | `_Nextcdf4Model` | root group | Present only in `NC_NETCDF4_MODEL` mode |
 | `_Netcdf4Dimid` | dimension scale | Stores the stable dimension ID |
+| `_Nextcdf4Varid` | variable dataset | Stores the stable variable ID |
 | `_Netcdf4Coordinates` | variable | Stores the variable's dimension IDs |
 
 These attributes are filtered from user-visible attribute lists.
@@ -184,12 +193,13 @@ nc_ref_region(ncid, varid, start, count, NULL, &region);
 - Reference-typed variables cannot be coordinate variables and cannot be nested inside compound types.
 - Small floating-point types (`NC_FLOAT6_E2M3`, `NC_FLOAT4_E2M1`) have no default fill value because their value spaces are too small for a useful sentinel.
 - Typed calls on FP8/FP6/FP4 variables, and integer/text/string typed calls on any small float, return `NC_EBADTYPE` (`NC_ECHAR` for text).
-- NEXTCDF-4 does not return `NC_ERANGE` for out-of-range conversions ([issue #381](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/381)).
+- Out-of-range conversion results can differ between engines even though both return `NC_ERANGE` after completing the operation; see the conversion experiment above ([issue #381](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/381)).
 - `NC_BFLOAT16` fill values are not supported: `_FillValue` attributes are rejected, and a fill value set with `nc_def_var_fill` is not recovered on reopen ([issue #377](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/377)).
 - Def-var setters (`nc_def_var_fill`, `nc_def_var_chunking`, `nc_def_var_deflate`, `nc_def_var_endian`, `nc_def_var_fletcher32`) recreate the HDF5 dataset, which leaves an orphaned dataset object and an extra dimension-scale reference in the file ([issue #382](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/382)).
 
 ## Resources
 
+- [NEXTCDF-4 Architecture](nextcdf4_architecture.md) — dispatch table, per-object state, hidden attributes, and the metadata lifecycle.
 - `docs/plan/NEXTCDF4_plan.md` — full architecture, compatibility contract, and type mapping.
 - `docs/roadmap.md` — detailed v4.0.0 implementation sprints and acceptance criteria.
 - NetCDF-C UDF documentation: https://docs.unidata.ucar.edu/netcdf/NUG/user_defined_formats.html

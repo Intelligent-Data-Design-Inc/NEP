@@ -12,7 +12,15 @@
 #include "nxt4internal.h"
 
 /**
- * Recursively close HDF5 object identifiers for a group.
+ * @brief Recursively close the HDF5 objects belonging to a group.
+ *
+ * At close time every open `hid_t` under a group must be released:
+ * the group's own `NEXTCDF4_GRP_INFO_T::hdf_group` (skipping the root,
+ * whose handle is closed separately via `rootid`), each variable's
+ * dataset `hid_t`, each dimension's scale `hid_t`, then all children.
+ * HDF5 calls are wrapped in `H5E_BEGIN_TRY`/`H5E_END_TRY` so a
+ * partially-closed tree does not print spurious error stacks.
+ *
  * @param grp Group.
  */
 static void
@@ -62,7 +70,14 @@ close_group_hdf(NC_GRP_INFO_T *grp)
 }
 
 /**
- * Close owned HDF5 identifiers and release per-file memory.
+ * @brief Close a `NEXTCDF4_FILE_INFO_T`'s HDF5 handles and free it.
+ *
+ * Companion to NEXTCDF4_add_file(): closes the root group and the
+ * HDF5 file, then releases the path and the struct. Safe to call with
+ * `NULL`. The `H5Fget_obj_count` log line is a leak check — anything
+ * but 1 (the file itself) after `H5Fclose` means an object was left
+ * open.
+ *
  * @param file State to release; may be `NULL`.
  * @return `NC_NOERR` or `NC_EHDFERR` if an HDF5 close fails.
  */
@@ -88,7 +103,16 @@ NEXTCDF4_free_file(NEXTCDF4_FILE_INFO_T *file)
 }
 
 /**
- * Allocate NEXTCDF-4 state and attach it to netcdf-c's file list.
+ * @brief Allocate per-file state and attach it to netcdf-c's open-file
+ * list.
+ *
+ * Called by both NEXTCDF4_create() and NEXTCDF4_open(). netcdf-c's
+ * `nc4_file_list_add` creates the shared `NC_FILE_INFO_T` (with a
+ * root `NC_GRP_INFO_T`); this function then allocates the
+ * NEXTCDF-4-private `NEXTCDF4_FILE_INFO_T` and hangs it on
+ * `format_file_info`, plus a `NEXTCDF4_GRP_INFO_T` on the root group.
+ * New files start in define mode with `hdfid`/`rootid` unset.
+ *
  * @param ncid NetCDF file identifier.
  * @param path File-system path.
  * @param mode Effective NetCDF mode.
@@ -136,7 +160,14 @@ NEXTCDF4_add_file(int ncid, const char *path, int mode,
 }
 
 /**
- * Resolve common and backend-specific state for an open NEXTCDF-4 file.
+ * @brief Resolve both the shared and NEXTCDF-4-private file state for
+ * an ncid.
+ *
+ * Almost every dispatch entry begins here: `nc4_find_grp_h5` maps the
+ * ncid to netcdf-c's `NC_FILE_INFO_T`, and `format_file_info` then
+ * yields the `NEXTCDF4_FILE_INFO_T`. A missing private record means
+ * the ncid names a non-NEXTCDF-4 file.
+ *
  * @param ncid NetCDF file identifier.
  * @param h5p Optional destination for common NetCDF-4 state.
  * @param filep Optional destination for NEXTCDF-4 state.
@@ -164,11 +195,16 @@ NEXTCDF4_get_file(int ncid, NC_FILE_INFO_T **h5p,
 }
 
 /**
- * @internal Write a null-terminated scalar HDF5 string attribute.
+ * @brief Write a null-terminated scalar HDF5 string attribute.
+ *
+ * Helper for NEXTCDF4_write_markers(): creates a scalar dataspace and
+ * a fixed-size, null-terminated string type sized to the value, then
+ * writes it. All HDF5 handles are closed on both paths.
+ *
  * @param location HDF5 location identifier.
  * @param name Name.
  * @param value Data buffer.
- * @return `NC_NOERR` on success, or a NetCDF error code.
+ * @return `NC_NOERR` on success, or `NC_EHDFERR`.
  */
 static int
 write_string_att(hid_t location, const char *name, const char *value)
@@ -199,7 +235,16 @@ done:
 }
 
 /**
- * Write hidden NEXTCDF-4 provenance and compatibility attributes.
+ * @brief Write the hidden marker attributes identifying the file as
+ * NEXTCDF-4.
+ *
+ * Every NEXTCDF-4 file gets `_Nextcdf4Backend` = `"NEXTCDF-4/1.0"` on
+ * the root group — this is what `NEXTCDF4_read_markers` checks at
+ * open to distinguish NEXTCDF-4 files from upstream netCDF-4/HDF5
+ * files. Files created with `NC_NETCDF4_MODEL` additionally get the
+ * integer `_Nextcdf4Model` marker so the compatibility mode survives
+ * reopen. See @ref nextcdf4_architecture.
+ *
  * @param file Open writable NEXTCDF-4 state.
  * @return `NC_NOERR` on success, or `NC_EHDFERR`.
  */
@@ -236,7 +281,14 @@ NEXTCDF4_write_markers(NEXTCDF4_FILE_INFO_T *file)
 }
 
 /**
- * Read and validate hidden NEXTCDF-4 provenance and compatibility attributes.
+ * @brief Read and validate the hidden marker attributes at open.
+ *
+ * Sets `file->backend_marked` when `_Nextcdf4Backend` matches
+ * `"NEXTCDF-4/1.0"`, and restores `netcdf4_model`/`NC_NETCDF4_MODEL`
+ * when `_Nextcdf4Model` is present. A file without the backend marker
+ * is treated as a plain HDF5/netCDF-4 file and opened anyway —
+ * NEXTCDF-4 can read upstream netCDF-4 files.
+ *
  * @param file Open NEXTCDF-4 state.
  * @return `NC_NOERR` on success, or `NC_EFILEMETA` for invalid markers.
  */
@@ -290,7 +342,10 @@ done:
 }
 
 /**
- * Flush pending writes for a writable NEXTCDF-4 file.
+ * @brief Flush pending writes — the `nc_sync()` dispatch entry.
+ *
+ * Read-only files are a no-op.
+ *
  * @param ncid NetCDF file identifier.
  * @return `NC_NOERR` on success, or a NetCDF error code.
  */
@@ -310,7 +365,14 @@ NEXTCDF4_sync(int ncid)
 }
 
 /**
- * Flush, close, and release a NEXTCDF-4 file.
+ * @brief Flush, close, and release a file — the `nc_close()` dispatch
+ * entry.
+ *
+ * A file still in define mode is `_enddef`'d first (materializing its
+ * pending metadata), then all HDF5 handles are closed recursively,
+ * the file is flushed if writable, and the state is freed and removed
+ * from netcdf-c's open-file list.
+ *
  * @param ncid NetCDF file identifier.
  * @param parameters Optional close parameters; currently ignored.
  * @return `NC_NOERR` on success, or a NetCDF error code.
@@ -342,7 +404,11 @@ NEXTCDF4_close(int ncid, void *parameters)
 }
 
 /**
- * Abort a NEXTCDF-4 operation using the normal resource-release path.
+ * @brief Abort a file — the `nc_abort()` dispatch entry.
+ *
+ * For NEXTCDF-4 abort and close share the release path; HDF5 simply
+ * discards unflushed state.
+ *
  * @param ncid NetCDF file identifier.
  * @return `NC_NOERR` on success, or a NetCDF error code.
  */
@@ -353,7 +419,13 @@ NEXTCDF4_abort(int ncid)
 }
 
 /**
- * Report the public NetCDF-4 format class.
+ * @brief Report the public format class — the `nc_inq_format()`
+ * dispatch entry.
+ *
+ * NEXTCDF-4 files report as `NC_FORMAT_NETCDF4`: they are HDF5 files
+ * in the NetCDF-4 family, distinguishable only through
+ * `nc_inq_format_extended()`.
+ *
  * @param ncid NetCDF file identifier.
  * @param formatp Optional destination for `NC_FORMAT_NETCDF4`.
  * @return `NC_NOERR` on success, or a NetCDF error code.
@@ -372,7 +444,13 @@ NEXTCDF4_inq_format(int ncid, int *formatp)
 }
 
 /**
- * Report the extended NEXTCDF-4 format identifier and effective mode.
+ * @brief Report the extended format and effective mode — the
+ * `nc_inq_format_extended()` dispatch entry.
+ *
+ * Returns `NC_FORMATX_NEXTCDF4` plus the mode the file actually runs
+ * with: the create/open flags plus `NC_NEXTCDF4` and, for files
+ * carrying the `_Nextcdf4Model` marker, `NC_NETCDF4_MODEL`.
+ *
  * @param ncid NetCDF file identifier.
  * @param formatp Optional destination for `NC_FORMATX_NEXTCDF4`.
  * @param modep Optional destination for the effective open/create mode.
@@ -396,7 +474,17 @@ NEXTCDF4_inq_format_extended(int ncid, int *formatp, int *modep)
 }
 
 /**
- * Materialize pending root-group metadata and exit define mode.
+ * @brief Materialize pending metadata and leave define mode — the
+ * `nc_enddef()` dispatch entry.
+ *
+ * While a file is in define mode, `nc_def_dim`/`nc_def_var`/
+ * `nc_put_att` only build the in-memory `NC_*_INFO_T` tree.
+ * `_enddef` is where it all becomes HDF5: NEXTCDF4_write_types() and
+ * the metadata writer in `nxt4meta.c` create the committed datatypes,
+ * dimension scales, variable datasets and attributes, then the file
+ * flushes and switches to data mode. The alignment arguments exist in
+ * the dispatch signature for netcdf-c compatibility but are ignored.
+ *
  * @param ncid NetCDF file identifier.
  * @param h_minfree Ignored (reserved for future alignment control).
  * @param v_align Ignored (reserved for future alignment control).
@@ -435,7 +523,12 @@ NEXTCDF4__enddef(int ncid, size_t h_minfree, size_t v_align,
 }
 
 /**
- * Return the file to define mode.
+ * @brief Return the file to define mode — the `nc_redef()` dispatch
+ * entry.
+ *
+ * Flips `define_mode` and netcdf-c's `NC_INDEF` flag; the next
+ * `_enddef` writes any newly defined metadata to HDF5.
+ *
  * @param ncid NetCDF file identifier.
  * @return `NC_NOERR` on success, or a NetCDF error code.
  */
