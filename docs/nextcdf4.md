@@ -1,6 +1,6 @@
 # NEXTCDF-4 Backend
 
-NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NEP User Defined Format (UDF) expansion pack. It provides the full NetCDF-4 enhanced data model, variable I/O, storage features, and a set of new atomic types while coexisting with netcdf-c's built-in HDF5 backend.
+NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NEP User Defined Format (UDF) expansion pack. A UDF is a plug-in file format registered with netcdf-c's dispatch mechanism; current netcdf-c `main` provides 64 UDF slots (UDF0–UDF63), and NEXTCDF-4 occupies slot 9 (`NC_UDF9`). The backend provides the full NetCDF-4 enhanced data model, variable I/O, storage features, and a set of new atomic types while coexisting with netcdf-c's built-in HDF5 backend. See [NEXTCDF-4 Architecture](nextcdf4_architecture.md) for how the dispatch table, per-object state, and hidden attributes fit together.
 
 **Explicit selection required**: because HDF5 files already belong to netcdf-c's built-in NetCDF-4 backend, NEXTCDF-4 does not register the HDF5 magic number. Open and create NEXTCDF-4 files by passing `NC_NEXTCDF4`.
 
@@ -10,7 +10,7 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 
 NEXTCDF-4 converts all supported numeric variable and attribute data with the private, NEP-owned `nx4_convert_type()` engine, selected as the permanent engine after Sprint 1H's OFF/ON comparison. It replaced the temporary `NEP_INTERNAL_CONVERT` CMake option; passing that option now fails at configure time. There is no runtime or file-format switch.
 
-Standard float/double calls on bfloat16 use round-to-nearest-even, with single rounding from double and signed infinity on finite overflow. For example, 449 narrows to 448 instead of HDF5's 450. IEEE float16 conversion is the explicit HDF5 exception until Sprint 1I; its results do not change. HDF5 still handles file byte order and storage representation.
+Standard float/double calls on bfloat16 use round-to-nearest-even, with single rounding from double and signed infinity on finite overflow. For example, 449 narrows to 448 instead of HDF5's 450. IEEE float16 conversion is the one explicit exception: it still converts through HDF5. HDF5 also handles file byte order and storage representation.
 
 Matching-type raw-bit I/O, FP8/FP6/FP4 typed-call restrictions and the independent `nc_*_bfloat16` wrappers are unchanged. Float/double conversion for bfloat16 attributes is supported; fill-value limitations still apply. Variable/attribute conversions and quantized writes complete all values, then return `NC_ERANGE` on finite overflow, integer range violations or nonfinite-to-integer conversion (#381). A range warning does not roll back writes: every value is processed, attributes may be replaced and unlimited dimensions may grow. Ordinary precision loss, fractional truncation and floating underflow do not cause range errors; floating NaN/infinity inputs remain valid for floating destinations. Structural, permission and HDF5 failures take precedence over range warnings. Historical HDF5-engine benchmark artifacts are kept for comparison in `examples/nextcdf4/conversion_*.csv`; new measurements use the internal engine.
 
@@ -125,6 +125,7 @@ NEXTCDF-4 stores NetCDF dimensions as HDF5 dimension scales and attaches them to
 | `_Nextcdf4Backend` | root group | Identifies the file as created by NEXTCDF-4 |
 | `_Nextcdf4Model` | root group | Present only in `NC_NETCDF4_MODEL` mode |
 | `_Netcdf4Dimid` | dimension scale | Stores the stable dimension ID |
+| `_Nextcdf4Varid` | variable dataset | Stores the stable variable ID |
 | `_Netcdf4Coordinates` | variable | Stores the variable's dimension IDs |
 
 These attributes are filtered from user-visible attribute lists.
@@ -198,6 +199,7 @@ nc_ref_region(ncid, varid, start, count, NULL, &region);
 
 ## Resources
 
+- [NEXTCDF-4 Architecture](nextcdf4_architecture.md) — dispatch table, per-object state, hidden attributes, and the metadata lifecycle.
 - `docs/plan/NEXTCDF4_plan.md` — full architecture, compatibility contract, and type mapping.
 - `docs/roadmap.md` — detailed v4.0.0 implementation sprints and acceptance criteria.
 - NetCDF-C UDF documentation: https://docs.unidata.ucar.edu/netcdf/NUG/user_defined_formats.html

@@ -13,9 +13,18 @@
 #include "nxt4internal.h"
 
 /**
+ * @brief Return the open HDF5 group handle for an in-memory group.
+ *
+ * Every `NC_GRP_INFO_T` carries a `NEXTCDF4_GRP_INFO_T` holding the
+ * `hid_t` of the corresponding HDF5 group. If that private record was
+ * never allocated (for example for the root group right after
+ * create), this function allocates it on demand: non-root groups get
+ * a placeholder handle that is filled in when the HDF5 group is
+ * created; the root group uses the file's `rootid`.
+ *
  * @param grp Group.
  * @param gid Destination for the HDF5 group identifier.
- * @return The NEXTCDF-4 group info, creating a default one if absent.
+ * @return `NC_NOERR` on success or `NC_ENOMEM`.
  */
 static int
 get_grp_hdf(NC_GRP_INFO_T *grp, hid_t *gid)
@@ -38,9 +47,16 @@ get_grp_hdf(NC_GRP_INFO_T *grp, hid_t *gid)
 }
 
 /**
+ * @brief Attach an HDF5 group handle to a freshly-added group.
+ *
+ * Companion to get_grp_hdf(): used when the `NC_GRP_INFO_T` already
+ * exists (created by `nc4_grp_list_add`) and only the private
+ * `NEXTCDF4_GRP_INFO_T` record with its `hid_t` needs to be hung off
+ * it. A no-op if the record is already attached.
+ *
  * @param grp Group.
  * @param hdf_group HDF5 group identifier to attach.
- * @return The group info attached to a freshly-added or existing group.
+ * @return `NC_NOERR` on success or `NC_ENOMEM`.
  */
 static int
 attach_grp_hdf(NC_GRP_INFO_T *grp, hid_t hdf_group)
@@ -56,11 +72,17 @@ attach_grp_hdf(NC_GRP_INFO_T *grp, hid_t hdf_group)
 }
 
 /**
- * Recursively find a group by its in-file id.
+ * @brief Recursively find a group in the tree by its in-file group id.
+ *
+ * In netcdf-c an ncid is two halves: the upper 16 bits identify the
+ * file, the lower 16 bits the group inside that file. This walks the
+ * in-memory group tree looking for a group whose `hdr.id` matches the
+ * low half — the HDF5 object ids are not used for this lookup.
+ *
  * @param root Group tree root.
- * @param grpid HDF5 group identifier.
+ * @param grpid In-file group id (low half of an ncid).
  * @param grpp Destination for the matching group.
- * @return `NC_NOERR` on success, or a NetCDF error code.
+ * @return `NC_NOERR` on success or `NC_EBADID`.
  */
 static int
 find_grp_by_id(NC_GRP_INFO_T *root, int grpid, NC_GRP_INFO_T **grpp)
@@ -84,9 +106,17 @@ find_grp_by_id(NC_GRP_INFO_T *root, int grpid, NC_GRP_INFO_T **grpp)
 }
 
 /**
- * Resolve a group from a NetCDF ncid, creating root group info on demand.
- * @param ncid NetCDF file identifier.
- * @param h5 NetCDF-4 file state.
+ * @brief Resolve the `NC_GRP_INFO_T` an ncid refers to.
+ *
+ * Splits the ncid into file id (upper 16 bits) and in-file group id
+ * (lower 16 bits), locates the file's root group via netcdf-c's
+ * `nc4_find_grp_h5`, then descends the in-memory group tree. Group
+ * operations dispatch on an ncid that may name any group in the file,
+ * so nearly every public function in this file starts here.
+ *
+ * @param ncid NetCDF file identifier (file id | group id).
+ * @param h5 Destination for the file state, or NULL; if non-NULL and
+ * `*h5` is NULL it is filled with the file's `NC_FILE_INFO_T`.
  * @param grpp Destination for the group.
  * @return `NC_NOERR` on success, or a NetCDF error code.
  */
@@ -105,7 +135,16 @@ get_grp_from_ncid(int ncid, NC_FILE_INFO_T **h5, NC_GRP_INFO_T **grpp)
     return find_grp_by_id(root, ncid & 0xffff, grpp);
 }
 
-/** Create a subgroup below a group.
+/**
+ * @brief Create a subgroup — the `nc_def_grp()` dispatch entry.
+ *
+ * Validates define-mode write access, creates the HDF5 group under
+ * the parent's `hid_t`, adds the matching `NC_GRP_INFO_T` to the
+ * in-memory tree, and returns the child ncid. Groups are an
+ * enhanced-model feature: both `NC_CLASSIC_MODEL` and
+ * `NC_NETCDF4_MODEL` files reject this with `NC_ENOTNC4`, since
+ * NEXTCDF-4's netcdf-4-model mode aims for upstream compatibility.
+ *
  * @param ncid NetCDF file identifier of the parent group.
  * @param name Subgroup name.
  * @param grpidp Destination for the new subgroup ncid.
@@ -138,6 +177,8 @@ NEXTCDF4_def_grp(int ncid, const char *name, int *grpidp)
     if ((ret = get_grp_hdf(parent, &parent_g)))
         return ret;
 
+    /* Create the HDF5 group first, then mirror it in the in-memory
+     * tree; on metadata failure the HDF5 group is closed again. */
     child_g = H5Gcreate2(parent_g, name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
     if (child_g < 0)
         return NC_EHDFERR;
@@ -159,11 +200,11 @@ fail:
 }
 
 /**
- * Locate a direct child group by name.
+ * @brief Locate a direct child group by name.
  * @param parent Parent group.
  * @param name Name.
  * @param grpp Destination for the child group.
- * @return `NC_NOERR` on success, or a NetCDF error code.
+ * @return `NC_NOERR` on success or `NC_ENOTNC` when absent.
  */
 static int
 find_child_grp(NC_GRP_INFO_T *parent, const char *name, NC_GRP_INFO_T **grpp)
@@ -179,9 +220,18 @@ find_child_grp(NC_GRP_INFO_T *parent, const char *name, NC_GRP_INFO_T **grpp)
     return NC_ENOTNC;
 }
 
-/** Get the ncid of a named subgroup.
+/**
+ * @brief Get the ncid of a named subgroup — the `nc_inq_ncid()`
+ * dispatch entry.
+ *
+ * @p name may be a simple name ("g1"), a relative path ("g1/g2"), or
+ * an absolute path ("/g1/g2"); "/" alone resolves to the root group.
+ * The lookup walks the in-memory group tree component by component —
+ * no HDF5 calls are needed because the metadata was fully loaded at
+ * open.
+ *
  * @param ncid NetCDF file identifier.
- * @param name Subgroup name.
+ * @param name Subgroup name or path.
  * @param grpidp Destination for the subgroup ncid.
  * @return `NC_NOERR` on success, or a NetCDF error code.
  */
@@ -226,7 +276,10 @@ NEXTCDF4_inq_ncid(int ncid, const char *name, int *grpidp)
     return NC_NOERR;
 }
 
-/** Get the ncids of all subgroups.
+/**
+ * @brief Get the ncids of all subgroups — the `nc_inq_grps()`
+ * dispatch entry.
+ *
  * @param ncid NetCDF file identifier.
  * @param numgrps Destination for the number of subgroups.
  * @param grpidsp Destination for the subgroup ncids.
@@ -254,7 +307,9 @@ NEXTCDF4_inq_grps(int ncid, int *numgrps, int *grpidsp)
     return NC_NOERR;
 }
 
-/** Get a group's name.
+/**
+ * @brief Get a group's (short) name — the `nc_inq_grpname()`
+ * dispatch entry.
  * @param ncid NetCDF file identifier.
  * @param name Destination for the group name.
  * @return `NC_NOERR` on success, or a NetCDF error code.
@@ -272,7 +327,14 @@ NEXTCDF4_inq_grpname(int ncid, char *name)
     return NC_NOERR;
 }
 
-/** Get a group's full path name.
+/**
+ * @brief Get a group's full path name — the `nc_inq_grpname_full()`
+ * dispatch entry.
+ *
+ * Rebuilds "/g1/g2/..." by walking the parent chain up to the root;
+ * the root group itself contributes nothing but the leading slash.
+ * Nesting is capped at 32 levels.
+ *
  * @param ncid NetCDF file identifier.
  * @param lenp Destination for the name length.
  * @param name Destination for the full group name.
@@ -320,10 +382,13 @@ NEXTCDF4_inq_grpname_full(int ncid, size_t *lenp, char *name)
     return NC_NOERR;
 }
 
-/** Get a group's parent ncid.
+/**
+ * @brief Get a group's parent ncid — the `nc_inq_grp_parent()`
+ * dispatch entry.
  * @param ncid NetCDF file identifier.
  * @param parentidp Destination for the parent ncid.
- * @return `NC_NOERR` on success, or a NetCDF error code.
+ * @return `NC_NOERR` on success, `NC_ENOGRP` for the root group, or
+ * another NetCDF error code.
  */
 int
 NEXTCDF4_inq_grp_parent(int ncid, int *parentidp)
@@ -340,7 +405,13 @@ NEXTCDF4_inq_grp_parent(int ncid, int *parentidp)
     return NC_NOERR;
 }
 
-/** Get the ncid of a group given its full path.
+/**
+ * @brief Get the ncid of a group given its full path — the
+ * `nc_inq_grp_full_ncid()` dispatch entry.
+ *
+ * `NEXTCDF4_inq_ncid()` already accepts absolute paths, so this is a
+ * straight delegation.
+ *
  * @param ncid NetCDF file identifier.
  * @param full_name Full group path.
  * @param grpidp Destination for the group ncid.

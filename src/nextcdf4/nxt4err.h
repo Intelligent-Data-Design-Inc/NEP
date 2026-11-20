@@ -4,7 +4,8 @@
  *
  * These macros mirror the NetCDF-C BAIL/BAIL2 pattern used in
  * libsrc4 and libhdf5, adapted to the local cleanup style (`ret` and
- * `fail:`) used by the NEXTCDF-4 source files.
+ * `fail:`) used by the NEXTCDF-4 source files. See
+ * @ref nextcdf4_architecture for the convention in context.
  *
  * @author Edward Hartnett
  * @date 2026-08-31
@@ -19,9 +20,12 @@
 #include <hdf5.h>
 
 /**
- * @internal Log a NetCDF error, set `ret`, and jump to the `fail:`
- * cleanup label. Use this for errors that are not HDF5-specific (for
- * example, invalid arguments or missing state).
+ * @brief Log a NetCDF error, set `ret`, and jump to the `fail:`
+ * cleanup label.
+ *
+ * Use this for errors that are not HDF5-specific (for example,
+ * invalid arguments or missing state). Every function using it must
+ * declare `int ret = NC_NOERR;` and provide a `fail:` label.
  */
 #ifdef EBAIL
 #undef EBAIL
@@ -34,9 +38,13 @@
    } while (0)
 
 /**
- * @internal Log a NetCDF error, dump the HDF5 error stack, set `ret`,
- * and jump to the `fail:` cleanup label. Use this after an HDF5 API
- * call fails.
+ * @brief Log a NetCDF error, dump the HDF5 error stack, set `ret`,
+ * and jump to the `fail:` cleanup label.
+ *
+ * Use this after an HDF5 API call fails — HDF5 records its own
+ * detailed error stack, which `H5Eprint2` dumps to stderr. Without
+ * logging compiled in (`NEP_ENABLE_LOGGING=OFF`) it degrades to
+ * EBAIL().
  */
 #ifdef NEP_LOGGING
 #define EBAIL2(e) \

@@ -88,7 +88,18 @@ Plan: [docs/plan/v4.3.0-sprint1G-convert-data-types.md](plan/v4.3.0-sprint1G-con
 
 Plan: [docs/plan/v4.3.0-sprint1H-continued-conversion-changes.md](plan/v4.3.0-sprint1H-continued-conversion-changes.md)
 
-#### Sprint 1I - Support IEEE 754 Float16
+#### Sprint 1I - Better Documentation
+- New `docs/nextcdf4_architecture.md` `@page` (UDF mechanism as in current netcdf-c main with 64 slots — no mention of the old 10-slot scheme — slot 9, dispatch table, `NEXTCDF4_*_INFO_T` state, hidden attributes, metadata/`_enddef` lifecycle, compatibility modes, EBAIL/ELOG, conversion engine), added to `INPUT` and `@ref`'d from function docs.
+- Expand every `/**` block in all 9 `src/nextcdf4/*.c` files (incl. `nxt4convert.c`) and `nxt4internal.h`/`nxt4err.h` from one-liners to end-user prose: lifecycle role, brief concept explanations, `@ref` links; fix skeleton blocks (e.g. `is_reserved_att`) and stale params.
+- Plain `/*` comments: a walkthrough paragraph atop each function body plus targeted "why" comments (HDF5 idioms, ownership/refcount, format quirks, `nxt4convert.c` rounding/aliasing); nothing on self-evident lines.
+- `include/nextcdf4dispatch.h` and the NEXTCDF-4 parts of `include/nep.h` (`NC_NEXTCDF4`, reference API, `nc_*_bfloat16`) get the same end-user depth.
+- `docs/nextcdf4.md` gains a "How it works" section; `docs/NEXTCDF4_float16.md` and `docs/mainpage.md` get a first-use-of-terms pass and pointers to the architecture page.
+- Docs build stays warning-free (`WARN_AS_ERROR`); comment-only changes, `ctest` unaffected. No Spack/conda recipe changes.
+- Out of scope: `test/`/`examples/` docs, other UDF readers' deep docs, `EXTRACT_ALL`/`WARN_IF_UNDOCUMENTED` enforcement, code changes, IEEE float16 (Sprint 1J), release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1I-better-documentation.md](plan/v4.3.0-sprint1I-better-documentation.md)
+
+#### Sprint 1J - Support IEEE 754 Float16
 
 #### Sprint 2 - 
 - Tag v4.3.0 and write `docs/releases/v4.3.0.md` (HDF5 detection change, CMake 3.19 minimum, conda GeoTIFF, Sprint 1A NEXTCDF-4 bfloat16 examples and `NEP_ZSTD_PLUGIN_DIR`, Sprint 1B typed small-float I/O and the `nc_*_bfloat16` functions, #376, Sprint 1C optimized benchmark results, the bfloat16 GDAS sample and `bfloat16_io_perf`, the #382 contiguous-layout fix, and the fix for untyped `nc_put_var`/`nc_get_var`/`var1`/`vars` failing with `NC_EBADTYPE` on NEXTCDF-4).

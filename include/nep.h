@@ -7,7 +7,8 @@
  *
  * @section udf_slots UDF Slot Allocation
  *
- * NetCDF-C 4.10.0+ provides 10 UDF slots (UDF0-UDF9):
+ * Current netcdf-c `main` provides 64 UDF slots (UDF0-UDF63). NEP
+ * occupies UDF0-UDF9:
  * - UDF0: GeoTIFF BigTIFF (magic: "II+")
  * - UDF1: GeoTIFF standard TIFF (magic: "II*")
  * - UDF2: GRIB2 meteorological data (magic: "GRIB")
@@ -230,10 +231,10 @@ extern "C" {
  * @defgroup nep_udf_slots NEP UDF Slot Allocation
  * @{
  *
- * NetCDF-C exposes ten User-Defined Format (UDF) slots (UDF0–UDF9). Each NEP
- * format handler occupies a permanently assigned slot so that multiple handlers
- * can be enabled simultaneously without conflict. Slot assignments are stable
- * across NEP releases.
+ * Current netcdf-c `main` exposes 64 User-Defined Format (UDF) slots
+ * (UDF0–UDF63). Each NEP format handler occupies a permanently assigned slot
+ * so that multiple handlers can be enabled simultaneously without conflict.
+ * Slot assignments are stable across NEP releases.
  *
  * | Slot  | Macro                      | Format                   | Magic       |
  * |-------|----------------------------|--------------------------|-------------|

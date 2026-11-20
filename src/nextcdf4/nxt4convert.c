@@ -12,7 +12,25 @@
 #include <string.h>
 #include "nxt4internal.h"
 
-/** Observe conversion exceptions without changing HDF5's result.
+/**
+ * @brief HDF5 type-conversion exception callback that records range
+ * errors without changing HDF5's result.
+ *
+ * Registered on a dataset-transfer property list by
+ * nx4_conversion_dxpl(). HDF5 calls it once per value it cannot
+ * convert cleanly. Returning `H5T_CONV_UNHANDLED` keeps HDF5's own
+ * fallback conversion — the callback only *observes*: it sets the
+ * flag in @p user_data when the exception means a genuine
+ * `NC_ERANGE` situation.
+ *
+ * The extra analysis below exists because HDF5 reports some
+ * non-errors (like float→smaller-float rounding) with the same
+ * exception codes as real overflow. For a float source the value is
+ * decoded byte-order-safely and re-checked against the integer
+ * destination's exact bounds (2^precision, adjusted for sign), so a
+ * merely rounded value does not raise a false range error. NaN and
+ * infinities into integer targets are always range errors.
+ *
  * @param exception Conversion exception.
  * @param src_id Source datatype.
  * @param dst_id Destination datatype.
@@ -66,7 +84,15 @@ nx4_conversion_exception(H5T_conv_except_t exception, hid_t src_id,
     return H5T_CONV_UNHANDLED;
 }
 
-/** Create an owned transfer property list observing conversion range errors.
+/**
+ * @brief Create a dataset-transfer property list that watches for
+ * conversion range errors.
+ *
+ * Used by the code paths that still convert through HDF5 (IEEE
+ * float16). The caller owns the returned `hid_t` and must close it
+ * with `H5Pclose()`. @p range_error is reset here and set later by
+ * nx4_conversion_exception() if a real `NC_ERANGE` occurs mid-I/O.
+ *
  * @param dxplp Receives the property list, or -1 on failure.
  * @param range_error Per-operation flag, reset to zero.
  * @return NC_NOERR or NC_EHDFERR.
@@ -86,7 +112,15 @@ nx4_conversion_dxpl(hid_t *dxplp, int *range_error)
     return NC_NOERR;
 }
 
-/** Test whether a type is a standard numeric atomic type.
+/**
+ * @brief Test whether a type is a standard numeric atomic type.
+ *
+ * "Standard numeric" means the classic netCDF numeric types
+ * (`NC_BYTE` through `NC_DOUBLE`, including the unsigned set) — the
+ * ones nx4_convert_type() handles itself. `NC_CHAR`, `NC_STRING`,
+ * small floats, bitfields, references and user-defined types are
+ * excluded.
+ *
  * @param t NetCDF type.
  * @return Nonzero for a standard numeric type.
  */
@@ -97,7 +131,15 @@ numeric(nc_type t)
         (t >= NC_UBYTE && t <= NC_UINT64);
 }
 
-/** Encode float as bfloat16 with ties to even.
+/**
+ * @brief Encode a `float` as bfloat16 with round-to-nearest-even.
+ *
+ * bfloat16 is the top 16 bits of an IEEE-754 float, so encoding is a
+ * right shift — but the dropped bits must round correctly. Adding
+ * `0x7fff + lsb` before shifting implements ties-to-even. NaN inputs
+ * are preserved as NaN; finite values that overflow to the bfloat16
+ * infinity exponent raise @p range.
+ *
  * @param f Source value.
  * @param range Receives a range flag on finite overflow.
  * @return Encoded bits.
@@ -116,7 +158,16 @@ encode_bfloat(float f, int *range)
     return b;
 }
 
-/** Encode double as bfloat16 with one final rounding.
+/**
+ * @brief Encode a `double` as bfloat16 with a single final rounding.
+ *
+ * A naive `double→float→bfloat16` sequence rounds twice and can land
+ * on the wrong representable value (double rounding). To avoid it,
+ * when the `float` result is inexact the neighboring float on the
+ * correct side of @p d is chosen *before* the final bfloat16 rounding
+ * — so only one rounding decides the outcome. Values beyond
+ * `FLT_MAX` become bfloat16 infinities with @p range set.
+ *
  * @param d Source value.
  * @param range Receives a range flag on finite overflow.
  * @return Encoded bits.
@@ -140,9 +191,22 @@ encode_bfloat_double(double d, int *range)
     return encode_bfloat(f, range);
 }
 
-/** Apply NetCDF quantization after conversion, using alias-safe bit access.
+/**
+ * @brief Apply netCDF quantization in place after conversion.
+ *
+ * Quantization throws away low-order mantissa bits of float/double
+ * data to make compression more effective. The three modes:
+ * `NC_QUANTIZE_BITGROOM` alternately sets/zeros the tail bits,
+ * `NC_QUANTIZE_GRANULARBR` keeps a per-value decimal precision, and
+ * `NC_QUANTIZE_BITROUND` keeps a fixed bit count and rounds. Fill
+ * values, zeros and non-finite values are left untouched.
+ *
+ * All bit manipulation goes through `memcpy` to stay legal under
+ * strict aliasing — the buffer was written as a real float/double,
+ * and reading it as an integer through a cast would be undefined.
+ *
  * @param data Numeric destination buffer.
- * @param t Destination type.
+ * @param t Destination type (`NC_FLOAT` or `NC_DOUBLE`).
  * @param n Element count.
  * @param fill Optional fill value.
  * @param mode Validated quantization mode.
@@ -202,10 +266,20 @@ quantize(void *data, nc_type t, size_t n, const void *fill, int mode, int nsd)
     }
 }
 
-/** Check integer range without passing 64-bit boundaries through floating point.
+/**
+ * @brief Check integer range without passing 64-bit boundaries
+ * through floating point.
+ *
+ * Comparing a `long long` to 2^63 via floating point is imprecise
+ * near the boundary (exactly the values that matter for `NC_UINT64`
+ * and `NC_INT64`), so integer-to-integer conversions are range-checked
+ * entirely in integer arithmetic: unsigned sources go through @p u,
+ * signed through @p s.
+ *
  * @param source Source type.
  * @param target Integer destination type.
- * @param u Source converted to unsigned long long, used for unsigned sources.
+ * @param u Source converted to unsigned long long, used for unsigned
+ * sources.
  * @param s Source converted to long long, used for signed sources.
  * @return Nonzero when outside the destination range.
  */
@@ -229,7 +303,14 @@ integer_range(nc_type source, nc_type target, unsigned long long u, long long s)
     return s < minimum || (s >= 0 && (unsigned long long)s > maximum);
 }
 
-/** Convert one source array to each standard destination type.
+/**
+ * @brief Macro: expand a loop converting one source C type to every
+ * standard destination type.
+ *
+ * Used inside nx4_convert_type()'s `switch (src_type)`; generates the
+ * per-destination loops, including `DEST_INT` cases with range
+ * checking and `NC_FLOAT`/`NC_DOUBLE` cases with overflow detection.
+ *
  * @param T Source C type.
  * @param REAL Whether the source is floating point.
  */
@@ -261,7 +342,16 @@ integer_range(nc_type source, nc_type target, unsigned long long u, long long s)
     } \
 } while (0)
 
-/** Write integer destinations with guarded real-to-integer conversion.
+/**
+ * @brief Macro: one `case` of CONVERT_SOURCE writing an integer
+ * destination with guarded conversion.
+ *
+ * Real sources are truncated and checked against `LOW`/`HIGH` in
+ * `long double`; integer sources are checked by integer_range().
+ * Out-of-range values set `*range_error` and store the fill value —
+ * except the classic `NC_UBYTE`→`NC_BYTE` overflow, which netcdf-c
+ * historically tolerates under `_NCProperties` strict-nc3 semantics.
+ *
  * @param ID NetCDF destination type.
  * @param D Destination C type.
  * @param LOW Inclusive lower bound.
@@ -283,9 +373,26 @@ integer_range(nc_type source, nc_type target, unsigned long long u, long long s)
         } \
         break;
 
-/** Convert supported numeric buffers; see the private header for parameters.
- * @param src Source buffer.
- * @param dest Destination buffer.
+/**
+ * @brief NEP's internal numeric conversion engine for NEXTCDF-4.
+ *
+ * Converts between standard numeric atomic types, and between
+ * `NC_BFLOAT16`/`NC_FLOAT16` storage and `NC_FLOAT`/`NC_DOUBLE`
+ * buffers. Modeled on netcdf-c's `libsrc4/nc4var.c` conversion but
+ * owned by NEP so behavior (in particular `NC_ERANGE` reporting,
+ * issue #381) is consistent across all I/O paths: variable I/O,
+ * attributes and quantized writes.
+ *
+ * Three strategies: standard numerics convert elementwise in C with
+ * exact range checks; `NC_FLOAT16` pairs go through HDF5's native
+ * conversion watched by nx4_conversion_exception() (the deliberate
+ * float16 exception); `NC_BFLOAT16` pairs use encode_bfloat() with
+ * round-to-nearest-even. Quantization is applied to the converted
+ * output last. Callers may probe with NULL buffers to validate a
+ * conversion before allocating.
+ *
+ * @param src Source buffer (may be NULL for a validation-only probe).
+ * @param dest Destination buffer (may be NULL for a probe).
  * @param src_type Resolved source type.
  * @param dest_type Resolved destination type.
  * @param len Element count.
@@ -294,7 +401,8 @@ integer_range(nc_type source, nc_type target, unsigned long long u, long long s)
  * @param strict_nc3 Classic byte-range convention.
  * @param quantize_mode Quantization mode.
  * @param nsd Quantization precision.
- * @return NC_NOERR or a type, argument, allocation or HDF5 error.
+ * @return NC_NOERR or a type, argument, allocation or HDF5 error;
+ * overflow is reported via @p range_error, not the return value.
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
 int
@@ -308,6 +416,10 @@ nx4_convert_type(const void *src, void *dest, nc_type src_type,
         (dest_type == NC_BFLOAT16 && (src_type == NC_FLOAT || src_type == NC_DOUBLE));
     int half = (src_type == NC_FLOAT16 && (dest_type == NC_FLOAT || dest_type == NC_DOUBLE)) ||
         (dest_type == NC_FLOAT16 && (src_type == NC_FLOAT || src_type == NC_DOUBLE));
+    /* Validate argument and type combination first, then dispatch on
+     * the conversion kind: identical types memcpy, float16 goes
+     * through HDF5, bfloat16 uses the RNE encoders, everything else
+     * uses the generated per-source loops. Quantization runs last. */
     if (!range_error) return NC_EINVAL;
     *range_error = 0;
     if ((src_type == NC_CHAR) != (dest_type == NC_CHAR)) return NC_ECHAR;

@@ -69,7 +69,7 @@ NEP implements NetCDF's UDF system to provide transparent access to various scie
 
 #### UDF Slot Allocation
 
-NetCDF-C exposes ten UDF slots (0–9). NEP assigns each format handler a permanent slot:
+Current netcdf-c `main` exposes 64 UDF slots (UDF0–UDF63). NEP assigns each format handler a permanent slot in UDF0–UDF9:
 
 | Format | UDF Slot | NetCDF-C Constant | Notes |
 |--------|----------|-------------------|-------|

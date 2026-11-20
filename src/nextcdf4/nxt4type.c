@@ -13,9 +13,11 @@
 #include "nxt4internal.h"
 
 /**
+ * @brief Return the in-memory size of an atomic type — a thin public
+ * wrapper over NEXTCDF4_type_size().
  * @param xtype NetCDF atomic type.
  * @param sizep Destination for the size.
- * @return The in-memory type size for any base nc_type.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_get_type_size(nc_type xtype, size_t *sizep)
@@ -24,9 +26,16 @@ NEXTCDF4_get_type_size(nc_type xtype, size_t *sizep)
 }
 
 /**
- * Validate a type for definition.
+ * @brief Check that the file may have a user-defined type defined now.
+ *
+ * User-defined types (compound, vlen, enum, opaque) require define
+ * mode and write access. They are an enhanced-model feature, so both
+ * `NC_CLASSIC_MODEL` and `NC_NETCDF4_MODEL` files reject them —
+ * NEXTCDF-4's netcdf-4-model mode deliberately supports only what
+ * upstream netcdf-c already knows.
+ *
  * @param file NEXTCDF-4 file state.
- * @param grp Group.
+ * @param grp Group (currently unused).
  * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 static int
@@ -47,11 +56,17 @@ check_type_write(NEXTCDF4_FILE_INFO_T *file, NC_GRP_INFO_T *grp)
 }
 
 /**
+ * @brief Resolve file state and the group an ncid refers to.
+ *
+ * Shared prologue for the `def_*` functions: NEXTCDF4_get_file() maps
+ * the ncid to file state, `nc4_find_nc4_grp` finds the in-memory
+ * group (types are defined per-group in the enhanced model).
+ *
  * @param ncid NetCDF file identifier.
- * @param h5 NetCDF-4 file state.
- * @param grp Group.
- * @param filep Destination for the NEXTCDF-4 file state.
- * @return The group associated with an ncid.
+ * @param h5 Destination for the NetCDF-4 file state.
+ * @param grp Destination for the group.
+ * @param filep Destination for the NEXTCDF-4 file state; may be NULL.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 static int
 get_grp_and_file(int ncid, NC_FILE_INFO_T **h5, NC_GRP_INFO_T **grp,
@@ -66,7 +81,11 @@ get_grp_and_file(int ncid, NC_FILE_INFO_T **h5, NC_GRP_INFO_T **grp,
 }
 
 /**
- * Map an in-memory nc_type to an HDF5 atomic type.
+ * @brief Map an atomic nc_type to a fresh HDF5 datatype `hid_t`.
+ *
+ * Convenience wrapper over NEXTCDF4_map_hdf_type() returning -1
+ * instead of an error code. The caller owns the returned datatype.
+ *
  * @param xtype NetCDF atomic type.
  * @return HDF5 datatype, or negative on unsupported type.
  */
@@ -80,9 +99,17 @@ base_hdf_type(nc_type xtype)
 }
 
 /**
- * Record an HDF5 datatype in the in-memory type without committing.
- * @param type HDF5 datatype.
- * @param hdf HDF5 datatype identifier to attach.
+ * @brief Record a built HDF5 datatype on a type, still uncommitted.
+ *
+ * HDF5 distinguishes a "transient" datatype (exists only in memory)
+ * from a "committed" one (named and stored in the file). Types being
+ * defined stay transient so members can still be inserted; they are
+ * committed later at `_enddef` by NEXTCDF4_write_types() (or
+ * immediately for vlen/opaque, which have no members).
+ *
+ * @param type In-memory type record.
+ * @param hdf HDF5 datatype identifier to attach (ownership stays
+ * with the record).
  * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 static int
@@ -99,9 +126,14 @@ attach_hdf_type(NC_TYPE_INFO_T *type, hid_t hdf)
 }
 
 /**
- * Commit an HDF5 datatype to its group.
+ * @brief Commit (name and store) an HDF5 datatype into a group.
+ *
+ * Committed datatypes are named objects in the file, like variables —
+ * this is what makes a user-defined type persistent. Falls back to
+ * the root group when the group's own HDF5 handle isn't open yet.
+ *
  * @param grp Group.
- * @param type HDF5 datatype.
+ * @param type In-memory type record.
  * @param hdf HDF5 datatype to commit.
  * @return `NC_NOERR` on success, or a NetCDF error code.
  */
@@ -131,7 +163,16 @@ commit_hdf_type(NC_GRP_INFO_T *grp, NC_TYPE_INFO_T *type, hid_t hdf)
     return NC_NOERR;
 }
 
-/** Define a compound type.
+/**
+ * @brief Define a compound type — the `nc_def_compound()` dispatch
+ * entry.
+ *
+ * A compound type is a C-struct-like record of named fields at byte
+ * offsets. Creates an empty transient `H5T_COMPOUND`, registers the
+ * `NC_TYPE_INFO_T`, and attaches the datatype uncommitted — fields
+ * are added by NEXTCDF4_insert_compound() and the type is committed
+ * at `_enddef`.
+ *
  * @param ncid NetCDF file identifier.
  * @param size Size of the compound type in bytes.
  * @param name Type name.
@@ -179,7 +220,14 @@ fail:
     return ret;
 }
 
-/** Insert a scalar field into a compound type.
+/**
+ * @brief Insert a scalar field into a compound type — the
+ * `nc_insert_compound()` dispatch entry.
+ *
+ * Maps the field's atomic type to HDF5 and `H5Tinsert`s it at the
+ * byte offset in the (still transient) compound datatype, then
+ * records the field in the in-memory type.
+ *
  * @param ncid NetCDF file identifier.
  * @param typeid Compound type id.
  * @param name Field name.
@@ -227,7 +275,9 @@ NEXTCDF4_insert_compound(int ncid, nc_type typeid, const char *name,
     return NC_NOERR;
 }
 
-/** Insert an array field into a compound type.
+/**
+ * @brief Insert an array field into a compound type; not implemented.
+ *
  * @param ncid NetCDF file identifier.
  * @param typeid Compound type id.
  * @param name Field name.
@@ -235,7 +285,7 @@ NEXTCDF4_insert_compound(int ncid, nc_type typeid, const char *name,
  * @param xtype NetCDF type of the field elements.
  * @param ndims Number of array dimensions.
  * @param dim_sizesp Array dimension sizes.
- * @return `NC_NOERR` on success, or a NetCDF error code.
+ * @return `NC_ENOTBUILT` always.
  */
 int
 NEXTCDF4_insert_array_compound(int ncid, nc_type typeid, const char *name,
@@ -247,7 +297,9 @@ NEXTCDF4_insert_array_compound(int ncid, nc_type typeid, const char *name,
     return NC_ENOTBUILT;
 }
 
-/** Inquire a field of a compound type.
+/**
+ * @brief Inquire a field of a compound type — the
+ * `nc_inq_compound_field()` dispatch entry.
  * @param ncid NetCDF file identifier.
  * @param typeid Compound type id.
  * @param fieldid Field index.
@@ -292,7 +344,9 @@ NEXTCDF4_inq_compound_field(int ncid, nc_type typeid, int fieldid, char *name,
     return NC_NOERR;
 }
 
-/** Get a compound field's index by name.
+/**
+ * @brief Get a compound field's index by name — the
+ * `nc_inq_compound_fieldindex()` dispatch entry.
  * @param ncid NetCDF file identifier.
  * @param typeid Compound type id.
  * @param name Field name.
@@ -325,7 +379,15 @@ NEXTCDF4_inq_compound_fieldindex(int ncid, nc_type typeid, const char *name,
     return NC_EBADFIELD;
 }
 
-/** Define a variable-length type.
+/**
+ * @brief Define a variable-length type — the `nc_def_vlen()` dispatch
+ * entry.
+ *
+ * A vlen variable stores a different number of elements per datum
+ * (`hvl_t` handles in memory, heap-allocated on disk). Because vlens
+ * have no fields to insert, the `H5Tvlen_create` datatype is
+ * committed immediately rather than deferred to `_enddef`.
+ *
  * @param ncid NetCDF file identifier.
  * @param name Type name.
  * @param base_typeid Base type of the vlen elements.
@@ -384,13 +446,15 @@ fail:
     return ret;
 }
 
-/** Write a vlen element value.
+/**
+ * @brief Write a vlen element value (`nc_put_vlen_element`); not
+ * implemented.
  * @param ncid NetCDF file identifier.
  * @param typeid Vlen type id.
  * @param vlen_element Destination for the vlen element.
  * @param len Number of elements.
  * @param data Element data.
- * @return `NC_NOERR` on success, or a NetCDF error code.
+ * @return `NC_ENOTBUILT` always.
  */
 int
 NEXTCDF4_put_vlen_element(int ncid, int typeid, void *vlen_element,
@@ -400,13 +464,15 @@ NEXTCDF4_put_vlen_element(int ncid, int typeid, void *vlen_element,
     return NC_ENOTBUILT;
 }
 
-/** Read a vlen element value.
+/**
+ * @brief Read a vlen element value (`nc_get_vlen_element`); not
+ * implemented.
  * @param ncid NetCDF file identifier.
  * @param typeid Vlen type id.
  * @param vlen_element Vlen element to read.
  * @param lenp Destination for the element count.
  * @param data Destination for the element data.
- * @return `NC_NOERR` on success, or a NetCDF error code.
+ * @return `NC_ENOTBUILT` always.
  */
 int
 NEXTCDF4_get_vlen_element(int ncid, int typeid, const void *vlen_element,
@@ -416,7 +482,14 @@ NEXTCDF4_get_vlen_element(int ncid, int typeid, const void *vlen_element,
     return NC_ENOTBUILT;
 }
 
-/** Define an enum type.
+/**
+ * @brief Define an enum type — the `nc_def_enum()` dispatch entry.
+ *
+ * An enum is named constants over an integer base type. Creates a
+ * transient `H5Tenum_create` datatype and attaches it uncommitted;
+ * members are added by NEXTCDF4_insert_enum() and the type is
+ * committed at `_enddef`.
+ *
  * @param ncid NetCDF file identifier.
  * @param base_typeid Integer base type id.
  * @param name Type name.
@@ -476,7 +549,14 @@ fail:
     return ret;
 }
 
-/** Insert a member into an enum type.
+/**
+ * @brief Insert a member into an enum type — the `nc_insert_enum()`
+ * dispatch entry.
+ *
+ * The member value arrives as raw bytes in the enum's base type; it
+ * is widened to `long long` for `H5Tenum_insert` and stored
+ * byte-for-byte in the in-memory record.
+ *
  * @param ncid NetCDF file identifier.
  * @param typeid Enum type id.
  * @param name Member name.
@@ -522,7 +602,9 @@ NEXTCDF4_insert_enum(int ncid, nc_type typeid, const char *name, const void *val
     return NC_NOERR;
 }
 
-/** Inquire an enum member by index.
+/**
+ * @brief Inquire an enum member by index — the
+ * `nc_inq_enum_member()` dispatch entry.
  * @param ncid NetCDF file identifier.
  * @param typeid Enum type id.
  * @param idx Member index.
@@ -556,7 +638,9 @@ NEXTCDF4_inq_enum_member(int ncid, nc_type typeid, int idx, char *name, void *va
     return NC_NOERR;
 }
 
-/** Get an enum member name by value.
+/**
+ * @brief Get an enum member name by value — the `nc_inq_enum_ident()`
+ * dispatch entry.
  * @param ncid NetCDF file identifier.
  * @param typeid Enum type id.
  * @param value Member value.
@@ -592,7 +676,14 @@ NEXTCDF4_inq_enum_ident(int ncid, nc_type typeid, long long value, char *identif
     return NC_EINVAL;
 }
 
-/** Define an opaque type.
+/**
+ * @brief Define an opaque type — the `nc_def_opaque()` dispatch
+ * entry.
+ *
+ * An opaque type is a fixed-size blob the library does not interpret.
+ * Like vlens it has no members, so the `H5T_OPAQUE` datatype is
+ * committed immediately.
+ *
  * @param ncid NetCDF file identifier.
  * @param size Size of the opaque data in bytes.
  * @param name Type name.
@@ -640,9 +731,14 @@ fail:
 }
 
 /**
- * Commit a single previously-attached (but not committed) type.
- * @param grp Group.
- * @param type HDF5 datatype.
+ * @brief Commit one previously-attached-but-uncommitted type.
+ *
+ * Used at `_enddef` for compounds and enums, whose HDF5 datatypes
+ * were built transient so members could be inserted during define
+ * mode.
+ *
+ * @param grp Group the type belongs to.
+ * @param type In-memory type record.
  * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 static int
@@ -674,7 +770,7 @@ commit_one_type(NC_GRP_INFO_T *grp, NC_TYPE_INFO_T *type)
 }
 
 /**
- * Recursively commit all uncommitted types in a group tree.
+ * @brief Recursively commit all uncommitted types in a group tree.
  * @param grp Group.
  * @return `NC_NOERR` on success, or a NetCDF error code.
  */
@@ -700,7 +796,10 @@ commit_types_in_grp(NC_GRP_INFO_T *grp)
     return NC_NOERR;
 }
 
-/** Commit all user-defined types to the file.
+/**
+ * @brief Commit every pending user-defined type — called by
+ * NEXTCDF4__enddef() before the metadata writer runs, so committed
+ * datatypes exist when variable datasets are created.
  * @param h5 NetCDF-4 file state.
  * @return `NC_NOERR` on success, or a NetCDF error code.
  */
@@ -710,7 +809,9 @@ NEXTCDF4_write_types(NC_FILE_INFO_T *h5)
     return commit_types_in_grp(h5->root_grp);
 }
 
-/** Inquire a user-defined type.
+/**
+ * @brief Inquire a user-defined type — the `nc_inq_user_type()`
+ * dispatch entry.
  * @param ncid NetCDF file identifier.
  * @param typeid Type id.
  * @param name Destination for the type name.
@@ -749,7 +850,14 @@ NEXTCDF4_inq_user_type(int ncid, nc_type typeid, char *name, size_t *sizep,
     return NC_NOERR;
 }
 
-/** Get a type's id by name.
+/**
+ * @brief Get a type's id by name — the `nc_inq_typeid()` dispatch
+ * entry.
+ *
+ * Type names are visible file-wide in netCDF semantics; the lookup
+ * recurses through the group tree via netcdf-c's
+ * `nc4_rec_find_named_type`.
+ *
  * @param ncid NetCDF file identifier.
  * @param name Type name.
  * @param typeidp Destination for the type id.
@@ -773,7 +881,14 @@ NEXTCDF4_inq_typeid(int ncid, const char *name, nc_type *typeidp)
     return NC_NOERR;
 }
 
-/** Compare two types for equality.
+/**
+ * @brief Compare two types for equality — the `nc_inq_type_equal()`
+ * dispatch entry.
+ *
+ * Two types count as equal when they are the same in-memory record or
+ * share class and size; field-by-field structural comparison is not
+ * attempted.
+ *
  * @param ncid1 NetCDF file identifier of the first type.
  * @param typeid1 First type id.
  * @param ncid2 NetCDF file identifier of the second type.
@@ -807,7 +922,9 @@ NEXTCDF4_inq_type_equal(int ncid1, nc_type typeid1, int ncid2, nc_type typeid2,
     return NC_NOERR;
 }
 
-/** Get the typeids of user-defined types in a group.
+/**
+ * @brief Get the type ids of the user-defined types in a group — the
+ * `nc_inq_typeids()` dispatch entry.
  * @param ncid NetCDF file identifier.
  * @param ntypes Destination for the number of types.
  * @param typeids Destination for the type ids.

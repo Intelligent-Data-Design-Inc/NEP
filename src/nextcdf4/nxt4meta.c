@@ -1,7 +1,13 @@
 /**
  * @file nxt4meta.c
- * @brief NEXTCDF-4 Sprint 3 metadata model: dimensions, variables,
+ * @brief NEXTCDF-4 metadata model: dimensions, variables,
  * attributes, type mapping, and on-disk discovery.
+ *
+ * This file contains the two halves of the metadata lifecycle (see
+ * @ref nextcdf4_architecture): the def/inq dispatch entries that
+ * build and query the in-memory `NC_*_INFO_T` tree during define
+ * mode, and the loader (`NEXTCDF4_load_metadata` and its helpers)
+ * that rebuilds the same tree from HDF5 contents at open.
 
  * @author Edward Hartnett
  * @date 2026-08-28
@@ -16,7 +22,15 @@
 #include "nxt4internal.h"
 
 /**
- * List of attribute names that are internal to NEXTCDF-4/HDF5.
+ * @brief Attribute names that are internal to NEXTCDF-4/HDF5.
+ *
+ * NEXTCDF-4 (and the NetCDF-4/HDF5 convention generally) stores
+ * bookkeeping as ordinary HDF5 attributes: marker attributes like
+ * `_Nextcdf4Backend`, dimension-scale attributes like `CLASS` and
+ * `NAME`, and netcdf-c's own conventions like `_Netcdf4Coordinates`
+ * and `_FillValue`. They must never appear in `nc_inq_att*` results,
+ * so is_reserved_att() filters them during metadata load and
+ * `nc_put_att`/`nc_rename_att` reject them as user names.
  */
 static const char *reserved_atts[] = {
     NEXTCDF4_BACKEND_ATT,
@@ -41,6 +55,11 @@ static const char *reserved_atts[] = {
 };
 
 /**
+ * @brief Test whether an attribute name is reserved for internal use.
+ *
+ * See #reserved_atts. Used to hide NEXTCDF-4 bookkeeping attributes
+ * from users and to reject reserved names in `nc_put_att`.
+ *
  * @param name Name.
  * @return Nonzero when @p name is a reserved attribute name.
  */
@@ -55,7 +74,12 @@ is_reserved_att(const char *name)
 }
 
 /**
- * Free a dynamically-allocated string list used by the loader.
+ * @brief Free a dynamically-allocated string list used by the loader.
+ *
+ * The `H5Literate` callbacks (find_dim_cb, find_var_cb) build
+ * `NULL`-terminated-capacity arrays of `strdup`'d names; this frees
+ * the elements and the array.
+ *
  * @param names String array.
  * @param n Element count.
  */
@@ -72,8 +96,15 @@ free_name_list(char **names, size_t n)
 
 /**
  * @brief Check that a file is writable and currently in define mode.
+ *
+ * Common guard for every metadata-changing dispatch entry
+ * (`nc_def_*`, `nc_rename_*`, `nc_put_att`, `nc_del_att`). netCDF
+ * semantics require define mode for metadata changes; files opened
+ * read-only reject them outright.
+ *
  * @param file NEXTCDF-4 file state.
- * @return `NC_NOERR` or an appropriate NetCDF error code.
+ * @return `NC_NOERR`, `NC_EPERM` (read-only file), or
+ * `NC_ENOTINDEFINE`.
  */
 int
 NEXTCDF4_check_write_define(NEXTCDF4_FILE_INFO_T *file)
@@ -87,6 +118,17 @@ NEXTCDF4_check_write_define(NEXTCDF4_FILE_INFO_T *file)
 
 /**
  * @brief Map an atomic nc_type to its on-disk HDF5 datatype.
+ *
+ * Every netCDF atomic type is stored as a copy of an HDF5 predefined
+ * type — little-endian for numerics so files are
+ * architecture-independent. The mapping covers the standard types
+ * (`NC_BYTE`…`NC_DOUBLE`, `NC_CHAR`, `NC_STRING`) plus NEXTCDF-4's
+ * extended set: `NC_FLOAT16`, `NC_BFLOAT16`, the HDF5 2.x small
+ * floats (FP8/FP6/FP4), complex, bitfields, and the reference types
+ * `NC_REF_OBJECT`/`NC_REF_REGION`. The caller owns the returned
+ * `hid_t` and must `H5Tclose` it. The inverse mapping (disk →
+ * nc_type) is map_nc_type().
+ *
  * @param xtype NetCDF atomic type.
  * @param typep Destination for an HDF5 datatype identifier.
  * @return `NC_NOERR` or `NC_EBADTYPE`.
@@ -193,6 +235,11 @@ NEXTCDF4_map_hdf_type(nc_type xtype, hid_t *typep)
 
 /**
  * @brief Return the in-memory size, in bytes, of an atomic nc_type.
+ *
+ * This is the size of one element in a user buffer: `NC_STRING` is
+ * `sizeof(char *)`, references are their opaque token sizes (8 and
+ * 12 bytes), the sub-byte small floats round up to 1 byte.
+ *
  * @param xtype NetCDF atomic type.
  * @param sizep Destination for the size in bytes.
  * @return `NC_NOERR` or `NC_EBADTYPE`.
@@ -269,12 +316,15 @@ NEXTCDF4_type_size(nc_type xtype, size_t *sizep)
 
 /**
  * @brief Return the short name for an atomic nc_type.
+ *
+ * These names ("float16", "bfloat16", ...) label the in-memory
+ * `NC_TYPE_INFO_T` records set_var_type() builds for atomic-typed
+ * variables.
+ *
+ * @param xtype NetCDF atomic type.
+ * @return Static name string, or `"unknown"`.
  */
 const char *
-/** 
- * @param xtype NetCDF atomic type.
- * @return `NC_NOERR` on success, or a NetCDF error code.
- */
 NEXTCDF4_type_name(nc_type xtype)
 {
     switch (xtype) {
@@ -310,7 +360,16 @@ NEXTCDF4_type_name(nc_type xtype)
 }
 
 /**
- * @brief Check whether an atomic type is allowed for the current file mode.
+ * @brief Check whether an atomic type is allowed for the file's
+ * compatibility mode.
+ *
+ * Called at `nc_def_var`/`nc_put_att` time. `NC_CLASSIC_MODEL` files
+ * accept only the six classic types; `NC_NETCDF4_MODEL` adds the
+ * enhanced types (unsigned ints, int64, string) but not the
+ * NEXTCDF-4-only types (small floats, complex, bitfields,
+ * references), keeping the file readable by upstream netcdf-c. See
+ * the mode table in @ref nextcdf4_architecture.
+ *
  * @param file NEXTCDF-4 file state.
  * @param xtype Candidate NetCDF type.
  * @return `NC_NOERR` or `NC_EBADTYPE`/`NC_ENOTNC4`.
@@ -363,7 +422,16 @@ NEXTCDF4_check_atomic_type(NEXTCDF4_FILE_INFO_T *file, nc_type xtype)
 }
 
 /**
- * Build an NC_TYPE_INFO_T for a fixed-size atomic variable.
+ * @brief Build the `NC_TYPE_INFO_T` record for an atomic-typed
+ * variable.
+ *
+ * netcdf-c expects every variable to point at a type record; atomic
+ * types get a small synthetic one whose `hdr.id` is the `nc_type`
+ * itself. The `nc_type_class` mapping groups the extended types onto
+ * classic classes (small floats → `NC_FLOAT`, bitfields → `NC_INT`,
+ * references → `NC_OPAQUE`) so shared `NC4_*` inquiry helpers keep
+ * working.
+ *
  * @param var Variable.
  * @param xtype NetCDF atomic type.
  * @return `NC_NOERR` on success, or a NetCDF error code.
@@ -416,11 +484,15 @@ set_var_type(NC_VAR_INFO_T *var, nc_type xtype)
 }
 
 /**
- * Write a null-terminated scalar string HDF5 attribute.
+ * @brief Write a null-terminated scalar string HDF5 attribute.
+ *
+ * Helper for the hidden marker attributes (`CLASS`, `NAME`) written
+ * on dimension scales.
+ *
  * @param loc HDF5 location identifier.
  * @param name Name.
  * @param value Data buffer.
- * @return `NC_NOERR` on success, or a NetCDF error code.
+ * @return `NC_NOERR` on success, or `NC_EHDFERR`.
  */
 static int
 write_string_att(hid_t loc, const char *name, const char *value)
@@ -451,11 +523,15 @@ done:
 }
 
 /**
- * Write a one-element 32-bit integer HDF5 attribute.
+ * @brief Write a one-element 32-bit integer HDF5 attribute.
+ *
+ * Helper for the hidden id attributes (`_Netcdf4Dimid`,
+ * `_Netcdf4Varid`).
+ *
  * @param loc HDF5 location identifier.
  * @param name Name.
  * @param value Data buffer.
- * @return `NC_NOERR` on success, or a NetCDF error code.
+ * @return `NC_NOERR` on success, or `NC_EHDFERR`.
  */
 static int
 write_int_att(hid_t loc, const char *name, int value)
@@ -480,12 +556,17 @@ done:
 }
 
 /**
- * Write an array of 32-bit integers as an HDF5 attribute.
+ * @brief Write an array of 32-bit integers as an HDF5 attribute.
+ *
+ * Helper for `_Netcdf4Coordinates`, which records a variable's dimids
+ * so open can recover them without walking dimension scales. A
+ * zero-length attribute uses an `H5S_NULL` dataspace.
+ *
  * @param loc HDF5 location identifier.
  * @param name Name.
  * @param values Array of int values to write.
  * @param len Number of values.
- * @return `NC_NOERR` on success, or a NetCDF error code.
+ * @return `NC_NOERR` on success, or `NC_EHDFERR`.
  */
 static int
 write_int_array_att(hid_t loc, const char *name, const int *values, size_t len)
@@ -518,7 +599,14 @@ done:
 }
 
 /**
- * Map an on-disk HDF5 datatype to a fixed-size NetCDF type.
+ * @brief Map an on-disk HDF5 datatype back to a NetCDF atomic type.
+ *
+ * Inverse of NEXTCDF4_map_hdf_type(), used at open. HDF5 class +
+ * size + sign resolves the standard types; small floats, references
+ * and complex need `H5Tequal` against specific predefined types.
+ * Datatypes that don't map (e.g. committed user types, which are
+ * loaded by load_one_type instead) yield `NC_EBADTYPE`.
+ *
  * @param htype HDF5 datatype to map.
  * @param xtypep Destination for the NetCDF atomic type.
  * @return `NC_NOERR` on success, or a NetCDF error code.
@@ -620,11 +708,20 @@ map_nc_type(hid_t htype, nc_type *xtypep)
 }
 
 /**
+ * @brief Resolve where an attribute lives: on a variable's dataset or
+ * on the root group.
+ *
+ * netCDF attributes are either per-variable or global (`NC_GLOBAL`,
+ * which NEXTCDF-4 stores on the root group). Returns both the
+ * in-memory `NCindex` and the HDF5 `hid_t` the attribute is written
+ * to.
+ *
  * @param grp Group.
- * @param var Variable.
+ * @param var Variable, or NULL for a global attribute.
  * @param listp Destination for the attribute index.
  * @param locp Destination for the HDF5 location identifier.
- * @return The group or variable attribute list and the object HDF5 id.
+ * @return `NC_NOERR` or `NC_EBADID` when the variable's HDF5 dataset
+ * is not open.
  */
 static int
 get_att_context(NC_GRP_INFO_T *grp, NC_VAR_INFO_T *var, NCindex **listp,
@@ -646,7 +743,7 @@ get_att_context(NC_GRP_INFO_T *grp, NC_VAR_INFO_T *var, NCindex **listp,
 }
 
 /**
- * Find an existing attribute by name in the appropriate list.
+ * @brief Find an existing attribute by name in an attribute index.
  * @param list Attribute index to search.
  * @param name Name.
  * @return Pointer to the attribute, or NULL if not found.
@@ -664,9 +761,14 @@ find_att(NCindex *list, const char *name)
 }
 
 /**
- * Allocate and add a new attribute to the in-memory model.
+ * @brief Allocate and add a new attribute to the in-memory model.
+ *
+ * Deep-copies the attribute value: numeric data by `memcpy`,
+ * `NC_STRING` values element-by-element (NULL elements become empty
+ * strings), so the attribute record owns its data outright.
+ *
  * @param list Attribute index to add to.
- * @param container Object that owns the attribute.
+ * @param container Object that owns the attribute (group or var `hdr`).
  * @param name Name.
  * @param xtype NetCDF atomic type.
  * @param len Number of elements.
@@ -731,7 +833,14 @@ add_att(NCindex *list, NC_OBJ *container, const char *name,
 }
 
 /**
- * Read an HDF5 attribute into the in-memory model.
+ * @brief Read one HDF5 attribute into the in-memory model.
+ *
+ * Loader helper: opens the attribute, maps its datatype through
+ * map_nc_type(), reads the values with a matching memory type, and
+ * registers the result via add_att(). Attributes whose datatype does
+ * not map to an atomic nc_type fail — the caller skips them so an
+ * unrecognised attribute cannot sink a file open.
+ *
  * @param loc HDF5 location identifier.
  * @param name Name.
  * @param list Attribute index to add to.
@@ -802,7 +911,14 @@ done:
 }
 
 /**
- * @brief Define a dimension in the current group.
+ * @brief Define a dimension — the `nc_def_dim()` dispatch entry.
+ *
+ * NEXTCDF-4 stores each dimension as an HDF5 **dimension scale**: a
+ * 1-D `int8` dataset marked `CLASS = "DIMENSION_SCALE"` with hidden
+ * `NAME` and `_Netcdf4Dimid` attributes. An unlimited dimension
+ * (`len == 0`) becomes a chunked dataset with `H5S_UNLIMITED` extent.
+ * Classic-model files get at most one unlimited dimension.
+ *
  * @param ncid NetCDF file identifier.
  * @param name Dimension name.
  * @param len Dimension length, or 0 for unlimited.
@@ -828,6 +944,9 @@ NEXTCDF4_def_dim(int ncid, const char *name, size_t len, int *idp)
     int assignedid;
     int ret;
 
+    /* Validate, allocate the in-memory dim record, then create the
+     * dimension-scale dataset (chunked+unlimited for len==0) and write
+     * its CLASS/NAME/_Netcdf4Dimid attributes. */
     if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
         return ret;
     if ((ret = nc4_find_nc4_grp(ncid, &grp)))
@@ -918,7 +1037,12 @@ fail:
 }
 
 /**
- * @brief Inquire about a dimension.
+ * @brief Inquire about a dimension — the `nc_inq_dim()` dispatch
+ * entry.
+ *
+ * Answers from the in-memory tree; for an unlimited dimension `lenp`
+ * is the *current* length.
+ *
  * @param ncid NetCDF file identifier.
  * @param dimid Dimension id.
  * @param name Destination for the dimension name.
@@ -945,7 +1069,21 @@ NEXTCDF4_inq_dim(int ncid, int dimid, char *name, size_t *lenp)
 }
 
 /**
- * @brief Define a variable in the current group.
+ * @brief Define a variable — the `nc_def_var()` dispatch entry.
+ *
+ * Builds the `NC_VAR_INFO_T` record and creates the HDF5 dataset
+ * immediately: scalar variables get a scalar dataspace, dimensioned
+ * variables a simple dataspace (unlimited dims force chunked layout).
+ * The hidden `_Netcdf4Varid` and `_Netcdf4Coordinates` attributes are
+ * written on the dataset, and each dimension's scale is attached with
+ * `H5DSattach_scale`. A 1-D variable named after its only dimension
+ * is a **coordinate variable** — it replaces the dimension's scale
+ * dataset so the variable's data *is* the scale.
+ *
+ * `var->storage` starts at -1 ("not specified") so that layout is
+ * decided here and a later def-var setter cannot silently change it
+ * (issue #382).
+ *
  * @param ncid NetCDF file identifier.
  * @param name Variable name.
  * @param xtype NetCDF atomic type.
@@ -978,6 +1116,10 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
     int i;
     int ret;
 
+    /* Validate name/type/mode, build the NC_VAR_INFO_T, then create
+     * the HDF5 dataset (coordinate variables replace their
+     * dimension's scale dataset), write the hidden id attributes, and
+     * attach the dimension scales. */
     if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
         return ret;
     if ((ret = nc4_find_nc4_grp(ncid, &grp)))
@@ -1134,13 +1276,22 @@ fail:
     return ret;
 }
 
-/** Create or re-create the HDF5 dataset for a variable, applying the
+/**
+ * @brief Create or re-create the HDF5 dataset for a variable.
+ *
+ * Called by `NEXTCDF4_def_var` and by every def-var setter
+ * (`def_var_chunking`, `deflate`, `fletcher32`, `fill`, `endian`):
+ * because HDF5 dataset creation properties are immutable, changing
+ * chunking/compression/fill/endian requires deleting the dataset link
+ * and recreating it with a new creation property list. The hidden id
+ * attributes and dimension-scale attachments are rewritten each time.
+ *
  * @param var Variable.
  * @param h5 NetCDF-4 file state.
  * @param file NEXTCDF-4 file state.
  * @param grp Group.
  * @return `NC_NOERR` on success, or a NetCDF error code.
- * current storage, chunking, fill, filter, and endian settings. */
+ */
 static int
 create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
                    NEXTCDF4_FILE_INFO_T *file, NC_GRP_INFO_T *grp)
@@ -1161,7 +1312,10 @@ create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
     coordinate = (var->ndims == 1 &&
                   !strcmp(var->hdr.name, var->dim[0]->hdr.name));
 
-    /* Remove any existing dataset for this variable. */
+    /* Recreation is delete-and-rebuild: drop the old link and dataset,
+     * rebuild dataspace and creation properties from the current
+     * settings, recreate, rewrite the id attributes and scale
+     * attachments. */
     H5E_BEGIN_TRY {
         if (vinfo && vinfo->hdf_dataset >= 0) {
             H5Dclose(vinfo->hdf_dataset);
@@ -1326,13 +1480,17 @@ fail:
 }
 
 /**
- * Common setup for a variable-storage dispatch function.
+ * @brief Common prologue for the def-var setter dispatch functions.
+ *
+ * Resolves the variable and file state and checks define-mode write
+ * access, so each setter only validates its own arguments.
+ *
  * @param ncid NetCDF file identifier.
  * @param varid Variable identifier.
- * @param h5 NetCDF-4 file state.
- * @param file NEXTCDF-4 file state.
- * @param grp Group.
- * @param var Variable.
+ * @param h5 Destination for the NetCDF-4 file state.
+ * @param file Destination for the NEXTCDF-4 file state.
+ * @param grp Destination for the group.
+ * @param var Destination for the variable.
  * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 static int
@@ -1349,10 +1507,17 @@ find_var_for_write(int ncid, int varid, NC_FILE_INFO_T **h5,
 }
 
 /**
- * @brief Set the storage and chunking parameters for a variable.
+ * @brief Set storage and chunk sizes — the `nc_def_var_chunking()`
+ * dispatch entry.
+ *
+ * Records the layout and per-dimension chunk sizes, then recreates
+ * the dataset via create_var_dataset() since layout is fixed at
+ * dataset creation in HDF5.
+ *
  * @param ncid NetCDF file identifier.
  * @param varid Variable identifier.
- * @param storage Storage class (`NC_CHUNKED`, `NC_CONTIGUOUS` or `NC_COMPACT`).
+ * @param storage Storage class (`NC_CHUNKED` or `NC_CONTIGUOUS`;
+ * `NC_COMPACT` is rejected).
  * @param chunksizesp Chunk size for each dimension, or NULL.
  * @return `NC_NOERR` on success, or a NetCDF error code.
  */
@@ -1390,7 +1555,13 @@ NEXTCDF4_def_var_chunking(int ncid, int varid, int storage,
 }
 
 /**
- * @brief Set the deflate compression parameters for a variable.
+ * @brief Set deflate compression — the `nc_def_var_deflate()`
+ * dispatch entry.
+ *
+ * Records shuffle flag and deflate level on `NEXTCDF4_VAR_INFO_T`
+ * (`-1` means deflate off, distinguishing "level 0" from "unset"),
+ * then recreates the dataset with the new filter pipeline.
+ *
  * @param ncid NetCDF file identifier.
  * @param varid Variable id.
  * @param shuffle Nonzero to enable the shuffle filter.
@@ -1424,7 +1595,8 @@ NEXTCDF4_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
 }
 
 /**
- * @brief Enable or disable the Fletcher32 checksum filter for a variable.
+ * @brief Enable or disable the Fletcher32 checksum — the
+ * `nc_def_var_fletcher32()` dispatch entry.
  * @param ncid NetCDF file identifier.
  * @param varid Variable id.
  * @param fletcher32 `NC_FLETCHER32` to enable the checksum, `NC_NOCHECKSUM` to disable.
@@ -1452,7 +1624,13 @@ NEXTCDF4_def_var_fletcher32(int ncid, int varid, int fletcher32)
 }
 
 /**
- * @brief Set the fill value behavior for a variable.
+ * @brief Set fill behavior — the `nc_def_var_fill()` dispatch entry.
+ *
+ * Stores the no-fill flag and a private copy of the fill value on the
+ * variable, then recreates the dataset: fill value and fill time are
+ * HDF5 creation properties. (Known defect #377: a bfloat16 fill value
+ * is not recovered on reopen.)
+ *
  * @param ncid NetCDF file identifier.
  * @param varid Variable id.
  * @param no_fill Nonzero to suppress fill values.
@@ -1490,7 +1668,13 @@ NEXTCDF4_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
 }
 
 /**
- * @brief Set the byte order for a variable's data.
+ * @brief Set the on-disk byte order — the `nc_def_var_endian()`
+ * dispatch entry.
+ *
+ * Overrides the datatype's byte order in create_var_dataset();
+ * `NC_ENDIAN_NATIVE` leaves the little-endian default produced by
+ * NEXTCDF4_map_hdf_type().
+ *
  * @param ncid NetCDF file identifier.
  * @param varid Variable id.
  * @param endianness `NC_ENDIAN_NATIVE`, `NC_ENDIAN_LITTLE` or `NC_ENDIAN_BIG`.
@@ -1516,7 +1700,13 @@ NEXTCDF4_def_var_endian(int ncid, int varid, int endianness)
 }
 
 /**
- * @brief Set the quantization mode for a variable.
+ * @brief Set quantization — the `nc_def_var_quantize()` dispatch
+ * entry.
+ *
+ * Quantization records a mode and precision on the variable; it is
+ * applied at write time by nx4_convert_type(), so no dataset
+ * recreation is needed here.
+ *
  * @param ncid NetCDF file identifier.
  * @param varid Variable id.
  * @param quantize_mode `NC_NOQUANTIZE`, `NC_QUANTIZE_BITGROOM`, `NC_QUANTIZE_GRANULARBR` or `NC_QUANTIZE_BITROUND`.
@@ -1548,13 +1738,14 @@ NEXTCDF4_def_var_quantize(int ncid, int varid, int quantize_mode, int nsd)
 }
 
 /**
- * @brief Stub for user-defined variable filters (not implemented).
+ * @brief User-defined variable filters (`nc_def_var_filter`); not
+ * implemented.
  * @param ncid NetCDF file identifier.
  * @param varid Variable id.
  * @param id HDF5 filter identifier.
  * @param nparams Number of filter parameters.
  * @param params Filter parameter values.
- * @return `NC_NOERR` on success, or a NetCDF error code.
+ * @return `NC_ENOTBUILT` always.
  */
 int
 NEXTCDF4_def_var_filter(int ncid, int varid, unsigned int id, size_t nparams,
@@ -1565,7 +1756,13 @@ NEXTCDF4_def_var_filter(int ncid, int varid, unsigned int id, size_t nparams,
 }
 
 /**
- * @brief Inquire about all supported properties of a variable.
+ * @brief Inquire about all supported properties of a variable — the
+ * `nc_inq_var_all()` dispatch entry.
+ *
+ * The kitchen-sink inquiry used internally by netcdf-c; every output
+ * pointer is optional. Filter outputs are not yet populated (custom
+ * filters are unimplemented, see NEXTCDF4_def_var_filter()).
+ *
  * @param ncid NetCDF file identifier.
  * @param varid Variable id.
  * @param name Destination for the variable name.
@@ -1647,7 +1844,8 @@ NEXTCDF4_inq_var_all(int ncid, int varid, char *name, nc_type *xtypep,
 }
 
 /**
- * @brief Inquire about a variable's name, type, dimensions, and attributes.
+ * @brief Inquire about a variable's name, type, dimensions, and
+ * attributes — the `nc_inq_var()` dispatch entry.
  * @param ncid NetCDF file identifier.
  * @param varid Variable id.
  * @param name Destination for the variable name.
@@ -1685,12 +1883,19 @@ NEXTCDF4_inq_var(int ncid, int varid, char *name, nc_type *xtypep,
 }
 
 /**
- * @brief Inquire about the filter ids applied to a variable.
+ * @brief Inquire the filter ids applied to a variable — the
+ * `nc_inq_var_filter_ids()` dispatch entry.
+ *
+ * Reconstructs the pipeline from `NEXTCDF4_VAR_INFO_T` (deflate,
+ * shuffle, fletcher32). `NC_ENOFILTER` is returned when no filters
+ * apply, matching netcdf-c.
+ *
  * @param ncid NetCDF file identifier.
  * @param varid Variable id.
  * @param nfiltersp Destination for the number of filters.
  * @param ids Destination for the filter ids.
- * @return `NC_NOERR` on success, or a NetCDF error code.
+ * @return `NC_NOERR` on success, `NC_ENOFILTER` when none apply, or a
+ * NetCDF error code.
  */
 int
 NEXTCDF4_inq_var_filter_ids(int ncid, int varid, size_t *nfiltersp,
@@ -1722,13 +1927,19 @@ NEXTCDF4_inq_var_filter_ids(int ncid, int varid, size_t *nfiltersp,
 }
 
 /**
- * @brief Inquire about the parameters of a variable filter.
+ * @brief Inquire the parameters of one variable filter — the
+ * `nc_inq_var_filter_info()` dispatch entry.
+ *
+ * Only deflate carries a parameter (its level); shuffle and
+ * fletcher32 report zero params.
+ *
  * @param ncid NetCDF file identifier.
  * @param varid Variable id.
  * @param id Filter identifier to inquire about.
  * @param nparamsp Destination for the number of filter parameters.
  * @param params Destination for the filter parameter values.
- * @return `NC_NOERR` on success, or a NetCDF error code.
+ * @return `NC_NOERR` on success, `NC_ENOFILTER` when the filter is
+ * not applied, or a NetCDF error code.
  */
 int
 NEXTCDF4_inq_var_filter_info(int ncid, int varid, unsigned int id,
@@ -1766,7 +1977,16 @@ NEXTCDF4_inq_var_filter_info(int ncid, int varid, unsigned int id,
 }
 
 /**
- * @brief Create or replace an attribute on a group or variable.
+ * @brief Create or replace an attribute — the `nc_put_att_*` dispatch
+ * entry.
+ *
+ * Converts the value from the caller's memory type to the attribute's
+ * storage type through nx4_convert_type() (overflow returns
+ * `NC_ERANGE` after the write), replaces any same-named attribute in
+ * both the in-memory index and HDF5, and persists immediately —
+ * attributes are written to the file in define mode, not deferred to
+ * `_enddef`. Reserved (internal) names are rejected.
+ *
  * @param ncid NetCDF file identifier.
  * @param varid Variable id or `NC_GLOBAL`.
  * @param name Attribute name.
@@ -1774,7 +1994,8 @@ NEXTCDF4_inq_var_filter_info(int ncid, int varid, unsigned int id,
  * @param len Number of elements.
  * @param value Attribute data.
  * @param memtype In-memory type for the attribute value.
- * @return `NC_NOERR` on success, or a NetCDF error code.
+ * @return `NC_NOERR` on success, `NC_ERANGE` when the value was
+ * written but overflowed during conversion, or a NetCDF error code.
  */
 int
 NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type datatype,
@@ -1913,13 +2134,21 @@ fail:
 }
 
 /**
- * @brief Read the value of an attribute.
+ * @brief Read an attribute's value — the `nc_get_att_*` dispatch
+ * entry.
+ *
+ * Reads from the in-memory record (all attributes were loaded at
+ * open), converting through nx4_convert_type() when the caller asks
+ * for a different type. `NC_STRING` attributes return `strdup`'d
+ * strings the caller owns.
+ *
  * @param ncid NetCDF file identifier.
  * @param varid Variable id or `NC_GLOBAL`.
  * @param name Attribute name.
  * @param value Destination buffer.
  * @param memtype Requested in-memory type.
- * @return `NC_NOERR` on success, or a NetCDF error code.
+ * @return `NC_NOERR` on success, `NC_ERANGE` when data was delivered
+ * but overflowed, or a NetCDF error code.
  */
 int
 NEXTCDF4_get_att(int ncid, int varid, const char *name, void *value,
@@ -1984,7 +2213,13 @@ NEXTCDF4_get_att(int ncid, int varid, const char *name, void *value,
 }
 
 /**
- * @brief Rename an attribute on a group or variable.
+ * @brief Rename an attribute — the `nc_rename_att()` dispatch entry.
+ *
+ * HDF5 attributes cannot be renamed in place, so the old attribute is
+ * deleted and the value rewritten under the new name via
+ * NEXTCDF4_put_att(); the in-memory index is rebuilt by
+ * delete-and-re-add for the same reason.
+ *
  * @param ncid NetCDF file identifier.
  * @param varid Variable id or `NC_GLOBAL`.
  * @param name Current attribute name.
@@ -2314,7 +2549,12 @@ NEXTCDF4_del_att(int ncid, int varid, const char *name)
 }
 
 /**
- * Data collected while iterating over the root group.
+ * @brief Accumulator used while iterating a group's links looking for
+ * dimension scales.
+ *
+ * `H5Literate` visits links in name order, but dimids must be
+ * recovered in id order — find_dim_cb() collects name/dimid pairs
+ * here and load_dimensions() replays them sorted.
  */
 typedef struct {
     char **names;
@@ -2324,7 +2564,13 @@ typedef struct {
 } dim_list_t;
 
 /**
- * Callback for H5Literate that collects dimension scale datasets.
+ * @brief `H5Literate` callback collecting dimension-scale datasets.
+ *
+ * A link is a dimension scale when its dataset carries
+ * `CLASS = "DIMENSION_SCALE"` and a `_Netcdf4Dimid` attribute; those
+ * two hidden attributes are how the loader recovers both the name and
+ * the dimid. Anything else is skipped.
+ *
  * @param loc HDF5 location identifier.
  * @param name Name.
  * @param info Link info (unused).
@@ -2392,7 +2638,13 @@ find_dim_cb(hid_t loc, const char *name, const H5L_info_t *info, void *op_data)
 }
 
 /**
- * Load one dimension from the file.
+ * @brief Load one dimension from its scale dataset into the in-memory
+ * tree.
+ *
+ * Recovers current length and unlimited-ness (`H5S_UNLIMITED` max
+ * extent) from the dataset's dataspace, keeps the dataset `hid_t`
+ * open in `NEXTCDF4_DIM_INFO_T` for later scale attachment.
+ *
  * @param file NEXTCDF-4 file state.
  * @param grp Group.
  * @param name Name.
@@ -2454,7 +2706,12 @@ done:
 }
 
 /**
- * Load all dimensions in stable id order for a group.
+ * @brief Load all of a group's dimensions in stable dimid order.
+ *
+ * HDF5 iterates links by name, but netCDF dimids are positional — so
+ * the callback pass collects them and this replays them 0..maxid.
+ * Missing ids (a sparse id space) fail as `NC_EFILEMETA`.
+ *
  * @param file NEXTCDF-4 file state.
  * @param h5 NetCDF-4 file state.
  * @param grp Group.
@@ -2509,7 +2766,8 @@ load_dimensions(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
 }
 
 /**
- * Collect variable dataset names and their stored varids.
+ * @brief Accumulator used while iterating a group's links looking for
+ * variable datasets — the varid counterpart of #dim_list_t.
  */
 typedef struct {
     char **names;
@@ -2519,7 +2777,17 @@ typedef struct {
 } var_list_t;
 
 /**
- * @brief H5Literate callback that collects candidate variable datasets.
+ * @brief `H5Literate` callback collecting candidate variable
+ * datasets.
+ *
+ * Datasets carrying `_Netcdf4Varid` are variables unconditionally.
+ * Without it (files written by upstream netcdf-c or older NEXTCDF-4),
+ * heuristics apply: dimension scales count only if they are
+ * coordinate variables (carry `_Netcdf4Coordinates`), and plain
+ * datasets count only if they have attached scales or the
+ * coordinates attribute — this is what lets the loader read
+ * unmarked netCDF-4/HDF5 files.
+ *
  * @param loc HDF5 location identifier.
  * @param name Name.
  * @param info Link info (unused).
@@ -2616,7 +2884,11 @@ find_var_cb(hid_t loc, const char *name, const H5L_info_t *info, void *op_data)
 }
 
 /**
- * Find a dimension in the current group or any ancestor by name.
+ * @brief Find a dimension by name in a group or any ancestor.
+ *
+ * Dimension scope in netCDF flows downward — a variable may use any
+ * ancestor's dimensions, never a sibling's.
+ *
  * @param grp Group.
  * @param name Name.
  * @return Pointer to the dimension, or NULL if not found.
@@ -2638,6 +2910,10 @@ find_dim_by_name(NC_GRP_INFO_T *grp, const char *name)
     return NULL;
 }
 
+/**
+ * @brief Context for scale_resolve_visitor(): group to search,
+ * result dimid slot, and a done flag.
+ */
 typedef struct {
     NC_GRP_INFO_T *grp;
     int *dimid;
@@ -2645,12 +2921,19 @@ typedef struct {
 } resolve_scale_t;
 
 /**
- * Resolve a single attached scale to a dimid. Only acts on the first scale.
+ * @brief `H5DSiterate_scales` visitor resolving one attached scale to
+ * a dimid.
+ *
+ * Prefers the scale's `_Netcdf4Dimid` attribute; falls back to
+ * matching the scale's name against the group's dimensions for files
+ * written without the attribute. Only the first attached scale per
+ * dimension is used.
+ *
  * @param did Dimension scale dataset being visited (unused).
- * @param dim Dimension.
+ * @param dim Dimension index being visited (unused).
  * @param dsid Variable dataset the scale is attached to.
  * @param op_data resolve_scale_t search context.
- * @return `NC_NOERR` on success, or a NetCDF error code.
+ * @return 0 always (iteration continues or stops via @p found).
  */
 static int
 scale_resolve_visitor(hid_t did, unsigned int dim, hid_t dsid, void *op_data)
@@ -2689,12 +2972,19 @@ scale_resolve_visitor(hid_t did, unsigned int dim, hid_t dsid, void *op_data)
 }
 
 /**
- * Resolve a variable's dimension ids from attached dimension scales.
+ * @brief Resolve a variable's dimids from its attached dimension
+ * scales.
+ *
+ * Fallback for variables lacking the `_Netcdf4Coordinates` attribute:
+ * each dimension must have at least one scale attached, resolved by
+ * scale_resolve_visitor().
+ *
  * @param grp Group.
  * @param dset Variable dataset.
  * @param ndims Number of dimensions.
  * @param dimids Destination for the resolved dimension IDs.
- * @return `NC_NOERR` on success, or a NetCDF error code.
+ * @return `NC_NOERR` on success, `NC_EFILEMETA`/`NC_EBADDIM` when the
+ * scales cannot be resolved.
  */
 static int
 resolve_var_dimids(NC_GRP_INFO_T *grp, hid_t dset, int ndims, int *dimids)
@@ -2727,12 +3017,22 @@ resolve_var_dimids(NC_GRP_INFO_T *grp, hid_t dset, int ndims, int *dimids)
 }
 
 /**
- * Load one variable and its attributes.
+ * @brief Load one variable dataset into the in-memory tree.
+ *
+ * Rebuilds the full `NC_VAR_INFO_T`: type via map_nc_type(), rank and
+ * dims from the dataspace, dimids from `_Netcdf4Coordinates` (or
+ * attached scales), then — from the dataset creation property list —
+ * chunking/storage, fill behavior and value, the filter pipeline
+ * (deflate/shuffle/fletcher32), and endianness from the datatype's
+ * byte order. `meta_read`/`atts_read`/`created` are set so netcdf-c
+ * treats the variable as fully loaded, not new.
+ *
  * @param file NEXTCDF-4 file state.
  * @param h5 NetCDF-4 file state.
  * @param grp Group.
  * @param name Name.
- * @param varid Variable identifier.
+ * @param varid Variable identifier (currently unused; ids come from
+ * load order).
  * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 static int
@@ -2943,7 +3243,8 @@ done:
 }
 
 /**
- * Iteration callback for variable attributes.
+ * @brief Context for load_att_cb(): the attribute index to fill, the
+ * owning object, and the HDF5 location to iterate.
  */
 typedef struct {
     NCindex *list;
@@ -2952,12 +3253,17 @@ typedef struct {
 } att_iter_data_t;
 
 /**
- * @brief H5Aiterate2 callback that loads a single attribute.
+ * @brief `H5Aiterate2` callback loading a single user attribute.
+ *
+ * Reserved (internal) attributes and attributes whose datatype
+ * doesn't map to an atomic nc_type are skipped — neither should make
+ * an otherwise-valid file unopenable.
+ *
  * @param loc HDF5 location identifier.
  * @param attr_name HDF5 attribute name.
  * @param ainfo Attribute info (unused).
  * @param op_data att_iter_data_t iteration context.
- * @return 0 to continue iteration, negative on error.
+ * @return 0 always; failures are swallowed as skips.
  */
 static herr_t
 load_att_cb(hid_t loc, const char *attr_name, const H5A_info_t *ainfo,
@@ -2973,7 +3279,13 @@ load_att_cb(hid_t loc, const char *attr_name, const H5A_info_t *ainfo,
 }
 
 /**
- * Load all variables and their attributes for a group.
+ * @brief Load all of a group's variables and their attributes.
+ *
+ * Collects candidates with find_var_cb(), then loads in stored-varid
+ * order when `_Netcdf4Varid` attributes exist (preserving the ids
+ * assigned at create), else in HDF5 iteration order. Each variable's
+ * user attributes are iterated with `H5Aiterate2`.
+ *
  * @param file NEXTCDF-4 file state.
  * @param h5 NetCDF-4 file state.
  * @param grp Group.
@@ -3057,7 +3369,7 @@ load_variables(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
 }
 
 /**
- * Load attributes for the given group.
+ * @brief Load a group's own (non-global) attributes.
  * @param file NEXTCDF-4 file state.
  * @param h5 NetCDF-4 file state.
  * @param grp Group.
@@ -3083,7 +3395,8 @@ load_group_attributes(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
 }
 
 /**
- * Data carried to the load-children callback.
+ * @brief Context carried to load_children_cb(): file state, parent
+ * group record, and parent HDF5 handle.
  */
 typedef struct {
     NEXTCDF4_FILE_INFO_T *file;
@@ -3097,9 +3410,17 @@ static int load_children(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
 static int load_one_type(NC_GRP_INFO_T *grp, hid_t htype, const char *name);
 
 /**
- * Load a single committed HDF5 type into the in-memory group type list.
+ * @brief Load one committed HDF5 datatype into the in-memory type
+ * list.
+ *
+ * Committed datatypes are the on-disk form of user-defined types.
+ * The HDF5 class sets the `nc_type_class`; enum and vlen base types
+ * are recovered from the datatype's super-type. The `hid_t` is kept
+ * open in `NEXTCDF4_TYPE_INFO_T`.
+ *
  * @param grp Group.
- * @param htype HDF5 committed datatype.
+ * @param htype HDF5 committed datatype (ownership transferred on
+ * success).
  * @param name Name.
  * @return `NC_NOERR` on success, or a NetCDF error code.
  */
@@ -3168,7 +3489,14 @@ load_one_type(NC_GRP_INFO_T *grp, hid_t htype, const char *name)
 }
 
 /**
- * Load dimensions, variables, attributes, and then child groups for a group.
+ * @brief Load one group's full metadata: dimensions, variables,
+ * attributes, then children recursively.
+ *
+ * Order matters — dimensions must exist before variables resolve
+ * their dimids, and children load last. An unmarked root group with
+ * nothing loadable is rejected (`NC_ENOTNC`): a plain HDF5 file with
+ * no netCDF structure is not a netCDF file.
+ *
  * @param file NEXTCDF-4 file state.
  * @param h5 NetCDF-4 file state.
  * @param grp Group.
@@ -3199,7 +3527,7 @@ load_group_metadata(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
 }
 
 /**
- * Load a single HDF5 group and all of its descendants.
+ * @brief Open one child HDF5 group and load it recursively.
  * @param file NEXTCDF-4 file state.
  * @param h5 NetCDF-4 file state.
  * @param parent Parent group.
@@ -3243,12 +3571,19 @@ fail:
 }
 
 /**
- * Callback that loads child groups and committed types.
+ * @brief `H5Literate` callback dispatching each child link to the
+ * right loader.
+ *
+ * Links that open as groups become subgroups (load_one_group); links
+ * that open as committed datatypes become user-defined types
+ * (load_one_type); datasets were already handled by the variable
+ * pass. Anything else is skipped.
+ *
  * @param loc HDF5 location identifier.
  * @param name Name.
  * @param info Link info (unused).
  * @param op_data load_children_data_t iteration context.
- * @return 0 to continue iteration, negative on error.
+ * @return 0 to continue iteration, -1 on load failure.
  */
 static herr_t
 load_children_cb(hid_t loc, const char *name, const H5L_info_t *info, void *op_data)
@@ -3284,7 +3619,8 @@ load_children_cb(hid_t loc, const char *name, const H5L_info_t *info, void *op_d
 }
 
 /**
- * Load all child groups and committed types for a group.
+ * @brief Iterate a group's links loading child groups and committed
+ * types.
  * @param file NEXTCDF-4 file state.
  * @param h5 NetCDF-4 file state.
  * @param parent_hdf Parent HDF5 group identifier.
@@ -3304,7 +3640,14 @@ load_children(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
 }
 
 /**
- * @brief Load all metadata for an open NEXTCDF-4 file.
+ * @brief Load all metadata for an open NEXTCDF-4 file — the entry
+ * point NEXTCDF4_open() calls after checking the marker attributes.
+ *
+ * Recursively walks the HDF5 file starting at the root group and
+ * rebuilds the complete `NC_*_INFO_T` tree (groups, dimensions,
+ * variables, attributes, committed types) that the dispatch entries
+ * then operate on. See @ref nextcdf4_architecture.
+ *
  * @param file Open NEXTCDF-4 state.
  * @param h5 Common NetCDF-4 file metadata.
  * @return `NC_NOERR` on success, or a NetCDF error code.

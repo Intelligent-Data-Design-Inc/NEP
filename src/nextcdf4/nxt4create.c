@@ -13,9 +13,16 @@
 #include "nxt4internal.h"
 
 /**
- * @internal Validate NEXTCDF-4 create-mode combinations.
+ * @brief Reject create-mode flag combinations NEXTCDF-4 cannot honor.
+ *
+ * NEXTCDF-4 always writes HDF5 files, so the NetCDF-3 format-variant
+ * flags `NC_64BIT_OFFSET` and `NC_64BIT_DATA` have no meaning here.
+ * `NC_CLASSIC_MODEL` and `NC_NETCDF4_MODEL` select different data
+ * models and different HDF5 superblock bounds, so they are mutually
+ * exclusive. See @ref nextcdf4_architecture for the mode table.
+ *
  * @param mode NetCDF mode flags.
- * @return `NC_NOERR` on success, or a NetCDF error code.
+ * @return `NC_NOERR` on success, or `NC_EINVAL`.
  */
 static int
 valid_create_mode(int mode)
@@ -29,11 +36,21 @@ valid_create_mode(int mode)
 }
 
 /**
- * Create an empty NEXTCDF-4 HDF5 file and register its in-memory state.
-
- * Native and classic-model files use the latest HDF5 format bounds;
- * `NC_NETCDF4_MODEL` files use HDF5 1.10 compatibility bounds. The function
- * writes backend markers before returning a valid ncid.
+ * @brief Create an empty NEXTCDF-4 file.
+ *
+ * This is the dispatch-table entry netcdf-c calls when a user calls
+ * `nc_create()` with `NC_NEXTCDF4` in the mode flags. It validates the
+ * mode, requires HDF5 2.1.1 or newer at run time (the build enforces
+ * the same minimum), registers the file's in-memory state, and
+ * creates the HDF5 file with a superblock bound matching the
+ * requested model: `H5F_LIBVER_LATEST` (superblock v3) for native and
+ * classic-model files, `H5F_LIBVER_V110` for `NC_NETCDF4_MODEL` files
+ * so upstream netcdf-c linked against HDF5 1.10 can read them.
+ *
+ * Only the hidden marker attributes are written here — dimensions,
+ * variables and attributes are materialized later by `_enddef` (see
+ * NEXTCDF4__enddef() and @ref nextcdf4_architecture).
+ *
  * @param path File-system path to create.
  * @param cmode NetCDF create-mode flags.
  * @param initialsz Requested initial file size; currently ignored.
@@ -42,8 +59,10 @@ valid_create_mode(int mode)
  * @param parameters Optional dispatch parameters; currently ignored.
  * @param dispatch Dispatch table selected by netcdf-c.
  * @param ncid NetCDF file identifier allocated by netcdf-c.
- * @return `NC_NOERR` on success, or a NetCDF error code.
-*/
+ * @return `NC_NOERR` on success, `NC_EINVAL` for bad mode flags,
+ * `NC_ENOTBUILT` when HDF5 is too old, `NC_EEXIST` for a
+ * `NC_NOCLOBBER` collision, or another NetCDF error code.
+ */
 int
 NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
                 size_t *chunksizehintp, void *parameters,
@@ -68,6 +87,10 @@ NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
 
     ELOG((2, "%s: path %s mode 0x%x ncid %d", __func__, path ? path : "", cmode, ncid));
 
+    /* Validate path and mode, check the run-time HDF5 version, then
+     * register state, create the HDF5 file with the right superblock
+     * bound, open the root group, write the hidden marker attributes,
+     * and flush. */
     if (!path || !*path)
         return NC_EINVAL;
     if ((ret = valid_create_mode(cmode)))
@@ -78,6 +101,9 @@ NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
         return NC_ENOTBUILT;
 
     existed = access(path, F_OK) == 0;
+    /* netcdf-c semantics: clobbering an existing path is the default,
+     * so unlink it up front; with NC_NOCLOBBER we let H5Fcreate's
+     * H5F_ACC_EXCL produce the NC_EEXIST instead. */
     if (existed && !(cmode & NC_NOCLOBBER)) {
         ELOG((3, "unlinking existing file %s", path));
         if (unlink(path) < 0)
