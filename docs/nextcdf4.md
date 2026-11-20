@@ -130,6 +130,44 @@ NEXTCDF-4 stores NetCDF dimensions as HDF5 dimension scales and attaches them to
 
 These attributes are filtered from user-visible attribute lists.
 
+## Filters
+
+NEXTCDF-4 supports the full NetCDF-4 filter model on non-scalar variables. Filters are stored in the shared `NC_VAR_INFO_T::filters` list — the same structure upstream netcdf-c uses — and are applied to the HDF5 dataset creation property list in pipeline order.
+
+```c
+/* Convenience functions for the standard filters */
+nc_def_var_deflate(ncid, varid, 1 /* shuffle */, 1 /* deflate */, 4 /* level */);
+nc_def_var_fletcher32(ncid, varid, NC_FLETCHER32);
+nc_def_var_szip(ncid, varid, NC_SZIP_NN, 16);
+
+/* Generic filter API for plugin filters such as bzip2 (307) or zstd (32015) */
+unsigned int level = 3;
+nc_def_var_filter(ncid, varid, H5Z_FILTER_ZSTD, 1, &level);
+
+/* Inquiry */
+size_t nfilters;
+unsigned int ids[8], params[8];
+nc_inq_var_filter_ids(ncid, varid, &nfilters, ids);
+nc_inq_var_filter_info(ncid, varid, ids[0], &nparams, params);
+nc_inq_filter_avail(ncid, H5Z_FILTER_BZIP2); /* NC_ENOFILTER if the plugin is absent */
+```
+
+Semantics match upstream netcdf-c:
+
+- Defining a filter forces chunked storage; a filtered variable cannot be set contiguous.
+- Scalar variables cannot have filters (`NC_EINVAL`).
+- Filters cannot be removed once defined; re-defining a filter id replaces its parameters.
+- Fletcher32 is always first in the pipeline, then shuffle, then remaining filters in definition order.
+- Deflate and szip are mutually exclusive; a deflate level of 0 adds no filter.
+- Filter changes after the variable was committed to disk in a previous open (post-`nc_redef`) return `NC_ELATEDEF`; calls outside define mode return `NC_ENOTINDEFINE`.
+- `nc_inq_var_filter_ids` on a filterless variable returns `NC_NOERR` with a count of zero.
+
+Plugin filters work through HDF5's plugin mechanism: set `HDF5_PLUGIN_PATH` (or install plugins in HDF5's default plugin directory) and the filter becomes available to `nc_def_var_filter` and to data I/O. When a file is opened whose variable uses a filter that is unavailable in the current process, the variable's metadata — including the filter pipeline — remains readable, but reads and writes return `NC_ENOFILTER`.
+
+`NC_CLASSIC_MODEL` files permit no filters: every filter and storage setter (`nc_def_var_filter`, `nc_def_var_deflate`, `nc_def_var_fletcher32`, `nc_def_var_szip`, `nc_def_var_chunking`) returns `NC_EINVAL`.
+
+Filters may be applied to coordinate variables, but because def-var setters recreate the HDF5 dataset (see Known Limitations), the filter must be defined **before** dependent variables are defined — otherwise the dependents' dimension-scale attachments point at the deleted dataset.
+
 ## Example: Create a File with a Variable
 
 ```c
@@ -195,7 +233,7 @@ nc_ref_region(ncid, varid, start, count, NULL, &region);
 - Typed calls on FP8/FP6/FP4 variables, and integer/text/string typed calls on any small float, return `NC_EBADTYPE` (`NC_ECHAR` for text).
 - Out-of-range conversion results can differ between engines even though both return `NC_ERANGE` after completing the operation; see the conversion experiment above ([issue #381](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/381)).
 - `NC_BFLOAT16` fill values are not supported: `_FillValue` attributes are rejected, and a fill value set with `nc_def_var_fill` is not recovered on reopen ([issue #377](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/377)).
-- Def-var setters (`nc_def_var_fill`, `nc_def_var_chunking`, `nc_def_var_deflate`, `nc_def_var_endian`, `nc_def_var_fletcher32`) recreate the HDF5 dataset, which leaves an orphaned dataset object and an extra dimension-scale reference in the file ([issue #382](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/382)).
+- Def-var setters (`nc_def_var_fill`, `nc_def_var_chunking`, `nc_def_var_deflate`, `nc_def_var_endian`, `nc_def_var_fletcher32`, `nc_def_var_filter`) recreate the HDF5 dataset, which leaves an orphaned dataset object and an extra dimension-scale reference in the file ([issue #382](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/382)).
 
 ## Resources
 

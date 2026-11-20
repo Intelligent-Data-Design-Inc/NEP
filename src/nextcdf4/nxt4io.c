@@ -260,6 +260,9 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
     if ((ret = NEXTCDF4_get_file(ncid, &h5, &file))) return ret;
     if ((ret = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var))) return ret;
     if (!var || !(vinfo = var->format_var_info) || vinfo->hdf_dataset < 0) return NC_ENOTVAR;
+    /* A variable opened with a missing mandatory filter plugin keeps
+     * its metadata readable but rejects all data I/O. */
+    if (vinfo->flags & NC_HDF5_VAR_FILTER_MISSING) return NC_ENOFILTER;
     if (writing && file->no_write) return NC_EPERM;
     if (writing && file->define_mode) return NC_EINDEFINE;
     if (!writing && file->define_mode) return NC_EINDEFINE;

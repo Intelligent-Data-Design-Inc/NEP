@@ -721,11 +721,12 @@ The same NetCDF-4 `NC_Dispatch` interface is exposed, but the dispatch table liv
 
 ### Filters and plugins (analogous to `libhdf5/hdf5filter.c`, `hdf5plugins.c` and `libsrc4/nc4filters.c`)
 
+Implemented in v4.3.0 Sprint 1K. NEXTCDF-4 keeps the filter pipeline on the shared `NC_VAR_INFO_T::filters` list and manipulates it with netcdf-c's exported `NC4_hdf5_*` helpers rather than private copies.
+
 - `nxt4filter.c`:
-  - `NC4_hdf5_def_var_filter`, `NC4_hdf5_inq_var_filter_ids`, `NC4_hdf5_inq_var_filter_info`, `NC4_hdf5_inq_filter_avail`
-  - `NEXTCDF4_filter_lookup`, `NEXTCDF4_filter_remove`, `NEXTCDF4_filter_initialize`, `NEXTCDF4_filter_finalize`
-- `nxt4plugins.c` (optional, if NEP plugin path support is required):
-  - `NEXTCDF4_plugin_path_initialize`, `NEXTCDF4_plugin_path_finalize`, `NEXTCDF4_plugin_path_get/set`
+  - `NEXTCDF4_def_var_filter`, `NEXTCDF4_def_var_deflate`, `NEXTCDF4_def_var_fletcher32`, `NEXTCDF4_inq_var_filter_ids`, `NEXTCDF4_inq_var_filter_info`, `NEXTCDF4_inq_filter_avail` (dispatch entries)
+  - `nx4_apply_filters` (filter list -> DCPL, called by `nx4_create_var_dataset`), `nx4_load_filters` (DCPL -> filter list at open, with `NC_HDF5_VAR_FILTER_MISSING` marking)
+- Plugin path support is inherited unchanged from HDF5 (`HDF5_PLUGIN_PATH`); no `nxt4plugins.c` is required.
 
 ### In-memory metadata model and utilities (analogous to `libhdf5/hdf5internal.c` and `libsrc4/nc4internal.c`)
 

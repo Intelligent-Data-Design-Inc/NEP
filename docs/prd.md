@@ -726,7 +726,7 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 - **File Lifecycle**: `nc_create`, `nc_open`, `nc_close`, and `nc_abort` for native, classic-model, and `NC_NETCDF4_MODEL` files.
 - **Core Metadata Model**: Dimensions, variables, global/variable attributes, groups, and user-defined types.
 - **Variable I/O and Dimension Scales**: `nc_put_vara`/`nc_get_vara`, `nc_put_var`/`nc_get_var`, `nc_put_var1`/`nc_get_var1`, and `nc_put_vars`/`nc_get_vars`; `nc_put_varm`/`nc_get_varm` are intentionally unimplemented.
-- **Storage Features**: Chunking, fill values, deflate+shuffle, Fletcher32, endianness, and quantization.
+- **Storage Features**: Chunking, fill values, deflate+shuffle, Fletcher32, endianness, quantization, and generic HDF5 filters (`nc_def_var_filter`, including plugin filters such as bzip2 and zstd).
 - **Interoperability**: Open files written by NEXTCDF-4 and upstream `NC_NETCDF4` files with dimension-scale fallback discovery.
 - **New Atomic Types**:
   - Small floating-point: `NC_FLOAT16`, `NC_BFLOAT16`, `NC_FLOAT8_E4M3`, `NC_FLOAT8_E5M2`, `NC_FLOAT6_E2M3`, `NC_FLOAT6_E3M2`, `NC_FLOAT4_E2M1`.

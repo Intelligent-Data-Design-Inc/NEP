@@ -107,7 +107,7 @@ static const NC_Dispatch NEXTCDF4_dispatcher = {
     NEXTCDF4_inq_var_filter_info,
     NEXTCDF4_def_var_quantize,
     NC4_inq_var_quantize,
-    NC_NOOP_inq_filter_avail
+    NEXTCDF4_inq_filter_avail
 };
 
 /**

@@ -108,8 +108,16 @@ Plan: [docs/plan/v4.3.0-sprint1I-better-documentation.md](plan/v4.3.0-sprint1I-b
 
 Plan: [docs/plan/v4.3.0-sprint1J-ieee-float16.md](plan/v4.3.0-sprint1J-ieee-float16.md)
 
+#### Sprint 1K - Do Filters work with NEXTCDF4?
+- Yes: `nc_def_var_filter()` implemented on `var->filters` via netcdf-c's exported `NC4_hdf5_*` helpers in new `nxt4filter.c`; deflate/fletcher32 setters moved there with upstream parity (no removal, level-0 rule, `NC_ELATEDEF` on created vars, fletcher32-first pipeline order). Free szip/bzip2/zstd/`nc_inq_var_filter` wrappers; real `inq_filter_avail` replaces `NC_NOOP`.
+- Open path loads every DCPL filter (any param count) and marks vars unreadable when a mandatory plugin is missing; `var_io` returns `NC_ENOFILTER`; `NC_CLASSIC_MODEL` rejects all filter/storage setters. Filters allowed on coord vars (ordering caveat → #382).
+- New enabled `tst_nextcdf4_filter` (plugin cases runtime-gated, missing plugin via `H5Zunregister`); docs updated. No Spack/conda/CI changes.
+- Out of scope: rest of #382, #377/#379/#380/#386, parallel/chunk-cache stubs, nccopy/Fortran filter APIs, filter examples, release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1K-def-var-filter.md](plan/v4.3.0-sprint1K-def-var-filter.md)
+
 #### Sprint 2 - 
-- Tag v4.3.0 and write `docs/releases/v4.3.0.md` (HDF5 detection change, CMake 3.19 minimum, conda GeoTIFF, Sprint 1A NEXTCDF-4 bfloat16 examples and `NEP_ZSTD_PLUGIN_DIR`, Sprint 1B typed small-float I/O and the `nc_*_bfloat16` functions, #376, Sprint 1C optimized benchmark results, the bfloat16 GDAS sample and `bfloat16_io_perf`, the #382 contiguous-layout fix, and the fix for untyped `nc_put_var`/`nc_get_var`/`var1`/`vars` failing with `NC_EBADTYPE` on NEXTCDF-4).
+- Tag v4.3.0 and write `docs/releases/v4.3.0.md` (HDF5 detection change, CMake 3.19 minimum, conda GeoTIFF, Sprint 1A NEXTCDF-4 bfloat16 examples and `NEP_ZSTD_PLUGIN_DIR`, Sprint 1B typed small-float I/O and the `nc_*_bfloat16` functions, #376, Sprint 1C optimized benchmark results, the bfloat16 GDAS sample and `bfloat16_io_perf`, the #382 contiguous-layout fix, the fix for untyped `nc_put_var`/`nc_get_var`/`var1`/`vars` failing with `NC_EBADTYPE` on NEXTCDF-4, and Sprint 1K generic HDF5 filter support (`nc_def_var_filter`, szip/bzip2/zstd plugins, missing-plugin `NC_ENOFILTER`).
 - Spack: add `version("4.3.0")` with its sha256; update spack/spack-packages#5557 in place per `docs/spack.md` "Updating the upstream PR".
 - Conda (#374 part 2): if #34309 is still open, regenerate the staged copy for 4.3.0, push it to `nep-3.0.0` and update the PR body; if merged, make the GeoTIFF change on the feedstock and drop the staged lint/micromamba steps. Move the `conda.yml` lint step to the 4.3.0 tarball and set `context.version` to `4.3.1.dev0`.
 - Update the README "Conda Installation", `docs/prd.md` section 5.5, `docs/prfaq.md` and the `docs/conda-plan.md` Status table for GeoTIFF in 4.3.0.

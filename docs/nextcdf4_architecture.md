@@ -63,7 +63,7 @@ NEXTCDF-4's private structs are declared in
 | `NEXTCDF4_FILE_INFO_T` | `NC_FILE_INFO_T` | `hdfid` (the HDF5 file), `rootid`, `path`, `mode`, `no_write`, `define_mode`, `netcdf4_model`, `backend_marked` |
 | `NEXTCDF4_GRP_INFO_T` | `NC_GRP_INFO_T` | open `hid_t` for the HDF5 group |
 | `NEXTCDF4_DIM_INFO_T` | `NC_DIM_INFO_T` | `hid_t` of the dimension-scale dataset |
-| `NEXTCDF4_VAR_INFO_T` | `NC_VAR_INFO_T` | `hid_t` of the variable dataset plus cached `deflate_level`, `shuffle`, `fletcher32` |
+| `NEXTCDF4_VAR_INFO_T` | `NC_VAR_INFO_T` | `hid_t` of the variable dataset plus `flags` (e.g. `NC_HDF5_VAR_FILTER_MISSING`); the filter pipeline itself lives on the shared `NC_VAR_INFO_T::filters` list |
 | `NEXTCDF4_TYPE_INFO_T` | `NC_TYPE_INFO_T` | committed HDF5 datatype `hid_t` |
 
 `NEXTCDF4_add_file`/`NEXTCDF4_get_file`/`NEXTCDF4_free_file` in
@@ -111,6 +111,47 @@ through `NEXTCDF4__enddef`/`NEXTCDF4_redef` in `nxt4file.c`.
 - **I/O** (`nxt4io.c`): `get/put_vara`, `get/put_vars` select a
   hyperslab on the variable's dataset and run `H5Dread`/`H5Dwrite`
   with a memory datatype.
+
+## Filters
+
+Variable filter pipelines are stored on `NC_VAR_INFO_T::filters` — an
+`NClist` of `struct NC_HDF5_Filter` — managed with netcdf-c's
+exported `NC4_hdf5_*` helpers (`NC4_hdf5_addfilter`,
+`NC4_hdf5_filter_lookup`, `NC4_hdf5_filter_freelist`), exactly as the
+built-in HDF5 backend does in `libhdf5/hdf5filter.c`. All filter code
+lives in `nxt4filter.c`:
+
+- **Define**: `NEXTCDF4_def_var_filter`, `NEXTCDF4_def_var_deflate`
+  and `NEXTCDF4_def_var_fletcher32` append to the list (upstream's
+  `nc_def_var_szip`, `nc_def_var_bzip2`, `nc_def_var_zstandard` and
+  the quantize path all funnel through the generic entry) and then
+  call `nx4_create_var_dataset`, because HDF5 creation properties are
+  immutable — the dataset is deleted and recreated with the new
+  pipeline.
+- **Apply**: `nx4_apply_filters` translates the list into DCPL calls:
+  `H5Pset_fletcher32`/`H5Pset_shuffle`/`H5Pset_deflate`/`H5Pset_szip`
+  for the built-ins, `H5Pset_filter(..., H5Z_FLAG_OPTIONAL, ...)` for
+  everything else.
+- **Open**: `nx4_load_filters` reads every DCPL filter — including
+  unknown plugin filters — into `var->filters` with its parameters.
+  A filter `H5Zfilter_avail` cannot resolve sets
+  `NC_HDF5_FILTER_MISSING` on the spec and
+  `NC_HDF5_VAR_FILTER_MISSING` on `NEXTCDF4_VAR_INFO_T::flags`, so
+  metadata stays readable while `var_io` rejects reads and writes
+  with `NC_ENOFILTER`.
+- **Inquire**: `NEXTCDF4_inq_var_filter_ids`,
+  `NEXTCDF4_inq_var_filter_info` and `NEXTCDF4_inq_filter_avail`
+  (the last replacing `NC_NOOP_inq_filter_avail`, which reported every
+  filter present) sit in the dispatch table behind
+  `nc_inq_var_filter_ids`, `nc_inq_var_filter_info`,
+  `nc_inq_var_filter` and `nc_inq_filter_avail`.
+- **Close**: `close_group_hdf` in `nxt4file.c` frees the list with
+  `NC4_hdf5_filter_freelist` (netcdf-c's `var_free` does not touch
+  `format`-owned state) and frees `NEXTCDF4_VAR_INFO_T` itself.
+
+`NC_CLASSIC_MODEL` files reject every filter and storage setter with
+`NC_EINVAL`; scalars reject filters; and committed variables reject
+new filters with `NC_ELATEDEF`.
 
 ## Compatibility modes
 
