@@ -156,10 +156,10 @@ is_small_float(nc_type xtype)
  *
  * - Untyped or same-type calls always pass (raw bit patterns, no
  *   conversion).
- * - Standard types keep netcdf-c behavior: anything goes, HDF5
- *   converts.
+ * - Standard types keep netcdf-c behavior: anything goes, the
+ *   internal engine converts.
  * - `NC_FLOAT16`/`NC_BFLOAT16` additionally accept `NC_FLOAT` and
- *   `NC_DOUBLE` buffers via HDF5 conversion.
+ *   `NC_DOUBLE` buffers, converted by the internal engine.
  * - The FP8/FP6/FP4 types accept only their own type, because HDF5
  *   2.1.1 converts them incorrectly (an HDF5 Known Problem).
  * - Text (`NC_CHAR`) calls on small floats return `NC_ECHAR`,
@@ -191,8 +191,8 @@ check_memtype(nc_type xtype, nc_type memtype)
         return NC_ECHAR;
 
     /* float16 and bfloat16 widen exactly into float and double, and
-     * HDF5's conversion back is usable (its rounding is documented in
-     * NEXTCDF4_float16.md). */
+     * the internal engine's conversion back is round-to-nearest-even
+     * (documented in NEXTCDF4_float16.md). */
     if ((xtype == NC_FLOAT16 || xtype == NC_BFLOAT16) &&
         (memtype == NC_FLOAT || memtype == NC_DOUBLE))
         return NC_NOERR;

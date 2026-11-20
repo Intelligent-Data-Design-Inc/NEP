@@ -1,7 +1,7 @@
 # CMakeLists.txt for NEXTCDF-4 examples
 # Edward Hartnett, Intelligent Data Design, Inc.
 
-foreach(_target bfloat16 bfloat16_perf bfloat16_io_perf make_bfloat16_sample conversion_perf)
+foreach(_target bfloat16 bfloat16_perf bfloat16_io_perf make_bfloat16_sample float16 float16_perf float16_io_perf make_float16_sample conversion_perf)
     add_executable(${_target} ${_target}.c)
     target_include_directories(${_target} PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_BINARY_DIR}/include ${CMAKE_SOURCE_DIR}/examples ${NETCDF_INCLUDE_DIRS})
     target_link_libraries(${_target} PRIVATE nep ${NETCDF_LIBRARIES} m)
@@ -18,7 +18,7 @@ if(BUILD_TESTING)
             LABELS "nextcdf4;performance" TIMEOUT 900 RUN_SERIAL TRUE)
     endif()
     if(NEP_ZSTD_PLUGIN_DIR STREQUAL "")
-        message(STATUS "NEP_ZSTD_PLUGIN_DIR not set; skipping NEXTCDF-4 bfloat16 example tests")
+        message(STATUS "NEP_ZSTD_PLUGIN_DIR not set; skipping NEXTCDF-4 bfloat16/float16 example tests")
         return()
     endif()
     if(NOT IS_DIRECTORY "${NEP_ZSTD_PLUGIN_DIR}")
@@ -31,11 +31,20 @@ if(BUILD_TESTING)
     add_test(NAME nxt4_bfloat16 COMMAND bfloat16 ${_bf16_sample} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     set_tests_properties(nxt4_bfloat16 PROPERTIES ENVIRONMENT "${_bf16_env}" LABELS nextcdf4)
 
+    add_test(NAME nxt4_float16 COMMAND float16 ${_bf16_sample} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    set_tests_properties(nxt4_float16 PROPERTIES ENVIRONMENT "${_bf16_env}" LABELS nextcdf4)
+
     if(NEP_ENABLE_BENCHMARKS)
         add_test(NAME nxt4_bfloat16_perf COMMAND bfloat16_perf ${_bf16_sample} ${CMAKE_CURRENT_BINARY_DIR}/bfloat16_results.csv WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
         set_tests_properties(nxt4_bfloat16_perf PROPERTIES ENVIRONMENT "${_bf16_env}" LABELS "nextcdf4;performance" TIMEOUT 900 RUN_SERIAL TRUE)
 
         add_test(NAME nxt4_bfloat16_io_perf COMMAND bfloat16_io_perf ${_bf16_sample} ${CMAKE_SOURCE_DIR}/test/data/NEXTCDF4/gdas_sfc_sample_bfloat16.nc ${CMAKE_CURRENT_BINARY_DIR}/bfloat16_io_results.csv WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
         set_tests_properties(nxt4_bfloat16_io_perf PROPERTIES ENVIRONMENT "${_bf16_env}" LABELS "nextcdf4;performance" TIMEOUT 900 RUN_SERIAL TRUE)
+
+        add_test(NAME nxt4_float16_perf COMMAND float16_perf ${_bf16_sample} ${CMAKE_CURRENT_BINARY_DIR}/float16_results.csv WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+        set_tests_properties(nxt4_float16_perf PROPERTIES ENVIRONMENT "${_bf16_env}" LABELS "nextcdf4;performance" TIMEOUT 900 RUN_SERIAL TRUE)
+
+        add_test(NAME nxt4_float16_io_perf COMMAND float16_io_perf ${_bf16_sample} ${CMAKE_SOURCE_DIR}/test/data/NEXTCDF4/gdas_sfc_sample_float16.nc ${CMAKE_CURRENT_BINARY_DIR}/float16_io_results.csv WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+        set_tests_properties(nxt4_float16_io_perf PROPERTIES ENVIRONMENT "${_bf16_env}" LABELS "nextcdf4;performance" TIMEOUT 900 RUN_SERIAL TRUE)
     endif()
 endif()

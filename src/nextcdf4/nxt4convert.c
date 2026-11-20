@@ -1,6 +1,6 @@
 /**
  * @file nxt4convert.c
- * @brief Experimental numeric conversion and quantization for NEXTCDF-4.
+ * @brief Internal numeric conversion and quantization for NEXTCDF-4.
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
 #include "config.h"
@@ -11,106 +11,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "nxt4internal.h"
-
-/**
- * @brief HDF5 type-conversion exception callback that records range
- * errors without changing HDF5's result.
- *
- * Registered on a dataset-transfer property list by
- * nx4_conversion_dxpl(). HDF5 calls it once per value it cannot
- * convert cleanly. Returning `H5T_CONV_UNHANDLED` keeps HDF5's own
- * fallback conversion — the callback only *observes*: it sets the
- * flag in @p user_data when the exception means a genuine
- * `NC_ERANGE` situation.
- *
- * The extra analysis below exists because HDF5 reports some
- * non-errors (like float→smaller-float rounding) with the same
- * exception codes as real overflow. For a float source the value is
- * decoded byte-order-safely and re-checked against the integer
- * destination's exact bounds (2^precision, adjusted for sign), so a
- * merely rounded value does not raise a false range error. NaN and
- * infinities into integer targets are always range errors.
- *
- * @param exception Conversion exception.
- * @param src_id Source datatype.
- * @param dst_id Destination datatype.
- * @param src_buf Source value.
- * @param dst_buf Destination value.
- * @param user_data Per-operation boolean range flag.
- * @return H5T_CONV_UNHANDLED to retain HDF5 conversion.
- * @author Edward Hartnett, Intelligent Data Design, Inc.
- */
-static H5T_conv_ret_t
-nx4_conversion_exception(H5T_conv_except_t exception, hid_t src_id,
-                         hid_t dst_id, void *src_buf, void *dst_buf,
-                         void *user_data)
-{
-    int range = exception == H5T_CONV_EXCEPT_RANGE_HI ||
-        exception == H5T_CONV_EXCEPT_RANGE_LOW;
-    H5T_class_t target = H5Tget_class(dst_id);
-    (void)dst_buf;
-    if (target == H5T_INTEGER &&
-        (exception == H5T_CONV_EXCEPT_NAN || exception == H5T_CONV_EXCEPT_PINF ||
-         exception == H5T_CONV_EXCEPT_NINF))
-        range = 1;
-    if (range && H5Tget_class(src_id) == H5T_FLOAT) {
-        size_t size = H5Tget_size(src_id), i;
-        unsigned char bytes[sizeof(double)];
-        long double value;
-        if (size == sizeof(float) || size == sizeof(double)) {
-            int swap = H5Tget_order(src_id) != H5Tget_order(H5T_NATIVE_DOUBLE);
-            for (i = 0; i < size; i++)
-                bytes[i] = ((const unsigned char *)src_buf)[swap ? size - i - 1 : i];
-            if (size == sizeof(float)) {
-                float f;
-                memcpy(&f, bytes, size);
-                value = f;
-            } else {
-                double d;
-                memcpy(&d, bytes, size);
-                value = d;
-            }
-            if (target == H5T_INTEGER) {
-                size_t bits = H5Tget_precision(dst_id);
-                int sign = H5Tget_sign(dst_id) == H5T_SGN_2;
-                long double limit = ldexpl(1.0L, (int)bits - sign);
-                value = truncl(value);
-                range = !isfinite(value) || value < (sign ? -limit : 0) || value >= limit;
-            } else
-                range = isfinite(value) && fabsl(value) >= 1;
-        }
-    }
-    if (range) *(int *)user_data = 1;
-    return H5T_CONV_UNHANDLED;
-}
-
-/**
- * @brief Create a dataset-transfer property list that watches for
- * conversion range errors.
- *
- * Used by the code paths that still convert through HDF5 (IEEE
- * float16). The caller owns the returned `hid_t` and must close it
- * with `H5Pclose()`. @p range_error is reset here and set later by
- * nx4_conversion_exception() if a real `NC_ERANGE` occurs mid-I/O.
- *
- * @param dxplp Receives the property list, or -1 on failure.
- * @param range_error Per-operation flag, reset to zero.
- * @return NC_NOERR or NC_EHDFERR.
- * @author Edward Hartnett, Intelligent Data Design, Inc.
- */
-int
-nx4_conversion_dxpl(hid_t *dxplp, int *range_error)
-{
-    *range_error = 0;
-    *dxplp = H5Pcreate(H5P_DATASET_XFER);
-    if (*dxplp < 0) return NC_EHDFERR;
-    if (H5Pset_type_conv_cb(*dxplp, nx4_conversion_exception, range_error) < 0) {
-        H5Pclose(*dxplp);
-        *dxplp = -1;
-        return NC_EHDFERR;
-    }
-    return NC_NOERR;
-}
 
 /**
  * @brief Test whether a type is a standard numeric atomic type.
@@ -189,6 +89,126 @@ encode_bfloat_double(double d, int *range)
         memcpy(&f, &u, sizeof(f));
     }
     return encode_bfloat(f, range);
+}
+
+/**
+ * @brief Decode an IEEE 754 binary16 bit pattern as `float`.
+ *
+ * The conversion is exact: subnormals are normalized, infinities and
+ * NaN payloads are preserved into the float NaN.
+ *
+ * @param h Encoded bits.
+ * @return Decoded value.
+ */
+static float
+decode_half(uint16_t h)
+{
+    uint32_t sign = (uint32_t)(h & 0x8000U) << 16;
+    uint32_t e = (h >> 10) & 0x1fU;
+    uint32_t m = h & 0x03ffU;
+    uint32_t u;
+    float f;
+    if (e == 0) {
+        if (!m) {
+            u = sign;
+        } else {
+            e = 1;
+            while (!(m & 0x400U)) { m <<= 1; e--; }
+            m &= 0x3ffU;
+            u = sign | ((uint32_t)(e + 112) << 23) | (m << 13);
+        }
+    } else if (e == 31) {
+        u = sign | 0x7f800000U | (m << 13);
+    } else {
+        u = sign | ((e + 112U) << 23) | (m << 13);
+    }
+    memcpy(&f, &u, sizeof(f));
+    return f;
+}
+
+/**
+ * @brief Encode a `float` as IEEE 754 binary16 with
+ * round-to-nearest-even.
+ *
+ * binary16 keeps the sign, rebases the exponent by -112 and rounds
+ * the significand to 10 bits. Finite magnitudes of 65520 or more
+ * overflow to infinity with @p range set (the tie at 65520 rounds to
+ * even, which is infinity); magnitudes in (65504, 65520) round to the
+ * largest finite 0x7bff. Results below 2^-14 become subnormals or
+ * signed zero; that underflow is not a range error. NaN stays a quiet
+ * NaN. Mirrors f32_to_f16() in `src/nep_float16.c`, which is the
+ * reference implementation.
+ *
+ * @param f Source value.
+ * @param range Receives a range flag on finite overflow.
+ * @return Encoded bits.
+ */
+static uint16_t
+encode_half(float f, int *range)
+{
+    uint32_t u, mag, sig, mant, rem;
+    uint16_t sign;
+    int e, shift;
+    memcpy(&u, &f, sizeof(u));
+    mag = u & 0x7fffffffU;
+    sign = (uint16_t)((u >> 16) & 0x8000U);
+    if (mag > 0x7f800000U)
+        return (uint16_t)(sign | 0x7c00U | ((u >> 13) & 0x03ffU) | 0x0200U);
+    if (mag == 0x7f800000U)
+        return (uint16_t)(sign | 0x7c00U);
+    if (mag >= 0x477ff000U) {   /* 65520.0f */
+        *range = 1;
+        return (uint16_t)(sign | 0x7c00U);
+    }
+    e = (int)(mag >> 23);
+    if (e >= 113) {
+        uint32_t m = mag & 0x7fffffU;
+        uint32_t rounded = (m + 0x0fffU + ((m >> 13) & 1U)) >> 13;
+        return (uint16_t)(sign | (uint16_t)(((e - 112) << 10) + rounded));
+    }
+    shift = 126 - e;
+    if (shift >= 32)
+        return sign;
+    sig = 0x800000U | (mag & 0x7fffffU);
+    mant = sig >> shift;
+    rem = sig & ((1U << shift) - 1U);
+    if (rem > (1U << (shift - 1)) || (rem == (1U << (shift - 1)) && (mant & 1U)))
+        mant++;
+    return (uint16_t)(sign | (uint16_t)mant);
+}
+
+/**
+ * @brief Encode a `double` as IEEE 754 binary16 with a single final
+ * rounding.
+ *
+ * Same round-to-odd technique as encode_bfloat_double(): when the
+ * `float` result is inexact the neighboring float on the correct side
+ * of @p d is chosen before the final binary16 rounding. float's
+ * 24-bit significand has 13 spare bits over binary16's 11, so this
+ * equals rounding the double directly. Values beyond `FLT_MAX` become
+ * binary16 infinities with @p range set.
+ *
+ * @param d Source value.
+ * @param range Receives a range flag on finite overflow.
+ * @return Encoded bits.
+ */
+static uint16_t
+encode_half_double(double d, int *range)
+{
+    float f;
+    uint32_t u;
+    if (isfinite(d) && fabs(d) > FLT_MAX) {
+        *range = 1;
+        return signbit(d) ? 0xfc00U : 0x7c00U;
+    }
+    f = (float)d;
+    if (isfinite(d) && (double)f != d) {
+        memcpy(&u, &f, sizeof(u));
+        if (!(u & 1U))
+            u = fabs((double)f) < fabs(d) ? u + 1U : u - 1U;
+        memcpy(&f, &u, sizeof(f));
+    }
+    return encode_half(f, range);
 }
 
 /**
@@ -384,12 +404,14 @@ integer_range(nc_type source, nc_type target, unsigned long long u, long long s)
  * attributes and quantized writes.
  *
  * Three strategies: standard numerics convert elementwise in C with
- * exact range checks; `NC_FLOAT16` pairs go through HDF5's native
- * conversion watched by nx4_conversion_exception() (the deliberate
- * float16 exception); `NC_BFLOAT16` pairs use encode_bfloat() with
- * round-to-nearest-even. Quantization is applied to the converted
- * output last. Callers may probe with NULL buffers to validate a
- * conversion before allocating.
+ * exact range checks; `NC_FLOAT16` pairs use decode_half() and
+ * encode_half()/encode_half_double(); `NC_BFLOAT16` pairs use
+ * encode_bfloat() with round-to-nearest-even. Both 16-bit types
+ * decode exactly and narrow with round-to-nearest-even, single
+ * rounding from double — HDF5 performs no application numeric
+ * conversion. Quantization is applied to the converted output last.
+ * Callers may probe with NULL buffers to validate a conversion before
+ * allocating.
  *
  * @param src Source buffer (may be NULL for a validation-only probe).
  * @param dest Destination buffer (may be NULL for a probe).
@@ -417,8 +439,8 @@ nx4_convert_type(const void *src, void *dest, nc_type src_type,
     int half = (src_type == NC_FLOAT16 && (dest_type == NC_FLOAT || dest_type == NC_DOUBLE)) ||
         (dest_type == NC_FLOAT16 && (src_type == NC_FLOAT || src_type == NC_DOUBLE));
     /* Validate argument and type combination first, then dispatch on
-     * the conversion kind: identical types memcpy, float16 goes
-     * through HDF5, bfloat16 uses the RNE encoders, everything else
+     * the conversion kind: identical types memcpy, the 16-bit floats
+     * use the RNE encoders/decoders, everything else
      * uses the generated per-source loops. Quantization runs last. */
     if (!range_error) return NC_EINVAL;
     *range_error = 0;
@@ -439,38 +461,28 @@ nx4_convert_type(const void *src, void *dest, nc_type src_type,
     if (!src || !dest) return NC_EINVAL;
     if (src_type == dest_type) {
         memcpy(dest, src, len * src_size);
-    } else if (half) {
-        int close_src = 0, close_dest = 0, ret = NC_NOERR;
-        hid_t dxpl = -1;
-        hid_t s = NEXTCDF4_memory_type(src_type, &close_src);
-        hid_t d = NEXTCDF4_memory_type(dest_type, &close_dest);
-        void *tmp = malloc(len * (src_size > dest_size ? src_size : dest_size));
-        if (!tmp) ret = NC_ENOMEM;
-        else if (s < 0 || d < 0) ret = NC_EBADTYPE;
-        else if (!(ret = nx4_conversion_dxpl(&dxpl, range_error))) {
-            memcpy(tmp, src, len * src_size);
-            if (H5Tconvert(s, d, len, tmp, NULL, dxpl) < 0) ret = NC_EHDFERR;
-            else memcpy(dest, tmp, len * dest_size);
-        }
-        if (dxpl >= 0) H5Pclose(dxpl);
-        free(tmp);
-        if (close_src && s >= 0) H5Tclose(s);
-        if (close_dest && d >= 0) H5Tclose(d);
-        if (ret) return ret;
-    } else if (bf) {
+    } else if (half || bf) {
         for (i = 0; i < len; i++) {
             uint16_t bits;
-            if (src_type == NC_BFLOAT16) {
+            if (src_type == NC_FLOAT16 || src_type == NC_BFLOAT16) {
                 uint32_t u;
                 float f;
                 memcpy(&bits, (const unsigned char *)src + i * 2, 2);
-                u = (uint32_t)bits << 16;
-                memcpy(&f, &u, sizeof(f));
+                if (src_type == NC_FLOAT16) {
+                    f = decode_half(bits);
+                } else {
+                    u = (uint32_t)bits << 16;
+                    memcpy(&f, &u, sizeof(f));
+                }
                 if (dest_type == NC_FLOAT) ((float *)dest)[i] = f;
                 else ((double *)dest)[i] = f;
             } else {
-                bits = src_type == NC_FLOAT ? encode_bfloat(((const float *)src)[i], range_error)
-                    : encode_bfloat_double(((const double *)src)[i], range_error);
+                if (dest_type == NC_FLOAT16)
+                    bits = src_type == NC_FLOAT ? encode_half(((const float *)src)[i], range_error)
+                        : encode_half_double(((const double *)src)[i], range_error);
+                else
+                    bits = src_type == NC_FLOAT ? encode_bfloat(((const float *)src)[i], range_error)
+                        : encode_bfloat_double(((const double *)src)[i], range_error);
                 memcpy((unsigned char *)dest + i * 2, &bits, 2);
             }
         }

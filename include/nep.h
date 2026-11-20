@@ -33,8 +33,8 @@
 #include <netcdf_filter.h>
 
 /** NEXTCDF-4 16-bit IEEE 754 half-precision floating point type.
- *  Untyped I/O uses raw uint16_t; typed float/double I/O converts
- *  through HDF5. */
+ *  Untyped I/O uses raw uint16_t; typed float/double I/O uses NEP
+ *  round-to-nearest-even, with single rounding from double. */
 #define NC_FLOAT16     17
 /** NEXTCDF-4 16-bit bfloat16 floating point type (HDF5 2.1.1+).
  *  Untyped I/O uses raw uint16_t; typed float/double I/O uses NEP
@@ -86,6 +86,23 @@ typedef __bf16 nc_bfloat16_t;
 #else
 #define NEP_HAVE_NATIVE_BFLOAT16 0
 typedef uint16_t nc_bfloat16_t;
+#endif
+
+/** @def NEP_HAVE_NATIVE_FLOAT16
+ *  1 when nc_float16_t is the compiler's `_Float16` type, 0 when it is
+ *  `uint16_t`. */
+/** @typedef nc_float16_t
+ *  One IEEE 754 binary16 value in memory: 2 bytes holding the float16
+ *  bit pattern either way. With `_Float16`, C casts convert
+ *  numerically, so code that holds raw bits in `uint16_t` passes them
+ *  by casting the pointer (`(nc_float16_t *)(void *)bits`), not by
+ *  assigning values. */
+#if defined(__FLT16_MAX__)
+#define NEP_HAVE_NATIVE_FLOAT16 1
+typedef _Float16 nc_float16_t;
+#else
+#define NEP_HAVE_NATIVE_FLOAT16 0
+typedef uint16_t nc_float16_t;
 #endif
 
 #if defined(__cplusplus)
@@ -222,6 +239,133 @@ extern "C" {
      * @author Edward Hartnett, Intelligent Data Design, Inc.
      */
     int nc_put_vara_bfloat16(int ncid, int varid, const size_t *startp, const size_t *countp, const nc_bfloat16_t *op);
+
+    /**
+     * @brief Read one value from a variable as IEEE 754 float16.
+     *
+     * @param ncid NetCDF file ID.
+     * @param varid Variable ID.
+     * @param indexp Element coordinates (NULL reads element 0).
+     * @param ip Returned float16 value.
+     * @return NC_NOERR on success; error as in nc_get_vara_float16().
+     * @see nc_get_vara_float16()
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_get_var1_float16(int ncid, int varid, const size_t *indexp, nc_float16_t *ip);
+
+    /**
+     * @brief Write one value to a variable as IEEE 754 float16.
+     *
+     * @param ncid NetCDF file ID.
+     * @param varid Variable ID.
+     * @param indexp Element coordinates (NULL writes element 0).
+     * @param op The float16 value to write.
+     * @return NC_NOERR on success; error as in nc_put_vara_float16().
+     * @see nc_put_vara_float16()
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_put_var1_float16(int ncid, int varid, const size_t *indexp, const nc_float16_t *op);
+
+    /**
+     * @brief Read a whole variable as IEEE 754 float16.
+     *
+     * @param ncid NetCDF file ID.
+     * @param varid Variable ID.
+     * @param ip Returned float16 values, one per element.
+     * @return NC_NOERR on success; error as in nc_get_vara_float16().
+     * @see nc_get_vara_float16()
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_get_var_float16(int ncid, int varid, nc_float16_t *ip);
+
+    /**
+     * @brief Write a whole variable from IEEE 754 float16 values.
+     *
+     * @param ncid NetCDF file ID.
+     * @param varid Variable ID.
+     * @param op The float16 values to write, one per element.
+     * @return NC_NOERR on success; error as in nc_put_vara_float16().
+     * @see nc_put_vara_float16()
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_put_var_float16(int ncid, int varid, const nc_float16_t *op);
+
+    /**
+     * @brief Read a strided hyperslab of a variable as IEEE 754 float16.
+     *
+     * @param ncid NetCDF file ID.
+     * @param varid Variable ID.
+     * @param startp Start index in each dimension.
+     * @param countp Edge count in each dimension.
+     * @param stridep Stride in each dimension.
+     * @param ip Returned float16 values.
+     * @return NC_NOERR on success; error as in nc_get_vara_float16().
+     * @see nc_get_vara_float16()
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_get_vars_float16(int ncid, int varid, const size_t *startp, const size_t *countp, const ptrdiff_t *stridep, nc_float16_t *ip);
+
+    /**
+     * @brief Write a strided hyperslab of a variable from IEEE 754 float16 values.
+     *
+     * @param ncid NetCDF file ID.
+     * @param varid Variable ID.
+     * @param startp Start index in each dimension.
+     * @param countp Edge count in each dimension.
+     * @param stridep Stride in each dimension.
+     * @param op The float16 values to write.
+     * @return NC_NOERR on success; error as in nc_put_vara_float16().
+     * @see nc_put_vara_float16()
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_put_vars_float16(int ncid, int varid, const size_t *startp, const size_t *countp, const ptrdiff_t *stridep, const nc_float16_t *op);
+
+    /**
+     * @brief Read a hyperslab of a variable as IEEE 754 float16.
+     *
+     * Works on any file the netCDF API can open. An NC_FLOAT16
+     * variable returns its raw bit patterns with no conversion. An
+     * NC_FLOAT or NC_DOUBLE variable is read with the corresponding
+     * typed call and every value is converted to float16 by NEP,
+     * rounding to nearest with ties to even (a single rounding from
+     * double); the float16-to-float/double direction is exact. An
+     * NC_CHAR variable returns NC_ECHAR; every other variable type
+     * (including NC_BFLOAT16) returns NC_EBADTYPE, and nothing is read.
+     *
+     * @param ncid NetCDF file ID.
+     * @param varid Variable ID (NC_FLOAT16, NC_FLOAT or NC_DOUBLE).
+     * @param startp Start index in each dimension.
+     * @param countp Edge count in each dimension.
+     * @param ip Returned float16 values.
+     * @return NC_NOERR on success; NC_ERANGE if a finite value
+     * overflowed to ±inf (all values are still converted); NC_EBADTYPE,
+     * NC_ECHAR, NC_EINVAL, NC_ENOMEM or other errors from the
+     * underlying netCDF call.
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_get_vara_float16(int ncid, int varid, const size_t *startp, const size_t *countp, nc_float16_t *ip);
+
+    /**
+     * @brief Write a hyperslab of a variable from IEEE 754 float16 values.
+     *
+     * Works on any file the netCDF API can open. An NC_FLOAT16
+     * variable stores the raw bit patterns with no conversion. An
+     * NC_FLOAT or NC_DOUBLE variable is written with the corresponding
+     * typed call after every value is widened exactly to float or
+     * double by NEP; puts never overflow. An NC_CHAR variable returns
+     * NC_ECHAR; every other variable type (including NC_BFLOAT16)
+     * returns NC_EBADTYPE, and nothing is written.
+     *
+     * @param ncid NetCDF file ID.
+     * @param varid Variable ID (NC_FLOAT16, NC_FLOAT or NC_DOUBLE).
+     * @param startp Start index in each dimension.
+     * @param countp Edge count in each dimension.
+     * @param op The float16 values to write.
+     * @return NC_NOERR on success; NC_EBADTYPE, NC_ECHAR, NC_EINVAL,
+     * NC_ENOMEM or other errors from the underlying netCDF call.
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_put_vara_float16(int ncid, int varid, const size_t *startp, const size_t *countp, const nc_float16_t *op);
 
 #if defined(__cplusplus)
 }

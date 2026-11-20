@@ -12,7 +12,7 @@ The goals are:
 
 ## Sprint 1G conversion experiment
 
-The temporary CMake option `NEP_INTERNAL_CONVERT` defaults OFF. ON routes supported numeric variable/attribute conversion and quantization through NEP-owned `nx4_convert_type()` in `nxt4convert.c`; it is not an upstream converter wrapper. The common native-memory mapper is `NEXTCDF4_memory_type()`. Numeric conversion precedes quantization; HDF5 retains byte-order/storage work and the explicit IEEE float16 exception until Sprint 1I. Bfloat16 narrowing uses NEP nearest/even rounding. `NEP_HAS_INTERNAL_CONVERT` reports the effective build setting. The standalone public bfloat16 functions remain in `libnep`, independent of this backend. OFF/ON CI tests the experiment. Sprint 1H adds completed-I/O `NC_ERANGE` reporting to both engines, separate performance comparisons and Ed's required review before the permanent decision and switch removal. The independent API and packaging contract stay unchanged. On-disk formats and model flags do not change.
+The temporary CMake option `NEP_INTERNAL_CONVERT` defaults OFF. ON routes supported numeric variable/attribute conversion and quantization through NEP-owned `nx4_convert_type()` in `nxt4convert.c`; it is not an upstream converter wrapper. The common native-memory mapper is `NEXTCDF4_memory_type()`. Numeric conversion precedes quantization; HDF5 retains byte-order/storage work; the IEEE float16 exception was removed in v4.3.0 Sprint 1J, which brought float16 into `nx4_convert_type()`. Bfloat16 narrowing uses NEP nearest/even rounding. `NEP_HAS_INTERNAL_CONVERT` reports the effective build setting. The standalone public bfloat16 functions remain in `libnep`, independent of this backend. OFF/ON CI tests the experiment. Sprint 1H adds completed-I/O `NC_ERANGE` reporting to both engines, separate performance comparisons and Ed's required review before the permanent decision and switch removal. The independent API and packaging contract stay unchanged. On-disk formats and model flags do not change.
 
 ## Goals and Non-Goals
 
@@ -303,7 +303,7 @@ Memory representation is the raw bit pattern:
 - `NC_FLOAT8_*` → `uint8_t`
 - `NC_FLOAT6_*`, `NC_FLOAT4_*` → `uint8_t` (HDF5 stores 6-bit and 4-bit floats in 1-byte datatypes)
 
-These types are software-emulated in HDF5 and implicit conversions are unreliable, so callers must use the matching raw type for I/O. (v4.3.0 Sprint 1B: `NC_FLOAT16`/`NC_BFLOAT16` also accept `NC_FLOAT`/`NC_DOUBLE` memtypes, converted by HDF5; FP8/FP6/FP4 still require the matching type, enforced by `check_memtype` in `nxt4io.c`.)
+These types are software-emulated in HDF5 and implicit conversions are unreliable, so callers must use the matching raw type for I/O. (v4.3.0 Sprint 1B: `NC_FLOAT16`/`NC_BFLOAT16` also accept `NC_FLOAT`/`NC_DOUBLE` memtypes; Sprint 1H/1J moved both to the internal `nx4_convert_type()` engine, so HDF5 no longer does the conversion. FP8/FP6/FP4 still require the matching type, enforced by `check_memtype` in `nxt4io.c`.)
 
 ### Compatibility
 
@@ -825,7 +825,7 @@ Sprint 9 adds `NC_FLOAT16`, `NC_BFLOAT16`, and the FP8/FP6/FP4 small floating-po
 
 - `src/nextcdf4/nxt4io.c`:
   - Ensure `var_io` uses the correct HDF5 memory/file type for the new small floats. For the initial implementation, require `memtype` to match the variable's file type to avoid incomplete HDF5 conversions.
-  (v4.3.0 Sprint 1B: `NC_FLOAT16`/`NC_BFLOAT16` also accept `NC_FLOAT`/`NC_DOUBLE` memtypes, converted by HDF5; FP8/FP6/FP4 still require the matching type, enforced by `check_memtype` in `nxt4io.c`.)
+  (v4.3.0 Sprint 1B: `NC_FLOAT16`/`NC_BFLOAT16` also accept `NC_FLOAT`/`NC_DOUBLE` memtypes; Sprint 1H/1J moved both to the internal `nx4_convert_type()` engine, so HDF5 no longer does the conversion. FP8/FP6/FP4 still require the matching type, enforced by `check_memtype` in `nxt4io.c`.)
 
 - `test/tst_nextcdf4_float16.c`:
   - Round-trip `NC_FLOAT16` data using `nc_def_var`, `nc_put_vara`, and `nc_get_vara`.

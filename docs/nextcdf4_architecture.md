@@ -143,11 +143,12 @@ Functions use a `ret` variable plus a `fail:` cleanup label
 quantized-write conversions. It reports overflow and integer
 range errors as `NC_ERANGE` *after* completing the I/O — the data
 still lands — and treats precision loss and fractional truncation as
-non-errors. Two deliberate exceptions remain with HDF5's own
-conversion: IEEE float16 (`H5T` has native float16), and the
-raw-bit small-float types (FP8/FP6/FP4) which are untyped-only. The
-`nc_*_bfloat16` family performs NEP round-to-nearest-even conversion
-between `NC_BFLOAT16` storage and `NC_FLOAT`/`NC_DOUBLE` buffers.
+non-errors. IEEE float16 joined the engine in Sprint 1J (v4.3.0);
+the only remaining exclusion is the raw-bit small-float types
+(FP8/FP6/FP4) which are untyped-only. The `nc_*_bfloat16` and
+`nc_*_float16` families perform NEP round-to-nearest-even conversion
+between `NC_BFLOAT16`/`NC_FLOAT16` storage and `NC_FLOAT`/`NC_DOUBLE`
+buffers.
 
 @author Edward Hartnett
 @date 2026-11-20

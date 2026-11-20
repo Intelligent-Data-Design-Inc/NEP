@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # record_machine.sh - record the machine and library context of a
-# bfloat16_perf and bfloat16_io_perf benchmark run, in the format of
-# nep-compress performance/reference_machine.txt.
+# bfloat16_perf/bfloat16_io_perf and float16_perf/float16_io_perf
+# benchmark run, in the format of nep-compress
+# performance/reference_machine.txt.
 #
 # Usage: HDF5_PLUGIN_PATH=<zstd plugin dir> record_machine.sh BUILD_DIR OUTPUT
 #
@@ -41,6 +42,7 @@ py_ver=$(python3 -c 'import sys; print("%d.%d.%d" % sys.version_info[:3])')
 mpl_ver=$(python3 -c 'import matplotlib; print(matplotlib.__version__)')
 sample_sha=$(sha256sum "$SRC_DIR/test/data/netCDF-4/gdas_sfc_sample.nc" | awk '{print $1}')
 bf16_sample_sha=$(sha256sum "$SRC_DIR/test/data/NEXTCDF4/gdas_sfc_sample_bfloat16.nc" | awk '{print $1}')
+f16_sample_sha=$(sha256sum "$SRC_DIR/test/data/NEXTCDF4/gdas_sfc_sample_float16.nc" | awk '{print $1}')
 cache="$BUILD_DIR/CMakeCache.txt"
 build_type=$(awk -F= '/^CMAKE_BUILD_TYPE:/ {print $2; exit}' "$cache")
 cflags=$(awk -F= '/^CMAKE_C_FLAGS:/ {print $2; exit}' "$cache")
@@ -74,7 +76,7 @@ git -C "$SRC_DIR" diff --quiet HEAD || git_rev="$git_rev-dirty"
     echo "C flags: $cflags_line"
     marker=$(awk '/^#define NEP_HAS_INTERNAL_CONVERT / {print $3; exit}' "$BUILD_DIR/include/nep_meta.h")
     echo "Internal conversion: ${marker:-permanent}"
-    sha256sum "$PERF" "$IO_PERF" "$BUILD_DIR/examples/nextcdf4/conversion_perf" "$BUILD_DIR/src/libncnextcdf4.so"
+    sha256sum "$PERF" "$IO_PERF" "$BUILD_DIR/examples/nextcdf4/float16_perf" "$BUILD_DIR/examples/nextcdf4/float16_io_perf" "$BUILD_DIR/examples/nextcdf4/conversion_perf" "$BUILD_DIR/src/libncnextcdf4.so"
     echo "NetCDF-C: $("$nc_config" --version) ($netcdf_lib)"
     echo "HDF5: $hdf5_lib"
     for so in "$HDF5_PLUGIN_PATH"/*.so; do
@@ -89,6 +91,7 @@ git -C "$SRC_DIR" diff --quiet HEAD || git_rev="$git_rev-dirty"
     echo "NCOPIES: $(awk '/^#define NCOPIES/ {print $3; exit}' "$SRC_DIR/examples/nextcdf4/bfloat16_perf.c")"
     echo "Sample: test/data/netCDF-4/gdas_sfc_sample.nc sha256 $sample_sha"
     echo "Sample: test/data/NEXTCDF4/gdas_sfc_sample_bfloat16.nc sha256 $bf16_sample_sha"
+    echo "Sample: test/data/NEXTCDF4/gdas_sfc_sample_float16.nc sha256 $f16_sample_sha"
     echo "Plotting: Python $py_ver, matplotlib $mpl_ver"
 } > "$OUTPUT"
 

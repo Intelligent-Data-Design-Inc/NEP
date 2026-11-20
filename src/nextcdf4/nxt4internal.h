@@ -127,9 +127,6 @@ int NEXTCDF4_type_size(nc_type xtype, size_t *sizep);
 /** Map an atomic memory type to HDF5. */
 hid_t NEXTCDF4_memory_type(nc_type type, int *closep);
 
-/** Create a transfer property list observing conversion range errors. */
-int nx4_conversion_dxpl(hid_t *dxplp, int *range_error);
-
 /** Convert numeric buffers using the internal engine. */
 int nx4_convert_type(const void *src, void *dest, nc_type src_type,
                      nc_type dest_type, size_t len, int *range_error,

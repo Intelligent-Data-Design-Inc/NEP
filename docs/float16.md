@@ -11,7 +11,7 @@ This page gives an overview with code from `examples/nextcdf4/bfloat16.c` and th
 
 ## Internal conversion engine
 
-NEXTCDF-4 uses the private `nx4_convert_type()` engine — made permanent in Sprint 1H — for standard float/double calls on bfloat16 variables and supported attributes, with NEP round-to-nearest-even. The temporary `NEP_INTERNAL_CONVERT` option and `NEP_HAS_INTERNAL_CONVERT` marker were removed after the engine decision; passing the option now fails at configure time. IEEE float16 remains an HDF5 exception until Sprint 1I. The independent `nc_*_bfloat16` API is unchanged. See [nextcdf4.md](nextcdf4.md).
+NEXTCDF-4 uses the private `nx4_convert_type()` engine — made permanent in Sprint 1H — for standard float/double calls on bfloat16 and float16 variables and supported attributes, with NEP round-to-nearest-even. The temporary `NEP_INTERNAL_CONVERT` option and `NEP_HAS_INTERNAL_CONVERT` marker were removed after the engine decision; passing the option now fails at configure time. IEEE float16 joined the engine in Sprint 1J (v4.3.0); its `H5Tconvert` path was removed. The independent `nc_*_bfloat16` and `nc_*_float16` APIs are unchanged. See [nextcdf4.md](nextcdf4.md).
 
 The committed charts and benchmark numbers in `examples/nextcdf4/conversion_*.csv` record the Sprint 1H OFF/ON comparison; the internal engine is now the only conversion path.
 
@@ -191,6 +191,23 @@ A second benchmark, `examples/nextcdf4/bfloat16_io_perf.c`, measures pure I/O wi
 ### Accuracy
 
 The maximum relative error is 0.00389 for `tmp2m`, `prate_ave` and `soilw1` in every bfloat16 configuration, just under the 2^-8 bound, and 0 for `land`. In absolute terms that is 1 K for `tmp2m`, 3.0e-05 kg/m²/s for `prate_ave` and 9.8e-04 for `soilw1`.
+
+## IEEE float16
+
+`NC_FLOAT16` (value 17, IEEE 754 binary16) is the other 16-bit atomic type: 1 sign bit, 5 exponent bits and 10 mantissa bits. It trades bfloat16's range for precision — about 3 significant decimal digits (relative error at most 2^-11), but a maximum of 65504 and a smallest normal value of about 6.1e-5, below which values become subnormals and lose precision. It suits data bounded well under 65504 where the extra mantissa bits matter more than the range.
+
+Since Sprint 1J (v4.3.0) the typed `float`/`double` calls on `NC_FLOAT16` variables convert through the internal engine, with the same round-to-nearest-even and `NC_ERANGE` semantics as bfloat16; the old `H5Tconvert` path is gone.
+
+`libnep` also provides the `nc_*_float16` family, mirroring `nc_*_bfloat16`:
+
+```c
+nc_get_var_float16   nc_put_var_float16
+nc_get_var1_float16  nc_put_var1_float16
+nc_get_vara_float16  nc_put_vara_float16
+nc_get_vars_float16  nc_put_vars_float16
+```
+
+The buffer type is `nc_float16_t` — `_Float16` where the compiler has it (`NEP_HAVE_NATIVE_FLOAT16` = 1), `uint16_t` otherwise. On `NC_FLOAT16` variables the functions exchange raw bits; on `NC_FLOAT`/`NC_DOUBLE` variables NEP converts with round-to-nearest-even and reports finite overflow (magnitude at or above 65520) as `NC_ERANGE`. The `float16.c` example, the `float16_perf`/`float16_io_perf` benchmarks, the committed `gdas_sfc_sample_float16.nc` and the performance results are documented in [NEXTCDF4_float16.md](NEXTCDF4_float16.md).
 
 ## Summary
 

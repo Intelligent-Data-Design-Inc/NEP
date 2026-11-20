@@ -101,6 +101,13 @@ if(HAVE_NEXTCDF4)
     set_tests_properties(tst_nep_bfloat16 PROPERTIES
         ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
 
+    add_executable(tst_nep_float16 tst_nep_float16.c)
+    target_link_libraries(tst_nep_float16 PRIVATE nep ncnextcdf4 ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
+    target_include_directories(tst_nep_float16 PRIVATE ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+    add_test(NAME tst_nep_float16 COMMAND tst_nep_float16)
+    set_tests_properties(tst_nep_float16 PROPERTIES
+        ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+
     add_executable(tst_nextcdf4_complex tst_nextcdf4_complex.c)
     target_link_libraries(tst_nextcdf4_complex PRIVATE ncnextcdf4 ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
     target_include_directories(tst_nextcdf4_complex PRIVATE ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
