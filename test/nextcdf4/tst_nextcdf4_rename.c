@@ -98,6 +98,14 @@ test_rename_coord_var(void)
         return 1;
     if (nc_rename_var(ncid, varid2, "longitude") != NC_NOERR)
         return 1;
+    /* NEXTCDF-4 keeps the names in sync: the dimension is renamed
+     * in-session, not just on disk. */
+    if (nc_inq_dimid(ncid, "longitude", &dimid) != NC_NOERR)
+        return 1;
+    if (nc_inq_dimname(ncid, dimid, name) != NC_NOERR)
+        return 1;
+    if (strcmp(name, "longitude"))
+        return 1;
     if (nc_enddef(ncid) != NC_NOERR)
         return 1;
     if (nc_close(ncid) != NC_NOERR)
@@ -148,6 +156,14 @@ test_rename_dim_with_coord(void)
     if (nc_inq_dimid(ncid, "x", &dimid) != NC_NOERR)
         return 1;
     if (nc_rename_dim(ncid, dimid, "longitude") != NC_NOERR)
+        return 1;
+    /* NEXTCDF-4 keeps the names in sync: the coordinate variable is
+     * renamed in-session, not just on disk. */
+    if (nc_inq_varid(ncid, "longitude", &varid2) != NC_NOERR)
+        return 1;
+    if (nc_inq_varname(ncid, varid2, name) != NC_NOERR)
+        return 1;
+    if (strcmp(name, "longitude"))
         return 1;
     if (nc_enddef(ncid) != NC_NOERR)
         return 1;

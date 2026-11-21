@@ -22,8 +22,8 @@ opened or created with `NC_NEXTCDF4`.
   function, require native NEXTCDF-4 mode. Under `NC_NETCDF4_MODEL` or
   `NC_CLASSIC_MODEL` they return `NC_ENOTNC4`. `nc_deref_*` and
   `nc_ref_get_*` work in any NEXTCDF4 mode.
-- `NC_STD_REF` variables cannot be coordinate variables and
-  `NC_STD_REF` cannot be a compound member.
+- `NC_STD_REF` cannot be a compound member. (Reference-typed
+  coordinate variables are allowed since v4.3.0 Sprint 1L1.)
 - No default fill value is defined; variables behave as if `NC_NOFILL`
   were set unless the caller supplies an explicit fill pattern.
 - Tokens are opaque 64-byte values. Never interpret the bytes.

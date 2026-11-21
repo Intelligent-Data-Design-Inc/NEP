@@ -2217,6 +2217,7 @@ NEXTCDF4_rename_dim(int ncid, int dimid, const char *name)
     NEXTCDF4_GRP_INFO_T *ginfo;
     hid_t hdf_grp = -1;
     char *oldname;
+    NC_VAR_INFO_T *cvar;
     int ret;
 
     if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
@@ -2243,6 +2244,10 @@ NEXTCDF4_rename_dim(int ncid, int dimid, const char *name)
     hdf_grp = ginfo ? ginfo->hdf_group : file->rootid;
     oldname = dim->hdr.name;
 
+    /* Find the coordinate variable before the dim name changes:
+     * find_coord_var matches on the old name. */
+    cvar = find_coord_var(dim->container, dim);
+
     if (dinfo && dinfo->hdf_dataset >= 0) {
         if (H5Lmove(hdf_grp, oldname, hdf_grp, name, H5P_DEFAULT,
                     H5P_DEFAULT) < 0)
@@ -2257,10 +2262,18 @@ NEXTCDF4_rename_dim(int ncid, int dimid, const char *name)
     if (!ncindexrebuild(dim->container->dim))
         return NC_EHDFERR;
 
-    /* Do not rename the in-memory coordinate variable here; netcdf-c
-     * semantics keep the variable name unchanged until the caller
-     * explicitly renames it with nc_rename_var. The HDF5 link, however,
-     * has already moved with the dimension-scale dataset. */
+    /* Rename the coordinate variable too: NEXTCDF-4 keeps the var and
+     * dim names in sync (upstream netcdf-c instead breaks the
+     * coordinate relationship). The scale dataset's link already
+     * moved with the dimension, so only the in-memory name and index
+     * need updating. */
+    if (cvar) {
+        free(cvar->hdr.name);
+        if (!(cvar->hdr.name = strdup(name)))
+            return NC_ENOMEM;
+        if (!ncindexrebuild(dim->container->vars))
+            return NC_EHDFERR;
+    }
 
     if (H5Fflush(file->hdfid, H5F_SCOPE_LOCAL) < 0)
         return NC_EHDFERR;
@@ -2347,13 +2360,15 @@ NEXTCDF4_rename_var(int ncid, int varid, const char *name)
         /* If cur_name has no link the dataset was already moved. */
     }
 
+    /* Detect the coordinate variable before the var name changes:
+     * after the update the names can never match. */
+    dim = coord_var_dim(var);
     free(var->hdr.name);
     if (!(var->hdr.name = strdup(name)))
         return NC_ENOMEM;
     if (!ncindexrebuild(var->container->vars))
         return NC_EHDFERR;
 
-    dim = coord_var_dim(var);
     if (dim) {
         dinfo = (NEXTCDF4_DIM_INFO_T *)dim->format_dim_info;
         if (dinfo && dinfo->hdf_dataset >= 0) {

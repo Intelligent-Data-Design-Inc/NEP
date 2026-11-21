@@ -542,7 +542,7 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 - If the build links HDF5 2.1.1 or later, also add `NC_BFLOAT16`, `NC_FLOAT8_E4M3`, `NC_FLOAT8_E5M2`, `NC_FLOAT6_E2M3`, `NC_FLOAT6_E3M2`, and `NC_FLOAT4_E2M1` with the mappings and memory types from the HDF5 2.x small-floating-point datatypes.
 - Small floating-point types are atomic NetCDF types, not user-defined types. They use the same `nc_def_var`/`nc_put_vara`/`nc_get_vara` dispatch path as other atomic types.
 - `NC_FLOAT16` and the other small floats are only allowed in native NEXTCDF-4 mode; they are rejected in `NC_NETCDF4_MODEL` and `NC_CLASSIC_MODEL`.
-- They cannot be used as coordinate variables because they do not support a total ordering suitable for dimension coordinates.
+- They cannot be used as coordinate variables because they do not support a total ordering suitable for dimension coordinates. (Superseded by v4.3.0 Sprint 1L1: small floats may be coordinate variables in native mode.)
 - The canonical in-memory representation is the raw bit pattern (`uint16_t` for 16-bit, `uint8_t` for 8/6/4-bit types). Users are responsible for producing valid encodings; no automatic conversion to/from `float`/`double` is guaranteed for the non-IEEE formats.
 
 **Prerequisites and constraints:**
@@ -589,7 +589,7 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 **Out of scope for Sprint 9:**
 - Automatic conversion between `NC_FLOAT16`/small floats and `NC_FLOAT`/`NC_DOUBLE`; users must supply the correct in-memory type.
 - Complex numbers, bitfields, and reference types (Sprint 10).
-- Coordinate variables and unlimited dimensions using small floats.
+- Coordinate variables and unlimited dimensions using small floats. (Superseded by v4.3.0 Sprint 1L1 — now allowed.)
 - Support for HDF5 versions older than 1.14.0.
 
 #### Sprint 10: Add Complex, Bitfield, and Reference Types
@@ -600,7 +600,7 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 - Add `NC_BITFIELD8`, `NC_BITFIELD16`, `NC_BITFIELD32`, and `NC_BITFIELD64` as built-in atomic types. They map to `H5T_STD_B*LE/BE` bitfield datatypes and are held in memory as `uint8_t`, `uint16_t`, `uint32_t`, and `uint64_t`. The NetCDF API treats them as unsigned integers; bit decoding is the caller's responsibility.
 - Add `NC_REF_OBJECT` and `NC_REF_REGION` as opaque reference types. They map to `H5T_STD_REF_OBJ` and `H5T_STD_REF_DSETREG`. Variables of these types store HDF5 reference tokens as opaque byte arrays. No dereferencing API is exposed in this sprint; callers read and write the opaque tokens.
 - All new types are rejected in `NC_NETCDF4_MODEL` and `NC_CLASSIC_MODEL` because they are not part of the classic NetCDF data model.
-- Complex and bitfield variables may be used as regular variables. Reference-typed variables cannot be coordinate variables, cannot appear inside compounds or attributes, and cannot be copied meaningfully between files.
+- Complex and bitfield variables may be used as regular variables. Reference-typed variables cannot appear inside compounds or attributes and cannot be copied meaningfully between files. (The coordinate-variable ban was lifted in v4.3.0 Sprint 1L1.)
 
 **Prerequisites and constraints:**
 - Build on `NEXTCDF4_map_hdf_type`, `map_nc_type`, `NEXTCDF4_type_size`, `NEXTCDF4_type_name`, `NEXTCDF4_check_atomic_type`, `set_var_type`, and `nxt4io.c` `memory_type` from Sprints 8 and 9.
