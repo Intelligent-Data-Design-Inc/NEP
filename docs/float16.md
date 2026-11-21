@@ -24,7 +24,7 @@ The committed charts and benchmark numbers in `examples/nextcdf4/conversion_*.cs
 - Create the file with `NC_NEXTCDF4`. The type is rejected in the netCDF-4 compatibility modes (`NC_NETCDF4_MODEL`, `NC_CLASSIC_MODEL`).
 - Build NEP with NEXTCDF-4 enabled (`-DNEP_ENABLE_NEXTCDF4=ON`), which requires HDF5 2.1.1.
 - Define the variable without a fill value (`nc_def_var_fill(..., NC_NOFILL, NULL)`); bfloat16 fill values are not yet supported ([#377](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/377)).
-- Don't use it for coordinate variables ([#380](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/380)).
+- Coordinate variables are allowed: a bfloat16 (or float16) variable may share its dimension's name and act as the dimension's coordinate ([#380](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/380) — allowed since v4.3.0 Sprint 1L1).
 
 A 16-bit IEEE half-precision type, `NC_FLOAT16`, is also available. It has 3 more mantissa bits than bfloat16 but a maximum of 65504. See [NEXTCDF4_float16.md](NEXTCDF4_float16.md) for a comparison.
 

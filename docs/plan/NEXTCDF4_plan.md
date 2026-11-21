@@ -310,7 +310,7 @@ These types are software-emulated in HDF5 and implicit conversions are unreliabl
 - All new floating-point types (`NC_FLOAT16`, `NC_BFLOAT16`, `NC_FLOAT8_*`, `NC_FLOAT6_*`, `NC_FLOAT4_*`) are only available when `NC_NETCDF4_MODEL` is **not** set.
 - NEXTCDF-4 requires HDF5 2.1.1 or later, which provides all of these types, so every NEXTCDF-4 build has them.
 - Reading an existing float16, bfloat16, or FP8/FP6/FP4 dataset from a non-NEXTCDF-4 HDF5 file is supported.
-- These types cannot be coordinate variables.
+- These types may be coordinate variables in native mode (the original ban was superseded in v4.3.0 Sprint 1L1); the dimension-scale dataset carries the variable's small-float dtype, and ordering/comparison semantics of non-IEEE encodings are the caller's concern.
 
 ### Default Fill Values
 
@@ -419,7 +419,6 @@ This is a purely reactive (dereference-time) check — NEXTCDF-4 does not track 
 
 ### Restrictions
 
-- Reference-typed variables cannot be coordinate variables.
 - Reference types cannot be used inside compound types in the initial implementation.
 - Reference types are forbidden in `NC_NETCDF4_MODEL` mode.
 - No default `_FillValue` is defined for reference types (see "Default Fill Values" above); variables are created with `NC_NOFILL` semantics unless the caller explicitly requests a fill pattern.

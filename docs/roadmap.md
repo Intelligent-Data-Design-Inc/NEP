@@ -126,12 +126,85 @@ Plan: [docs/plan/v4.3.0-sprint1K-def-var-filter.md](plan/v4.3.0-sprint1K-def-var
 
 Plan: [docs/plan/v4.3.0-sprint1L-reference-types.md](plan/v4.3.0-sprint1L-reference-types.md)
 
+#### Sprint 1L1 - Allow float16/bfloat16 Coord Vars
+Ratify the code's current behavior — small-float coordinate variables are allowed — resolving #380 by lifting the design ban rather than enforcing it. Verified by probe: fixed `NC_BFLOAT16` and unlimited `NC_FLOAT16` coord vars already define/write/reopen bit-exactly; no code change is needed for the feature itself.
+
+- FP8/FP6/FP4 documented as allowed (untested); the `NC_STD_REF` coord-var doc ban is removed the same way.
+- Fix found in-session staleness: `NEXTCDF4_rename_var` detects the coord var *after* updating its name (dead dim-rename block) and `NEXTCDF4_rename_dim` leaves the in-memory var name stale; make inquiry match post-reopen state.
+- Extend `tst_nextcdf4_var` (bf16 fixed + dependent var, f16 unlimited append/reopen, `NC_ENOTNC4` in both compat modes) and add in-session rename checks to `tst_nextcdf4_rename`.
+- Remove the ban from `NEXTCDF4_plan.md`, `NEXTCDF4_float16.md`, `float16.md`, `nextcdf4.md`, `refs.md`, the status doc, and both Sprint 9/10 copies in `roadmap.md`/`roadmap_v3.md`; close #380.
+- Out of scope: FP8/FP6/FP4/complex/bitfield coord-var testing, the subgroup name-collision edge (→ 1M candidate), #377/#379/#382/#386, CI, release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1L1-small-float-coord-vars.md](plan/v4.3.0-sprint1L1-small-float-coord-vars.md)
+
+#### Sprint 1L2 - Port More nc_test4 Tests
+- Make a port of some of the bigger, more comprehensive tests from nc_test4.
+
+
+
+#### Sprint 1M - Issues
+Fix the open NEXTCDF-4 defects tracked in `docs/nextcdf4_status_v4_3_0.md`:
+
+- #378: make installed `include/nextcdf4dispatch.h` usable downstream — drop the `config.h`/`ncdispatch.h` includes so `NC_NEXTCDF4_initialize()` can be declared outside the NEP build tree.
+- #382: stop def-var setters (`def_var_fill`, `chunking`, `deflate`, `endian`, `fletcher32`, `filter`) from recreating the HDF5 dataset, or clean up the orphaned dataset object and stale dimension-scale reference they leave behind.
+- #377: make a `NC_BFLOAT16` fill value set with `nc_def_var_fill` survive close/reopen; define the `_FillValue` attribute policy for bfloat16.
+- #379: root-cause the netcdf-c `NC_reclaim_data` `USEFILEINFO` abort on reopen and re-enable `tst_nextcdf4_float16`, `tst_nextcdf4_complex`, `tst_nextcdf4_bitfield`, `tst_nextcdf4_ref`, `tst_explore` (and `tst_rename` if it shares the cause).
+- Out of scope: #380 (small-float coordinate variables — still needs a policy decision), #386 (performance only).
+
+#### Sprint 1N - User Defined Types
+Make compound/vlen/enum/opaque types usable end-to-end, not just definable (`docs/nextcdf4_status_v4_3_0.md` gaps 1-2):
+
+- `nc_def_var` and `nc_put_att` accept user typeids: resolve them through the file's `NC_TYPE_INFO_T` list instead of the atomic-only `NEXTCDF4_check_atomic_type`.
+- `load_one_var` resolves datasets whose datatype is a committed type to the loaded user type, so files with user-typed variables open — both NEXTCDF-4's own and upstream `NC_NETCDF4` files.
+- Implement `nc_insert_array_compound` (currently `NC_ENOTBUILT`).
+- Implement `nc_put_vlen_element`/`nc_get_vlen_element` and vlen-variable I/O end to end.
+- Keep `NC_COMPLEX`/`NC_DOUBLECOMPLEX` on the native HDF5 2.x `H5T_COMPLEX_IEEE_F*` datatypes (already implemented and the easy path); update `docs/nextcdf4.md` and `docs/plan/NEXTCDF4_plan.md`, which still describe the compound `{r, i}` layout. Only fall back to `{r, i}` if native complex proves unworkable.
+- Tests: round-trip a variable and attribute of each user type; open an upstream `NC_NETCDF4` file with a compound variable.
+- Out of scope: reference types inside compounds (documented restriction).
+
+#### Sprint 1O - Fill Mode, Cache Control, Renaming Groups
+Replace the remaining `NC_EPERM`/`NC_ENOTNC4` stubs with working semantics or an explicit decision (`docs/nextcdf4_status_v4_3_0.md`):
+
+- `nc_set_fill`: implement file-level `NC_FILL`/`NC_NOFILL` mode, replacing the `NC_RO_set_fill` stub.
+- `nc_rename_grp`: rename a group with the same flush-per-rename discipline as dims/vars, replacing `NC_NOTNC4_rename_grp`.
+- `nc_set_var_chunk_cache`/`nc_get_var_chunk_cache`: back them with real `H5Pset/get_chunk_cache` calls, or document the no-op decision.
+- Validate create/open mode flags: reject (not silently ignore) `NC_DISKLESS`, `NC_INMEMORY`, `NC_MPIIO`/`NC_MPIPOSIX`, `NC_SHARE`, `NC_PERSIST`.
+- Parallel I/O is deferred to the next release: `var_par_access` stays `NC_ENOTNC4`, the parallel mode flags above are rejected, and the deferral is documented in `docs/nextcdf4.md`, `docs/prd.md`, `docs/prfaq.md` and the release notes.
+- Out of scope: in-memory image files (`nxt4image.c`), SWMR, all parallel I/O.
+
+#### Sprint 1P - NC_STRING
+Fix `NC_STRING` round-tripping (`docs/nextcdf4_status_v4_3_0.md` gaps 2-3):
+
+- `map_nc_type`/loader: map variable-length string HDF5 datatypes back to `NC_STRING` so files with `NC_STRING` variables reopen instead of failing `NC_EBADTYPE`.
+- Load variable-length string attributes on open — currently they are silently dropped (`nc_get_att_string` returns `NC_ENOTATT` after reopen).
+- Correct string memory handling on read (`H5Dvlen_reclaim`/`nc_free_string` paths).
+- Tests: enabled reopen tests for `NC_STRING` variables and attributes; upstream `NC_NETCDF4` files with `NC_STRING` variables open read-only.
+
+#### Sprint 1Q - Provenance Attributes (_NCProperties/_IsNetcdf4/_SuperblockVersion)
+Write the standard hidden attributes upstream netcdf-c produces (`docs/nextcdf4_status_v4_3_0.md` gap 11):
+
+- Write `_NCProperties` (`version=2,netcdf=...,hdf5=...`) and `_SuperblockVersion` on every file; `_IsNetcdf4` where upstream writes it.
+- Parse and preserve them on open; they are already filtered from user-visible attribute lists.
+- Decide the `_Format`/`_nc3_strict` behavior for `NC_CLASSIC_MODEL` files.
+- Goal: `h5dump`/`ncdump` and third-party tools treat NEXTCDF-4 files like upstream NetCDF-4 files.
+
+#### Sprint 1R - Fortran Wrappers
+Expose the NEXTCDF-4 C APIs through the Fortran binding (plan goal: "same release" as the C API):
+
+- Fortran wrappers for `nc_{get,put}_{var,var1,vara,vars}_bfloat16` and the `_float16` family, with matching parameter types.
+- Fortran constants for `NC_NEXTCDF4`, `NC_NETCDF4_MODEL`, and the new `nc_type` values (small floats, complex, bitfields, `NC_STD_REF`).
+- `nc_ref_*`/`nc_deref_*` Fortran wrappers, or an explicit documented decision to defer them.
+- `ftest/` coverage: `ftst_nextcdf4_*.F90` exercising create/types/I/O/reopen.
+- Out of scope: varm/other deprecated wrappers, Fortran support for the still-broken Sprint 1N/1P paths.
+
+
 #### Sprint 2 - 
 - Tag v4.3.0 and write `docs/releases/v4.3.0.md` (HDF5 detection change, CMake 3.19 minimum, conda GeoTIFF, Sprint 1A NEXTCDF-4 bfloat16 examples and `NEP_ZSTD_PLUGIN_DIR`, Sprint 1B typed small-float I/O and the `nc_*_bfloat16` functions, #376, Sprint 1C optimized benchmark results, the bfloat16 GDAS sample and `bfloat16_io_perf`, the #382 contiguous-layout fix, the fix for untyped `nc_put_var`/`nc_get_var`/`var1`/`vars` failing with `NC_EBADTYPE` on NEXTCDF-4, and Sprint 1K generic HDF5 filter support (`nc_def_var_filter`, szip/bzip2/zstd plugins, missing-plugin `NC_ENOFILTER`), and Sprint 1L reference types (`NC_REF_OBJECT`/`NC_REF_REGION` removed — a breaking API change — replaced by `NC_STD_REF`/`H5T_STD_REF` and the `nc_ref_*`/`nc_deref_*` API).
 - Spack: add `version("4.3.0")` with its sha256; update spack/spack-packages#5557 in place per `docs/spack.md` "Updating the upstream PR".
 - Conda (#374 part 2): if #34309 is still open, regenerate the staged copy for 4.3.0, push it to `nep-3.0.0` and update the PR body; if merged, make the GeoTIFF change on the feedstock and drop the staged lint/micromamba steps. Move the `conda.yml` lint step to the 4.3.0 tarball and set `context.version` to `4.3.1.dev0`.
 - Update the README "Conda Installation", `docs/prd.md` section 5.5, `docs/prfaq.md` and the `docs/conda-plan.md` Status table for GeoTIFF in 4.3.0.
-- Close #372 and #374.
+- Document the deferrals in the release notes: `nextcopy`/`nextdump` (NEXTCDF-4 Phase 4 tools) and all NEXTCDF-4 parallel I/O move to a future release.
+- Close #374 (#372 was closed 2026-11-21 — Sprint 1 work landed).
 
 
 ### V4.2.0 - Move Compression Filters to nep-compress
@@ -902,7 +975,7 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 - Because NEXTCDF-4 requires HDF5 2.1.1 or later, also add `NC_BFLOAT16`, `NC_FLOAT8_E4M3`, `NC_FLOAT8_E5M2`, `NC_FLOAT6_E2M3`, `NC_FLOAT6_E3M2`, and `NC_FLOAT4_E2M1` with the mappings and memory types from the HDF5 2.x small-floating-point datatypes.
 - Small floating-point types are atomic NetCDF types, not user-defined types. They use the same `nc_def_var`/`nc_put_vara`/`nc_get_vara` dispatch path as other atomic types.
 - `NC_FLOAT16` and the other small floats are only allowed in native NEXTCDF-4 mode; they are rejected in `NC_NETCDF4_MODEL` and `NC_CLASSIC_MODEL`.
-- They cannot be used as coordinate variables because they do not support a total ordering suitable for dimension coordinates.
+- They cannot be used as coordinate variables because they do not support a total ordering suitable for dimension coordinates. (Superseded by v4.3.0 Sprint 1L1: small floats may be coordinate variables in native mode.)
 - The canonical in-memory representation is the raw bit pattern (`uint16_t` for 16-bit, `uint8_t` for 8/6/4-bit types). Users are responsible for producing valid encodings; no automatic conversion to/from `float`/`double` is guaranteed for the non-IEEE formats.
 
 **Prerequisites and constraints:**
@@ -948,7 +1021,7 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 **Out of scope for Sprint 9:**
 - Automatic conversion between `NC_FLOAT16`/small floats and `NC_FLOAT`/`NC_DOUBLE`; users must supply the correct in-memory type.
 - Complex numbers, bitfields, and reference types (Sprint 10).
-- Coordinate variables and unlimited dimensions using small floats.
+- Coordinate variables and unlimited dimensions using small floats. (Superseded by v4.3.0 Sprint 1L1 — now allowed.)
 - Support for HDF5 versions older than 2.1.1.
 
 #### Sprint 10: Add Complex, Bitfield, and Reference Types
@@ -959,7 +1032,7 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 - Add `NC_BITFIELD8`, `NC_BITFIELD16`, `NC_BITFIELD32`, and `NC_BITFIELD64` as built-in atomic types. They map to `H5T_STD_B*LE/BE` bitfield datatypes and are held in memory as `uint8_t`, `uint16_t`, `uint32_t`, and `uint64_t`. The NetCDF API treats them as unsigned integers; bit decoding is the caller's responsibility.
 - Add `NC_REF_OBJECT` and `NC_REF_REGION` as opaque reference types. They map to `H5T_STD_REF_OBJ` and `H5T_STD_REF_DSETREG`. Variables of these types store HDF5 reference tokens as opaque byte arrays. No dereferencing API is exposed in this sprint; callers read and write the opaque tokens.
 - All new types are rejected in `NC_NETCDF4_MODEL` and `NC_CLASSIC_MODEL` because they are not part of the classic NetCDF data model.
-- Complex and bitfield variables may be used as regular variables. Reference-typed variables cannot be coordinate variables, cannot appear inside compounds or attributes, and cannot be copied meaningfully between files.
+- Complex and bitfield variables may be used as regular variables. Reference-typed variables cannot appear inside compounds or attributes and cannot be copied meaningfully between files. (The coordinate-variable ban was lifted in v4.3.0 Sprint 1L1.)
 
 **Prerequisites and constraints:**
 - Build on `NEXTCDF4_map_hdf_type`, `map_nc_type`, `NEXTCDF4_type_size`, `NEXTCDF4_type_name`, `NEXTCDF4_check_atomic_type`, `set_var_type`, and `nxt4io.c` `memory_type` from Sprints 8 and 9.
