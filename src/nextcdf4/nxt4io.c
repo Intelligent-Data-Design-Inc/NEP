@@ -98,14 +98,10 @@ NEXTCDF4_memory_type(nc_type type, int *closep)
     case NC_BITFIELD16: return H5T_NATIVE_B16;
     case NC_BITFIELD32: return H5T_NATIVE_B32;
     case NC_BITFIELD64: return H5T_NATIVE_B64;
-    case NC_REF_OBJECT:
+    case NC_STD_REF:
         if (closep)
             *closep = 1;
-        return H5Tcopy(H5T_STD_REF_OBJ);
-    case NC_REF_REGION:
-        if (closep)
-            *closep = 1;
-        return H5Tcopy(H5T_STD_REF_DSETREG);
+        return H5Tcopy(H5T_STD_REF);
     case NC_STRING:
         if (closep)
             *closep = 1;

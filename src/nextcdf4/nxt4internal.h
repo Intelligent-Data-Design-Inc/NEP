@@ -259,6 +259,11 @@ int NEXTCDF4_put_varm(int ncid, int varid, const size_t *startp, const size_t *c
 int NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type xtype,
                      size_t len, const void *value, nc_type memtype);
 
+/** Inquire about an attribute's type and length.
+ */
+int NEXTCDF4_inq_att(int ncid, int varid, const char *name,
+                     nc_type *xtypep, size_t *lenp);
+
 /** Get an attribute from the root group or a variable.
  */
 int NEXTCDF4_get_att(int ncid, int varid, const char *name, void *value,

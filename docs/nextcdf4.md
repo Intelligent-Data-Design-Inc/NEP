@@ -111,10 +111,9 @@ Messages are written to `stderr`. Instrumented NEXTCDF-4 paths include file crea
 | `NC_COMPLEX` | compound `{r: f32, i: f32}` | Native only |
 | `NC_DOUBLECOMPLEX` | compound `{r: f64, i: f64}` | Native only |
 | `NC_BITFIELD8/16/32/64` | `H5T_STD_B*LE/BE` | Native only |
-| `NC_REF_OBJECT` | `H5T_STD_REF_OBJ` | Native only |
-| `NC_REF_REGION` | `H5T_STD_REF_DSETREG` | Native only |
+| `NC_STD_REF` | `H5T_STD_REF` | Native only |
 
-Small floating-point and bitfield types are exchanged as raw bit patterns by the untyped calls; `NC_FLOAT16` and `NC_BFLOAT16` also accept typed `float`/`double` calls (see [NEXTCDF4_float16.md](NEXTCDF4_float16.md)). Complex numbers use the memory layout `{ float r; float i; }` or `{ double r; double i; }`. Reference-typed variables are read and written as opaque tokens; no NetCDF dereferencing API is provided for them.
+Small floating-point and bitfield types are exchanged as raw bit patterns by the untyped calls; `NC_FLOAT16` and `NC_BFLOAT16` also accept typed `float`/`double` calls (see [NEXTCDF4_float16.md](NEXTCDF4_float16.md)). Complex numbers use the memory layout `{ float r; float i; }` or `{ double r; double i; }`. `NC_STD_REF` variables store 64-byte `H5R_ref_t` reference tokens; the `nc_ref_*`/`nc_deref_*` functions create and resolve them.
 
 ## Storage and Metadata
 
@@ -199,35 +198,47 @@ See **[NEXTCDF4_float16.md](NEXTCDF4_float16.md)** for the full float16/bfloat16
 
 ## Reference API
 
-NEXTCDF-4 adds functions for creating and resolving HDF5 object and region references. These are only available in native mode and are declared in the NEP public headers.
+NEXTCDF-4 exposes HDF5 2.x unified references (`H5T_STD_REF` /
+`H5R_ref_t`) as `NC_STD_REF`, with functions for creating and
+resolving object, region, and attribute references — including
+references into external files. These are only available in native
+mode and are declared in `nep.h`. See **[refs.md](refs.md)** for the
+full reference.
 
 ```c
 #include <nep.h>
 
-nc_ref_t ref;
+nc_std_ref_t ref;
 
 /* Create an object reference to a variable, group, or user-defined type */
 nc_ref_object(ncid, NC_REF_OBJ_VAR, varid, &ref);
 
-/* Resolve a reference back to object ids */
-int grpid, id;
-nc_deref_object(ncid, NC_REF_OBJ_VAR, &ref, &grpid, &id);
+/* Resolve a reference back to NetCDF ids */
+int obj_type, grpid, id;
+nc_deref_object(ncid, &ref, &obj_type, &grpid, &id);
+nc_ref_free(&ref);
 ```
 
-Region references identify a hyperslab selection inside a variable:
+Region references identify a regular strided hyperslab selection
+inside a variable; attribute references name an attribute on any
+object kind:
 
 ```c
-nc_region_ref_t region;
+nc_std_ref_t region, att;
 size_t start[2] = {0, 0}, count[2] = {1, 10};
 
 nc_ref_region(ncid, varid, start, count, NULL, &region);
+nc_ref_attr(ncid, NC_REF_OBJ_VAR, varid, "units", &att);
 ```
+
+Tokens hold an open reference to their file — release them with
+`nc_ref_free()` before closing the file.
 
 ## Known Limitations
 
 - `NC_NEXTCDF4` must be passed explicitly; there is no magic-number dispatch for HDF5 files.
 - `nc_put_varm` and `nc_get_varm` are not implemented in NEXTCDF-4 because the mapped I/O API is deprecated.
-- Object and region references round-trip as opaque tokens; no NetCDF dereferencing API is provided beyond `nc_deref_object` and `nc_deref_region`.
+- `nc_deref_*` functions do not follow references into external files (`NC_ENOTNC4`); use `nc_ref_get_file_name`/`nc_ref_get_obj_name` to resolve them, or raw HDF5.
 - Reference-typed variables cannot be coordinate variables and cannot be nested inside compound types.
 - Small floating-point types (`NC_FLOAT6_E2M3`, `NC_FLOAT4_E2M1`) have no default fill value because their value spaces are too small for a useful sentinel.
 - Typed calls on FP8/FP6/FP4 variables, and integer/text/string typed calls on any small float, return `NC_EBADTYPE` (`NC_ECHAR` for text).

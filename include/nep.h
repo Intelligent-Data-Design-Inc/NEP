@@ -67,10 +67,43 @@
 #define NC_BITFIELD32  28
 /** NEXTCDF-4 64-bit bitfield type. */
 #define NC_BITFIELD64  29
-/** NEXTCDF-4 object reference type. */
-#define NC_REF_OBJECT  30
-/** NEXTCDF-4 dataset region reference type. */
-#define NC_REF_REGION  31
+/** NEXTCDF-4 HDF5 standard reference type (`H5T_STD_REF`). Elements
+ *  are opaque 64-byte nc_std_ref_t tokens covering object, dataset
+ *  region, and attribute references; see nc_ref_object() and friends.
+ *  Native mode only. */
+#define NC_STD_REF     30
+
+/** @def NC_STD_REF_SIZE
+ *  Bytes in one opaque NEXTCDF-4 reference token. Matches HDF5
+ *  `H5R_REF_BUF_SIZE` (the size of `H5R_ref_t`). */
+#define NC_STD_REF_SIZE 64
+
+/** @typedef nc_std_ref_t
+ *  One opaque NEXTCDF-4 reference token; layout-compatible with HDF5
+ *  `H5R_ref_t` so tokens move to and from the HDF5 reference API
+ *  without conversion. Never interpret the bytes. */
+typedef struct nc_std_ref_s {
+    union {
+        unsigned char bytes[NC_STD_REF_SIZE];
+        int64_t align;
+    } u;
+} nc_std_ref_t;
+
+/** Object reference token kind, reported by nc_ref_get_type(). */
+#define NC_STD_REF_OBJECT 1
+/** Dataset region reference token kind, reported by nc_ref_get_type(). */
+#define NC_STD_REF_REGION 2
+/** Attribute reference token kind, reported by nc_ref_get_type(). */
+#define NC_STD_REF_ATTR   3
+
+/** Reference target kind for nc_ref_object(), nc_ref_attr() and the
+ *  nc_deref_*() functions: a NetCDF variable (HDF5 dataset). */
+#define NC_REF_OBJ_VAR  1
+/** Reference target kind: a NetCDF group (HDF5 group). */
+#define NC_REF_OBJ_GRP  2
+/** Reference target kind: a NetCDF user-defined type (HDF5 committed
+ *  datatype). */
+#define NC_REF_OBJ_TYPE 3
 
 /** @def NEP_HAVE_NATIVE_BFLOAT16
  *  1 when nc_bfloat16_t is the compiler's `__bf16` type, 0 when it is
@@ -366,6 +399,260 @@ extern "C" {
      * @author Edward Hartnett, Intelligent Data Design, Inc.
      */
     int nc_put_vara_float16(int ncid, int varid, const size_t *startp, const size_t *countp, const nc_float16_t *op);
+
+    /**
+     * @brief Create an HDF5 object reference to a variable, group, or
+     * user-defined type in a NEXTCDF-4 file.
+     *
+     * @param ncid NetCDF file ID (NEXTCDF-4, native mode).
+     * @param obj_type `NC_REF_OBJ_VAR`: @p objid is a varid in group
+     * @p ncid. `NC_REF_OBJ_GRP`: @p objid is a group ncid (@p ncid is
+     * ignored). `NC_REF_OBJ_TYPE`: @p objid is a typeid in group @p ncid.
+     * @param objid Object identifier, interpreted per @p obj_type.
+     * @param ref Receives the opaque reference token.
+     * @return NC_NOERR on success; NC_ENOTNC4 for a non-NEXTCDF-4 file
+     * or a compatibility mode; NC_EINVAL for a bad @p obj_type or
+     * target; NC_EHDFERR on HDF5 failure.
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_ref_object(int ncid, int obj_type, int objid, nc_std_ref_t *ref);
+
+    /**
+     * @brief Resolve an object reference token back to NetCDF ids.
+     *
+     * @param ncid NetCDF file ID (NEXTCDF-4).
+     * @param ref Reference token created for this file.
+     * @param obj_typep Receives `NC_REF_OBJ_VAR`, `NC_REF_OBJ_GRP`, or
+     * `NC_REF_OBJ_TYPE`; may be NULL.
+     * @param grpidp For a variable or type, the containing group's
+     * ncid; for a group, the group ncid itself. May be NULL.
+     * @param idp For a variable the varid, a group the group ncid, or
+     * a type the typeid. May be NULL.
+     * @return NC_NOERR on success; NC_ENOTNC4 for a non-NEXTCDF-4 file
+     * or a token pointing into an external file; NC_EINVAL for a
+     * non-object token or a target that no longer exists;
+     * NC_EHDFERR on HDF5 failure.
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_deref_object(int ncid, const nc_std_ref_t *ref, int *obj_typep,
+                        int *grpidp, int *idp);
+
+    /**
+     * @brief Create a dataset region reference to a strided hyperslab
+     * of a variable in a NEXTCDF-4 file.
+     *
+     * @param ncid NetCDF file ID (NEXTCDF-4, native mode).
+     * @param varid Variable ID.
+     * @param startp Start index in each dimension (rank elements).
+     * @param countp Edge count in each dimension (rank elements).
+     * @param stridep Stride in each dimension, or NULL for unit
+     * stride.
+     * @param ref Receives the opaque reference token.
+     * @return NC_NOERR on success; NC_ENOTNC4 for a non-NEXTCDF-4 file
+     * or a compatibility mode; NC_EINVAL for bad arguments;
+     * NC_EHDFERR on HDF5 failure.
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_ref_region(int ncid, int varid, const size_t *startp,
+                      const size_t *countp, const ptrdiff_t *stridep,
+                      nc_std_ref_t *ref);
+
+    /**
+     * @brief Resolve a dataset region reference token back to its
+     * variable and selection.
+     *
+     * @param ncid NetCDF file ID (NEXTCDF-4).
+     * @param ref Reference token created for this file.
+     * @param grpidp Containing group's ncid; may be NULL.
+     * @param varidp Variable ID; may be NULL.
+     * @param ndimsp Variable rank; may be NULL.
+     * @param startp Receives the selection start (rank elements); may
+     * be NULL.
+     * @param countp Receives the selection count (rank elements); may
+     * be NULL.
+     * @param stridep Receives the selection stride (rank elements);
+     * may be NULL.
+     * @return NC_NOERR on success; NC_ENOTNC4 for a non-NEXTCDF-4 file
+     * or a token pointing into an external file; NC_EINVAL for a
+     * non-region token, a missing target, or a selection that is not
+     * a regular strided hyperslab with unit blocks; NC_EHDFERR on
+     * HDF5 failure.
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_deref_region(int ncid, const nc_std_ref_t *ref, int *grpidp,
+                        int *varidp, int *ndimsp, size_t *startp,
+                        size_t *countp, ptrdiff_t *stridep);
+
+    /**
+     * @brief Create an HDF5 attribute reference to an attribute on a
+     * variable, group, or committed datatype in a NEXTCDF-4 file.
+     *
+     * @param ncid NetCDF file ID (NEXTCDF-4, native mode).
+     * @param obj_type `NC_REF_OBJ_VAR`, `NC_REF_OBJ_GRP`, or
+     * `NC_REF_OBJ_TYPE`, dispatched exactly as in nc_ref_object().
+     * `NC_REF_OBJ_GRP` covers the attributes the NetCDF API attaches
+     * to `NC_GLOBAL`.
+     * @param objid Object identifier, interpreted per @p obj_type.
+     * @param att_name Name of an existing attribute on the object.
+     * @param ref Receives the opaque reference token.
+     * @return NC_NOERR on success; NC_ENOTNC4 for a non-NEXTCDF-4 file
+     * or a compatibility mode; NC_EINVAL for a bad @p obj_type,
+     * target, or missing attribute; NC_EHDFERR on HDF5 failure.
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_ref_attr(int ncid, int obj_type, int objid,
+                    const char *att_name, nc_std_ref_t *ref);
+
+    /**
+     * @brief Resolve an attribute reference token back to its owner
+     * and attribute name.
+     *
+     * @param ncid NetCDF file ID (NEXTCDF-4).
+     * @param ref Reference token created for this file.
+     * @param obj_typep Receives `NC_REF_OBJ_VAR`, `NC_REF_OBJ_GRP`, or
+     * `NC_REF_OBJ_TYPE` for the attribute-bearing object; may be NULL.
+     * @param grpidp Containing group's ncid (or the group itself for
+     * `NC_REF_OBJ_GRP`); may be NULL.
+     * @param idp The varid, group ncid, or typeid of the owner; may be
+     * NULL.
+     * @param att_name Receives the attribute name; must be a caller
+     * buffer of at least `NC_MAX_NAME + 1` bytes, or NULL.
+     * @return NC_NOERR on success; NC_ENOTNC4 for a non-NEXTCDF-4 file
+     * or a token pointing into an external file; NC_EINVAL for a
+     * non-attribute token or a missing target; NC_EHDFERR on HDF5
+     * failure.
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_deref_attr(int ncid, const nc_std_ref_t *ref, int *obj_typep,
+                      int *grpidp, int *idp, char *att_name);
+
+    /**
+     * @brief Create an object reference pointing into another file.
+     *
+     * The token encodes @p filename; storing it in an `NC_STD_REF`
+     * variable or attribute of the file @p ncid produces a
+     * cross-file reference. @p ncid is validated like nc_ref_object()
+     * but is otherwise unused.
+     *
+     * @param ncid NetCDF file ID (NEXTCDF-4, native mode).
+     * @param filename Path of the HDF5 file holding the target object.
+     * @param path HDF5 path of the target object in @p filename (for
+     * example `"grp/dset"` or `"/grp/dset"`).
+     * @param ref Receives the opaque reference token.
+     * @return NC_NOERR on success; NC_ENOTNC4 for a non-NEXTCDF-4 file
+     * or a compatibility mode; NC_EINVAL for bad arguments;
+     * NC_EHDFERR on HDF5 failure.
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_ref_object_ext(int ncid, const char *filename, const char *path,
+                          nc_std_ref_t *ref);
+
+    /**
+     * @brief Create a dataset region reference pointing into another
+     * file.
+     *
+     * Like nc_ref_region(), but the target is the variable named by
+     * @p path in @p filename.
+     *
+     * @param ncid NetCDF file ID (NEXTCDF-4, native mode).
+     * @param filename Path of the HDF5 file holding the target
+     * dataset.
+     * @param path HDF5 path of the target dataset in @p filename.
+     * @param startp Start index in each dimension.
+     * @param countp Edge count in each dimension.
+     * @param stridep Stride in each dimension, or NULL for unit
+     * stride.
+     * @param ref Receives the opaque reference token.
+     * @return NC_NOERR on success; NC_ENOTNC4 for a non-NEXTCDF-4 file
+     * or a compatibility mode; NC_EINVAL for bad arguments;
+     * NC_EHDFERR on HDF5 failure.
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_ref_region_ext(int ncid, const char *filename, const char *path,
+                          const size_t *startp, const size_t *countp,
+                          const ptrdiff_t *stridep, nc_std_ref_t *ref);
+
+    /**
+     * @brief Create an attribute reference pointing into another file.
+     *
+     * Like nc_ref_attr(), but the target is the attribute @p att_name
+     * on the object named by @p path in @p filename. @p path may name
+     * any attribute-bearing object kind.
+     *
+     * @param ncid NetCDF file ID (NEXTCDF-4, native mode).
+     * @param filename Path of the HDF5 file holding the target object.
+     * @param path HDF5 path of the target object in @p filename.
+     * @param att_name Name of an attribute on the target object.
+     * @param ref Receives the opaque reference token.
+     * @return NC_NOERR on success; NC_ENOTNC4 for a non-NEXTCDF-4 file
+     * or a compatibility mode; NC_EINVAL for bad arguments;
+     * NC_EHDFERR on HDF5 failure.
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_ref_attr_ext(int ncid, const char *filename, const char *path,
+                        const char *att_name, nc_std_ref_t *ref);
+
+    /**
+     * @brief Report the kind of a reference token.
+     *
+     * @param ref Reference token.
+     * @param ref_typep Receives `NC_STD_REF_OBJECT`,
+     * `NC_STD_REF_REGION`, or `NC_STD_REF_ATTR`.
+     * @return NC_NOERR on success; NC_EINVAL for bad arguments.
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_ref_get_type(const nc_std_ref_t *ref, int *ref_typep);
+
+    /**
+     * @brief Copy the file name stored in a reference token.
+     *
+     * Returns the name of the file the token points into, which
+     * differs from the containing file only for external references.
+     *
+     * @param ref Reference token.
+     * @param name Destination buffer of @p size bytes.
+     * @param size Buffer size in bytes, including room for the null
+     * terminator.
+     * @return NC_NOERR on success; NC_EINVAL for bad arguments;
+     * NC_EINVAL when @p size is too small.
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_ref_get_file_name(const nc_std_ref_t *ref, char *name, size_t size);
+
+    /**
+     * @brief Copy the object path stored in a reference token.
+     *
+     * For an attribute reference this is the path of the object that
+     * carries the attribute; use nc_deref_attr() for the attribute
+     * name itself.
+     *
+     * @param ref Reference token.
+     * @param name Destination buffer of @p size bytes.
+     * @param size Buffer size in bytes, including room for the null
+     * terminator.
+     * @return NC_NOERR on success; NC_EINVAL for bad arguments;
+     * NC_EINVAL when @p size is too small.
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_ref_get_obj_name(const nc_std_ref_t *ref, char *name, size_t size);
+
+    /**
+     * @brief Release the resources held by a reference token.
+     *
+     * An HDF5 reference token holds a reference to the file it was
+     * created in; until it is released the file cannot fully close.
+     * Call this on every token obtained from nc_ref_object(),
+     * nc_ref_region(), nc_ref_attr(), or the `nc_ref_*_ext()`
+     * variants when the token is no longer needed. Tokens read from
+     * a dataset or attribute may also be passed here. Releasing an
+     * uninitialized or already-released token is safe.
+     *
+     * @param ref Reference token.
+     * @return NC_NOERR on success; NC_EINVAL for a NULL argument;
+     * NC_EHDFERR on HDF5 failure.
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_ref_free(nc_std_ref_t *ref);
 
 #if defined(__cplusplus)
 }

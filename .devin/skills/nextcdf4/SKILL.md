@@ -15,7 +15,7 @@ This skill covers the NEXTCDF-4 backend: a clean-room rewrite of netcdf-c's `lib
 
 **Status: experimental and under active development.** NEXTCDF-4 is only partially implemented — not all NetCDF-4 features work yet (see Known Limitations). Its headline new features beyond upstream netcdf-c are:
 
-- **HDF5 reference types** — `NC_REF_OBJECT` and `NC_REF_REGION` variables storing object/dataset-region references as opaque tokens, plus `nc_ref_object`/`nc_deref_object`/`nc_ref_region` APIs.
+- **HDF5 reference types** — `NC_STD_REF` variables and attributes storing unified `H5T_STD_REF` (`H5R_ref_t`) tokens, plus the `nc_ref_*`/`nc_deref_*` APIs for object, region, and attribute references including external-file targets.
 - **New floating-point types** — `NC_FLOAT16`, `NC_BFLOAT16`, and the HDF5 2.x small floats (`NC_FLOAT8_E4M3/E5M2`, `NC_FLOAT6_E2M3/E3M2`, `NC_FLOAT4_E2M1`).
 
 Related skills: `hdf5` (HDF5 feature details — superblock v3, small floats, references, bitfields), `netcdf-architecture` (dispatch tables and format plumbing), `netcdf` (filters, chunking, quantization).
@@ -90,11 +90,11 @@ Dimensions are stored as HDF5 dimension scales; `_Netcdf4Coordinates` provides f
 
 ### Atomic Types
 
-Standard `NC_BYTE`…`NC_UINT64`, `NC_FLOAT`, `NC_DOUBLE`, `NC_CHAR`, `NC_STRING` plus native-only types: `NC_FLOAT16`, `NC_BFLOAT16`, `NC_FLOAT8_E4M3/E5M2`, `NC_FLOAT6_E2M3/E3M2`, `NC_FLOAT4_E2M1`, `NC_COMPLEX`, `NC_DOUBLECOMPLEX`, `NC_BITFIELD8/16/32/64`, `NC_REF_OBJECT`, `NC_REF_REGION`. See the `hdf5` skill for the full `nc_type` → HDF5 type mapping table.
+Standard `NC_BYTE`…`NC_UINT64`, `NC_FLOAT`, `NC_DOUBLE`, `NC_CHAR`, `NC_STRING` plus native-only types: `NC_FLOAT16`, `NC_BFLOAT16`, `NC_FLOAT8_E4M3/E5M2`, `NC_FLOAT6_E2M3/E3M2`, `NC_FLOAT4_E2M1`, `NC_COMPLEX`, `NC_DOUBLECOMPLEX`, `NC_BITFIELD8/16/32/64`, `NC_STD_REF`. See the `hdf5` skill for the full `nc_type` → HDF5 type mapping table.
 
 Small floats and bitfields move as raw bit patterns through untyped calls; `NC_FLOAT16`/`NC_BFLOAT16` additionally support typed float/double calls via HDF5 conversion (see `docs/NEXTCDF4_float16.md`). Typed calls on FP8/FP6/FP4 vars, and text/integer calls on small floats, return `NC_EBADTYPE`.
 
-Reference APIs (`nc_ref_object`, `nc_deref_object`, `nc_ref_region`) are declared in `nep.h`; references round-trip as opaque tokens.
+Reference APIs (`nc_ref_object`, `nc_ref_region`, `nc_ref_attr`, `nc_deref_*`, `nc_ref_*_ext`, `nc_ref_get_*`, `nc_ref_free`) are declared in `nep.h` and implemented in `src/nextcdf4/nxt4ref.c`; `nc_std_ref_t` tokens round-trip through `NC_STD_REF` variables and attributes. See `docs/refs.md`.
 
 ## Coding Conventions
 
@@ -127,12 +127,12 @@ Doxygen file headers with `@file`, `@brief`, `@author Edward Hartnett`, `@date`,
 - CMake: `cmake -B build -DNEP_ENABLE_NEXTCDF4=ON` (use the `build/` directory per AGENTS.md; delete an existing `build` first).
 - Requires netcdf-c ≥ 4.10.1 with UDF plugin/`NC_Dispatch` support and HDF5 ≥ 2.1.1. netcdf-c `main` (next release) expands UDF slots to 64 (UDF0–UDF63); older releases only have UDF0–UDF9.
 - Examples live in `examples/nextcdf4/` (bfloat16 I/O and performance benchmarks).
-- Feature test macros in `nep_meta.h`: `NEP_HAS_NEXTCDF4`, `NEP_HAS_FLOAT16`, `NEP_HAS_BITFIELD`, `NEP_HAS_REF_TYPES`, `NEP_HAS_COMPLEX`, `NEP_HAS_BFLOAT16`, `NEP_HAS_FLOAT8/6/4`, `NEP_HAS_NETCDF4_MODEL`, `NEP_HAS_SUPERBLOCK_V3`.
+- Feature test macros in `nep_meta.h` are format/support flags only (`NEP_HAS_NEXTCDF4`, `NEP_HAS_HDF5`, `NEP_HAS_NETCDF`, `NEP_HAS_LOGGING`); there are no per-type macros — detect type support via the `NC_*` constants in `nep.h`.
 
 ## Known Limitations
 
 - `nc_put_varm`/`nc_get_varm` not implemented (mapped I/O deprecated).
-- Reference-typed vars cannot be coordinate variables or nested in compounds; no deref API beyond `nc_deref_object`/`nc_deref_region`.
+- Reference-typed vars cannot be coordinate variables or nested in compounds; `nc_deref_*` do not follow external-file references (`NC_ENOTNC4`); tokens must be released with `nc_ref_free()` before `nc_close()`.
 - `NC_FLOAT6_E2M3`/`NC_FLOAT4_E2M1` have no default fill value.
 - `NC_BFLOAT16` rejects `_FillValue`; `nc_def_var_fill` value not recovered on reopen (issue #377).
 - NEXTCDF-4 does not return `NC_ERANGE` for out-of-range conversions (issue #381).

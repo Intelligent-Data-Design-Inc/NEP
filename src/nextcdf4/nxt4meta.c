@@ -124,8 +124,8 @@ NEXTCDF4_check_write_define(NEXTCDF4_FILE_INFO_T *file)
  * architecture-independent. The mapping covers the standard types
  * (`NC_BYTE`…`NC_DOUBLE`, `NC_CHAR`, `NC_STRING`) plus NEXTCDF-4's
  * extended set: `NC_FLOAT16`, `NC_BFLOAT16`, the HDF5 2.x small
- * floats (FP8/FP6/FP4), complex, bitfields, and the reference types
- * `NC_REF_OBJECT`/`NC_REF_REGION`. The caller owns the returned
+ * floats (FP8/FP6/FP4), complex, bitfields, and the reference type
+ * `NC_STD_REF`. The caller owns the returned
  * `hid_t` and must `H5Tclose` it. The inverse mapping (disk →
  * nc_type) is map_nc_type().
  *
@@ -215,11 +215,8 @@ NEXTCDF4_map_hdf_type(nc_type xtype, hid_t *typep)
     case NC_BITFIELD64:
         *typep = H5Tcopy(H5T_STD_B64LE);
         return NC_NOERR;
-    case NC_REF_OBJECT:
-        *typep = H5Tcopy(H5T_STD_REF_OBJ);
-        return NC_NOERR;
-    case NC_REF_REGION:
-        *typep = H5Tcopy(H5T_STD_REF_DSETREG);
+    case NC_STD_REF:
+        *typep = H5Tcopy(H5T_STD_REF);
         return NC_NOERR;
     case NC_STRING:
         *typep = H5Tcopy(H5T_C_S1);
@@ -297,11 +294,8 @@ NEXTCDF4_type_size(nc_type xtype, size_t *sizep)
     case NC_BITFIELD64:
         size = 8;
         break;
-    case NC_REF_OBJECT:
-        size = 8;
-        break;
-    case NC_REF_REGION:
-        size = 12;
+    case NC_STD_REF:
+        size = sizeof(H5R_ref_t);
         break;
     case NC_STRING:
         size = sizeof(char *);
@@ -352,8 +346,7 @@ NEXTCDF4_type_name(nc_type xtype)
     case NC_BITFIELD16: return "bitfield16";
     case NC_BITFIELD32: return "bitfield32";
     case NC_BITFIELD64: return "bitfield64";
-    case NC_REF_OBJECT: return "ref_object";
-    case NC_REF_REGION: return "ref_region";
+    case NC_STD_REF:    return "std_ref";
     case NC_STRING:     return "string";
     default:            return "unknown";
     }
@@ -411,8 +404,7 @@ NEXTCDF4_check_atomic_type(NEXTCDF4_FILE_INFO_T *file, nc_type xtype)
     case NC_BITFIELD16:
     case NC_BITFIELD32:
     case NC_BITFIELD64:
-    case NC_REF_OBJECT:
-    case NC_REF_REGION:
+    case NC_STD_REF:
         return (!file->netcdf4_model && !(file->mode & NC_CLASSIC_MODEL))
             ? NC_NOERR : NC_ENOTNC4;
     default:
@@ -472,7 +464,7 @@ set_var_type(NC_VAR_INFO_T *var, nc_type xtype)
         type->u.c.field = nclistnew();
     } else if (xtype >= NC_BITFIELD8 && xtype <= NC_BITFIELD64)
         type->nc_type_class = NC_INT;
-    else if (xtype == NC_REF_OBJECT || xtype == NC_REF_REGION)
+    else if (xtype == NC_STD_REF)
         type->nc_type_class = NC_OPAQUE;
     else
         type->nc_type_class = NC_INT;
@@ -696,11 +688,8 @@ map_nc_type(hid_t htype, nc_type *xtypep)
             return NC_NOERR;
         }
     } else if (cls == H5T_REFERENCE) {
-        if (H5Tequal(htype, H5T_STD_REF_OBJ) > 0) {
-            *xtypep = NC_REF_OBJECT;
-            return NC_NOERR;
-        } else if (H5Tequal(htype, H5T_STD_REF_DSETREG) > 0) {
-            *xtypep = NC_REF_REGION;
+        if (H5Tequal(htype, H5T_STD_REF) > 0) {
+            *xtypep = NC_STD_REF;
             return NC_NOERR;
         }
     }
@@ -1964,6 +1953,60 @@ fail:
     if (space >= 0)
         H5Sclose(space);
     return ret;
+}
+
+/**
+ * @brief Inquire about an attribute — the `nc_inq_att()` dispatch
+ * entry.
+ *
+ * Stock `NC4_inq_att` resolves `att->nc_typeid` through
+ * nc4_find_type(), which knows only stock atomic typeids and the
+ * file's user-defined types — NEP atomic types (float16, bitfield,
+ * `NC_STD_REF`, ...) all fail there. This version returns the
+ * stored typeid directly, so `nc_inq_att()` and the generic
+ * `nc_get_att()` work for NEP types.
+ *
+ * @param ncid NetCDF file identifier.
+ * @param varid Variable id or `NC_GLOBAL`.
+ * @param name Attribute name.
+ * @param xtypep Destination for the attribute's type, or NULL.
+ * @param lenp Destination for the attribute's length, or NULL.
+ * @return `NC_NOERR` on success, `NC_ENOTATT` when the attribute
+ * does not exist, or a NetCDF error code.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+NEXTCDF4_inq_att(int ncid, int varid, const char *name, nc_type *xtypep,
+                 size_t *lenp)
+{
+    NCindex *list;
+    hid_t loc;
+    NC_FILE_INFO_T *h5;
+    NC_GRP_INFO_T *grp;
+    NC_VAR_INFO_T *var = NULL;
+    NC_ATT_INFO_T *att;
+    int ret;
+
+    if ((ret = NEXTCDF4_get_file(ncid, &h5, NULL)))
+        return ret;
+    if (varid == NC_GLOBAL) {
+        grp = h5->root_grp;
+        var = NULL;
+    } else {
+        if ((ret = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var)))
+            return ret;
+        if (!var)
+            return NC_ENOTVAR;
+    }
+    if ((ret = get_att_context(grp, var, &list, &loc)))
+        return ret;
+    if (!(att = find_att(list, name)))
+        return NC_ENOTATT;
+    if (xtypep)
+        *xtypep = att->nc_typeid;
+    if (lenp)
+        *lenp = att->len;
+    return NC_NOERR;
 }
 
 /**

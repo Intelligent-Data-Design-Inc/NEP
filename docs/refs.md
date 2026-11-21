@@ -1,0 +1,270 @@
+# NEXTCDF-4 References {#nextcdf4_refs}
+
+NEXTCDF-4 stores HDF5 references through the atomic `nc_type`
+`NC_STD_REF`, which maps to the HDF5 2.x unified reference datatype
+`H5T_STD_REF`. Each element of an `NC_STD_REF` variable or attribute is
+one opaque 64-byte `nc_std_ref_t` token — layout-compatible with HDF5
+`H5R_ref_t`. A single token format covers all three HDF5 reference
+kinds: object references, dataset region references, and attribute
+references, including references to objects in other files.
+
+The older HDF5 reference datatypes (`H5T_STD_REF_OBJ`,
+`H5T_STD_REF_DSETREG` and their `hobj_ref_t`/`hdset_reg_ref_t` tokens)
+are deprecated in HDF5 2.x and are not supported. A file containing a
+dataset of either deprecated type fails `nc_open` with `NC_EBADTYPE`.
+
+Reference functions are declared in `nep.h` and operate only on files
+opened or created with `NC_NEXTCDF4`.
+
+## Requirements and restrictions
+
+- `NC_STD_REF` variables and attributes, and every `nc_ref_*` create
+  function, require native NEXTCDF-4 mode. Under `NC_NETCDF4_MODEL` or
+  `NC_CLASSIC_MODEL` they return `NC_ENOTNC4`. `nc_deref_*` and
+  `nc_ref_get_*` work in any NEXTCDF4 mode.
+- `NC_STD_REF` variables cannot be coordinate variables and
+  `NC_STD_REF` cannot be a compound member.
+- No default fill value is defined; variables behave as if `NC_NOFILL`
+  were set unless the caller supplies an explicit fill pattern.
+- Tokens are opaque 64-byte values. Never interpret the bytes.
+- A token created for one file is meaningful only in the file that
+  holds it — except that a token may itself *point into* an external
+  file (see below).
+
+## Types and constants
+
+```c
+#define NC_STD_REF       30   /* nc_type for H5T_STD_REF */
+#define NC_STD_REF_SIZE  64   /* bytes per token, matches H5R_REF_BUF_SIZE */
+
+typedef struct {
+    union {
+        unsigned char bytes[NC_STD_REF_SIZE];
+        int64_t align;
+    } u;
+} nc_std_ref_t;
+
+/* Token kinds, returned by nc_ref_get_type(). */
+#define NC_STD_REF_OBJECT 1
+#define NC_STD_REF_REGION 2
+#define NC_STD_REF_ATTR   3
+
+/* Object target kinds for nc_ref_object()/nc_ref_attr()/nc_deref_*. */
+#define NC_REF_OBJ_VAR  1   /* NetCDF variable (HDF5 dataset) */
+#define NC_REF_OBJ_GRP  2   /* NetCDF group (HDF5 group) */
+#define NC_REF_OBJ_TYPE 3   /* NetCDF user-defined type (HDF5 committed datatype) */
+```
+
+## Storing and reading reference tokens
+
+`NC_STD_REF` variables and attributes are defined and accessed like
+any other atomic type: `nc_def_var`, `nc_put_att`, `nc_put_var`,
+`nc_put_vara`, `nc_put_vars`, and the matching `nc_get_*` calls move
+whole tokens. `nc_inq_type` reports a size of 64. Each element is an
+independent token; strided access reads or writes independent
+references.
+
+## Creating references in the open file
+
+All create functions take an open `ncid`, fill a caller-supplied
+`nc_std_ref_t`, and require native mode (`NC_ENOTNC4` otherwise,
+including on a non-NEXTCDF4 `ncid`).
+
+```c
+int nc_ref_object(int ncid, int obj_type, int objid, nc_std_ref_t *ref);
+```
+
+Creates an object reference. `obj_type` selects what `objid` is:
+`NC_REF_OBJ_VAR` — a varid in group `ncid`; `NC_REF_OBJ_GRP` — a
+group ncid (`ncid` ignored); `NC_REF_OBJ_TYPE` — a typeid in group
+`ncid`.
+
+```c
+int nc_ref_region(int ncid, int varid, const size_t *start,
+                  const size_t *count, const ptrdiff_t *stride,
+                  nc_std_ref_t *ref);
+```
+
+Creates a dataset region reference to a hyperslab selection in
+variable `varid`. `start`/`count`/`stride` use normal NetCDF indexing;
+`stride` may be NULL for unit stride. Any selection expressible as
+`start`/`count`/`stride` is allowed.
+
+```c
+int nc_ref_attr(int ncid, int obj_type, int objid,
+                const char *att_name, nc_std_ref_t *ref);
+```
+
+Creates an attribute reference. `obj_type`/`objid` dispatch exactly as
+in `nc_ref_object`, so attribute references work on every
+attribute-bearing object kind HDF5 supports: variables, groups (the
+group's attributes, i.e. what `nc_put_att` attaches to `NC_GLOBAL`),
+and committed datatypes. Note the NetCDF API cannot put attributes on
+types — a datatype attribute exists only if created through raw HDF5 —
+but a reference can point at it regardless. `att_name` must name an
+existing attribute on the object (`NC_EINVAL` otherwise).
+
+## Dereferencing references
+
+Dereference functions resolve a token back to NetCDF ids in the file
+identified by `ncid`. They accept any NEXTCDF4 mode, return `NC_EINVAL`
+when the token kind does not match the function or the target no
+longer exists, and return `NC_ENOTNC4` when the token points into an
+external file.
+
+```c
+int nc_deref_object(int ncid, const nc_std_ref_t *ref, int *obj_typep,
+                    int *grpidp, int *idp);
+```
+
+`*obj_typep` receives `NC_REF_OBJ_VAR`/`NC_REF_OBJ_GRP`/`NC_REF_OBJ_TYPE`.
+For a variable, `*grpidp` is the containing group and `*idp` the varid;
+for a group, both receive the group ncid; for a type, `*grpidp` is the
+containing group and `*idp` the typeid.
+
+```c
+int nc_deref_region(int ncid, const nc_std_ref_t *ref, int *grpidp,
+                    int *varidp, int *ndimsp, size_t *start,
+                    size_t *count, ptrdiff_t *stride);
+```
+
+Recovers the target variable and its selection. Only regular strided
+hyperslabs are representable: an irregular selection, or one built
+with non-unit blocks, returns `NC_EINVAL`. Output pointers may be NULL
+to skip a result.
+
+```c
+int nc_deref_attr(int ncid, const nc_std_ref_t *ref, int *obj_typep,
+                  int *grpidp, int *idp, char *att_name);
+```
+
+Returns the attribute-bearing object's kind and ids as in
+`nc_deref_object`, plus the attribute name in `att_name`, which must
+be a caller buffer of at least `NC_MAX_NAME + 1` bytes.
+
+## External references — pointing into other files
+
+The `nc_ref_*_ext` functions create tokens that reference objects in a
+*different* file. `ncid` is still validated as a native-mode NEXTCDF4
+file (the token can then be stored in its `NC_STD_REF` data), but the
+target is named by `filename` plus `path`, the object's HDF5 path in
+that file (for example `"grp/dset"` or `"/grp/dset"`).
+
+```c
+int nc_ref_object_ext(int ncid, const char *filename, const char *path,
+                      nc_std_ref_t *ref);
+int nc_ref_region_ext(int ncid, const char *filename, const char *path,
+                      const size_t *start, const size_t *count,
+                      const ptrdiff_t *stride, nc_std_ref_t *ref);
+int nc_ref_attr_ext(int ncid, const char *filename, const char *path,
+                    const char *att_name, nc_std_ref_t *ref);
+```
+
+`path` may name any attribute-bearing object kind, so
+`nc_ref_attr_ext` covers the same owner set as `nc_ref_attr`. The
+resulting token records `filename` and HDF5 resolves it at open time.
+
+`nc_deref_*` returns `NC_ENOTNC4` for external tokens — NetCDF ids are
+meaningless across files. To resolve an external target, get its file
+name and object path with `nc_ref_get_file_name`/`nc_ref_get_obj_name`
+and `nc_open` that file, or dereference the token with raw HDF5
+(`H5Ropen_object`, `H5Ropen_region`, `H5Ropen_attr`), which opens the
+external file automatically. Region selections in external files are
+recoverable only through `H5Ropen_region`.
+
+## Inspecting tokens
+
+```c
+int nc_ref_get_type(const nc_std_ref_t *ref, int *ref_typep);
+```
+
+Reports the token kind: `NC_STD_REF_OBJECT`, `NC_STD_REF_REGION`, or
+`NC_STD_REF_ATTR`.
+
+```c
+int nc_ref_get_file_name(const nc_std_ref_t *ref, char *name, size_t size);
+int nc_ref_get_obj_name(const nc_std_ref_t *ref, char *name, size_t size);
+```
+
+Copy the stored file name (of the file the token *points into*, which
+differs from the containing file only for external references) and the
+object's path within that file into caller buffers of `size` bytes.
+Both return `NC_EINVAL` when `size` is too small. For an attribute
+reference, `nc_ref_get_obj_name` returns the name of the object that
+carries the attribute; `nc_deref_attr` recovers the attribute name
+itself.
+
+## Releasing tokens
+
+```c
+int nc_ref_free(nc_std_ref_t *ref);
+```
+
+A reference token holds an open reference to the file it was created
+in; until it is released the HDF5 file cannot fully close, and a later
+`H5Fopen` on the same file fails. Call `nc_ref_free` on every token
+obtained from an `nc_ref_*` creator — and on tokens read back from a
+variable or attribute — when it is no longer needed, and always before
+`nc_close`. Releasing an uninitialized or already-released token is
+safe.
+
+## Reference validity
+
+- A reference binds the target *object*, not its path, so renaming a
+  referenced dimension, variable, group, or type never invalidates an
+  existing reference.
+- The NetCDF API cannot delete variables or groups, so in-file
+  references cannot dangle through `nc_*` calls. An external reference
+  fails to resolve when its target file is moved or deleted; any
+  `nc_deref_*` call on it then reports `NC_ENOTNC4`, and a raw-HDF5
+  `H5Ropen_*` fails.
+- Extending an unlimited dimension does not invalidate a region
+  reference whose stored selection remains within the variable's
+  current shape.
+
+## Example
+
+```c
+#include <netcdf.h>
+#include <nep.h>
+
+int ncid, dimid, varid, refid;
+nc_std_ref_t ref;
+size_t one[1] = {0}, count[1] = {1};
+
+nc_create("refs.nc", NC_NEXTCDF4 | NC_CLOBBER, &ncid);
+nc_def_dim(ncid, "n", 4, &dimid);
+nc_def_var(ncid, "data", NC_INT, 1, &dimid, &varid);
+nc_def_var(ncid, "refs", NC_STD_REF, 1, &dimid, &refid);
+nc_enddef(ncid);
+
+/* Object reference to the variable "data". */
+nc_ref_object(ncid, NC_REF_OBJ_VAR, varid, &ref);
+nc_put_vara(ncid, refid, one, count, &ref);
+nc_ref_free(&ref);
+nc_close(ncid);
+
+/* Later: read the token back and resolve it. */
+nc_open("refs.nc", NC_NEXTCDF4 | NC_NOWRITE, &ncid);
+nc_inq_varid(ncid, "refs", &refid);
+nc_get_vara(ncid, refid, one, count, &ref);
+int obj_type, grpid, id;
+nc_deref_object(ncid, &ref, &obj_type, &grpid, &id);   /* id == varid */
+nc_ref_free(&ref);
+nc_close(ncid);
+```
+
+External variant:
+
+```c
+/* Point at variable "data" in another file. */
+nc_ref_object_ext(ncid, "other.nc", "/data", &ref);
+nc_put_vara(ncid, refid, one, count, &ref);
+
+/* Where does it point? */
+char fname[NC_MAX_NAME + 1], oname[NC_MAX_NAME + 1];
+nc_ref_get_file_name(&ref, fname, sizeof(fname));   /* "other.nc" */
+nc_ref_get_obj_name(&ref, oname, sizeof(oname));    /* "/data" */
+/* nc_deref_object() on this token returns NC_ENOTNC4. */
+nc_ref_free(&ref);
+```

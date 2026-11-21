@@ -6,6 +6,7 @@ add_library(ncnextcdf4 SHARED
     nxt4meta.c
     nxt4filter.c
     nxt4io.c
+    nxt4ref.c
     nxt4convert.c
     nxt4group.c
     nxt4type.c
