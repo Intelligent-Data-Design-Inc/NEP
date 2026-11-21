@@ -150,139 +150,60 @@ The standard path is to use `nc_def_var` with `NC_FLOAT16` and the generic `nc_p
 
 ### What They Are
 
-An HDF5 compound type is a collection of named members, each with its own datatype and offset. It is the HDF5 equivalent of a C `struct`.
+HDF5 references are opaque values that point to objects, data regions, or attributes inside an HDF5 file — or inside another file. They allow one dataset or attribute to refer to another without embedding paths.
+
+HDF5 2.x has a single unified reference datatype:
+
+- **`H5T_STD_REF`** — a fixed-size 64-byte token (`H5R_ref_t`, exactly `H5R_REF_BUF_SIZE` bytes) covering three token kinds: object (`H5R_OBJECT2`), dataset region (`H5R_DATASET_REGION2`), and attribute (`H5R_ATTR`).
+
+The older split types are deprecated:
+
+- `H5T_STD_REF_OBJ` (8-byte `hobj_ref_t`) and `H5T_STD_REF_DSETREG` (12-byte `hdset_reg_ref_t`), and the monolithic `H5Rcreate`/`H5Ropen`/`H5Rdereference` API, are all marked `\deprecated` in HDF5 2.x headers. NEXTCDF-4 does not read datasets or attributes stored with these types — they fail `nc_open` with `NC_EBADTYPE`.
+
+### Creating and Using References
 
 ```c
-typedef struct {
-    int x;
-    double y;
-} point_t;
+H5R_ref_t ref;   /* 64-byte opaque token */
+
+H5Rcreate_object(file_id, "/g1/dset", H5P_DEFAULT, &ref);   /* object */
+H5Rcreate_region(file_id, "/g1/dset", space_id, H5P_DEFAULT, &ref); /* region */
+H5Rcreate_attr(file_id, "/g1/dset", "units", H5P_DEFAULT, &ref);    /* attribute */
+
+hid_t obj   = H5Ropen_object(&ref, H5P_DEFAULT, H5P_DEFAULT);
+hid_t space = H5Ropen_region(&ref, H5P_DEFAULT, H5P_DEFAULT);
+hid_t att   = H5Ropen_attr(&ref, H5P_DEFAULT, H5P_DEFAULT);
+
+H5R_type_t kind = H5Rget_type(&ref);   /* token kind */
+H5Rdestroy(&ref);                      /* release the token */
 ```
 
-### Creating a Compound Type
+Gotchas specific to `H5R_ref_t`:
 
-```c
-hid_t compound_type_id = H5Tcreate(H5T_COMPOUND, sizeof(point_t));
-H5Tinsert(compound_type_id, "x", HOFFSET(point_t, x), H5T_STD_I32LE);
-H5Tinsert(compound_type_id, "y", HOFFSET(point_t, y), H5T_IEEE_F64LE);
-```
-
-### Reading Compound Metadata
-
-```c
-int nmembers = H5Tget_nmembers(compound_type_id);
-for (int i = 0; i < nmembers; i++) {
-    char *name = H5Tget_member_name(compound_type_id, i);
-    hid_t member_type = H5Tget_member_type(compound_type_id, i);
-    size_t offset = H5Tget_member_offset(compound_type_id, i);
-    /* ... */
-    free(name);
-    H5Tclose(member_type);
-}
-```
+- `H5Rget_type` returns the `*2` enum values for tokens created by `H5Rcreate_*`; the plain `H5R_OBJECT`/`H5R_DATASET_REGION` macros alias the legacy `*1` values. Kind checks must accept both.
+- A live token holds an open reference to its file — `H5Fclose` defers while tokens exist, and a later `H5Fopen` with a mismatched close degree fails. Always `H5Rdestroy` tokens before closing the file. Tokens read back from disk likewise need `H5Rdestroy`.
+- Bytes of a stored token differ from a live token; compare with `H5Requal`, not `memcmp`.
+- `nc_ref_region`-style regular-hyperslab checks: `H5Sis_regular_hyperslab` treats a union of single-point slabs as regular; an irregular selection needs unequal blocks.
+- Creating a token in file A whose target is an object of another open file B produces an external-file reference; `H5Rget_file_name`/`H5Rget_obj_name` report the target file and path. The `H5Ropen_*` functions follow external references transparently.
 
 ### NetCDF Mapping
 
-NetCDF-4 user-defined compound types map directly to HDF5 compound types. NEXTCDF-4 preserves this behavior unchanged:
+NEXTCDF-4 exposes `H5T_STD_REF` as the opaque NetCDF type `NC_STD_REF` (30) with the byte-compatible token type `nc_std_ref_t` (`NC_STD_REF_SIZE` = 64), and ships a full create/dereference API (`nc_ref_object`, `nc_ref_region`, `nc_ref_attr`, `nc_ref_*_ext`, `nc_deref_*`, `nc_ref_get_*`, `nc_ref_free`) — see `docs/refs.md` and `src/nextcdf4/nxt4ref.c`.
 
-- Member names are preserved exactly and are case-sensitive.
-- Nested compound types are supported.
-- Fixed-size arrays inside a compound member are supported.
-- Padding and alignment follow the HDF5 type definition.
-
-### Complex Numbers as Compound Types
-
-NEXTCDF-4 uses HDF5 compound types to represent complex numbers:
-
-```c
-/* Single-precision complex */
-hid_t cplx = H5Tcreate(H5T_COMPOUND, 2 * sizeof(float));
-H5Tinsert(cplx, "r", 0, H5T_IEEE_F32LE);
-H5Tinsert(cplx, "i", sizeof(float), H5T_IEEE_F32LE);
-
-/* Double-precision complex */
-hid_t dcplx = H5Tcreate(H5T_COMPOUND, 2 * sizeof(double));
-H5Tinsert(dcplx, "r", 0, H5T_IEEE_F64LE);
-H5Tinsert(dcplx, "i", sizeof(double), H5T_IEEE_F64LE);
-```
-
-Proposed NetCDF type constants:
-
-```c
-#define NC_COMPLEX       18  /* float complex  */
-#define NC_DOUBLECOMPLEX 19  /* double complex */
-```
-
-Memory layout is the portable compound `{ float r; float i; }` (or `{ double r; double i; }`). This matches the C `_Complex` layout on most platforms and is the canonical NetCDF ABI. On platforms without native `_Complex` support, users interact with the same `{r, i}` compound layout.
-
-### Implementation Notes
-
-- Use `H5Tpack` only when the user requests it; otherwise preserve the declared layout.
-- When writing, verify that the memory type layout matches the file type layout.
-- Compound types are allowed in `NC_NETCDF4_MODEL` mode, but complex-number compound types are not.
-
-## Reference Types
-
-### What They Are
-
-HDF5 references are opaque values that point to objects or data regions inside an HDF5 file. They allow one dataset or attribute to refer to another without embedding paths.
-
-There are two reference types:
-
-1. **Object Reference** (`H5T_STD_REF_OBJ`): an 8-byte opaque token identifying an HDF5 object (group, dataset, committed type, etc.).
-2. **Region Reference** (`H5T_STD_REF_DSETREG`): an opaque token identifying a hyperslab selection within a dataset.
-
-### Object References
-
-```c
-hdf_ref_t ref;  /* opaque 8-byte type, H5R_OBJECT */
-H5Rcreate(&ref, file_id, "/g1/dset", H5R_OBJECT, H5P_DEFAULT);
-```
-
-### Region References
-
-```c
-hdf_reg_ref_t ref;  /* opaque region reference type, H5R_DATASET_REGION */
-hid_t space_id = H5Dget_space(dset_id);
-hsize_t start[2] = {0, 0};
-hsize_t count[2] = {10, 20};
-H5Sselect_hyperslab(space_id, H5S_SELECT_SET, start, NULL, count, NULL);
-H5Rcreate(&ref, file_id, "/g1/dset", H5R_DATASET_REGION, space_id);
-```
-
-### NetCDF Mapping
-
-NEXTCDF-4 proposes two new opaque NetCDF types:
-
-```c
-#define NC_REF_OBJECT 20
-#define NC_REF_REGION 21
-```
-
-- Variables of these types store HDF5 references as opaque byte arrays.
-- The NetCDF API treats them as opaque types; it does **not** dereference them.
-- Future API extensions may add dereferencing functions, but that is out of scope for the initial rewrite.
-
-### Reading and Writing
-
-Because references are file-local tokens, they cannot be copied meaningfully between files. This means:
-
-- Reading references from one file and writing them to another is generally undefined.
-- Reference-typed variables must be read and written as whole arrays; per-element hyperslab writes are allowed only within the same file.
+- `NC_STD_REF` variables and attributes store the 64-byte tokens; `nc_deref_*` resolve in-file targets and return `NC_ENOTNC4` for external-file targets.
+- Region references are limited to regular strided hyperslabs (`start`/`count`/`stride`); irregular selections fail `nc_deref_region` with `NC_EINVAL`.
 
 ### Restrictions
 
-- Reference types cannot be coordinate variables.
-- Reference types cannot appear inside compound types in the initial implementation.
-- Reference types are not allowed in `NC_NETCDF4_MODEL` mode.
-- Region references require the referenced dataset to remain open; keep the file open while reading region references.
+- `NC_STD_REF` variables cannot be coordinate variables.
+- `NC_STD_REF` cannot appear inside compound types.
+- `NC_STD_REF` is not allowed in `NC_NETCDF4_MODEL` or `NC_CLASSIC_MODEL` mode.
+- Reference tokens are file-relative; copying token bytes between files does not retarget them.
 
 ### Implementation Guidance
 
-- Detect `H5T_REFERENCE` with `H5Tget_class(type_id) == H5T_REFERENCE`.
-- Use `H5Tget_ref_type(type_id)` to distinguish `H5R_OBJECT` from `H5R_DATASET_REGION`.
-- Store references as opaque blobs in memory. Do not interpret the bytes.
-- When writing, create the dataset with the exact HDF5 reference datatype.
+- Detect references with `H5Tget_class(type_id) == H5T_REFERENCE`; the unified type compares equal to `H5T_STD_REF` via `H5Tequal`.
+- Use `H5Rget_type` on a token (accepting both `*1` and `*2` enum values) to distinguish object, region, and attribute kinds.
+- Store references as opaque `H5R_ref_t` blobs; do not interpret the bytes.
 
 ## Bitfield Types
 
@@ -371,8 +292,7 @@ Using `_Netcdf4Coordinates` for every variable:
 | `NC_FLOAT4_E2M1`     | `H5T_FLOAT_F4E2M1`               | No                            |
 | `NC_COMPLEX`         | `H5T_COMPOUND {r:f32, i:f32}`    | No                            |
 | `NC_DOUBLECOMPLEX`   | `H5T_COMPOUND {r:f64, i:f64}`    | No                            |
-| `NC_REF_OBJECT`      | `H5T_STD_REF_OBJ`                | No                            |
-| `NC_REF_REGION`      | `H5T_STD_REF_DSETREG`            | No                            |
+| `NC_STD_REF`         | `H5T_STD_REF`                    | No                            |
 | `NC_BITFIELD8`       | `H5T_STD_B8LE/BE`                | No                            |
 | `NC_BITFIELD16`      | `H5T_STD_B16LE/BE`               | No                            |
 | `NC_BITFIELD32`      | `H5T_STD_B32LE/BE`               | No                            |

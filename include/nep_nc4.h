@@ -23,6 +23,7 @@
 #include "nc4internal.h"   /* NC_FILE_INFO_T, NC_GRP_INFO_T, NC_VAR_INFO_T, NC_ATT_INFO_T, NC_DIM_INFO_T */
 #include "nc.h"            /* NC struct, NC_check_id() */
 #include "ncdimscale.h"    /* HDF5 dimension scale constants (needed by grib2file.c) */
+#include "hdf5internal.h"  /* NC_HDF5_Filter + NC4_hdf5_* filter-list helpers (needed by nxt4filter.c) */
 
 /* Functions from netcdf-c libsrc4 used by NEP UDF handlers.
  * These are not declared in any public netcdf-c header. */

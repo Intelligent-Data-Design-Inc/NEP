@@ -100,9 +100,34 @@ Plan: [docs/plan/v4.3.0-sprint1H-continued-conversion-changes.md](plan/v4.3.0-sp
 Plan: [docs/plan/v4.3.0-sprint1I-better-documentation.md](plan/v4.3.0-sprint1I-better-documentation.md)
 
 #### Sprint 1J - Support IEEE 754 Float16
+- `nx4_convert_type()` drops the HDF5 float16 exception: NEP RNE conversion both directions, corrected boundary ((65504, 65520) → `0x7bff`, ≥ 65520 finite → ±inf + `NC_ERANGE`), single rounding from double; `nx4_conversion_dxpl()`/`nx4_conversion_exception()` removed.
+- New `libnep` API `nc_{get,put}_{var,var1,vara,vars}_float16` with `nc_float16_t` (`_Float16` when `__FLT16_MAX__`, else `uint16_t`), mirroring `nc_*_bfloat16`; raw bits on `NC_FLOAT16`, NEP RNE + `NC_ERANGE` on `NC_FLOAT`/`NC_DOUBLE`; new test `tst_nep_float16`, boundary pins updated in `tst_nextcdf4_conv`/`_range`/`_internal_convert`.
+- Full bfloat16 example mirror: `float16.c`/`float16_conv.h`/`float16_perf.c` (float32 / `nc_*_float16` / typed x contiguous / deflate1, disk-bound), `make_float16_sample` + committed `gdas_sfc_sample_float16.nc`, `float16_io_perf.c`, plots and committed reference artifacts. `prate_ave` subnormals pass a combined rel/abs error gate.
+- Docs updated across `NEXTCDF4_float16.md`, `float16.md`, `nextcdf4.md`, `nextcdf4_architecture.md`, `prd.md`, `NEXTCDF4_plan.md`; ctest stays green and docs warning-free. No Spack/conda changes.
+- Out of scope: #377-#380, #382, #386, `tst_nextcdf4_float16` re-enablement, typed FP8/FP6/FP4, float16 attributes/varm/Fortran, benchmark CI, release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1J-ieee-float16.md](plan/v4.3.0-sprint1J-ieee-float16.md)
+
+#### Sprint 1K - Do Filters work with NEXTCDF4?
+- Yes: `nc_def_var_filter()` implemented on `var->filters` via netcdf-c's exported `NC4_hdf5_*` helpers in new `nxt4filter.c`; deflate/fletcher32 setters moved there with upstream parity (no removal, level-0 rule, `NC_ELATEDEF` on created vars, fletcher32-first pipeline order). Free szip/bzip2/zstd/`nc_inq_var_filter` wrappers; real `inq_filter_avail` replaces `NC_NOOP`.
+- Open path loads every DCPL filter (any param count) and marks vars unreadable when a mandatory plugin is missing; `var_io` returns `NC_ENOFILTER`; `NC_CLASSIC_MODEL` rejects all filter/storage setters. Filters allowed on coord vars (ordering caveat → #382).
+- New enabled `tst_nextcdf4_filter` (plugin cases runtime-gated, missing plugin via `H5Zunregister`); docs updated. No Spack/conda/CI changes.
+- Out of scope: rest of #382, #377/#379/#380/#386, parallel/chunk-cache stubs, nccopy/Fortran filter APIs, filter examples, release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1K-def-var-filter.md](plan/v4.3.0-sprint1K-def-var-filter.md)
+
+#### Sprint 1L - Reference Types
+- Remove `NC_REF_OBJECT`/`NC_REF_REGION` (deprecated HDF5 types) and all mentions; files holding `H5T_STD_REF_OBJ`/`H5T_STD_REF_DSETREG` datasets then fail `nc_open` with `NC_EBADTYPE`.
+- New `NC_STD_REF` (=30) maps to `H5T_STD_REF` — 64-byte `H5R_ref_t` tokens as opaque `nc_std_ref_t`; native mode only, `NC_OPAQUE` class, allowed on variables and attributes; still no coord vars or compound members.
+- New API in `src/nextcdf4/nxt4ref.c`, declared in `nep.h`: `nc_ref_object`/`nc_deref_object`, `nc_ref_region`/`nc_deref_region` (regular strided hyperslabs only), `nc_ref_attr`/`nc_deref_attr`, external-file creators `nc_ref_*_ext`, `nc_ref_get_type`/`nc_ref_get_file_name`/`nc_ref_get_obj_name`, and `nc_ref_free` (tokens hold open file references); `nc_deref_*` return `NC_ENOTNC4` for external targets.
+- Rewrite `tst_nextcdf4_ref` (object/region/attr/external round-trips, token inquiry, mode rejections) and update `tst_nextcdf4_internal_convert`.
+- Update `docs/nextcdf4.md`, `docs/design.md`, `docs/prd.md`, `docs/prfaq.md`, `NEXTCDF4_plan.md` and the hdf5/nextcdf4 skills; `roadmap_v3.md` and `releases/v4.0.0.md` stay historical.
+- Out of scope: external deref via NetCDF, legacy ref datasets, refs in compounds/coord vars, varm/Fortran/dump tools, release notes (Sprint 2), Spack/conda.
+
+Plan: [docs/plan/v4.3.0-sprint1L-reference-types.md](plan/v4.3.0-sprint1L-reference-types.md)
 
 #### Sprint 2 - 
-- Tag v4.3.0 and write `docs/releases/v4.3.0.md` (HDF5 detection change, CMake 3.19 minimum, conda GeoTIFF, Sprint 1A NEXTCDF-4 bfloat16 examples and `NEP_ZSTD_PLUGIN_DIR`, Sprint 1B typed small-float I/O and the `nc_*_bfloat16` functions, #376, Sprint 1C optimized benchmark results, the bfloat16 GDAS sample and `bfloat16_io_perf`, the #382 contiguous-layout fix, and the fix for untyped `nc_put_var`/`nc_get_var`/`var1`/`vars` failing with `NC_EBADTYPE` on NEXTCDF-4).
+- Tag v4.3.0 and write `docs/releases/v4.3.0.md` (HDF5 detection change, CMake 3.19 minimum, conda GeoTIFF, Sprint 1A NEXTCDF-4 bfloat16 examples and `NEP_ZSTD_PLUGIN_DIR`, Sprint 1B typed small-float I/O and the `nc_*_bfloat16` functions, #376, Sprint 1C optimized benchmark results, the bfloat16 GDAS sample and `bfloat16_io_perf`, the #382 contiguous-layout fix, the fix for untyped `nc_put_var`/`nc_get_var`/`var1`/`vars` failing with `NC_EBADTYPE` on NEXTCDF-4, and Sprint 1K generic HDF5 filter support (`nc_def_var_filter`, szip/bzip2/zstd plugins, missing-plugin `NC_ENOFILTER`), and Sprint 1L reference types (`NC_REF_OBJECT`/`NC_REF_REGION` removed — a breaking API change — replaced by `NC_STD_REF`/`H5T_STD_REF` and the `nc_ref_*`/`nc_deref_*` API).
 - Spack: add `version("4.3.0")` with its sha256; update spack/spack-packages#5557 in place per `docs/spack.md` "Updating the upstream PR".
 - Conda (#374 part 2): if #34309 is still open, regenerate the staged copy for 4.3.0, push it to `nep-3.0.0` and update the PR body; if merged, make the GeoTIFF change on the feedstock and drop the staged lint/micromamba steps. Move the `conda.yml` lint step to the 4.3.0 tarball and set `context.version` to `4.3.1.dev0`.
 - Update the README "Conda Installation", `docs/prd.md` section 5.5, `docs/prfaq.md` and the `docs/conda-plan.md` Status table for GeoTIFF in 4.3.0.

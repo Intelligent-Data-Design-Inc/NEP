@@ -10,9 +10,9 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 
 NEXTCDF-4 converts all supported numeric variable and attribute data with the private, NEP-owned `nx4_convert_type()` engine, selected as the permanent engine after Sprint 1H's OFF/ON comparison. It replaced the temporary `NEP_INTERNAL_CONVERT` CMake option; passing that option now fails at configure time. There is no runtime or file-format switch.
 
-Standard float/double calls on bfloat16 use round-to-nearest-even, with single rounding from double and signed infinity on finite overflow. For example, 449 narrows to 448 instead of HDF5's 450. IEEE float16 conversion is the one explicit exception: it still converts through HDF5. HDF5 also handles file byte order and storage representation.
+Standard float/double calls on bfloat16 use round-to-nearest-even, with single rounding from double and signed infinity on finite overflow. For example, 449 narrows to 448 instead of HDF5's 450. IEEE float16 conversion joined the engine in Sprint 1J (v4.3.0), with the same round-to-nearest-even and `NC_ERANGE` semantics; the former HDF5 `H5Tconvert` path was removed. HDF5 also handles file byte order and storage representation.
 
-Matching-type raw-bit I/O, FP8/FP6/FP4 typed-call restrictions and the independent `nc_*_bfloat16` wrappers are unchanged. Float/double conversion for bfloat16 attributes is supported; fill-value limitations still apply. Variable/attribute conversions and quantized writes complete all values, then return `NC_ERANGE` on finite overflow, integer range violations or nonfinite-to-integer conversion (#381). A range warning does not roll back writes: every value is processed, attributes may be replaced and unlimited dimensions may grow. Ordinary precision loss, fractional truncation and floating underflow do not cause range errors; floating NaN/infinity inputs remain valid for floating destinations. Structural, permission and HDF5 failures take precedence over range warnings. Historical HDF5-engine benchmark artifacts are kept for comparison in `examples/nextcdf4/conversion_*.csv`; new measurements use the internal engine.
+Matching-type raw-bit I/O, FP8/FP6/FP4 typed-call restrictions and the independent `nc_*_bfloat16`/`nc_*_float16` wrappers are unchanged. Float/double conversion for bfloat16 attributes is supported; fill-value limitations still apply. Variable/attribute conversions and quantized writes complete all values, then return `NC_ERANGE` on finite overflow, integer range violations or nonfinite-to-integer conversion (#381). A range warning does not roll back writes: every value is processed, attributes may be replaced and unlimited dimensions may grow. Ordinary precision loss, fractional truncation and floating underflow do not cause range errors; floating NaN/infinity inputs remain valid for floating destinations. Structural, permission and HDF5 failures take precedence over range warnings. Historical HDF5-engine benchmark artifacts are kept for comparison in `examples/nextcdf4/conversion_*.csv`; new measurements use the internal engine.
 
 ## Creating and Opening Files
 
@@ -111,10 +111,9 @@ Messages are written to `stderr`. Instrumented NEXTCDF-4 paths include file crea
 | `NC_COMPLEX` | compound `{r: f32, i: f32}` | Native only |
 | `NC_DOUBLECOMPLEX` | compound `{r: f64, i: f64}` | Native only |
 | `NC_BITFIELD8/16/32/64` | `H5T_STD_B*LE/BE` | Native only |
-| `NC_REF_OBJECT` | `H5T_STD_REF_OBJ` | Native only |
-| `NC_REF_REGION` | `H5T_STD_REF_DSETREG` | Native only |
+| `NC_STD_REF` | `H5T_STD_REF` | Native only |
 
-Small floating-point and bitfield types are exchanged as raw bit patterns by the untyped calls; `NC_FLOAT16` and `NC_BFLOAT16` also accept typed `float`/`double` calls (see [NEXTCDF4_float16.md](NEXTCDF4_float16.md)). Complex numbers use the memory layout `{ float r; float i; }` or `{ double r; double i; }`. Reference-typed variables are read and written as opaque tokens; no NetCDF dereferencing API is provided for them.
+Small floating-point and bitfield types are exchanged as raw bit patterns by the untyped calls; `NC_FLOAT16` and `NC_BFLOAT16` also accept typed `float`/`double` calls (see [NEXTCDF4_float16.md](NEXTCDF4_float16.md)). Complex numbers use the memory layout `{ float r; float i; }` or `{ double r; double i; }`. `NC_STD_REF` variables store 64-byte `H5R_ref_t` reference tokens; the `nc_ref_*`/`nc_deref_*` functions create and resolve them.
 
 ## Storage and Metadata
 
@@ -129,6 +128,44 @@ NEXTCDF-4 stores NetCDF dimensions as HDF5 dimension scales and attaches them to
 | `_Netcdf4Coordinates` | variable | Stores the variable's dimension IDs |
 
 These attributes are filtered from user-visible attribute lists.
+
+## Filters
+
+NEXTCDF-4 supports the full NetCDF-4 filter model on non-scalar variables. Filters are stored in the shared `NC_VAR_INFO_T::filters` list — the same structure upstream netcdf-c uses — and are applied to the HDF5 dataset creation property list in pipeline order.
+
+```c
+/* Convenience functions for the standard filters */
+nc_def_var_deflate(ncid, varid, 1 /* shuffle */, 1 /* deflate */, 4 /* level */);
+nc_def_var_fletcher32(ncid, varid, NC_FLETCHER32);
+nc_def_var_szip(ncid, varid, NC_SZIP_NN, 16);
+
+/* Generic filter API for plugin filters such as bzip2 (307) or zstd (32015) */
+unsigned int level = 3;
+nc_def_var_filter(ncid, varid, H5Z_FILTER_ZSTD, 1, &level);
+
+/* Inquiry */
+size_t nfilters;
+unsigned int ids[8], params[8];
+nc_inq_var_filter_ids(ncid, varid, &nfilters, ids);
+nc_inq_var_filter_info(ncid, varid, ids[0], &nparams, params);
+nc_inq_filter_avail(ncid, H5Z_FILTER_BZIP2); /* NC_ENOFILTER if the plugin is absent */
+```
+
+Semantics match upstream netcdf-c:
+
+- Defining a filter forces chunked storage; a filtered variable cannot be set contiguous.
+- Scalar variables cannot have filters (`NC_EINVAL`).
+- Filters cannot be removed once defined; re-defining a filter id replaces its parameters.
+- Fletcher32 is always first in the pipeline, then shuffle, then remaining filters in definition order.
+- Deflate and szip are mutually exclusive; a deflate level of 0 adds no filter.
+- Filter changes after the variable was committed to disk in a previous open (post-`nc_redef`) return `NC_ELATEDEF`; calls outside define mode return `NC_ENOTINDEFINE`.
+- `nc_inq_var_filter_ids` on a filterless variable returns `NC_NOERR` with a count of zero.
+
+Plugin filters work through HDF5's plugin mechanism: set `HDF5_PLUGIN_PATH` (or install plugins in HDF5's default plugin directory) and the filter becomes available to `nc_def_var_filter` and to data I/O. When a file is opened whose variable uses a filter that is unavailable in the current process, the variable's metadata — including the filter pipeline — remains readable, but reads and writes return `NC_ENOFILTER`.
+
+`NC_CLASSIC_MODEL` files permit no filters: every filter and storage setter (`nc_def_var_filter`, `nc_def_var_deflate`, `nc_def_var_fletcher32`, `nc_def_var_szip`, `nc_def_var_chunking`) returns `NC_EINVAL`.
+
+Filters may be applied to coordinate variables, but because def-var setters recreate the HDF5 dataset (see Known Limitations), the filter must be defined **before** dependent variables are defined — otherwise the dependents' dimension-scale attachments point at the deleted dataset.
 
 ## Example: Create a File with a Variable
 
@@ -152,50 +189,62 @@ nc_close(ncid);
 
 bfloat16 (brain floating point) is a 16-bit floating-point format with 1 sign bit, 8 exponent bits and 7 mantissa bits. It has the same range as float32 — the exponent width is identical — but only about 2-3 significant decimal digits of precision, and takes half the storage. `NC_BFLOAT16` halves the file size for data where a relative error of up to 2^-8 (about 0.4%) is acceptable.
 
-NEXTCDF-4 stores bfloat16 as raw bit patterns; conversion between float32 and bfloat16 can be done in user code or by HDF5 through the typed calls. The rules for `NC_BFLOAT16` variables:
+NEXTCDF-4 stores bfloat16 as raw bit patterns; conversion between float32 and bfloat16 can be done in user code or by the internal conversion engine through the typed calls. The rules for `NC_BFLOAT16` variables:
 
-- Use `nc_put_vara_bfloat16`/`nc_get_vara_bfloat16` (or the untyped `nc_put_vara`/`nc_get_vara`) with a `uint16_t` buffer, or the typed float/double calls, which convert through HDF5 (ties away from zero; finite float input past the largest bfloat16 saturates). The `nc_*_bfloat16` functions also convert to and from `NC_FLOAT`/`NC_DOUBLE` variables with round-to-nearest-even (see [NEXTCDF4_float16.md](NEXTCDF4_float16.md)).
+- Use `nc_put_vara_bfloat16`/`nc_get_vara_bfloat16` (or the untyped `nc_put_vara`/`nc_get_vara`) with a `uint16_t` buffer, or the typed float/double calls, which the internal engine converts with round-to-nearest-even (finite overflow becomes signed infinity, reported as `NC_ERANGE` after all values are processed). The `nc_*_bfloat16` functions also convert to and from `NC_FLOAT`/`NC_DOUBLE` variables with round-to-nearest-even (see [NEXTCDF4_float16.md](NEXTCDF4_float16.md)). The same applies to `NC_FLOAT16` and the `nc_*_float16` functions, with binary16's smaller range (maximum 65504).
 - Do not define a fill value: `_FillValue` attributes are rejected, and a value set with `nc_def_var_fill` is not recovered on reopen ([issue #377](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/377)).
 
 See **[NEXTCDF4_float16.md](NEXTCDF4_float16.md)** for the full float16/bfloat16 user guide, a walkthrough of the `examples/nextcdf4/bfloat16.c` example, and the benchmark results.
 
 ## Reference API
 
-NEXTCDF-4 adds functions for creating and resolving HDF5 object and region references. These are only available in native mode and are declared in the NEP public headers.
+NEXTCDF-4 exposes HDF5 2.x unified references (`H5T_STD_REF` /
+`H5R_ref_t`) as `NC_STD_REF`, with functions for creating and
+resolving object, region, and attribute references — including
+references into external files. These are only available in native
+mode and are declared in `nep.h`. See **[refs.md](refs.md)** for the
+full reference.
 
 ```c
 #include <nep.h>
 
-nc_ref_t ref;
+nc_std_ref_t ref;
 
 /* Create an object reference to a variable, group, or user-defined type */
 nc_ref_object(ncid, NC_REF_OBJ_VAR, varid, &ref);
 
-/* Resolve a reference back to object ids */
-int grpid, id;
-nc_deref_object(ncid, NC_REF_OBJ_VAR, &ref, &grpid, &id);
+/* Resolve a reference back to NetCDF ids */
+int obj_type, grpid, id;
+nc_deref_object(ncid, &ref, &obj_type, &grpid, &id);
+nc_ref_free(&ref);
 ```
 
-Region references identify a hyperslab selection inside a variable:
+Region references identify a regular strided hyperslab selection
+inside a variable; attribute references name an attribute on any
+object kind:
 
 ```c
-nc_region_ref_t region;
+nc_std_ref_t region, att;
 size_t start[2] = {0, 0}, count[2] = {1, 10};
 
 nc_ref_region(ncid, varid, start, count, NULL, &region);
+nc_ref_attr(ncid, NC_REF_OBJ_VAR, varid, "units", &att);
 ```
+
+Tokens hold an open reference to their file — release them with
+`nc_ref_free()` before closing the file.
 
 ## Known Limitations
 
 - `NC_NEXTCDF4` must be passed explicitly; there is no magic-number dispatch for HDF5 files.
 - `nc_put_varm` and `nc_get_varm` are not implemented in NEXTCDF-4 because the mapped I/O API is deprecated.
-- Object and region references round-trip as opaque tokens; no NetCDF dereferencing API is provided beyond `nc_deref_object` and `nc_deref_region`.
+- `nc_deref_*` functions do not follow references into external files (`NC_ENOTNC4`); use `nc_ref_get_file_name`/`nc_ref_get_obj_name` to resolve them, or raw HDF5.
 - Reference-typed variables cannot be coordinate variables and cannot be nested inside compound types.
 - Small floating-point types (`NC_FLOAT6_E2M3`, `NC_FLOAT4_E2M1`) have no default fill value because their value spaces are too small for a useful sentinel.
 - Typed calls on FP8/FP6/FP4 variables, and integer/text/string typed calls on any small float, return `NC_EBADTYPE` (`NC_ECHAR` for text).
 - Out-of-range conversion results can differ between engines even though both return `NC_ERANGE` after completing the operation; see the conversion experiment above ([issue #381](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/381)).
 - `NC_BFLOAT16` fill values are not supported: `_FillValue` attributes are rejected, and a fill value set with `nc_def_var_fill` is not recovered on reopen ([issue #377](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/377)).
-- Def-var setters (`nc_def_var_fill`, `nc_def_var_chunking`, `nc_def_var_deflate`, `nc_def_var_endian`, `nc_def_var_fletcher32`) recreate the HDF5 dataset, which leaves an orphaned dataset object and an extra dimension-scale reference in the file ([issue #382](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/382)).
+- Def-var setters (`nc_def_var_fill`, `nc_def_var_chunking`, `nc_def_var_deflate`, `nc_def_var_endian`, `nc_def_var_fletcher32`, `nc_def_var_filter`) recreate the HDF5 dataset, which leaves an orphaned dataset object and an extra dimension-scale reference in the file ([issue #382](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/382)).
 
 ## Resources
 

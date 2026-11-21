@@ -45,12 +45,18 @@ close_group_hdf(NC_GRP_INFO_T *grp)
     for (i = 0; i < ncindexsize(grp->vars); i++) {
         NC_VAR_INFO_T *var = (NC_VAR_INFO_T *)ncindexith(grp->vars, i);
         NEXTCDF4_VAR_INFO_T *vinfo;
-        if (var && (vinfo = var->format_var_info) && vinfo->hdf_dataset >= 0) {
-            H5E_BEGIN_TRY {
-                H5Dclose(vinfo->hdf_dataset);
-            } H5E_END_TRY;
-            vinfo->hdf_dataset = -1;
+        if (!var)
+            continue;
+        if ((vinfo = var->format_var_info)) {
+            if (vinfo->hdf_dataset >= 0) {
+                H5E_BEGIN_TRY {
+                    H5Dclose(vinfo->hdf_dataset);
+                } H5E_END_TRY;
+            }
+            free(vinfo);
+            var->format_var_info = NULL;
         }
+        NC4_hdf5_filter_freelist(var);
     }
 
     for (i = 0; i < ncindexsize(grp->dim); i++) {

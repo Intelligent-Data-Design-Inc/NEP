@@ -124,8 +124,8 @@ NEXTCDF4_check_write_define(NEXTCDF4_FILE_INFO_T *file)
  * architecture-independent. The mapping covers the standard types
  * (`NC_BYTE`…`NC_DOUBLE`, `NC_CHAR`, `NC_STRING`) plus NEXTCDF-4's
  * extended set: `NC_FLOAT16`, `NC_BFLOAT16`, the HDF5 2.x small
- * floats (FP8/FP6/FP4), complex, bitfields, and the reference types
- * `NC_REF_OBJECT`/`NC_REF_REGION`. The caller owns the returned
+ * floats (FP8/FP6/FP4), complex, bitfields, and the reference type
+ * `NC_STD_REF`. The caller owns the returned
  * `hid_t` and must `H5Tclose` it. The inverse mapping (disk →
  * nc_type) is map_nc_type().
  *
@@ -215,11 +215,8 @@ NEXTCDF4_map_hdf_type(nc_type xtype, hid_t *typep)
     case NC_BITFIELD64:
         *typep = H5Tcopy(H5T_STD_B64LE);
         return NC_NOERR;
-    case NC_REF_OBJECT:
-        *typep = H5Tcopy(H5T_STD_REF_OBJ);
-        return NC_NOERR;
-    case NC_REF_REGION:
-        *typep = H5Tcopy(H5T_STD_REF_DSETREG);
+    case NC_STD_REF:
+        *typep = H5Tcopy(H5T_STD_REF);
         return NC_NOERR;
     case NC_STRING:
         *typep = H5Tcopy(H5T_C_S1);
@@ -297,11 +294,8 @@ NEXTCDF4_type_size(nc_type xtype, size_t *sizep)
     case NC_BITFIELD64:
         size = 8;
         break;
-    case NC_REF_OBJECT:
-        size = 8;
-        break;
-    case NC_REF_REGION:
-        size = 12;
+    case NC_STD_REF:
+        size = sizeof(H5R_ref_t);
         break;
     case NC_STRING:
         size = sizeof(char *);
@@ -352,8 +346,7 @@ NEXTCDF4_type_name(nc_type xtype)
     case NC_BITFIELD16: return "bitfield16";
     case NC_BITFIELD32: return "bitfield32";
     case NC_BITFIELD64: return "bitfield64";
-    case NC_REF_OBJECT: return "ref_object";
-    case NC_REF_REGION: return "ref_region";
+    case NC_STD_REF:    return "std_ref";
     case NC_STRING:     return "string";
     default:            return "unknown";
     }
@@ -411,8 +404,7 @@ NEXTCDF4_check_atomic_type(NEXTCDF4_FILE_INFO_T *file, nc_type xtype)
     case NC_BITFIELD16:
     case NC_BITFIELD32:
     case NC_BITFIELD64:
-    case NC_REF_OBJECT:
-    case NC_REF_REGION:
+    case NC_STD_REF:
         return (!file->netcdf4_model && !(file->mode & NC_CLASSIC_MODEL))
             ? NC_NOERR : NC_ENOTNC4;
     default:
@@ -472,7 +464,7 @@ set_var_type(NC_VAR_INFO_T *var, nc_type xtype)
         type->u.c.field = nclistnew();
     } else if (xtype >= NC_BITFIELD8 && xtype <= NC_BITFIELD64)
         type->nc_type_class = NC_INT;
-    else if (xtype == NC_REF_OBJECT || xtype == NC_REF_REGION)
+    else if (xtype == NC_STD_REF)
         type->nc_type_class = NC_OPAQUE;
     else
         type->nc_type_class = NC_INT;
@@ -696,11 +688,8 @@ map_nc_type(hid_t htype, nc_type *xtypep)
             return NC_NOERR;
         }
     } else if (cls == H5T_REFERENCE) {
-        if (H5Tequal(htype, H5T_STD_REF_OBJ) > 0) {
-            *xtypep = NC_REF_OBJECT;
-            return NC_NOERR;
-        } else if (H5Tequal(htype, H5T_STD_REF_DSETREG) > 0) {
-            *xtypep = NC_REF_REGION;
+        if (H5Tequal(htype, H5T_STD_REF) > 0) {
+            *xtypep = NC_STD_REF;
             return NC_NOERR;
         }
     }
@@ -1140,7 +1129,6 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
 
     if (!(vinfo = calloc(1, sizeof(*vinfo))))
         return NC_ENOMEM;
-    vinfo->deflate_level = -1;
 
     if ((ret = nc4_var_list_add(grp, name, ndims, &var)))
         goto fail;
@@ -1148,6 +1136,12 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
         goto fail;
     if ((ret = set_var_type(var, xtype)))
         goto fail;
+    /* The filter list exists from birth, as upstream does in
+     * NC4_HDF5_def_var, so NC4_hdf5_addfilter can snapshot it. */
+    if (!(var->filters = (void *)nclistnew())) {
+        ret = NC_ENOMEM;
+        goto fail;
+    }
     var->format_var_info = vinfo;
 
     for (i = 0; i < ndims; i++) {
@@ -1280,11 +1274,13 @@ fail:
  * @brief Create or re-create the HDF5 dataset for a variable.
  *
  * Called by `NEXTCDF4_def_var` and by every def-var setter
- * (`def_var_chunking`, `deflate`, `fletcher32`, `fill`, `endian`):
- * because HDF5 dataset creation properties are immutable, changing
- * chunking/compression/fill/endian requires deleting the dataset link
- * and recreating it with a new creation property list. The hidden id
- * attributes and dimension-scale attachments are rewritten each time.
+ * (`def_var_chunking`, `deflate`, `fletcher32`, `filter`, `fill`,
+ * `endian`): because HDF5 dataset creation properties are immutable,
+ * changing chunking/compression/fill/endian requires deleting the
+ * dataset link and recreating it with a new creation property list.
+ * The hidden id attributes and dimension-scale attachments are
+ * rewritten each time. The variable's filter pipeline comes from
+ * `var->filters` via `nx4_apply_filters()`.
  *
  * @param var Variable.
  * @param h5 NetCDF-4 file state.
@@ -1292,9 +1288,9 @@ fail:
  * @param grp Group.
  * @return `NC_NOERR` on success, or a NetCDF error code.
  */
-static int
-create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
-                   NEXTCDF4_FILE_INFO_T *file, NC_GRP_INFO_T *grp)
+int
+nx4_create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
+                       NEXTCDF4_FILE_INFO_T *file, NC_GRP_INFO_T *grp)
 {
     NEXTCDF4_VAR_INFO_T *vinfo = (NEXTCDF4_VAR_INFO_T *)var->format_var_info;
     NEXTCDF4_GRP_INFO_T *ginfo = (NEXTCDF4_GRP_INFO_T *)grp->format_grp_info;
@@ -1368,9 +1364,8 @@ create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
     }
 
     if (var->storage == NC_CHUNKED ||
-        (var->storage < 0 && (has_unlimited || (vinfo && vinfo->deflate_level >= 0) ||
-                              (vinfo && vinfo->fletcher32) ||
-                              (vinfo && vinfo->shuffle)))) {
+        (var->storage < 0 && (has_unlimited ||
+                              nclistlength((NClist *)var->filters) > 0))) {
         for (i = 0; i < (int)var->ndims; i++) {
             if (var->chunksizes && var->chunksizes[i])
                 chunks[i] = var->chunksizes[i];
@@ -1405,14 +1400,8 @@ create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
             H5Pset_fill_time(dcpl, H5D_FILL_TIME_NEVER);
         }
 
-        if (vinfo) {
-            if (vinfo->shuffle)
-                H5Pset_shuffle(dcpl);
-            if (vinfo->deflate_level >= 0)
-                H5Pset_deflate(dcpl, vinfo->deflate_level);
-            if (vinfo->fletcher32)
-                H5Pset_fletcher32(dcpl);
-        }
+        if ((ret = nx4_apply_filters(dcpl, var)))
+            goto fail;
     }
 
     if (coordinate) {
@@ -1425,7 +1414,9 @@ create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
         dinfo->hdf_dataset = H5Dcreate2(hdf_grp, var->hdr.name, hdf_type, space,
                                         H5P_DEFAULT, dcpl, H5P_DEFAULT);
         if (dinfo->hdf_dataset < 0 ||
-            H5DSset_scale(dinfo->hdf_dataset, var->hdr.name) < 0)
+            H5DSset_scale(dinfo->hdf_dataset, var->hdr.name) < 0 ||
+            (ret = write_int_att(dinfo->hdf_dataset, NEXTCDF4_DIMID_ATT,
+                                 var->dimids[0])))
             { if (!ret) ret = NC_EHDFERR; goto fail; }
         vinfo->hdf_dataset = H5Dopen2(hdf_grp, var->hdr.name, H5P_DEFAULT);
         if (vinfo->hdf_dataset < 0)
@@ -1493,10 +1484,10 @@ fail:
  * @param var Destination for the variable.
  * @return `NC_NOERR` on success, or a NetCDF error code.
  */
-static int
-find_var_for_write(int ncid, int varid, NC_FILE_INFO_T **h5,
-                   NEXTCDF4_FILE_INFO_T **file, NC_GRP_INFO_T **grp,
-                   NC_VAR_INFO_T **var)
+int
+nx4_find_var_for_write(int ncid, int varid, NC_FILE_INFO_T **h5,
+                       NEXTCDF4_FILE_INFO_T **file, NC_GRP_INFO_T **grp,
+                       NC_VAR_INFO_T **var)
 {
     int ret;
     if ((ret = nc4_find_grp_h5_var(ncid, varid, h5, grp, var)))
@@ -1531,12 +1522,18 @@ NEXTCDF4_def_var_chunking(int ncid, int varid, int storage,
     NC_VAR_INFO_T *var;
     int i, ret;
 
-    if ((ret = find_var_for_write(ncid, varid, &h5, &file, &grp, &var)))
+    if ((ret = nx4_find_var_for_write(ncid, varid, &h5, &file, &grp, &var)))
         return ret;
+    if (file->mode & NC_CLASSIC_MODEL)
+        return NC_EINVAL;
 
     if (storage != NC_CHUNKED && storage != NC_CONTIGUOUS)
         return NC_EINVAL;
     if (var->ndims == 0 && storage == NC_CHUNKED)
+        return NC_EINVAL;
+    /* A filtered variable cannot be contiguous. */
+    if (storage != NC_CHUNKED &&
+        nclistlength((NClist *)var->filters) > 0)
         return NC_EINVAL;
 
     var->storage = storage;
@@ -1551,76 +1548,7 @@ NEXTCDF4_def_var_chunking(int ncid, int varid, int storage,
             var->chunksizes[i] = chunksizesp[i];
     }
 
-    return create_var_dataset(var, h5, file, grp);
-}
-
-/**
- * @brief Set deflate compression — the `nc_def_var_deflate()`
- * dispatch entry.
- *
- * Records shuffle flag and deflate level on `NEXTCDF4_VAR_INFO_T`
- * (`-1` means deflate off, distinguishing "level 0" from "unset"),
- * then recreates the dataset with the new filter pipeline.
- *
- * @param ncid NetCDF file identifier.
- * @param varid Variable id.
- * @param shuffle Nonzero to enable the shuffle filter.
- * @param deflate Nonzero to enable deflate compression.
- * @param deflate_level Deflate level (0-9).
- * @return `NC_NOERR` on success, or a NetCDF error code.
- */
-int
-NEXTCDF4_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
-                         int deflate_level)
-{
-    NC_FILE_INFO_T *h5;
-    NEXTCDF4_FILE_INFO_T *file;
-    NC_GRP_INFO_T *grp;
-    NC_VAR_INFO_T *var;
-    NEXTCDF4_VAR_INFO_T *vinfo;
-    int ret;
-
-    if ((ret = find_var_for_write(ncid, varid, &h5, &file, &grp, &var)))
-        return ret;
-    if (var->ndims == 0)
-        return NC_EINVAL;
-    if (deflate_level < 0 || deflate_level > 9)
-        return NC_EINVAL;
-
-    vinfo = (NEXTCDF4_VAR_INFO_T *)var->format_var_info;
-    vinfo->shuffle = shuffle ? 1 : 0;
-    vinfo->deflate_level = deflate ? deflate_level : -1;
-
-    return create_var_dataset(var, h5, file, grp);
-}
-
-/**
- * @brief Enable or disable the Fletcher32 checksum — the
- * `nc_def_var_fletcher32()` dispatch entry.
- * @param ncid NetCDF file identifier.
- * @param varid Variable id.
- * @param fletcher32 `NC_FLETCHER32` to enable the checksum, `NC_NOCHECKSUM` to disable.
- * @return `NC_NOERR` on success, or a NetCDF error code.
- */
-int
-NEXTCDF4_def_var_fletcher32(int ncid, int varid, int fletcher32)
-{
-    NC_FILE_INFO_T *h5;
-    NEXTCDF4_FILE_INFO_T *file;
-    NC_GRP_INFO_T *grp;
-    NC_VAR_INFO_T *var;
-    NEXTCDF4_VAR_INFO_T *vinfo;
-    int ret;
-
-    if ((ret = find_var_for_write(ncid, varid, &h5, &file, &grp, &var)))
-        return ret;
-    if (var->ndims == 0)
-        return NC_EINVAL;
-
-    vinfo = (NEXTCDF4_VAR_INFO_T *)var->format_var_info;
-    vinfo->fletcher32 = fletcher32 ? 1 : 0;
-
-    return create_var_dataset(var, h5, file, grp);
+    return nx4_create_var_dataset(var, h5, file, grp);
 }
 
 /**
@@ -1647,7 +1575,7 @@ NEXTCDF4_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
     size_t size;
     int ret;
 
-    if ((ret = find_var_for_write(ncid, varid, &h5, &file, &grp, &var)))
+    if ((ret = nx4_find_var_for_write(ncid, varid, &h5, &file, &grp, &var)))
         return ret;
 
     var->no_fill = no_fill ? 1 : 0;
@@ -1664,7 +1592,7 @@ NEXTCDF4_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
         var->fill_val_changed = 1;
     }
 
-    return create_var_dataset(var, h5, file, grp);
+    return nx4_create_var_dataset(var, h5, file, grp);
 }
 
 /**
@@ -1689,14 +1617,14 @@ NEXTCDF4_def_var_endian(int ncid, int varid, int endianness)
     NC_VAR_INFO_T *var;
     int ret;
 
-    if ((ret = find_var_for_write(ncid, varid, &h5, &file, &grp, &var)))
+    if ((ret = nx4_find_var_for_write(ncid, varid, &h5, &file, &grp, &var)))
         return ret;
     if (endianness != NC_ENDIAN_NATIVE && endianness != NC_ENDIAN_LITTLE &&
         endianness != NC_ENDIAN_BIG)
         return NC_EINVAL;
 
     var->endianness = endianness;
-    return create_var_dataset(var, h5, file, grp);
+    return nx4_create_var_dataset(var, h5, file, grp);
 }
 
 /**
@@ -1722,7 +1650,7 @@ NEXTCDF4_def_var_quantize(int ncid, int varid, int quantize_mode, int nsd)
     NC_VAR_INFO_T *var;
     int ret;
 
-    if ((ret = find_var_for_write(ncid, varid, &h5, &file, &grp, &var)))
+    if ((ret = nx4_find_var_for_write(ncid, varid, &h5, &file, &grp, &var)))
         return ret;
     if (quantize_mode != NC_NOQUANTIZE &&
         quantize_mode != NC_QUANTIZE_BITGROOM &&
@@ -1738,30 +1666,14 @@ NEXTCDF4_def_var_quantize(int ncid, int varid, int quantize_mode, int nsd)
 }
 
 /**
- * @brief User-defined variable filters (`nc_def_var_filter`); not
- * implemented.
- * @param ncid NetCDF file identifier.
- * @param varid Variable id.
- * @param id HDF5 filter identifier.
- * @param nparams Number of filter parameters.
- * @param params Filter parameter values.
- * @return `NC_ENOTBUILT` always.
- */
-int
-NEXTCDF4_def_var_filter(int ncid, int varid, unsigned int id, size_t nparams,
-                        const unsigned int *params)
-{
-    (void)ncid; (void)varid; (void)id; (void)nparams; (void)params;
-    return NC_ENOTBUILT;
-}
-
-/**
  * @brief Inquire about all supported properties of a variable — the
  * `nc_inq_var_all()` dispatch entry.
  *
  * The kitchen-sink inquiry used internally by netcdf-c; every output
- * pointer is optional. Filter outputs are not yet populated (custom
- * filters are unimplemented, see NEXTCDF4_def_var_filter()).
+ * pointer is optional. The `idp`/`nparamsp`/`params` filter outputs
+ * are never populated — upstream's shared `NC4_inq_var_all` doesn't
+ * populate them either; filter inquiry goes through
+ * `nc_inq_var_filter_ids()`/`nc_inq_var_filter_info()`.
  *
  * @param ncid NetCDF file identifier.
  * @param varid Variable id.
@@ -1795,13 +1707,12 @@ NEXTCDF4_inq_var_all(int ncid, int varid, char *name, nc_type *xtypep,
     NC_FILE_INFO_T *h5;
     NC_GRP_INFO_T *grp;
     NC_VAR_INFO_T *var;
-    NEXTCDF4_VAR_INFO_T *vinfo;
+    struct NC_HDF5_Filter *fspec = NULL;
     size_t size;
     int i, ret;
 
     if ((ret = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var)))
         return ret;
-    vinfo = (NEXTCDF4_VAR_INFO_T *)var->format_var_info;
 
     if (name)
         strncpy(name, var->hdr.name, NC_MAX_NAME);
@@ -1815,13 +1726,18 @@ NEXTCDF4_inq_var_all(int ncid, int varid, char *name, nc_type *xtypep,
     if (nattsp)
         *nattsp = ncindexsize(var->att);
     if (shufflep)
-        *shufflep = vinfo ? vinfo->shuffle : 0;
-    if (deflatep)
-        *deflatep = (vinfo && vinfo->deflate_level >= 0) ? 1 : 0;
-    if (deflate_levelp)
-        *deflate_levelp = (vinfo && vinfo->deflate_level > 0) ? vinfo->deflate_level : 0;
+        *shufflep = (!NC4_hdf5_filter_lookup(var, H5Z_FILTER_SHUFFLE, NULL));
     if (fletcher32p)
-        *fletcher32p = vinfo ? vinfo->fletcher32 : 0;
+        *fletcher32p = (!NC4_hdf5_filter_lookup(var, H5Z_FILTER_FLETCHER32, NULL));
+    if (deflatep || deflate_levelp) {
+        int has_deflate = !NC4_hdf5_filter_lookup(var, H5Z_FILTER_DEFLATE,
+                                                  &fspec);
+        if (deflatep)
+            *deflatep = has_deflate;
+        if (deflate_levelp)
+            *deflate_levelp = (has_deflate && fspec->nparams > 0) ?
+                              (int)fspec->params[0] : 0;
+    }
     if (contiguousp)
         *contiguousp = (var->storage < 0) ? NC_CONTIGUOUS : var->storage;
     if (chunksizesp && var->storage == NC_CHUNKED) {
@@ -1879,100 +1795,6 @@ NEXTCDF4_inq_var(int ncid, int varid, char *name, nc_type *xtypep,
     }
     if (nattsp)
         *nattsp = ncindexsize(var->att);
-    return NC_NOERR;
-}
-
-/**
- * @brief Inquire the filter ids applied to a variable — the
- * `nc_inq_var_filter_ids()` dispatch entry.
- *
- * Reconstructs the pipeline from `NEXTCDF4_VAR_INFO_T` (deflate,
- * shuffle, fletcher32). `NC_ENOFILTER` is returned when no filters
- * apply, matching netcdf-c.
- *
- * @param ncid NetCDF file identifier.
- * @param varid Variable id.
- * @param nfiltersp Destination for the number of filters.
- * @param ids Destination for the filter ids.
- * @return `NC_NOERR` on success, `NC_ENOFILTER` when none apply, or a
- * NetCDF error code.
- */
-int
-NEXTCDF4_inq_var_filter_ids(int ncid, int varid, size_t *nfiltersp,
-                            unsigned int *ids)
-{
-    NC_FILE_INFO_T *h5;
-    NC_GRP_INFO_T *grp;
-    NC_VAR_INFO_T *var;
-    NEXTCDF4_VAR_INFO_T *vinfo;
-    size_t n = 0;
-    int ret;
-
-    if ((ret = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var)))
-        return ret;
-    vinfo = (NEXTCDF4_VAR_INFO_T *)var->format_var_info;
-
-    if (vinfo && vinfo->deflate_level >= 0)
-        ids[n++] = H5Z_FILTER_DEFLATE;
-    if (vinfo && vinfo->shuffle)
-        ids[n++] = H5Z_FILTER_SHUFFLE;
-    if (vinfo && vinfo->fletcher32)
-        ids[n++] = H5Z_FILTER_FLETCHER32;
-
-    if (nfiltersp)
-        *nfiltersp = n;
-    if (n > 0 && ids)
-        return NC_NOERR;
-    return NC_ENOFILTER;
-}
-
-/**
- * @brief Inquire the parameters of one variable filter — the
- * `nc_inq_var_filter_info()` dispatch entry.
- *
- * Only deflate carries a parameter (its level); shuffle and
- * fletcher32 report zero params.
- *
- * @param ncid NetCDF file identifier.
- * @param varid Variable id.
- * @param id Filter identifier to inquire about.
- * @param nparamsp Destination for the number of filter parameters.
- * @param params Destination for the filter parameter values.
- * @return `NC_NOERR` on success, `NC_ENOFILTER` when the filter is
- * not applied, or a NetCDF error code.
- */
-int
-NEXTCDF4_inq_var_filter_info(int ncid, int varid, unsigned int id,
-                             size_t *nparamsp, unsigned int *params)
-{
-    NC_FILE_INFO_T *h5;
-    NC_GRP_INFO_T *grp;
-    NC_VAR_INFO_T *var;
-    NEXTCDF4_VAR_INFO_T *vinfo;
-    size_t nparams = 0;
-    unsigned int p[4];
-    int ret;
-
-    if ((ret = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var)))
-        return ret;
-    vinfo = (NEXTCDF4_VAR_INFO_T *)var->format_var_info;
-
-    if (id == H5Z_FILTER_DEFLATE && vinfo && vinfo->deflate_level >= 0) {
-        nparams = 1;
-        p[0] = (unsigned int)vinfo->deflate_level;
-    } else if (id == H5Z_FILTER_SHUFFLE && vinfo && vinfo->shuffle) {
-        nparams = 0;
-    } else if (id == H5Z_FILTER_FLETCHER32 && vinfo && vinfo->fletcher32) {
-        nparams = 0;
-    } else {
-        return NC_ENOFILTER;
-    }
-
-    if (nparamsp)
-        *nparamsp = nparams;
-    if (params && nparams)
-        memcpy(params, p, nparams * sizeof(unsigned int));
-    (void)h5;
     return NC_NOERR;
 }
 
@@ -2131,6 +1953,60 @@ fail:
     if (space >= 0)
         H5Sclose(space);
     return ret;
+}
+
+/**
+ * @brief Inquire about an attribute — the `nc_inq_att()` dispatch
+ * entry.
+ *
+ * Stock `NC4_inq_att` resolves `att->nc_typeid` through
+ * nc4_find_type(), which knows only stock atomic typeids and the
+ * file's user-defined types — NEP atomic types (float16, bitfield,
+ * `NC_STD_REF`, ...) all fail there. This version returns the
+ * stored typeid directly, so `nc_inq_att()` and the generic
+ * `nc_get_att()` work for NEP types.
+ *
+ * @param ncid NetCDF file identifier.
+ * @param varid Variable id or `NC_GLOBAL`.
+ * @param name Attribute name.
+ * @param xtypep Destination for the attribute's type, or NULL.
+ * @param lenp Destination for the attribute's length, or NULL.
+ * @return `NC_NOERR` on success, `NC_ENOTATT` when the attribute
+ * does not exist, or a NetCDF error code.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+NEXTCDF4_inq_att(int ncid, int varid, const char *name, nc_type *xtypep,
+                 size_t *lenp)
+{
+    NCindex *list;
+    hid_t loc;
+    NC_FILE_INFO_T *h5;
+    NC_GRP_INFO_T *grp;
+    NC_VAR_INFO_T *var = NULL;
+    NC_ATT_INFO_T *att;
+    int ret;
+
+    if ((ret = NEXTCDF4_get_file(ncid, &h5, NULL)))
+        return ret;
+    if (varid == NC_GLOBAL) {
+        grp = h5->root_grp;
+        var = NULL;
+    } else {
+        if ((ret = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var)))
+            return ret;
+        if (!var)
+            return NC_ENOTVAR;
+    }
+    if ((ret = get_att_context(grp, var, &list, &loc)))
+        return ret;
+    if (!(att = find_att(list, name)))
+        return NC_ENOTATT;
+    if (xtypep)
+        *xtypep = att->nc_typeid;
+    if (lenp)
+        *lenp = att->len;
+    return NC_NOERR;
 }
 
 /**
@@ -3124,7 +3000,13 @@ load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
         free(vinfo);
         goto done;
     }
-    vinfo->deflate_level = -1;
+    /* The filter list exists from birth, as upstream does in
+     * hdf5open.c, so NC4_hdf5_addfilter can snapshot it. */
+    if (!(var->filters = (void *)nclistnew())) {
+        free(vinfo);
+        ret = NC_ENOMEM;
+        goto done;
+    }
     var->format_var_info = vinfo;
     (void)varid;
     vinfo->hdf_dataset = dset;
@@ -3148,9 +3030,7 @@ load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
     /* Read the dataset creation properties. */
     {
         hid_t dcpl;
-        int j, nfilter;
-        unsigned int cd_values[4];
-        size_t cd_nelmts;
+        int j;
         H5T_order_t order;
         H5D_fill_time_t fill_time;
 
@@ -3196,26 +3076,8 @@ load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
                 }
             }
 
-            nfilter = H5Pget_nfilters(dcpl);
-            for (j = 0; j < nfilter; j++) {
-                cd_nelmts = 4;
-                if (H5Pget_filter2(dcpl, (unsigned)j, NULL, &cd_nelmts,
-                                   cd_values, 0, NULL, NULL) < 0)
-                    continue;
-                switch (H5Pget_filter2(dcpl, (unsigned)j, NULL, &cd_nelmts,
-                                       cd_values, 0, NULL, NULL)) {
-                case H5Z_FILTER_DEFLATE:
-                    if (cd_nelmts > 0)
-                        vinfo->deflate_level = (int)cd_values[0];
-                    break;
-                case H5Z_FILTER_SHUFFLE:
-                    vinfo->shuffle = 1;
-                    break;
-                case H5Z_FILTER_FLETCHER32:
-                    vinfo->fletcher32 = 1;
-                    break;
-                }
-            }
+            if ((ret = nx4_load_filters(dcpl, var, vinfo)))
+                goto done;
             H5Pclose(dcpl);
         }
 

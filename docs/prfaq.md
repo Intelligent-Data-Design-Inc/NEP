@@ -174,7 +174,7 @@ nc_open("file.nc", NC_NEXTCDF4 | NC_NOWRITE, &ncid);
 There is no magic-number dispatch for NEXTCDF-4 because HDF5 files are already owned by the built-in NetCDF-4 backend; you must request it with the mode flag.
 
 #### Q: What new atomic types does NEXTCDF-4 support?
-**A:** NEXTCDF-4 adds small floating-point types (`NC_FLOAT16`, `NC_BFLOAT16`, `NC_FLOAT8_E4M3`, `NC_FLOAT8_E5M2`, `NC_FLOAT6_E2M3`, `NC_FLOAT6_E3M2`, `NC_FLOAT4_E2M1`), complex numbers (`NC_COMPLEX`, `NC_DOUBLECOMPLEX`), bitfields (`NC_BITFIELD8/16/32/64`), and HDF5 object and region references (`NC_REF_OBJECT`, `NC_REF_REGION`). These types require native NEXTCDF-4 mode and are not available in `NC_NETCDF4_MODEL` compatibility mode.
+**A:** NEXTCDF-4 adds small floating-point types (`NC_FLOAT16`, `NC_BFLOAT16`, `NC_FLOAT8_E4M3`, `NC_FLOAT8_E5M2`, `NC_FLOAT6_E2M3`, `NC_FLOAT6_E3M2`, `NC_FLOAT4_E2M1`), complex numbers (`NC_COMPLEX`, `NC_DOUBLECOMPLEX`), bitfields (`NC_BITFIELD8/16/32/64`), and HDF5 references (`NC_STD_REF`, covering object, region, and attribute targets). These types require native NEXTCDF-4 mode and are not available in `NC_NETCDF4_MODEL` compatibility mode.
 
 #### Q: Can NEXTCDF-4 files be read by upstream netcdf-c?
 **A:** Files created with the `NC_NETCDF4_MODEL` compatibility flag are written with HDF5 Superblock v1 and can be read by upstream netcdf-c linked against HDF5 1.10.x or later. Native NEXTCDF-4 files use HDF5 Superblock v3 and require HDF5 1.14.x or later; whether upstream netcdf-c can read them depends on the HDF5 version it was built with.

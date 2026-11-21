@@ -15,7 +15,7 @@ Even smaller floats exist — `NC_FLOAT8_E4M3`, `NC_FLOAT8_E5M2`, `NC_FLOAT6_E2M
 
 ## Internal conversion engine
 
-NEXTCDF-4 uses the private, NEP-owned `nx4_convert_type()` conversion engine, selected as the permanent path in Sprint 1H; the temporary `NEP_INTERNAL_CONVERT` option and `NEP_HAS_INTERNAL_CONVERT` marker were removed, and passing the option now fails at configure time. Standard float/double calls on `NC_BFLOAT16` use NEP round-to-nearest-even (449 becomes 448), double narrows once, and finite overflow produces signed infinity. Supported bfloat16 attributes use the same rules. IEEE float16 is the one exception: it still converts through HDF5. Raw-bit I/O and the independent `nc_*_bfloat16` functions do not change. The engine reports `NC_ERANGE` after completing out-of-range variable/attribute conversions and quantized writes. The warning does not undo writes, attribute replacement or dimension growth. Precision loss, fractional truncation and floating underflow are not range errors; nonfinite-to-integer conversion is.
+NEXTCDF-4 uses the private, NEP-owned `nx4_convert_type()` conversion engine, selected as the permanent path in Sprint 1H; the temporary `NEP_INTERNAL_CONVERT` option and `NEP_HAS_INTERNAL_CONVERT` marker were removed, and passing the option now fails at configure time. Standard float/double calls on `NC_BFLOAT16` use NEP round-to-nearest-even (449 becomes 448), double narrows once, and finite overflow produces signed infinity. Supported bfloat16 attributes use the same rules. Since Sprint 1J (v4.3.0), IEEE float16 uses the same engine: float/double calls on `NC_FLOAT16` convert with NEP round-to-nearest-even, single rounding from double, signed infinity on finite overflow, and the former `H5Tconvert` path is gone. Values at or above 65520 (the halfway point past 65504, the largest binary16) overflow to infinity, as do the boundary roundings that reach it; finite overflow returns `NC_ERANGE` after all values are processed. Raw-bit I/O and the independent `nc_*_bfloat16`/`nc_*_float16` functions do not change. The engine reports `NC_ERANGE` after completing out-of-range variable/attribute conversions and quantized writes. The warning does not undo writes, attribute replacement or dimension growth. Precision loss, fractional truncation and floating underflow are not range errors; nonfinite-to-integer conversion is.
 
 The committed OFF/ON benchmark artifacts in `examples/nextcdf4/conversion_*.csv` record the Sprint 1H comparison that selected this engine. See [nextcdf4.md](nextcdf4.md) for the conversion engine's scope.
 
@@ -23,8 +23,8 @@ The committed OFF/ON benchmark artifacts in `examples/nextcdf4/conversion_*.csv`
 
 - **Native mode only.** Small floating-point types are rejected with `NC_ENOTNC4` in `NC_NETCDF4_MODEL` and `NC_CLASSIC_MODEL` mode (`NEXTCDF4_check_atomic_type` in `src/nextcdf4/nxt4meta.c`).
 - **No coordinate variables.** Small floating-point types are not supported as coordinate variables by design (v4.0.0 Sprint 9). The library does not currently reject a 1-D variable whose name matches its dimension, and reopening such a file is untested, so do not create them yet ([issue #380](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/380)).
-- **Raw bits or float/double.** Untyped calls exchange raw bit patterns. For `NC_FLOAT16` and `NC_BFLOAT16`, the typed `float` and `double` calls convert through HDF5. Reads are exact.
-- **HDF5 write rounding.** float16 rounds ties to even, and any value above 65504 becomes +inf. bfloat16 rounds ties away from zero; finite float input past the largest bfloat16 saturates to `0x7f7f`, and double input past the float range becomes inf. NaN becomes `0x7fff` for bfloat16 and `0x7e00` for float16. Finite overflow returns `NC_ERANGE` after all values are processed ([issue #381](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/381)). To get round-to-nearest-even, use the `nc_*_bfloat16` functions, which convert in NEP (see below), or convert in user code (`bfloat16_conv.h`).
+- **Raw bits or float/double.** Untyped calls exchange raw bit patterns. For `NC_FLOAT16` and `NC_BFLOAT16`, the typed `float` and `double` calls convert through the internal engine. Reads are exact.
+- **Write rounding.** The internal engine rounds both types to nearest, ties to even. For bfloat16, finite input past the largest bfloat16 becomes signed infinity; for float16, input at or above 65520 (or below -65520) becomes ±infinity. NaN stays a quiet NaN carrying the top bits of its payload (a float32 quiet NaN becomes `0x7e00` for float16). Finite overflow returns `NC_ERANGE` after all values are processed ([issue #381](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/381)). The `nc_*_bfloat16` and `nc_*_float16` functions convert in NEP with the same rounding (see below), and `bfloat16_conv.h`/`float16_conv.h` provide the same conversion in user code.
 - **Other typed calls are rejected.** Integer, string and other typed calls return `NC_EBADTYPE`; the `_text` calls return `NC_ECHAR`.
 - **FP8/FP6/FP4: untyped calls only.** All typed calls are rejected, because HDF5 2.1.1 converts these types incorrectly (for example, E2M1 6.0 is stored as infinity). See HDF5 2.1.1 "Known Problems".
 - **No fill value.** `_FillValue` attributes on `NC_BFLOAT16` variables are rejected, and a fill value set with `nc_def_var_fill` is not recovered on reopen ([issue #377](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/377)). Define small-float variables without a fill value.
@@ -66,6 +66,28 @@ ret = nc_get_vara_bfloat16(ncid, varid, start, count, btmp);
 if (ret == NC_ERANGE)
     fprintf(stderr, "some values overflowed to bfloat16 infinity\n");
 ```
+
+## float16 I/O functions
+
+`libnep` provides the same eight functions for IEEE binary16, added in Sprint 1J (v4.3.0):
+
+```c
+nc_get_var_float16   nc_put_var_float16
+nc_get_var1_float16  nc_put_var1_float16
+nc_get_vara_float16  nc_put_vara_float16
+nc_get_vars_float16  nc_put_vars_float16
+```
+
+The buffer type is `nc_float16_t`: the compiler's `_Float16` where available (`NEP_HAVE_NATIVE_FLOAT16` = 1), otherwise `uint16_t`. Both are 2 bytes holding the binary16 bit pattern, so raw-bits code casts the pointer — `(nc_float16_t *)(void *)bits` — rather than assigning values.
+
+| Variable type | Behavior |
+|---------------|----------|
+| `NC_FLOAT16` | Raw bit patterns, no conversion |
+| `NC_FLOAT`, `NC_DOUBLE` | NEP converts: reads round to nearest, ties to even (single rounding from double); writes widen exactly |
+| `NC_CHAR` | `NC_ECHAR` |
+| anything else (incl. `NC_BFLOAT16`) | `NC_EBADTYPE` |
+
+On a get, a finite float or double at or above 65520 in magnitude is stored as ±inf, every value is still converted, and the call returns `NC_ERANGE`. Infinity and NaN are not range errors, and puts never overflow because widening is exact. Values below 6.1e-5 in magnitude become subnormals or zero without a range warning.
 
 ## Example: `examples/nextcdf4/bfloat16.c`
 
@@ -230,3 +252,70 @@ field,type,storage,copies,uncompressed_bytes,file_bytes,ratio_vs_float,write_s,r
 ```
 
 (`copies` is `NCOPIES`; sizes and times cover all copies, and `write_MBps`/`read_MBps` are MB/s of float32 data for every row. `ratio_vs_float` is the matching float row's `file_bytes` divided by this row's; `write_speedup`/`read_speedup` are the matching float row's times divided by this row's — 1.000 on the float rows.) Results are discussed in [float16.md](float16.md), and the reference CSV is `examples/nextcdf4/reference_io_results.csv`.
+
+## Example: `examples/nextcdf4/float16.c`
+
+`float16.c` is the binary16 version of the bfloat16 tutorial. It reads `tmp2m` and its `grid_yt`/`grid_xt` coordinate variables from the GDAS sample — twice: as `NC_FLOAT` for reference and as float16 through `nc_get_var_float16`, so NEP does the conversion — writes `float_tmp2m.nc` (`NC_FLOAT`) and `float16_tmp2m.nc` (`NC_FLOAT16`), reopens the float16 file, verifies the bits round-tripped exactly, and reports file sizes and the maximum conversion error. The conversion helpers live in `float16_conv.h`, with the same algorithms as the internal engine and `nep_float16.c`.
+
+Real output on the reference machine:
+
+```
+tmp2m: 1179648 values
+float32 file: 4743920 bytes
+float16 file: 2384624 bytes (50.3% of float32)
+max abs error: 0.125 K
+max rel error: 0.000487924
+typed nc_get_vara_float: 0 mismatches
+nc_get_var_float16 vs float_to_float16: 0 mismatches
+```
+
+The maximum relative error is just under the 2^-11 = 0.000488281 round-to-nearest bound for binary16. `h5dump -H float16_tmp2m.nc` shows `DATATYPE H5T_IEEE_F16LE` for `tmp2m`.
+
+## Benchmark: `float16_perf` and `plot_float16.py`
+
+`float16_perf.c` runs the same four GDAS fields through six configurations — `float`/`float16`/`float16_typed` x `contiguous`/`deflate1` — with the same 10-repetition, disk-bound, min-time methodology as `bfloat16_perf`. The `float16` rows convert in user code with `float_to_float16()`/`float16_to_float()` and use `nc_put_vara_float16`/`nc_get_vara_float16`; the `float16_typed` rows define the same `NC_FLOAT16` variable but write with `nc_put_vara_float` and read with `nc_get_vara_float`, so the internal engine converts inside the timed I/O. Both paths use NEP round-to-nearest-even, so there is no differing-rounding report: the typed path's stored bits are checked against `float_to_float16()` and must match exactly.
+
+The error gate is a combined tolerance: a non-fill point fails only if its relative error exceeds 2^-11 *and* its absolute error exceeds 2^-25 (half the smallest binary16 subnormal). The absolute-error leg keeps `prate_ave` honest — values below the 6.1e-5 minimum normal become subnormals or zero, which is precision loss the format cannot avoid, not a conversion bug — while the relative leg still bounds every normal-range value.
+
+```sh
+HDF5_PLUGIN_PATH=$HOME/plugins/zstd-only \
+NCRCENV_RC=<build>/.ncrc NETCDF_RC=<build> \
+./float16_perf ../../../test/data/netCDF-4/gdas_sfc_sample.nc float16_results.csv
+python3 ../../../examples/nextcdf4/plot_float16.py float16_results.csv float16
+```
+
+### Results
+
+Measured on the machine recorded in `examples/nextcdf4/reference_machine.txt`; the full CSV is `examples/nextcdf4/reference_float16_results.csv`. File sizes are in bytes, for files holding 10 copies of the field.
+
+| Field | float contiguous | float16 contiguous | float16 (typed) contiguous | float deflate1 | float16 deflate1 | float16 (typed) deflate1 | max rel err |
+|-------|-----------------:|-------------------:|---------------------------:|---------------:|-----------------:|-------------------------:|------------:|
+| `tmp2m` | 47192259 | 23599299 | 23599299 | 25022289 | 5493699 | 5493699 | 0.000487924 |
+| `prate_ave` | 47192259 | 23599299 | 23599299 | 33543449 | 9277849 | 9277849 | 1* |
+| `soilw1` | 47192259 | 23599299 | 23599299 | 8538049 | 3892069 | 3892069 | 0.000486854 |
+| `land` | 47192259 | 23599299 | 23599299 | 758369 | 402889 | 402889 | 0 |
+
+*`prate_ave`'s maximum relative error of 1 comes from values below binary16's smallest normal that round to a subnormal or zero; its maximum absolute error is only 3.4e-06 kg/m**2/s.
+
+![NEXTCDF-4 file size: float32 vs float16 (4 configurations)](images/float16_size.png)
+
+![NEXTCDF-4 disk write/read throughput (MB/s of float32 data): float32 vs float16 (4 configurations)](images/float16_speed.png)
+
+![float16 conversion: user code vs internal engine, disk write/read throughput (all 6 configurations)](images/float16_typed_speed.png)
+
+What the numbers show:
+
+- Every contiguous float16 file is 23599299 bytes, 50.0% of its float file, identical to bfloat16 — both are 2-byte types plus the same metadata.
+- With shuffle+deflate level 1, float16 compresses less well than bfloat16 because the three extra mantissa bits leave more distinct values, but still much better than float32: `tmp2m` 5493699 bytes (4.6x smaller than float, against bfloat16's 12.7x), `prate_ave` 9277849 (3.6x), `soilw1` 3892069 (2.2x), `land` 402889 (1.9x).
+- The maximum relative error is 0.00049 on `tmp2m` and `soilw1`, just under the 2^-11 bound; `land` is exact. `prate_ave`'s relative error reaches 1 only at subnormal-underflow points (absolute error bounded by 3.4e-06), which is the expected binary16 trade-off for that field.
+- The typed path costs only a little more than user-code conversion — for `tmp2m` contiguous, typed write is 0.110 s against 0.089 s for user code (0.027 s of which is `wconv_s`), and typed read is 0.057 s against 0.055 s — because the internal engine is a compiled loop like the user code, not HDF5's generic software conversion. The extra cost over user code is the engine's extra full-buffer pass on reads ([issue #386](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/386)) and the in-engine conversion on writes.
+
+### Benchmark: `float16_io_perf`
+
+`float16_io_perf.c` times pure I/O with no conversion, using the committed float16 copy of the GDAS sample `test/data/NEXTCDF4/gdas_sfc_sample_float16.nc` (see `test/data/NEXTCDF4/README.md`). It checks that the sample's stored bits are exactly `float_to_float16()` of the float sample, then writes and reads 10 copies of each field as float32 and as float16 bits, contiguous and deflate1, 10 repetitions each, minimum kept. Results are in `examples/nextcdf4/reference_float16_io_results.csv`:
+
+![NEXTCDF-4 disk write/read throughput (MB/s of float32 data): float32 vs data already in float16](images/float16_io.png)
+
+- Contiguous reads are 1.88-1.94x faster for float16 (984-1031 MB/s of float32 data against 508-531 MB/s), the same disk-bound 2x ceiling as bfloat16.
+- Contiguous writes are 1.8-2.9x faster (604-784 against 269-418 MB/s).
+- With deflate1 the gains track the smaller compression ratios: writes 2.2-3.3x and reads 1.9-3.1x faster than float32 (`tmp2m` 616 against 281 MB/s to read; `prate_ave` 519 against 165 MB/s).

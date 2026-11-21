@@ -155,18 +155,18 @@ static int
 raw_types(void)
 {
     const nc_type types[] = {NC_COMPLEX, NC_DOUBLECOMPLEX, NC_BITFIELD8,
-        NC_BITFIELD16, NC_BITFIELD32, NC_BITFIELD64, NC_REF_OBJECT, NC_REF_REGION};
-    int ncid, vars[8];
+        NC_BITFIELD16, NC_BITFIELD32, NC_BITFIELD64, NC_STD_REF};
+    int ncid, vars[7];
     size_t i, size;
     buffer source, target;
     char name[16];
     CHECK(nc_create(FILE_NAME, NC_NEXTCDF4 | NC_CLOBBER, &ncid));
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < 7; i++) {
         snprintf(name, sizeof(name), "v%u", (unsigned)i);
         CHECK(nc_def_var(ncid, name, types[i], 0, NULL, &vars[i]));
     }
     CHECK(nc_enddef(ncid));
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < 7; i++) {
         memset(&source, i < 6 ? 0x5a : 0, sizeof(source));
         memset(&target, 0, sizeof(target));
         CHECK(NEXTCDF4_type_size(types[i], &size));

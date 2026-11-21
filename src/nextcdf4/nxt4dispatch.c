@@ -48,7 +48,7 @@ static const NC_Dispatch NEXTCDF4_dispatcher = {
     NEXTCDF4_inq_dim,
     NC4_inq_unlimdim,
     NEXTCDF4_rename_dim,
-    NC4_inq_att,
+    NEXTCDF4_inq_att,
     NC4_inq_attid,
     NC4_inq_attname,
     NEXTCDF4_rename_att,
@@ -107,7 +107,7 @@ static const NC_Dispatch NEXTCDF4_dispatcher = {
     NEXTCDF4_inq_var_filter_info,
     NEXTCDF4_def_var_quantize,
     NC4_inq_var_quantize,
-    NC_NOOP_inq_filter_avail
+    NEXTCDF4_inq_filter_avail
 };
 
 /**

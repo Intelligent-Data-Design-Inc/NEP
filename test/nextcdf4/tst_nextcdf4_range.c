@@ -102,6 +102,10 @@ attributes(void)
         CHECK(nc_put_att_double(contexts[i], varid, "empty", NC_SHORT, 0, NULL));
     }
     input[0] = 65505;
+    CHECK(nc_put_att_double(ncid, NC_GLOBAL, "half", NC_FLOAT16, 1, input));
+    CHECK(nc_get_att_float(ncid, NC_GLOBAL, "half", &f));
+    REQUIRE(f == 65504.0f);
+    input[0] = 65520;
     STATUS(nc_put_att_double(ncid, NC_GLOBAL, "half", NC_FLOAT16, 1, input), NC_ERANGE);
     CHECK(nc_get_att_float(ncid, NC_GLOBAL, "half", &f));
     REQUIRE(isinf(f));
@@ -124,7 +128,8 @@ boundaries(void)
     double values[] = {NAN, INFINITY, -INFINITY, 0x1p63, -0x1p63, 7};
     double edge[] = {32767.75, -32768.75, -0.75, 3.75, 0, 7};
     double tiny[] = {0x1p-1000, -0x1p-1000, NAN, INFINITY, -0.0, 7};
-    double half[] = {65505, -65505, 0, INFINITY, NAN, 7};
+    double half[] = {65520, -65520, 0, INFINITY, NAN, 7};
+    double half_in[] = {65505, -65505, 0, 65504, 65519, 7};
     float bf[] = {FLT_MAX, -FLT_MAX, 0, INFINITY, NAN, 7}, floats[6];
     unsigned short raw[6];
     short shorts[6];
@@ -158,6 +163,10 @@ boundaries(void)
     STATUS(nc_put_var_double(ncid, h, half), NC_ERANGE);
     CHECK(nc_get_var(ncid, h, raw));
     REQUIRE(raw[0] == 0x7c00 && raw[1] == 0xfc00 && raw[5] == 0x4700);
+    CHECK(nc_put_var_double(ncid, h, half_in));
+    CHECK(nc_get_var(ncid, h, raw));
+    REQUIRE(raw[0] == 0x7bff && raw[1] == 0xfbff && raw[3] == 0x7bff &&
+            raw[4] == 0x7bff && raw[5] == 0x4700);
     STATUS(nc_put_var_float(ncid, b, bf), NC_ERANGE);
     CHECK(nc_get_var(ncid, b, raw));
     REQUIRE(raw[0] == 0x7f80);

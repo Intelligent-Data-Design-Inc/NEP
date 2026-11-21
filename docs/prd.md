@@ -19,7 +19,7 @@
 
 ## NEXTCDF-4 internal conversion requirement
 
-NEXTCDF-4 uses the private, NEP-owned `nx4_convert_type()` engine for all supported variable, attribute and quantized-write numeric conversions, made permanent in Sprint 1H after measured comparison with the HDF5 engine. The temporary `NEP_INTERNAL_CONVERT` option and `NEP_HAS_INTERNAL_CONVERT` marker were removed; setting the option fails at configure time, and a single NEXTCDF-4 CI job covers correctness. Conversion uses nearest/even bfloat16 narrowing, with a temporary HDF5 exception for IEEE float16 until Sprint 1I. Unsupported FP8/FP6/FP4 conversions and the public bfloat16-wrapper contract remain unchanged. The engine reports completed-conversion `NC_ERANGE` for overflow/integer range errors (including nonfinite-to-integer), not precision loss, fractional truncation or floating underflow. Range-warning writes finish all values and may replace attributes/extend dimensions; structural and I/O errors take precedence. No Spack variant or new public conversion API is required.
+NEXTCDF-4 uses the private, NEP-owned `nx4_convert_type()` engine for all supported variable, attribute and quantized-write numeric conversions, made permanent in Sprint 1H after measured comparison with the HDF5 engine. The temporary `NEP_INTERNAL_CONVERT` option and `NEP_HAS_INTERNAL_CONVERT` marker were removed; setting the option fails at configure time, and a single NEXTCDF-4 CI job covers correctness. Conversion uses nearest/even bfloat16 and IEEE float16 narrowing; float16 joined the engine in Sprint 1J (v4.3.0) and its `H5Tconvert` path was removed. Unsupported FP8/FP6/FP4 conversions and the public bfloat16-wrapper contract remain unchanged. The engine reports completed-conversion `NC_ERANGE` for overflow/integer range errors (including nonfinite-to-integer), not precision loss, fractional truncation or floating underflow. Range-warning writes finish all values and may replace attributes/extend dimensions; structural and I/O errors take precedence. No Spack variant or new public conversion API is required.
 
 ## 2. Core Architecture
 
@@ -726,13 +726,13 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 - **File Lifecycle**: `nc_create`, `nc_open`, `nc_close`, and `nc_abort` for native, classic-model, and `NC_NETCDF4_MODEL` files.
 - **Core Metadata Model**: Dimensions, variables, global/variable attributes, groups, and user-defined types.
 - **Variable I/O and Dimension Scales**: `nc_put_vara`/`nc_get_vara`, `nc_put_var`/`nc_get_var`, `nc_put_var1`/`nc_get_var1`, and `nc_put_vars`/`nc_get_vars`; `nc_put_varm`/`nc_get_varm` are intentionally unimplemented.
-- **Storage Features**: Chunking, fill values, deflate+shuffle, Fletcher32, endianness, and quantization.
+- **Storage Features**: Chunking, fill values, deflate+shuffle, Fletcher32, endianness, quantization, and generic HDF5 filters (`nc_def_var_filter`, including plugin filters such as bzip2 and zstd).
 - **Interoperability**: Open files written by NEXTCDF-4 and upstream `NC_NETCDF4` files with dimension-scale fallback discovery.
 - **New Atomic Types**:
   - Small floating-point: `NC_FLOAT16`, `NC_BFLOAT16`, `NC_FLOAT8_E4M3`, `NC_FLOAT8_E5M2`, `NC_FLOAT6_E2M3`, `NC_FLOAT6_E3M2`, `NC_FLOAT4_E2M1`.
   - Complex: `NC_COMPLEX`, `NC_DOUBLECOMPLEX`.
   - Bitfields: `NC_BITFIELD8`, `NC_BITFIELD16`, `NC_BITFIELD32`, `NC_BITFIELD64`.
-  - References: `NC_REF_OBJECT`, `NC_REF_REGION`.
+  - References: `NC_STD_REF` (HDF5 `H5T_STD_REF`, `H5R_ref_t` tokens).
 
 ### 18.3 Selection and Compatibility
 
@@ -758,9 +758,10 @@ cmake -B build -DNEP_ENABLE_NEXTCDF4=ON
 
 - Format-selection flag: `NC_NEXTCDF4`.
 - Model flag: `NC_NETCDF4_MODEL`.
-- New atomic `nc_type` constants: `NC_FLOAT16`, `NC_BFLOAT16`, `NC_FLOAT8_E4M3`, `NC_FLOAT8_E5M2`, `NC_FLOAT6_E2M3`, `NC_FLOAT6_E3M2`, `NC_FLOAT4_E2M1`, `NC_COMPLEX`, `NC_DOUBLECOMPLEX`, `NC_BITFIELD8`, `NC_BITFIELD16`, `NC_BITFIELD32`, `NC_BITFIELD64`, `NC_REF_OBJECT`, and `NC_REF_REGION`.
-- Reference helper functions: `nc_ref_object`, `nc_deref_object`, `nc_ref_region`, `nc_deref_region`.
+- New atomic `nc_type` constants: `NC_FLOAT16`, `NC_BFLOAT16`, `NC_FLOAT8_E4M3`, `NC_FLOAT8_E5M2`, `NC_FLOAT6_E2M3`, `NC_FLOAT6_E3M2`, `NC_FLOAT4_E2M1`, `NC_COMPLEX`, `NC_DOUBLECOMPLEX`, `NC_BITFIELD8`, `NC_BITFIELD16`, `NC_BITFIELD32`, `NC_BITFIELD64`, and `NC_STD_REF`.
+- Reference functions: `nc_ref_object`, `nc_ref_region`, `nc_ref_attr` (plus `nc_ref_*_ext` external-file variants), `nc_deref_object`, `nc_deref_region`, `nc_deref_attr`, `nc_ref_get_type`, `nc_ref_get_file_name`, `nc_ref_get_obj_name`, and `nc_ref_free`.
 - bfloat16 I/O functions: `nc_get_var_bfloat16`, `nc_put_var_bfloat16`, `nc_get_var1_bfloat16`, `nc_put_var1_bfloat16`, `nc_get_vara_bfloat16`, `nc_put_vara_bfloat16`, `nc_get_vars_bfloat16`, `nc_put_vars_bfloat16`, and the `nc_bfloat16_t` memory type.
+- float16 I/O functions: `nc_get_var_float16`, `nc_put_var_float16`, `nc_get_var1_float16`, `nc_put_var1_float16`, `nc_get_vara_float16`, `nc_put_vara_float16`, `nc_get_vars_float16`, `nc_put_vars_float16`, and the `nc_float16_t` memory type (`_Float16` where the compiler supports it, `NEP_HAVE_NATIVE_FLOAT16`).
 
 ### 18.7 Known Limitations
 

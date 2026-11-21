@@ -12,7 +12,7 @@ The goals are:
 
 ## Sprint 1G conversion experiment
 
-The temporary CMake option `NEP_INTERNAL_CONVERT` defaults OFF. ON routes supported numeric variable/attribute conversion and quantization through NEP-owned `nx4_convert_type()` in `nxt4convert.c`; it is not an upstream converter wrapper. The common native-memory mapper is `NEXTCDF4_memory_type()`. Numeric conversion precedes quantization; HDF5 retains byte-order/storage work and the explicit IEEE float16 exception until Sprint 1I. Bfloat16 narrowing uses NEP nearest/even rounding. `NEP_HAS_INTERNAL_CONVERT` reports the effective build setting. The standalone public bfloat16 functions remain in `libnep`, independent of this backend. OFF/ON CI tests the experiment. Sprint 1H adds completed-I/O `NC_ERANGE` reporting to both engines, separate performance comparisons and Ed's required review before the permanent decision and switch removal. The independent API and packaging contract stay unchanged. On-disk formats and model flags do not change.
+The temporary CMake option `NEP_INTERNAL_CONVERT` defaults OFF. ON routes supported numeric variable/attribute conversion and quantization through NEP-owned `nx4_convert_type()` in `nxt4convert.c`; it is not an upstream converter wrapper. The common native-memory mapper is `NEXTCDF4_memory_type()`. Numeric conversion precedes quantization; HDF5 retains byte-order/storage work; the IEEE float16 exception was removed in v4.3.0 Sprint 1J, which brought float16 into `nx4_convert_type()`. Bfloat16 narrowing uses NEP nearest/even rounding. `NEP_HAS_INTERNAL_CONVERT` reports the effective build setting. The standalone public bfloat16 functions remain in `libnep`, independent of this backend. OFF/ON CI tests the experiment. Sprint 1H adds completed-I/O `NC_ERANGE` reporting to both engines, separate performance comparisons and Ed's required review before the permanent decision and switch removal. The independent API and packaging contract stay unchanged. On-disk formats and model flags do not change.
 
 ## Goals and Non-Goals
 
@@ -122,7 +122,7 @@ In `NC_NETCDF4_MODEL` mode, the following features are forbidden at create time:
 
 - `NC_FLOAT16`, `NC_BFLOAT16`, `NC_FLOAT8_*`, `NC_FLOAT6_*`, and `NC_FLOAT4_*` datatypes.
 - Complex number compound types (`NC_COMPLEX`, `NC_DOUBLECOMPLEX`).
-- HDF5 reference types (`NC_REF_OBJECT`, `NC_REF_REGION`).
+- HDF5 reference types (`NC_STD_REF`, unified `H5T_STD_REF`).
 - Bitfield types (`NC_BITFIELD8/16/32/64`).
 
 Attempts to use these features with `NC_NETCDF4_MODEL` will return `NC_EINVAL` or `NC_ENOTNC4` as appropriate.
@@ -235,7 +235,7 @@ NEXTCDF-4 deliberately avoids this class of bug by design rather than by handlin
 - This trades rename throughput for correctness: a script issuing thousands of renames in a loop will incur a flush per call. This is an accepted, intentional cost — rename operations are not expected to be a hot path, and the correctness guarantee is considered more valuable than batched rename performance.
 - This behavior is not configurable; there is no "deferred flush" mode for renames, precisely because reintroducing deferred/batched updates is what caused the original bugs.
 - Applications that need to perform many renames efficiently should be advised (in user-facing documentation) to expect O(1) disk flushes per rename call, and to avoid rename-heavy workloads in performance-sensitive code paths.
-- Renaming a dimension or variable never invalidates an existing `NC_REF_OBJECT`/`NC_REF_REGION` reference to it: HDF5 renames (`H5Lmove`) only change the group *link* pointing at an object, not the object's underlying address/token that references actually store. See "Reference Validity Across File Changes" under "Support for HDF5 Reference Types" for the operations that *do* invalidate references.
+- Renaming a dimension or variable never invalidates an existing `NC_STD_REF` reference to it: HDF5 renames (`H5Lmove`) only change the group *link* pointing at an object, not the object's underlying address/token that references actually store. See "Reference Validity Across File Changes" under "Support for HDF5 Reference Types" for the operations that *do* invalidate references.
 
 ## Dimension Scales and Dimension Mapping
 
@@ -303,7 +303,7 @@ Memory representation is the raw bit pattern:
 - `NC_FLOAT8_*` → `uint8_t`
 - `NC_FLOAT6_*`, `NC_FLOAT4_*` → `uint8_t` (HDF5 stores 6-bit and 4-bit floats in 1-byte datatypes)
 
-These types are software-emulated in HDF5 and implicit conversions are unreliable, so callers must use the matching raw type for I/O. (v4.3.0 Sprint 1B: `NC_FLOAT16`/`NC_BFLOAT16` also accept `NC_FLOAT`/`NC_DOUBLE` memtypes, converted by HDF5; FP8/FP6/FP4 still require the matching type, enforced by `check_memtype` in `nxt4io.c`.)
+These types are software-emulated in HDF5 and implicit conversions are unreliable, so callers must use the matching raw type for I/O. (v4.3.0 Sprint 1B: `NC_FLOAT16`/`NC_BFLOAT16` also accept `NC_FLOAT`/`NC_DOUBLE` memtypes; Sprint 1H/1J moved both to the internal `nx4_convert_type()` engine, so HDF5 no longer does the conversion. FP8/FP6/FP4 still require the matching type, enforced by `check_memtype` in `nxt4io.c`.)
 
 ### Compatibility
 
@@ -333,7 +333,7 @@ Each new floating-point type has a documented default fill value, following the 
 
 For `NC_COMPLEX` and `NC_DOUBLECOMPLEX` (see "Support for Complex Numbers" below), the default fill value is the compound `{ NC_FILL_FLOAT, NC_FILL_FLOAT }` or `{ NC_FILL_DOUBLE, NC_FILL_DOUBLE }` respectively, applied independently to the real and imaginary members.
 
-`NC_BITFIELD8/16/32/64` and `NC_REF_OBJECT`/`NC_REF_REGION` have no numeric interpretation, so no default fill value is defined for them (matching existing netCDF-4 behavior for `NC_OPAQUE`); files are created with `NC_NOFILL` semantics for these types unless the caller explicitly requests a fill pattern.
+`NC_BITFIELD8/16/32/64` and `NC_STD_REF` have no numeric interpretation, so no default fill value is defined for them (matching existing netCDF-4 behavior for `NC_OPAQUE`); files are created with `NC_NOFILL` semantics for these types unless the caller explicitly requests a fill pattern.
 
 ### Fill Value Validation
 
@@ -341,90 +341,59 @@ For `NC_COMPLEX` and `NC_DOUBLECOMPLEX` (see "Support for Complex Numbers" below
 
 ## Support for HDF5 Reference Types
 
-NEXTCDF-4 will support both HDF5 object references and region references as NetCDF variables.
+NEXTCDF-4 supports HDF5 2.x unified references as NetCDF variables and attributes. (An earlier draft of this section specified two NetCDF types mapped to the deprecated `H5T_STD_REF_OBJ`/`H5T_STD_REF_DSETREG` datatypes; the implementation uses the unified `H5T_STD_REF` instead, and files containing the deprecated types are rejected at open with `NC_EBADTYPE`.)
 
 ### Types
 
-- `H5T_STD_REF_OBJ` (object reference): an opaque 8-byte value pointing to an HDF5 object.
-- `H5T_STD_REF_DSETREG` (region reference): an opaque value pointing to a dataspace region in a dataset.
+- `H5T_STD_REF` (unified reference): an opaque 64-byte `H5R_ref_t` token pointing to an HDF5 object, a dataset region, or an attribute — in this file or in an external file.
 
 ### NetCDF Mapping
 
-- Object references will be exposed as a new opaque NetCDF type `NC_REF_OBJECT`.
-- Region references will be exposed as `NC_REF_REGION`.
-- Variables of these types are read and written as opaque byte arrays.
-- NEXTCDF-4 provides functions to create and resolve both object references and region references.
+- References are exposed as a single opaque NetCDF type `NC_STD_REF` (30), laid out as `nc_std_ref_t`, a byte-compatible wrapper for `H5R_ref_t` (`NC_STD_REF_SIZE` = 64).
+- Variables of this type are read and written as opaque tokens; `NC_STD_REF` is also a legal attribute type.
+- NEXTCDF-4 provides functions to create and resolve object, region, and attribute references, plus `nc_ref_*_ext` variants that create references into external files and `nc_ref_get_file_name`/`nc_ref_get_obj_name` to inspect them.
 - Region references are created and dereferenced using NetCDF-style `start` / `count` / `stride` arrays, since NetCDF has no dataspace abstraction.
-- Variables of type `NC_REF_REGION` support normal NetCDF strided access (`nc_get_vars` / `nc_put_vars`) to read or write subsets of the reference array; each element is an independent region-reference token.
+- Variables of type `NC_STD_REF` support normal NetCDF strided access (`nc_get_vars` / `nc_put_vars`) to read or write subsets of the reference array; each element is an independent reference token.
+- Tokens hold an open reference to their file; callers release them with `nc_ref_free()` before closing the file.
 
-### Object Reference API
+### Reference API
 
-NEXTCDF-4 will add functions to create an HDF5 object reference and to resolve an existing reference back to a NetCDF object id. The object type is passed as a parameter so the same functions work for variables, groups, and user-defined types.
-
-Object reference tokens are represented by an opaque 8-byte struct type:
-
-```c
-typedef struct {
-    unsigned char bytes[8];
-} nc_ref_t;
-```
+See `docs/refs.md` for the full interface. All tokens share the single `nc_std_ref_t` representation:
 
 ```c
 #define NC_REF_OBJ_VAR  1  /* NetCDF variable (HDF5 dataset) */
 #define NC_REF_OBJ_GRP  2  /* NetCDF group (HDF5 group) */
 #define NC_REF_OBJ_TYPE 3  /* NetCDF user-defined type (HDF5 committed datatype) */
 
-/* Create a reference to the object identified by `objid` in group `ncid`.
- * `ref` receives the opaque 8-byte HDF5 object reference token.
- *   - obj_type == NC_REF_OBJ_VAR:  objid is a varid in group `ncid`.
- *   - obj_type == NC_REF_OBJ_GRP:  objid is a grpid (ncid); `ncid` is ignored.
- *   - obj_type == NC_REF_OBJ_TYPE: objid is a typeid in group `ncid`. */
-int nc_ref_object(int ncid, int obj_type, int objid, nc_ref_t *ref);
-
-/* Dereference `ref` and return the group and object ids.
- *   - NC_REF_OBJ_VAR:  *grpidp is the group containing the variable;
- *                      *idp is the varid valid in that group.
- *   - NC_REF_OBJ_GRP:  *grpidp and *idp both receive the grpid (ncid).
- *   - NC_REF_OBJ_TYPE: *grpidp is the group containing the type;
- *                      *idp is the typeid valid in that group. */
-int nc_deref_object(int ncid, int obj_type, const nc_ref_t *ref,
+int nc_ref_object(int ncid, int obj_type, int objid, nc_std_ref_t *ref);
+int nc_deref_object(int ncid, const nc_std_ref_t *ref, int *obj_typep,
                     int *grpidp, int *idp);
-```
-
-Both functions validate that the requested `obj_type` matches the actual HDF5 object type stored in the reference token and return `NC_EINVAL` on mismatch.
-
-### Region Reference API
-
-Region references are represented by an opaque struct large enough to hold an HDF5 dataset-region reference token:
-
-```c
-/* Region references are opaque and variable-sized in HDF5 1.12+.
- * The caller must allocate a buffer of at least
- * H5Tget_size(H5T_STD_REF_DSETREG) bytes and set `size` accordingly. */
-typedef struct {
-    size_t size;
-    unsigned char *bytes;
-} nc_region_ref_t;
-```
-
-```c
-/* Create a region reference to a hyperslab selection in variable `varid`.
- * `start` and `count` arrays must have length equal to the variable's rank.
- * `stride` may be NULL to indicate a stride of 1 in all dimensions. */
 int nc_ref_region(int ncid, int varid,
                   const size_t *start, const size_t *count,
-                  const ptrdiff_t *stride,
-                  nc_region_ref_t *ref);
-
-/* Dereference a region reference and return the target variable and selection.
- * `start`, `count`, and `stride` arrays must have length equal to the
- * returned rank. */
-int nc_deref_region(int ncid, const nc_region_ref_t *ref,
+                  const ptrdiff_t *stride, nc_std_ref_t *ref);
+int nc_deref_region(int ncid, const nc_std_ref_t *ref,
                     int *grpidp, int *varidp, int *ndimsp,
                     size_t *start, size_t *count, ptrdiff_t *stride);
+int nc_ref_attr(int ncid, int obj_type, int objid,
+                const char *att_name, nc_std_ref_t *ref);
+int nc_deref_attr(int ncid, const nc_std_ref_t *ref, int *obj_typep,
+                  int *grpidp, int *idp, char *att_name);
+int nc_ref_object_ext(int ncid, const char *filename, const char *path,
+                      nc_std_ref_t *ref);
+int nc_ref_region_ext(int ncid, const char *filename, const char *path,
+                      const size_t *start, const size_t *count,
+                      const ptrdiff_t *stride, nc_std_ref_t *ref);
+int nc_ref_attr_ext(int ncid, const char *filename, const char *path,
+                    const char *att_name, nc_std_ref_t *ref);
+int nc_ref_get_type(const nc_std_ref_t *ref, int *ref_typep);
+int nc_ref_get_file_name(const nc_std_ref_t *ref, char *name, size_t size);
+int nc_ref_get_obj_name(const nc_std_ref_t *ref, char *name, size_t size);
+int nc_ref_free(nc_std_ref_t *ref);
 ```
 
-Both functions translate between NetCDF-style `start` / `count` / `stride` arrays and the corresponding HDF5 dataspace selection. Only simple strided hyperslabs that can be represented by `start` / `count` / `stride` are supported; more complex HDF5 selections fail with `NC_EINVAL`.
+`nc_deref_object` reports the target kind through `obj_typep` (`NC_REF_OBJ_VAR`/`NC_REF_OBJ_GRP`/`NC_REF_OBJ_TYPE`); wrong-kind tokens and stale targets return `NC_EINVAL`. `nc_ref_attr` dispatches on `obj_type`/`objid` like `nc_ref_object`, so attribute references work on every object kind HDF5 supports, including committed datatypes. The `nc_deref_*` functions do not follow references into external files; they return `NC_ENOTNC4`, and `nc_ref_get_file_name`/`nc_ref_get_obj_name` provide the resolution path.
+
+Both region functions translate between NetCDF-style `start` / `count` / `stride` arrays and the corresponding HDF5 dataspace selection. Only regular strided hyperslabs that can be represented by `start` / `count` / `stride` are supported; irregular HDF5 selections fail with `NC_EINVAL` at dereference.
 
 ### Reference Validity Across File Changes
 
@@ -441,7 +410,7 @@ HDF5 object and region references target an object's underlying address/token, n
 - Deleting the referenced variable or group, including the common "delete and recreate under the same name" pattern used to simulate retyping/reshaping. The recreated object has a new HDF5 address/token; old references to the original object become dangling.
 - Shrinking a dimension (or otherwise reducing a variable's shape) such that a previously valid region reference's stored `start`/`count`/`stride` selection no longer fits within the variable's current dataspace.
 
-**Enforcement**: `nc_deref_object` and `nc_deref_region` will detect both failure modes at dereference time rather than assuming success:
+**Enforcement**: `nc_deref_object`, `nc_deref_region`, and `nc_deref_attr` detect both failure modes at dereference time rather than assuming success:
 
 - If the referenced object no longer exists, both functions return `NC_EINVAL`.
 - If a region reference's stored selection no longer fits the target variable's current shape, `nc_deref_region` returns `NC_EINVAL` rather than returning a truncated or out-of-bounds selection.
@@ -568,8 +537,7 @@ Bitfield variables are defined with the standard `nc_def_var` using an `NC_BITFI
 | `NC_FLOAT4_E2M1`    | `H5T_FLOAT_F4E2M1`             | No                   |
 | `NC_COMPLEX`        | Compound `{r: f32, i: f32}`    | No                   |
 | `NC_DOUBLECOMPLEX`  | Compound `{r: f64, i: f64}`    | No                   |
-| `NC_REF_OBJECT`     | `H5T_STD_REF_OBJ`              | No                   |
-| `NC_REF_REGION`     | `H5T_STD_REF_DSETREG`          | No                   |
+| `NC_STD_REF`        | `H5T_STD_REF`                  | No                   |
 | `NC_BITFIELD8`      | `H5T_STD_B8LE/BE`              | No                   |
 | `NC_BITFIELD16`     | `H5T_STD_B16LE/BE`             | No                   |
 | `NC_BITFIELD32`     | `H5T_STD_B32LE/BE`             | No                   |
@@ -634,14 +602,14 @@ Bitfield variables are defined with the standard `nc_def_var` using an `NC_BITFI
 - Compatibility tests that open NEXTCDF-4 files with upstream netcdf-c (for `NC_NETCDF4_MODEL`).
 - Compatibility tests that open upstream netcdf-c files with NEXTCDF-4.
 - Rename regression tests covering coordinate variables and shared dimension scales.
-- Reference-validity tests: create an object/region reference, then (a) rename the target and confirm the reference still dereferences correctly, (b) extend an unlimited dimension and confirm an in-bounds region reference still dereferences correctly, (c) delete-and-recreate the target under the same name and confirm `nc_deref_object`/`nc_deref_region` return `NC_EINVAL`, and (d) shrink a dimension so a region reference's selection no longer fits and confirm `nc_deref_region` returns `NC_EINVAL`.
+- Reference-validity tests: create an object/region/attribute reference, then (a) rename the target and confirm the reference still dereferences correctly, (b) extend an unlimited dimension and confirm an in-bounds region reference still dereferences correctly, (c) delete-and-recreate the target under the same name and confirm `nc_deref_object`/`nc_deref_region`/`nc_deref_attr` return `NC_EINVAL`, and (d) shrink a dimension so a region reference's selection no longer fits and confirm `nc_deref_region` returns `NC_EINVAL`.
 
 ## Risks and Mitigations
 
 | Risk | Mitigation |
 |------|------------|
 | HDF5 2.1.1 not available on all target systems | NEXTCDF-4 is off by default; NEP builds without it and users keep netcdf-c's built-in HDF5 backend. |
-| Reference types expose HDF5-specific semantics | Provide explicit `nc_ref_object`/`nc_deref_object` and `nc_ref_region`/`nc_deref_region` APIs; document that reference tokens are file-local and that region references are limited to strided hyperslabs. |
+| Reference types expose HDF5-specific semantics | Provide explicit `nc_ref_*`/`nc_deref_*` APIs for object, region, and attribute references including external-file targets; document that `nc_deref_*` do not cross files and that region references are limited to regular strided hyperslabs. |
 | Float16 precision surprises users | Document precision limits; consider fill-value and default-conversion behavior carefully. |
 | Rename bug fixes break existing workarounds | Add tests for the exact bug scenarios and announce behavioral changes. |
 | Complex compound layout differs from Fortran expectations | Define a single portable layout and provide Fortran wrappers that reorder if needed. |
@@ -721,11 +689,12 @@ The same NetCDF-4 `NC_Dispatch` interface is exposed, but the dispatch table liv
 
 ### Filters and plugins (analogous to `libhdf5/hdf5filter.c`, `hdf5plugins.c` and `libsrc4/nc4filters.c`)
 
+Implemented in v4.3.0 Sprint 1K. NEXTCDF-4 keeps the filter pipeline on the shared `NC_VAR_INFO_T::filters` list and manipulates it with netcdf-c's exported `NC4_hdf5_*` helpers rather than private copies.
+
 - `nxt4filter.c`:
-  - `NC4_hdf5_def_var_filter`, `NC4_hdf5_inq_var_filter_ids`, `NC4_hdf5_inq_var_filter_info`, `NC4_hdf5_inq_filter_avail`
-  - `NEXTCDF4_filter_lookup`, `NEXTCDF4_filter_remove`, `NEXTCDF4_filter_initialize`, `NEXTCDF4_filter_finalize`
-- `nxt4plugins.c` (optional, if NEP plugin path support is required):
-  - `NEXTCDF4_plugin_path_initialize`, `NEXTCDF4_plugin_path_finalize`, `NEXTCDF4_plugin_path_get/set`
+  - `NEXTCDF4_def_var_filter`, `NEXTCDF4_def_var_deflate`, `NEXTCDF4_def_var_fletcher32`, `NEXTCDF4_inq_var_filter_ids`, `NEXTCDF4_inq_var_filter_info`, `NEXTCDF4_inq_filter_avail` (dispatch entries)
+  - `nx4_apply_filters` (filter list -> DCPL, called by `nx4_create_var_dataset`), `nx4_load_filters` (DCPL -> filter list at open, with `NC_HDF5_VAR_FILTER_MISSING` marking)
+- Plugin path support is inherited unchanged from HDF5 (`HDF5_PLUGIN_PATH`); no `nxt4plugins.c` is required.
 
 ### In-memory metadata model and utilities (analogous to `libhdf5/hdf5internal.c` and `libsrc4/nc4internal.c`)
 
@@ -825,7 +794,7 @@ Sprint 9 adds `NC_FLOAT16`, `NC_BFLOAT16`, and the FP8/FP6/FP4 small floating-po
 
 - `src/nextcdf4/nxt4io.c`:
   - Ensure `var_io` uses the correct HDF5 memory/file type for the new small floats. For the initial implementation, require `memtype` to match the variable's file type to avoid incomplete HDF5 conversions.
-  (v4.3.0 Sprint 1B: `NC_FLOAT16`/`NC_BFLOAT16` also accept `NC_FLOAT`/`NC_DOUBLE` memtypes, converted by HDF5; FP8/FP6/FP4 still require the matching type, enforced by `check_memtype` in `nxt4io.c`.)
+  (v4.3.0 Sprint 1B: `NC_FLOAT16`/`NC_BFLOAT16` also accept `NC_FLOAT`/`NC_DOUBLE` memtypes; Sprint 1H/1J moved both to the internal `nx4_convert_type()` engine, so HDF5 no longer does the conversion. FP8/FP6/FP4 still require the matching type, enforced by `check_memtype` in `nxt4io.c`.)
 
 - `test/tst_nextcdf4_float16.c`:
   - Round-trip `NC_FLOAT16` data using `nc_def_var`, `nc_put_vara`, and `nc_get_vara`.
@@ -842,7 +811,7 @@ Sprint 9 adds `NC_FLOAT16`, `NC_BFLOAT16`, and the FP8/FP6/FP4 small floating-po
 
 ## Sprint 10: Add Complex, Bitfield, and Reference Types
 
-Sprint 10 adds built-in complex (`NC_COMPLEX`, `NC_DOUBLECOMPLEX`), bitfield (`NC_BITFIELD8/16/32/64`), and reference (`NC_REF_OBJECT`, `NC_REF_REGION`) types to the NEXTCDF-4 backend.
+Sprint 10 adds built-in complex (`NC_COMPLEX`, `NC_DOUBLECOMPLEX`), bitfield (`NC_BITFIELD8/16/32/64`), and reference (`NC_REF_OBJECT`, `NC_REF_REGION`) types to the NEXTCDF-4 backend. (The reference types were later unified into `NC_STD_REF`/`H5T_STD_REF`; see the v4.3.0 Sprint 1L plan.)
 
 - `include/nep.h`:
   - Define the eight new `nc_type` constants.
@@ -860,7 +829,7 @@ Sprint 10 adds built-in complex (`NC_COMPLEX`, `NC_DOUBLECOMPLEX`), bitfield (`N
 - Tests:
   - `test/tst_nextcdf4_complex.c` round-trips `NC_COMPLEX` and `NC_DOUBLECOMPLEX`.
   - `test/tst_nextcdf4_bitfield.c` round-trips `NC_BITFIELD8/16/32/64`.
-  - `test/tst_nextcdf4_ref.c` round-trips `NC_REF_OBJECT` and `NC_REF_REGION` as opaque byte arrays.
+  - `test/nextcdf4/tst_nextcdf4_ref.c` round-trips `NC_STD_REF` tokens and exercises the `nc_ref_*`/`nc_deref_*` API.
   - Rejection in `NC_NETCDF4_MODEL` and `NC_CLASSIC_MODEL` for each new type.
 
 - Acceptance criteria:

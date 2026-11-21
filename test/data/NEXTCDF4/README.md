@@ -30,3 +30,19 @@ H5REPACK=/usr/local/hdf5-2.1.1/bin/h5repack \
 ```
 
 Author: Edward Hartnett, Intelligent Data Design, Inc.
+
+`gdas_sfc_sample_float16.nc` is the same conversion with the four data
+fields stored as `NC_FLOAT16` (IEEE 754 binary16). Values were
+converted with `nc_get_var_float16` (round to nearest, ties to even).
+The same differences apply; it is used by
+`examples/nextcdf4/float16_io_perf.c`.
+
+Regenerate with:
+
+```sh
+HDF5_PLUGIN_PATH=$HOME/plugins/zstd-only \
+H5REPACK=/usr/local/hdf5-2.1.1/bin/h5repack \
+  examples/nextcdf4/make_float16_sample.sh build \
+  test/data/netCDF-4/gdas_sfc_sample.nc \
+  test/data/NEXTCDF4/gdas_sfc_sample_float16.nc
+```

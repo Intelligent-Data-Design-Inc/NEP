@@ -76,14 +76,16 @@ typedef struct NEXTCDF4_DIM_INFO
 
 /** @brief NEXTCDF-4-private state hung off
  * `NC_VAR_INFO_T::format_var_info`: the variable's dataset handle
- * plus its cached filter settings (rebuilt when the dataset is
- * recreated by a def-var setter). */
+ * plus status flags (rebuilt when the dataset is recreated by a
+ * def-var setter). Filter state itself lives on the shared
+ * `NC_VAR_INFO_T::filters` list, exactly as in upstream netcdf-c. */
 typedef struct NEXTCDF4_VAR_INFO
 {
     hid_t hdf_dataset;  /**< HDF5 variable dataset identifier. */
-    int deflate_level;  /**< Deflate level, or -1 if deflate is not applied. */
-    int shuffle;        /**< Non-zero if the shuffle filter is enabled. */
-    int fletcher32;     /**< Non-zero if the fletcher32 checksum filter is enabled. */
+    int flags;          /**< Bitmask; bit `NC_HDF5_VAR_FILTER_MISSING` (from
+                         * `hdf5internal.h`) is set when a mandatory filter
+                         * plugin was missing at open and the variable's
+                         * data is unreadable. */
 } NEXTCDF4_VAR_INFO_T;
 
 /** @brief NEXTCDF-4-private state hung off
@@ -127,9 +129,6 @@ int NEXTCDF4_type_size(nc_type xtype, size_t *sizep);
 /** Map an atomic memory type to HDF5. */
 hid_t NEXTCDF4_memory_type(nc_type type, int *closep);
 
-/** Create a transfer property list observing conversion range errors. */
-int nx4_conversion_dxpl(hid_t *dxplp, int *range_error);
-
 /** Convert numeric buffers using the internal engine. */
 int nx4_convert_type(const void *src, void *dest, nc_type src_type,
                      nc_type dest_type, size_t len, int *range_error,
@@ -169,6 +168,25 @@ int NEXTCDF4_inq_dim(int ncid, int dimid, char *name, size_t *lenp);
  */
 int NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
                      const int *dimidsp, int *varidp);
+
+/** Resolve a variable for a def-var setter, enforcing write +
+ * define-mode access.
+ */
+int nx4_find_var_for_write(int ncid, int varid, NC_FILE_INFO_T **h5,
+                           NEXTCDF4_FILE_INFO_T **file, NC_GRP_INFO_T **grp,
+                           NC_VAR_INFO_T **var);
+/** Create or re-create the HDF5 dataset for a variable.
+ */
+int nx4_create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
+                           NEXTCDF4_FILE_INFO_T *file, NC_GRP_INFO_T *grp);
+/** Apply a variable's filter list to a dataset creation property list.
+ */
+int nx4_apply_filters(hid_t dcpl, NC_VAR_INFO_T *var);
+/** Read a variable's filter pipeline from a dataset creation property
+ * list into `var->filters`.
+ */
+int nx4_load_filters(hid_t dcpl, NC_VAR_INFO_T *var,
+                     NEXTCDF4_VAR_INFO_T *vinfo);
 
 /** Variable storage-property dispatch callbacks. */
 int NEXTCDF4_def_var_chunking(int ncid, int varid, int storage,
@@ -214,6 +232,9 @@ int NEXTCDF4_inq_var_filter_ids(int ncid, int varid, size_t *nfiltersp,
  */
 int NEXTCDF4_inq_var_filter_info(int ncid, int varid, unsigned int id,
                                  size_t *nparamsp, unsigned int *params);
+/** Test whether an HDF5 filter is available.
+ */
+int NEXTCDF4_inq_filter_avail(int ncid, unsigned int id);
 
 /** Fixed-size atomic variable hyperslab I/O callbacks. */
 int NEXTCDF4_get_vara(int ncid, int varid, const size_t *startp, const size_t *countp, void *data, nc_type memtype);
@@ -237,6 +258,11 @@ int NEXTCDF4_put_varm(int ncid, int varid, const size_t *startp, const size_t *c
  */
 int NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type xtype,
                      size_t len, const void *value, nc_type memtype);
+
+/** Inquire about an attribute's type and length.
+ */
+int NEXTCDF4_inq_att(int ncid, int varid, const char *name,
+                     nc_type *xtypep, size_t *lenp);
 
 /** Get an attribute from the root group or a variable.
  */

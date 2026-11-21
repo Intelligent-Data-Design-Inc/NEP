@@ -211,26 +211,29 @@ test_widening(nc_type xtype, const char *name)
     return 0;
 }
 
-/* These are HDF5 2.1.1's rounding results (float16 ties to even;
- * bfloat16 ties away from zero and saturates float input), recorded in
- * docs/plan/v4.3.0-sprint1B-fix-float-conversion.md. A change here means
- * HDF5 changed its conversion. */
+/* These are NEP's round-to-nearest-even results (bfloat16 also ties to
+ * even since the internal engine replaced HDF5's conversion). float16
+ * magnitudes in (65504, 65520) round to the largest finite 0x7bff; the
+ * tie at 65520 and larger finite values give +-inf. */
 static int
 test_pinned_writes(void)
 {
-    int ncid, dimid, hvar, bvar;
+    int ncid, dimid, dimid2, hvar, bvar, h2var;
     size_t start[1] = {0};
     size_t count[1] = {13};
+    size_t count4[1] = {4};
     size_t count3[1] = {3};
     float hin[13] = {1.5f, -2.f, 0.1f, 2049.f, 2051.f, 65504.f, 65505.f,
                      3e5f, -FLT_MAX, INFINITY, -0.0f, 1e-30f, NAN};
+    float hin2[4] = {65519.f, 65520.f, 65504.5f, 65512.f};
     float bin[13] = {1.5f, -2.f, 0.1f, 449.f, 0.f, 0.f, 1e-30f,
                      FLT_MAX, -FLT_MAX, INFINITY, -INFINITY, -0.0f, NAN};
     double din[3] = {1.5, 0.1, 1e300};
-    uint16_t hraw[13] = {0}, braw[13] = {0};
+    uint16_t hraw[13] = {0}, braw[13] = {0}, hraw2[4] = {0};
     static const uint16_t hexp[13] = {0x3e00, 0xc000, 0x2e66, 0x6800, 0x6802,
-                                      0x7bff, 0x7c00, 0x7c00, 0xfc00, 0x7c00,
+                                      0x7bff, 0x7bff, 0x7c00, 0xfc00, 0x7c00,
                                       0x8000, 0x0000, 0};
+    static const uint16_t hexp2[4] = {0x7bff, 0x7c00, 0x7bff, 0x7bff};
     static const uint16_t bexp[13] = {0x3fc0, 0xc000, 0x3dcd, 0x43e0, 0x3f80,
                                       0x0000, 0x0da2, 0x7f80, 0xff80, 0x7f80,
                                       0xff80, 0x8000, 0};
@@ -246,7 +249,9 @@ test_pinned_writes(void)
     unlink(FILE_NAME);
     if ((ret = nc_create(FILE_NAME, NC_NEXTCDF4 | NC_CLOBBER, &ncid)) ||
         (ret = nc_def_dim(ncid, "n", 13, &dimid)) ||
+        (ret = nc_def_dim(ncid, "m", 4, &dimid2)) ||
         (ret = nc_def_var(ncid, "h", NC_FLOAT16, 1, &dimid, &hvar)) ||
+        (ret = nc_def_var(ncid, "h2", NC_FLOAT16, 1, &dimid2, &h2var)) ||
         (ret = nc_def_var(ncid, "b", NC_BFLOAT16, 1, &dimid, &bvar)) ||
         (ret = nc_enddef(ncid))) {
         fprintf(stderr, "pinned: define failed %d\n", ret);
@@ -258,6 +263,26 @@ test_pinned_writes(void)
         fprintf(stderr, "pinned: nc_put_vara_float failed %d\n", ret);
         nc_close(ncid);
         return 1;
+    }
+    /* Boundary values: the tie at 65520 overflows to inf with NC_ERANGE,
+     * so the write reports a range error but stores all values. */
+    if ((ret = nc_put_vara_float(ncid, h2var, start, count4, hin2)) != NC_ERANGE) {
+        fprintf(stderr, "pinned: h2 write gave %d, not NC_ERANGE\n", ret);
+        nc_close(ncid);
+        return 1;
+    }
+    if ((ret = nc_get_vara(ncid, h2var, start, count4, hraw2))) {
+        fprintf(stderr, "pinned: h2 raw read failed %d\n", ret);
+        nc_close(ncid);
+        return 1;
+    }
+    for (i = 0; i < 4; i++) {
+        if (hraw2[i] != hexp2[i]) {
+            fprintf(stderr, "pinned: h2 index %d got 0x%04x expected 0x%04x\n",
+                    i, hraw2[i], hexp2[i]);
+            nc_close(ncid);
+            return 1;
+        }
     }
     if ((ret = nc_get_vara(ncid, hvar, start, count, hraw)) ||
         (ret = nc_get_vara(ncid, bvar, start, count, braw))) {

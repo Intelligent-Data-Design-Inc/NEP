@@ -98,14 +98,10 @@ NEXTCDF4_memory_type(nc_type type, int *closep)
     case NC_BITFIELD16: return H5T_NATIVE_B16;
     case NC_BITFIELD32: return H5T_NATIVE_B32;
     case NC_BITFIELD64: return H5T_NATIVE_B64;
-    case NC_REF_OBJECT:
+    case NC_STD_REF:
         if (closep)
             *closep = 1;
-        return H5Tcopy(H5T_STD_REF_OBJ);
-    case NC_REF_REGION:
-        if (closep)
-            *closep = 1;
-        return H5Tcopy(H5T_STD_REF_DSETREG);
+        return H5Tcopy(H5T_STD_REF);
     case NC_STRING:
         if (closep)
             *closep = 1;
@@ -156,10 +152,10 @@ is_small_float(nc_type xtype)
  *
  * - Untyped or same-type calls always pass (raw bit patterns, no
  *   conversion).
- * - Standard types keep netcdf-c behavior: anything goes, HDF5
- *   converts.
+ * - Standard types keep netcdf-c behavior: anything goes, the
+ *   internal engine converts.
  * - `NC_FLOAT16`/`NC_BFLOAT16` additionally accept `NC_FLOAT` and
- *   `NC_DOUBLE` buffers via HDF5 conversion.
+ *   `NC_DOUBLE` buffers, converted by the internal engine.
  * - The FP8/FP6/FP4 types accept only their own type, because HDF5
  *   2.1.1 converts them incorrectly (an HDF5 Known Problem).
  * - Text (`NC_CHAR`) calls on small floats return `NC_ECHAR`,
@@ -191,8 +187,8 @@ check_memtype(nc_type xtype, nc_type memtype)
         return NC_ECHAR;
 
     /* float16 and bfloat16 widen exactly into float and double, and
-     * HDF5's conversion back is usable (its rounding is documented in
-     * NEXTCDF4_float16.md). */
+     * the internal engine's conversion back is round-to-nearest-even
+     * (documented in NEXTCDF4_float16.md). */
     if ((xtype == NC_FLOAT16 || xtype == NC_BFLOAT16) &&
         (memtype == NC_FLOAT || memtype == NC_DOUBLE))
         return NC_NOERR;
@@ -260,6 +256,9 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
     if ((ret = NEXTCDF4_get_file(ncid, &h5, &file))) return ret;
     if ((ret = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var))) return ret;
     if (!var || !(vinfo = var->format_var_info) || vinfo->hdf_dataset < 0) return NC_ENOTVAR;
+    /* A variable opened with a missing mandatory filter plugin keeps
+     * its metadata readable but rejects all data I/O. */
+    if (vinfo->flags & NC_HDF5_VAR_FILTER_MISSING) return NC_ENOFILTER;
     if (writing && file->no_write) return NC_EPERM;
     if (writing && file->define_mode) return NC_EINDEFINE;
     if (!writing && file->define_mode) return NC_EINDEFINE;
