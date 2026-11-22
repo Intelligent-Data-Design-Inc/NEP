@@ -208,8 +208,19 @@ edge_io(void)
     CHECK(nc_put_vara_double(ncid, v, start, count, input));
     CHECK(nc_get_vara_double(ncid, v, start, count, back));
     REQUIRE(back[0] == 1 && back[1] == -7 && back[3] == 42);
+    CHECK(nc_close(ncid));
+    CHECK(nc_open(FILE_NAME, NC_NEXTCDF4 | NC_NOWRITE, &ncid));
+    CHECK(nc_inq_varid(ncid, "records", &v));
+    REQUIRE(nc_put_var_double(ncid, v, input) == NC_EPERM);
+    CHECK(nc_close(ncid));
+    /* nc_def_var_quantize on a committed variable is too late
+     * (NC_ELATEDEF, as upstream nc_def_var_extra): each mode gets its
+     * own define session in a fresh file. */
     for (mode = NC_QUANTIZE_BITGROOM; mode <= NC_QUANTIZE_BITROUND; mode++) {
-        CHECK(nc_redef(ncid));
+        CHECK(nc_create(FILE_NAME, NC_NEXTCDF4 | NC_CLOBBER, &ncid));
+        CHECK(nc_def_dim(ncid, "x", 4, &dims[1]));
+        CHECK(nc_def_var(ncid, "scalar", NC_FLOAT, 0, NULL, &scalar));
+        CHECK(nc_def_var(ncid, "quantized", NC_FLOAT, 1, &dims[1], &quantized));
         CHECK(nc_def_var_quantize(ncid, scalar, mode, 3));
         CHECK(nc_def_var_quantize(ncid, quantized, mode, 3));
         CHECK(nc_enddef(ncid));
@@ -222,12 +233,8 @@ edge_io(void)
         REQUIRE(!memcmp(expected, actual, sizeof(actual)));
         CHECK(nc_get_var_float(ncid, scalar, actual));
         REQUIRE(actual[0] == expected[0]);
+        CHECK(nc_close(ncid));
     }
-    CHECK(nc_close(ncid));
-    CHECK(nc_open(FILE_NAME, NC_NEXTCDF4 | NC_NOWRITE, &ncid));
-    CHECK(nc_inq_varid(ncid, "records", &v));
-    REQUIRE(nc_put_var_double(ncid, v, input) == NC_EPERM);
-    CHECK(nc_close(ncid));
     unlink(FILE_NAME);
     return 0;
 }

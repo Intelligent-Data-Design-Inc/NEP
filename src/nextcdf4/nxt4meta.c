@@ -35,6 +35,10 @@
 static int nx4_set_att_order(hid_t ocpl);
 static int nx4_dcpl_fill(hid_t dcpl, NC_FILE_INFO_T *h5,
                          NC_VAR_INFO_T *var, hid_t hdf_type);
+static int nx4_rewrite_atts(hid_t loc, NCindex *list);
+static int nx4_reattach_dim(NC_GRP_INFO_T *grp, NC_DIM_INFO_T *dim,
+                            hid_t old_dset, hid_t new_dset,
+                            NC_VAR_INFO_T *skip);
 
 static const char *reserved_atts[] = {
     NEXTCDF4_BACKEND_ATT,
@@ -1280,6 +1284,13 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
     if (coordinate) {
         NEXTCDF4_DIM_INFO_T *dinfo = var->dim[0]->format_dim_info;
         if (!dinfo || dinfo->hdf_dataset < 0) { ret = NC_EFILEMETA; goto fail; }
+        /* Variables defined before this coordinate variable attached
+         * the placeholder scale; detach them before it is deleted so
+         * their DIMENSION_LIST entries do not point at a dead object,
+         * then reattach them to the variable's new scale below. */
+        if ((ret = nx4_reattach_dim(grp, var->dim[0], dinfo->hdf_dataset,
+                                  -1, var)))
+            goto fail;
         H5Dclose(dinfo->hdf_dataset);
         dinfo->hdf_dataset = -1;
         if (H5Ldelete(hdf_grp, name, H5P_DEFAULT) < 0)
@@ -1291,6 +1302,9 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
             (ret = write_int_att(dinfo->hdf_dataset, NEXTCDF4_DIMID_ATT,
                                  var->dimids[0])))
             { if (!ret) ret = NC_EHDFERR; goto fail; }
+        if ((ret = nx4_reattach_dim(grp, var->dim[0], -1,
+                                  dinfo->hdf_dataset, var)))
+            goto fail;
         vinfo->hdf_dataset = H5Dopen2(hdf_grp, name, H5P_DEFAULT);
     } else {
         vinfo->hdf_dataset = H5Dcreate2(hdf_grp, name, hdf_type, space,
@@ -1408,7 +1422,14 @@ nx4_dcpl_fill(hid_t dcpl, NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
     } else if ((ret = nc4_get_fill_value(h5, var, &fillp)))
         return ret;
     if (fillp) {
-        fill_type = H5Tget_native_type(hdf_type, H5T_DIR_DEFAULT);
+        /* NEP-only atomic types: `fillp` holds raw file-format bytes
+         * and `H5Tget_native_type()` widens them to the nearest native
+         * type (bfloat16 -> a 4-byte native float), which reads past
+         * the buffer (#377) — pass the dataset's own datatype. */
+        if (var->type_info->hdr.id > NC_STRING)
+            fill_type = H5Tcopy(hdf_type);
+        else
+            fill_type = H5Tget_native_type(hdf_type, H5T_DIR_DEFAULT);
         if (fill_type < 0 ||
             H5Pset_fill_value(dcpl, fill_type, fillp) < 0)
             ret = NC_EHDFERR;
@@ -1424,14 +1445,17 @@ nx4_dcpl_fill(hid_t dcpl, NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
 /**
  * @brief Create or re-create the HDF5 dataset for a variable.
  *
- * Called by `NEXTCDF4_def_var` and by every def-var setter
- * (`def_var_chunking`, `deflate`, `fletcher32`, `filter`, `fill`,
- * `endian`): because HDF5 dataset creation properties are immutable,
- * changing chunking/compression/fill/endian requires deleting the
- * dataset link and recreating it with a new creation property list.
- * The hidden id attributes and dimension-scale attachments are
- * rewritten each time. The variable's filter pipeline comes from
- * `var->filters` via `nx4_apply_filters()`.
+ * Called by `NEXTCDF4_def_var` and from `NEXTCDF4__enddef` for every
+ * variable a def-var setter marked `dcpl_dirty`: because HDF5 dataset
+ * creation properties are immutable, changing
+ * chunking/compression/fill/endian requires deleting the dataset link
+ * and recreating it with a new creation property list. Recreation
+ * detaches the dimension-scale references that point at the old
+ * object, rewrites the hidden id attributes and the variable's scale
+ * attachments, re-attaches a coordinate variable's dependents to the
+ * new scale, and restores the user attributes the delete dropped.
+ * The variable's filter pipeline comes from `var->filters` via
+ * `nx4_apply_filters()`.
  *
  * @param var Variable.
  * @param h5 NetCDF-4 file state.
@@ -1449,6 +1473,7 @@ nx4_create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
     hid_t hdf_type = -1;
     hid_t space = -1;
     hid_t dcpl = -1;
+    hid_t old_dset = -1;
     hsize_t dims[NC_MAX_VAR_DIMS];
     hsize_t maxdims[NC_MAX_VAR_DIMS];
     hsize_t chunks[NC_MAX_VAR_DIMS];
@@ -1460,10 +1485,44 @@ nx4_create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
                   !strcmp(var->hdr.name, var->dim[0]->hdr.name) &&
                   var->dim[0]->container == grp);
 
-    /* Recreation is delete-and-rebuild: drop the old link and dataset,
-     * rebuild dataspace and creation properties from the current
-     * settings, recreate, rewrite the id attributes and scale
-     * attachments. */
+    /* Recreation is delete-and-rebuild. Before the old dataset is
+     * deleted, remove the dimension-scale references that point at
+     * it: a non-coordinate variable detaches from each of its dims'
+     * scales (removing the scale's dangling REFERENCE_LIST entry), and
+     * a coordinate variable — whose dataset IS the scale — detaches
+     * every dependent variable so its DIMENSION_LIST entry does not
+     * outlive the object. First creation of a coordinate variable
+     * hits the same path: dependents then detach from the placeholder
+     * scale def_dim created. */
+    if (coordinate) {
+        NEXTCDF4_DIM_INFO_T *dinfo =
+            (NEXTCDF4_DIM_INFO_T *)var->dim[0]->format_dim_info;
+        if (dinfo)
+            old_dset = dinfo->hdf_dataset;
+    } else if (vinfo) {
+        old_dset = vinfo->hdf_dataset;
+    }
+    if (old_dset >= 0) {
+        if (coordinate) {
+            if ((ret = nx4_reattach_dim(grp, var->dim[0], old_dset,
+                                      -1, var)))
+                return ret;
+        } else {
+            for (i = 0; i < (int)var->ndims; i++) {
+                NEXTCDF4_DIM_INFO_T *dinfo = (NEXTCDF4_DIM_INFO_T *)
+                    var->dim[i]->format_dim_info;
+                if (dinfo && dinfo->hdf_dataset >= 0)
+                    H5E_BEGIN_TRY {
+                        H5DSdetach_scale(old_dset, dinfo->hdf_dataset,
+                                         (unsigned)i);
+                    } H5E_END_TRY;
+            }
+        }
+    }
+
+    /* Drop the old link and dataset, then rebuild dataspace and
+     * creation properties from the current settings, recreate, and
+     * rewrite the id attributes and scale attachments. */
     H5E_BEGIN_TRY {
         if (vinfo && vinfo->hdf_dataset >= 0) {
             H5Dclose(vinfo->hdf_dataset);
@@ -1588,7 +1647,25 @@ nx4_create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
                 goto fail;
             }
         }
+    } else {
+        NEXTCDF4_DIM_INFO_T *dinfo =
+            (NEXTCDF4_DIM_INFO_T *)var->dim[0]->format_dim_info;
+        /* Reattach every dependent variable to the new scale object —
+         * on recreation their DIMENSION_LIST entries pointed at the
+         * deleted one; on first creation they pointed at the
+         * placeholder scale. */
+        if (dinfo && dinfo->hdf_dataset >= 0 &&
+            (ret = nx4_reattach_dim(grp, var->dim[0], -1,
+                                  dinfo->hdf_dataset, var)))
+            goto fail;
     }
+
+    /* Recreation dropped every attribute on the dataset — the hidden
+     * id attributes were rewritten above; restore the user's
+     * attributes in index order. On first creation the list is
+     * empty. */
+    if ((ret = nx4_rewrite_atts(vinfo->hdf_dataset, var->att)))
+        goto fail;
 
     H5Tclose(hdf_type);
     H5Sclose(space);
@@ -1639,6 +1716,11 @@ nx4_find_var_for_write(int ncid, int varid, NC_FILE_INFO_T **h5,
         return NC_EPERM;
     if (!(*file)->define_mode)
         return NC_ENOTINDEFINE;
+    /* Dataset creation properties are immutable once the dataset
+     * exists: any def-var setter after `_enddef` committed it is too
+     * late, matching upstream's `var->created` checks. */
+    if ((*var)->created)
+        return NC_ELATEDEF;
     return NC_NOERR;
 }
 
@@ -1646,9 +1728,10 @@ nx4_find_var_for_write(int ncid, int varid, NC_FILE_INFO_T **h5,
  * @brief Set storage and chunk sizes — the `nc_def_var_chunking()`
  * dispatch entry.
  *
- * Records the layout and per-dimension chunk sizes, then recreates
- * the dataset via create_var_dataset() since layout is fixed at
- * dataset creation in HDF5.
+ * Records the layout and per-dimension chunk sizes and marks the
+ * variable `dcpl_dirty`; layout is fixed at dataset creation in
+ * HDF5, so `_enddef` rebuilds the dataset once with the new
+ * creation properties.
  *
  * @param ncid NetCDF file identifier.
  * @param varid Variable identifier.
@@ -1693,16 +1776,17 @@ NEXTCDF4_def_var_chunking(int ncid, int varid, int storage,
             var->chunksizes[i] = chunksizesp[i];
     }
 
-    return nx4_create_var_dataset(var, h5, file, grp);
+    ((NEXTCDF4_VAR_INFO_T *)var->format_var_info)->dcpl_dirty = 1;
+    return NC_NOERR;
 }
 
 /**
  * @brief Set fill behavior — the `nc_def_var_fill()` dispatch entry.
  *
  * Stores the no-fill flag and a private copy of the fill value on the
- * variable, then recreates the dataset: fill value and fill time are
- * HDF5 creation properties. (Known defect #377: a bfloat16 fill value
- * is not recovered on reopen.)
+ * variable and marks it `dcpl_dirty`: fill value and fill time are
+ * HDF5 creation properties, so `_enddef` rebuilds the dataset once
+ * with them.
  *
  * @param ncid NetCDF file identifier.
  * @param varid Variable id.
@@ -1737,14 +1821,16 @@ NEXTCDF4_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
         var->fill_val_changed = 1;
     }
 
-    return nx4_create_var_dataset(var, h5, file, grp);
+    ((NEXTCDF4_VAR_INFO_T *)var->format_var_info)->dcpl_dirty = 1;
+    return NC_NOERR;
 }
 
 /**
  * @brief Set the on-disk byte order — the `nc_def_var_endian()`
  * dispatch entry.
  *
- * Overrides the datatype's byte order in create_var_dataset();
+ * Records the byte order on the variable and marks it `dcpl_dirty`;
+ * the `_enddef` rebuild applies it to the dataset's datatype.
  * `NC_ENDIAN_NATIVE` leaves the little-endian default produced by
  * NEXTCDF4_map_hdf_type().
  *
@@ -1769,7 +1855,8 @@ NEXTCDF4_def_var_endian(int ncid, int varid, int endianness)
         return NC_EINVAL;
 
     var->endianness = endianness;
-    return nx4_create_var_dataset(var, h5, file, grp);
+    ((NEXTCDF4_VAR_INFO_T *)var->format_var_info)->dcpl_dirty = 1;
+    return NC_NOERR;
 }
 
 /**
@@ -2153,9 +2240,12 @@ NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type datatype,
         }
     }
     if (var && !strcmp(name, NC_FillValue)) {
-        /* Mirror the value into var->fill_value and recreate the
-         * dataset so the DCPL carries it; the dataset handle in loc is
-         * replaced, so re-resolve the attribute context. */
+        /* Mirror the value into var->fill_value; a pre-commit variable
+         * is marked dirty so the `_enddef` rebuild carries it in the
+         * DCPL fill message too. Once the dataset is committed the
+         * DCPL is immutable — the attribute (which is written
+         * normally, below) and var->fill_value carry the value, the
+         * same user-visible behavior upstream has. */
         free(var->fill_value);
         if (datatype == NC_STRING)
             var->fill_value = strdup(*(char **)data);
@@ -2166,10 +2256,8 @@ NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type datatype,
         if (!var->fill_value)
             { free(data); return NC_ENOMEM; }
         var->fill_val_changed = 1;
-        if ((ret = nx4_create_var_dataset(var, h5, file, grp)))
-            { free(data); return ret; }
-        if ((ret = get_att_context(grp, var, &list, &loc)))
-            { free(data); return ret; }
+        if (!var->created)
+            ((NEXTCDF4_VAR_INFO_T *)var->format_var_info)->dcpl_dirty = 1;
     }
 
     /* Replace an existing attribute of the same name. Upstream keeps
@@ -3608,8 +3696,20 @@ load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
                 }
                 if (!NEXTCDF4_type_size(xtype, &fsize) &&
                     (var->fill_value = malloc(fsize))) {
-                    hid_t mem_type = H5Tget_native_type(ftype, H5T_DIR_DEFAULT);
+                    /* NEP-only types: `H5Tget_native_type()` widens
+                     * them to a larger native type (bfloat16 -> a
+                     * 4-byte float), overflowing `var->fill_value`
+                     * (#377) — the memory type keeps the on-disk
+                     * size. */
+                    int close_mem = 0;
+                    hid_t mem_type;
                     int rv;
+                    if (xtype > NC_STRING)
+                        mem_type = NEXTCDF4_memory_type(xtype, &close_mem);
+                    else {
+                        mem_type = H5Tget_native_type(ftype, H5T_DIR_DEFAULT);
+                        close_mem = (mem_type >= 0);
+                    }
                     if (mem_type < 0) {
                         free(var->fill_value);
                         var->fill_value = NULL;
@@ -3619,7 +3719,8 @@ load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
                             free(var->fill_value);
                             var->fill_value = NULL;
                         }
-                        H5Tclose(mem_type);
+                        if (close_mem)
+                            H5Tclose(mem_type);
                     }
                 }
             }
@@ -3660,6 +3761,7 @@ typedef struct {
     NCindex *list;
     NC_OBJ *container;
     hid_t loc;
+    int is_var;         /**< Nonzero when iterating a variable's dataset. */
 } att_iter_data_t;
 
 /**
@@ -3696,7 +3798,9 @@ att_iter_index(hid_t obj, int group)
  *
  * Reserved (internal) attributes and attributes whose datatype
  * doesn't map to an atomic nc_type are skipped — neither should make
- * an otherwise-valid file unopenable.
+ * an otherwise-valid file unopenable. `_FillValue` on a variable is
+ * the one exception: upstream exposes it as a normal, user-visible
+ * attribute (#377).
  *
  * @param loc HDF5 location identifier.
  * @param attr_name HDF5 attribute name.
@@ -3710,11 +3814,51 @@ load_att_cb(hid_t loc, const char *attr_name, const H5A_info_t *ainfo,
 {
     att_iter_data_t *ad = op_data;
     (void)ainfo;
-    if (is_reserved_att(attr_name))
+    if (is_reserved_att(attr_name) &&
+        !(ad->is_var && !strcmp(attr_name, NC_FillValue)))
         return 0;
     if (read_hdf5_att(loc, attr_name, ad->list, ad->container))
         return 0; /* skip attributes that cannot be mapped */
     return 0;
+}
+
+/**
+ * @brief Mirror a loaded `_FillValue` attribute into
+ * `var->fill_value`.
+ *
+ * `_FillValue` loads as a normal attribute; when present it is the
+ * authoritative fill for `nc_inq_var_fill()` — the DCPL fill message
+ * recovered earlier fills only the gap when no attribute exists.
+ *
+ * @param var Variable whose attribute index was just populated.
+ */
+static void
+nx4_fill_from_att(NC_VAR_INFO_T *var)
+{
+    NC_ATT_INFO_T *att;
+    size_t size;
+
+    if (!(att = find_att(var->att, NC_FillValue)) || !att->data ||
+        att->len < 1 || att->nc_typeid != var->type_info->hdr.id)
+        return;
+    if (att->nc_typeid == NC_STRING) {
+        char *copy = strdup(*(char **)att->data);
+        if (!copy)
+            return;
+        free(var->fill_value);
+        var->fill_value = copy;
+        return;
+    }
+    if (NEXTCDF4_type_size(var->type_info->hdr.id, &size))
+        return;
+    {
+        void *copy = malloc(size);
+        if (!copy)
+            return;
+        memcpy(copy, att->data, size);
+        free(var->fill_value);
+        var->fill_value = copy;
+    }
 }
 
 /**
@@ -3757,18 +3901,21 @@ load_variables(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
     if (maxid < 0) {
         /* No stored varids: load in HDF5 iteration order. */
         for (i = 0; i < vl.count; i++) {
+            NC_VAR_INFO_T *lvar;
             if ((ret = load_one_var(file, h5, grp, vl.names[i], vl.varids[i]))) {
                 free_name_list(vl.names, vl.count);
                 free(vl.varids);
                 return ret;
             }
-            ad.loc = ((NEXTCDF4_VAR_INFO_T *)
-                      ((NC_VAR_INFO_T *)ncindexith(grp->vars, loaded))
-                      ->format_var_info)->hdf_dataset;
-            ad.list = ((NC_VAR_INFO_T *)ncindexith(grp->vars, loaded))->att;
-            ad.container = &((NC_VAR_INFO_T *)ncindexith(grp->vars, loaded))->hdr;
+            lvar = (NC_VAR_INFO_T *)ncindexith(grp->vars, loaded);
+            ad.loc = ((NEXTCDF4_VAR_INFO_T *)lvar->format_var_info)
+                     ->hdf_dataset;
+            ad.list = lvar->att;
+            ad.container = &lvar->hdr;
+            ad.is_var = 1;
             H5Aiterate2(ad.loc, att_iter_index(ad.loc, 0), H5_ITER_INC,
                         NULL, load_att_cb, &ad);
+            nx4_fill_from_att(lvar);
             loaded++;
         }
     } else {
@@ -3777,18 +3924,21 @@ load_variables(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
         for (id = 0; id <= maxid; id++) {
             for (i = 0; i < vl.count; i++) {
                 if (vl.varids[i] == id) {
+                    NC_VAR_INFO_T *lvar;
                     if ((ret = load_one_var(file, h5, grp, vl.names[i], vl.varids[i]))) {
                         free_name_list(vl.names, vl.count);
                         free(vl.varids);
                         return ret;
                     }
-                    ad.loc = ((NEXTCDF4_VAR_INFO_T *)
-                              ((NC_VAR_INFO_T *)ncindexith(grp->vars, loaded))
-                              ->format_var_info)->hdf_dataset;
-                    ad.list = ((NC_VAR_INFO_T *)ncindexith(grp->vars, loaded))->att;
-                    ad.container = &((NC_VAR_INFO_T *)ncindexith(grp->vars, loaded))->hdr;
+                    lvar = (NC_VAR_INFO_T *)ncindexith(grp->vars, loaded);
+                    ad.loc = ((NEXTCDF4_VAR_INFO_T *)lvar->format_var_info)
+                             ->hdf_dataset;
+                    ad.list = lvar->att;
+                    ad.container = &lvar->hdr;
+                    ad.is_var = 1;
                     H5Aiterate2(ad.loc, att_iter_index(ad.loc, 0),
                                 H5_ITER_INC, NULL, load_att_cb, &ad);
+                    nx4_fill_from_att(lvar);
                     loaded++;
                     break;
                 }
@@ -3826,6 +3976,7 @@ load_group_attributes(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
     ad.loc = hdf_grp;
     ad.list = grp->att;
     ad.container = &grp->hdr;
+    ad.is_var = 0;
     if (H5Aiterate2(hdf_grp, att_iter_index(hdf_grp, 1), H5_ITER_INC,
                     NULL, load_att_cb, &ad) < 0)
         return NC_EHDFERR;

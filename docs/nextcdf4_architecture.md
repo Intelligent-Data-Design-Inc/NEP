@@ -124,10 +124,11 @@ lives in `nxt4filter.c`:
 - **Define**: `NEXTCDF4_def_var_filter`, `NEXTCDF4_def_var_deflate`
   and `NEXTCDF4_def_var_fletcher32` append to the list (upstream's
   `nc_def_var_szip`, `nc_def_var_bzip2`, `nc_def_var_zstandard` and
-  the quantize path all funnel through the generic entry) and then
-  call `nx4_create_var_dataset`, because HDF5 creation properties are
-  immutable — the dataset is deleted and recreated with the new
-  pipeline.
+  the quantize path all funnel through the generic entry) and mark
+  the variable dirty. Because HDF5 creation properties are immutable,
+  `_enddef` then recreates each dirty dataset once — detaching
+  dimension scales and dependents before `H5Ldelete` and re-attaching
+  them after — with the collected pipeline.
 - **Apply**: `nx4_apply_filters` translates the list into DCPL calls:
   `H5Pset_fletcher32`/`H5Pset_shuffle`/`H5Pset_deflate`/`H5Pset_szip`
   for the built-ins, `H5Pset_filter(..., H5Z_FLAG_OPTIONAL, ...)` for
@@ -151,7 +152,9 @@ lives in `nxt4filter.c`:
 
 `NC_CLASSIC_MODEL` files reject every filter and storage setter with
 `NC_EINVAL`; scalars reject filters; and committed variables reject
-new filters with `NC_ELATEDEF`.
+every dataset-property setter — filters, chunking, fill, endianness,
+quantization — with `NC_ELATEDEF`, matching upstream's
+`nc_def_var_extra`.
 
 ## Compatibility modes
 

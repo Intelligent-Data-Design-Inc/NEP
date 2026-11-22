@@ -116,10 +116,10 @@ Probed with a small program linked against `build/src/libncnextcdf4.so`
 | 1 | **Variables/attributes of user-defined types are unusable.** `nc_def_var` and `nc_put_att` call `NEXTCDF4_check_atomic_type`, which returns `NC_EBADTYPE` for any non-atomic typeid. Compound/vlen/enum/opaque types can be defined but no variable or attribute can use them. | `nc_def_var(ncid, "cv", compound_typeid, ...)` → `NC_EBADTYPE` |
 | 2 | **Files containing user-typed or `NC_STRING` variables cannot be opened.** `load_one_var` resolves the dataset type through `map_nc_type`, which has no committed-type, vlen, or variable-length-string case → `NC_EBADTYPE` fails `nc_open`. This breaks the plan's "full read compatibility with existing NetCDF-4/HDF5 files" goal for a large class of upstream files. | NEXTCDF-4's own file with an `NC_STRING` var fails to reopen; an upstream `NC_NETCDF4` file with a compound or `NC_STRING` var fails to open; same file with only `NC_INT` opens fine |
 | 3 | **`NC_STRING` attributes are silently lost on reopen.** File opens, but `nc_get_att_string` returns `NC_ENOTATT` — the variable-length-string attribute is not loaded. | probe: `put_att_string` → close → open → `get_att_string` = `NC_ENOTATT` |
-| 4 | **Four tests disabled** (`test/nextcdf4/CMakeLists.txt`): `tst_nextcdf4_float16`, `tst_nextcdf4_complex`, `tst_nextcdf4_bitfield`, `tst_explore` abort in netcdf-c `NC_reclaim_data` (`USEFILEINFO` assertion) after reopen. `tst_nextcdf4_ref`, `tst_nextcdf4_rename`, the ported `tst_rename`, and the five Sprint 1L2 ports were re-enabled in Sprint 1L2 (see gaps 13–16, all fixed). | #379; `docs/releases/v4.2.0.md` |
-| 5 | **Def-var setters recreate the HDF5 dataset** (`nc_def_var_fill`/`chunking`/`deflate`/`endian`/`fletcher32`/`filter`), leaving an orphaned dataset object and a stale dimension-scale reference. The contiguous→chunked-deflate-0 half was fixed in Sprint 1C; the orphan remains. | #382 |
-| 6 | **`NC_BFLOAT16` fill values don't work**: `_FillValue` attribute write rejected, `nc_def_var_fill` value not recovered on reopen. | #377 |
-| 7 | **Installed `nextcdf4dispatch.h` is unusable downstream** — it includes `config.h` (not installed) and `ncdispatch.h`, so `NC_NEXTCDF4_initialize()` can't be declared by applications outside the tree. | #378; header unchanged |
+| 4 | ~~**Four tests disabled**~~ — fixed in Sprint 1M: the abort was upstream netcdf-c's `FILEINFOFLAGS` covering only UDF slots 0–1, fixed upstream by the 64-slot `UDFMODEL` scheme (netcdf-c `main`, shipping in 4.10.2). `NEP_ENABLE_NEXTCDF4` now requires 64-slot headers at configure time (`NC_UDF` + `NC_MAX_UDF_FORMATS >= 64`, `FATAL_ERROR` on 10-slot) and all four tests are re-enabled unconditionally. Note: the flag-value ABI differs between the two schemes — a NEP build runs only against the scheme it was built for. | #379 |
+| 5 | ~~**Def-var setters recreate the HDF5 dataset**~~ — fixed in Sprint 1M: setters (`nc_def_var_fill`/`chunking`/`deflate`/`endian`/`fletcher32`/`filter`/`szip` via `nx4_mark_dcpl_dirty`; quantization is applied at data-conversion time and needs no rebuild) only update in-memory metadata and mark the variable dirty; `_enddef` rebuilds each dirty dataset once — detaching scales/dependents before `H5Ldelete`, re-attaching after — and rewrites user attributes in index order. Committed variables reject all dataset-property setters with `NC_ELATEDEF` (upstream parity), so written data can no longer be silently destroyed; a rebuilt var leaves one bounded orphaned object header. | #382 |
+| 6 | ~~**`NC_BFLOAT16` fill values don't work**~~ — fixed in Sprint 1M: `nx4_dcpl_fill` no longer widens the fill message through `H5Tget_native_type` (which returned a 4-byte float for bf16, causing a heap over-read and storing 0); `_FillValue` loads as a normal attribute on reopen (`nc_inq_att` finds it) while `var->fill_value` is recovered from the DCPL via `NEXTCDF4_memory_type`-sized buffers. | #377 |
+| 7 | ~~**Installed `nextcdf4dispatch.h` is unusable downstream**~~ — fixed in Sprint 1M: the installed header no longer includes `config.h`/`ncdispatch.h` and now declares only `NC_FORMATX_NEXTCDF4`, the create/open/abort/close/sync/inq-format entries, `NC_NEXTCDF4_initialize`/`finalize`, and `NEXTCDF4_dispatch_table` against `netcdf.h`/`netcdf_dispatch.h`/`nep.h`; private declarations moved to `src/nextcdf4/nxt4internal.h`. Sibling installed dispatch headers share the original defect — tracked in #389. | #378 |
 | 8 | ~~**Small-float coordinate variables** — the design banned them but nothing enforces it.~~ Done in Sprint 1L1: allowed and documented; `tst_nextcdf4_var` covers bf16/f16 coord vars. | #380 |
 | 9 | **Conversion reads take an extra full-buffer pass** (performance, not correctness). | #386 |
 | 10 | **Mode flags not validated**: `NC_DISKLESS` is accepted but silently creates a file on disk; `NC_MPIIO`/`NC_MPIPOSIX`/`NC_SHARE`/`NC_PERSIST`/`NC_INMEMORY` are likewise neither honored nor rejected. | probe: `NC_NEXTCDF4|NC_DISKLESS` creates a real file |
@@ -138,9 +138,11 @@ resolved by `test_issue_376` in `tst_nextcdf4_conv.c`), #381 (`NC_ERANGE` —
 implemented in Sprint 1H) and #372 (HDF5 detection — `cmake/NEPFindHDF5.cmake`,
 imported targets, SONAME check, CMake 3.19, Spack gating all landed in Sprint 1)
 were closed on 2026-11-21 with explanatory comments, as was #380
-(small-float coordinate variables — Sprint 1L1). Still open and unresolved:
-#374 (conda-forge submission is Sprint 2 work), #377, #378, #379, #382,
-#386.
+(small-float coordinate variables — Sprint 1L1). #377, #378, #379 and
+#382 were fixed in Sprint 1M; #389 (same `config.h` defect in the six
+other installed dispatch headers) was filed from that sprint. Still open
+and unresolved: #374 (conda-forge submission is Sprint 2 work), #386,
+#389.
 
 ## Planned but not started
 
@@ -173,10 +175,7 @@ Sprint 1 (deferred when v4.1.0 shipped docs+logging instead):
   `nc_ref_get_file_name`/`nc_ref_get_obj_name`.
 - Reference-typed vars can't be compound members; no default fill for
   `NC_STD_REF`, `NC_BITFIELD*`, `NC_FLOAT6_E2M3`, `NC_FLOAT4_E2M1`.
-- A variable defined in a subgroup whose name matches an ancestor
-  group's dimension is misdetected as a coordinate variable and fails
-  `nc_def_var` with `NC_EHDFERR` — define coordinate variables in the
-  dimension's own group (candidate fix for Sprint 1M).
+
 - Typed calls on FP8/FP6/FP4 (HDF5 2.1.1 known problem) — raw-bits I/O only.
 - Legacy `H5T_STD_REF_OBJ`/`H5T_STD_REF_DSETREG` datasets rejected at open.
 - No changes to netcdf-c source; NEXTCDF-4 is a pure UDF expansion pack.
@@ -207,12 +206,12 @@ Owned by v4.3.0 Sprints 1L1–1R (see `docs/roadmap.md`), ordered by severity.
    implement `nc_insert_array_compound` + `nc_put/get_vlen_element`
    (gaps 1–2). Until then `NC_NETCDF4_MODEL` cannot honestly claim
    upstream-file compatibility. → Sprint 1N
-3. Root-cause and fix the `NC_reclaim_data`/`USEFILEINFO` abort; re-enable
-   the six disabled tests (#379). → Sprint 1M
-4. Fix dataset-recreation orphans from def-var setters (#382) and the
-   `NC_BFLOAT16` fill-value loss (#377). → Sprint 1M
-5. Fix the installed `nextcdf4dispatch.h` (#378) so applications can call
-   `NC_NEXTCDF4_initialize()`. → Sprint 1M
+3. ~~Root-cause and fix the `NC_reclaim_data`/`USEFILEINFO` abort; re-enable
+   the disabled tests (#379).~~ — done in Sprint 1M.
+4. ~~Fix dataset-recreation orphans from def-var setters (#382) and the
+   `NC_BFLOAT16` fill-value loss (#377).~~ — done in Sprint 1M.
+5. ~~Fix the installed `nextcdf4dispatch.h` (#378) so applications can call
+   `NC_NEXTCDF4_initialize()`.~~ — done in Sprint 1M.
 6. Validate or explicitly reject `NC_DISKLESS`/`NC_MPIIO`/`NC_SHARE`/
    `NC_INMEMORY`/`NC_PERSIST` mode flags instead of ignoring them (gap 10).
    → Sprint 1O

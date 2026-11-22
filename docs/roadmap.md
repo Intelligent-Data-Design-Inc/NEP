@@ -148,13 +148,16 @@ Plan: [docs/plan/v4.3.0-sprint1L2-port-nc-test4.md](plan/v4.3.0-sprint1L2-port-n
 
 
 #### Sprint 1M - Issues
-Fix the open NEXTCDF-4 defects tracked in `docs/nextcdf4_status_v4_3_0.md`:
+Fix the four open NEXTCDF-4 defect issues:
 
-- #378: make installed `include/nextcdf4dispatch.h` usable downstream — drop the `config.h`/`ncdispatch.h` includes so `NC_NEXTCDF4_initialize()` can be declared outside the NEP build tree.
-- #382: stop def-var setters (`def_var_fill`, `chunking`, `deflate`, `endian`, `fletcher32`, `filter`) from recreating the HDF5 dataset, or clean up the orphaned dataset object and stale dimension-scale reference they leave behind.
-- #377: make a `NC_BFLOAT16` fill value set with `nc_def_var_fill` survive close/reopen; define the `_FillValue` attribute policy for bfloat16.
-- #379: root-cause the netcdf-c `NC_reclaim_data` `USEFILEINFO` abort on reopen and re-enable `tst_nextcdf4_float16`, `tst_nextcdf4_complex`, `tst_nextcdf4_bitfield`, `tst_nextcdf4_ref`, `tst_explore` (and `tst_rename` if it shares the cause).
-- Out of scope: #380 (small-float coordinate variables — still needs a policy decision), #386 (performance only).
+- #378: split `include/nextcdf4dispatch.h` — installed part keeps `NC_NEXTCDF4_initialize`/`finalize`/`NC_FORMATX_NEXTCDF4` and includes only `<netcdf.h>`, `<netcdf_dispatch.h>`, `nep.h`; dispatch entries + `NEXTCDF4_dispatch_table` move to `nxt4internal.h`.
+- #382: setters mark a `dcpl_dirty` flag instead of recreating; `_enddef` rebuilds each dirty var once (detach scales/dependents, recreate, rewrite atts, re-attach). `var->created` set at `_enddef`; all DCPL setters + quantize then return `NC_ELATEDEF` — fixes verified att-wipe and silent data-loss paths.
+- #377: root cause is `H5Tget_native_type` widening NEP types (bf16→f32): `nx4_dcpl_fill`/`load_one_var` use the dataset's own HDF5 type for `H5Pset/get_fill_value`; `_FillValue` loads as a normal visible attribute on datasets.
+- #379: abort traced to upstream `FILEINFOFLAGS` covering only UDF0/UDF1 (fixed in `5a81fb791`, 64-slot rework). NEXTCDF-4 requires the 64-slot scheme at configure time (`NC_MAX_UDF_FORMATS>=64` compile check → `FATAL_ERROR`); re-enable `tst_nextcdf4_float16`, `tst_nextcdf4_complex`, `tst_nextcdf4_bitfield`, `tst_explore` unconditionally. Spack overlay gains `depends_on("netcdf-c@4.10.2:", when="+nextcdf4 @4.3.0:")`.
+- New `tst_nextcdf4_setters` + `tst_nextcdf4_var` fill coverage; status doc and docs updated; #377/#378/#379/#382 closed.
+- Out of scope: #386 (performance only), other installed dispatch headers' `config.h` defect (#389), project-wide netcdf-c ≥4.10.2 floor once that release ships (it has not — Sprint 2 owns the bump), no freespace manager, release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1M-fix-nextcdf4-issues.md](plan/v4.3.0-sprint1M-fix-nextcdf4-issues.md)
 
 #### Sprint 1N - User Defined Types
 Make compound/vlen/enum/opaque types usable end-to-end, not just definable (`docs/nextcdf4_status_v4_3_0.md` gaps 1-2):

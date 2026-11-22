@@ -36,7 +36,7 @@ See **[Example Programs](examples.md)** — complete program listing by category
 ## Installation
 
 NEP requires:
-- NetCDF-C library (v4.10.1+) (required for UDF slots > 2 used by FITS, CDF, and PDS4)
+- NetCDF-C library (v4.10.1+) (required for UDF slots > 2 used by FITS, CDF, and PDS4). NEXTCDF-4 additionally requires the 64-slot UDF headers — netcdf-c 4.10.2 once released, `main` until then.
 - HDF5 library (v1.10+) and its dependencies
 - NetCDF-Fortran library (optional, for Fortran support)
 - NASA CDF library v3.9+ (optional, for CDF file reading)

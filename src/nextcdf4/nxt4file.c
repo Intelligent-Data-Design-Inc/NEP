@@ -480,6 +480,57 @@ NEXTCDF4_inq_format_extended(int ncid, int *formatp, int *modep)
 }
 
 /**
+ * @brief Rebuild dirty variable datasets and mark them committed.
+ *
+ * Def-var setters only record their settings and flag the variable
+ * `dcpl_dirty`; `_enddef` performs the single rebuild per variable
+ * that the immutable HDF5 creation properties require. Afterwards
+ * every variable with a live dataset is marked `var->created`, so
+ * post-commit setter calls fail with `NC_ELATEDEF`, matching
+ * upstream.
+ *
+ * @param h5 NetCDF-4 file state.
+ * @param file NEXTCDF-4 file state.
+ * @param grp Group to walk (recursively).
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+static int
+commit_group_vars(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file,
+                  NC_GRP_INFO_T *grp)
+{
+    size_t i;
+    int ret;
+
+    for (i = 0; i < ncindexsize(grp->vars); i++) {
+        NC_VAR_INFO_T *var = (NC_VAR_INFO_T *)ncindexith(grp->vars, i);
+        NEXTCDF4_VAR_INFO_T *vinfo;
+        if (!var || !(vinfo = var->format_var_info))
+            continue;
+        if (vinfo->dcpl_dirty && vinfo->hdf_dataset >= 0) {
+            if ((ret = nx4_create_var_dataset(var, h5, file, grp)))
+                return ret;
+            vinfo->dcpl_dirty = 0;
+        }
+        if (vinfo->hdf_dataset >= 0) {
+            /* The variable's metadata and attributes are fully in
+             * memory — flag them read so upstream's lazy-load paths
+             * (nc4_hdf5_find_grp_h5_var) leave them alone, then mark
+             * the dataset committed. */
+            var->meta_read = 1;
+            var->atts_read = 1;
+            var->created = 1;
+        }
+    }
+    for (i = 0; i < ncindexsize(grp->children); i++) {
+        NC_GRP_INFO_T *child =
+            (NC_GRP_INFO_T *)ncindexith(grp->children, i);
+        if (child && (ret = commit_group_vars(h5, file, child)))
+            return ret;
+    }
+    return NC_NOERR;
+}
+
+/**
  * @brief Materialize pending metadata and leave define mode — the
  * `nc_enddef()` dispatch entry.
  *
@@ -520,6 +571,8 @@ NEXTCDF4__enddef(int ncid, size_t h_minfree, size_t v_align,
     if (!file->define_mode)
         return NC_EINVAL;
     if ((ret = NEXTCDF4_write_types(h5)))
+        return ret;
+    if ((ret = commit_group_vars(h5, file, h5->root_grp)))
         return ret;
     if (H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0)
         return NC_EHDFERR;

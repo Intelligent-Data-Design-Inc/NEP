@@ -15,6 +15,52 @@
 #include "nextcdf4dispatch.h"
 #include "nxt4err.h"
 
+/** @brief Dispatch-table entry behind `nc_create()` with
+ * `NC_NEXTCDF4`: creates the HDF5 file and writes the backend marker
+ * attributes.
+ */
+extern int NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
+                           size_t *chunksizehintp, void *parameters,
+                           const NC_Dispatch *dispatch, int ncid);
+
+/** @brief Dispatch-table entry behind `nc_open()` with `NC_NEXTCDF4`:
+ * opens the HDF5 file, validates the marker attributes and loads all
+ * metadata.
+ */
+extern int NEXTCDF4_open(const char *path, int mode, int basepe,
+                         size_t *chunksizehintp, void *parameters,
+                         const NC_Dispatch *dispatch, int ncid);
+
+/** @brief Dispatch-table entry behind `nc_abort()`: releases the
+ * file's resources; shares the close path.
+ */
+extern int NEXTCDF4_abort(int ncid);
+
+/** @brief Dispatch-table entry behind `nc_close()`: ends define mode
+ * if needed, flushes, closes all HDF5 objects and frees state.
+ */
+extern int NEXTCDF4_close(int ncid, void *parameters);
+
+/** @brief Dispatch-table entry behind `nc_sync()`: flushes a
+ * writable file to storage.
+ */
+extern int NEXTCDF4_sync(int ncid);
+
+/** @brief Dispatch-table entry behind `nc_inq_format()`: reports
+ * `NC_FORMAT_NETCDF4` — NEXTCDF-4 files are in the NetCDF-4/HDF5
+ * family.
+ */
+extern int NEXTCDF4_inq_format(int ncid, int *formatp);
+
+/** @brief Dispatch-table entry behind `nc_inq_format_extended()`:
+ * reports `NC_FORMATX_NEXTCDF4` and the effective mode flags.
+ */
+extern int NEXTCDF4_inq_format_extended(int ncid, int *formatp, int *modep);
+
+/** @brief Active NEXTCDF-4 dispatch table, or `NULL` before
+ * initialization. */
+extern const NC_Dispatch *NEXTCDF4_dispatch_table;
+
 /** @brief Hidden root attribute identifying a NEXTCDF-4-created file.
  *
  * Written at create; checked by NEXTCDF4_read_markers() at open to
@@ -76,8 +122,7 @@ typedef struct NEXTCDF4_DIM_INFO
 
 /** @brief NEXTCDF-4-private state hung off
  * `NC_VAR_INFO_T::format_var_info`: the variable's dataset handle
- * plus status flags (rebuilt when the dataset is recreated by a
- * def-var setter). Filter state itself lives on the shared
+ * plus status flags. Filter state itself lives on the shared
  * `NC_VAR_INFO_T::filters` list, exactly as in upstream netcdf-c. */
 typedef struct NEXTCDF4_VAR_INFO
 {
@@ -86,6 +131,10 @@ typedef struct NEXTCDF4_VAR_INFO
                          * `hdf5internal.h`) is set when a mandatory filter
                          * plugin was missing at open and the variable's
                          * data is unreadable. */
+    int dcpl_dirty;     /**< Nonzero when a def-var setter changed storage
+                         * properties that require the dataset to be
+                         * rebuilt; the rebuild happens once at
+                         * `_enddef`. */
 } NEXTCDF4_VAR_INFO_T;
 
 /** @brief NEXTCDF-4-private state hung off
@@ -285,10 +334,6 @@ int NEXTCDF4_rename_var(int ncid, int varid, const char *name);
 /** Delete an attribute.
  */
 int NEXTCDF4_del_att(int ncid, int varid, const char *name);
-
-/** Write all in-memory attributes to their HDF5 group or dataset.
- */
-int NEXTCDF4_write_attributes(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5);
 
 /* Group and type operations. */
 /** Create a subgroup below a group.
