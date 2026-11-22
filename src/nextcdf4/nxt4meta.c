@@ -2346,6 +2346,18 @@ NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type datatype,
             return NC_EBADTYPE;
     }
 
+    if (var && !strcmp(name, NC_FillValue)) {
+        /* Upstream routes variable _FillValue attributes through the
+         * fill machinery: exactly one value of the variable's type,
+         * and no changes after data have been written. */
+        if (len != 1)
+            return NC_EINVAL;
+        if (var->written_to)
+            return NC_ELATEFILL;
+        if (datatype != var->type_info->hdr.id)
+            return NC_EBADTYPE;
+    }
+
     if ((ret = get_att_context(grp, var, &list, &loc)))
         return ret;
 
@@ -3914,7 +3926,8 @@ load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
                             free(var->fill_value);
                             var->fill_value = NULL;
                         }
-                        H5Tclose(mem_type);
+                        if (close_mem)
+                            H5Tclose(mem_type);
                     }
                 }
             }
