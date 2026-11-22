@@ -54,16 +54,20 @@ Mark anything you could not verify as an open question, not a fact.
 
 ## 2. Ask clarifying questions
 
-Ask 3-5 questions, all in one message. Number them. Give each one 2-4
-lettered multiple-choice answers and mark one as **(Recommended)** with a
-one-line reason. Ed may reply with just the letters (for example
-`1a 2b 3a`).
+Present all questions at once, in a single message. Never ask questions
+one at a time, and never use an interactive tool or prompt that delivers
+questions sequentially — Ed sees and answers the whole set together.
+
+Ask 3-5 questions. Number them. Give each one 2-4 lettered
+multiple-choice answers and mark one as **(Recommended)** with a
+one-line reason, so Ed can reply with just the letters (for example
+`1a 2b 3a`) or accept all recommendations at once.
 
 Ask only about decisions that change the plan: scope, interfaces and
 names, behavior changes, compatibility, test strategy, CI, and release
 impact. Do not ask about anything the research already settled.
 
-Wait for the answers before writing anything.
+Wait for one reply to the whole set before writing anything.
 
 ## 3. Write the plan
 
