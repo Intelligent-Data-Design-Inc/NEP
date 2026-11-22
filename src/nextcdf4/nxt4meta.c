@@ -1522,15 +1522,27 @@ nx4_dcpl_fill(hid_t dcpl, NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
      * unreadable to H5Dopen2 — reference datasets get no fill. */
     if (var->type_info->hdr.id == NC_STD_REF)
         return NC_NOERR;
-    /* Variable-sized types (vlens and compounds containing them) have
-     * no HDF5 fill representation: H5Pset_fill_value cannot encode a
-     * heap-allocated payload, so the DCPL carries no fill message.
-     * Unwritten elements read back zeroed descriptors (empty vlens),
-     * and a user-supplied _FillValue attribute still applies through
-     * the attribute machinery. */
     if (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID &&
-        var->type_info->varsized)
+        var->type_info->varsized) {
+        /* Variable-sized types do have an HDF5 fill representation —
+         * the zeroed descriptor (empty vlens, null embedded heaps).
+         * Without an explicit fill message H5Dread fails outright on
+         * unwritten elements of a vlen dataset instead of returning
+         * empty vlens. var->fill_value is a deep copy owned by the
+         * variable, so shallow-copying its descriptor into the fill
+         * message is safe: H5Pset_fill_value serializes it at create
+         * time. */
+        if (!(fillp = calloc(1, var->type_info->size)))
+            return NC_ENOMEM;
+        if (var->fill_value)
+            memcpy(fillp, var->fill_value, var->type_info->size);
+        if (H5Pset_fill_value(dcpl, hdf_type, fillp) < 0) {
+            free(fillp);
+            return NC_EHDFERR;
+        }
+        free(fillp);
         return NC_NOERR;
+    }
     if (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID) {
         /* User-defined types have no netCDF default fill, matching
          * upstream: only an explicit `nc_def_var_fill`/`_FillValue`
@@ -3785,6 +3797,17 @@ scale_resolve_visitor(hid_t did, unsigned int dim, hid_t dsid, void *op_data)
         H5DSget_scale_name(dsid, name, sizeof(name));
         if (name[0])
             diminfo = find_dim_by_name(r->grp, name);
+    }
+    if (!diminfo) {
+        /* Upstream scales for dimensions without coordinate variables
+         * carry a NAME of "This is a netCDF dimension but not a
+         * netCDF variable." — useless for matching. The scale's own
+         * link name is the dimension name instead. */
+        ssize_t nlen = H5Iget_name(dsid, name, sizeof(name));
+        if (nlen > 0) {
+            char *base = strrchr(name, '/');
+            diminfo = find_dim_by_name(r->grp, base ? base + 1 : name);
+        }
     }
     if (diminfo) {
         *r->dimid = diminfo->hdr.id;

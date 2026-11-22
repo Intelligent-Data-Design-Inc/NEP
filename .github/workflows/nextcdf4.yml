@@ -54,6 +54,7 @@ jobs:
         run: |
           cmake --build build --parallel 2
           ctest --test-dir build -R 'tst_nextcdf4_(range|internal_convert|conv)|tst_nep_bfloat16' --output-on-failure
+          ctest --test-dir build -L nextcdf4_user_types --output-on-failure
           ctest --test-dir build --output-on-failure
       - name: Documentation
         run: |
@@ -120,6 +121,7 @@ jobs:
         run: |
           cmake --build build-san --parallel 2
           ctest --test-dir build-san -R '^tst_nextcdf4_(user_types|compound_arrays|vlen)$' --output-on-failure
+          ctest --test-dir build-san -L nextcdf4_user_types --output-on-failure -j1
           ctest --test-dir build-san --output-on-failure -j1
       - name: Failure logs
         if: failure()

@@ -201,4 +201,34 @@ if(HAVE_NEXTCDF4)
     # the srcdir environment variable, as automake does upstream.
     set_tests_properties(tst_dims PROPERTIES
         ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};srcdir=${CMAKE_CURRENT_SOURCE_DIR}/nc_test4;LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+
+    # Ported upstream user-type tests (Sprint 1N4). Each runs twice —
+    # once in native mode and once in NC_NETCDF4_MODEL mode, selected by
+    # NEP_NC_TEST4_MODEL via nep_nc_test4_create_mode() in nc_tests.h —
+    # from a per-mode working directory so parallel runs never collide
+    # on upstream file names. ref_tst_compounds.nc is a byte-for-byte
+    # copy of netcdf-c nc_test4/ref_tst_compounds.nc at
+    # 5baa62e6966d3e505b895574dafbd531a4aed360, sha256
+    # ccf52cb2afefc3faca9d6e0e281f7d07a0297446efa3987fb2fcc592314cdddd,
+    # read through srcdir by tst_compounds.
+    foreach(_nxt4_utype tst_enums tst_opaques tst_compounds
+            tst_compounds2 tst_vl tst_vlen_unlim)
+        add_executable(${_nxt4_utype} nc_test4/${_nxt4_utype}.c)
+        target_link_libraries(${_nxt4_utype} PRIVATE ncnextcdf4 ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
+        target_include_directories(${_nxt4_utype} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/nc_test4 ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+        foreach(_nxt4_mode native netcdf4_model)
+            file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/nc_test4/${_nxt4_utype}/${_nxt4_mode})
+            add_test(NAME ${_nxt4_utype}_${_nxt4_mode}
+                COMMAND ${_nxt4_utype}
+                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/nc_test4/${_nxt4_utype}/${_nxt4_mode})
+            if(_nxt4_mode STREQUAL native)
+                set(_nxt4_selector native)
+            else()
+                set(_nxt4_selector netcdf4)
+            endif()
+            set_tests_properties(${_nxt4_utype}_${_nxt4_mode} PROPERTIES
+                LABELS nextcdf4_user_types
+                ENVIRONMENT "NEP_NC_TEST4_MODEL=${_nxt4_selector};NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};srcdir=${CMAKE_CURRENT_SOURCE_DIR}/nc_test4;LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+        endforeach()
+    endforeach()
 endif()

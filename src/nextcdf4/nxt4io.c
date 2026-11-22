@@ -243,7 +243,10 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
     int close_mtype = 0;
     hsize_t dims[NC_MAX_VAR_DIMS], newdims[NC_MAX_VAR_DIMS];
     hsize_t start[NC_MAX_VAR_DIMS], count[NC_MAX_VAR_DIMS], stride[NC_MAX_VAR_DIMS];
+    hsize_t rcount[NC_MAX_VAR_DIMS];
+    size_t fill_steps[NC_MAX_VAR_DIMS];
     hsize_t total = 1;
+    int provide_fill = 0, no_read = 0;
     int ndims, i, extend = 0, ret, range_error = 0;
     void *converted = NULL, *io_data = data;
     nc_type xtype, io_type;
@@ -296,13 +299,30 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
         if (stridep && stridep[i] <= 0) { ret = NC_ESTRIDE; goto done; }
         start[i] = startp[i]; count[i] = countp[i]; stride[i] = stridep ? (hsize_t)stridep[i] : 1;
         newdims[i] = dims[i];
+        rcount[i] = countp[i];
+        fill_steps[i] = 0;
         if (!countp[i]) { total = 0; continue; }
         if (countp[i] - 1 > (SIZE_MAX - startp[i]) / (size_t)stride[i]) { ret = NC_EEDGE; goto done; }
         last = startp[i] + (countp[i] - 1) * (size_t)stride[i];
         if (last == SIZE_MAX) { ret = NC_EEDGE; goto done; }
         if (last >= dims[i]) {
-            if (!writing || !var->dim[i]->unlimited) { ret = NC_EEDGE; goto done; }
-            newdims[i] = (hsize_t)last + 1; extend = 1;
+            if (!var->dim[i]->unlimited) { ret = NC_EEDGE; goto done; }
+            if (writing) {
+                newdims[i] = (hsize_t)last + 1; extend = 1;
+            } else {
+                /* Reads legitimately select past the physical extent
+                 * on an unlimited dim: clip the hyperslab to what the
+                 * dataset actually holds and fill the tail with the
+                 * variable's fill value, as upstream does. */
+                if (start[i] < dims[i])
+                    rcount[i] = (dims[i] - (hsize_t)start[i] +
+                                 stride[i] - 1) / stride[i];
+                else
+                    rcount[i] = 0;
+                fill_steps[i] = countp[i] - (size_t)rcount[i];
+                count[i] = rcount[i];
+                provide_fill = 1;
+            }
         }
         if (total && countp[i] > SIZE_MAX / total) { ret = NC_EINVAL; goto done; }
         total *= countp[i];
@@ -380,8 +400,15 @@ prepare:
             }
         }
     }
-    if (ndims && (H5Sselect_hyperslab(fspace, H5S_SELECT_SET, start, stride, count, NULL) < 0 ||
-        (mspace = H5Screate_simple(ndims, count, NULL)) < 0)) { ret = NC_EHDFERR; goto done; }
+    if (!writing) {
+        /* A zero count on any dimension means nothing to read from
+         * disk — the whole region is fill. */
+        for (i = 0, no_read = 0; i < ndims; i++)
+            if (!rcount[i]) no_read = 1;
+    }
+    if (ndims && !no_read &&
+        (H5Sselect_hyperslab(fspace, H5S_SELECT_SET, start, stride, count, NULL) < 0 ||
+         (mspace = H5Screate_simple(ndims, count, NULL)) < 0)) { ret = NC_EHDFERR; goto done; }
     if (writing) {
         ret = H5Dwrite(vinfo->hdf_dataset, mtype, ndims ? mspace : H5S_ALL,
                        fspace, H5P_DEFAULT, io_data) < 0 ? NC_EHDFERR : NC_NOERR;
@@ -389,22 +416,54 @@ prepare:
             var->written_to = 1;
     }
     else {
-        ret = H5Dread(vinfo->hdf_dataset, mtype, ndims ? mspace : H5S_ALL,
-                      fspace, H5P_DEFAULT, io_data) < 0 ? NC_EHDFERR : NC_NOERR;
-        if (ret && xtype >= NC_FIRSTUSERTYPEID) {
-            /* A failed read of a variable-sized type (vlens and
-             * compounds containing them) may have left HDF5-allocated
-             * payloads in the buffer: reclaim them so the error does
-             * not leak, then clear the descriptors so the caller
-             * sees no dangling pointers. */
-            NC_TYPE_INFO_T *ut = NULL;
-            if (!nx4_find_type(grp, xtype, &ut) && ut && ut->varsized) {
-                H5E_BEGIN_TRY {
-                    H5Dvlen_reclaim(mtype, ndims ? mspace : H5S_ALL,
-                                    H5P_DEFAULT, io_data);
-                } H5E_END_TRY;
-                memset(io_data, 0, (size_t)total * xtype_size);
+        if (!no_read) {
+            ret = H5Dread(vinfo->hdf_dataset, mtype, ndims ? mspace : H5S_ALL,
+                          fspace, H5P_DEFAULT, io_data) < 0 ? NC_EHDFERR : NC_NOERR;
+            if (ret && xtype >= NC_FIRSTUSERTYPEID) {
+                /* A failed read of a variable-sized type (vlens and
+                 * compounds containing them) may have left
+                 * HDF5-allocated payloads in the buffer: reclaim them
+                 * so the error does not leak, then clear the
+                 * descriptors so the caller sees no dangling
+                 * pointers. */
+                NC_TYPE_INFO_T *ut = NULL;
+                if (!nx4_find_type(grp, xtype, &ut) && ut && ut->varsized) {
+                    H5E_BEGIN_TRY {
+                        H5Dvlen_reclaim(mtype, ndims ? mspace : H5S_ALL,
+                                        H5P_DEFAULT, io_data);
+                    } H5E_END_TRY;
+                    memset(io_data, 0, (size_t)total * xtype_size);
+                }
             }
+        }
+        if (!ret && provide_fill) {
+            /* Elements selected past the dataset extent on unlimited
+             * dims get the fill value, deep-copied element by element
+             * so variable-sized types carry owned payloads for
+             * nc_reclaim_data. The fill region is the tail of the
+             * caller's buffer after the elements HDF5 supplied. */
+            size_t real_size = xtype_size, fill_len = 1, k;
+            char *filldata;
+            void *zero_fill = NULL;
+            const void *fillvalue = var->fill_value;
+            for (i = 0; i < ndims; i++) {
+                real_size *= (size_t)rcount[i];
+                fill_len *= fill_steps[i] ? fill_steps[i] : 1;
+            }
+            if (!fillvalue &&
+                !(fillvalue = zero_fill = calloc(1, xtype_size))) {
+                ret = NC_ENOMEM; goto done;
+            }
+            filldata = (char *)io_data + real_size;
+            for (k = 0; k < fill_len; k++) {
+                if ((ret = NC_copy_data(h5->controller, xtype,
+                                        fillvalue, 1, filldata))) {
+                    free(zero_fill);
+                    goto done;
+                }
+                filldata += xtype_size;
+            }
+            free(zero_fill);
         }
         if (!ret && converting)
             ret = nx4_convert_type(converted, data, xtype, memtype, (size_t)total,

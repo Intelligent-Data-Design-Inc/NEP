@@ -234,6 +234,7 @@ examples/**/*.nc
 !test/data/netCDF-4/*.nc
 !test/data/NEXTCDF4/*.nc
 !test/nextcdf4/nc_test4/ref_tst_dims.nc
+!test/nextcdf4/nc_test4/ref_tst_compounds.nc
 
 # Generated plot images
 *.jpg

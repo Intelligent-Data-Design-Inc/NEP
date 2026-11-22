@@ -628,7 +628,8 @@ NEXTCDF4_redef(int ncid)
     if (file->no_write)
         return NC_EPERM;
     if (file->define_mode)
-        return NC_EINVAL;
+        return (file->mode & NC_CLASSIC_MODEL) ? NC_EINDEFINE :
+            NC_NOERR;
     file->define_mode = 1;
     h5->flags |= NC_INDEF;
     return NC_NOERR;

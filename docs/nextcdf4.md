@@ -117,7 +117,7 @@ Small floating-point and bitfield types are exchanged as raw bit patterns by the
 
 ## User-Defined Types
 
-NEXTCDF-4 supports the fixed-size enhanced-model user types — compound types with scalar atomic fields, integer enums, and fixed-size opaque types — as variables and attributes in both native and `NC_NETCDF4_MODEL` files, fully interchangeable with upstream NetCDF-4:
+NEXTCDF-4 supports the enhanced-model user types — compounds (with atomic, enum, opaque, array, nested-compound and vlen fields), integer enums, fixed-size opaque types and variable-length types — as variables and attributes in both native and `NC_NETCDF4_MODEL` files, fully interchangeable with upstream NetCDF-4:
 
 ```c
 struct sample { int id; float temp; unsigned char flag; };

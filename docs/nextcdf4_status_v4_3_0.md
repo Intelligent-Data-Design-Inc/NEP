@@ -190,12 +190,30 @@ Sprint 1 (deferred when v4.1.0 shipped docs+logging instead):
   Fortran API in the same release" is unmet: no Fortran wrappers for
   `nc_*_bfloat16`, `nc_*_float16`, `nc_ref_*`/`nc_deref_*`, or the new
   `nc_type` constants; `ftest/` has no NEXTCDF-4 test.
-- **Full upstream `nc_test4` suite validation** (Phase 5) — six tests
-  ported into `test/nextcdf4/nc_test4/` (`tst_rename` plus Sprint 1L2's
-  `tst_camrun`, `tst_atts3`, `tst_dims`, `tst_vars`, `tst_atts1`, kept
-  near-verbatim via the local `nc_tests.h`/`err_macros.h` shims). All six
-  pass in native `NC_NEXTCDF4` mode as of Sprint 1L2; `tst_dims` also
-  reads the shipped upstream fixture `ref_tst_dims.nc`.
+- **Full upstream `nc_test4` suite validation** (Phase 5) — twelve
+  programs ported into `test/nextcdf4/nc_test4/` (`tst_rename` plus
+  Sprint 1L2's `tst_camrun`, `tst_atts3`, `tst_dims`, `tst_vars`,
+  `tst_atts1`, kept near-verbatim via the local
+  `nc_tests.h`/`err_macros.h` shims). All pass in native `NC_NEXTCDF4`
+  mode as of Sprint 1L2; `tst_dims` also reads the shipped upstream
+  fixture `ref_tst_dims.nc`. Sprint 1N4 added the six user-type ports
+  `tst_enums`, `tst_opaques`, `tst_compounds`, `tst_compounds2`,
+  `tst_vl` and `tst_vlen_unlim` — each registered twice (native and
+  `NC_NETCDF4_MODEL`) under the `nextcdf4_user_types` CTest label,
+  selected by `NEP_NC_TEST4_MODEL` through
+  `nep_nc_test4_create_mode()`, with per-mode working directories —
+  plus the upstream fixture `ref_tst_compounds.nc` (byte-for-byte from
+  netcdf-c 5baa62e6, read through `srcdir`). Landing them required
+  three backend fixes: an empty enum now fails `_enddef`/`nc_close`
+  with `NC_EINVAL` (file stays open and `nc_redef` works),
+  `nc_redef` in define mode is a no-op outside classic model
+  (upstream parity), upstream dimscales named "This is a netCDF
+  dimension but not a netCDF variable." resolve by link name, and
+  reads past a dataset's physical extent on unlimited dims are
+  clipped to the extent with the tail deep-copied from the fill value
+  (vlen datasets now carry a zeroed-descriptor fill message so
+  unwritten elements read as empty vlens). String and mixed-feature
+  ports remain future work.
 - **Provenance/`_NCProperties`** (`nxt4provenance.c` in the plan's source
   layout) and **in-memory image files** (`nxt4image.c`, optional) — not
   implemented.
@@ -246,8 +264,8 @@ Owned by v4.3.0 Sprints 1L1–1R (see `docs/roadmap.md`), ordered by severity.
    compound fields, integer enums, opaque) done in Sprint 1N1, and
    nested compounds/array fields done in Sprint 1N2, including
    committed-type reload and upstream interchange in both directions.
-   Vlen I/O/ownership done in Sprint 1N3. Remaining in Sprint 1N:
-   upstream test ports (1N4).
+   Vlen I/O/ownership done in Sprint 1N3 and the selected upstream
+   user-type ports in Sprint 1N4 — Sprint 1N is complete.
 3. ~~Root-cause and fix the `NC_reclaim_data`/`USEFILEINFO` abort; re-enable
    the disabled tests (#379).~~ — done in Sprint 1M.
 4. ~~Fix dataset-recreation orphans from def-var setters (#382) and the
@@ -280,9 +298,12 @@ Owned by v4.3.0 Sprints 1L1–1R (see `docs/roadmap.md`), ordered by severity.
     notes (Sprint 2).
 14. Port more of upstream `nc_test4` against the backend — Sprint 1L2
     delivered five ports (`tst_camrun`, `tst_atts3`, `tst_dims`,
-    `tst_vars`, `tst_atts1`) plus `tst_rename`; all pass in native
-    `NC_NEXTCDF4` mode after the backend fixes recorded in gaps 13–19.
-    The rest of the suite and enabling the NEXTCDF-4 tests in CI beyond
-    `nextcdf4.yml` remain unowned.
+    `tst_vars`, `tst_atts1`) plus `tst_rename`, and Sprint 1N4 added
+    the six user-type ports (`tst_enums`, `tst_opaques`,
+    `tst_compounds`, `tst_compounds2`, `tst_vl`, `tst_vlen_unlim`)
+    each running in native and `NC_NETCDF4_MODEL` modes under the
+    `nextcdf4_user_types` CTest label in both `nextcdf4` and
+    `nextcdf4-sanitizers` CI jobs. String/mixed-feature ports remain
+    future suite-expansion work.
 15. v4.3.0 Sprint 2 mechanics: tag, `docs/releases/v4.3.0.md`, Spack
     4.3.0, conda-forge, README/PRD/PRFAQ updates.

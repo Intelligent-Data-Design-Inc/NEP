@@ -1727,6 +1727,9 @@ commit_type_tree(NC_FILE_INFO_T *h5, NC_GRP_INFO_T *grp,
 
     if (type->committed)
         return NC_NOERR;
+    if (type->nc_type_class == NC_ENUM &&
+        nclistlength(type->u.e.enum_member) == 0)
+        return NC_EINVAL;
     if (type->nc_type_class == NC_COMPOUND) {
         for (i = 0; i < nclistlength(type->u.c.field); i++) {
             NC_FIELD_INFO_T *f =
