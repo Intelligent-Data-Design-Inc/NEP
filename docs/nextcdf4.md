@@ -108,12 +108,44 @@ Messages are written to `stderr`. Instrumented NEXTCDF-4 paths include file crea
 | `NC_FLOAT6_E2M3` | `H5T_FLOAT_F6E2M3` | Native only |
 | `NC_FLOAT6_E3M2` | `H5T_FLOAT_F6E3M2` | Native only |
 | `NC_FLOAT4_E2M1` | `H5T_FLOAT_F4E2M1` | Native only |
-| `NC_COMPLEX` | compound `{r: f32, i: f32}` | Native only |
-| `NC_DOUBLECOMPLEX` | compound `{r: f64, i: f64}` | Native only |
+| `NC_COMPLEX` | `H5T_COMPLEX` over `H5T_NATIVE_FLOAT` | Native only |
+| `NC_DOUBLECOMPLEX` | `H5T_COMPLEX` over `H5T_NATIVE_DOUBLE` | Native only |
 | `NC_BITFIELD8/16/32/64` | `H5T_STD_B*LE/BE` | Native only |
 | `NC_STD_REF` | `H5T_STD_REF` | Native only |
 
-Small floating-point and bitfield types are exchanged as raw bit patterns by the untyped calls; `NC_FLOAT16` and `NC_BFLOAT16` also accept typed `float`/`double` calls (see [NEXTCDF4_float16.md](NEXTCDF4_float16.md)). Complex numbers use the memory layout `{ float r; float i; }` or `{ double r; double i; }`. `NC_STD_REF` variables store 64-byte `H5R_ref_t` reference tokens; the `nc_ref_*`/`nc_deref_*` functions create and resolve them.
+Small floating-point and bitfield types are exchanged as raw bit patterns by the untyped calls; `NC_FLOAT16` and `NC_BFLOAT16` also accept typed `float`/`double` calls (see [NEXTCDF4_float16.md](NEXTCDF4_float16.md)). Complex numbers use the memory layout `{ float r; float i; }` or `{ double r; double i; }` but are stored as native HDF5 2.x `H5T_COMPLEX` datatypes, not as ordinary compounds — a user compound with `{r,i}` fields remains an ordinary user compound. `NC_STD_REF` variables store 64-byte `H5R_ref_t` reference tokens; the `nc_ref_*`/`nc_deref_*` functions create and resolve them.
+
+## User-Defined Types
+
+NEXTCDF-4 supports the fixed-size enhanced-model user types — compound types with scalar atomic fields, integer enums, and fixed-size opaque types — as variables and attributes in both native and `NC_NETCDF4_MODEL` files, fully interchangeable with upstream NetCDF-4:
+
+```c
+struct sample { int id; float temp; unsigned char flag; };
+nc_type cmpid, enumid, opid;
+
+nc_def_compound(ncid, sizeof(struct sample), "sample", &cmpid);
+nc_insert_compound(ncid, cmpid, "id",   offsetof(struct sample, id),   NC_INT);
+nc_insert_compound(ncid, cmpid, "temp", offsetof(struct sample, temp), NC_FLOAT);
+nc_insert_compound(ncid, cmpid, "flag", offsetof(struct sample, flag), NC_UBYTE);
+
+nc_def_enum(ncid, NC_INT, "cloud_class", &enumid);
+nc_insert_enum(ncid, enumid, "clear",  &((int){0}));
+nc_insert_enum(ncid, enumid, "cumulus",&((int){1}));
+
+nc_def_opaque(ncid, 8, "blob", &opid);
+
+nc_def_var(ncid, "samples", cmpid, 1, &dimid, &varid);
+nc_enddef(ncid);              /* types commit here */
+nc_put_var(ncid, varid, data);          /* untyped access copies raw elements */
+```
+
+Semantics:
+
+- Types are group-scoped and visible to descendant groups; committed datatypes are written at `_enddef` and member inserts are rejected afterwards (`NC_ENOTINDEFINE`).
+- I/O is matching-type or untyped (`nc_put/get_var`, `var1`, `vara`, `vars`); typed calls that request numeric conversion of a user type return `NC_EBADTYPE`. Memory and file layouts are the type's exact sizes and field offsets — no conversion engine is involved.
+- Attributes of user types work the same way (`nc_put_att`/`nc_get_att` with the user typeid or untyped), including zero-length attributes, and preserve their type across close/reopen.
+- Classic-model files reject all user-type calls (`NC_ENOTNC4`).
+- Limits: compound fields must be scalar atomic types — array fields (`nc_insert_array_compound`) and fields of user-defined type are not yet implemented; vlen types can be defined but carry no data yet; `NC_STD_REF` cannot be a compound member.
 
 ## Storage and Metadata
 

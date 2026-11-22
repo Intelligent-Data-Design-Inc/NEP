@@ -1,6 +1,6 @@
 # NEP Development Roadmap
 
-### V4.3.0 -
+### V4.3.0 - NEXTCDF4 Development
 
 #### Sprint 1 - Fix Issues 372 and 374
 - #372: find HDF5 without a version in new `cmake/NEPFindHDF5.cmake` (1.14.0 minimum enforced, NEXTCDF-4 2.1.1 check kept); link every target through FindHDF5's `hdf5::hdf5_hl`/`HDF5::HDF5` imported targets; CMake minimum 3.19.
@@ -159,16 +159,39 @@ Fix the four open NEXTCDF-4 defect issues:
 
 Plan: [docs/plan/v4.3.0-sprint1M-fix-nextcdf4-issues.md](plan/v4.3.0-sprint1M-fix-nextcdf4-issues.md)
 
-#### Sprint 1N - User Defined Types
-Make compound/vlen/enum/opaque types usable end-to-end, not just definable (`docs/nextcdf4_status_v4_3_0.md` gaps 1-2):
+#### Sprint 1N1 - Fixed-Size User Types
+- Context-aware user-type resolution; compound (scalar atomic fields), enum and opaque variables/attributes work through I/O, complete inquiries and reopen.
+- Load committed types before values; preserve type identity, native memory layouts, ownership, fill behavior and deferred setter rebuilds.
+- Native and `NC_NETCDF4_MODEL` coverage, classic-mode rejections and bidirectional upstream interchange; focused enabled tests.
+- Keep native HDF5 complex storage and correct stale compound-layout docs; ordinary `{r,i}` compounds remain user types. No packaging changes.
+- Out of scope: nesting/array fields (1N2), vlens/sanitizer CI (1N3), upstream ports (1N4), strings (1P), reference members (unsupported), release notes (Sprint 2).
 
-- `nc_def_var` and `nc_put_att` accept user typeids: resolve them through the file's `NC_TYPE_INFO_T` list instead of the atomic-only `NEXTCDF4_check_atomic_type`.
-- `load_one_var` resolves datasets whose datatype is a committed type to the loaded user type, so files with user-typed variables open — both NEXTCDF-4's own and upstream `NC_NETCDF4` files.
-- Implement `nc_insert_array_compound` (currently `NC_ENOTBUILT`).
-- Implement `nc_put_vlen_element`/`nc_get_vlen_element` and vlen-variable I/O end to end.
-- Keep `NC_COMPLEX`/`NC_DOUBLECOMPLEX` on the native HDF5 2.x `H5T_COMPLEX_IEEE_F*` datatypes (already implemented and the easy path); update `docs/nextcdf4.md` and `docs/plan/NEXTCDF4_plan.md`, which still describe the compound `{r, i}` layout. Only fall back to `{r, i}` if native complex proves unworkable.
-- Tests: round-trip a variable and attribute of each user type; open an upstream `NC_NETCDF4` file with a compound variable.
-- Out of scope: reference types inside compounds (documented restriction).
+Plan: [docs/plan/v4.3.0-sprint1N1-fixed-size-user-types.md](plan/v4.3.0-sprint1N1-fixed-size-user-types.md)
+
+#### Sprint 1N2 - Nested Types and Array Fields
+- Implement `nc_insert_array_compound` and fixed-size nesting, sharing scalar insertion, recursive layout/visibility checks and dependency-ordered type commit/load.
+- Preserve complete member metadata, rank/shapes, enum/opaque members and arrays of compounds; reject cycles, invalid shapes/offsets and nested references.
+- Focused tests in native and `NC_NETCDF4_MODEL` modes, including upstream interchange; update type docs. No packaging/CI changes.
+- Out of scope: dynamic nesting/vlens (1N3), upstream ports (1N4), strings (1P), reference members (unsupported), release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1N2-nested-types-and-array-fields.md](plan/v4.3.0-sprint1N2-nested-types-and-array-fields.md)
+
+#### Sprint 1N3 - Vlen I/O and Ownership
+- Vlen variables/attributes and full non-string nesting (vlens of user types, nested vlens, compounds/arrays containing vlens) in native and `NC_NETCDF4_MODEL` modes.
+- Implement `nc_put_vlen_element`/`nc_get_vlen_element` with resolved base sizes; define borrowed descriptors versus owned read/deep-copy results and recursive reclamation.
+- Focused fill, unlimited/strided I/O, reopen, ownership and upstream-interchange tests; update docs. No packaging changes.
+- New `nextcdf4-sanitizers` CI job builds instrumented dependencies and NEP with ASan/UBSan plus leak detection; normal full CTest/docs checks retained.
+- Out of scope: selected upstream ports (1N4), all string-value work (1P), nested references (unsupported), release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1N3-vlen-io-and-ownership.md](plan/v4.3.0-sprint1N3-vlen-io-and-ownership.md)
+
+#### Sprint 1N4 - Upstream User-Type Tests
+- Port pinned upstream `tst_enums`, `tst_opaques`, `tst_compounds`, `tst_compounds2`, `tst_vl`, `tst_vlen_unlim` using existing shims; preserve UCAR notices and the upstream compound fixture.
+- Run each port in native and `NC_NETCDF4_MODEL` modes with isolated working directories, in normal and sanitizer CI; fix in-scope failures without weakening or disabling assertions.
+- Update the status doc with exact two-mode coverage; full CTest remains green and docs warning-free. No packaging changes.
+- Out of scope: remaining/mixed-feature upstream ports (future suite expansion), strings (1P), reference nesting (unsupported), release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1N4-upstream-user-type-tests.md](plan/v4.3.0-sprint1N4-upstream-user-type-tests.md)
 
 #### Sprint 1O - Fill Mode, Cache Control, Renaming Groups
 Replace the remaining `NC_EPERM`/`NC_ENOTNC4` stubs with working semantics or an explicit decision (`docs/nextcdf4_status_v4_3_0.md`):

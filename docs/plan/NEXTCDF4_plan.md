@@ -425,51 +425,26 @@ This is a purely reactive (dereference-time) check — NEXTCDF-4 does not track 
 
 ## Support for Complex Numbers
 
-NEXTCDF-4 will support complex number types using HDF5 compound types.
+NEXTCDF-4 supports complex number types using HDF5 2.x's native `H5T_COMPLEX` compound class. (This supersedes the original plan to map complex onto an ordinary `{r, i}` HDF5 compound: using the dedicated class avoids reinterpreting a user compound that happens to have `{r, i}` members, and is the natural representation in HDF5 2.1+.)
 
 ### Type Definition
 
-A complex number is represented as an HDF5 compound type with two members:
-
-- `r` — real part.
-- `i` — imaginary part.
-
-For example, a single-precision complex number maps to the portable compound layout:
-
-```c
-H5Tcreate(H5T_COMPOUND, 2 * sizeof(float));
-H5Tinsert(type_id, "r", 0, H5T_IEEE_F32LE);
-H5Tinsert(type_id, "i", sizeof(float), H5T_IEEE_F32LE);
-```
+A single-precision complex number is `H5T_COMPLEX` over `H5T_NATIVE_FLOAT` (file layout `H5T_COMPLEX` over `H5T_IEEE_F32LE`); a double-precision complex is `H5T_COMPLEX` over `H5T_NATIVE_DOUBLE`/`H5T_IEEE_F64LE`.
 
 ### NetCDF Mapping
 
 - New base types: `NC_COMPLEX` (single precision), `NC_DOUBLECOMPLEX` (double precision).
-- Layout in memory is the portable compound `{ float r; float i; }` (or `{ double r; double i; }`).
-- On platforms with native C `_Complex` support, convenience conversions may be provided, but the file and wire format use the explicit `{r, i}` compound layout.
+- Layout in memory is the portable record `{ float r; float i; }` (or `{ double r; double i; }`) — the same layout an `H5T_COMPLEX` element uses.
+- On platforms with native C `_Complex` support, convenience conversions may be provided.
 
 ### Detecting Complex Types on Open
 
-NEXTCDF-4 identifies a compound datatype as `NC_COMPLEX`/`NC_DOUBLECOMPLEX` using a purely structural rule, with no separate marker attribute or reserved committed-type name:
-
-A compound datatype is treated as `NC_COMPLEX` (or `NC_DOUBLECOMPLEX`) if and only if it has:
-
-- Exactly two members, in order.
-- The first member named exactly `r`, the second named exactly `i` (case-sensitive).
-- Both members of the same base type, either both `H5T_IEEE_F32LE`/`BE` (→ `NC_COMPLEX`) or both `H5T_IEEE_F64LE`/`BE` (→ `NC_DOUBLECOMPLEX`).
-- No padding between or after the members (`i` immediately follows `r`, and the compound's total size is exactly `2 * sizeof(member type)`).
-
-Any compound matching this shape — including one created by upstream netcdf-c or another tool with no knowledge of NEXTCDF-4 — is presented to the caller as `NC_COMPLEX`/`NC_DOUBLECOMPLEX`, not as a generic user-defined compound. This is a deliberate simplicity/compatibility trade-off:
-
-- **Pro**: no hidden attributes or reserved committed-type names to keep in sync across renames, copies, or subsetting operations; any tool that writes the exact `{r, i}` layout interoperates automatically.
-- **Con**: a pre-existing user-defined compound type that happens to match this exact shape (member names `r`/`i`, matching float/double members, no padding) will be reinterpreted as a complex number when opened by NEXTCDF-4, even if the original author intended a plain 2-field record. This is considered acceptable because the `r`/`i` naming convention for a 2-member float/double compound is already the de facto complex-number convention in the wider HDF5/NetCDF ecosystem (e.g. h5py, PyTables), so a genuine collision is expected to be rare in practice.
-- This structural rule applies identically to compound types used for variables, attributes, and compound-type members nested inside other compounds.
+NEXTCDF-4 detects `NC_COMPLEX`/`NC_DOUBLECOMPLEX` directly from the HDF5 datatype class: an `H5T_COMPLEX` over a 32-bit float base maps to `NC_COMPLEX`, over a 64-bit float to `NC_DOUBLECOMPLEX`. Ordinary `H5T_COMPOUND` types — including a user-defined compound with `{r, i}` float members — load as ordinary user compounds; no structural reinterpretation occurs.
 
 ### Compatibility
 
 - Complex types are only available outside `NC_NETCDF4_MODEL`.
-- Existing NetCDF-4 files with user-defined compound types that do **not** match the exact `{r, i}` structural shape above continue to be read as plain compound types, unchanged from current netcdf-4 behavior.
-- Existing files whose compound types do match the structural shape (see "Detecting Complex Types on Open") will now be read as `NC_COMPLEX`/`NC_DOUBLECOMPLEX` rather than as a generic compound; this is a documented, intentional behavior change from upstream netcdf-c and will be called out in release notes.
+- Existing NetCDF-4 files with user-defined compound types are always read as plain compound types, unchanged from current netcdf-4 behavior — there is no `{r, i}` reinterpretation.
 - User-defined compound types are otherwise unchanged from netcdf-4.
 - See "Default Fill Values" above for the default `_FillValue` applied to `NC_COMPLEX`/`NC_DOUBLECOMPLEX` variables.
 
@@ -534,8 +509,8 @@ Bitfield variables are defined with the standard `nc_def_var` using an `NC_BITFI
 | `NC_FLOAT6_E2M3`    | `H5T_FLOAT_F6E2M3`             | No                   |
 | `NC_FLOAT6_E3M2`    | `H5T_FLOAT_F6E3M2`             | No                   |
 | `NC_FLOAT4_E2M1`    | `H5T_FLOAT_F4E2M1`             | No                   |
-| `NC_COMPLEX`        | Compound `{r: f32, i: f32}`    | No                   |
-| `NC_DOUBLECOMPLEX`  | Compound `{r: f64, i: f64}`    | No                   |
+| `NC_COMPLEX`        | `H5T_COMPLEX` over f32         | No                   |
+| `NC_DOUBLECOMPLEX`  | `H5T_COMPLEX` over f64         | No                   |
 | `NC_STD_REF`        | `H5T_STD_REF`                  | No                   |
 | `NC_BITFIELD8`      | `H5T_STD_B8LE/BE`              | No                   |
 | `NC_BITFIELD16`     | `H5T_STD_B16LE/BE`             | No                   |
@@ -571,7 +546,7 @@ Bitfield variables are defined with the standard `nc_def_var` using an `NC_BITFI
 ### Phase 3 — New Types
 
 - Add float16, bfloat16, FP8, FP6, and FP4 support.
-- Add complex number compound types.
+- Add complex number types (native `H5T_COMPLEX`).
 - Add reference type support.
 - Add bitfield type support (`NC_BITFIELD8/16/32/64`).
 

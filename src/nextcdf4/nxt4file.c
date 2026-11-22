@@ -71,6 +71,17 @@ close_group_hdf(NC_GRP_INFO_T *grp)
         }
     }
 
+    /* Committed/transient datatypes close after every dependent
+     * object (variables above) is finished, before the shared
+     * metadata records are deleted by nc4_file_list_del(). */
+    if (grp->type)
+        for (i = 0; i < ncindexsize(grp->type); i++) {
+            NC_TYPE_INFO_T *type =
+                (NC_TYPE_INFO_T *)ncindexith(grp->type, i);
+            if (type)
+                nx4_free_type_info(type);
+        }
+
     for (i = 0; i < ncindexsize(grp->children); i++)
         close_group_hdf((NC_GRP_INFO_T *)ncindexith(grp->children, i));
 }
@@ -506,7 +517,13 @@ commit_group_vars(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file,
         NEXTCDF4_VAR_INFO_T *vinfo;
         if (!var || !(vinfo = var->format_var_info))
             continue;
-        if (vinfo->dcpl_dirty && vinfo->hdf_dataset >= 0) {
+        if (vinfo->hdf_dataset < 0) {
+            /* A user-typed variable's dataset is created only now,
+             * after NEXTCDF4_write_types() committed its datatype. */
+            if ((ret = nx4_create_var_dataset(var, h5, file, grp)))
+                return ret;
+            vinfo->dcpl_dirty = 0;
+        } else if (vinfo->dcpl_dirty) {
             if ((ret = nx4_create_var_dataset(var, h5, file, grp)))
                 return ret;
             vinfo->dcpl_dirty = 0;
@@ -521,6 +538,10 @@ commit_group_vars(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file,
             var->created = 1;
         }
     }
+    /* Attributes deferred on uncommitted types or deferred datasets
+     * are materialized now, in definition order. */
+    if ((ret = nx4_flush_pending_atts(grp)))
+        return ret;
     for (i = 0; i < ncindexsize(grp->children); i++) {
         NC_GRP_INFO_T *child =
             (NC_GRP_INFO_T *)ncindexith(grp->children, i);

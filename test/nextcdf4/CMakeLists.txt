@@ -143,6 +143,13 @@ if(HAVE_NEXTCDF4)
     set_tests_properties(tst_nextcdf4_ref PROPERTIES
         ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
 
+    add_executable(tst_nextcdf4_user_types tst_nextcdf4_user_types.c)
+    target_link_libraries(tst_nextcdf4_user_types PRIVATE ncnextcdf4 ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
+    target_include_directories(tst_nextcdf4_user_types PRIVATE ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+    add_test(NAME tst_nextcdf4_user_types COMMAND tst_nextcdf4_user_types)
+    set_tests_properties(tst_nextcdf4_user_types PROPERTIES
+        ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+
     add_executable(tst_nextcdf4_logging tst_nextcdf4_logging.c)
     target_link_libraries(tst_nextcdf4_logging PRIVATE ncnextcdf4 ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
     target_include_directories(tst_nextcdf4_logging PRIVATE ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})

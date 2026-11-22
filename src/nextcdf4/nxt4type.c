@@ -29,10 +29,10 @@ NEXTCDF4_get_type_size(nc_type xtype, size_t *sizep)
  * @brief Check that the file may have a user-defined type defined now.
  *
  * User-defined types (compound, vlen, enum, opaque) require define
- * mode and write access. They are an enhanced-model feature, so both
- * `NC_CLASSIC_MODEL` and `NC_NETCDF4_MODEL` files reject them —
- * NEXTCDF-4's netcdf-4-model mode deliberately supports only what
- * upstream netcdf-c already knows.
+ * mode and write access. They are an enhanced-model feature, so
+ * `NC_CLASSIC_MODEL` files reject them; `NC_NETCDF4_MODEL` files
+ * permit the standard enhanced-model types because upstream netcdf-c
+ * files can represent them.
  *
  * @param file NEXTCDF-4 file state.
  * @param grp Group (currently unused).
@@ -49,8 +49,6 @@ check_type_write(NEXTCDF4_FILE_INFO_T *file, NC_GRP_INFO_T *grp)
     if (!file->define_mode)
         return NC_ENOTINDEFINE;
     if (file->mode & NC_CLASSIC_MODEL)
-        return NC_ENOTNC4;
-    if (file->netcdf4_model)
         return NC_ENOTNC4;
     return NC_NOERR;
 }
@@ -81,6 +79,340 @@ get_grp_and_file(int ncid, NC_FILE_INFO_T **h5, NC_GRP_INFO_T **grp,
 }
 
 /**
+ * @brief Find the user-defined type record an `nc_type` id refers to.
+ *
+ * Type visibility flows downward in the enhanced model: a type
+ * defined in a group is usable in that group and its descendants,
+ * never in siblings or ancestors. The search therefore walks the
+ * group and its ancestors only; the returned record is borrowed —
+ * the caller must not free it or alter its reference count.
+ *
+ * @param grp Group the type is being used from.
+ * @param xtype Type id (must be `NC_FIRSTUSERTYPEID` or above).
+ * @param typep Destination for the borrowed record.
+ * @return `NC_NOERR` on success, `NC_EBADTYPE` for an atomic id, or
+ * `NC_EBADTYPID` when no visible user type has the id.
+ */
+int
+nx4_find_type(NC_GRP_INFO_T *grp, nc_type xtype, NC_TYPE_INFO_T **typep)
+{
+    NC_GRP_INFO_T *g;
+    size_t i;
+
+    if (typep)
+        *typep = NULL;
+    if (xtype < NC_FIRSTUSERTYPEID)
+        return NC_EBADTYPE;
+    for (g = grp; g; g = g->parent) {
+        if (!g->type)
+            continue;
+        for (i = 0; i < ncindexsize(g->type); i++) {
+            NC_TYPE_INFO_T *t = (NC_TYPE_INFO_T *)ncindexith(g->type, i);
+            if (t && (nc_type)t->hdr.id == xtype) {
+                if (typep)
+                    *typep = t;
+                return NC_NOERR;
+            }
+        }
+    }
+    return NC_EBADTYPID;
+}
+
+/**
+ * @brief Resolve the in-memory element size of any supported type.
+ *
+ * Atomic ids delegate to NEXTCDF4_type_size(); ids at or above
+ * `NC_FIRSTUSERTYPEID` resolve through nx4_find_type() and return
+ * the type record's size.
+ *
+ * @param grp Group the type is being used from.
+ * @param xtype Type id.
+ * @param sizep Destination for the size in bytes.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+int
+nx4_type_size(NC_GRP_INFO_T *grp, nc_type xtype, size_t *sizep)
+{
+    NC_TYPE_INFO_T *type;
+
+    if (xtype < NC_FIRSTUSERTYPEID)
+        return NEXTCDF4_type_size(xtype, sizep);
+    if (nx4_find_type(grp, xtype, &type))
+        return NC_EBADTYPE;
+    if (sizep)
+        *sizep = type->size;
+    return NC_NOERR;
+}
+
+/**
+ * @brief Produce an owned HDF5 datatype with the type's file layout.
+ *
+ * Atomic types map through NEXTCDF4_map_hdf_type(); user-defined
+ * types copy the record's committed (or still-transient) HDF5
+ * datatype so the dataset or attribute links to the named type.
+ * The caller owns the returned handle and must `H5Tclose` it.
+ *
+ * @param grp Group the type is being used from.
+ * @param xtype Type id.
+ * @param typep Destination for an owned HDF5 datatype.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+int
+nx4_file_type(NC_GRP_INFO_T *grp, nc_type xtype, hid_t *typep)
+{
+    NC_TYPE_INFO_T *type;
+    NEXTCDF4_TYPE_INFO_T *tinfo;
+
+    if (xtype < NC_FIRSTUSERTYPEID)
+        return NEXTCDF4_map_hdf_type(xtype, typep);
+    if (!typep)
+        return NC_EINVAL;
+    if (nx4_find_type(grp, xtype, &type))
+        return NC_EBADTYPE;
+    tinfo = type->format_type_info;
+    if (!tinfo || tinfo->hdf_type < 0)
+        return NC_EBADTYPE;
+    /* Once the type is committed, datasets and attributes must use
+     * the committed datatype id itself — a `H5Tcopy()` would be a
+     * transient anonymous type and the stored object would no longer
+     * share the named type's identity (breaking reload). The
+     * incremented reference keeps the caller's `H5Tclose` safe. */
+    if (type->committed || H5Tcommitted(tinfo->hdf_type) > 0) {
+        if (H5Iinc_ref(tinfo->hdf_type) < 0)
+            return NC_EHDFERR;
+        *typep = tinfo->hdf_type;
+        return NC_NOERR;
+    }
+    if ((*typep = H5Tcopy(tinfo->hdf_type)) < 0)
+        return NC_EHDFERR;
+    return NC_NOERR;
+}
+
+/**
+ * @brief Build an owned HDF5 memory datatype for a user-defined type.
+ *
+ * The memory layout uses native-endian atomic components so HDF5
+ * converts between buffer and file representations:
+ * compounds are rebuilt field-by-field at the offsets `nc_inq_compound_field`
+ * reports (array fields wrapped in `H5Tarray_create`), enums are
+ * rebuilt over the native integer base with the recorded member
+ * values, opaques are plain `H5T_OPAQUE`, and vlens wrap the memory
+ * base.
+ *
+ * @param grp Group the type is being used from.
+ * @param type In-memory user-type record.
+ * @param typep Destination for an owned HDF5 datatype.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+static int
+user_mem_type(NC_GRP_INFO_T *grp, NC_TYPE_INFO_T *type, hid_t *typep)
+{
+    size_t i;
+    hid_t t = -1;
+    int ret;
+
+    switch (type->nc_type_class) {
+    case NC_COMPOUND: {
+        if ((t = H5Tcreate(H5T_COMPOUND, type->size)) < 0)
+            return NC_EHDFERR;
+        for (i = 0; i < nclistlength(type->u.c.field); i++) {
+            NC_FIELD_INFO_T *field =
+                (NC_FIELD_INFO_T *)nclistget(type->u.c.field, i);
+            hid_t mt = -1;
+            if (!field)
+                continue;
+            if ((ret = nx4_memory_type(grp, field->nc_typeid, &mt))) {
+                H5Tclose(t);
+                return ret;
+            }
+            if (mt >= 0 && field->ndims > 0) {
+                hsize_t adims[NC_MAX_VAR_DIMS];
+                hid_t at;
+                int d;
+                for (d = 0; d < field->ndims; d++)
+                    adims[d] = (hsize_t)field->dim_size[d];
+                at = H5Tarray_create(mt, (unsigned)field->ndims, adims);
+                H5Tclose(mt);
+                mt = at;
+            }
+            if (mt < 0 ||
+                H5Tinsert(t, field->hdr.name, field->offset, mt) < 0) {
+                if (mt >= 0)
+                    H5Tclose(mt);
+                H5Tclose(t);
+                return NC_EHDFERR;
+            }
+            H5Tclose(mt);
+        }
+        break;
+    }
+    case NC_ENUM: {
+        hid_t base = -1;
+        int close_base = 0;
+        hid_t nbase;
+        base = NEXTCDF4_memory_type(type->u.e.base_nc_typeid, &close_base);
+        if (base < 0)
+            return NC_EBADTYPE;
+        if ((nbase = H5Tcopy(base)) < 0) {
+            if (close_base)
+                H5Tclose(base);
+            return NC_EHDFERR;
+        }
+        if (close_base)
+            H5Tclose(base);
+        if ((t = H5Tenum_create(nbase)) < 0) {
+            H5Tclose(nbase);
+            return NC_EHDFERR;
+        }
+        H5Tclose(nbase);
+        for (i = 0; i < nclistlength(type->u.e.enum_member); i++) {
+            NC_ENUM_MEMBER_INFO_T *mem =
+                (NC_ENUM_MEMBER_INFO_T *)nclistget(type->u.e.enum_member, i);
+            if (mem && H5Tenum_insert(t, mem->name, mem->value) < 0) {
+                H5Tclose(t);
+                return NC_EHDFERR;
+            }
+        }
+        break;
+    }
+    case NC_OPAQUE:
+        if ((t = H5Tcreate(H5T_OPAQUE, type->size)) < 0)
+            return NC_EHDFERR;
+        break;
+    case NC_VLEN: {
+        hid_t mb = -1;
+        if ((ret = nx4_memory_type(grp, type->u.v.base_nc_typeid, &mb)))
+            return ret;
+        t = H5Tvlen_create(mb);
+        H5Tclose(mb);
+        if (t < 0)
+            return NC_EHDFERR;
+        break;
+    }
+    default:
+        return NC_EBADTYPE;
+    }
+    *typep = t;
+    return NC_NOERR;
+}
+
+/**
+ * @brief Produce an owned HDF5 memory datatype for any supported
+ * type.
+ *
+ * Atomic types delegate to NEXTCDF4_memory_type(); ids at or above
+ * `NC_FIRSTUSERTYPEID` resolve through nx4_find_type() and build the
+ * memory layout described by user_mem_type(). The caller owns the
+ * returned handle and must `H5Tclose` it.
+ *
+ * @param grp Group the type is being used from.
+ * @param xtype Type id.
+ * @param typep Destination for an owned HDF5 datatype.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+int
+nx4_memory_type(NC_GRP_INFO_T *grp, nc_type xtype, hid_t *typep)
+{
+    NC_TYPE_INFO_T *type;
+    hid_t t;
+    int close_t = 0;
+
+    if (!typep)
+        return NC_EINVAL;
+    if (xtype < NC_FIRSTUSERTYPEID) {
+        if ((t = NEXTCDF4_memory_type(xtype, &close_t)) < 0)
+            return NC_EBADTYPE;
+        if (!close_t) {
+            hid_t copy = H5Tcopy(t);
+            if (copy < 0)
+                return NC_EHDFERR;
+            t = copy;
+        }
+        *typep = t;
+        return NC_NOERR;
+    }
+    if (nx4_find_type(grp, xtype, &type))
+        return NC_EBADTYPE;
+    return user_mem_type(grp, type, typep);
+}
+
+/**
+ * @brief Resolve an HDF5 datatype to a registered committed user
+ * type by object identity.
+ *
+ * Datasets and attributes created from a committed datatype keep a
+ * reference to that named object; comparing the HDF5 object token of
+ * @p htype against every committed type visible from @p grp (the
+ * group and its ancestors) recovers the exact `NC_TYPE_INFO_T` —
+ * matching on `H5Tequal` alone would conflate distinct named types
+ * with equal shapes.
+ *
+ * @param grp Group the datatype is being used from.
+ * @param htype HDF5 datatype (need not be committed itself).
+ * @param typep Destination for the borrowed type record.
+ * @return `NC_NOERR` on success, `NC_EBADTYPID` when no visible
+ * committed type is the same object.
+ */
+int
+nx4_hdf_type_match(NC_GRP_INFO_T *grp, hid_t htype,
+                   NC_TYPE_INFO_T **typep)
+{
+    NC_GRP_INFO_T *g;
+    H5O_info2_t info;
+    size_t i;
+    int ret = NC_EBADTYPID;
+
+    if (typep)
+        *typep = NULL;
+    if (htype < 0 || !typep)
+        return NC_EBADTYPE;
+
+    if (H5Oget_info3(htype, &info, H5O_INFO_BASIC) >= 0) {
+        for (g = grp; g && ret; g = g->parent) {
+            if (!g->type)
+                continue;
+            for (i = 0; i < ncindexsize(g->type); i++) {
+                NC_TYPE_INFO_T *t = (NC_TYPE_INFO_T *)ncindexith(g->type, i);
+                NEXTCDF4_TYPE_INFO_T *tinfo;
+                H5O_info2_t tinfo_o;
+                int cmp = 1;
+                if (!t || !(tinfo = t->format_type_info) ||
+                    tinfo->hdf_type < 0 || H5Tcommitted(tinfo->hdf_type) <= 0)
+                    continue;
+                if (H5Oget_info3(tinfo->hdf_type, &tinfo_o, H5O_INFO_BASIC) < 0)
+                    continue;
+                if (H5Otoken_cmp(htype, &info.token, &tinfo_o.token, &cmp) >= 0 &&
+                    cmp == 0) {
+                    *typep = t;
+                    return NC_NOERR;
+                }
+            }
+        }
+    }
+    /* Fallback: an object created from a transient copy of the named
+     * type stores an anonymous datatype with no shared token. A
+     * structural `H5Tequal` match still resolves it to the visible
+     * registered type; ambiguous shapes resolve to the first match,
+     * which is the scoping rule's closest definition anyway. */
+    for (g = grp; g; g = g->parent) {
+        if (!g->type)
+            continue;
+        for (i = 0; i < ncindexsize(g->type); i++) {
+            NC_TYPE_INFO_T *t = (NC_TYPE_INFO_T *)ncindexith(g->type, i);
+            NEXTCDF4_TYPE_INFO_T *tinfo;
+            if (!t || !(tinfo = t->format_type_info) ||
+                tinfo->hdf_type < 0)
+                continue;
+            if (H5Tequal(tinfo->hdf_type, htype) > 0) {
+                *typep = t;
+                return NC_NOERR;
+            }
+        }
+    }
+    return ret;
+}
+
+/**
  * @brief Map an atomic nc_type to a fresh HDF5 datatype `hid_t`.
  *
  * Convenience wrapper over NEXTCDF4_map_hdf_type() returning -1
@@ -96,6 +428,31 @@ base_hdf_type(nc_type xtype)
     if (NEXTCDF4_map_hdf_type(xtype, &t))
         return -1;
     return t;
+}
+
+/**
+ * @brief Release a type's NEXTCDF-4-private record and its HDF5
+ * datatype handle, if any.
+ *
+ * `nc4_type_free()` knows nothing about `format_type_info`, so every
+ * definition failure path and the file-close walk must dispose of it
+ * separately. Safe on a type with no private record.
+ *
+ * @param type In-memory type record.
+ */
+void
+nx4_free_type_info(NC_TYPE_INFO_T *type)
+{
+    NEXTCDF4_TYPE_INFO_T *tinfo;
+
+    if (!type || !(tinfo = type->format_type_info))
+        return;
+    H5E_BEGIN_TRY {
+        if (tinfo->hdf_type >= 0)
+            H5Tclose(tinfo->hdf_type);
+    } H5E_END_TRY;
+    free(tinfo);
+    type->format_type_info = NULL;
 }
 
 /**
@@ -216,8 +573,10 @@ NEXTCDF4_def_compound(int ncid, size_t size, const char *name, nc_type *typeidp)
 
 fail:
     H5Tclose(hdf);
-    if (type)
+    if (type) {
+        nx4_free_type_info(type);
         nc4_type_free(type);
+    }
     return ret;
 }
 
@@ -241,6 +600,7 @@ NEXTCDF4_insert_compound(int ncid, nc_type typeid, const char *name,
                          size_t offset, nc_type xtype)
 {
     NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
     NC_GRP_INFO_T *grp;
     NC_TYPE_INFO_T *type;
     NEXTCDF4_TYPE_INFO_T *tinfo;
@@ -248,18 +608,44 @@ NEXTCDF4_insert_compound(int ncid, nc_type typeid, const char *name,
     int ret;
     size_t size;
 
-    if ((ret = get_grp_and_file(ncid, &h5, &grp, NULL)))
+    if ((ret = get_grp_and_file(ncid, &h5, &grp, &file)))
+        return ret;
+    if (file->no_write)
+        return NC_EPERM;
+    if (!file->define_mode)
+        return NC_ENOTINDEFINE;
+    if (!name)
+        return NC_EINVAL;
+    if ((ret = NC_check_name(name)))
         return ret;
     if ((ret = nc4_find_type(h5, typeid, &type)))
         return ret;
     if (!type || type->nc_type_class != NC_COMPOUND)
         return NC_EBADTYPE;
+    /* A committed datatype is immutable in HDF5; member inserts must
+     * happen before `_enddef` commits it. */
+    if (type->committed)
+        return NC_ENOTINDEFINE;
     tinfo = type->format_type_info;
     if (!tinfo || tinfo->hdf_type < 0)
         return NC_EBADTYPE;
 
     if (NEXTCDF4_type_size(xtype, &size))
         return NC_EBADTYPE;
+    /* netcdf-4-model files must stay readable by upstream netcdf-c:
+     * NEP-only atomic types cannot be fields. */
+    if (file->netcdf4_model &&
+        (ret = NEXTCDF4_check_atomic_type(file, xtype)))
+        return ret;
+    /* The field must fit inside the declared compound size. */
+    if (offset > type->size || size > type->size - offset)
+        return NC_EINVAL;
+    for (ret = 0; (size_t)ret < nclistlength(type->u.c.field); ret++) {
+        NC_FIELD_INFO_T *f =
+            (NC_FIELD_INFO_T *)nclistget(type->u.c.field, ret);
+        if (f && !strcmp(f->hdr.name, name))
+            return NC_ENAMEINUSE;
+    }
 
     hdf = base_hdf_type(xtype);
     if (hdf < 0)
@@ -443,8 +829,10 @@ NEXTCDF4_def_vlen(int ncid, const char *name, nc_type base_typeid, nc_type *type
 
 fail:
     H5Tclose(vlen);
-    if (type)
+    if (type) {
+        nx4_free_type_info(type);
         nc4_type_free(type);
+    }
     return ret;
 }
 
@@ -547,8 +935,10 @@ NEXTCDF4_def_enum(int ncid, nc_type base_typeid, const char *name, nc_type *type
 
 fail:
     H5Tclose(en);
-    if (type)
+    if (type) {
+        nx4_free_type_info(type);
         nc4_type_free(type);
+    }
     return ret;
 }
 
@@ -570,34 +960,36 @@ int
 NEXTCDF4_insert_enum(int ncid, nc_type typeid, const char *name, const void *value)
 {
     NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
     NC_TYPE_INFO_T *type;
     NEXTCDF4_TYPE_INFO_T *tinfo;
     int ret;
-    long long v;
 
-    if ((ret = NEXTCDF4_get_file(ncid, &h5, NULL)))
+    if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
+        return ret;
+    if (file->no_write)
+        return NC_EPERM;
+    if (!file->define_mode)
+        return NC_ENOTINDEFINE;
+    if (!name || !value)
+        return NC_EINVAL;
+    if ((ret = NC_check_name(name)))
         return ret;
     if ((ret = nc4_find_type(h5, typeid, &type)))
         return ret;
     if (!type || type->nc_type_class != NC_ENUM)
         return NC_EBADTYPE;
+    if (type->committed)
+        return NC_ENOTINDEFINE;
     tinfo = type->format_type_info;
     if (!tinfo || tinfo->hdf_type < 0)
         return NC_EBADTYPE;
 
-    switch (type->u.e.base_nc_typeid) {
-    case NC_BYTE: v = *(signed char *)value; break;
-    case NC_UBYTE: v = *(unsigned char *)value; break;
-    case NC_SHORT: v = *(short *)value; break;
-    case NC_USHORT: v = *(unsigned short *)value; break;
-    case NC_INT: v = *(int *)value; break;
-    case NC_UINT: v = *(unsigned int *)value; break;
-    case NC_INT64: v = *(long long *)value; break;
-    case NC_UINT64: v = *(unsigned long long *)value; break;
-    default: return NC_EBADTYPE;
-    }
-
-    if (H5Tenum_insert(tinfo->hdf_type, name, &v) < 0)
+    /* The value already carries the base type's in-memory
+     * representation — `H5Tenum_insert` reads exactly the parent
+     * datatype's size, preserving every bit of signed and unsigned
+     * 64-bit members alike. */
+    if (H5Tenum_insert(tinfo->hdf_type, name, (void *)value) < 0)
         return NC_EHDFERR;
 
     if ((ret = nc4_enum_member_add(type, type->size, name, value)))
@@ -664,15 +1056,32 @@ NEXTCDF4_inq_enum_ident(int ncid, nc_type typeid, long long value, char *identif
         return ret;
     if (!type || type->nc_type_class != NC_ENUM)
         return NC_EBADTYPE;
-    for (i = 0; i < nclistlength(type->u.e.enum_member); i++) {
-        NC_ENUM_MEMBER_INFO_T *mem = (NC_ENUM_MEMBER_INFO_T *)nclistget(type->u.e.enum_member, i);
-        if (mem) {
-            long long v = 0;
-            memcpy(&v, mem->value, type->size);
-            if (v == value) {
-                if (identifier)
-                    strncpy(identifier, mem->name, NC_MAX_NAME);
-                return NC_NOERR;
+    /* Extend the 8-byte inquiry argument to the member's stored
+     * representation: sign-extend for signed bases, zero-extend for
+     * unsigned, so all unsigned 64-bit bits compare correctly. */
+    {
+        unsigned long long needle = (unsigned long long)value;
+        int signed_base;
+        switch (type->u.e.base_nc_typeid) {
+        case NC_UBYTE: case NC_USHORT: case NC_UINT: case NC_UINT64:
+            signed_base = 0;
+            break;
+        default:
+            signed_base = 1;
+        }
+        for (i = 0; i < nclistlength(type->u.e.enum_member); i++) {
+            NC_ENUM_MEMBER_INFO_T *mem = (NC_ENUM_MEMBER_INFO_T *)nclistget(type->u.e.enum_member, i);
+            if (mem) {
+                unsigned long long v = 0;
+                memcpy(&v, mem->value, type->size);
+                if (signed_base && type->size < sizeof(v) &&
+                    (v & (1ULL << (type->size * 8 - 1))))
+                    v |= ~((1ULL << (type->size * 8)) - 1);
+                if (v == needle) {
+                    if (identifier)
+                        strncpy(identifier, mem->name, NC_MAX_NAME);
+                    return NC_NOERR;
+                }
             }
         }
     }
@@ -729,8 +1138,10 @@ NEXTCDF4_def_opaque(int ncid, size_t size, const char *name, nc_type *typeidp)
 
 fail:
     H5Tclose(op);
-    if (type)
+    if (type) {
+        nx4_free_type_info(type);
         nc4_type_free(type);
+    }
     return ret;
 }
 

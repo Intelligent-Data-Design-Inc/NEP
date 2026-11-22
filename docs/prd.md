@@ -10,7 +10,7 @@
 - Simplify installation and deployment in HPC environments
 
 ### 1.3 Success Metrics
-- Preserve NEP format APIs; v4.2.0 moves LZ4/BZIP2 calls to a separately linked library. NEXTCDF-4's structural detection of `NC_COMPLEX`/`NC_DOUBLECOMPLEX` may also reinterpret an exactly matching two-member user-defined compound; document both exceptions in release notes
+- Preserve NEP format APIs; v4.2.0 moves LZ4/BZIP2 calls to a separately linked library — document the exception in release notes. NEXTCDF-4 stores `NC_COMPLEX`/`NC_DOUBLECOMPLEX` as native HDF5 `H5T_COMPLEX` types, so a user compound with `{r, i}` members is never reinterpreted
 - Compression is independently tested in nep-compress
 - Successful integration with scientific data workflows
 - Comprehensive test coverage and CI validation

@@ -112,6 +112,42 @@ through `NEXTCDF4__enddef`/`NEXTCDF4_redef` in `nxt4file.c`.
   hyperslab on the variable's dataset and run `H5Dread`/`H5Dwrite`
   with a memory datatype.
 
+## User-defined types
+
+Type ids at or above `NC_FIRSTUSERTYPEID` (32) are user-defined types;
+lower ids are atomic or NEP extended types. `nxt4type.c` provides the
+context-aware plumbing that every consumer routes through:
+
+- `nx4_find_type(grp, xtype)` resolves a type id by walking the group
+  and its ancestors — types are group-scoped and visible to
+  descendants, matching netCDF's visibility rules.
+- `nx4_type_size`, `nx4_file_type` and `nx4_memory_type` resolve the
+  element size, the committed HDF5 file datatype and a rebuilt
+  native-layout memory datatype for any type, atomic or user-defined.
+  For a committed type `nx4_file_type` returns the committed `hid_t`
+  itself (refcount-bumped) rather than a `H5Tcopy`, so datasets and
+  attributes share the named datatype's object identity; copies would
+  produce anonymous stored types that break reload resolution.
+
+Committed datatypes are written at `_enddef` (`NEXTCDF4_write_types`);
+variables defined over a not-yet-committed type defer dataset creation
+until then, and attributes over them queue similarly. At open, each
+group's committed datatypes are loaded **before** variables and
+attributes (`load_types`/`load_one_type` in `nxt4meta.c`), so a
+dataset or attribute whose datatype is a shared committed type
+resolves it back to the registered `NC_TYPE_INFO_T` by object token
+(`nx4_hdf_type_match`, with an `H5Tequal` structural fallback for
+anonymously stored types).
+
+User-type I/O is matching-type or untyped only: `var_io` rejects a
+typed request for a different memtype with `NC_EBADTYPE` and never
+routes user types through `nx4_convert_type`. The memory datatype is
+rebuilt field-by-field for compounds (native-endian members at the
+recorded offsets), as `H5Tenum_create` over the integer base for
+enums, and as a plain `H5T_OPAQUE` for opaque types, so HDF5 handles
+byte-order conversion while the element layout the caller sees is the
+type's exact `nc_inq_*` layout.
+
 ## Filters
 
 Variable filter pipelines are stored on `NC_VAR_INFO_T::filters` — an

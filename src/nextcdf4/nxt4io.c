@@ -255,18 +255,21 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
      * so every HDF5 handle is closed exactly once. */
     if ((ret = NEXTCDF4_get_file(ncid, &h5, &file))) return ret;
     if ((ret = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var))) return ret;
-    if (!var || !(vinfo = var->format_var_info) || vinfo->hdf_dataset < 0) return NC_ENOTVAR;
+    if (!var || !(vinfo = var->format_var_info)) return NC_ENOTVAR;
     /* A variable opened with a missing mandatory filter plugin keeps
      * its metadata readable but rejects all data I/O. */
     if (vinfo->flags & NC_HDF5_VAR_FILTER_MISSING) return NC_ENOFILTER;
     if (writing && file->no_write) return NC_EPERM;
     /* Upstream leaves define mode automatically when a write arrives;
      * nc_close does the same below. Reads in define mode keep NEP's
-     * NC_EINDEFINE rule. */
+     * NC_EINDEFINE rule. The auto-enddef must run before the dataset
+     * check: a user-typed variable's dataset exists only after the
+     * deferred creation `_enddef` performs. */
     if (file->define_mode) {
         if (!writing) return NC_EINDEFINE;
         if ((ret = NEXTCDF4__enddef(ncid, 0, 0, 0, 0))) return ret;
     }
+    if (vinfo->hdf_dataset < 0) return NC_ENOTVAR;
     if (!data) return NC_EINVAL;
     /* The untyped nc_put_var/nc_get_var, var1 and vars calls pass
      * NC_NAT, meaning "the variable's own type"; resolve it so
@@ -275,8 +278,13 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
     /* Reject memtypes not allowed for small-float variables before any
      * HDF5 call, so a rejected call touches neither buffer nor file. */
     if ((memtype == NC_CHAR) != (var->type_info->hdr.id == NC_CHAR)) return NC_ECHAR;
-    if ((ret = check_memtype((nc_type)var->type_info->hdr.id, memtype))) return ret;
-    if ((mtype = NEXTCDF4_memory_type(memtype, &close_mtype)) < 0) return NC_EBADTYPE;
+    if (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID) {
+        /* User-defined types take matching-type or untyped I/O only;
+         * there is no numeric conversion. */
+        if (memtype != var->type_info->hdr.id) return NC_EBADTYPE;
+    } else if ((ret = check_memtype((nc_type)var->type_info->hdr.id, memtype))) return ret;
+    if ((ret = nx4_memory_type(grp, memtype, &mtype))) return ret;
+    close_mtype = 1;
     ndims = (int)var->ndims;
     if ((fspace = H5Dget_space(vinfo->hdf_dataset)) < 0) { ret = NC_EHDFERR; goto done; }
     if (!ndims) goto prepare;
@@ -303,7 +311,7 @@ prepare:
     xtype = (nc_type)var->type_info->hdr.id;
     converting = memtype != xtype || (writing && var->quantize_mode != NC_NOQUANTIZE);
     io_type = converting ? xtype : memtype;
-    if ((ret = NEXTCDF4_type_size(xtype, &xtype_size))) goto done;
+    if ((ret = nx4_type_size(grp, xtype, &xtype_size))) goto done;
     if (total > SIZE_MAX / xtype_size) { ret = NC_EINVAL; goto done; }
     if (converting) {
         /* A dry-run call with no buffers lets the engine report
@@ -320,7 +328,8 @@ prepare:
         if (writing && (ret = nx4_convert_type(data, converted, source, target, (size_t)total,
                                                &range_error, var->fill_value, 0, mode, var->nsd, 1))) goto done;
         if (close_mtype) { H5Tclose(mtype); close_mtype = 0; }
-        if ((mtype = NEXTCDF4_memory_type(io_type, &close_mtype)) < 0) { ret = NC_EBADTYPE; goto done; }
+        if ((ret = nx4_memory_type(grp, io_type, &mtype))) goto done;
+        close_mtype = 1;
     }
     if (extend) {
         if (H5Dset_extent(vinfo->hdf_dataset, newdims) < 0) { ret = NC_EHDFERR; goto done; }

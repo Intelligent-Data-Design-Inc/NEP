@@ -79,12 +79,24 @@ lines across 11 C files plus `nxt4internal.h`/`nxt4err.h`).
   hyperslabs), `nc_ref_attr` / `nc_deref_attr`, external-file creators
   `nc_ref_*_ext`, `nc_ref_get_type`/`nc_ref_get_file_name`/
   `nc_ref_get_obj_name`, `nc_ref_free`.
-- User-defined types can be **defined and inquired**: `nc_def_compound` +
-  `nc_insert_compound` (scalar fields), `nc_def_vlen`, `nc_def_enum` +
-  `nc_insert_enum` + enum inquiries, `nc_def_opaque`, `nc_inq_user_type`,
-  `nc_inq_typeid`, `nc_inq_typeids`, `nc_inq_type_equal`; committed
-  datatypes are loaded at open (`load_one_type`). **But variables and
-  attributes cannot use them — see gaps below.**
+- Fixed-size user-defined types work end to end (Sprint 1N1):
+  `nc_def_compound` + `nc_insert_compound` (scalar atomic fields),
+  `nc_def_enum` + `nc_insert_enum` (integer bases) + enum inquiries,
+  `nc_def_opaque`, `nc_def_vlen` (definition/inquiry only — vlen I/O is
+  Sprint 1N3), plus `nc_inq_user_type`, `nc_inq_typeid`,
+  `nc_inq_typeids`, `nc_inq_type_equal`. Variables and attributes of
+  compound/enum/opaque types are supported in native and
+  `NC_NETCDF4_MODEL` files: untyped `nc_put/get_var*`, matching-type
+  typed calls (numeric conversion of user types is rejected with
+  `NC_EBADTYPE`), zero-length/user-typed attributes, fill values,
+  group-scoped type visibility with parent-type inheritance, and full
+  close/reopen via committed HDF5 datatypes loaded before variables
+  (`load_types`/`load_one_type`, resolved by object token with an
+  `H5Tequal` fallback). Files interchange with upstream netcdf-c in
+  both directions (`tst_nextcdf4_user_types`). Limits: compound fields
+  must be scalar atomics (array fields and nested user types are
+  Sprint 1N2), `NC_STD_REF` inside compounds is unsupported, and
+  `NC_STRING` members/values are Sprint 1P.
 - `nc_*_bfloat16` / `nc_*_float16` typed APIs in `libnep`
   (`src/nep_bfloat16.c`, `src/nep_float16.c`).
 
@@ -113,8 +125,8 @@ Probed with a small program linked against `build/src/libncnextcdf4.so`
 
 | # | Gap | Evidence |
 |---|-----|----------|
-| 1 | **Variables/attributes of user-defined types are unusable.** `nc_def_var` and `nc_put_att` call `NEXTCDF4_check_atomic_type`, which returns `NC_EBADTYPE` for any non-atomic typeid. Compound/vlen/enum/opaque types can be defined but no variable or attribute can use them. | `nc_def_var(ncid, "cv", compound_typeid, ...)` → `NC_EBADTYPE` |
-| 2 | **Files containing user-typed or `NC_STRING` variables cannot be opened.** `load_one_var` resolves the dataset type through `map_nc_type`, which has no committed-type, vlen, or variable-length-string case → `NC_EBADTYPE` fails `nc_open`. This breaks the plan's "full read compatibility with existing NetCDF-4/HDF5 files" goal for a large class of upstream files. | NEXTCDF-4's own file with an `NC_STRING` var fails to reopen; an upstream `NC_NETCDF4` file with a compound or `NC_STRING` var fails to open; same file with only `NC_INT` opens fine |
+| 1 | ~~**Variables/attributes of user-defined types are unusable**~~ — fixed in Sprint 1N1: `nc_def_var`/`nc_put_att` resolve user typeids through group-scoped lookup (`nx4_find_type`), uncommitted-type variables defer dataset creation until `_enddef`, and I/O uses the type's exact memory/file layout with matching-type or untyped access only. | Sprint 1N1 |
+| 2 | **Files containing `NC_STRING` variables cannot be opened** — partially fixed in Sprint 1N1: `load_one_var`/`read_hdf5_att` now resolve committed compound/enum/opaque datatypes by object token (with `H5Tequal` fallback) so user-typed variables and attributes open and reopen correctly, including upstream files; vlen and variable-length-string dataset types still fail `nc_open` with `NC_EBADTYPE`. | upstream `NC_NETCDF4` compound/enum/opaque file opens; `NC_STRING` var still fails |
 | 3 | **`NC_STRING` attributes are silently lost on reopen.** File opens, but `nc_get_att_string` returns `NC_ENOTATT` — the variable-length-string attribute is not loaded. | probe: `put_att_string` → close → open → `get_att_string` = `NC_ENOTATT` |
 | 4 | ~~**Four tests disabled**~~ — fixed in Sprint 1M: the abort was upstream netcdf-c's `FILEINFOFLAGS` covering only UDF slots 0–1, fixed upstream by the 64-slot `UDFMODEL` scheme (netcdf-c `main`, shipping in 4.10.2). `NEP_ENABLE_NEXTCDF4` now requires 64-slot headers at configure time (`NC_UDF` + `NC_MAX_UDF_FORMATS >= 64`, `FATAL_ERROR` on 10-slot) and all four tests are re-enabled unconditionally. Note: the flag-value ABI differs between the two schemes — a NEP build runs only against the scheme it was built for. | #379 |
 | 5 | ~~**Def-var setters recreate the HDF5 dataset**~~ — fixed in Sprint 1M: setters (`nc_def_var_fill`/`chunking`/`deflate`/`endian`/`fletcher32`/`filter`/`szip` via `nx4_mark_dcpl_dirty`; quantization is applied at data-conversion time and needs no rebuild) only update in-memory metadata and mark the variable dirty; `_enddef` rebuilds each dirty dataset once — detaching scales/dependents before `H5Ldelete`, re-attaching after — and rewrites user attributes in index order. Committed variables reject all dataset-property setters with `NC_ELATEDEF` (upstream parity), so written data can no longer be silently destroyed; a rebuilt var leaves one bounded orphaned object header. | #382 |
@@ -182,13 +194,13 @@ Sprint 1 (deferred when v4.1.0 shipped docs+logging instead):
 
 ## Doc deltas to fix before release
 
-- `docs/nextcdf4.md` and `NEXTCDF4_plan.md` describe `NC_COMPLEX` as the
-  `{r,i}` compound layout; the code uses native HDF5 2.x `H5T_COMPLEX_*`.
-  Decided 2026-11-21: keep native `H5T_COMPLEX_IEEE_F*` (already
-  implemented); update the docs in Sprint 1N.
-- `docs/design.md` claims compound/enum/opaque/vlen types and `NC_STRING`
-  are implemented — only type *definition* is; variables/attributes and
-  reopen paths are broken (gaps 1–3).
+- ~~`docs/nextcdf4.md` and `NEXTCDF4_plan.md` describe `NC_COMPLEX` as the
+  `{r,i}` compound layout~~ — reconciled in Sprint 1N: docs now state
+  the native HDF5 2.x `H5T_COMPLEX_IEEE_F*` storage (decided
+  2026-11-21). Ordinary `{r,i}` compounds are ordinary user compounds.
+- `docs/design.md` claims vlen types and `NC_STRING` variables are
+  implemented — only type *definition* is; `NC_STRING` variables and
+  vlen I/O remain broken (gap 2).
 - Feature macros: `NEP_HAS_NEXTCDF4` is the only NEXTCDF-4 capability
   macro `nep_meta.h` needs; the larger per-feature set sketched in
   `docs/plan/NEXTCDF4_plan.md` is dropped (decided 2026-11-21).
@@ -201,11 +213,12 @@ Owned by v4.3.0 Sprints 1L1–1R (see `docs/roadmap.md`), ordered by severity.
 
 1. Reopen path for `NC_STRING` variables (gap 2) and silent loss of
    `NC_STRING` attributes (gap 3). → Sprint 1P
-2. End-to-end user-defined types: let `nc_def_var`/`nc_put_att` accept
-   user typeids, resolve committed datatypes in `load_one_var`, and
-   implement `nc_insert_array_compound` + `nc_put/get_vlen_element`
-   (gaps 1–2). Until then `NC_NETCDF4_MODEL` cannot honestly claim
-   upstream-file compatibility. → Sprint 1N
+2. ~~End-to-end user-defined types~~ — fixed-size types (scalar atomic
+   compound fields, integer enums, opaque) done in Sprint 1N1,
+   including committed-type reload and upstream interchange in both
+   directions. Remaining in Sprint 1N: array fields and nested types
+   (1N2), vlen I/O/`nc_put/get_vlen_element` (1N3), upstream test ports
+   (1N4).
 3. ~~Root-cause and fix the `NC_reclaim_data`/`USEFILEINFO` abort; re-enable
    the disabled tests (#379).~~ — done in Sprint 1M.
 4. ~~Fix dataset-recreation orphans from def-var setters (#382) and the

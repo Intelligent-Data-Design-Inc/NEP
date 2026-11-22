@@ -373,9 +373,9 @@ Important caveats:
 
 ## Important Caveats
 
-1. **Superblock v3 requires HDF5 1.14+**; all NEXTCDF-4 files, including `NC_NETCDF4_MODEL` and `NC_CLASSIC_MODEL` compatibility files, are written with Superblock v3.
+1. **Superblock v3 requires HDF5 1.14+**; native and `NC_CLASSIC_MODEL` NEXTCDF-4 files are written with Superblock v3, while `NC_NETCDF4_MODEL` files use Superblock v1 for upstream/HDF5 1.10 compatibility.
 2. **Float16** is a distinct HDF5 atomic type; do not confuse it with a 16-bit integer or a user-defined type.
-3. **Compound types with complex-number member names** (`r`, `i`) should be recognized as complex only when the exact layout matches and the user type name or flag indicates a complex type.
+3. **Complex numbers use the native HDF5 2.x `H5T_COMPLEX` class**, not a `{r,i}` compound — a user compound with `r`/`i` members stays an ordinary user compound (no structural reinterpretation).
 4. **References are opaque tokens**; they are meaningful only within the file that created them.
 5. **Region references** require the target dataset to exist and remain valid for the lifetime of the reference read.
 6. **Non-IEEE floating-point types** (FP4/FP6/FP8) require exact in-memory type matching; implicit conversion is unreliable in current HDF5 releases.
