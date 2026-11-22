@@ -145,7 +145,9 @@ Semantics:
 - I/O is matching-type or untyped (`nc_put/get_var`, `var1`, `vara`, `vars`); typed calls that request numeric conversion of a user type return `NC_EBADTYPE`. Memory and file layouts are the type's exact sizes and field offsets — no conversion engine is involved.
 - Attributes of user types work the same way (`nc_put_att`/`nc_get_att` with the user typeid or untyped), including zero-length attributes, and preserve their type across close/reopen.
 - Classic-model files reject all user-type calls (`NC_ENOTNC4`).
-- Limits: compound fields must be scalar atomic types — array fields (`nc_insert_array_compound`) and fields of user-defined type are not yet implemented; vlen types can be defined but carry no data yet; `NC_STD_REF` cannot be a compound member.
+- Compounds nest: fields may be other fixed-size compounds, enums, opaques, or fixed-size multidimensional arrays (`nc_insert_array_compound`) of any of those. Nested types are committed before their containers and each group tracks link creation order, so upstream netCDF reads the types back in dependency order.
+- For compounds containing nested compound members, NEXTCDF-4 writes a lossless declared-layout record per element (upstream's own convention under HDF5 2.1.1 overflows dataset storage and loses the last record's tail). Foreign files written with upstream's serialized-compound layout are read through the packed native datatype, matching upstream's own read capability.
+- Limits: vlen types can be defined but carry no data yet; `NC_STD_REF` cannot be a compound member; `NC_STRING` members are not yet supported.
 
 ## Storage and Metadata
 

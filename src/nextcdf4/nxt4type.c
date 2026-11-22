@@ -213,6 +213,13 @@ user_mem_type(NC_GRP_INFO_T *grp, NC_TYPE_INFO_T *type, hid_t *typep)
 
     switch (type->nc_type_class) {
     case NC_COMPOUND: {
+        /* The buffer uses the user's declared C layout, so the
+         * memory datatype is rebuilt field-by-field at the recorded
+         * offsets — including nested compound members, which must be
+         * transient rebuilds rather than the committed datatype:
+         * doing I/O through the committed datatype's packed native
+         * type makes HDF5 insert alignment pads in the file
+         * serialization, overflowing the dataset's storage. */
         if ((t = H5Tcreate(H5T_COMPOUND, type->size)) < 0)
             return NC_EHDFERR;
         for (i = 0; i < nclistlength(type->u.c.field); i++) {
@@ -335,6 +342,7 @@ nx4_memory_type(NC_GRP_INFO_T *grp, nc_type xtype, hid_t *typep)
         return NC_EBADTYPE;
     return user_mem_type(grp, type, typep);
 }
+
 
 /**
  * @brief Resolve an HDF5 datatype to a registered committed user
@@ -581,12 +589,148 @@ fail:
 }
 
 /**
+ * @brief Check whether @p target appears anywhere in @p t's member
+ * graph — the cycle check for compound insertion.
+ *
+ * Compound members form a DAG by construction (every insert runs this
+ * check), so a depth-first walk through user-typed fields is enough;
+ * @p seen bounds the recursion on a malformed graph.
+ *
+ * @param h5 NetCDF-4 file state used to resolve member type ids.
+ * @param t Type record whose member graph is walked.
+ * @param target Type record being searched for.
+ * @param seen Scratch list of already-visited records (may be NULL;
+ * allocated lazily by the caller).
+ * @return Nonzero when @p target is reachable from @p t's members.
+ */
+static int
+type_graph_contains(NC_FILE_INFO_T *h5, NC_TYPE_INFO_T *t,
+                    NC_TYPE_INFO_T *target, NClist *seen)
+{
+    size_t i;
+
+    if (!t || t->nc_type_class != NC_COMPOUND)
+        return 0;
+    if (t == target)
+        return 1;
+    for (i = 0; i < nclistlength(seen); i++)
+        if (nclistget(seen, i) == t)
+            return 0;
+    nclistpush(seen, t);
+    for (i = 0; i < nclistlength(t->u.c.field); i++) {
+        NC_FIELD_INFO_T *f = (NC_FIELD_INFO_T *)nclistget(t->u.c.field, i);
+        NC_TYPE_INFO_T *m = NULL;
+        if (f && f->nc_typeid >= NC_FIRSTUSERTYPEID &&
+            !nc4_find_type(h5, f->nc_typeid, &m) && m &&
+            type_graph_contains(h5, m, target, seen))
+            return 1;
+    }
+    return 0;
+}
+
+/**
+ * @brief Validate a compound member's element type.
+ *
+ * Atomic members use the file's compatibility rules with two fixed
+ * exclusions — `NC_STRING` (Sprint 1P) and `NC_STD_REF` (documented
+ * restriction). User-defined members must be fixed-size types
+ * (compound/enum/opaque — vlen and string classes are deferred) and
+ * their member graph must not contain the container itself.
+ *
+ * @param file NEXTCDF-4 file state.
+ * @param grp Group the container type lives in (visibility scope).
+ * @param xtype Candidate member element type.
+ * @param container Compound record receiving the member.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+static int
+member_type_ok(NEXTCDF4_FILE_INFO_T *file, NC_GRP_INFO_T *grp,
+               nc_type xtype, NC_TYPE_INFO_T *container)
+{
+    NC_TYPE_INFO_T *m = NULL;
+    NClist *seen;
+    int cyclic;
+
+    if (xtype < NC_FIRSTUSERTYPEID) {
+        if (xtype == NC_STRING || xtype == NC_STD_REF)
+            return NC_EBADTYPE;
+        return NEXTCDF4_check_atomic_type(file, xtype);
+    }
+    if (nx4_find_type(grp, xtype, &m) || !m)
+        return NC_EBADTYPE;
+    if (m->nc_type_class == NC_VLEN || m->nc_type_class == NC_STRING)
+        return NC_EBADTYPE;
+    if (!(seen = nclistnew()))
+        return NC_ENOMEM;
+    cyclic = type_graph_contains(grp->nc4_info, m, container, seen);
+    nclistfree(seen);
+    if (cyclic)
+        return NC_EBADTYPE;
+    return NC_NOERR;
+}
+
+/**
+ * @brief Build the HDF5 datatype for one compound field.
+ *
+ * Resolves the element type (atomic via NEXTCDF4_map_hdf_type, or a
+ * user-defined type's own HDF5 datatype) and wraps it in
+ * `H5Tarray_create2` when the field is an array. The returned id is
+ * owned by the caller only when `*ownedp` is nonzero; a borrowed
+ * committed member datatype stays owned by its type record.
+ *
+ * @param grp Group resolving member type ids.
+ * @param f Field record.
+ * @param typep Destination for the HDF5 datatype.
+ * @param ownedp Destination for the ownership flag.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+static int
+field_hdf_type(NC_GRP_INFO_T *grp, const NC_FIELD_INFO_T *f, hid_t *typep,
+               int *ownedp)
+{
+    hid_t base = -1;
+    int owned = 1;
+
+    if (f->nc_typeid < NC_FIRSTUSERTYPEID) {
+        if ((base = base_hdf_type(f->nc_typeid)) < 0)
+            return NC_EBADTYPE;
+    } else {
+        NC_TYPE_INFO_T *m = NULL;
+        NEXTCDF4_TYPE_INFO_T *mi;
+        if (nx4_find_type(grp, f->nc_typeid, &m) || !m ||
+            !(mi = m->format_type_info) || mi->hdf_type < 0)
+            return NC_EBADTYPE;
+        base = mi->hdf_type;
+        owned = 0;
+    }
+    if (f->ndims > 0) {
+        hsize_t adims[NC_MAX_VAR_DIMS];
+        hid_t at;
+        int d;
+        for (d = 0; d < f->ndims; d++)
+            adims[d] = (hsize_t)f->dim_size[d];
+        at = H5Tarray_create2(base, (unsigned)f->ndims, adims);
+        if (at < 0) {
+            if (owned && base >= 0)
+                H5Tclose(base);
+            return NC_EHDFERR;
+        }
+        if (owned)
+            H5Tclose(base);
+        base = at;
+        owned = 1;
+    }
+    *typep = base;
+    *ownedp = owned;
+    return NC_NOERR;
+}
+
+/**
  * @brief Insert a scalar field into a compound type — the
  * `nc_insert_compound()` dispatch entry.
  *
- * Maps the field's atomic type to HDF5 and `H5Tinsert`s it at the
- * byte offset in the (still transient) compound datatype, then
- * records the field in the in-memory type.
+ * Thin wrapper over NEXTCDF4_insert_array_compound() with rank zero,
+ * matching upstream's delegation.
  *
  * @param ncid NetCDF file identifier.
  * @param typeid Compound type id.
@@ -599,14 +743,43 @@ int
 NEXTCDF4_insert_compound(int ncid, nc_type typeid, const char *name,
                          size_t offset, nc_type xtype)
 {
+    return NEXTCDF4_insert_array_compound(ncid, typeid, name, offset,
+                                        xtype, 0, NULL);
+}
+
+/**
+ * @brief Insert a scalar or fixed-size array field into a compound
+ * type — the `nc_insert_array_compound()` dispatch entry.
+ *
+ * Members may be atomic types (excluding `NC_STRING` and
+ * `NC_STD_REF`) or visible fixed-size user-defined types — compounds
+ * nest. Validation happens entirely before `H5Tinsert` and the
+ * metadata update, so a rejected call changes nothing.
+ *
+ * @param ncid NetCDF file identifier.
+ * @param typeid Compound type id.
+ * @param name Field name.
+ * @param offset Field offset in bytes.
+ * @param xtype NetCDF type of the field elements.
+ * @param ndims Number of array dimensions; 0 inserts a scalar.
+ * @param dim_sizesp Array dimension sizes (required when @p ndims>0).
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+int
+NEXTCDF4_insert_array_compound(int ncid, nc_type typeid, const char *name,
+                               size_t offset, nc_type xtype, int ndims,
+                               const int *dim_sizesp)
+{
     NC_FILE_INFO_T *h5;
     NEXTCDF4_FILE_INFO_T *file;
     NC_GRP_INFO_T *grp;
     NC_TYPE_INFO_T *type;
     NEXTCDF4_TYPE_INFO_T *tinfo;
-    hid_t hdf;
-    int ret;
-    size_t size;
+    NC_FIELD_INFO_T tmp;
+    hid_t hdf = -1;
+    int owned = 0;
+    size_t esize, total = 1;
+    int i, ret;
 
     if ((ret = get_grp_and_file(ncid, &h5, &grp, &file)))
         return ret;
@@ -630,58 +803,63 @@ NEXTCDF4_insert_compound(int ncid, nc_type typeid, const char *name,
     if (!tinfo || tinfo->hdf_type < 0)
         return NC_EBADTYPE;
 
-    if (NEXTCDF4_type_size(xtype, &size))
-        return NC_EBADTYPE;
-    /* netcdf-4-model files must stay readable by upstream netcdf-c:
-     * NEP-only atomic types cannot be fields. */
-    if (file->netcdf4_model &&
-        (ret = NEXTCDF4_check_atomic_type(file, xtype)))
-        return ret;
-    /* The field must fit inside the declared compound size. */
-    if (offset > type->size || size > type->size - offset)
+    /* Array shape: rank zero is a scalar member. */
+    if (ndims < 0 || ndims > NC_MAX_VAR_DIMS)
         return NC_EINVAL;
-    for (ret = 0; (size_t)ret < nclistlength(type->u.c.field); ret++) {
+    if (ndims > 0) {
+        if (!dim_sizesp)
+            return NC_EINVAL;
+        for (i = 0; i < ndims; i++) {
+            if (dim_sizesp[i] <= 0)
+                return NC_EINVAL;
+            if (total > SIZE_MAX / (size_t)dim_sizesp[i])
+                return NC_EINVAL;
+            total *= (size_t)dim_sizesp[i];
+        }
+    }
+
+    /* The member's element type must be legal here: standard atomic
+     * (minus strings/references) or a visible fixed-size user type
+     * that does not contain the container. */
+    if ((ret = member_type_ok(file, grp, xtype, type)))
+        return ret;
+    if (nx4_type_size(grp, xtype, &esize))
+        return NC_EBADTYPE;
+    if (total > SIZE_MAX / esize)
+        return NC_EINVAL;
+    total *= esize;
+    /* The field must fit inside the declared compound size. */
+    if (offset > type->size || total > type->size - offset)
+        return NC_EINVAL;
+    for (i = 0; (size_t)i < nclistlength(type->u.c.field); i++) {
         NC_FIELD_INFO_T *f =
-            (NC_FIELD_INFO_T *)nclistget(type->u.c.field, ret);
+            (NC_FIELD_INFO_T *)nclistget(type->u.c.field, i);
         if (f && !strcmp(f->hdr.name, name))
             return NC_ENAMEINUSE;
     }
 
-    hdf = base_hdf_type(xtype);
-    if (hdf < 0)
-        return NC_EBADTYPE;
-
-    if (H5Tinsert(tinfo->hdf_type, name, offset, hdf) < 0) {
-        H5Tclose(hdf);
-        return NC_EHDFERR;
-    }
-    H5Tclose(hdf);
-
-    if ((ret = nc4_field_list_add(type, name, offset, xtype, 0, NULL)))
+    /* All validation done — build the member datatype, insert, and
+     * record the field. field_hdf_type borrows the member's own
+     * datatype for user-defined elements so a committed member embeds
+     * a shared reference. */
+    memset(&tmp, 0, sizeof(tmp));
+    tmp.nc_typeid = xtype;
+    tmp.ndims = ndims;
+    tmp.dim_size = (int *)dim_sizesp;
+    if ((ret = field_hdf_type(grp, &tmp, &hdf, &owned)))
         return ret;
-    return NC_NOERR;
-}
+    if (H5Tinsert(tinfo->hdf_type, name, offset, hdf) < 0) {
+        ret = NC_EHDFERR;
+        goto done;
+    }
+    if ((ret = nc4_field_list_add(type, name, offset, xtype, ndims,
+                                 dim_sizesp)))
+        goto done;
 
-/**
- * @brief Insert an array field into a compound type; not implemented.
- *
- * @param ncid NetCDF file identifier.
- * @param typeid Compound type id.
- * @param name Field name.
- * @param offset Field offset in bytes.
- * @param xtype NetCDF type of the field elements.
- * @param ndims Number of array dimensions.
- * @param dim_sizesp Array dimension sizes.
- * @return `NC_ENOTBUILT` always.
- */
-int
-NEXTCDF4_insert_array_compound(int ncid, nc_type typeid, const char *name,
-                               size_t offset, nc_type xtype, int ndims,
-                               const int *dim_sizesp)
-{
-    (void)ncid;(void)typeid;(void)name;(void)offset;(void)xtype;(void)ndims;
-    (void)dim_sizesp;
-    return NC_ENOTBUILT;
+done:
+    if (owned && hdf >= 0)
+        H5Tclose(hdf);
+    return ret;
 }
 
 /**
@@ -872,6 +1050,12 @@ NEXTCDF4_get_vlen_element(int ncid, int typeid, const void *vlen_element,
     return NC_ENOTBUILT;
 }
 
+/* Enum bases are restricted to integer types, upstream-style. */
+#define NX4_ENUM_BASE_OK(t) \
+    ((t) == NC_BYTE || (t) == NC_CHAR || (t) == NC_SHORT || \
+     (t) == NC_INT || (t) == NC_UBYTE || (t) == NC_USHORT || \
+     (t) == NC_UINT || (t) == NC_INT64 || (t) == NC_UINT64)
+
 /**
  * @brief Define an enum type — the `nc_def_enum()` dispatch entry.
  *
@@ -907,6 +1091,11 @@ NEXTCDF4_def_enum(int ncid, nc_type base_typeid, const char *name, nc_type *type
     if (nc4_check_dup_name(grp, (char *)name))
         return NC_ENAMEINUSE;
 
+    /* Upstream restricts enum bases to integer types; in
+     * netcdf-4-model files they are always standard anyway, but the
+     * atomic check keeps the rule in one place. */
+    if (!NX4_ENUM_BASE_OK(base_typeid))
+        return NC_EBADTYPE;
     if (NEXTCDF4_type_size(base_typeid, &size))
         return NC_EBADTYPE;
 
@@ -1185,27 +1374,147 @@ commit_one_type(NC_GRP_INFO_T *grp, NC_TYPE_INFO_T *type)
 }
 
 /**
+ * @brief Rebuild a compound's transient HDF5 datatype from its field
+ * metadata.
+ *
+ * Called at commit time, after the compound's dependency member types
+ * have themselves been committed: building members from the now-
+ * committed HDF5 datatypes makes the stored members shared datatype
+ * references (as upstream netcdf-c writes), rather than anonymous
+ * copies of what were transient ids at insert time.
+ *
+ * @param grp Group the type belongs to (visibility scope).
+ * @param type Compound type record.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+static int
+rebuild_compound_transient(NC_GRP_INFO_T *grp, NC_TYPE_INFO_T *type)
+{
+    NEXTCDF4_TYPE_INFO_T *tinfo = type->format_type_info;
+    hid_t newt = -1;
+    size_t i;
+    int ret;
+
+    if (!tinfo || tinfo->hdf_type < 0)
+        return NC_EBADTYPE;
+    if ((newt = H5Tcreate(H5T_COMPOUND, type->size)) < 0)
+        return NC_EHDFERR;
+    for (i = 0; i < nclistlength(type->u.c.field); i++) {
+        NC_FIELD_INFO_T *f =
+            (NC_FIELD_INFO_T *)nclistget(type->u.c.field, i);
+        hid_t mt = -1;
+        int owned = 0;
+        if (!f)
+            continue;
+        if ((ret = field_hdf_type(grp, f, &mt, &owned)))
+            goto fail;
+        if (H5Tinsert(newt, f->hdr.name, f->offset, mt) < 0)
+            ret = NC_EHDFERR;
+        if (owned && mt >= 0)
+            H5Tclose(mt);
+        if (ret)
+            goto fail;
+    }
+    H5Tclose(tinfo->hdf_type);
+    tinfo->hdf_type = newt;
+    return NC_NOERR;
+
+fail:
+    if (newt >= 0)
+        H5Tclose(newt);
+    return ret;
+}
+
+/**
+ * @brief Find the group whose type index owns a record.
+ * @param grp Group to walk recursively.
+ * @param type Type record to locate.
+ * @return Owning group, or NULL.
+ */
+static NC_GRP_INFO_T *
+find_type_owner(NC_GRP_INFO_T *grp, NC_TYPE_INFO_T *type)
+{
+    size_t i;
+
+    for (i = 0; i < ncindexsize(grp->type); i++)
+        if (ncindexith(grp->type, i) == (NC_OBJ *)type)
+            return grp;
+    for (i = 0; i < ncindexsize(grp->children); i++) {
+        NC_GRP_INFO_T *child =
+            (NC_GRP_INFO_T *)ncindexith(grp->children, i);
+        NC_GRP_INFO_T *found;
+        if (child && (found = find_type_owner(child, type)))
+            return found;
+    }
+    return NULL;
+}
+
+/**
+ * @brief Commit one type after its dependencies.
+ *
+ * For compounds, every uncommitted user-defined member type is
+ * committed first (in its own group), then the container's transient
+ * datatype is rebuilt so stored members are shared references to the
+ * committed datatypes. Cycles cannot form — insertion rejects them —
+ * so plain recursion is sufficient.
+ *
+ * @param h5 NetCDF-4 file state.
+ * @param grp Group the type belongs to.
+ * @param type Type record.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+static int
+commit_type_tree(NC_FILE_INFO_T *h5, NC_GRP_INFO_T *grp,
+                 NC_TYPE_INFO_T *type)
+{
+    size_t i;
+    int ret;
+
+    if (type->committed)
+        return NC_NOERR;
+    if (type->nc_type_class == NC_COMPOUND) {
+        for (i = 0; i < nclistlength(type->u.c.field); i++) {
+            NC_FIELD_INFO_T *f =
+                (NC_FIELD_INFO_T *)nclistget(type->u.c.field, i);
+            NC_TYPE_INFO_T *m = NULL;
+            NC_GRP_INFO_T *og;
+            if (!f || f->nc_typeid < NC_FIRSTUSERTYPEID)
+                continue;
+            if (nc4_find_type(h5, f->nc_typeid, &m) || !m)
+                return NC_EBADTYPE;
+            if (m->committed)
+                continue;
+            og = find_type_owner(h5->root_grp, m);
+            if ((ret = commit_type_tree(h5, og ? og : grp, m)))
+                return ret;
+        }
+        if ((ret = rebuild_compound_transient(grp, type)))
+            return ret;
+    }
+    return commit_one_type(grp, type);
+}
+
+/**
  * @brief Recursively commit all uncommitted types in a group tree.
+ * @param h5 NetCDF-4 file state.
  * @param grp Group.
  * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 static int
-commit_types_in_grp(NC_GRP_INFO_T *grp)
+commit_types_in_grp(NC_FILE_INFO_T *h5, NC_GRP_INFO_T *grp)
 {
     size_t i;
     int ret;
 
     for (i = 0; i < ncindexsize(grp->type); i++) {
         NC_TYPE_INFO_T *type = (NC_TYPE_INFO_T *)ncindexith(grp->type, i);
-        if (type && !type->committed) {
-            if ((ret = commit_one_type(grp, type)))
-                return ret;
-        }
+        if (type && (ret = commit_type_tree(h5, grp, type)))
+            return ret;
     }
 
     for (i = 0; i < ncindexsize(grp->children); i++) {
         NC_GRP_INFO_T *child = (NC_GRP_INFO_T *)ncindexith(grp->children, i);
-        if (child && (ret = commit_types_in_grp(child)))
+        if (child && (ret = commit_types_in_grp(h5, child)))
             return ret;
     }
     return NC_NOERR;
@@ -1221,7 +1530,7 @@ commit_types_in_grp(NC_GRP_INFO_T *grp)
 int
 NEXTCDF4_write_types(NC_FILE_INFO_T *h5)
 {
-    return commit_types_in_grp(h5->root_grp);
+    return commit_types_in_grp(h5, h5->root_grp);
 }
 
 /**
@@ -1307,12 +1616,103 @@ NEXTCDF4_inq_typeid(int ncid, const char *name, nc_type *typeidp)
 }
 
 /**
+ * @brief Structural comparison for `nc_inq_type_equal()`.
+ *
+ * Compares class, size and contents recursively — member type ids are
+ * file-local, so user-defined members compare by structure through
+ * each side's own type list, never by numeric id or by name.
+ *
+ * @param h5_1 File state of the first type.
+ * @param t1 First type record.
+ * @param h5_2 File state of the second type.
+ * @param t2 Second type record.
+ * @return Nonzero when the types are structurally equal.
+ */
+static int
+types_equal(NC_FILE_INFO_T *h5_1, NC_TYPE_INFO_T *t1,
+            NC_FILE_INFO_T *h5_2, NC_TYPE_INFO_T *t2)
+{
+    size_t i;
+
+    if (t1 == t2)
+        return 1;
+    if (t1->nc_type_class != t2->nc_type_class || t1->size != t2->size)
+        return 0;
+    switch (t1->nc_type_class) {
+    case NC_COMPOUND: {
+        if (nclistlength(t1->u.c.field) != nclistlength(t2->u.c.field))
+            return 0;
+        for (i = 0; i < nclistlength(t1->u.c.field); i++) {
+            NC_FIELD_INFO_T *f1 =
+                (NC_FIELD_INFO_T *)nclistget(t1->u.c.field, i);
+            NC_FIELD_INFO_T *f2 =
+                (NC_FIELD_INFO_T *)nclistget(t2->u.c.field, i);
+            int d;
+            if (!f1 || !f2 || strcmp(f1->hdr.name, f2->hdr.name) ||
+                f1->offset != f2->offset || f1->ndims != f2->ndims)
+                return 0;
+            for (d = 0; d < f1->ndims; d++)
+                if (f1->dim_size[d] != f2->dim_size[d])
+                    return 0;
+            if (f1->nc_typeid >= NC_FIRSTUSERTYPEID ||
+                f2->nc_typeid >= NC_FIRSTUSERTYPEID) {
+                NC_TYPE_INFO_T *m1 = NULL, *m2 = NULL;
+                if (f1->nc_typeid < NC_FIRSTUSERTYPEID ||
+                    f2->nc_typeid < NC_FIRSTUSERTYPEID)
+                    return 0;
+                if (nc4_find_type(h5_1, f1->nc_typeid, &m1) || !m1 ||
+                    nc4_find_type(h5_2, f2->nc_typeid, &m2) || !m2 ||
+                    !types_equal(h5_1, m1, h5_2, m2))
+                    return 0;
+            } else if (f1->nc_typeid != f2->nc_typeid)
+                return 0;
+        }
+        return 1;
+    }
+    case NC_ENUM: {
+        if (t1->u.e.base_nc_typeid != t2->u.e.base_nc_typeid ||
+            nclistlength(t1->u.e.enum_member) !=
+            nclistlength(t2->u.e.enum_member))
+            return 0;
+        for (i = 0; i < nclistlength(t1->u.e.enum_member); i++) {
+            NC_ENUM_MEMBER_INFO_T *m1 =
+                (NC_ENUM_MEMBER_INFO_T *)nclistget(t1->u.e.enum_member, i);
+            NC_ENUM_MEMBER_INFO_T *m2 =
+                (NC_ENUM_MEMBER_INFO_T *)nclistget(t2->u.e.enum_member, i);
+            if (!m1 || !m2 || strcmp(m1->name, m2->name) ||
+                memcmp(m1->value, m2->value, t1->size))
+                return 0;
+        }
+        return 1;
+    }
+    case NC_OPAQUE:
+        return 1;
+    case NC_VLEN: {
+        if (t1->u.v.base_nc_typeid >= NC_FIRSTUSERTYPEID ||
+            t2->u.v.base_nc_typeid >= NC_FIRSTUSERTYPEID) {
+            NC_TYPE_INFO_T *m1 = NULL, *m2 = NULL;
+            if (t1->u.v.base_nc_typeid < NC_FIRSTUSERTYPEID ||
+                t2->u.v.base_nc_typeid < NC_FIRSTUSERTYPEID)
+                return 0;
+            if (nc4_find_type(h5_1, t1->u.v.base_nc_typeid, &m1) || !m1 ||
+                nc4_find_type(h5_2, t2->u.v.base_nc_typeid, &m2) || !m2)
+                return 0;
+            return types_equal(h5_1, m1, h5_2, m2);
+        }
+        return t1->u.v.base_nc_typeid == t2->u.v.base_nc_typeid;
+    }
+    default:
+        return 0;
+    }
+}
+
+/**
  * @brief Compare two types for equality — the `nc_inq_type_equal()`
  * dispatch entry.
  *
  * Two types count as equal when they are the same in-memory record or
- * share class and size; field-by-field structural comparison is not
- * attempted.
+ * structurally equal: same class, size and member layout/base/member
+ * values, recursively for nested members.
  *
  * @param ncid1 NetCDF file identifier of the first type.
  * @param typeid1 First type id.
@@ -1342,8 +1742,7 @@ NEXTCDF4_inq_type_equal(int ncid1, nc_type typeid1, int ncid2, nc_type typeid2,
     if (!t1 || !t2)
         return NC_EBADTYPE;
     if (equalp)
-        *equalp = (t1 == t2) || (t1->nc_type_class == t2->nc_type_class &&
-                                 t1->size == t2->size);
+        *equalp = types_equal(h5_1, t1, h5_2, t2);
     return NC_NOERR;
 }
 

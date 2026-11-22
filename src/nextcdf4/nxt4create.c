@@ -124,9 +124,13 @@ NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
     if (H5Pset_libver_bounds(fapl, bound, bound) < 0)
         EBAIL2(NC_EHDFERR);
     flags = (cmode & NC_NOCLOBBER) ? H5F_ACC_EXCL : H5F_ACC_TRUNC;
-    /* Track attribute creation order on the root group, as upstream
-     * does, so global nc_inq_attname() returns creation order. */
+    /* Track link and attribute creation order on the root group, as
+     * upstream does: nc_inq_attname() returns creation order, and
+     * readers iterate committed datatypes in commit order, which the
+     * dependency-ordered type writer relies on for nested members. */
     if ((fcpl = H5Pcreate(H5P_FILE_CREATE)) < 0 ||
+        H5Pset_link_creation_order(fcpl, H5P_CRT_ORDER_TRACKED |
+                                   H5P_CRT_ORDER_INDEXED) < 0 ||
         H5Pset_attr_creation_order(fcpl, H5P_CRT_ORDER_TRACKED |
                                    H5P_CRT_ORDER_INDEXED) < 0)
         EBAIL2(NC_EHDFERR);

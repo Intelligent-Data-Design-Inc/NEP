@@ -93,10 +93,23 @@ lines across 11 C files plus `nxt4internal.h`/`nxt4err.h`).
   close/reopen via committed HDF5 datatypes loaded before variables
   (`load_types`/`load_one_type`, resolved by object token with an
   `H5Tequal` fallback). Files interchange with upstream netcdf-c in
-  both directions (`tst_nextcdf4_user_types`). Limits: compound fields
-  must be scalar atomics (array fields and nested user types are
-  Sprint 1N2), `NC_STD_REF` inside compounds is unsupported, and
-  `NC_STRING` members/values are Sprint 1P.
+  both directions (`tst_nextcdf4_user_types`). Sprint 1N2 added nested
+  fixed-size compounds, enum and opaque members inside compounds,
+  multidimensional fixed-size array fields, and arrays of compounds
+  (`tst_nextcdf4_compound_arrays`): dependency-ordered committed-type
+  writes (link creation order tracked so upstream reads types in
+  dependency order), structural `nc_inq_type_equal`, cycle/duplicate/
+  overlap rejection, and upstream interchange. Two upstream
+  limitations exist under HDF5 2.1.1 (they are upstream bugs, not NEP
+  bugs): upstream's own writer loses the last record's serialized tail
+  when a compound contains nested compound members (serialized records
+  need 84 bytes; storage holds n*80), and upstream's reader delivers
+  the packed native layout for clean files. NEXTCDF-4 writes
+  lossless declared-layout records; reads of foreign (anonymous-type)
+  compound datasets go through the packed native datatype, matching
+  upstream's own read capability. Limits: `NC_STD_REF` inside
+  compounds is unsupported, and `NC_STRING` members/values are Sprint
+  1P.
 - `nc_*_bfloat16` / `nc_*_float16` typed APIs in `libnep`
   (`src/nep_bfloat16.c`, `src/nep_float16.c`).
 
@@ -111,7 +124,7 @@ lines across 11 C files plus `nxt4internal.h`/`nxt4err.h`).
 | API | Dispatch entry | Return |
 |-----|---------------|--------|
 | `nc_get_varm`/`nc_put_varm` | `NEXTCDF4_get_varm`/`put_varm` (`nxt4io.c`) | `NC_ENOTBUILT` — deliberate; mapped I/O is deprecated upstream |
-| `nc_insert_array_compound` | `NEXTCDF4_insert_array_compound` (`nxt4type.c`) | `NC_ENOTBUILT` |
+
 | `nc_put_vlen_element`/`nc_get_vlen_element` | `nxt4type.c` | `NC_ENOTBUILT` |
 | `nc_set_fill` | `NC_RO_set_fill` stub | `NC_EPERM` — file-level fill mode cannot be changed |
 | `nc_rename_grp` | `NC_NOTNC4_rename_grp` stub | `NC_ENOTNC4` — group rename unimplemented (dims/vars do rename) |
@@ -214,11 +227,11 @@ Owned by v4.3.0 Sprints 1L1–1R (see `docs/roadmap.md`), ordered by severity.
 1. Reopen path for `NC_STRING` variables (gap 2) and silent loss of
    `NC_STRING` attributes (gap 3). → Sprint 1P
 2. ~~End-to-end user-defined types~~ — fixed-size types (scalar atomic
-   compound fields, integer enums, opaque) done in Sprint 1N1,
-   including committed-type reload and upstream interchange in both
-   directions. Remaining in Sprint 1N: array fields and nested types
-   (1N2), vlen I/O/`nc_put/get_vlen_element` (1N3), upstream test ports
-   (1N4).
+   compound fields, integer enums, opaque) done in Sprint 1N1, and
+   nested compounds/array fields done in Sprint 1N2, including
+   committed-type reload and upstream interchange in both directions.
+   Remaining in Sprint 1N: vlen I/O/`nc_put/get_vlen_element` (1N3),
+   upstream test ports (1N4).
 3. ~~Root-cause and fix the `NC_reclaim_data`/`USEFILEINFO` abort; re-enable
    the disabled tests (#379).~~ — done in Sprint 1M.
 4. ~~Fix dataset-recreation orphans from def-var setters (#382) and the

@@ -331,6 +331,32 @@ prepare:
         if ((ret = nx4_memory_type(grp, io_type, &mtype))) goto done;
         close_mtype = 1;
     }
+    if (!converting && xtype >= NC_FIRSTUSERTYPEID) {
+        /* A compound variable whose stored datatype is anonymous was
+         * written by a foreign library (upstream netCDF stores an
+         * anonymous copy on its datasets). Those files use HDF5's
+         * serialized-compound layout, which decodes correctly only
+         * through the packed native datatype — the same memtype
+         * upstream itself uses. Our own datasets keep the committed
+         * datatype and the declared-layout memory type. */
+        NC_TYPE_INFO_T *ut = NULL;
+        hid_t dt;
+        if (!nx4_find_type(grp, xtype, &ut) && ut &&
+            ut->nc_type_class == NC_COMPOUND &&
+            (dt = H5Dget_type(vinfo->hdf_dataset)) >= 0) {
+            if (H5Tcommitted(dt) <= 0) {
+                if (close_mtype)
+                    H5Tclose(mtype);
+                if ((mtype = H5Tget_native_type(dt, H5T_DIR_DEFAULT)) < 0) {
+                    H5Tclose(dt);
+                    ret = NC_EHDFERR;
+                    goto done;
+                }
+                close_mtype = 1;
+            }
+            H5Tclose(dt);
+        }
+    }
     if (extend) {
         if (H5Dset_extent(vinfo->hdf_dataset, newdims) < 0) { ret = NC_EHDFERR; goto done; }
         H5Sclose(fspace);

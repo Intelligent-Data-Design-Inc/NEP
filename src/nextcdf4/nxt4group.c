@@ -180,11 +180,14 @@ NEXTCDF4_def_grp(int ncid, const char *name, int *grpidp)
 
     /* Create the HDF5 group first, then mirror it in the in-memory
      * tree; on metadata failure the HDF5 group is closed again.
-     * Attribute creation order is tracked so nc_inq_attname()
-     * preserves it across reopen, as upstream does. */
+     * Link and attribute creation order are tracked so readers
+     * (including upstream) iterate committed datatypes and attributes
+     * in creation order, as upstream files record. */
     {
         hid_t gcpl = H5Pcreate(H5P_GROUP_CREATE);
         if (gcpl < 0 ||
+            H5Pset_link_creation_order(gcpl, H5P_CRT_ORDER_TRACKED |
+                                       H5P_CRT_ORDER_INDEXED) < 0 ||
             H5Pset_attr_creation_order(gcpl, H5P_CRT_ORDER_TRACKED |
                                        H5P_CRT_ORDER_INDEXED) < 0) {
             if (gcpl >= 0)

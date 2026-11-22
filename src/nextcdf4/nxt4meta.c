@@ -944,6 +944,19 @@ read_hdf5_att(hid_t loc, const char *name, NCindex *list, NC_OBJ *container,
                 goto done;
             H5Tset_size(ntype, 1);
             H5Tset_strpad(ntype, H5T_STR_NULLPAD);
+        } else if (xtype >= NC_FIRSTUSERTYPEID && H5Tcommitted(ftype) <= 0) {
+            /* Anonymous compound datatype: a foreign (upstream)
+             * file — its serialized-compound layout decodes only
+             * through the packed native datatype. */
+            NC_TYPE_INFO_T *ut = NULL;
+            if (!nx4_find_type(grp, xtype, &ut) && ut &&
+                ut->nc_type_class == NC_COMPOUND) {
+                if ((ntype = H5Tget_native_type(ftype,
+                                                H5T_DIR_DEFAULT)) < 0)
+                    goto done;
+            } else if (nx4_memory_type(grp, xtype, &ntype)) {
+                goto done;
+            }
         } else if (nx4_memory_type(grp, xtype, &ntype)) {
             goto done;
         }
@@ -4223,8 +4236,6 @@ load_one_type(NC_GRP_INFO_T *grp, hid_t htype, const char *name)
     NEXTCDF4_TYPE_INFO_T *tinfo;
     H5T_class_t cls;
     size_t size = 0;
-    hid_t super = -1;
-    nc_type xtype;
     int ret;
 
     cls = H5Tget_class(htype);
@@ -4245,136 +4256,24 @@ load_one_type(NC_GRP_INFO_T *grp, hid_t htype, const char *name)
     tinfo->hdf_type = htype;
     type->format_type_info = tinfo;
 
+    /* Register the record and class now; members are filled in the
+     * second pass of load_types() so that a committed member type
+     * appearing later in link order is already registered when its
+     * container resolves members by object identity. */
     switch (cls) {
-    case H5T_COMPOUND: {
-        int nmem, m;
+    case H5T_COMPOUND:
         type->nc_type_class = NC_COMPOUND;
         type->u.c.field = nclistnew();
-        if ((nmem = H5Tget_nmembers(htype)) < 0) {
-            ret = NC_EHDFERR;
-            goto fail;
-        }
-        for (m = 0; m < nmem; m++) {
-            char *mname = H5Tget_member_name(htype, (unsigned)m);
-            size_t moff = H5Tget_member_offset(htype, (unsigned)m);
-            hid_t mtype = -1;
-            nc_type mxtype = NC_NAT;
-            int mndims = 0;
-            int mdims[NC_MAX_VAR_DIMS];
-
-            if (!mname) {
-                ret = NC_EHDFERR;
-                goto fail;
-            }
-            if ((mtype = H5Tget_member_type(htype, (unsigned)m)) < 0) {
-                H5free_memory(mname);
-                ret = NC_EHDFERR;
-                goto fail;
-            }
-            if (H5Tget_class(mtype) == H5T_ARRAY) {
-                /* Fixed-size array member (1N2): record the shape and
-                 * resolve the element type. */
-                hsize_t adims[NC_MAX_VAR_DIMS];
-                hid_t base = -1;
-                if ((mndims = H5Tget_array_ndims(mtype)) < 0 ||
-                    mndims > NC_MAX_VAR_DIMS ||
-                    H5Tget_array_dims(mtype, adims) < 0) {
-                    H5Tclose(mtype);
-                    H5free_memory(mname);
-                    ret = NC_EHDFERR;
-                    goto fail;
-                }
-                if ((base = H5Tget_super(mtype)) < 0 ||
-                    map_nc_type(base, &mxtype)) {
-                    if (base >= 0)
-                        H5Tclose(base);
-                    H5Tclose(mtype);
-                    H5free_memory(mname);
-                    ret = NC_EBADTYPE;
-                    goto fail;
-                }
-                H5Tclose(base);
-                for (ret = 0; ret < mndims; ret++)
-                    mdims[ret] = (int)adims[ret];
-                ret = NC_NOERR;
-            } else if (map_nc_type(mtype, &mxtype)) {
-                /* A committed member type (1N2 nesting) resolves to
-                 * its registered record by object identity. */
-                NC_TYPE_INFO_T *ut = NULL;
-                if (nx4_hdf_type_match(grp, mtype, &ut) || !ut) {
-                    H5Tclose(mtype);
-                    H5free_memory(mname);
-                    ret = NC_EBADTYPE;
-                    goto fail;
-                }
-                mxtype = (nc_type)ut->hdr.id;
-            }
-            H5Tclose(mtype);
-            ret = nc4_field_list_add(type, mname, moff, mxtype, mndims,
-                                     mndims ? mdims : NULL);
-            H5free_memory(mname);
-            if (ret)
-                goto fail;
-        }
         break;
-    }
-    case H5T_ENUM: {
-        int nmem, m;
+    case H5T_ENUM:
         type->nc_type_class = NC_ENUM;
         type->u.e.enum_member = nclistnew();
-        if ((super = H5Tget_super(htype)) < 0) {
-            ret = NC_EHDFERR;
-            goto fail;
-        }
-        if (map_nc_type(super, &xtype) == NC_NOERR)
-            type->u.e.base_nc_typeid = xtype;
-        else {
-            H5Tclose(super);
-            ret = NC_EBADTYPE;
-            goto fail;
-        }
-        H5Tclose(super);
-        if ((nmem = H5Tget_nmembers(htype)) < 0) {
-            ret = NC_EHDFERR;
-            goto fail;
-        }
-        for (m = 0; m < nmem; m++) {
-            char *mname = H5Tget_member_name(htype, (unsigned)m);
-            void *mval = NULL;
-            if (!mname) {
-                ret = NC_EHDFERR;
-                goto fail;
-            }
-            if (!(mval = malloc(size ? size : 1)) ||
-                H5Tenum_valueof(htype, mname, mval) < 0) {
-                free(mval);
-                H5free_memory(mname);
-                ret = NC_EHDFERR;
-                goto fail;
-            }
-            ret = nc4_enum_member_add(type, size, mname, mval);
-            free(mval);
-            H5free_memory(mname);
-            if (ret)
-                goto fail;
-        }
         break;
-    }
     case H5T_OPAQUE:
         type->nc_type_class = NC_OPAQUE;
         break;
     case H5T_VLEN:
         type->nc_type_class = NC_VLEN;
-        if ((super = H5Tget_super(htype)) >= 0) {
-            if (map_nc_type(super, &xtype) == NC_NOERR)
-                type->u.v.base_nc_typeid = xtype;
-            else {
-                NC_TYPE_INFO_T *ut = NULL;
-                if (!nx4_hdf_type_match(grp, super, &ut) && ut)
-                    type->u.v.base_nc_typeid = (nc_type)ut->hdr.id;
-            }
-            H5Tclose(super);
-        }
         break;
     case H5T_STRING:
         type->nc_type_class = NC_STRING;
@@ -4396,6 +4295,152 @@ fail:
         type->format_type_info = NULL;
     }
     return ret;
+}
+
+/**
+ * @brief Fill the members of a registered type record from its HDF5
+ * datatype.
+ *
+ * Second pass of load_types(): runs once every committed datatype in
+ * the group has a registered record, so compound member types and
+ * vlen bases resolve through nx4_hdf_type_match() regardless of the
+ * order HDF5 links were iterated. Array members recover their rank
+ * and shape via H5Tget_array_ndims()/H5Tget_array_dims().
+ *
+ * @param grp Group.
+ * @param type Type record with `format_type_info` populated.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+static int
+load_type_members(NC_GRP_INFO_T *grp, NC_TYPE_INFO_T *type)
+{
+    NEXTCDF4_TYPE_INFO_T *tinfo =
+        (NEXTCDF4_TYPE_INFO_T *)type->format_type_info;
+    hid_t htype = tinfo->hdf_type;
+    size_t size = type->size;
+    hid_t super = -1;
+    nc_type xtype;
+    int ret;
+
+    switch (type->nc_type_class) {
+    case NC_COMPOUND: {
+        int nmem, m;
+        if ((nmem = H5Tget_nmembers(htype)) < 0)
+            return NC_EHDFERR;
+        for (m = 0; m < nmem; m++) {
+            char *mname = H5Tget_member_name(htype, (unsigned)m);
+            size_t moff = H5Tget_member_offset(htype, (unsigned)m);
+            hid_t mtype = -1;
+            nc_type mxtype = NC_NAT;
+            int mndims = 0;
+            int mdims[NC_MAX_VAR_DIMS];
+
+            if (!mname)
+                return NC_EHDFERR;
+            if ((mtype = H5Tget_member_type(htype, (unsigned)m)) < 0) {
+                H5free_memory(mname);
+                return NC_EHDFERR;
+            }
+            if (H5Tget_class(mtype) == H5T_ARRAY) {
+                /* Fixed-size array member: record the shape and
+                 * resolve the element type, atomic or user-defined. */
+                hsize_t adims[NC_MAX_VAR_DIMS];
+                hid_t base = -1;
+                if ((mndims = H5Tget_array_ndims(mtype)) < 0 ||
+                    mndims > NC_MAX_VAR_DIMS ||
+                    H5Tget_array_dims(mtype, adims) < 0) {
+                    H5Tclose(mtype);
+                    H5free_memory(mname);
+                    return NC_EHDFERR;
+                }
+                if ((base = H5Tget_super(mtype)) < 0) {
+                    H5Tclose(mtype);
+                    H5free_memory(mname);
+                    return NC_EHDFERR;
+                }
+                if (map_nc_type(base, &mxtype)) {
+                    NC_TYPE_INFO_T *ut = NULL;
+                    if (nx4_hdf_type_match(grp, base, &ut) || !ut) {
+                        H5Tclose(base);
+                        H5Tclose(mtype);
+                        H5free_memory(mname);
+                        return NC_EBADTYPE;
+                    }
+                    mxtype = (nc_type)ut->hdr.id;
+                }
+                H5Tclose(base);
+                for (ret = 0; ret < mndims; ret++)
+                    mdims[ret] = (int)adims[ret];
+                ret = NC_NOERR;
+            } else if (map_nc_type(mtype, &mxtype)) {
+                /* A committed member type resolves to its registered
+                 * record by object identity. */
+                NC_TYPE_INFO_T *ut = NULL;
+                if (nx4_hdf_type_match(grp, mtype, &ut) || !ut) {
+                    H5Tclose(mtype);
+                    H5free_memory(mname);
+                    return NC_EBADTYPE;
+                }
+                mxtype = (nc_type)ut->hdr.id;
+            }
+            H5Tclose(mtype);
+            ret = nc4_field_list_add(type, mname, moff, mxtype, mndims,
+                                     mndims ? mdims : NULL);
+            H5free_memory(mname);
+            if (ret)
+                return ret;
+        }
+        break;
+    }
+    case NC_ENUM: {
+        int nmem, m;
+        if ((super = H5Tget_super(htype)) < 0)
+            return NC_EHDFERR;
+        if (map_nc_type(super, &xtype) == NC_NOERR)
+            type->u.e.base_nc_typeid = xtype;
+        else {
+            H5Tclose(super);
+            return NC_EBADTYPE;
+        }
+        H5Tclose(super);
+        if ((nmem = H5Tget_nmembers(htype)) < 0)
+            return NC_EHDFERR;
+        for (m = 0; m < nmem; m++) {
+            char *mname = H5Tget_member_name(htype, (unsigned)m);
+            void *mval = NULL;
+            if (!mname)
+                return NC_EHDFERR;
+            if (!(mval = malloc(size ? size : 1)) ||
+                H5Tenum_valueof(htype, mname, mval) < 0) {
+                free(mval);
+                H5free_memory(mname);
+                return NC_EHDFERR;
+            }
+            ret = nc4_enum_member_add(type, size, mname, mval);
+            free(mval);
+            H5free_memory(mname);
+            if (ret)
+                return ret;
+        }
+        break;
+    }
+    case NC_VLEN:
+        if ((super = H5Tget_super(htype)) >= 0) {
+            if (map_nc_type(super, &xtype) == NC_NOERR)
+                type->u.v.base_nc_typeid = xtype;
+            else {
+                NC_TYPE_INFO_T *ut = NULL;
+                if (!nx4_hdf_type_match(grp, super, &ut) && ut)
+                    type->u.v.base_nc_typeid = (nc_type)ut->hdr.id;
+            }
+            H5Tclose(super);
+        }
+        break;
+    default:
+        /* OPAQUE and STRING carry no members. */
+        break;
+    }
+    return NC_NOERR;
 }
 
 /**
@@ -4534,6 +4579,19 @@ load_types(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
     if (H5Literate(hdf_grp, H5_INDEX_NAME, H5_ITER_INC, NULL,
                    load_type_cb, &ld) < 0)
         return NC_EHDFERR;
+
+    /* Second pass: fill compound/enum/vlen members now that every
+     * committed datatype in the group has a registered record. */
+    {
+        size_t i;
+        for (i = 0; i < ncindexsize(grp->type); i++) {
+            NC_TYPE_INFO_T *type =
+                (NC_TYPE_INFO_T *)ncindexith(grp->type, i);
+            int ret;
+            if (type && (ret = load_type_members(grp, type)))
+                return ret;
+        }
+    }
     return NC_NOERR;
 }
 
