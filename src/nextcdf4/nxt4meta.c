@@ -32,6 +32,10 @@
  * so is_reserved_att() filters them during metadata load and
  * `nc_put_att`/`nc_rename_att` reject them as user names.
  */
+static int nx4_set_att_order(hid_t ocpl);
+static int nx4_dcpl_fill(hid_t dcpl, NC_FILE_INFO_T *h5,
+                         NC_VAR_INFO_T *var, hid_t hdf_type);
+
 static const char *reserved_atts[] = {
     NEXTCDF4_BACKEND_ATT,
     NEXTCDF4_MODEL_ATT,
@@ -100,19 +104,30 @@ free_name_list(char **names, size_t n)
  * Common guard for every metadata-changing dispatch entry
  * (`nc_def_*`, `nc_rename_*`, `nc_put_att`, `nc_del_att`). netCDF
  * semantics require define mode for metadata changes; files opened
- * read-only reject them outright.
+ * read-only reject them outright. A metadata call in data mode
+ * silently re-enters define mode, as upstream `NC4_redef` does;
+ * classic-model files keep the strict `NC_ENOTINDEFINE` rule.
  *
+ * @param h5 NetCDF-4 file state (may be NULL).
  * @param file NEXTCDF-4 file state.
  * @return `NC_NOERR`, `NC_EPERM` (read-only file), or
  * `NC_ENOTINDEFINE`.
  */
 int
-NEXTCDF4_check_write_define(NEXTCDF4_FILE_INFO_T *file)
+NEXTCDF4_check_write_define(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file)
 {
     if (file->no_write)
         return NC_EPERM;
-    if (!file->define_mode)
-        return NC_ENOTINDEFINE;
+    if (!file->define_mode) {
+        /* Metadata calls in data mode silently re-enter define mode,
+         * as upstream does in NC4_redef; classic-model files forbid
+         * the implicit switch. */
+        if (file->mode & NC_CLASSIC_MODEL)
+            return NC_ENOTINDEFINE;
+        file->define_mode = 1;
+        if (h5)
+            h5->flags |= NC_INDEF;
+    }
     return NC_NOERR;
 }
 
@@ -390,7 +405,8 @@ NEXTCDF4_check_atomic_type(NEXTCDF4_FILE_INFO_T *file, nc_type xtype)
         break;
     case NC_STRING:
         return (!file->netcdf4_model && !(file->mode & NC_CLASSIC_MODEL))
-            ? NC_NOERR : NC_EBADTYPE;
+            ? NC_NOERR
+            : NC_EBADTYPE;
     case NC_FLOAT16:
     case NC_BFLOAT16:
     case NC_FLOAT8_E4M3:
@@ -406,7 +422,8 @@ NEXTCDF4_check_atomic_type(NEXTCDF4_FILE_INFO_T *file, nc_type xtype)
     case NC_BITFIELD64:
     case NC_STD_REF:
         return (!file->netcdf4_model && !(file->mode & NC_CLASSIC_MODEL))
-            ? NC_NOERR : NC_ENOTNC4;
+            ? NC_NOERR
+            : NC_ENOTNC4;
     default:
         return NC_EBADTYPE;
     }
@@ -732,6 +749,43 @@ get_att_context(NC_GRP_INFO_T *grp, NC_VAR_INFO_T *var, NCindex **listp,
 }
 
 /**
+ * @brief Delete an attribute from an index and free it.
+ *
+ * `nc4_att_list_del()` deletes by `att->hdr.id`, but ids drift out of
+ * sync with list positions after earlier deletes: mid-list removal
+ * does not rehash the name map or renumber the survivors, so a later
+ * delete can drop the wrong attribute and `ncindexlookup()` returns
+ * stale positions. Find the real slot, delete it, renumber, rebuild
+ * the name map, then free the record.
+ *
+ * @param list Attribute index.
+ * @param att Attribute to delete.
+ * @return `NC_NOERR` on success, `NC_ENOTATT` when absent.
+ */
+static int
+nx4_att_list_del(NCindex *list, NC_ATT_INFO_T *att)
+{
+    size_t i;
+
+    if (!list || !att)
+        return NC_ENOTATT;
+    for (i = 0; i < ncindexsize(list); i++)
+        if (ncindexith(list, i) == (NC_OBJ *)att)
+            break;
+    if (i == ncindexsize(list))
+        return NC_ENOTATT;
+    ncindexidel(list, i);
+    for (i = 0; i < ncindexsize(list); i++) {
+        NC_ATT_INFO_T *a = (NC_ATT_INFO_T *)ncindexith(list, i);
+        if (a)
+            a->hdr.id = (int)i;
+    }
+    ncindexrebuild(list);
+    nc4_att_free(att);
+    return NC_NOERR;
+}
+
+/**
  * @brief Find an existing attribute by name in an attribute index.
  * @param list Attribute index to search.
  * @param name Name.
@@ -940,12 +994,15 @@ NEXTCDF4_def_dim(int ncid, const char *name, size_t len, int *idp)
         return ret;
     if ((ret = nc4_find_nc4_grp(ncid, &grp)))
         return ret;
-    if ((ret = NEXTCDF4_check_write_define(file)))
+    if ((ret = NEXTCDF4_check_write_define(h5, file)))
         return ret;
+    if (!name) return NC_EINVAL;
     if ((ret = NC_check_name(name)))
         return ret;
     if ((ret = nc4_check_dup_name(grp, (char *)name)))
         return ret;
+    if (ncindexlookup(grp->dim, (char *)name))
+        return NC_ENAMEINUSE;
 
     /* Classic model: at most one unlimited dimension. */
     if ((file->mode & NC_CLASSIC_MODEL) && len == 0) {
@@ -953,7 +1010,7 @@ NEXTCDF4_def_dim(int ncid, const char *name, size_t len, int *idp)
         for (i = 0; i < ncindexsize(grp->dim); i++) {
             NC_DIM_INFO_T *d = (NC_DIM_INFO_T *)ncindexith(grp->dim, i);
             if (d && d->unlimited)
-                return NC_EINVAL;
+                return NC_EUNLIMIT;
         }
     }
 
@@ -974,10 +1031,12 @@ NEXTCDF4_def_dim(int ncid, const char *name, size_t len, int *idp)
     /* Create the HDF5 dimension scale dataset. */
     if ((dtype = H5Tcopy(H5T_STD_I8LE)) < 0)
         goto fail;
+    if ((dcpl = H5Pcreate(H5P_DATASET_CREATE)) < 0)
+        goto fail;
+    if (nx4_set_att_order(dcpl))
+        goto fail;
     if (len == 0) {
         if ((space = H5Screate_simple(1, &cur, &max)) < 0)
-            goto fail;
-        if ((dcpl = H5Pcreate(H5P_DATASET_CREATE)) < 0)
             goto fail;
         if (H5Pset_chunk(dcpl, 1, &chunk) < 0)
             goto fail;
@@ -1113,16 +1172,20 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
         return ret;
     if ((ret = nc4_find_nc4_grp(ncid, &grp)))
         return ret;
-    if ((ret = NEXTCDF4_check_write_define(file)))
+    if ((ret = NEXTCDF4_check_write_define(h5, file)))
         return ret;
     if ((ret = NEXTCDF4_check_atomic_type(file, xtype)))
         return ret;
     if (ndims < 0 || ndims > NC_MAX_VAR_DIMS)
         return NC_EINVAL;
+    if (!name) return NC_EINVAL;
     if ((ret = NC_check_name(name)))
         return ret;
     if ((ret = nc4_check_dup_name(grp, (char *)name)))
         return ret;
+    /* For non-scalar vars, dim IDs must be provided. */
+    if (ndims && !dimidsp)
+        return NC_EINVAL;
 
     ginfo = grp->format_grp_info;
     hdf_grp = ginfo ? ginfo->hdf_group : file->rootid;
@@ -1179,7 +1242,8 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
      * layout (#382). */
     var->storage = has_unlimited ? NC_CHUNKED : -1;
 
-    coordinate = ndims == 1 && !strcmp(name, var->dim[0]->hdr.name);
+    coordinate = ndims == 1 && !strcmp(name, var->dim[0]->hdr.name) &&
+                 var->dim[0]->container == grp;
     if ((ret = NEXTCDF4_map_hdf_type(xtype, &hdf_type)))
         goto fail;
 
@@ -1188,21 +1252,29 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
             ret = NC_EHDFERR;
             goto fail;
         }
+        if ((dcpl = H5Pcreate(H5P_DATASET_CREATE)) < 0 ||
+            nx4_set_att_order(dcpl)) {
+            ret = NC_EHDFERR;
+            goto fail;
+        }
+        if ((ret = nx4_dcpl_fill(dcpl, h5, var, hdf_type)))
+            goto fail;
     } else {
         if ((space = H5Screate_simple(ndims, dims, maxdims)) < 0) {
             ret = NC_EHDFERR;
             goto fail;
         }
-        if (has_unlimited) {
-            if ((dcpl = H5Pcreate(H5P_DATASET_CREATE)) < 0) {
-                ret = NC_EHDFERR;
-                goto fail;
-            }
-            if (H5Pset_chunk(dcpl, ndims, chunks) < 0) {
-                ret = NC_EHDFERR;
-                goto fail;
-            }
+        if ((dcpl = H5Pcreate(H5P_DATASET_CREATE)) < 0 ||
+            nx4_set_att_order(dcpl)) {
+            ret = NC_EHDFERR;
+            goto fail;
         }
+        if (has_unlimited && H5Pset_chunk(dcpl, ndims, chunks) < 0) {
+            ret = NC_EHDFERR;
+            goto fail;
+        }
+        if ((ret = nx4_dcpl_fill(dcpl, h5, var, hdf_type)))
+            goto fail;
     }
 
     if (coordinate) {
@@ -1271,6 +1343,85 @@ fail:
 }
 
 /**
+ * @brief Enable HDF5 attribute creation-order tracking on an object
+ * creation property list.
+ *
+ * Upstream netcdf-4 tracks attribute creation order on every group
+ * and dataset so `nc_inq_attname()` returns names in creation order
+ * after reopen; NEXTCDF-4 does the same and iterates with
+ * `H5_INDEX_CRT_ORDER` at load.
+ *
+ * @param ocpl Object creation property list.
+ * @return `NC_NOERR` on success, `NC_EHDFERR` on failure.
+ */
+static int
+nx4_set_att_order(hid_t ocpl)
+{
+    return (H5Pset_attr_creation_order(ocpl, H5P_CRT_ORDER_TRACKED |
+                                      H5P_CRT_ORDER_INDEXED) < 0)
+           ? NC_EHDFERR : NC_NOERR;
+}
+
+/**
+ * @brief Write the variable's fill setting to a dataset creation
+ * property list.
+ *
+ * Mirrors upstream: `no_fill` disables fill entirely; otherwise the
+ * user's fill value or the type default is written, so unwritten
+ * elements read back `NC_FILL_*` instead of HDF5's zero default.
+ *
+ * @param dcpl Dataset creation property list.
+ * @param h5 NetCDF-4 file state.
+ * @param var Variable.
+ * @param hdf_type Dataset HDF5 datatype.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+static int
+nx4_dcpl_fill(hid_t dcpl, NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
+              hid_t hdf_type)
+{
+    void *fillp = NULL;
+    hid_t fill_type = -1;
+    int ret = NC_NOERR;
+
+    if (var->no_fill) {
+        if (H5Pset_fill_time(dcpl, H5D_FILL_TIME_NEVER) < 0)
+            return NC_EHDFERR;
+        return NC_NOERR;
+    }
+    /* A fill message on an H5T_STD_REF dataset makes the dataset
+     * unreadable to H5Dopen2 — reference datasets get no fill. */
+    if (var->type_info->hdr.id == NC_STD_REF)
+        return NC_NOERR;
+    if (var->type_info->hdr.id > NC_STRING) {
+        /* NEP-only atomic types have no entry in `h5->alltypes`, so
+         * upstream's nc4_get_fill_value() reports NC_EBADTYPID.
+         * Default to an all-zero fill (positive zero for the small
+         * floats, empty bitfields) or the explicit `_FillValue`. */
+        size_t size;
+        if ((ret = NEXTCDF4_type_size(var->type_info->hdr.id, &size)))
+            return ret;
+        if (!(fillp = calloc(1, size)))
+            return NC_ENOMEM;
+        if (var->fill_value)
+            memcpy(fillp, var->fill_value, size);
+    } else if ((ret = nc4_get_fill_value(h5, var, &fillp)))
+        return ret;
+    if (fillp) {
+        fill_type = H5Tget_native_type(hdf_type, H5T_DIR_DEFAULT);
+        if (fill_type < 0 ||
+            H5Pset_fill_value(dcpl, fill_type, fillp) < 0)
+            ret = NC_EHDFERR;
+        if (fill_type >= 0)
+            H5Tclose(fill_type);
+        if (var->type_info->hdr.id == NC_STRING)
+            free(*(char **)fillp);
+        free(fillp);
+    }
+    return ret;
+}
+
+/**
  * @brief Create or re-create the HDF5 dataset for a variable.
  *
  * Called by `NEXTCDF4_def_var` and by every def-var setter
@@ -1306,7 +1457,8 @@ nx4_create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
     int i, ret;
 
     coordinate = (var->ndims == 1 &&
-                  !strcmp(var->hdr.name, var->dim[0]->hdr.name));
+                  !strcmp(var->hdr.name, var->dim[0]->hdr.name) &&
+                  var->dim[0]->container == grp);
 
     /* Recreation is delete-and-rebuild: drop the old link and dataset,
      * rebuild dataspace and creation properties from the current
@@ -1358,7 +1510,8 @@ nx4_create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
         }
     }
 
-    if ((dcpl = H5Pcreate(H5P_DATASET_CREATE)) < 0) {
+    if ((dcpl = H5Pcreate(H5P_DATASET_CREATE)) < 0 ||
+        nx4_set_att_order(dcpl)) {
         ret = NC_EHDFERR;
         goto fail;
     }
@@ -1382,27 +1535,12 @@ nx4_create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
             var->storage = NC_CHUNKED;
     }
 
-    if (var->ndims == 0) {
-        H5Pclose(dcpl);
-        dcpl = H5P_DEFAULT;
-    } else {
-        if (!var->no_fill && var->fill_value) {
-            hid_t fill_type = H5Tget_native_type(hdf_type, H5T_DIR_DEFAULT);
-            if (fill_type < 0 ||
-                H5Pset_fill_value(dcpl, fill_type, var->fill_value) < 0) {
-                if (fill_type >= 0)
-                    H5Tclose(fill_type);
-                ret = NC_EHDFERR;
-                goto fail;
-            }
-            H5Tclose(fill_type);
-        } else if (var->no_fill) {
-            H5Pset_fill_time(dcpl, H5D_FILL_TIME_NEVER);
-        }
+    if ((ret = nx4_dcpl_fill(dcpl, h5, var, hdf_type)))
+        goto fail;
 
-        if ((ret = nx4_apply_filters(dcpl, var)))
-            goto fail;
-    }
+    if (var->ndims > 0 &&
+        (ret = nx4_apply_filters(dcpl, var)))
+        goto fail;
 
     if (coordinate) {
         NEXTCDF4_DIM_INFO_T *dinfo =
@@ -1494,7 +1632,14 @@ nx4_find_var_for_write(int ncid, int varid, NC_FILE_INFO_T **h5,
         return ret;
     if ((ret = NEXTCDF4_get_file(ncid, NULL, file)))
         return ret;
-    return NEXTCDF4_check_write_define(*file);
+    /* Unlike the metadata-definition calls, the def-var setters do
+     * not implicitly re-enter define mode — upstream leaves them
+     * illegal outside it. */
+    if ((*file)->no_write)
+        return NC_EPERM;
+    if (!(*file)->define_mode)
+        return NC_ENOTINDEFINE;
+    return NC_NOERR;
 }
 
 /**
@@ -1747,10 +1892,20 @@ NEXTCDF4_inq_var_all(int ncid, int varid, char *name, nc_type *xtypep,
     }
     if (no_fillp)
         *no_fillp = (int)var->no_fill;
-    if (fill_valuep && !var->no_fill && var->fill_value) {
-        if ((ret = NEXTCDF4_type_size(var->type_info->hdr.id, &size)))
+    if (fill_valuep && !var->no_fill) {
+        if (var->fill_value) {
+            if ((ret = NEXTCDF4_type_size(var->type_info->hdr.id, &size)))
+                return ret;
+            memcpy(fill_valuep, var->fill_value, size);
+        } else if (var->type_info->hdr.id > NC_STRING) {
+            /* NEP-only atomics: no upstream default exists; report
+             * the all-zero fill used at dataset creation. */
+            if ((ret = NEXTCDF4_type_size(var->type_info->hdr.id, &size)))
+                return ret;
+            memset(fill_valuep, 0, size);
+        } else if ((ret = nc4_get_default_fill_value(var->type_info,
+                                                     fill_valuep)))
             return ret;
-        memcpy(fill_valuep, var->fill_value, size);
     }
     if (endiannessp)
         *endiannessp = var->endianness;
@@ -1799,6 +1954,107 @@ NEXTCDF4_inq_var(int ncid, int varid, char *name, nc_type *xtypep,
 }
 
 /**
+ * @brief Write one in-memory attribute to an HDF5 object.
+ *
+ * The attribute name/type/length/data come from @p att; the HDF5
+ * datatype maps from `att->nc_typeid`.
+ *
+ * @param loc HDF5 object (dataset or group) to write on.
+ * @param att Attribute to write.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+static int
+nx4_write_att(hid_t loc, const NC_ATT_INFO_T *att)
+{
+    hid_t hdf_type = -1, space = -1, aid = -1, mem_type = -1;
+    hsize_t hlen = att->len;
+    int close_mem = 0;
+    int ret;
+
+    if ((ret = NEXTCDF4_map_hdf_type((nc_type)att->nc_typeid, &hdf_type)))
+        return ret;
+    if (att->len == 0) {
+        if ((space = H5Screate(H5S_NULL)) < 0) {
+            ret = NC_EHDFERR;
+            goto fail;
+        }
+    } else if ((space = H5Screate_simple(1, &hlen, NULL)) < 0) {
+        ret = NC_EHDFERR;
+        goto fail;
+    }
+    if (att->nc_typeid == NC_CHAR) {
+        mem_type = hdf_type;
+    } else if (att->nc_typeid == NC_STRING) {
+        mem_type = H5Tcopy(H5T_C_S1);
+        if (mem_type >= 0) {
+            H5Tset_size(mem_type, H5T_VARIABLE);
+            H5Tset_strpad(mem_type, H5T_STR_NULLTERM);
+        }
+        close_mem = 1;
+    } else {
+        mem_type = NEXTCDF4_memory_type((nc_type)att->nc_typeid, &close_mem);
+        if (mem_type < 0) { ret = NC_EBADTYPE; goto fail; }
+    }
+    if ((aid = H5Acreate2(loc, att->hdr.name, hdf_type, space,
+                          H5P_DEFAULT, H5P_DEFAULT)) < 0) {
+        ret = NC_EHDFERR;
+        goto fail;
+    }
+    if (att->len > 0 && H5Awrite(aid, mem_type, att->data) < 0) {
+        ret = NC_EHDFERR;
+        goto fail;
+    }
+    ret = NC_NOERR;
+
+fail:
+    if (close_mem && mem_type >= 0)
+        H5Tclose(mem_type);
+    if (aid >= 0)
+        H5Aclose(aid);
+    if (hdf_type >= 0)
+        H5Tclose(hdf_type);
+    if (space >= 0)
+        H5Sclose(space);
+    return ret;
+}
+
+/**
+ * @brief Rewrite every attribute on an HDF5 object in index order.
+ *
+ * netcdf-c defers attribute writes to `_enddef`, so the on-disk
+ * creation order always matches the metadata index order. NEXTCDF-4
+ * writes eagerly: a renamed or replaced attribute would land last in
+ * HDF5 creation order and reopen in the wrong position. Deleting the
+ * indexed attributes and rewriting them in index order keeps the two
+ * consistent. Internal (`_Netcdf4*`, `CLASS`, ...) attributes are not
+ * in the index and are untouched.
+ *
+ * @param loc HDF5 object (dataset or group).
+ * @param list Attribute index.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+static int
+nx4_rewrite_atts(hid_t loc, NCindex *list)
+{
+    size_t i;
+    int ret;
+
+    for (i = 0; i < ncindexsize(list); i++) {
+        NC_ATT_INFO_T *a = (NC_ATT_INFO_T *)ncindexith(list, i);
+        if (a && a->hdr.name)
+            H5E_BEGIN_TRY {
+                H5Adelete(loc, a->hdr.name);
+            } H5E_END_TRY;
+    }
+    for (i = 0; i < ncindexsize(list); i++) {
+        NC_ATT_INFO_T *a = (NC_ATT_INFO_T *)ncindexith(list, i);
+        if (a && (ret = nx4_write_att(loc, a)))
+            return ret;
+    }
+    return NC_NOERR;
+}
+
+/**
  * @brief Create or replace an attribute — the `nc_put_att_*` dispatch
  * entry.
  *
@@ -1842,13 +2098,18 @@ NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type datatype,
 
     if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
         return ret;
-    if ((ret = NEXTCDF4_check_write_define(file)))
+    if ((ret = NEXTCDF4_check_write_define(h5, file)))
         return ret;
+    /* Upstream hdf5attr.c semantics: classic-model files accept only
+     * the six classic attribute types. */
+    if (file->mode & NC_CLASSIC_MODEL && datatype > NC_DOUBLE)
+        return NC_ESTRICTNC3;
     if ((ret = NEXTCDF4_check_atomic_type(file, datatype)))
         return ret;
+    if (!name) return NC_EINVAL;
     if ((ret = NC_check_name(name)))
         return ret;
-    if (is_reserved_att(name))
+    if (is_reserved_att(name) && strcmp(name, NC_FillValue))
         return NC_EBADNAME;
     if (varid == NC_GLOBAL) {
         grp = h5->root_grp;
@@ -1860,12 +2121,24 @@ NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type datatype,
             return NC_ENOTVAR;
     }
 
+    if (var && !strcmp(name, NC_FillValue)) {
+        /* Upstream routes variable _FillValue attributes through the
+         * fill machinery: exactly one value of the variable's type,
+         * and no changes after data have been written. */
+        if (len != 1)
+            return NC_EINVAL;
+        if (var->written_to)
+            return NC_ELATEFILL;
+        if (datatype != var->type_info->hdr.id)
+            return NC_EBADTYPE;
+    }
+
     if ((ret = get_att_context(grp, var, &list, &loc)))
         return ret;
 
     if (memtype == NC_NAT) memtype = datatype;
     if ((ret = nx4_convert_type(NULL, NULL, memtype, datatype, 0, &range_error,
-                                NULL, 0, NC_NOQUANTIZE, 0)) && datatype != memtype)
+                                NULL, 0, NC_NOQUANTIZE, 0, 0)) && datatype != memtype)
         return ret;
     if (len && !value) return NC_EINVAL;
     if ((ret = NEXTCDF4_type_size(datatype, &size))) return ret;
@@ -1875,83 +2148,69 @@ NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type datatype,
         if (datatype == memtype) memcpy(data, value, len * size);
         else {
             ret = nx4_convert_type(value, data, memtype, datatype, len,
-                                    &range_error, NULL, 0, NC_NOQUANTIZE, 0);
+                                    &range_error, NULL, 0, NC_NOQUANTIZE, 0, 0);
             if (ret) { free(data); return ret; }
         }
     }
-    /* Replace an existing attribute of the same name. */
-    if ((att = find_att(list, name))) {
-        nc4_att_list_del(list, att);
-        H5E_BEGIN_TRY {
-            H5Adelete(loc, name);
-        } H5E_END_TRY;
+    if (var && !strcmp(name, NC_FillValue)) {
+        /* Mirror the value into var->fill_value and recreate the
+         * dataset so the DCPL carries it; the dataset handle in loc is
+         * replaced, so re-resolve the attribute context. */
+        free(var->fill_value);
+        if (datatype == NC_STRING)
+            var->fill_value = strdup(*(char **)data);
+        else if (!(var->fill_value = malloc(size)))
+            { free(data); return NC_ENOMEM; }
+        if (var->fill_value && datatype != NC_STRING)
+            memcpy(var->fill_value, data, size);
+        if (!var->fill_value)
+            { free(data); return NC_ENOMEM; }
+        var->fill_val_changed = 1;
+        if ((ret = nx4_create_var_dataset(var, h5, file, grp)))
+            { free(data); return ret; }
+        if ((ret = get_att_context(grp, var, &list, &loc)))
+            { free(data); return ret; }
     }
 
-    if ((ret = add_att(list, var ? &var->hdr : &grp->hdr, name, datatype,
-                       len, data, &att)))
-        goto fail;
+    /* Replace an existing attribute of the same name. Upstream keeps
+     * the attribute's index position, so the record is deleted and a
+     * new one reinserted at the same slot rather than appended. */
+    if ((att = find_att(list, name))) {
+        size_t pos;
+        for (pos = 0; pos < ncindexsize(list); pos++)
+            if (ncindexith(list, pos) == (NC_OBJ *)att)
+                break;
+        nx4_att_list_del(list, att);
+        if ((ret = add_att(list, var ? &var->hdr : &grp->hdr, name, datatype,
+                           len, data, &att)))
+            goto fail;
+        ncindexidel(list, ncindexsize(list) - 1);
+        nclistinsert(list->list, pos, (NC_OBJ *)att);
+        for (pos = 0; pos < ncindexsize(list); pos++) {
+            NC_ATT_INFO_T *a = (NC_ATT_INFO_T *)ncindexith(list, pos);
+            if (a)
+                a->hdr.id = (int)pos;
+        }
+        ncindexrebuild(list);
+        if ((ret = nx4_rewrite_atts(loc, list)))
+            goto fail;
+    } else {
+        if ((ret = add_att(list, var ? &var->hdr : &grp->hdr, name, datatype,
+                           len, data, &att)))
+            goto fail;
+        if ((ret = nx4_write_att(loc, att)))
+            goto fail;
+    }
     if (data) {
         free(data);
         data = NULL;
     }
 
-    /* Persist to HDF5 immediately. */
-    if ((ret = NEXTCDF4_map_hdf_type(datatype, &hdf_type)))
-        goto fail;
-    if (len == 0) {
-        if ((space = H5Screate(H5S_NULL)) < 0) {
-            ret = NC_EHDFERR;
-            goto fail;
-        }
-    } else {
-        if ((space = H5Screate_simple(1, &hlen, NULL)) < 0) {
-            ret = NC_EHDFERR;
-            goto fail;
-        }
-    }
-    {
-        if (datatype == NC_CHAR) {
-            mem_type = hdf_type;
-        } else if (datatype == NC_STRING) {
-            mem_type = H5Tcopy(H5T_C_S1);
-            if (mem_type >= 0) {
-                H5Tset_size(mem_type, H5T_VARIABLE);
-                H5Tset_strpad(mem_type, H5T_STR_NULLTERM);
-            }
-            close_mem = 1;
-        } else {
-            mem_type = NEXTCDF4_memory_type(datatype, &close_mem);
-            if (mem_type < 0) { ret = NC_EBADTYPE; goto fail; }
-        }
-        if ((attr = H5Acreate2(loc, name, hdf_type, space, H5P_DEFAULT,
-                               H5P_DEFAULT)) < 0) {
-            ret = NC_EHDFERR;
-            goto fail;
-        }
-        if (len > 0 && H5Awrite(attr, mem_type, att->data) < 0)
-            { ret = NC_EHDFERR; goto fail; }
-        if (close_mem) {
-            H5Tclose(mem_type);
-            close_mem = 0;
-        }
-    }
-
-    H5Aclose(attr);
-    H5Tclose(hdf_type);
-    H5Sclose(space);
     return range_error ? NC_ERANGE : NC_NOERR;
 
 fail:
-    if (close_mem && mem_type >= 0)
-        H5Tclose(mem_type);
     if (data)
         free(data);
-    if (attr >= 0)
-        H5Aclose(attr);
-    if (hdf_type >= 0)
-        H5Tclose(hdf_type);
-    if (space >= 0)
-        H5Sclose(space);
     return ret;
 }
 
@@ -2059,7 +2318,7 @@ NEXTCDF4_get_att(int ncid, int varid, const char *name, void *value,
     if (memtype == NC_NAT) memtype = att->nc_typeid;
     if (att->nc_typeid != memtype &&
         (ret = nx4_convert_type(NULL, NULL, att->nc_typeid, memtype, 0,
-                                &range_error, NULL, 0, NC_NOQUANTIZE, 0))) return ret;
+                                &range_error, NULL, 0, NC_NOQUANTIZE, 0, 0))) return ret;
     if (att->nc_typeid == memtype && att->len > 0) {
         if (memtype == NC_STRING) {
             char **src = (char **)att->data;
@@ -2084,7 +2343,7 @@ NEXTCDF4_get_att(int ncid, int varid, const char *name, void *value,
         return NC_NOERR;
 
     ret = nx4_convert_type(att->data, value, att->nc_typeid, memtype,
-                            att->len, &range_error, NULL, 0, NC_NOQUANTIZE, 0);
+                            att->len, &range_error, NULL, 0, NC_NOQUANTIZE, 0, 0);
     return ret ? ret : range_error ? NC_ERANGE : NC_NOERR;
 }
 
@@ -2116,8 +2375,9 @@ NEXTCDF4_rename_att(int ncid, int varid, const char *name, const char *newname)
 
     if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
         return ret;
-    if ((ret = NEXTCDF4_check_write_define(file)))
+    if ((ret = NEXTCDF4_check_write_define(h5, file)))
         return ret;
+    if (!newname) return NC_EINVAL;
     if ((ret = NC_check_name(newname)))
         return ret;
     if (is_reserved_att(newname))
@@ -2138,28 +2398,262 @@ NEXTCDF4_rename_att(int ncid, int varid, const char *name, const char *newname)
     if (find_att(list, newname))
         return NC_ENAMEINUSE;
 
-    /* Persist the new name to HDF5. */
+    /* Upstream semantics: the rename keeps the attribute's index
+     * position — only the name changes in place, then the object's
+     * attributes are rewritten in index order so the on-disk
+     * creation order matches. */
+    free(att->hdr.name);
+    if (!(att->hdr.name = strdup(newname)))
+        return NC_ENOMEM;
+    if (!ncindexrebuild(list))
+        return NC_EINTERNAL;
+
     H5E_BEGIN_TRY {
         H5Adelete(loc, name);
     } H5E_END_TRY;
-    /* Re-add with the new name so nc4_att_list_add handles indexing. */
-    if ((ret = add_att(list, att->container, newname, att->nc_typeid,
-                       att->len, att->data, NULL))) {
-        add_att(list, att->container, name, att->nc_typeid, att->len,
-                att->data, NULL);
+    if ((ret = nx4_rewrite_atts(loc, list)))
         return ret;
-    }
-    if ((ret = NEXTCDF4_put_att(ncid, varid, newname, att->nc_typeid,
-                                att->len, att->data, att->nc_typeid))) {
-        nc4_att_list_del(list, att);
-        nc4_att_free(att);
-        return ret;
-    }
-    nc4_att_list_del(list, att);
-    nc4_att_free(att);
 
     if (H5Fflush(file->hdfid, H5F_SCOPE_LOCAL) < 0)
         return NC_EHDFERR;
+    return NC_NOERR;
+}
+
+/**
+ * @brief Create a standalone dimension-scale dataset for a dimension.
+ *
+ * Used when a coordinate-variable relationship ends and the
+ * dimension no longer shares its dataset with a variable. The scale
+ * carries `CLASS`, `NAME` and `_Netcdf4Dimid` attributes like the
+ * scales `def_dim` creates.
+ *
+ * @param file NEXTCDF-4 file state.
+ * @param grp Group containing the dimension.
+ * @param dim Dimension.
+ * @param name Link and scale name.
+ * @param dsetp Receives the new dataset identifier.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+static int
+nx4_dimscale_create(NEXTCDF4_FILE_INFO_T *file, NC_GRP_INFO_T *grp,
+                    NC_DIM_INFO_T *dim, const char *name, hid_t *dsetp)
+{
+    NEXTCDF4_GRP_INFO_T *ginfo = grp->format_grp_info;
+    hid_t hdf_grp = ginfo ? ginfo->hdf_group : file->rootid;
+    hid_t dtype = -1, space = -1, dcpl = -1, dset = -1;
+    hsize_t cur = dim->len;
+    hsize_t max = H5S_UNLIMITED, chunk = 1;
+    int ret = NC_NOERR;
+
+    if ((dtype = H5Tcopy(H5T_STD_I8LE)) < 0)
+        return NC_EHDFERR;
+    if ((dcpl = H5Pcreate(H5P_DATASET_CREATE)) < 0 ||
+        nx4_set_att_order(dcpl))
+        { ret = NC_EHDFERR; goto done; }
+    if (dim->unlimited) {
+        if ((space = H5Screate_simple(1, &cur, &max)) < 0 ||
+            H5Pset_chunk(dcpl, 1, &chunk) < 0)
+            { ret = NC_EHDFERR; goto done; }
+    } else if ((space = H5Screate_simple(1, &cur, NULL)) < 0)
+        { ret = NC_EHDFERR; goto done; }
+    if ((dset = H5Dcreate2(hdf_grp, name, dtype, space, H5P_DEFAULT,
+                           dcpl, H5P_DEFAULT)) < 0)
+        { ret = NC_EHDFERR; goto done; }
+    if ((ret = write_string_att(dset, "CLASS", NEXTCDF4_DIMCLASS)) ||
+        (ret = write_string_att(dset, "NAME", name)) ||
+        (ret = write_int_att(dset, NEXTCDF4_DIMID_ATT, (int)dim->hdr.id)))
+        goto done;
+    *dsetp = dset;
+    dset = -1;
+done:
+    if (dset >= 0) H5Dclose(dset);
+    if (dtype >= 0) H5Tclose(dtype);
+    if (space >= 0) H5Sclose(space);
+    if (dcpl >= 0) H5Pclose(dcpl);
+    return ret;
+}
+
+/**
+ * @brief Reattach every variable on a dimension from one scale
+ * dataset to another.
+ *
+ * Mirrors upstream's rec_detach_scales(): all variables in @p grp
+ * (recursively) that attach @p old_dset as the scale for @p dim are
+ * detached and re-attached to @p new_dset. @p skip is exempted (the
+ * coordinate variable being broken/reformed never self-attaches).
+ *
+ * @param grp Group to walk.
+ * @param dim Dimension whose scale changed.
+ * @param old_dset Previous scale dataset.
+ * @param new_dset New scale dataset.
+ * @param skip Variable to exempt, or NULL.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+static int
+nx4_reattach_dim(NC_GRP_INFO_T *grp, NC_DIM_INFO_T *dim, hid_t old_dset,
+                 hid_t new_dset, NC_VAR_INFO_T *skip)
+{
+    size_t i;
+    int d, ret;
+
+    if (grp->vars)
+        for (i = 0; i < ncindexsize(grp->vars); i++) {
+            NC_VAR_INFO_T *v = (NC_VAR_INFO_T *)ncindexith(grp->vars, i);
+            NEXTCDF4_VAR_INFO_T *vi;
+            if (!v || v == skip)
+                continue;
+            vi = v->format_var_info;
+            if (!vi || vi->hdf_dataset < 0)
+                continue;
+            for (d = 0; d < v->ndims; d++) {
+                if (v->dim[d] != dim)
+                    continue;
+                if (old_dset >= 0)
+                    H5E_BEGIN_TRY {
+                        /* A former coordinate variable was never
+                         * attached to its own dataset; detaching what
+                         * is not attached is harmless. */
+                        H5DSdetach_scale(vi->hdf_dataset, old_dset,
+                                         (unsigned)d);
+                    } H5E_END_TRY;
+                if (new_dset >= 0 &&
+                    H5DSattach_scale(vi->hdf_dataset, new_dset,
+                                     (unsigned)d) < 0)
+                    return NC_EHDFERR;
+            }
+        }
+    if (grp->children)
+        for (i = 0; i < ncindexsize(grp->children); i++) {
+            NC_GRP_INFO_T *child =
+                (NC_GRP_INFO_T *)ncindexith(grp->children, i);
+            if (child && (ret = nx4_reattach_dim(child, dim, old_dset,
+                                               new_dset, skip)))
+                return ret;
+        }
+    return NC_NOERR;
+}
+
+/**
+ * @brief Break a coordinate-variable relationship.
+ *
+ * Upstream nc4_break_coord_var() semantics: the shared dataset stays
+ * with the variable under its link name, the dimension gets a
+ * standalone scale dataset under @p scalename, all other variables
+ * are reattached to it, and the variable's dataset loses its
+ * `_Netcdf4Dimid` marker so the loader does not recover a phantom
+ * dimension.
+ *
+ * @param file NEXTCDF-4 file state.
+ * @param grp Group containing the dimension.
+ * @param dim Dimension leaving the relationship.
+ * @param cvar Former coordinate variable.
+ * @param scalename Name for the dimension's new scale dataset.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+static int
+nx4_break_coord_var(NEXTCDF4_FILE_INFO_T *file, NC_GRP_INFO_T *grp,
+                    NC_DIM_INFO_T *dim, NC_VAR_INFO_T *cvar,
+                    const char *scalename)
+{
+    NEXTCDF4_DIM_INFO_T *dinfo = dim->format_dim_info;
+    hid_t old_dset = dinfo->hdf_dataset;
+    hid_t new_dset = -1;
+    int ret;
+
+    if ((ret = nx4_dimscale_create(file, grp, dim, scalename, &new_dset)))
+        return ret;
+    if ((ret = nx4_reattach_dim(grp, dim, old_dset, new_dset, cvar))) {
+        H5Dclose(new_dset);
+        return ret;
+    }
+    H5E_BEGIN_TRY {
+        H5Adelete(old_dset, NEXTCDF4_DIMID_ATT);
+    } H5E_END_TRY;
+    if (dinfo->hdf_dataset >= 0)
+        H5Dclose(dinfo->hdf_dataset);
+    dinfo->hdf_dataset = new_dset;
+    return NC_NOERR;
+}
+
+/**
+ * @brief Reform a coordinate-variable relationship.
+ *
+ * Upstream nc4_reform_coord_var() semantics: @p var's dataset becomes
+ * the dimension's scale — it gains `CLASS`/`NAME`/`_Netcdf4Dimid`
+ * markers, every other variable on the dimension is reattached to it,
+ * and the dimension's previous standalone scale (if any) is unlinked.
+ *
+ * @param file NEXTCDF-4 file state.
+ * @param grp Group containing the dimension.
+ * @param dim Dimension regaining a coordinate variable.
+ * @param var Variable whose dataset becomes the scale.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+static int
+nx4_reform_coord_var(NEXTCDF4_FILE_INFO_T *file, NC_GRP_INFO_T *grp,
+                     NC_DIM_INFO_T *dim, NC_VAR_INFO_T *var)
+{
+    NEXTCDF4_GRP_INFO_T *ginfo = grp->format_grp_info;
+    NEXTCDF4_DIM_INFO_T *dinfo = dim->format_dim_info;
+    NEXTCDF4_VAR_INFO_T *vinfo = var->format_var_info;
+    hid_t hdf_grp = ginfo ? ginfo->hdf_group : file->rootid;
+    hid_t old_dset = dinfo ? dinfo->hdf_dataset : -1;
+    int shared_old = 0;
+    int ret;
+
+    if (!dinfo || !vinfo || vinfo->hdf_dataset < 0)
+        return NC_EFILEMETA;
+
+    /* Detach any scales on the reforming variable itself (coordinate
+     * variables are never attached to a scale). */
+    {
+        int d;
+        for (d = 0; d < var->ndims; d++) {
+            if (var->dim[d] == dim && old_dset >= 0 &&
+                old_dset != vinfo->hdf_dataset)
+                H5DSdetach_scale(vinfo->hdf_dataset, old_dset,
+                                 (unsigned)d);
+        }
+    }
+
+    /* Make the variable's dataset a dimension scale again. */
+    if (H5DSset_scale(vinfo->hdf_dataset, var->hdr.name) < 0)
+        return NC_EHDFERR;
+    if ((ret = write_int_att(vinfo->hdf_dataset, NEXTCDF4_DIMID_ATT,
+                             (int)dim->hdr.id)))
+        return ret;
+
+    /* Reattach other variables from the old scale to this dataset. */
+    if ((ret = nx4_reattach_dim(grp, dim, old_dset, vinfo->hdf_dataset,
+                                var)))
+        return ret;
+
+    /* A standalone old scale is unlinked; a dataset shared with
+     * another variable (the former coordinate variable) stays. */
+    if (old_dset >= 0 && old_dset != vinfo->hdf_dataset) {
+        size_t i;
+        shared_old = 0;
+        for (i = 0; i < ncindexsize(grp->vars); i++) {
+            NC_VAR_INFO_T *v = (NC_VAR_INFO_T *)ncindexith(grp->vars, i);
+            NEXTCDF4_VAR_INFO_T *vi = v ? v->format_var_info : NULL;
+            if (v && v != var && vi && vi->hdf_dataset == old_dset) {
+                shared_old = 1;
+                break;
+            }
+        }
+        if (!shared_old) {
+            char path[1024];
+            ssize_t n = H5Iget_name(old_dset, path, sizeof(path));
+            if (n > 0) {
+                char *base = strrchr(path, '/');
+                H5E_BEGIN_TRY {
+                    H5Ldelete(hdf_grp, base ? base + 1 : path, H5P_DEFAULT);
+                } H5E_END_TRY;
+            }
+            H5Dclose(old_dset);
+        }
+    }
+    dinfo->hdf_dataset = vinfo->hdf_dataset;
     return NC_NOERR;
 }
 
@@ -2193,6 +2687,7 @@ static NC_DIM_INFO_T *
 coord_var_dim(NC_VAR_INFO_T *var)
 {
     if (var->ndims == 1 && var->dim[0] &&
+        var->container == var->dim[0]->container &&
         var->hdr.name && var->dim[0]->hdr.name &&
         !strcmp(var->hdr.name, var->dim[0]->hdr.name))
         return var->dim[0];
@@ -2224,8 +2719,9 @@ NEXTCDF4_rename_dim(int ncid, int dimid, const char *name)
         return ret;
     if ((ret = nc4_find_nc4_grp(ncid, &grp)))
         return ret;
-    if ((ret = NEXTCDF4_check_write_define(file)))
+    if ((ret = NEXTCDF4_check_write_define(h5, file)))
         return ret;
+    if (!name) return NC_EINVAL;
     if ((ret = NC_check_name(name)))
         return ret;
 
@@ -2236,8 +2732,11 @@ NEXTCDF4_rename_dim(int ncid, int dimid, const char *name)
     if (!strcmp(dim->hdr.name, name))
         return NC_NOERR;
 
-    if ((ret = nc4_check_dup_name(dim->container, (char *)name)))
-        return ret;
+    /* Only another dimension can conflict; renaming onto a variable
+     * that uses this dimension at index 0 is the upstream
+     * reform-coordinate-variable case. */
+    if (ncindexlookup(dim->container->dim, (char *)name))
+        return NC_ENAMEINUSE;
 
     dinfo = (NEXTCDF4_DIM_INFO_T *)dim->format_dim_info;
     ginfo = dim->container->format_grp_info;
@@ -2248,12 +2747,41 @@ NEXTCDF4_rename_dim(int ncid, int dimid, const char *name)
      * find_coord_var matches on the old name. */
     cvar = find_coord_var(dim->container, dim);
 
-    if (dinfo && dinfo->hdf_dataset >= 0) {
-        if (H5Lmove(hdf_grp, oldname, hdf_grp, name, H5P_DEFAULT,
-                    H5P_DEFAULT) < 0)
-            return NC_EHDFERR;
-        if (H5DSset_scale(dinfo->hdf_dataset, name) < 0)
-            return NC_EHDFERR;
+    /* A variable with the target name that uses this dimension at
+     * index 0 reforms the coordinate-variable relationship. */
+    {
+        NC_VAR_INFO_T *rvar =
+            (NC_VAR_INFO_T *)ncindexlookup(dim->container->vars,
+                                           (char *)name);
+        int reform = rvar && rvar->ndims == 1 && rvar->dim[0] == dim;
+
+        if (cvar) {
+            /* Upstream semantics: the shared dataset stays with the
+             * variable under its old link name, and the dimension
+             * moves onto the reforming variable's dataset or a
+             * standalone scale. */
+            if (reform) {
+                H5E_BEGIN_TRY {
+                    H5Adelete(dinfo->hdf_dataset, NEXTCDF4_DIMID_ATT);
+                } H5E_END_TRY;
+                if ((ret = nx4_reform_coord_var(file, dim->container,
+                                                dim, rvar)))
+                    return ret;
+            } else if ((ret = nx4_break_coord_var(file, dim->container,
+                                                  dim, cvar, name)))
+                return ret;
+        } else if (reform) {
+            /* The standalone scale is unlinked inside reform. */
+            if ((ret = nx4_reform_coord_var(file, dim->container,
+                                            dim, rvar)))
+                return ret;
+        } else if (dinfo && dinfo->hdf_dataset >= 0) {
+            if (H5Lmove(hdf_grp, oldname, hdf_grp, name, H5P_DEFAULT,
+                        H5P_DEFAULT) < 0)
+                return NC_EHDFERR;
+            if (H5DSset_scale(dinfo->hdf_dataset, name) < 0)
+                return NC_EHDFERR;
+        }
     }
 
     free(dim->hdr.name);
@@ -2261,19 +2789,6 @@ NEXTCDF4_rename_dim(int ncid, int dimid, const char *name)
         return NC_ENOMEM;
     if (!ncindexrebuild(dim->container->dim))
         return NC_EHDFERR;
-
-    /* Rename the coordinate variable too: NEXTCDF-4 keeps the var and
-     * dim names in sync (upstream netcdf-c instead breaks the
-     * coordinate relationship). The scale dataset's link already
-     * moved with the dimension, so only the in-memory name and index
-     * need updating. */
-    if (cvar) {
-        free(cvar->hdr.name);
-        if (!(cvar->hdr.name = strdup(name)))
-            return NC_ENOMEM;
-        if (!ncindexrebuild(dim->container->vars))
-            return NC_EHDFERR;
-    }
 
     if (H5Fflush(file->hdfid, H5F_SCOPE_LOCAL) < 0)
         return NC_EHDFERR;
@@ -2306,8 +2821,9 @@ NEXTCDF4_rename_var(int ncid, int varid, const char *name)
         return ret;
     if ((ret = nc4_find_nc4_grp(ncid, &grp)))
         return ret;
-    if ((ret = NEXTCDF4_check_write_define(file)))
+    if ((ret = NEXTCDF4_check_write_define(h5, file)))
         return ret;
+    if (!name) return NC_EINVAL;
     if ((ret = NC_check_name(name)))
         return ret;
 
@@ -2319,13 +2835,20 @@ NEXTCDF4_rename_var(int ncid, int varid, const char *name)
     if (!strcmp(var->hdr.name, name))
         return NC_NOERR;
 
-    if ((ret = nc4_check_dup_name(var->container, (char *)name)))
-        return ret;
+    /* Only another variable can conflict; renaming onto a dimension
+     * the variable uses at index 0 is the upstream
+     * reform-coordinate-variable case. */
+    if (ncindexlookup(var->container->vars, (char *)name))
+        return NC_ENAMEINUSE;
 
     vinfo = (NEXTCDF4_VAR_INFO_T *)var->format_var_info;
     ginfo = var->container->format_grp_info;
     hdf_grp = ginfo ? ginfo->hdf_group : file->rootid;
     oldname = var->hdr.name;
+
+    /* Detect the coordinate variable before the var name changes:
+     * after the update the names can never match. */
+    dim = coord_var_dim(var);
 
     if (vinfo && vinfo->hdf_dataset >= 0) {
         char cur_path[1024];
@@ -2360,34 +2883,29 @@ NEXTCDF4_rename_var(int ncid, int varid, const char *name)
         /* If cur_name has no link the dataset was already moved. */
     }
 
-    /* Detect the coordinate variable before the var name changes:
-     * after the update the names can never match. */
-    dim = coord_var_dim(var);
+    /* A coordinate variable renamed away from its dimension breaks
+     * the relationship upstream-style: the dimension keeps its name
+     * and gets a standalone scale dataset under it (created now that
+     * the variable's link has moved). */
+    if (dim &&
+        (ret = nx4_break_coord_var(file, var->container, dim, var,
+                                   dim->hdr.name)))
+        return ret;
+
     free(var->hdr.name);
     if (!(var->hdr.name = strdup(name)))
         return NC_ENOMEM;
     if (!ncindexrebuild(var->container->vars))
         return NC_EHDFERR;
 
-    if (dim) {
-        dinfo = (NEXTCDF4_DIM_INFO_T *)dim->format_dim_info;
-        if (dinfo && dinfo->hdf_dataset >= 0) {
-            if (dinfo->hdf_dataset != vinfo->hdf_dataset) {
-                if (H5Dclose(dinfo->hdf_dataset) < 0)
-                    return NC_EHDFERR;
-                dinfo->hdf_dataset = H5Dopen2(hdf_grp, name, H5P_DEFAULT);
-                if (dinfo->hdf_dataset < 0)
-                    return NC_EHDFERR;
-            }
-            if (H5DSset_scale(dinfo->hdf_dataset, name) < 0)
-                return NC_EHDFERR;
-        }
-        free(dim->hdr.name);
-        if (!(dim->hdr.name = strdup(name)))
-            return NC_ENOMEM;
-        if (!ncindexrebuild(var->container->dim))
-            return NC_EHDFERR;
-    }
+    /* A non-coordinate variable renamed onto a dimension it uses at
+     * index 0 reforms the relationship: its dataset becomes the
+     * dimension's scale. */
+    if (!dim && var->ndims == 1 && var->dim[0] &&
+        var->dim[0]->hdr.name && !strcmp(name, var->dim[0]->hdr.name) &&
+        (ret = nx4_reform_coord_var(file, var->container, var->dim[0],
+                                    var)))
+        return ret;
 
     if (H5Fflush(file->hdfid, H5F_SCOPE_LOCAL) < 0)
         return NC_EHDFERR;
@@ -2415,7 +2933,7 @@ NEXTCDF4_del_att(int ncid, int varid, const char *name)
 
     if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
         return ret;
-    if ((ret = NEXTCDF4_check_write_define(file)))
+    if ((ret = NEXTCDF4_check_write_define(h5, file)))
         return ret;
     if (varid == NC_GLOBAL) {
         grp = h5->root_grp;
@@ -2434,8 +2952,7 @@ NEXTCDF4_del_att(int ncid, int varid, const char *name)
     H5E_BEGIN_TRY {
         H5Adelete(loc, name);
     } H5E_END_TRY;
-    nc4_att_list_del(list, att);
-    nc4_att_free(att);
+    nx4_att_list_del(list, att);
     return NC_NOERR;
 }
 
@@ -2514,9 +3031,9 @@ find_dim_cb(hid_t loc, const char *name, const H5L_info_t *info, void *op_data)
         H5Dclose(dset);
     }
 
-    if (dimid < 0)
-        return 0;
-
+    /* Upstream files may carry a scale with no `_Netcdf4Dimid`
+     * attribute (a dimension without a coordinate variable). Collect
+     * it anyway with dimid -1; load_dimensions() assigns a free id. */
     if (dl->count >= dl->capacity) {
         dl->capacity = dl->capacity ? dl->capacity * 2 : 4;
         dl->names = realloc(dl->names, dl->capacity * sizeof(char *));
@@ -2625,6 +3142,22 @@ load_dimensions(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
     if (H5Literate(hdf_grp, H5_INDEX_NAME, H5_ITER_INC, NULL,
                    find_dim_cb, &dl) < 0)
         return NC_EHDFERR;
+
+    /* Assign free dimids to scales that store none (markerless
+     * upstream scales), smallest-first in discovery order. */
+    for (i = 0; i < dl.count; i++) {
+        if (dl.dimids[i] < 0) {
+            int cand, j;
+            for (cand = 0; ; cand++) {
+                int used = 0;
+                for (j = 0; j < dl.count; j++)
+                    if (j != i && dl.dimids[j] == cand) { used = 1; break; }
+                if (!used)
+                    break;
+            }
+            dl.dimids[i] = cand;
+        }
+    }
 
     for (i = 0; i < dl.count; i++)
         if (dl.dimids[i] > maxid)
@@ -3130,6 +3663,35 @@ typedef struct {
 } att_iter_data_t;
 
 /**
+ * @brief Pick the `H5Aiterate2` index that preserves attribute
+ * creation order when the object tracks it.
+ *
+ * NEXTCDF-4 and upstream files record `H5P_CRT_ORDER_TRACKED` on every
+ * group and dataset; plain HDF5 objects without tracking fall back to
+ * name order.
+ *
+ * @param obj HDF5 dataset or group identifier.
+ * @param group Nonzero when @p obj is a group, zero for a dataset.
+ * @return `H5_INDEX_CRT_ORDER` or `H5_INDEX_NAME`.
+ */
+static H5_index_t
+att_iter_index(hid_t obj, int group)
+{
+    unsigned flags = 0;
+    hid_t pl;
+    H5_index_t idx = H5_INDEX_NAME;
+
+    pl = group ? H5Gget_create_plist(obj) : H5Dget_create_plist(obj);
+    if (pl >= 0) {
+        if (H5Pget_attr_creation_order(pl, &flags) >= 0 &&
+            (flags & H5P_CRT_ORDER_TRACKED))
+            idx = H5_INDEX_CRT_ORDER;
+        H5Pclose(pl);
+    }
+    return idx;
+}
+
+/**
  * @brief `H5Aiterate2` callback loading a single user attribute.
  *
  * Reserved (internal) attributes and attributes whose datatype
@@ -3205,8 +3767,8 @@ load_variables(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
                       ->format_var_info)->hdf_dataset;
             ad.list = ((NC_VAR_INFO_T *)ncindexith(grp->vars, loaded))->att;
             ad.container = &((NC_VAR_INFO_T *)ncindexith(grp->vars, loaded))->hdr;
-            H5Aiterate2(ad.loc, H5_INDEX_NAME, H5_ITER_INC, NULL,
-                        load_att_cb, &ad);
+            H5Aiterate2(ad.loc, att_iter_index(ad.loc, 0), H5_ITER_INC,
+                        NULL, load_att_cb, &ad);
             loaded++;
         }
     } else {
@@ -3225,8 +3787,8 @@ load_variables(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
                               ->format_var_info)->hdf_dataset;
                     ad.list = ((NC_VAR_INFO_T *)ncindexith(grp->vars, loaded))->att;
                     ad.container = &((NC_VAR_INFO_T *)ncindexith(grp->vars, loaded))->hdr;
-                    H5Aiterate2(ad.loc, H5_INDEX_NAME, H5_ITER_INC, NULL,
-                                load_att_cb, &ad);
+                    H5Aiterate2(ad.loc, att_iter_index(ad.loc, 0),
+                                H5_ITER_INC, NULL, load_att_cb, &ad);
                     loaded++;
                     break;
                 }
@@ -3264,8 +3826,8 @@ load_group_attributes(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
     ad.loc = hdf_grp;
     ad.list = grp->att;
     ad.container = &grp->hdr;
-    if (H5Aiterate2(hdf_grp, H5_INDEX_NAME, H5_ITER_INC, NULL,
-                    load_att_cb, &ad) < 0)
+    if (H5Aiterate2(hdf_grp, att_iter_index(hdf_grp, 1), H5_ITER_INC,
+                    NULL, load_att_cb, &ad) < 0)
         return NC_EHDFERR;
     grp->atts_read = 1;
     return NC_NOERR;

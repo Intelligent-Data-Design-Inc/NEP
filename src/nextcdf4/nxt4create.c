@@ -70,6 +70,7 @@ NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
 {
     NEXTCDF4_FILE_INFO_T *file = NULL;
     hid_t fapl = -1;
+    hid_t fcpl = -1;
     H5F_libver_t bound;
     unsigned major;
     unsigned minor;
@@ -123,9 +124,17 @@ NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
     if (H5Pset_libver_bounds(fapl, bound, bound) < 0)
         EBAIL2(NC_EHDFERR);
     flags = (cmode & NC_NOCLOBBER) ? H5F_ACC_EXCL : H5F_ACC_TRUNC;
+    /* Track attribute creation order on the root group, as upstream
+     * does, so global nc_inq_attname() returns creation order. */
+    if ((fcpl = H5Pcreate(H5P_FILE_CREATE)) < 0 ||
+        H5Pset_attr_creation_order(fcpl, H5P_CRT_ORDER_TRACKED |
+                                   H5P_CRT_ORDER_INDEXED) < 0)
+        EBAIL2(NC_EHDFERR);
     H5E_BEGIN_TRY {
-        file->hdfid = H5Fcreate(path, flags, H5P_DEFAULT, fapl);
+        file->hdfid = H5Fcreate(path, flags, fcpl, fapl);
     } H5E_END_TRY;
+    H5Pclose(fcpl);
+    fcpl = -1;
     if (file->hdfid < 0) {
         ret = existed && (cmode & NC_NOCLOBBER) ? NC_EEXIST : NC_EHDFERR;
         EBAIL2(ret);
@@ -151,6 +160,8 @@ NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
 fail:
     if (fapl >= 0)
         H5Pclose(fapl);
+    if (fcpl >= 0)
+        H5Pclose(fcpl);
     NEXTCDF4_free_file(file);
     nc4_file_list_del(ncid);
     if (!existed && ret != NC_EEXIST)

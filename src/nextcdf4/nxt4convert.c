@@ -366,11 +366,16 @@ integer_range(nc_type source, nc_type target, unsigned long long u, long long s)
  * @brief Macro: one `case` of CONVERT_SOURCE writing an integer
  * destination with guarded conversion.
  *
- * Real sources are truncated and checked against `LOW`/`HIGH` in
- * `long double`; integer sources are checked by integer_range().
- * Out-of-range values set `*range_error` and store the fill value —
- * except the classic `NC_UBYTE`→`NC_BYTE` overflow, which netcdf-c
- * historically tolerates under `_NCProperties` strict-nc3 semantics.
+ * Integer sources are checked by integer_range(). Real sources get
+ * one of two checks, keyed on `fill_on_overflow`: the netcdf-c
+ * attribute semantics check the raw input before truncation (a float
+ * like -0.5 still overflows an unsigned destination), while the NEP
+ * variable semantics check the truncated value, so fractions near a
+ * bound simply truncate. Out-of-range values set `*range_error`; the
+ * store is the fill value when `fill_on_overflow` is set (NEP write
+ * semantics) or the raw cast otherwise (netcdf-c attribute-read
+ * semantics). The classic `NC_UBYTE`→`NC_BYTE` overflow is tolerated
+ * under `_NCProperties` strict-nc3 semantics.
  *
  * @param ID NetCDF destination type.
  * @param D Destination C type.
@@ -383,12 +388,13 @@ integer_range(nc_type source, nc_type target, unsigned long long u, long long s)
         for (j = 0; j < len; j++) { \
             long double v = (long double)input[j]; \
             int outside; \
-            if (real_source) v = truncl(v); \
-            outside = real_source ? (!isfinite(v) || v < (LOW) || v >= (HIGH)) \
+            if (real_source && fill_on_overflow) v = truncl(v); \
+            outside = real_source \
+                ? (!isfinite(v) || v < (LOW) || v >= (HIGH)) \
                 : integer_range(src_type, ID, (unsigned long long)input[j], (long long)input[j]); \
             if (outside && !(strict_nc3 && src_type == NC_UBYTE && ID == NC_BYTE)) \
                 *range_error = 1; \
-            ((D *)dest)[j] = outside && real_source \
+            ((D *)dest)[j] = outside && real_source && fill_on_overflow \
                 ? (fill_value ? *(const D *)fill_value : (D)(FILL)) : (D)input[j]; \
         } \
         break;
@@ -423,6 +429,9 @@ integer_range(nc_type source, nc_type target, unsigned long long u, long long s)
  * @param strict_nc3 Classic byte-range convention.
  * @param quantize_mode Quantization mode.
  * @param nsd Quantization precision.
+ * @param fill_on_overflow Nonzero to store the fill value on
+ * real-to-integer overflow (NEP variable semantics); zero stores the
+ * raw truncated cast like netcdf-c (attribute read semantics).
  * @return NC_NOERR or a type, argument, allocation or HDF5 error;
  * overflow is reported via @p range_error, not the return value.
  * @author Edward Hartnett, Intelligent Data Design, Inc.
@@ -430,7 +439,8 @@ integer_range(nc_type source, nc_type target, unsigned long long u, long long s)
 int
 nx4_convert_type(const void *src, void *dest, nc_type src_type,
                  nc_type dest_type, size_t len, int *range_error,
-                 const void *fill_value, int strict_nc3, int quantize_mode, int nsd)
+                 const void *fill_value, int strict_nc3, int quantize_mode, int nsd,
+                 int fill_on_overflow)
 {
     size_t src_size, dest_size, i;
     int standard = numeric(src_type) && numeric(dest_type);

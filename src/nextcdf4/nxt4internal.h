@@ -116,7 +116,7 @@ int NEXTCDF4_read_markers(NEXTCDF4_FILE_INFO_T *file);
 
 /** Verify the file is in define mode and not read-only.
  */
-int NEXTCDF4_check_write_define(NEXTCDF4_FILE_INFO_T *file);
+int NEXTCDF4_check_write_define(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file);
 
 /** Map a fixed-size NetCDF atomic type to its HDF5 datatype.
  */
@@ -133,7 +133,7 @@ hid_t NEXTCDF4_memory_type(nc_type type, int *closep);
 int nx4_convert_type(const void *src, void *dest, nc_type src_type,
                      nc_type dest_type, size_t len, int *range_error,
                      const void *fill_value, int strict_nc3,
-                     int quantize_mode, int nsd);
+                     int quantize_mode, int nsd, int fill_on_overflow);
 
 /** Return a display name for a fixed-size NetCDF atomic type.
  */

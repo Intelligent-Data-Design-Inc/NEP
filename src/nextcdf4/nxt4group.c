@@ -162,8 +162,9 @@ NEXTCDF4_def_grp(int ncid, const char *name, int *grpidp)
 
     if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
         return ret;
-    if ((ret = NEXTCDF4_check_write_define(file)))
+    if ((ret = NEXTCDF4_check_write_define(h5, file)))
         return ret;
+    if (!name) return NC_EINVAL;
     if ((ret = NC_check_name(name)))
         return ret;
     if ((ret = get_grp_from_ncid(ncid, &h5, &parent)))
@@ -178,8 +179,21 @@ NEXTCDF4_def_grp(int ncid, const char *name, int *grpidp)
         return ret;
 
     /* Create the HDF5 group first, then mirror it in the in-memory
-     * tree; on metadata failure the HDF5 group is closed again. */
-    child_g = H5Gcreate2(parent_g, name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+     * tree; on metadata failure the HDF5 group is closed again.
+     * Attribute creation order is tracked so nc_inq_attname()
+     * preserves it across reopen, as upstream does. */
+    {
+        hid_t gcpl = H5Pcreate(H5P_GROUP_CREATE);
+        if (gcpl < 0 ||
+            H5Pset_attr_creation_order(gcpl, H5P_CRT_ORDER_TRACKED |
+                                       H5P_CRT_ORDER_INDEXED) < 0) {
+            if (gcpl >= 0)
+                H5Pclose(gcpl);
+            return NC_EHDFERR;
+        }
+        child_g = H5Gcreate2(parent_g, name, H5P_DEFAULT, gcpl, H5P_DEFAULT);
+        H5Pclose(gcpl);
+    }
     if (child_g < 0)
         return NC_EHDFERR;
 

@@ -260,8 +260,13 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
      * its metadata readable but rejects all data I/O. */
     if (vinfo->flags & NC_HDF5_VAR_FILTER_MISSING) return NC_ENOFILTER;
     if (writing && file->no_write) return NC_EPERM;
-    if (writing && file->define_mode) return NC_EINDEFINE;
-    if (!writing && file->define_mode) return NC_EINDEFINE;
+    /* Upstream leaves define mode automatically when a write arrives;
+     * nc_close does the same below. Reads in define mode keep NEP's
+     * NC_EINDEFINE rule. */
+    if (file->define_mode) {
+        if (!writing) return NC_EINDEFINE;
+        if ((ret = NEXTCDF4__enddef(ncid, 0, 0, 0, 0))) return ret;
+    }
     if (!data) return NC_EINVAL;
     /* The untyped nc_put_var/nc_get_var, var1 and vars calls pass
      * NC_NAT, meaning "the variable's own type"; resolve it so
@@ -309,11 +314,11 @@ prepare:
         nc_type target = writing ? xtype : memtype;
         int mode = writing ? var->quantize_mode : NC_NOQUANTIZE;
         if ((ret = nx4_convert_type(NULL, NULL, source, target, 0, &range_error,
-                                    NULL, 0, mode, var->nsd))) goto done;
+                                    NULL, 0, mode, var->nsd, 1))) goto done;
         if (!(converted = malloc((size_t)total * xtype_size))) { ret = NC_ENOMEM; goto done; }
         io_data = converted;
         if (writing && (ret = nx4_convert_type(data, converted, source, target, (size_t)total,
-                                               &range_error, var->fill_value, 0, mode, var->nsd))) goto done;
+                                               &range_error, var->fill_value, 0, mode, var->nsd, 1))) goto done;
         if (close_mtype) { H5Tclose(mtype); close_mtype = 0; }
         if ((mtype = NEXTCDF4_memory_type(io_type, &close_mtype)) < 0) { ret = NC_EBADTYPE; goto done; }
     }
@@ -321,21 +326,38 @@ prepare:
         if (H5Dset_extent(vinfo->hdf_dataset, newdims) < 0) { ret = NC_EHDFERR; goto done; }
         H5Sclose(fspace);
         if ((fspace = H5Dget_space(vinfo->hdf_dataset)) < 0) { ret = NC_EHDFERR; goto done; }
-        for (i = 0; i < ndims; i++)
-            if (var->dim[i]->unlimited && newdims[i] > var->dim[i]->len)
-                var->dim[i]->len = (size_t)newdims[i];
+        for (i = 0; i < ndims; i++) {
+            NEXTCDF4_DIM_INFO_T *di;
+            if (!var->dim[i]->unlimited || newdims[i] <= var->dim[i]->len)
+                continue;
+            var->dim[i]->len = (size_t)newdims[i];
+            /* Grow the dimension's scale dataset too so the
+             * recovered length matches on reopen — unless the scale
+             * is the variable's own dataset (coordinate variable,
+             * already extended above). */
+            di = (NEXTCDF4_DIM_INFO_T *)var->dim[i]->format_dim_info;
+            if (di && di->hdf_dataset >= 0 &&
+                di->hdf_dataset != vinfo->hdf_dataset) {
+                hsize_t dlen = newdims[i];
+                if (H5Dset_extent(di->hdf_dataset, &dlen) < 0)
+                    { ret = NC_EHDFERR; goto done; }
+            }
+        }
     }
     if (ndims && (H5Sselect_hyperslab(fspace, H5S_SELECT_SET, start, stride, count, NULL) < 0 ||
         (mspace = H5Screate_simple(ndims, count, NULL)) < 0)) { ret = NC_EHDFERR; goto done; }
-    if (writing)
+    if (writing) {
         ret = H5Dwrite(vinfo->hdf_dataset, mtype, ndims ? mspace : H5S_ALL,
                        fspace, H5P_DEFAULT, io_data) < 0 ? NC_EHDFERR : NC_NOERR;
+        if (!ret)
+            var->written_to = 1;
+    }
     else {
         ret = H5Dread(vinfo->hdf_dataset, mtype, ndims ? mspace : H5S_ALL,
                       fspace, H5P_DEFAULT, io_data) < 0 ? NC_EHDFERR : NC_NOERR;
         if (!ret && converting)
             ret = nx4_convert_type(converted, data, xtype, memtype, (size_t)total,
-                                    &range_error, NULL, 0, NC_NOQUANTIZE, 0);
+                                    &range_error, NULL, 0, NC_NOQUANTIZE, 0, 1);
     }
 done:
     free(converted);

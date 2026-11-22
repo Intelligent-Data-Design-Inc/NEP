@@ -116,7 +116,7 @@ Probed with a small program linked against `build/src/libncnextcdf4.so`
 | 1 | **Variables/attributes of user-defined types are unusable.** `nc_def_var` and `nc_put_att` call `NEXTCDF4_check_atomic_type`, which returns `NC_EBADTYPE` for any non-atomic typeid. Compound/vlen/enum/opaque types can be defined but no variable or attribute can use them. | `nc_def_var(ncid, "cv", compound_typeid, ...)` → `NC_EBADTYPE` |
 | 2 | **Files containing user-typed or `NC_STRING` variables cannot be opened.** `load_one_var` resolves the dataset type through `map_nc_type`, which has no committed-type, vlen, or variable-length-string case → `NC_EBADTYPE` fails `nc_open`. This breaks the plan's "full read compatibility with existing NetCDF-4/HDF5 files" goal for a large class of upstream files. | NEXTCDF-4's own file with an `NC_STRING` var fails to reopen; an upstream `NC_NETCDF4` file with a compound or `NC_STRING` var fails to open; same file with only `NC_INT` opens fine |
 | 3 | **`NC_STRING` attributes are silently lost on reopen.** File opens, but `nc_get_att_string` returns `NC_ENOTATT` — the variable-length-string attribute is not loaded. | probe: `put_att_string` → close → open → `get_att_string` = `NC_ENOTATT` |
-| 4 | **Six tests disabled** (`test/nextcdf4/CMakeLists.txt`): `tst_nextcdf4_float16`, `tst_nextcdf4_complex`, `tst_nextcdf4_bitfield`, `tst_nextcdf4_ref`, `tst_explore` abort in netcdf-c `NC_reclaim_data` (`USEFILEINFO` assertion) after reopen; `tst_rename` (the ported upstream `nc_test4` test) disabled earlier. | #379; `docs/releases/v4.2.0.md` |
+| 4 | **Four tests disabled** (`test/nextcdf4/CMakeLists.txt`): `tst_nextcdf4_float16`, `tst_nextcdf4_complex`, `tst_nextcdf4_bitfield`, `tst_explore` abort in netcdf-c `NC_reclaim_data` (`USEFILEINFO` assertion) after reopen. `tst_nextcdf4_ref`, `tst_nextcdf4_rename`, the ported `tst_rename`, and the five Sprint 1L2 ports were re-enabled in Sprint 1L2 (see gaps 13–16, all fixed). | #379; `docs/releases/v4.2.0.md` |
 | 5 | **Def-var setters recreate the HDF5 dataset** (`nc_def_var_fill`/`chunking`/`deflate`/`endian`/`fletcher32`/`filter`), leaving an orphaned dataset object and a stale dimension-scale reference. The contiguous→chunked-deflate-0 half was fixed in Sprint 1C; the orphan remains. | #382 |
 | 6 | **`NC_BFLOAT16` fill values don't work**: `_FillValue` attribute write rejected, `nc_def_var_fill` value not recovered on reopen. | #377 |
 | 7 | **Installed `nextcdf4dispatch.h` is unusable downstream** — it includes `config.h` (not installed) and `ncdispatch.h`, so `NC_NEXTCDF4_initialize()` can't be declared by applications outside the tree. | #378; header unchanged |
@@ -125,6 +125,13 @@ Probed with a small program linked against `build/src/libncnextcdf4.so`
 | 10 | **Mode flags not validated**: `NC_DISKLESS` is accepted but silently creates a file on disk; `NC_MPIIO`/`NC_MPIPOSIX`/`NC_SHARE`/`NC_PERSIST`/`NC_INMEMORY` are likewise neither honored nor rejected. | probe: `NC_NEXTCDF4|NC_DISKLESS` creates a real file |
 | 11 | **No provenance attributes written** — upstream writes `_NCProperties`, `_IsNetcdf4`, `_SuperblockVersion`; NEXTCDF-4 filters them on read but never writes them (planned `nxt4provenance.c` doesn't exist). | `nxt4meta.c` reserved list |
 | 12 | **`nc_inq_var_all` filter outputs never populated** (`idp`/`nparamsp`/`params` always empty) — noted in code as matching upstream's shared helper. | `nxt4meta.c` `NEXTCDF4_inq_var_all` |
+| 13 | ~~**`nc_put_att` on `_FillValue` rejected**~~ — fixed in Sprint 1L2: `_FillValue` is exempted from the reserved-att rule and validated upstream-style (len 1 → `NC_EINVAL`, type mismatch → `NC_EBADTYPE`, after data write → `NC_ELATEFILL`), mirrored into `var->fill_value`, and written to the DCPL (default `NC_FILL_*` when unset, so unwritten elements read back as fill). | Sprint 1L2 |
+| 14 | ~~**Missing argument validation → crash instead of `NC_EINVAL`**~~ — fixed in Sprint 1L2: NULL `name`/`dimidsp` guards return `NC_EINVAL` before `NC_check_name`/`nc4_find_dim`. | Sprint 1L2 |
+| 15 | ~~**Attribute definition order not preserved on reopen**~~ — fixed in Sprint 1L2: file/group/dataset/dimscale creation property lists get `H5Pset_attr_creation_order(TRACKED|INDEXED)`, att load iterates `H5_INDEX_CRT_ORDER`, and att replace/rename rewrite the object's attributes in index order so positions are preserved. | Sprint 1L2 |
+| 16 | ~~**Rename semantics diverged from upstream**~~ — fixed in Sprint 1L2: `NEXTCDF4_rename_dim`/`rename_var` implement upstream break/reform (a renamed-away coordinate variable gets its own dimscale; renaming onto a matching name reforms the link), replacing the old name-sync divergence. `tst_nextcdf4_rename` was updated to assert upstream semantics. | Sprint 1L2 |
+| 17 | ~~**Auto-mode transitions missing**~~ — fixed in Sprint 1L2: data writes auto-`enddef`; metadata calls (`def_dim`/`def_var`/`put_att`/renames) auto-`redef` like upstream (classic model still `NC_ENOTINDEFINE`); def-var *setters* stay strict `NC_ENOTINDEFINE`; reads in define mode keep NEP's `NC_EINDEFINE`. | Sprint 1L2 |
+| 18 | ~~**Upstream `netCDF-4` files without `_Netcdf4Dimid` fail to open**~~ — fixed in Sprint 1L2: `find_dim_cb` accepts markerless `DIMENSION_SCALE` datasets and `load_dimensions` assigns free dimids, so upstream reference files (e.g. `ref_tst_dims.nc`) load. Also fixed: dimension-scale datasets now grow with unlimited-dim writes; coordinate variables require the dim in the same group (`dim->container`). | Sprint 1L2 |
+| 19 | ~~**`H5T_STD_REF` datasets corrupted by fill value**~~ — fixed in Sprint 1L2: writing a fill message on a reference dataset makes it unreadable by `H5Dopen2`; `nx4_dcpl_fill` now skips `NC_STD_REF`. | Sprint 1L2 |
 
 Open-issue bookkeeping: #376 (typed bfloat16 read no-op — verified
 resolved by `test_issue_376` in `tst_nextcdf4_conv.c`), #381 (`NC_ERANGE` —
@@ -146,9 +153,12 @@ Sprint 1 (deferred when v4.1.0 shipped docs+logging instead):
   Fortran API in the same release" is unmet: no Fortran wrappers for
   `nc_*_bfloat16`, `nc_*_float16`, `nc_ref_*`/`nc_deref_*`, or the new
   `nc_type` constants; `ftest/` has no NEXTCDF-4 test.
-- **Full upstream `nc_test4` suite validation** (Phase 5) — only
-  `nc_test4/tst_rename.c` was ported into `test/nextcdf4/nc_test4/`, and it
-  is disabled.
+- **Full upstream `nc_test4` suite validation** (Phase 5) — six tests
+  ported into `test/nextcdf4/nc_test4/` (`tst_rename` plus Sprint 1L2's
+  `tst_camrun`, `tst_atts3`, `tst_dims`, `tst_vars`, `tst_atts1`, kept
+  near-verbatim via the local `nc_tests.h`/`err_macros.h` shims). All six
+  pass in native `NC_NEXTCDF4` mode as of Sprint 1L2; `tst_dims` also
+  reads the shipped upstream fixture `ref_tst_dims.nc`.
 - **Provenance/`_NCProperties`** (`nxt4provenance.c` in the plan's source
   layout) and **in-memory image files** (`nxt4image.c`, optional) — not
   implemented.
@@ -227,7 +237,11 @@ Owned by v4.3.0 Sprints 1L1–1R (see `docs/roadmap.md`), ordered by severity.
 13. Fortran bindings for the new C APIs (Sprint 1R). `nextcopy`/`nextdump`
     (Phase 4 tools) deferred to a future release — recorded in the release
     notes (Sprint 2).
-14. Port more of upstream `nc_test4` against the backend and get the
-    NEXTCDF-4 suite into CI — currently owned by no sprint.
+14. Port more of upstream `nc_test4` against the backend — Sprint 1L2
+    delivered five ports (`tst_camrun`, `tst_atts3`, `tst_dims`,
+    `tst_vars`, `tst_atts1`) plus `tst_rename`; all pass in native
+    `NC_NEXTCDF4` mode after the backend fixes recorded in gaps 13–19.
+    The rest of the suite and enabling the NEXTCDF-4 tests in CI beyond
+    `nextcdf4.yml` remain unowned.
 15. v4.3.0 Sprint 2 mechanics: tag, `docs/releases/v4.3.0.md`, Spack
     4.3.0, conda-forge, README/PRD/PRFAQ updates.

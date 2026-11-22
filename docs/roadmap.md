@@ -138,7 +138,12 @@ Ratify the code's current behavior — small-float coordinate variables are allo
 Plan: [docs/plan/v4.3.0-sprint1L1-small-float-coord-vars.md](plan/v4.3.0-sprint1L1-small-float-coord-vars.md)
 
 #### Sprint 1L2 - Port More nc_test4 Tests
-- Make a port of some of the bigger, more comprehensive tests from nc_test4.
+- Port 5 of the biggest upstream `nc_test4` tests to NEXTCDF-4 (native mode only): `tst_camrun` (7.4k-line CAM metadata stress), `tst_atts3`, `tst_dims`, `tst_vars`, `tst_atts1`; kept near-verbatim via new `test/nextcdf4/nc_test4/` `err_macros.h`/`nc_tests.h` shims, and `tst_rename.c` migrates to them.
+- Runtime failures surfaced real backend gaps; they were fixed in-sprint (upstream-compatible validation, mode transitions, `_FillValue`, attribute ordering, coord-var break/reform, markerless-scale loading). All six ports pass.
+- Enabled ports run in `nextcdf4.yml` CI automatically; `docs/nextcdf4_status_v4_3_0.md` updated.
+- Out of scope: all other nc_test4 ports incl. the feature-blocked set (user types → 1N, `nc_set_fill`/`nc_rename_grp`/var chunk cache → 1O, `NC_STRING` → 1P), failure fixes, #379 re-enablement (1M), parallel/`.cdl`-diff/perf ports, release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1L2-port-nc-test4.md](plan/v4.3.0-sprint1L2-port-nc-test4.md)
 
 
 

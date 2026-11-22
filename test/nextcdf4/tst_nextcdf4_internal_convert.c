@@ -33,15 +33,15 @@ matrix(void)
     int range;
     for (i = 0; i < sizeof(types) / sizeof(types[0]); i++) {
         CHECK(nx4_convert_type(values, &source, NC_DOUBLE, types[i], 4,
-                               &range, NULL, 0, 0, 0));
+                               &range, NULL, 0, 0, 0, 1));
         for (j = 0; j < sizeof(types) / sizeof(types[0]); j++) {
             double back[4];
             memset(&target, 0x5a, sizeof(target));
             CHECK(nx4_convert_type(&source, &target, types[i], types[j], 4,
-                                   &range, NULL, 0, 0, 0));
+                                   &range, NULL, 0, 0, 0, 1));
             REQUIRE(!range);
             CHECK(nx4_convert_type(&target, back, types[j], NC_DOUBLE, 4,
-                                   &range, NULL, 0, 0, 0));
+                                   &range, NULL, 0, 0, 0, 1));
             REQUIRE(!memcmp(values, back, sizeof(values)));
         }
     }
@@ -50,11 +50,11 @@ matrix(void)
         long long s[] = {LLONG_MIN, LLONG_MAX}, sout[2];
         double bad[] = {NAN, INFINITY, -INFINITY, 0x1p63, -0x1p63, 3.75};
         long long fill = 17, integers[6];
-        CHECK(nx4_convert_type(u, out, NC_UINT64, NC_UINT64, 3, &range, NULL, 0, 0, 0));
+        CHECK(nx4_convert_type(u, out, NC_UINT64, NC_UINT64, 3, &range, NULL, 0, 0, 0, 1));
         REQUIRE(!range && !memcmp(u, out, sizeof(u)));
-        CHECK(nx4_convert_type(s, sout, NC_INT64, NC_INT64, 2, &range, NULL, 0, 0, 0));
+        CHECK(nx4_convert_type(s, sout, NC_INT64, NC_INT64, 2, &range, NULL, 0, 0, 0, 1));
         REQUIRE(!range && !memcmp(s, sout, sizeof(s)));
-        CHECK(nx4_convert_type(bad, integers, NC_DOUBLE, NC_INT64, 6, &range, &fill, 0, 0, 0));
+        CHECK(nx4_convert_type(bad, integers, NC_DOUBLE, NC_INT64, 6, &range, &fill, 0, 0, 0, 1));
         REQUIRE(range && integers[0] == fill && integers[1] == fill && integers[2] == fill &&
                 integers[3] == fill && integers[4] == LLONG_MIN && integers[5] == 3);
     }
@@ -62,7 +62,7 @@ matrix(void)
         double input[] = {1.00390625, nextafter(1.00390625, INFINITY),
                           nextafter(1.00390625, -INFINITY), -0.0, 1e300};
         uint16_t bits[5];
-        CHECK(nx4_convert_type(input, bits, NC_DOUBLE, NC_BFLOAT16, 5, &range, NULL, 0, 0, 0));
+        CHECK(nx4_convert_type(input, bits, NC_DOUBLE, NC_BFLOAT16, 5, &range, NULL, 0, 0, 0, 1));
         REQUIRE(range && bits[0] == 0x3f80 && bits[1] == 0x3f81 && bits[2] == 0x3f80 &&
                 bits[3] == 0x8000 && bits[4] == 0x7f80);
     }
@@ -75,16 +75,16 @@ matrix(void)
                 size_t size;
                 CHECK(NEXTCDF4_type_size(type, &size));
                 CHECK(nc4_convert_type(input, &expected, NC_DOUBLE, type, 6, &range, NULL, 0, mode, 3));
-                CHECK(nx4_convert_type(input, &actual, NC_DOUBLE, type, 6, &range, NULL, 0, mode, 3));
+                CHECK(nx4_convert_type(input, &actual, NC_DOUBLE, type, 6, &range, NULL, 0, mode, 3, 1));
                 REQUIRE(!memcmp(&expected, &actual, 6 * size));
             }
     }
     memset(&target, 0x5a, sizeof(target));
     source = target;
-    REQUIRE(nx4_convert_type(&source, &target, NC_INT, NC_CHAR, 1, &range, NULL, 0, 0, 0) == NC_ECHAR);
+    REQUIRE(nx4_convert_type(&source, &target, NC_INT, NC_CHAR, 1, &range, NULL, 0, 0, 0, 1) == NC_ECHAR);
     REQUIRE(!memcmp(&source, &target, sizeof(source)));
-    REQUIRE(nx4_convert_type(NULL, NULL, NC_INT, NC_SHORT, SIZE_MAX, &range, NULL, 0, 0, 0) == NC_EINVAL);
-    CHECK(nx4_convert_type(NULL, NULL, NC_DOUBLE, NC_INT, 0, &range, NULL, 0, 0, 0));
+    REQUIRE(nx4_convert_type(NULL, NULL, NC_INT, NC_SHORT, SIZE_MAX, &range, NULL, 0, 0, 0, 1) == NC_EINVAL);
+    CHECK(nx4_convert_type(NULL, NULL, NC_DOUBLE, NC_INT, 0, &range, NULL, 0, 0, 0, 1));
     return 0;
 }
 

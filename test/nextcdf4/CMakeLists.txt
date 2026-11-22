@@ -156,9 +156,24 @@ if(HAVE_NEXTCDF4)
 
     add_executable(tst_rename nc_test4/tst_rename.c)
     target_link_libraries(tst_rename PRIVATE ncnextcdf4 ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
-    target_include_directories(tst_rename PRIVATE ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+    target_include_directories(tst_rename PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/nc_test4 ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
     add_test(NAME tst_rename COMMAND tst_rename)
     set_tests_properties(tst_rename PROPERTIES
-        DISABLED TRUE
         ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+
+    # Ported upstream nc_test4 tests (Sprint 1L2). The nc_test4 include
+    # directory supplies the local nc_tests.h/err_macros.h shims.
+    foreach(_nxt4_port tst_camrun tst_atts3 tst_dims tst_vars tst_atts1)
+        add_executable(${_nxt4_port} nc_test4/${_nxt4_port}.c)
+        target_link_libraries(${_nxt4_port} PRIVATE ncnextcdf4 ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
+        target_include_directories(${_nxt4_port} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/nc_test4 ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+        add_test(NAME ${_nxt4_port} COMMAND ${_nxt4_port})
+        set_tests_properties(${_nxt4_port} PROPERTIES
+            ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+    endforeach()
+
+    # tst_dims reads the shipped upstream fixture ref_tst_dims.nc through
+    # the srcdir environment variable, as automake does upstream.
+    set_tests_properties(tst_dims PROPERTIES
+        ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};srcdir=${CMAKE_CURRENT_SOURCE_DIR}/nc_test4;LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
 endif()

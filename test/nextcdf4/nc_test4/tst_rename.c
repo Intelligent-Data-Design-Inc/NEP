@@ -15,43 +15,7 @@ See \ref copyright file for more info.
  * Quincey Koziol, Ed Hartnett
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include "netcdf.h"
-#include "nep.h"
-
-/* Error macros (derived from netcdf-c err_macros.h) */
-static int total_err = 0, err = 0;
-#define ERR do {                                                        \
-    fflush(stdout);                                                     \
-    err++;                                                              \
-    fprintf(stderr, "Sorry! Unexpected result, %s, line: %d\n",        \
-            __FILE__, __LINE__);                                        \
-    fflush(stderr);                                                     \
-    return 2;                                                           \
-} while (0)
-
-#define SUMMARIZE_ERR do {                      \
-    if (err)                                    \
-    {                                           \
-        printf("%d failures\n", err);           \
-        total_err += err;                       \
-        err = 0;                                \
-    }                                           \
-    else                                        \
-        printf("ok.\n");                       \
-} while (0)
-
-#define FINAL_RESULTS do {                                      \
-    if (total_err)                                              \
-    {                                                           \
-        printf("%d errors detected! Sorry!\n", total_err);     \
-        return 2;                                               \
-    }                                                           \
-    printf("*** Tests successful!\n");                        \
-    return 0;                                                   \
-} while (0)
+#include "nc_tests.h"
 
 #define FILE_NAME3 "tst_rename_fix3.nc"
 #define FILE_NAME4 "tst_rename_fix4.nc"
