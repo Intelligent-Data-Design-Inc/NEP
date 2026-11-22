@@ -23,8 +23,8 @@
  *
  * @param grp Group.
  */
-static void
-close_group_hdf(NC_GRP_INFO_T *grp)
+void
+nx4_close_group_hdf(NC_GRP_INFO_T *grp)
 {
     size_t i;
     NEXTCDF4_GRP_INFO_T *ginfo;
@@ -62,12 +62,14 @@ close_group_hdf(NC_GRP_INFO_T *grp)
     for (i = 0; i < ncindexsize(grp->dim); i++) {
         NC_DIM_INFO_T *dim = (NC_DIM_INFO_T *)ncindexith(grp->dim, i);
         NEXTCDF4_DIM_INFO_T *dinfo;
-        if (dim && (dinfo = (NEXTCDF4_DIM_INFO_T *)dim->format_dim_info) &&
-            dinfo->hdf_dataset >= 0) {
-            H5E_BEGIN_TRY {
-                H5Dclose(dinfo->hdf_dataset);
-            } H5E_END_TRY;
-            dinfo->hdf_dataset = -1;
+        if (dim && (dinfo = (NEXTCDF4_DIM_INFO_T *)dim->format_dim_info)) {
+            if (dinfo->hdf_dataset >= 0) {
+                H5E_BEGIN_TRY {
+                    H5Dclose(dinfo->hdf_dataset);
+                } H5E_END_TRY;
+            }
+            free(dinfo);
+            dim->format_dim_info = NULL;
         }
     }
 
@@ -83,7 +85,7 @@ close_group_hdf(NC_GRP_INFO_T *grp)
         }
 
     for (i = 0; i < ncindexsize(grp->children); i++)
-        close_group_hdf((NC_GRP_INFO_T *)ncindexith(grp->children, i));
+        nx4_close_group_hdf((NC_GRP_INFO_T *)ncindexith(grp->children, i));
 }
 
 /**
@@ -411,7 +413,7 @@ NEXTCDF4_close(int ncid, void *parameters)
         if ((ret = NEXTCDF4__enddef(ncid, 0, 0, 0, 0)))
             return ret;
     }
-    close_group_hdf(h5->root_grp);
+    nx4_close_group_hdf(h5->root_grp);
     h5->format_file_info = NULL;
     if (!file->no_write && H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0)
         close_ret = NC_EHDFERR;

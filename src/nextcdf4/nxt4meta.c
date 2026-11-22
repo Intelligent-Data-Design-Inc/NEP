@@ -807,11 +807,44 @@ find_att(NCindex *list, const char *name)
 }
 
 /**
+ * @brief Report whether a type is (transitively) variable-sized.
+ *
+ * Dynamic types — vlens and compounds containing them — carry
+ * pointers inside each element, so values must be deep-copied and
+ * reclaimed rather than `memcpy`'d and `free`'d.
+ *
+ * @param grp Group used to resolve user-defined types.
+ * @param xtype NetCDF atomic or user-defined type.
+ * @param vsp Destination for the variable-sized flag.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+static int
+nx4_type_varsized(NC_GRP_INFO_T *grp, nc_type xtype, int *vsp)
+{
+    NC_TYPE_INFO_T *t = NULL;
+
+    *vsp = 0;
+    if (xtype == NC_STRING) {
+        *vsp = 1;
+        return NC_NOERR;
+    }
+    if (xtype < NC_FIRSTUSERTYPEID)
+        return NC_NOERR;
+    if (nx4_find_type(grp, xtype, &t) || !t)
+        return NC_EBADTYPE;
+    *vsp = t->varsized;
+    return NC_NOERR;
+}
+
+/**
  * @brief Allocate and add a new attribute to the in-memory model.
  *
  * Deep-copies the attribute value: numeric data by `memcpy`,
  * `NC_STRING` values element-by-element (NULL elements become empty
- * strings), so the attribute record owns its data outright.
+ * strings), and variable-sized user types (vlens and compounds
+ * containing them) recursively through netcdf-c's shared
+ * `NC_copy_data()` — so the attribute record owns its data outright
+ * and the caller may mutate or free the input immediately.
  *
  * @param list Attribute index to add to.
  * @param container Object that owns the attribute (group or var `hdr`).
@@ -831,11 +864,16 @@ add_att(NCindex *list, NC_OBJ *container, NC_GRP_INFO_T *grp,
     NC_ATT_INFO_T *att = NULL;
     size_t size;
     void *copy = NULL;
+    int varsized = 0;
     int ret;
     size_t i;
 
     if ((ret = nc4_att_list_add(list, name, &att)))
         return ret;
+    if ((ret = nx4_type_varsized(grp, xtype, &varsized))) {
+        nc4_att_list_del(list, att);
+        return ret;
+    }
     if (len > 0) {
         if (xtype == NC_STRING) {
             const char **src = (const char **)data;
@@ -861,8 +899,10 @@ add_att(NCindex *list, NC_OBJ *container, NC_GRP_INFO_T *grp,
             copy = cp;
             size = sizeof(char *);
         } else {
-            if ((ret = nx4_type_size(grp, xtype, &size)))
+            if ((ret = nx4_type_size(grp, xtype, &size))) {
+                nc4_att_list_del(list, att);
                 return ret;
+            }
             if (len > SIZE_MAX / size) {
                 nc4_att_list_del(list, att);
                 return NC_EINVAL;
@@ -871,7 +911,22 @@ add_att(NCindex *list, NC_OBJ *container, NC_GRP_INFO_T *grp,
                 nc4_att_list_del(list, att);
                 return NC_ENOMEM;
             }
-            memcpy(copy, data, len * size);
+            if (varsized) {
+                /* Dynamic payloads are deep-copied element by
+                 * element; the top-level allocation stays owned here
+                 * either way. On failure the partially copied value
+                 * is reclaimed before the record is dropped. */
+                if ((ret = NC_copy_data(grp->nc4_info->controller,
+                                        xtype, data, len, copy))) {
+                    NC_reclaim_data(grp->nc4_info->controller, xtype,
+                                    copy, len);
+                    free(copy);
+                    nc4_att_list_del(list, att);
+                    return ret;
+                }
+            } else {
+                memcpy(copy, data, len * size);
+            }
         }
     }
     att->nc_typeid = xtype;
@@ -968,7 +1023,16 @@ read_hdf5_att(hid_t loc, const char *name, NCindex *list, NC_OBJ *container,
     ret = NC_NOERR;
 
 done:
-    free(data);
+    if (data) {
+        /* Variable-sized types (vlens and compounds containing
+         * them): add_att() deep-copied the value, so the
+         * HDF5-allocated payloads in the read buffer are reclaimed
+         * before the top-level buffer is freed. */
+        int vs = 0;
+        if (!nx4_type_varsized(grp, xtype, &vs) && vs)
+            NC_reclaim_data(grp->nc4_info->controller, xtype, data, len);
+        free(data);
+    }
     if (close_ntype && ntype >= 0)
         H5Tclose(ntype);
     if (fspace >= 0)
@@ -1228,8 +1292,6 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
 
     if ((ret = nc4_var_list_add(grp, name, ndims, &var)))
         goto fail;
-    if ((ret = nc4_var_set_ndims(var, ndims)))
-        goto fail;
     if (xtype >= NC_FIRSTUSERTYPEID) {
         /* The variable shares the group's type record — the
          * reference count balances the group's own ownership with
@@ -1459,6 +1521,15 @@ nx4_dcpl_fill(hid_t dcpl, NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
     /* A fill message on an H5T_STD_REF dataset makes the dataset
      * unreadable to H5Dopen2 — reference datasets get no fill. */
     if (var->type_info->hdr.id == NC_STD_REF)
+        return NC_NOERR;
+    /* Variable-sized types (vlens and compounds containing them) have
+     * no HDF5 fill representation: H5Pset_fill_value cannot encode a
+     * heap-allocated payload, so the DCPL carries no fill message.
+     * Unwritten elements read back zeroed descriptors (empty vlens),
+     * and a user-supplied _FillValue attribute still applies through
+     * the attribute machinery. */
+    if (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID &&
+        var->type_info->varsized)
         return NC_NOERR;
     if (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID) {
         /* User-defined types have no netCDF default fill, matching
@@ -1880,6 +1951,13 @@ NEXTCDF4_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
 
     var->no_fill = no_fill ? 1 : 0;
     if (var->fill_value) {
+        /* A variable-sized fill value owns nested payloads — reclaim
+         * them before dropping the top-level buffer. */
+        if (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID &&
+            var->type_info->varsized)
+            NC_reclaim_data(h5->controller,
+                            (nc_type)var->type_info->hdr.id,
+                            var->fill_value, 1);
         free(var->fill_value);
         var->fill_value = NULL;
     }
@@ -1889,7 +1967,23 @@ NEXTCDF4_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
             return NC_EBADTYPE;
         if (!(var->fill_value = malloc(size)))
             return NC_ENOMEM;
-        memcpy(var->fill_value, fill_value, size);
+        if (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID &&
+            var->type_info->varsized) {
+            /* Deep-copy the vlen descriptor and its payload: the
+             * caller's buffer stays caller-owned. */
+            if ((ret = NC_copy_data(h5->controller,
+                                    (nc_type)var->type_info->hdr.id,
+                                    fill_value, 1, var->fill_value))) {
+                NC_reclaim_data(h5->controller,
+                                (nc_type)var->type_info->hdr.id,
+                                var->fill_value, 1);
+                free(var->fill_value);
+                var->fill_value = NULL;
+                return ret;
+            }
+        } else {
+            memcpy(var->fill_value, fill_value, size);
+        }
         var->fill_val_changed = 1;
     }
 
@@ -2391,13 +2485,36 @@ NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type datatype,
          * DCPL is immutable — the attribute (which is written
          * normally, below) and var->fill_value carry the value, the
          * same user-visible behavior upstream has. */
-        free(var->fill_value);
+        if (var->fill_value) {
+            if (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID &&
+                var->type_info->varsized)
+                NC_reclaim_data(h5->controller,
+                                (nc_type)var->type_info->hdr.id,
+                                var->fill_value, 1);
+            free(var->fill_value);
+            var->fill_value = NULL;
+        }
         if (datatype == NC_STRING)
             var->fill_value = strdup(*(char **)data);
         else if (!(var->fill_value = malloc(size)))
             { free(data); return NC_ENOMEM; }
-        if (var->fill_value && datatype != NC_STRING)
-            memcpy(var->fill_value, data, size);
+        if (var->fill_value && datatype != NC_STRING) {
+            if (utype && utype->varsized) {
+                /* Dynamic fill values are deep-copied — the caller's
+                 * vlen payload stays caller-owned. */
+                if ((ret = NC_copy_data(h5->controller, datatype,
+                                        data, 1, var->fill_value))) {
+                    NC_reclaim_data(h5->controller, datatype,
+                                    var->fill_value, 1);
+                    free(var->fill_value);
+                    var->fill_value = NULL;
+                    free(data);
+                    return ret;
+                }
+            } else {
+                memcpy(var->fill_value, data, size);
+            }
+        }
         if (!var->fill_value)
             { free(data); return NC_ENOMEM; }
         var->fill_val_changed = 1;
@@ -2588,9 +2705,18 @@ NEXTCDF4_get_att(int ncid, int varid, const char *name, void *value,
             }
             return NC_NOERR;
         } else {
+            NC_TYPE_INFO_T *at = NULL;
             size_t size;
             if ((ret = nx4_type_size(grp, memtype, &size)))
                 return ret;
+            /* Variable-sized types (vlens and compounds containing
+             * them) are deep-copied: the caller receives owned
+             * payloads it can reclaim with nc_reclaim_data() without
+             * disturbing the cached attribute. */
+            if (memtype >= NC_FIRSTUSERTYPEID &&
+                !nx4_find_type(grp, memtype, &at) && at && at->varsized)
+                return NC_copy_data(h5->controller, memtype, att->data,
+                                    att->len, value);
             memcpy(value, att->data, att->len * size);
             return NC_NOERR;
         }
@@ -3819,10 +3945,6 @@ load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
         free(vinfo);
         goto done;
     }
-    if ((ret = nc4_var_set_ndims(var, ndims))) {
-        free(vinfo);
-        goto done;
-    }
     if (xtype >= NC_FIRSTUSERTYPEID) {
         /* Share the committed type record; the reference count
          * balances the group's ownership with each variable using
@@ -4059,6 +4181,33 @@ nx4_fill_from_att(NC_VAR_INFO_T *var)
         var->fill_value = copy;
         return;
     }
+    if (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID) {
+        /* Variable-sized types (vlens and compounds containing them)
+         * deep-copy the descriptor and its payload so the fill value
+         * owns its data outright. */
+        NC_TYPE_INFO_T *ut = NULL;
+        void *copy;
+        if (!nx4_find_type(var->container, att->nc_typeid, &ut) || !ut ||
+            !ut->varsized) {
+            if (nx4_type_size(var->container, att->nc_typeid, &size))
+                return;
+            if (!(copy = malloc(size)))
+                return;
+            memcpy(copy, att->data, size);
+        } else {
+            size = var->type_info->size;
+            if (!(copy = malloc(size ? size : 1)))
+                return;
+            if (NC_copy_data(var->container->nc4_info->controller,
+                             att->nc_typeid, att->data, 1, copy)) {
+                free(copy);
+                return;
+            }
+        }
+        free(var->fill_value);
+        var->fill_value = copy;
+        return;
+    }
     if (NEXTCDF4_type_size(var->type_info->hdr.id, &size))
         return;
     {
@@ -4283,6 +4432,9 @@ load_one_type(NC_GRP_INFO_T *grp, hid_t htype, const char *name)
         goto fail;
     }
     type->committed = NC_TRUE;
+    /* Mark vlens (and later, compounds containing them) variable-
+     * sized so nc_copy_data/nc_reclaim_data walk their payloads. */
+    NC4_set_varsize(type);
 
     return NC_NOERR;
 
@@ -4389,6 +4541,9 @@ load_type_members(NC_GRP_INFO_T *grp, NC_TYPE_INFO_T *type)
             H5free_memory(mname);
             if (ret)
                 return ret;
+            /* A member that is (transitively) variable-sized makes
+             * the whole compound variable-sized. */
+            NC4_recheck_varsize(type, mxtype);
         }
         break;
     }

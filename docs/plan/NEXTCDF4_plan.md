@@ -521,6 +521,14 @@ Bitfield variables are defined with the standard `nc_def_var` using an `NC_BITFI
 | User opaque         | `H5T_OPAQUE`                   | Yes                  |
 | User vlen           | `H5T_VLEN`                     | Yes                  |
 
+(v4.3.0 Sprint 1N3: vlen types are fully implemented — vlens of
+atomic and user-defined bases, nested vlens, compounds/arrays
+containing vlens, `nc_put_vlen_element` borrowed descriptors,
+`nc_get_vlen_element` resolved-base-size copies, recursive
+`nc_reclaim_data*` ownership before close, and upstream interchange.
+`NC_STD_REF` remains excluded from type graphs; `NC_STRING` is Sprint
+1P.)
+
 ## Implementation Phases
 
 ### Phase 0 — Feature Detection Header

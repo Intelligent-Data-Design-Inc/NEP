@@ -9,6 +9,7 @@
 #include "config.h"
 #include <limits.h>
 #include <stdlib.h>
+#include <string.h>
 #include "nxt4internal.h"
 
 /**
@@ -390,6 +391,21 @@ prepare:
     else {
         ret = H5Dread(vinfo->hdf_dataset, mtype, ndims ? mspace : H5S_ALL,
                       fspace, H5P_DEFAULT, io_data) < 0 ? NC_EHDFERR : NC_NOERR;
+        if (ret && xtype >= NC_FIRSTUSERTYPEID) {
+            /* A failed read of a variable-sized type (vlens and
+             * compounds containing them) may have left HDF5-allocated
+             * payloads in the buffer: reclaim them so the error does
+             * not leak, then clear the descriptors so the caller
+             * sees no dangling pointers. */
+            NC_TYPE_INFO_T *ut = NULL;
+            if (!nx4_find_type(grp, xtype, &ut) && ut && ut->varsized) {
+                H5E_BEGIN_TRY {
+                    H5Dvlen_reclaim(mtype, ndims ? mspace : H5S_ALL,
+                                    H5P_DEFAULT, io_data);
+                } H5E_END_TRY;
+                memset(io_data, 0, (size_t)total * xtype_size);
+            }
+        }
         if (!ret && converting)
             ret = nx4_convert_type(converted, data, xtype, memtype, (size_t)total,
                                     &range_error, NULL, 0, NC_NOQUANTIZE, 0, 1);

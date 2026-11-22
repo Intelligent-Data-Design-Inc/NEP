@@ -182,6 +182,9 @@ int NEXTCDF4_map_hdf_type(nc_type xtype, hid_t *typep);
 
 /** Find a user-defined type visible from a group.
  */
+/** Recursively close HDF5 objects and free per-group format info. */
+void nx4_close_group_hdf(NC_GRP_INFO_T *grp);
+
 int nx4_find_type(NC_GRP_INFO_T *grp, nc_type xtype,
                   NC_TYPE_INFO_T **typep);
 /** Resolve the in-memory size of an atomic or user-defined type.

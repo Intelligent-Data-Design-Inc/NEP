@@ -590,11 +590,11 @@ fail:
 
 /**
  * @brief Check whether @p target appears anywhere in @p t's member
- * graph — the cycle check for compound insertion.
+ * graph — the cycle check for compound insertion and vlen bases.
  *
- * Compound members form a DAG by construction (every insert runs this
- * check), so a depth-first walk through user-typed fields is enough;
- * @p seen bounds the recursion on a malformed graph.
+ * Member types form a DAG by construction (every insert runs this
+ * check), so a depth-first walk through user-typed fields and vlen
+ * bases is enough; @p seen bounds the recursion on a malformed graph.
  *
  * @param h5 NetCDF-4 file state used to resolve member type ids.
  * @param t Type record whose member graph is walked.
@@ -609,7 +609,7 @@ type_graph_contains(NC_FILE_INFO_T *h5, NC_TYPE_INFO_T *t,
 {
     size_t i;
 
-    if (!t || t->nc_type_class != NC_COMPOUND)
+    if (!t)
         return 0;
     if (t == target)
         return 1;
@@ -617,6 +617,18 @@ type_graph_contains(NC_FILE_INFO_T *h5, NC_TYPE_INFO_T *t,
         if (nclistget(seen, i) == t)
             return 0;
     nclistpush(seen, t);
+    if (t->nc_type_class == NC_VLEN) {
+        /* A vlen's base is part of its type graph; nested vlens and
+         * vlen-of-compound bases recurse the same way. */
+        NC_TYPE_INFO_T *m = NULL;
+        if (t->u.v.base_nc_typeid >= NC_FIRSTUSERTYPEID &&
+            !nc4_find_type(h5, t->u.v.base_nc_typeid, &m) && m &&
+            type_graph_contains(h5, m, target, seen))
+            return 1;
+        return 0;
+    }
+    if (t->nc_type_class != NC_COMPOUND)
+        return 0;
     for (i = 0; i < nclistlength(t->u.c.field); i++) {
         NC_FIELD_INFO_T *f = (NC_FIELD_INFO_T *)nclistget(t->u.c.field, i);
         NC_TYPE_INFO_T *m = NULL;
@@ -629,13 +641,91 @@ type_graph_contains(NC_FILE_INFO_T *h5, NC_TYPE_INFO_T *t,
 }
 
 /**
+ * @brief Check whether @p t's type graph contains a string or
+ * reference member anywhere.
+ *
+ * `NC_STRING` values and `NC_STD_REF` tokens cannot legally nest
+ * inside compounds or vlens (string member support is deferred;
+ * references stay unsupported inside containers). The walk covers
+ * compound fields, array elements and vlen bases recursively;
+ * @p seen bounds the recursion on a malformed graph.
+ *
+ * @param h5 NetCDF-4 file state used to resolve member type ids.
+ * @param t Type record whose member graph is walked.
+ * @param seen Scratch list of already-visited records.
+ * @return Nonzero when a forbidden type is reachable from @p t.
+ */
+static int
+type_graph_has_forbidden(NC_FILE_INFO_T *h5, NC_TYPE_INFO_T *t,
+                         NClist *seen)
+{
+    size_t i;
+
+    if (!t)
+        return 0;
+    if (t->nc_type_class == NC_STRING)
+        return 1;
+    for (i = 0; i < nclistlength(seen); i++)
+        if (nclistget(seen, i) == t)
+            return 0;
+    nclistpush(seen, t);
+    if (t->nc_type_class == NC_VLEN) {
+        if (t->u.v.base_nc_typeid == NC_STRING ||
+            t->u.v.base_nc_typeid == NC_STD_REF)
+            return 1;
+        if (t->u.v.base_nc_typeid >= NC_FIRSTUSERTYPEID) {
+            NC_TYPE_INFO_T *m = NULL;
+            if (!nc4_find_type(h5, t->u.v.base_nc_typeid, &m) && m &&
+                type_graph_has_forbidden(h5, m, seen))
+                return 1;
+        }
+        return 0;
+    }
+    if (t->nc_type_class != NC_COMPOUND)
+        return 0;
+    for (i = 0; i < nclistlength(t->u.c.field); i++) {
+        NC_FIELD_INFO_T *f = (NC_FIELD_INFO_T *)nclistget(t->u.c.field, i);
+        NC_TYPE_INFO_T *m = NULL;
+        if (!f)
+            continue;
+        if (f->nc_typeid == NC_STRING || f->nc_typeid == NC_STD_REF)
+            return 1;
+        if (f->nc_typeid >= NC_FIRSTUSERTYPEID &&
+            !nc4_find_type(h5, f->nc_typeid, &m) && m &&
+            type_graph_has_forbidden(h5, m, seen))
+            return 1;
+    }
+    return 0;
+}
+
+/**
+ * @brief Reject a type graph containing strings or references.
+ * @param h5 NetCDF-4 file state.
+ * @param t Type record to inspect.
+ * @return `NC_NOERR` when the graph is clean, `NC_EBADTYPE` otherwise.
+ */
+static int
+check_graph_clean(NC_FILE_INFO_T *h5, NC_TYPE_INFO_T *t)
+{
+    NClist *seen;
+    int bad;
+
+    if (!(seen = nclistnew()))
+        return NC_ENOMEM;
+    bad = type_graph_has_forbidden(h5, t, seen);
+    nclistfree(seen);
+    return bad ? NC_EBADTYPE : NC_NOERR;
+}
+
+/**
  * @brief Validate a compound member's element type.
  *
  * Atomic members use the file's compatibility rules with two fixed
  * exclusions — `NC_STRING` (Sprint 1P) and `NC_STD_REF` (documented
- * restriction). User-defined members must be fixed-size types
- * (compound/enum/opaque — vlen and string classes are deferred) and
- * their member graph must not contain the container itself.
+ * restriction). User-defined members may be any class except
+ * `NC_STRING` — compounds, enums, opaques and vlens all nest — but
+ * their member graph must contain no string or reference anywhere,
+ * and must not contain the container itself.
  *
  * @param file NEXTCDF-4 file state.
  * @param grp Group the container type lives in (visibility scope).
@@ -649,7 +739,7 @@ member_type_ok(NEXTCDF4_FILE_INFO_T *file, NC_GRP_INFO_T *grp,
 {
     NC_TYPE_INFO_T *m = NULL;
     NClist *seen;
-    int cyclic;
+    int cyclic, ret;
 
     if (xtype < NC_FIRSTUSERTYPEID) {
         if (xtype == NC_STRING || xtype == NC_STD_REF)
@@ -658,8 +748,10 @@ member_type_ok(NEXTCDF4_FILE_INFO_T *file, NC_GRP_INFO_T *grp,
     }
     if (nx4_find_type(grp, xtype, &m) || !m)
         return NC_EBADTYPE;
-    if (m->nc_type_class == NC_VLEN || m->nc_type_class == NC_STRING)
+    if (m->nc_type_class == NC_STRING)
         return NC_EBADTYPE;
+    if ((ret = check_graph_clean(grp->nc4_info, m)))
+        return ret;
     if (!(seen = nclistnew()))
         return NC_ENOMEM;
     cyclic = type_graph_contains(grp->nc4_info, m, container, seen);
@@ -855,6 +947,10 @@ NEXTCDF4_insert_array_compound(int ncid, nc_type typeid, const char *name,
     if ((ret = nc4_field_list_add(type, name, offset, xtype, ndims,
                                  dim_sizesp)))
         goto done;
+    /* A member that is (transitively) variable-sized makes the whole
+     * compound variable-sized — nc_copy_data/nc_reclaim_data need the
+     * flag to walk its vlen fields. */
+    NC4_recheck_varsize(type, xtype);
 
 done:
     if (owned && hdf >= 0)
@@ -949,9 +1045,19 @@ NEXTCDF4_inq_compound_fieldindex(int ncid, nc_type typeid, const char *name,
  * entry.
  *
  * A vlen variable stores a different number of elements per datum
- * (`hvl_t` handles in memory, heap-allocated on disk). Because vlens
- * have no fields to insert, the `H5Tvlen_create` datatype is
- * committed immediately rather than deferred to `_enddef`.
+ * (`nc_vlen_t` handles in memory, heap-allocated on disk). The base
+ * type may be any supported atomic type except `NC_STRING` and
+ * `NC_STD_REF`, or a visible user-defined type — compounds, enums,
+ * opaques and other vlens all nest.
+ *
+ * When the base is still uncommitted (a compound whose fields may
+ * still grow), the vlen's datatype stays transient and commit is
+ * deferred to `_enddef`, where commit_type_tree() commits the base
+ * first and rebuilds the vlen around it; vlens over committed bases
+ * commit immediately, like opaques.
+ *
+ * The public `nc_vlen_t` descriptor and HDF5's `hvl_t` must have the
+ * same layout — I/O moves descriptors verbatim.
  *
  * @param ncid NetCDF file identifier.
  * @param name Type name.
@@ -966,9 +1072,16 @@ NEXTCDF4_def_vlen(int ncid, const char *name, nc_type base_typeid, nc_type *type
     NEXTCDF4_FILE_INFO_T *file;
     NC_GRP_INFO_T *grp;
     NC_TYPE_INFO_T *type = NULL;
-    hid_t base, vlen;
-    size_t size;
+    NC_TYPE_INFO_T *base_t = NULL;
+    NEXTCDF4_TYPE_INFO_T *bi;
+    hid_t base = -1, vlen = -1;
+    int base_owned = 0;
     int ret;
+
+    _Static_assert(sizeof(nc_vlen_t) == sizeof(hvl_t) &&
+                   offsetof(nc_vlen_t, len) == offsetof(hvl_t, len) &&
+                   offsetof(nc_vlen_t, p) == offsetof(hvl_t, p),
+                   "nc_vlen_t and hvl_t layouts differ");
 
     if ((ret = get_grp_and_file(ncid, &h5, &grp, &file)))
         return ret;
@@ -980,32 +1093,58 @@ NEXTCDF4_def_vlen(int ncid, const char *name, nc_type base_typeid, nc_type *type
     if (nc4_check_dup_name(grp, (char *)name))
         return NC_ENAMEINUSE;
 
-    if (NEXTCDF4_type_size(base_typeid, &size))
-        return NC_EBADTYPE;
-
-    base = base_hdf_type(base_typeid);
-    if (base < 0)
-        return NC_EBADTYPE;
+    /* Resolve the base: an atomic type under the file's compatibility
+     * rules, or a visible user-defined type whose graph is free of
+     * strings and references. A vlen cannot reference itself, so no
+     * cycle is possible here. */
+    if (base_typeid < NC_FIRSTUSERTYPEID) {
+        if (base_typeid == NC_STRING || base_typeid == NC_STD_REF)
+            return NC_EBADTYPE;
+        if ((ret = NEXTCDF4_check_atomic_type(file, base_typeid)))
+            return ret;
+        if ((base = base_hdf_type(base_typeid)) < 0)
+            return NC_EBADTYPE;
+        base_owned = 1;
+    } else {
+        if (nx4_find_type(grp, base_typeid, &base_t) || !base_t)
+            return NC_EBADTYPE;
+        if (base_t->nc_type_class == NC_STRING)
+            return NC_EBADTYPE;
+        if ((ret = check_graph_clean(h5, base_t)))
+            return ret;
+        bi = base_t->format_type_info;
+        if (!bi || bi->hdf_type < 0)
+            return NC_EBADTYPE;
+        base = bi->hdf_type; /* borrowed */
+    }
 
     if ((vlen = H5Tvlen_create(base)) < 0) {
-        H5Tclose(base);
-        return NC_EHDFERR;
+        ret = NC_EHDFERR;
+        goto fail;
     }
-    H5Tclose(base);
 
-    if ((ret = nc4_type_list_add(grp, sizeof(hvl_t), name, &type)))
+    if ((ret = nc4_type_list_add(grp, sizeof(nc_vlen_t), name, &type)))
         goto fail;
     type->nc_type_class = NC_VLEN;
-    type->size = sizeof(hvl_t);
+    type->size = sizeof(nc_vlen_t);
     type->u.v.base_nc_typeid = base_typeid;
-    if ((ret = commit_hdf_type(grp, type, vlen)))
+    NC4_set_varsize(type);
+    if (base_t && !base_t->committed)
+        ret = attach_hdf_type(type, vlen);
+    else
+        ret = commit_hdf_type(grp, type, vlen);
+    if (ret)
         goto fail;
 
     if (typeidp)
         *typeidp = (nc_type)type->hdr.id;
+    if (base_owned && base >= 0)
+        H5Tclose(base);
     return NC_NOERR;
 
 fail:
+    if (base_owned && base >= 0)
+        H5Tclose(base);
     H5Tclose(vlen);
     if (type) {
         nx4_free_type_info(type);
@@ -1015,39 +1154,115 @@ fail:
 }
 
 /**
- * @brief Write a vlen element value (`nc_put_vlen_element`); not
- * implemented.
+ * @brief Resolve a vlen type record from a typeid — shared prologue
+ * for the vlen element helpers.
+ * @param ncid NetCDF file identifier.
+ * @param typeid Type id (must name a `NC_VLEN` user type).
+ * @param h5p Destination for the NetCDF-4 file state.
+ * @param typep Destination for the borrowed type record.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+static int
+find_vlen_type(int ncid, nc_type typeid, NC_FILE_INFO_T **h5p,
+               NC_TYPE_INFO_T **typep)
+{
+    NC_FILE_INFO_T *h5;
+    NC_TYPE_INFO_T *type;
+    int ret;
+
+    if ((ret = NEXTCDF4_get_file(ncid, &h5, NULL)))
+        return ret;
+    if ((ret = nc4_find_type(h5, typeid, &type)))
+        return ret;
+    if (h5p)
+        *h5p = h5;
+    if (!type || type->nc_type_class != NC_VLEN)
+        return NC_EBADTYPE;
+    if (typep)
+        *typep = type;
+    return NC_NOERR;
+}
+
+/**
+ * @brief Write a vlen element value — the `nc_put_vlen_element()`
+ * dispatch entry.
+ *
+ * Fills the caller's `nc_vlen_t` descriptor with the element count and
+ * a **borrowed** pointer to @p data — nothing is copied and no
+ * ownership is taken. The payload must stay valid until the write it
+ * feeds (typically `nc_put_vara`) has completed.
+ *
  * @param ncid NetCDF file identifier.
  * @param typeid Vlen type id.
- * @param vlen_element Destination for the vlen element.
+ * @param vlen_element Destination `nc_vlen_t` descriptor.
  * @param len Number of elements.
- * @param data Element data.
- * @return `NC_ENOTBUILT` always.
+ * @param data Element data (required when @p len is nonzero).
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_put_vlen_element(int ncid, int typeid, void *vlen_element,
                           size_t len, const void *data)
 {
-    (void)ncid;(void)typeid;(void)vlen_element;(void)len;(void)data;
-    return NC_ENOTBUILT;
+    nc_vlen_t *vl = (nc_vlen_t *)vlen_element;
+    int ret;
+
+    if (!vlen_element || (len && !data))
+        return NC_EINVAL;
+    if ((ret = find_vlen_type(ncid, typeid, NULL, NULL)))
+        return ret;
+    vl->len = len;
+    vl->p = (void *)data;
+    return NC_NOERR;
 }
 
 /**
- * @brief Read a vlen element value (`nc_get_vlen_element`); not
- * implemented.
+ * @brief Read a vlen element value — the `nc_get_vlen_element()`
+ * dispatch entry.
+ *
+ * Reports the descriptor's element count and copies the payload into
+ * the caller's buffer using the base type's real in-memory size. The
+ * copy is shallow: for a vlen whose base is itself dynamic (a nested
+ * vlen, or a compound containing vlen members) the copied descriptors
+ * still alias the source element's inner payloads. Those aliases must
+ * not be reclaimed independently — callers wanting an owned deep copy
+ * use `nc_copy_data()`.
+ *
  * @param ncid NetCDF file identifier.
  * @param typeid Vlen type id.
- * @param vlen_element Vlen element to read.
- * @param lenp Destination for the element count.
- * @param data Destination for the element data.
- * @return `NC_ENOTBUILT` always.
+ * @param vlen_element Source `nc_vlen_t` descriptor.
+ * @param lenp Destination for the element count (required).
+ * @param data Destination for the element data (required when the
+ * descriptor is non-empty).
+ * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 int
 NEXTCDF4_get_vlen_element(int ncid, int typeid, const void *vlen_element,
                           size_t *lenp, void *data)
 {
-    (void)ncid;(void)typeid;(void)vlen_element;(void)lenp;(void)data;
-    return NC_ENOTBUILT;
+    const nc_vlen_t *vl = (const nc_vlen_t *)vlen_element;
+    NC_FILE_INFO_T *h5;
+    NC_TYPE_INFO_T *type;
+    NC_GRP_INFO_T *grp;
+    size_t base_size;
+    int ret;
+
+    if (!lenp || !vlen_element)
+        return NC_EINVAL;
+    if ((ret = find_vlen_type(ncid, typeid, &h5, &type)))
+        return ret;
+    *lenp = vl->len;
+    if (!vl->len)
+        return NC_NOERR;
+    if (!data || !vl->p)
+        return NC_EINVAL;
+    if ((ret = nc4_find_nc4_grp(ncid, &grp)))
+        return ret;
+    if ((ret = nx4_type_size(grp, type->u.v.base_nc_typeid, &base_size)))
+        return ret;
+    if (vl->len > SIZE_MAX / base_size)
+        return NC_EINVAL;
+    memcpy(data, vl->p, vl->len * base_size);
+    return NC_NOERR;
 }
 
 /* Enum bases are restricted to integer types, upstream-style. */
@@ -1450,13 +1665,53 @@ find_type_owner(NC_GRP_INFO_T *grp, NC_TYPE_INFO_T *type)
 }
 
 /**
+ * @brief Rebuild a vlen's transient HDF5 datatype around its
+ * committed base.
+ *
+ * Called at commit time when the vlen's base is a user-defined type:
+ * building the vlen from the now-committed base datatype makes the
+ * stored base a shared datatype reference (as upstream netcdf-c
+ * writes), rather than an anonymous copy of the transient id the
+ * base had when `nc_def_vlen` ran.
+ *
+ * @param grp Group the type belongs to (visibility scope).
+ * @param type Vlen type record.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+static int
+rebuild_vlen_transient(NC_GRP_INFO_T *grp, NC_TYPE_INFO_T *type)
+{
+    NEXTCDF4_TYPE_INFO_T *tinfo = type->format_type_info;
+    NC_TYPE_INFO_T *m = NULL;
+    NEXTCDF4_TYPE_INFO_T *mi;
+    hid_t newt;
+
+    if (!tinfo || tinfo->hdf_type < 0)
+        return NC_EBADTYPE;
+    if (type->u.v.base_nc_typeid < NC_FIRSTUSERTYPEID)
+        return NC_NOERR;
+    if (nc4_find_type(grp->nc4_info, type->u.v.base_nc_typeid, &m) || !m)
+        return NC_EBADTYPE;
+    mi = m->format_type_info;
+    if (!mi || mi->hdf_type < 0)
+        return NC_EBADTYPE;
+    if ((newt = H5Tvlen_create(mi->hdf_type)) < 0)
+        return NC_EHDFERR;
+    H5Tclose(tinfo->hdf_type);
+    tinfo->hdf_type = newt;
+    return NC_NOERR;
+}
+
+/**
  * @brief Commit one type after its dependencies.
  *
  * For compounds, every uncommitted user-defined member type is
  * committed first (in its own group), then the container's transient
  * datatype is rebuilt so stored members are shared references to the
- * committed datatypes. Cycles cannot form — insertion rejects them —
- * so plain recursion is sufficient.
+ * committed datatypes. A vlen whose base is a user type gets the
+ * same treatment: commit the base first, then rebuild the vlen
+ * around it. Cycles cannot form — insertion rejects them — so plain
+ * recursion is sufficient.
  *
  * @param h5 NetCDF-4 file state.
  * @param grp Group the type belongs to.
@@ -1490,6 +1745,19 @@ commit_type_tree(NC_FILE_INFO_T *h5, NC_GRP_INFO_T *grp,
         }
         if ((ret = rebuild_compound_transient(grp, type)))
             return ret;
+    } else if (type->nc_type_class == NC_VLEN) {
+        NC_TYPE_INFO_T *m = NULL;
+        if (type->u.v.base_nc_typeid >= NC_FIRSTUSERTYPEID) {
+            if (nc4_find_type(h5, type->u.v.base_nc_typeid, &m) || !m)
+                return NC_EBADTYPE;
+            if (!m->committed) {
+                NC_GRP_INFO_T *og = find_type_owner(h5->root_grp, m);
+                if ((ret = commit_type_tree(h5, og ? og : grp, m)))
+                    return ret;
+            }
+            if ((ret = rebuild_vlen_transient(grp, type)))
+                return ret;
+        }
     }
     return commit_one_type(grp, type);
 }
@@ -1566,7 +1834,10 @@ NEXTCDF4_inq_user_type(int ncid, nc_type typeid, char *name, size_t *sizep,
     if (classp)
         *classp = type->nc_type_class;
     if (nfieldsp)
-        *nfieldsp = nclistlength(type->u.c.field);
+        *nfieldsp = (type->nc_type_class == NC_COMPOUND) ?
+            nclistlength(type->u.c.field) :
+            (type->nc_type_class == NC_ENUM) ?
+            nclistlength(type->u.e.enum_member) : 0;
     if (base_typep) {
         *base_typep = (type->nc_type_class == NC_ENUM) ? type->u.e.base_nc_typeid :
             (type->nc_type_class == NC_VLEN) ? type->u.v.base_nc_typeid : 0;

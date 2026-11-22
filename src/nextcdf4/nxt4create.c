@@ -166,6 +166,8 @@ fail:
         H5Pclose(fapl);
     if (fcpl >= 0)
         H5Pclose(fcpl);
+    if (h5)
+        nx4_close_group_hdf(h5->root_grp);
     NEXTCDF4_free_file(file);
     nc4_file_list_del(ncid);
     if (!existed && ret != NC_EEXIST)

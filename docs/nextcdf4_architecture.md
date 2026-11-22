@@ -148,6 +148,49 @@ enums, and as a plain `H5T_OPAQUE` for opaque types, so HDF5 handles
 byte-order conversion while the element layout the caller sees is the
 type's exact `nc_inq_*` layout.
 
+### Variable-length types and ownership
+
+Vlen types (`NEXTCDF4_def_vlen`) wrap `H5Tvlen_create` over any atomic
+or user-defined base, including other vlens; the type graph rejects
+`NC_STRING`, `NC_STD_REF`, unknown bases and cycles, and commits
+bases before dependents via `commit_type_tree`. `NC_TYPE_INFO_T::
+varsized` is maintained recursively — a vlen is variable-sized, and a
+compound is variable-sized when any field (including fields of array
+fields) is — so I/O, attribute and fill paths can tell flat from
+dynamic values.
+
+Elements are `nc_vlen_t {size_t len; void *p}` descriptors:
+
+- `NEXTCDF4_put_vlen_element` **borrows** the caller's payload: it
+  stores `len` and `p` verbatim and never copies or frees `data`. The
+  payload must stay valid until the subsequent `nc_put_var*` call
+  completes; the caller still owns and frees it.
+- `NEXTCDF4_get_vlen_element` copies `len *` resolved base-memory-size
+  bytes into caller storage (upstream's hard-coded 4-byte size is a
+  bug for doubles, compounds and most bases and is not reproduced).
+
+Read results (`nc_get_var*`, `nc_get_att`) are **owned deep copies**:
+HDF5's read buffer is handed to the caller and must be freed with
+`nc_reclaim_data` (recursive over nested vlens and dynamic compound
+fields; does not free the top-level buffer) or `nc_reclaim_data_all`
+(frees it too). The legacy `nc_free_vlen`/`nc_free_vlens`/
+`nc_free_string` helpers are flat-only. Reclaim must happen before
+`nc_close` — `NC_reclaim_data` needs valid file and type context, and
+on the 64-slot UDF scheme the controller resolves the UDF9 dispatch
+correctly (10-slot headers could abort, which is why the build
+requires the 64-slot scheme). On a failed variable read any
+HDF5-allocated payloads are reclaimed recursively before the error is
+returned.
+
+Attribute and fill-value metadata that lives in memory is stored
+**deep-copied** (`nc_copy_data` into caller-independent storage for
+dynamic types), so a `nc_put_att` caller may free or reuse its payload
+immediately and every `nc_get_att` returns a fresh independent copy.
+netcdf-c's `nc4_rec_grp_del_att_data`/`var_free` paths reclaim this
+owned storage at `nc_close`. `_FillValue` for variable-sized types
+takes the same deep-copy path both when written as an attribute and
+when mirrored into `var->fill_value`.
+
 ## Filters
 
 Variable filter pipelines are stored on `NC_VAR_INFO_T::filters` — an
