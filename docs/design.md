@@ -963,7 +963,7 @@ Each example:
 - **Fortran Examples**: NetCDF-Fortran library, Fortran 90+ compiler
 - **Build System**: CMake 3.19+
 
-HDF5 is found by `cmake/NEPFindHDF5.cmake` (any version 1.14.0 or newer, linked through FindHDF5's imported targets, with a SONAME check against `libnetcdf`). NEXTCDF-4 requires HDF5 2.1.1 or newer: configuring with `-DNEP_ENABLE_NEXTCDF4=ON` against an older HDF5 is a fatal configure error.
+HDF5 is found by `cmake/NEPFindHDF5.cmake` (any version 1.14.0 or newer, linked through FindHDF5's imported targets, with a SONAME check against `libnetcdf`). NEXTCDF-4 requires HDF5 2.1.1 or newer: configuring with `-DNEP_ENABLE_NEXTCDF4=ON` against an older HDF5 is a fatal configure error. NEXTCDF-4 also requires netcdf-c headers with the 64-slot UDF scheme (`NC_UDF` and `NC_MAX_UDF_FORMATS >= 64` — netcdf-c 4.10.2 or `main` until it ships); 10-slot headers are a fatal configure error because their UDF flag values differ and their `NC_reclaim_data` only covers UDF slots 0-1.
 
 Fortran examples are automatically skipped if:
 - Fortran support is disabled (`NEP_ENABLE_FORTRAN=OFF`)

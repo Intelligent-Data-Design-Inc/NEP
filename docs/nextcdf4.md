@@ -38,7 +38,7 @@ cmake -B build -DNEP_ENABLE_NEXTCDF4=ON
 ```
 
 **Dependencies:**
-- netcdf-c 4.10.1 or newer built with UDF plugin and `NC_Dispatch` support (`NC_UDF9`).
+- netcdf-c with the 64-slot UDF scheme (`NC_MAX_UDF_FORMATS >= 64`) and `NC_Dispatch` support (`NC_UDF9`) — netcdf-c 4.10.2 or newer once released; netcdf-c `main` until then. The older 10-slot headers are rejected at configure time.
 - HDF5 2.1.1 or newer (required).
 
 NEXTCDF-4 availability is advertised at compile time through `nep_meta.h`:
@@ -158,14 +158,14 @@ Semantics match upstream netcdf-c:
 - Filters cannot be removed once defined; re-defining a filter id replaces its parameters.
 - Fletcher32 is always first in the pipeline, then shuffle, then remaining filters in definition order.
 - Deflate and szip are mutually exclusive; a deflate level of 0 adds no filter.
-- Filter changes after the variable was committed to disk in a previous open (post-`nc_redef`) return `NC_ELATEDEF`; calls outside define mode return `NC_ENOTINDEFINE`.
+- All dataset-property setters — filters, chunking, deflate, fletcher32, fill, endianness, quantization — return `NC_ELATEDEF` once the variable's dataset is committed (after `_enddef` commits define mode); calls outside define mode return `NC_ENOTINDEFINE`.
 - `nc_inq_var_filter_ids` on a filterless variable returns `NC_NOERR` with a count of zero.
 
 Plugin filters work through HDF5's plugin mechanism: set `HDF5_PLUGIN_PATH` (or install plugins in HDF5's default plugin directory) and the filter becomes available to `nc_def_var_filter` and to data I/O. When a file is opened whose variable uses a filter that is unavailable in the current process, the variable's metadata — including the filter pipeline — remains readable, but reads and writes return `NC_ENOFILTER`.
 
 `NC_CLASSIC_MODEL` files permit no filters: every filter and storage setter (`nc_def_var_filter`, `nc_def_var_deflate`, `nc_def_var_fletcher32`, `nc_def_var_szip`, `nc_def_var_chunking`) returns `NC_EINVAL`.
 
-Filters may be applied to coordinate variables, but because def-var setters recreate the HDF5 dataset (see Known Limitations), the filter must be defined **before** dependent variables are defined — otherwise the dependents' dimension-scale attachments point at the deleted dataset.
+Filters may be applied to coordinate variables. Setter-triggered dataset rebuilds are deferred to `_enddef`, which detaches and re-attaches dependent variables' dimension-scale references around the recreation, so dependents keep valid attachments in any definition order.
 
 ## Example: Create a File with a Variable
 
@@ -192,7 +192,7 @@ bfloat16 (brain floating point) is a 16-bit floating-point format with 1 sign bi
 NEXTCDF-4 stores bfloat16 as raw bit patterns; conversion between float32 and bfloat16 can be done in user code or by the internal conversion engine through the typed calls. The rules for `NC_BFLOAT16` variables:
 
 - Use `nc_put_vara_bfloat16`/`nc_get_vara_bfloat16` (or the untyped `nc_put_vara`/`nc_get_vara`) with a `uint16_t` buffer, or the typed float/double calls, which the internal engine converts with round-to-nearest-even (finite overflow becomes signed infinity, reported as `NC_ERANGE` after all values are processed). The `nc_*_bfloat16` functions also convert to and from `NC_FLOAT`/`NC_DOUBLE` variables with round-to-nearest-even (see [NEXTCDF4_float16.md](NEXTCDF4_float16.md)). The same applies to `NC_FLOAT16` and the `nc_*_float16` functions, with binary16's smaller range (maximum 65504).
-- Do not define a fill value: `_FillValue` attributes are rejected, and a value set with `nc_def_var_fill` is not recovered on reopen ([issue #377](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/377)).
+- Fill values work: `nc_def_var_fill` and a `_FillValue` attribute both store the raw bfloat16 bits in the dataset's fill message, which survives close/reopen and fills unwritten elements; the `_FillValue` attribute is visible through `nc_inq_att` after reopen.
 
 See **[NEXTCDF4_float16.md](NEXTCDF4_float16.md)** for the full float16/bfloat16 user guide, a walkthrough of the `examples/nextcdf4/bfloat16.c` example, and the benchmark results.
 
@@ -239,12 +239,12 @@ Tokens hold an open reference to their file — release them with
 - `NC_NEXTCDF4` must be passed explicitly; there is no magic-number dispatch for HDF5 files.
 - `nc_put_varm` and `nc_get_varm` are not implemented in NEXTCDF-4 because the mapped I/O API is deprecated.
 - `nc_deref_*` functions do not follow references into external files (`NC_ENOTNC4`); use `nc_ref_get_file_name`/`nc_ref_get_obj_name` to resolve them, or raw HDF5.
-- Reference-typed variables cannot be coordinate variables and cannot be nested inside compound types.
+- Reference-typed variables cannot be nested inside compound types.
+- Small floating-point types (`NC_FLOAT16`, `NC_BFLOAT16`, FP8/FP6/FP4) and `NC_STD_REF` may be coordinate variables in native mode; the dimension-scale dataset carries the variable's dtype, and ordering/comparison semantics of non-IEEE encodings are the caller's concern.
 - Small floating-point types (`NC_FLOAT6_E2M3`, `NC_FLOAT4_E2M1`) have no default fill value because their value spaces are too small for a useful sentinel.
 - Typed calls on FP8/FP6/FP4 variables, and integer/text/string typed calls on any small float, return `NC_EBADTYPE` (`NC_ECHAR` for text).
 - Out-of-range conversion results can differ between engines even though both return `NC_ERANGE` after completing the operation; see the conversion experiment above ([issue #381](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/381)).
-- `NC_BFLOAT16` fill values are not supported: `_FillValue` attributes are rejected, and a fill value set with `nc_def_var_fill` is not recovered on reopen ([issue #377](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/377)).
-- Def-var setters (`nc_def_var_fill`, `nc_def_var_chunking`, `nc_def_var_deflate`, `nc_def_var_endian`, `nc_def_var_fletcher32`, `nc_def_var_filter`) recreate the HDF5 dataset, which leaves an orphaned dataset object and an extra dimension-scale reference in the file ([issue #382](https://github.com/Intelligent-Data-Design-Inc/NEP/issues/382)).
+- Def-var setters (`nc_def_var_fill`, `nc_def_var_chunking`, `nc_def_var_deflate`, `nc_def_var_endian`, `nc_def_var_fletcher32`, `nc_def_var_filter`) defer their dataset rebuild to `_enddef`; each variable is rebuilt at most once and a rebuilt variable leaves one orphaned HDF5 object header (~200-400 bytes) of dead space in the file.
 
 ## Resources
 

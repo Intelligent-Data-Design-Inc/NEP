@@ -28,11 +28,12 @@
  *
  * Follows upstream `NC4_hdf5_def_var_filter()`: the filter must be
  * available to HDF5, the variable must be non-scalar and not yet
- * committed to disk, and deflate/szip carry the usual parameter and
+ * committed to disk (`nx4_find_var_for_write` rejects that with
+ * `NC_ELATEDEF`), and deflate/szip carry the usual parameter and
  * mutual-exclusion rules. A re-defined filter id replaces its
  * parameters in place. Defining any filter forces chunked storage and
- * recreates the dataset, since HDF5 creation properties are
- * immutable.
+ * marks the variable `dcpl_dirty`, since HDF5 creation properties
+ * are immutable — `_enddef` rebuilds the dataset once.
  *
  * @param ncid NetCDF file identifier.
  * @param varid Variable id.
@@ -61,8 +62,6 @@ NEXTCDF4_def_var_filter(int ncid, int varid, unsigned int id,
         return NC_EINVAL;
     if (!var->ndims)
         return NC_EINVAL;
-    if (var->created)
-        return NC_ELATEDEF;
     if (nparams > 0 && !params)
         return NC_EINVAL;
 
@@ -117,7 +116,8 @@ NEXTCDF4_def_var_filter(int ncid, int varid, unsigned int id,
     if ((ret = NC4_hdf5_addfilter(var, id, nparams, params, 0)))
         return ret;
 
-    return nx4_create_var_dataset(var, h5, file, grp);
+    ((NEXTCDF4_VAR_INFO_T *)var->format_var_info)->dcpl_dirty = 1;
+    return NC_NOERR;
 }
 
 /**
@@ -155,8 +155,6 @@ NEXTCDF4_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
         return NC_EINVAL;
     if (!var->ndims)
         return NC_EINVAL;
-    if (var->created)
-        return NC_ELATEDEF;
     if (deflate_level < NC_MIN_DEFLATE_LEVEL ||
         deflate_level > NC_MAX_DEFLATE_LEVEL)
         return NC_EINVAL;
@@ -175,7 +173,8 @@ NEXTCDF4_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
         return NC_NOERR;
 
     var->storage = NC_CHUNKED;
-    return nx4_create_var_dataset(var, h5, file, grp);
+    ((NEXTCDF4_VAR_INFO_T *)var->format_var_info)->dcpl_dirty = 1;
+    return NC_NOERR;
 }
 
 /**
@@ -206,16 +205,14 @@ NEXTCDF4_def_var_fletcher32(int ncid, int varid, int fletcher32)
         return NC_EINVAL;
     if (!var->ndims)
         return NC_EINVAL;
-    if (var->created)
-        return NC_ELATEDEF;
     if (!fletcher32)
         return NC_NOERR;
 
     if ((ret = NC4_hdf5_addfilter(var, H5Z_FILTER_FLETCHER32, 0, NULL, 0)))
         return ret;
     var->storage = NC_CHUNKED;
-
-    return nx4_create_var_dataset(var, h5, file, grp);
+    ((NEXTCDF4_VAR_INFO_T *)var->format_var_info)->dcpl_dirty = 1;
+    return NC_NOERR;
 }
 
 /**

@@ -193,6 +193,7 @@ NEXTCDF4_def_compound(int ncid, size_t size, const char *name, nc_type *typeidp)
         return ret;
     if ((ret = check_type_write(file, grp)))
         return ret;
+    if (!name) return NC_EINVAL;
     if ((ret = NC_check_name(name)))
         return ret;
     if (nc4_check_dup_name(grp, (char *)name))
@@ -409,6 +410,7 @@ NEXTCDF4_def_vlen(int ncid, const char *name, nc_type base_typeid, nc_type *type
         return ret;
     if ((ret = check_type_write(file, grp)))
         return ret;
+    if (!name) return NC_EINVAL;
     if ((ret = NC_check_name(name)))
         return ret;
     if (nc4_check_dup_name(grp, (char *)name))
@@ -511,6 +513,7 @@ NEXTCDF4_def_enum(int ncid, nc_type base_typeid, const char *name, nc_type *type
         return ret;
     if ((ret = check_type_write(file, grp)))
         return ret;
+    if (!name) return NC_EINVAL;
     if ((ret = NC_check_name(name)))
         return ret;
     if (nc4_check_dup_name(grp, (char *)name))
@@ -704,6 +707,7 @@ NEXTCDF4_def_opaque(int ncid, size_t size, const char *name, nc_type *typeidp)
         return ret;
     if ((ret = check_type_write(file, grp)))
         return ret;
+    if (!name) return NC_EINVAL;
     if ((ret = NC_check_name(name)))
         return ret;
     if (nc4_check_dup_name(grp, (char *)name))
@@ -871,6 +875,16 @@ NEXTCDF4_inq_typeid(int ncid, const char *name, nc_type *typeidp)
     NC_TYPE_INFO_T *type;
     int ret;
 
+    /* Atomic type names resolve before any file lookup, as upstream
+     * does in NC4_inq_typeid. */
+    {
+        nc_type atype;
+        if (NC4_inq_atomic_typeid(ncid, name, &atype) == NC_NOERR) {
+            if (typeidp)
+                *typeidp = atype;
+            return NC_NOERR;
+        }
+    }
     if ((ret = get_grp_and_file(ncid, &h5, &grp, NULL)))
         return ret;
     type = nc4_rec_find_named_type(grp, (char *)name);

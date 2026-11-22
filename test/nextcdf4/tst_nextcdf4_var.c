@@ -267,6 +267,309 @@ test_coordinate(void)
     return 0;
 }
 
+/** @return Zero when a bfloat16 coordinate variable round-trips, including reopen. */
+static int
+test_coord_bfloat16(void)
+{
+    int ncid;
+    int dimid;
+    int varid;
+    int dataid;
+    unsigned short bits[4] = {0x3f80, 0x4000, 0x4040, 0x4080};
+    unsigned short out[4] = {0};
+    float fout[4] = {0.0f};
+    nc_type xtype;
+    int did[1];
+    size_t len;
+
+    unlink(FILE_NAME);
+    if (nc_create(FILE_NAME, NC_NEXTCDF4 | NC_CLOBBER, &ncid))
+        return 1;
+    if (nc_def_dim(ncid, "bx", 4, &dimid))
+        return 1;
+    if (nc_def_var(ncid, "bx", NC_BFLOAT16, 1, &dimid, &varid))
+        return 1;
+    if (nc_def_var(ncid, "data", NC_INT, 1, &dimid, &dataid))
+        return 1;
+    if (nc_enddef(ncid))
+        return 1;
+    if (nc_put_var(ncid, varid, bits))
+        return 1;
+    if (nc_get_var(ncid, varid, out))
+        return 1;
+    if (memcmp(bits, out, sizeof(bits)))
+        return 1;
+    if (nc_get_var_float(ncid, varid, fout))
+        return 1;
+    if (fout[0] != 1.0f || fout[3] != 4.0f)
+        return 1;
+    if (nc_inq_vardimid(ncid, dataid, did) || did[0] != dimid)
+        return 1;
+    if (nc_close(ncid))
+        return 1;
+
+    /* Reopen: the small-float scale must come back as the coordinate
+     * variable with its type intact. */
+    if (nc_open(FILE_NAME, NC_NEXTCDF4, &ncid))
+        return 1;
+    if (nc_inq_varid(ncid, "bx", &varid))
+        return 1;
+    if (nc_inq_vartype(ncid, varid, &xtype) || xtype != NC_BFLOAT16)
+        return 1;
+    if (nc_inq_dimid(ncid, "bx", &dimid))
+        return 1;
+    if (nc_inq_dimlen(ncid, dimid, &len) || len != 4)
+        return 1;
+    memset(out, 0, sizeof(out));
+    if (nc_get_var(ncid, varid, out))
+        return 1;
+    if (memcmp(bits, out, sizeof(bits)))
+        return 1;
+    if (nc_inq_varid(ncid, "data", &dataid))
+        return 1;
+    if (nc_inq_vardimid(ncid, dataid, did) || did[0] != dimid)
+        return 1;
+    if (nc_close(ncid))
+        return 1;
+    return 0;
+}
+
+/** @return Zero when a float16 coordinate variable on an unlimited dimension extends and reopens. */
+static int
+test_coord_float16_unlim(void)
+{
+    int ncid;
+    int dimid;
+    int varid;
+    unsigned short h[3] = {0x3c00, 0x4000, 0x4200};
+    unsigned short out[3] = {0};
+    size_t start[1] = {0};
+    size_t count[1] = {2};
+    size_t len;
+    nc_type xtype;
+
+    unlink(FILE_NAME);
+    if (nc_create(FILE_NAME, NC_NEXTCDF4 | NC_CLOBBER, &ncid))
+        return 1;
+    if (nc_def_dim(ncid, "t", NC_UNLIMITED, &dimid))
+        return 1;
+    if (nc_def_var(ncid, "t", NC_FLOAT16, 1, &dimid, &varid))
+        return 1;
+    if (nc_enddef(ncid))
+        return 1;
+    if (nc_put_vara(ncid, varid, start, count, h))
+        return 1;
+    if (nc_inq_dimlen(ncid, dimid, &len) || len != 2)
+        return 1;
+    if (nc_close(ncid))
+        return 1;
+
+    /* Reopen writable and append through the coordinate variable. */
+    if (nc_open(FILE_NAME, NC_NEXTCDF4 | NC_WRITE, &ncid))
+        return 1;
+    if (nc_inq_varid(ncid, "t", &varid))
+        return 1;
+    if (nc_inq_vartype(ncid, varid, &xtype) || xtype != NC_FLOAT16)
+        return 1;
+    if (nc_inq_dimid(ncid, "t", &dimid))
+        return 1;
+    if (nc_inq_dimlen(ncid, dimid, &len) || len != 2)
+        return 1;
+    {
+        size_t s[1] = {2};
+        size_t c[1] = {1};
+        if (nc_put_vara(ncid, varid, s, c, &h[2]))
+            return 1;
+    }
+    if (nc_inq_dimlen(ncid, dimid, &len) || len != 3)
+        return 1;
+    count[0] = 3;
+    if (nc_get_vara(ncid, varid, start, count, out))
+        return 1;
+    if (memcmp(h, out, sizeof(h)))
+        return 1;
+    if (nc_close(ncid))
+        return 1;
+    return 0;
+}
+
+/** @return Zero when compatibility modes still reject small-float coordinate variables. */
+static int
+test_coord_smallfloat_modes(void)
+{
+    int ncid;
+    int dimid;
+    int varid;
+
+    unlink(FILE_NAME);
+    if (nc_create(FILE_NAME, NC_NEXTCDF4 | NC_CLASSIC_MODEL | NC_CLOBBER, &ncid))
+        return 1;
+    if (nc_def_dim(ncid, "x", 4, &dimid))
+        return 1;
+    if (nc_def_var(ncid, "x", NC_BFLOAT16, 1, &dimid, &varid) != NC_ENOTNC4)
+        return 1;
+    if (nc_close(ncid))
+        return 1;
+
+    unlink(FILE_NAME);
+    if (nc_create(FILE_NAME, NC_NEXTCDF4 | NC_NETCDF4_MODEL | NC_CLOBBER, &ncid))
+        return 1;
+    if (nc_def_dim(ncid, "x", 4, &dimid))
+        return 1;
+    if (nc_def_var(ncid, "x", NC_BFLOAT16, 1, &dimid, &varid) != NC_ENOTNC4)
+        return 1;
+    if (nc_close(ncid))
+        return 1;
+    return 0;
+}
+
+/** @return Zero when a bfloat16 fill value survives close/reopen and
+ * fills unwritten elements (issue #377). */
+static int
+test_bfloat16_fill(void)
+{
+    int ncid;
+    int dimid;
+    int varid;
+    unsigned short fill = 0x7f00;
+    unsigned short fill_in = 0;
+    unsigned short out[4] = {0};
+    int no_fill_in = -1;
+    nc_type att_type;
+    size_t att_len;
+
+    unlink(FILE_NAME);
+    if (nc_create(FILE_NAME, NC_NEXTCDF4 | NC_CLOBBER, &ncid))
+        return 1;
+    if (nc_def_dim(ncid, "x", 4, &dimid))
+        return 1;
+    if (nc_def_var(ncid, "v", NC_BFLOAT16, 1, &dimid, &varid))
+        return 1;
+    if (nc_def_var_fill(ncid, varid, 0, &fill))
+        return 1;
+    if (nc_enddef(ncid))
+        return 1;
+    /* Unwritten elements read back the fill bits. */
+    if (nc_get_var(ncid, varid, out))
+        return 1;
+    if (out[0] != fill || out[3] != fill)
+        return 1;
+    if (nc_close(ncid))
+        return 1;
+
+    if (nc_open(FILE_NAME, NC_NEXTCDF4 | NC_NOWRITE, &ncid))
+        return 1;
+    if (nc_inq_varid(ncid, "v", &varid))
+        return 1;
+    if (nc_inq_var_fill(ncid, varid, &no_fill_in, &fill_in))
+        return 1;
+    if (no_fill_in || fill_in != fill)
+        return 1;
+    memset(out, 0, sizeof(out));
+    if (nc_get_var(ncid, varid, out))
+        return 1;
+    if (out[0] != fill || out[3] != fill)
+        return 1;
+    if (nc_close(ncid))
+        return 1;
+
+    /* The _FillValue attribute path stores the same value and is
+     * visible as a normal attribute after reopen. */
+    if (nc_create(FILE_NAME, NC_NEXTCDF4 | NC_CLOBBER, &ncid))
+        return 1;
+    if (nc_def_dim(ncid, "x", 4, &dimid))
+        return 1;
+    if (nc_def_var(ncid, "v", NC_BFLOAT16, 1, &dimid, &varid))
+        return 1;
+    if (nc_put_att(ncid, varid, "_FillValue", NC_BFLOAT16, 1, &fill))
+        return 1;
+    if (nc_enddef(ncid))
+        return 1;
+    memset(out, 0, sizeof(out));
+    if (nc_get_var(ncid, varid, out))
+        return 1;
+    if (out[0] != fill || out[3] != fill)
+        return 1;
+    if (nc_close(ncid))
+        return 1;
+
+    if (nc_open(FILE_NAME, NC_NEXTCDF4 | NC_NOWRITE, &ncid))
+        return 1;
+    if (nc_inq_varid(ncid, "v", &varid))
+        return 1;
+    if (nc_inq_att(ncid, varid, "_FillValue", &att_type, &att_len))
+        return 1;
+    if (att_type != NC_BFLOAT16 || att_len != 1)
+        return 1;
+    fill_in = 0;
+    if (nc_get_att(ncid, varid, "_FillValue", &fill_in))
+        return 1;
+    if (fill_in != fill)
+        return 1;
+    fill_in = 0;
+    if (nc_inq_var_fill(ncid, varid, &no_fill_in, &fill_in))
+        return 1;
+    if (no_fill_in || fill_in != fill)
+        return 1;
+    memset(out, 0, sizeof(out));
+    if (nc_get_var(ncid, varid, out))
+        return 1;
+    if (out[0] != fill || out[3] != fill)
+        return 1;
+    if (nc_close(ncid))
+        return 1;
+    return 0;
+}
+
+/** @return Zero when float16 and float8 fill values round-trip
+ * through close/reopen. */
+static int
+test_smallfloat_fill(void)
+{
+    int ncid;
+    int dimid;
+    int varid;
+    unsigned short hfill = 0x3c00; /* float16 1.0 */
+    unsigned short hfill_in = 0;
+    unsigned char ffill = 0x38;    /* float8 e4m3 0.5 */
+    unsigned char ffill_in = 0;
+    int no_fill_in = -1;
+
+    unlink(FILE_NAME);
+    if (nc_create(FILE_NAME, NC_NEXTCDF4 | NC_CLOBBER, &ncid))
+        return 1;
+    if (nc_def_dim(ncid, "x", 2, &dimid))
+        return 1;
+    if (nc_def_var(ncid, "h", NC_FLOAT16, 1, &dimid, &varid))
+        return 1;
+    if (nc_def_var_fill(ncid, varid, 0, &hfill))
+        return 1;
+    if (nc_def_var(ncid, "e", NC_FLOAT8_E4M3, 1, &dimid, &varid))
+        return 1;
+    if (nc_def_var_fill(ncid, varid, 0, &ffill))
+        return 1;
+    if (nc_close(ncid))
+        return 1;
+
+    if (nc_open(FILE_NAME, NC_NEXTCDF4 | NC_NOWRITE, &ncid))
+        return 1;
+    if (nc_inq_varid(ncid, "h", &varid))
+        return 1;
+    if (nc_inq_var_fill(ncid, varid, &no_fill_in, &hfill_in))
+        return 1;
+    if (no_fill_in || hfill_in != hfill)
+        return 1;
+    if (nc_inq_varid(ncid, "e", &varid))
+        return 1;
+    if (nc_inq_var_fill(ncid, varid, &no_fill_in, &ffill_in))
+        return 1;
+    if (no_fill_in || ffill_in != ffill)
+        return 1;
+    if (nc_close(ncid))
+        return 1;
+    return 0;
+}
+
 /** @return Zero when all Sprint 4 checks pass. */
 int
 main(void)
@@ -282,6 +585,11 @@ main(void)
     if (test_strided()) { fprintf(stderr, "strided test failed\n"); return 1; }
     if (test_varm_not_built()) { fprintf(stderr, "varm test failed\n"); return 1; }
     if (test_coordinate()) { fprintf(stderr, "coordinate test failed\n"); return 1; }
+    if (test_coord_bfloat16()) { fprintf(stderr, "bfloat16 coordinate test failed\n"); return 1; }
+    if (test_coord_float16_unlim()) { fprintf(stderr, "float16 unlimited coordinate test failed\n"); return 1; }
+    if (test_coord_smallfloat_modes()) { fprintf(stderr, "small-float mode rejection test failed\n"); return 1; }
+    if (test_bfloat16_fill()) { fprintf(stderr, "bfloat16 fill test failed\n"); return 1; }
+    if (test_smallfloat_fill()) { fprintf(stderr, "small-float fill test failed\n"); return 1; }
     unlink(FILE_NAME);
     printf("OK: NEXTCDF-4 variable I/O and dimension scales\n");
     return 0;

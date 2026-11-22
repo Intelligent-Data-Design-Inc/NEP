@@ -55,6 +55,13 @@ if(HAVE_NEXTCDF4)
     set_tests_properties(tst_nextcdf4_group PROPERTIES
         ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
 
+    add_executable(tst_nextcdf4_setters tst_nextcdf4_setters.c)
+    target_link_libraries(tst_nextcdf4_setters PRIVATE ncnextcdf4 ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
+    target_include_directories(tst_nextcdf4_setters PRIVATE ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+    add_test(NAME tst_nextcdf4_setters COMMAND tst_nextcdf4_setters)
+    set_tests_properties(tst_nextcdf4_setters PROPERTIES
+        ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+
     add_executable(tst_nextcdf4_chunking tst_nextcdf4_chunking.c)
     target_link_libraries(tst_nextcdf4_chunking PRIVATE ncnextcdf4 ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
     target_include_directories(tst_nextcdf4_chunking PRIVATE ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
@@ -87,11 +94,11 @@ if(HAVE_NEXTCDF4)
     target_link_libraries(tst_nextcdf4_float16 PRIVATE ncnextcdf4 ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
     target_include_directories(tst_nextcdf4_float16 PRIVATE ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
     add_test(NAME tst_nextcdf4_float16 COMMAND tst_nextcdf4_float16)
-    # Temporary: these five tests abort in netcdf-c NC_reclaim_data after reopening
-    # a NEXTCDF-4 file (USEFILEINFO assertion). Keep them registered as disabled
-    # rather than masking the failure or altering assertions in an external library.
+    # These tests aborted on 10-slot netcdf-c because released
+    # FILEINFOFLAGS covered only UDF0/UDF1 (the USEFILEINFO assert in
+    # NC_reclaim_data); fixed upstream in 5a81fb791, and NEXTCDF-4 now
+    # requires that 64-slot scheme at configure time.
     set_tests_properties(tst_nextcdf4_float16 PROPERTIES
-        DISABLED TRUE
         ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
 
     add_executable(tst_nextcdf4_conv tst_nextcdf4_conv.c)
@@ -120,7 +127,6 @@ if(HAVE_NEXTCDF4)
     target_include_directories(tst_nextcdf4_complex PRIVATE ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
     add_test(NAME tst_nextcdf4_complex COMMAND tst_nextcdf4_complex)
     set_tests_properties(tst_nextcdf4_complex PROPERTIES
-        DISABLED TRUE
         ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
 
     add_executable(tst_nextcdf4_bitfield tst_nextcdf4_bitfield.c)
@@ -128,7 +134,6 @@ if(HAVE_NEXTCDF4)
     target_include_directories(tst_nextcdf4_bitfield PRIVATE ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
     add_test(NAME tst_nextcdf4_bitfield COMMAND tst_nextcdf4_bitfield)
     set_tests_properties(tst_nextcdf4_bitfield PROPERTIES
-        DISABLED TRUE
         ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
 
     add_executable(tst_nextcdf4_ref tst_nextcdf4_ref.c)
@@ -150,15 +155,29 @@ if(HAVE_NEXTCDF4)
     target_include_directories(tst_explore PRIVATE ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
     add_test(NAME tst_explore COMMAND tst_explore)
     set_tests_properties(tst_explore PROPERTIES
-        DISABLED TRUE
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
 
     add_executable(tst_rename nc_test4/tst_rename.c)
     target_link_libraries(tst_rename PRIVATE ncnextcdf4 ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
-    target_include_directories(tst_rename PRIVATE ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+    target_include_directories(tst_rename PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/nc_test4 ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
     add_test(NAME tst_rename COMMAND tst_rename)
     set_tests_properties(tst_rename PROPERTIES
-        DISABLED TRUE
         ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+
+    # Ported upstream nc_test4 tests (Sprint 1L2). The nc_test4 include
+    # directory supplies the local nc_tests.h/err_macros.h shims.
+    foreach(_nxt4_port tst_camrun tst_atts3 tst_dims tst_vars tst_atts1)
+        add_executable(${_nxt4_port} nc_test4/${_nxt4_port}.c)
+        target_link_libraries(${_nxt4_port} PRIVATE ncnextcdf4 ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
+        target_include_directories(${_nxt4_port} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/nc_test4 ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+        add_test(NAME ${_nxt4_port} COMMAND ${_nxt4_port})
+        set_tests_properties(${_nxt4_port} PROPERTIES
+            ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+    endforeach()
+
+    # tst_dims reads the shipped upstream fixture ref_tst_dims.nc through
+    # the srcdir environment variable, as automake does upstream.
+    set_tests_properties(tst_dims PROPERTIES
+        ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};srcdir=${CMAKE_CURRENT_SOURCE_DIR}/nc_test4;LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
 endif()

@@ -36,7 +36,7 @@ Related skills: `hdf5` (HDF5 feature details — superblock v3, small floats, re
 | `src/nextcdf4/nxt4io.c` | `get/put_vara`, `get/put_vars`, `get/put_varm` hyperslab I/O. |
 | `src/nextcdf4/nxt4internal.h` | Private state structs, hidden-attribute name macros, and all internal prototypes. |
 | `src/nextcdf4/nxt4err.h` | `EBAIL`/`EBAIL2` error macros (see below). |
-| `include/nextcdf4dispatch.h` | Public dispatch header: `NC_NEXTCDF4_initialize`, `NC_NEXTCDF4_finalize`. |
+| `include/nextcdf4dispatch.h` | Installed public dispatch header (no `config.h`): `NC_FORMATX_NEXTCDF4`, `NC_NEXTCDF4_initialize`/`finalize`, create/open/close/sync/inq-format entries, `NEXTCDF4_dispatch_table`. |
 | `include/nep.h` | Defines `NC_NEXTCDF4` (= `NEP_UDF_NEXTCDF4` = `NC_UDF9`) and reference APIs. |
 
 ### Dispatch Wiring
@@ -125,7 +125,7 @@ Doxygen file headers with `@file`, `@brief`, `@author Edward Hartnett`, `@date`,
 ## Building and Testing
 
 - CMake: `cmake -B build -DNEP_ENABLE_NEXTCDF4=ON` (use the `build/` directory per AGENTS.md; delete an existing `build` first).
-- Requires netcdf-c ≥ 4.10.1 with UDF plugin/`NC_Dispatch` support and HDF5 ≥ 2.1.1. netcdf-c `main` (next release) expands UDF slots to 64 (UDF0–UDF63); older releases only have UDF0–UDF9.
+- Requires netcdf-c with the 64-slot UDF scheme (UDF0–UDF63, `NC_MAX_UDF_FORMATS >= 64` — netcdf-c 4.10.2 once released, `main` until then) and HDF5 ≥ 2.1.1. The old 10-slot headers are a fatal configure error: their `NC_UDF9` flag value differs and their `NC_reclaim_data` only covers UDF0/UDF1. The project-wide floor stays netcdf-c ≥ 4.10.1 until 4.10.2 ships (Sprint 2 owns the global bump).
 - Examples live in `examples/nextcdf4/` (bfloat16 I/O and performance benchmarks).
 - Feature test macros in `nep_meta.h` are format/support flags only (`NEP_HAS_NEXTCDF4`, `NEP_HAS_HDF5`, `NEP_HAS_NETCDF`, `NEP_HAS_LOGGING`); there are no per-type macros — detect type support via the `NC_*` constants in `nep.h`.
 
@@ -134,9 +134,9 @@ Doxygen file headers with `@file`, `@brief`, `@author Edward Hartnett`, `@date`,
 - `nc_put_varm`/`nc_get_varm` not implemented (mapped I/O deprecated).
 - Reference-typed vars cannot be coordinate variables or nested in compounds; `nc_deref_*` do not follow external-file references (`NC_ENOTNC4`); tokens must be released with `nc_ref_free()` before `nc_close()`.
 - `NC_FLOAT6_E2M3`/`NC_FLOAT4_E2M1` have no default fill value.
-- `NC_BFLOAT16` rejects `_FillValue`; `nc_def_var_fill` value not recovered on reopen (issue #377).
+- `NC_BFLOAT16` fill values work (`nc_def_var_fill` and `_FillValue` attributes store raw bf16 bits in the DCPL, survive reopen, and appear via `nc_inq_att`); fixed in Sprint 1M (#377).
 - NEXTCDF-4 does not return `NC_ERANGE` for out-of-range conversions (issue #381).
-- Def-var setters (`def_var_fill`, `chunking`, `deflate`, `endian`, `fletcher32`) recreate the HDF5 dataset, leaving an orphaned dataset object (issue #382).
+- Def-var setters (`def_var_fill`, `chunking`, `deflate`, `endian`, `fletcher32`, filters) mark the variable dirty and the dataset is rebuilt once at `_enddef`; committed variables reject all dataset-property setters with `NC_ELATEDEF`. Fixed in Sprint 1M (#382); each rebuild leaves one bounded orphaned object header.
 
 ## Documentation
 

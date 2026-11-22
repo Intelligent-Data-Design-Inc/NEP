@@ -68,6 +68,10 @@ class Nep(CMakePackage):
     depends_on("hdf5@1.14:+hl+mpi", when="+parallel", type=("build", "link"))
     # NEXTCDF-4 uses the HDF5 2.1 small floating-point and complex types.
     depends_on("hdf5@2.1.1:", when="+nextcdf4", type=("build", "link"))
+    # NEXTCDF-4 requires the 64-slot netcdf-c UDF scheme: the 10-slot
+    # headers use different UDF flag values and abort in
+    # NC_reclaim_data for slots >= 2.
+    depends_on("netcdf-c@4.10.2:", when="+nextcdf4 @4.3.0:", type=("build", "link"))
     depends_on("netcdf-fortran", when="+fortran", type=("build", "link"))
     depends_on("cfitsio", when="+fits", type=("build", "link"))
     depends_on("libgeotiff", when="+geotiff", type=("build", "link"))

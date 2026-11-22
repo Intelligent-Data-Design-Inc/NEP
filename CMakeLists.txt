@@ -332,6 +332,27 @@ if(NOT DOCS_ONLY)
         if(NOT NETCDF_HAS_UDF9)
             message(FATAL_ERROR "NEP_ENABLE_NEXTCDF4 requires NetCDF-C 4.10.1 or newer with NC_UDF9 support")
         endif()
+
+        # NEXTCDF-4 requires the 64-slot UDF scheme: the older 10-slot
+        # headers give UDF flags different values, and released
+        # netcdf-c <= 4.10.1 aborts in NC_reclaim_data for any UDF slot
+        # >= 2 (FILEINFOFLAGS covered only UDF0/UDF1). Both are fixed
+        # in the same upstream rework (netcdf-c 5a81fb791), so the
+        # macros are a correct proxy. NetCDF-C 4.10.2 is not released
+        # yet; use netcdf-c main until then.
+        include(CheckCSourceCompiles)
+        set(_saved_cmake_required_includes "${CMAKE_REQUIRED_INCLUDES}")
+        set(CMAKE_REQUIRED_INCLUDES "${NETCDF_INCLUDE_DIRS}")
+        check_c_source_compiles("#include <netcdf.h>
+#if !defined(NC_UDF) || !defined(NC_MAX_UDF_FORMATS) || NC_MAX_UDF_FORMATS < 64
+#error NEXTCDF-4 requires the 64-slot UDF scheme
+#endif
+int main(void){ return 0; }" NETCDF_UDF64)
+        set(CMAKE_REQUIRED_INCLUDES "${_saved_cmake_required_includes}")
+        unset(_saved_cmake_required_includes)
+        if(NOT NETCDF_UDF64)
+            message(FATAL_ERROR "NEP_ENABLE_NEXTCDF4 requires NetCDF-C with the 64-slot UDF scheme (NetCDF-C >= 4.10.2; use netcdf-c main until it releases), but the headers at ${NETCDF_INCLUDE_DIRS} are the 10-slot scheme")
+        endif()
         set(HAVE_NEXTCDF4 TRUE)
         message(STATUS "NEXTCDF-4 backend: enabled")
     endif()
