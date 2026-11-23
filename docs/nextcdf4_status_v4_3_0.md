@@ -194,10 +194,16 @@ Sprint 1 (deferred when v4.1.0 shipped docs+logging instead):
 
 - **`nextcopy`/`nextdump` tools** (Phase 4) — `nccopy`/`ncdump`
   replacements that understand the new types. No source exists.
-- **Fortran bindings** — the plan's goal "expose all new C APIs in the
-  Fortran API in the same release" is unmet: no Fortran wrappers for
-  `nc_*_bfloat16`, `nc_*_float16`, `nc_ref_*`/`nc_deref_*`, or the new
-  `nc_type` constants; `ftest/` has no NEXTCDF-4 test.
+- **Broader Fortran bindings** — Sprint 1R supplies installed `module
+  nep_nextcdf4` / `libnepnextcdf4f` (`NEP::nepnextcdf4f`): initialization,
+  mode/new-type constants and scalar–rank-7 float16/bfloat16 bit-buffer
+  generics with optional start/count/stride. Three `nextcdf4_fortran`
+  tests cover types/modes, I/O/reopen and an installed consumer in normal
+  NEXTCDF-4 CI. NetCDF-Fortran >=4.6.2 and compatible compiler modules are
+  required when both options are ON. The original all-new-C-APIs-in-the-same-release
+  goal is explicitly narrowed: references and general enhanced-type value
+  interfaces are deferred beyond v4.3.0, as is Fortran sanitizer-stack expansion.
+  See [Fortran binding](nextcdf4_fortran.md).
 - **Full upstream `nc_test4` suite validation** (Phase 5) — fifteen
   programs ported into `test/nextcdf4/nc_test4/` (`tst_rename` plus
   Sprint 1L2's `tst_camrun`, `tst_atts3`, `tst_dims`, `tst_vars`,

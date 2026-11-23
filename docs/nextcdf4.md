@@ -6,6 +6,16 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 
 > **Experimental**: NEXTCDF-4 is experimental and under active development. Not all NetCDF-4 features are implemented; see the Known Limitations section below.
 
+## Fortran binding
+
+With NEXTCDF-4 and Fortran enabled, `use nep_nextcdf4` provides initialization,
+mode/type constants and `nf90_{get,put}_var_{float16,bfloat16}` bit-buffer generics
+(scalar–rank 7, optional start/count/stride). NetCDF-Fortran >=4.6.2 and compatible
+compiler modules are required. See [NEXTCDF-4 Fortran](nextcdf4_fortran.md) for
+one-based selection conventions, installed `NEP::nepnextcdf4f` linkage and a
+complete example. Reference wrappers and broader enhanced-type value interfaces
+are deferred beyond v4.3.0; exported constants alone do not provide those interfaces.
+
 ## Internal conversion engine
 
 NEXTCDF-4 converts all supported numeric variable and attribute data with the private, NEP-owned `nx4_convert_type()` engine, selected as the permanent engine after Sprint 1H's OFF/ON comparison. It replaced the temporary `NEP_INTERNAL_CONVERT` CMake option; passing that option now fails at configure time. There is no runtime or file-format switch.

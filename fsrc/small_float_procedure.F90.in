@@ -1,0 +1,37 @@
+  !> @brief @OP@ @TYPE@ bit patterns using Fortran indices and dimension order.
+  !! @param ncid File or group ID, unchanged from NetCDF-Fortran.
+  !! @param varid One-based variable ID.
+  !! @param values Scalar or rank-@RANK@ integer(c_int16_t) bit buffer.
+  !! @param start Optional one-based starting indices in Fortran order.
+  !! @param count Optional leading memory rectangle extents.
+  !! @param stride Optional positive file strides in Fortran order.
+  !! @return NetCDF status; range-warning reads still populate values.
+  !! @author Edward Hartnett, Intelligent Data Design, Inc.
+  integer function nep_@OP@_@TYPE@_@RANK@(ncid,varid,values,start,count,stride) result(status)
+    integer, intent(in) :: ncid,varid
+    integer(c_int16_t), intent(@INTENT@) :: values@DIMS@
+    integer, optional, intent(in) :: start(:),count(:),stride(:)
+    integer(c_int16_t), allocatable, target :: buffer(:)
+    integer(c_size_t), target :: cs(7),cc(7),edges(7)
+    integer(c_intptr_t), target :: ct(7)
+    integer(c_size_t) :: n
+    integer(c_int) :: method
+    integer :: alloc_status
+    type(c_ptr) :: sp,cp,tp
+    call prepare(ncid,varid,nf90_@TYPE@,@SHAPE@,start,count,stride, &
+         cs,cc,ct,edges,method,n,status)
+    if (status /= nf90_noerr .or. n == 0) return
+    allocate(buffer(n),stat=alloc_status)
+    if (alloc_status /= 0) then
+      status = nf90_enomem
+      return
+    endif
+    @PACK@
+    sp=c_null_ptr; cp=c_null_ptr; tp=c_null_ptr
+    if (@RANK@ > 0) then
+      sp=c_loc(cs); cp=c_loc(cc); tp=c_loc(ct)
+    endif
+    status = c_transfer(int(ncid,c_int),int(varid-1,c_int),int(nf90_@TYPE@,c_int), &
+         @WRITE@_c_int,method,sp,cp,tp,c_loc(buffer))
+    @UNPACK@
+  end function

@@ -16,6 +16,54 @@ endif()
 include_directories(${NetCDF_Fortran_INCLUDE_DIRS})
 link_directories(${NetCDF_Fortran_LIBRARY_DIRS})
 
+if(TARGET nepnextcdf4f)
+    set(_binding_dependency_dirs "${NEP_HDF5_LIBRARY_DIR};${NETCDF_LIBRARY_DIRS};${NetCDF_Fortran_LIBRARY_DIRS}")
+    list(REMOVE_DUPLICATES _binding_dependency_dirs)
+    string(REPLACE ";" ":" _binding_dependency_path "${_binding_dependency_dirs}")
+    add_test(NAME ftst_nextcdf4_installed COMMAND ${CMAKE_COMMAND}
+        "-DBINARY=${CMAKE_BINARY_DIR}" "-DSOURCE=${CMAKE_SOURCE_DIR}"
+        "-DLIBDIR=${CMAKE_INSTALL_LIBDIR}" "-DINCLUDEDIR=${CMAKE_INSTALL_INCLUDEDIR}"
+        "-DFC=${CMAKE_Fortran_COMPILER}" "-DDEPENDENCY_PREFIXES=${CMAKE_PREFIX_PATH}"
+        "-DDEPENDENCY_LIBS=${_binding_dependency_path}"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/check_nextcdf4_install.cmake")
+    set_tests_properties(ftst_nextcdf4_installed PROPERTIES LABELS nextcdf4_fortran RUN_SERIAL TRUE)
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS rank_test.F90.in)
+    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/rank_test.F90.in" RANK_TEMPLATE)
+    set(RANK_TESTS "")
+    set(RANK_CALLS "")
+    foreach(RANK RANGE 1 7)
+        set(EXTENTS "2")
+        set(FIRST "1:1")
+        if(RANK GREATER 1)
+            foreach(I RANGE 2 ${RANK})
+                string(APPEND EXTENTS ",2")
+                string(APPEND FIRST ",1:1")
+            endforeach()
+        endif()
+        string(CONFIGURE "${RANK_TEMPLATE}" RANK_TEST @ONLY)
+        string(APPEND RANK_TESTS "${RANK_TEST}\n")
+        string(APPEND RANK_CALLS "call rank_${RANK}()\n")
+    endforeach()
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/rank_tests.inc" "${RANK_TESTS}")
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/rank_calls.inc" "${RANK_CALLS}")
+    add_executable(ftst_nextcdf4_types ftst_nextcdf4_types.F90 nextcdf4_constants.c)
+    target_include_directories(ftst_nextcdf4_types PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+    target_link_libraries(ftst_nextcdf4_types PRIVATE nepnextcdf4f)
+    file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/types")
+    add_test(NAME ftst_nextcdf4_types COMMAND ftst_nextcdf4_types)
+    set_tests_properties(ftst_nextcdf4_types PROPERTIES
+        LABELS nextcdf4_fortran WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/types")
+    add_executable(ftst_nextcdf4_small_float ftst_nextcdf4_small_float.F90)
+    target_link_libraries(ftst_nextcdf4_small_float PRIVATE nepnextcdf4f)
+    file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/small_float")
+    add_test(NAME ftst_nextcdf4_small_float COMMAND ftst_nextcdf4_small_float)
+    set_tests_properties(ftst_nextcdf4_small_float PROPERTIES
+        LABELS nextcdf4_fortran WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/small_float")
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/empty.ncrc" "")
+    set_tests_properties(ftst_nextcdf4_types ftst_nextcdf4_small_float PROPERTIES
+        ENVIRONMENT "NCRCENV_RC=${CMAKE_CURRENT_BINARY_DIR}/empty.ncrc;NETCDF_RC=${CMAKE_CURRENT_BINARY_DIR};NEP_LOG_LEVEL=-1")
+endif()
+
 # Build the FITS Fortran test if FITS is enabled.
 if(HAVE_FITS)
     add_executable(ftst_fits_udf ftst_fits_udf.F90)

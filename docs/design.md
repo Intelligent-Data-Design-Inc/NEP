@@ -3,6 +3,19 @@
 
 NEP provides NetCDF User Defined Format (UDF) readers and the NEXTCDF-4 backend. LZ4 and BZIP2 filter plugins and wrappers moved to [nep-compress](https://github.com/captainkirk99/nep-compress). Older releases also bundled those filters.
 
+## NEXTCDF-4 Fortran binding (v4.3.0 Sprint 1R)
+
+`fsrc/nep_nextcdf4.F90` and its private C byte-buffer bridge implement the installed
+`nep_nextcdf4` module / `libnepnextcdf4f`, built only with NEXTCDF-4 and Fortran ON.
+NetCDF-Fortran >=4.6.2 and compiler-compatible modules are required for that
+combination. Rank-specific wrappers (scalar–7) are generated from one template;
+selection validation, dimension reversal and owned packing preserve one-based
+Fortran semantics and noncontiguous buffers. C bridges forward raw 16-bit patterns
+to existing half APIs; no new conversion engine or on-disk layout is introduced.
+`NEP::nepnextcdf4f` exports the installed module directory and NetCDF-Fortran
+linkage. Reference and general enhanced-type value wrappers remain deferred beyond
+v4.3.0. See [Fortran binding](nextcdf4_fortran.md) for the exact public contract.
+
 ## NEXTCDF-4 conversion engine
 
 NEP-owned `nx4_convert_type()` is the permanent engine for supported numeric variable/attribute conversion and quantization, selected after Sprint 1H's OFF/ON comparison. The temporary `NEP_INTERNAL_CONVERT` option and `NEP_HAS_INTERNAL_CONVERT` marker were removed; setting the option fails at configure time. HDF5 receives the matching native numeric type; IEEE float16 conversion remains an explicit HDF5 exception until Sprint 1I. Bfloat16 narrowing uses round-to-nearest-even. The independent `libnep` bfloat16 API, on-disk types and compatibility flags are unchanged. The engine reports `NC_ERANGE` after completed conversion/I/O, without rolling back attributes or dimension growth. HDF5 transfer callbacks observe exceptions on the retained float16 path; a source check catches silent bfloat16 saturation, and explicit float16 attribute conversion uses an observing transfer list. Invalid real-to-integer attribute casts use guarded conversion, and quantization preserves nonfinite values. No Spack contract changes are required.

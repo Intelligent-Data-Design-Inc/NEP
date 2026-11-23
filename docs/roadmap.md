@@ -221,14 +221,13 @@ Plan: [docs/plan/v4.3.0-sprint1P-nc-string.md](plan/v4.3.0-sprint1P-nc-string.md
 Plan: [docs/plan/v4.3.0-sprint1Q-provenance-attributes.md](plan/v4.3.0-sprint1Q-provenance-attributes.md)
 
 #### Sprint 1R - Fortran Wrappers
-Expose the NEXTCDF-4 C APIs through the Fortran binding (plan goal: "same release" as the C API):
+- Install `module nep_nextcdf4` / `libnepnextcdf4f` (`NEP::nepnextcdf4f`) when NEXTCDF-4 and Fortran are enabled; require NetCDF-Fortran >=4.6.2 for that combination.
+- Export initialization, mode/new-type constants and `nf90_{get,put}_var_{float16,bfloat16}` generics (scalar–rank 7, optional start/count/stride); raw `integer(c_int16_t)` bits, 1-based Fortran indices and dimension order.
+- Add focused create/types/I/O/reopen tests and an installed consumer; enable Fortran in normal NEXTCDF-4 CI, retaining C-only sanitizer coverage and warning-free docs.
+- Update the Spack overlay's conditional dependency/install checks using existing variants; upstream copy ships with Sprint 2's version-bump PR. Conda is unchanged.
+- Out of scope: reference wrappers and general enhanced-type value interfaces (beyond v4.3.0), varm/F77/half attributes, Fortran sanitizer expansion, release notes/publication (Sprint 2).
 
-- Fortran wrappers for `nc_{get,put}_{var,var1,vara,vars}_bfloat16` and the `_float16` family, with matching parameter types.
-- Fortran constants for `NC_NEXTCDF4`, `NC_NETCDF4_MODEL`, and the new `nc_type` values (small floats, complex, bitfields, `NC_STD_REF`).
-- `nc_ref_*`/`nc_deref_*` Fortran wrappers, or an explicit documented decision to defer them.
-- `ftest/` coverage: `ftst_nextcdf4_*.F90` exercising create/types/I/O/reopen.
-- Out of scope: varm/other deprecated wrappers, Fortran support for the still-broken Sprint 1N/1P paths.
-- It may not be possible to support all user-defined types in Fortran, that's OK.
+Plan: [docs/plan/v4.3.0-sprint1R-fortran-wrappers.md](plan/v4.3.0-sprint1R-fortran-wrappers.md)
 
 
 #### Sprint 2 - 

@@ -285,6 +285,16 @@ nc_get_vara_float(grpid, varid, start, count, data);
 #### Q: Can NEXTCDF-4 store strings and nested string data?
 **A:** Yes, in native and NetCDF-4-model files, including strings in compound/array members and vlen bases. Values and attributes survive reopen; model-mode output interchanges with upstream netcdf-c, and NEXTCDF-4 can update upstream-created string files. Writes borrow your buffers, while reads and fill inquiries return owned payloads: use `nc_free_string` for standalone arrays and recursive `nc_reclaim_data` for nested values before closing the file. NULL standalone inputs/default fills read as empty strings; standalone string no-fill is rejected. New strings are UTF-8-tagged without transcoding, and legacy ASCII tags remain supported. Dynamic filled datasets allocate storage early to make read-only fills safe under HDF5 2.1.1, so sparse extensions may cost more storage. Wider fixed-length HDF5 strings, classic-model strings and reference nesting remain unsupported. See [NEXTCDF-4](nextcdf4.md) for layouts, ownership and selected test coverage.
 
+#### Q: Can I use NEXTCDF-4 from Fortran?
+**A:** Enable both NEXTCDF-4 and Fortran and use `netcdf` plus `nep_nextcdf4`.
+NetCDF-Fortran >=4.6.2 and compatible compiler modules are required. The installed
+`NEP::nepnextcdf4f` target provides initialization, mode/new-type constants and
+scalar–rank-7 float16/bfloat16 bit-buffer I/O with one-based Fortran selections.
+Standard real32/real64 NetCDF-Fortran I/O performs numeric half conversion; the new
+wrappers exchange raw `integer(c_int16_t)` encodings. Reference wrappers and general
+enhanced-type value interfaces are deferred beyond v4.3.0; constants alone do not
+supply them. See [NEXTCDF-4 Fortran](nextcdf4_fortran.md) for linkage and an example.
+
 #### Q: Can I use NEP on Windows?
 **A:** Currently, NEP targets Linux and Unix platforms. Windows support may be added in future releases based on community demand.
 

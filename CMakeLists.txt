@@ -622,6 +622,10 @@ if(NOT DOCS_ONLY)
 
     add_subdirectory (src)
 
+    if(HAVE_NEXTCDF4 AND NEP_ENABLE_FORTRAN)
+        add_subdirectory(fsrc)
+    endif()
+
     if(NEP_ENABLE_FORTRAN)
         add_subdirectory(ftest)
     endif()

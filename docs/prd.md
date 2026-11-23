@@ -17,6 +17,22 @@
 
 ---
 
+## NEXTCDF-4 Fortran requirements (v4.3.0 Sprint 1R)
+
+When NEXTCDF-4 and Fortran are ON, install `nep_nextcdf4.mod` under `include/nep`
+and `libnepnextcdf4f` in the configured library directory; export
+`NEP::nepnextcdf4f`. Require NetCDF-Fortran >=4.6.2 and a compatible compiler/module
+instead of silently omitting this binding. Supply explicit initialization,
+mode/new-type constants and scalar–rank-7 `nf90_{get,put}_var_{float16,bfloat16}`
+generics using raw `integer(c_int16_t)` bits, one-based indices/variable IDs and
+Fortran-order optional start/count/stride. Preserve completed-I/O range warnings
+and unselected read elements. Test focused I/O/types/reopen and an installed
+consumer in normal NEXTCDF-4 CI; retain C sanitizer coverage and warning-free docs.
+Spack reuses existing variants with version-gated dependencies/install checks;
+conda disables NEXTCDF-4 and is unchanged. Reference wrappers and broader
+enhanced-type value interfaces are deferred beyond v4.3.0, explicitly narrowing
+the original same-release parity goal. See [Fortran binding](nextcdf4_fortran.md).
+
 ## NEXTCDF-4 internal conversion requirement
 
 NEXTCDF-4 uses the private, NEP-owned `nx4_convert_type()` engine for all supported variable, attribute and quantized-write numeric conversions, made permanent in Sprint 1H after measured comparison with the HDF5 engine. The temporary `NEP_INTERNAL_CONVERT` option and `NEP_HAS_INTERNAL_CONVERT` marker were removed; setting the option fails at configure time, and a single NEXTCDF-4 CI job covers correctness. Conversion uses nearest/even bfloat16 and IEEE float16 narrowing; float16 joined the engine in Sprint 1J (v4.3.0) and its `H5Tconvert` path was removed. Unsupported FP8/FP6/FP4 conversions and the public bfloat16-wrapper contract remain unchanged. The engine reports completed-conversion `NC_ERANGE` for overflow/integer range errors (including nonfinite-to-integer), not precision loss, fractional truncation or floating underflow. Range-warning writes finish all values and may replace attributes/extend dimensions; structural and I/O errors take precedence. No Spack variant or new public conversion API is required.

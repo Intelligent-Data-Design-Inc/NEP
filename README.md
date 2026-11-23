@@ -6,6 +6,12 @@
 
 **[NEXTCDF-4 Documentation](docs/nextcdf4.md)**
 
+[NEXTCDF-4 Fortran binding](docs/nextcdf4_fortran.md): enable NEXTCDF-4 and Fortran
+to install `nep_nextcdf4.mod` / `libnepnextcdf4f` and use
+`NEP::nepnextcdf4f`. Requires NetCDF-Fortran >=4.6.2 with compatible compiler
+modules. Includes mode/type constants and scalar–rank-7 float16/bfloat16 bit-buffer
+I/O; reference wrappers and general enhanced-type value interfaces remain deferred.
+
 **[📄 NEP Abstract](docs/NEP_abstract.md)**
 
 <a href="https://www.amazon.com/NetCDF-Developers-Handbook-Authoritative-High-Performance/dp/B0H7Q49MPS/">

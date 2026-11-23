@@ -933,7 +933,9 @@ WARN_LOGFILE           =
 # spaces. See also FILE_PATTERNS and EXTENSION_MAPPING
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  = @abs_top_srcdir@/src/nep.c \
+INPUT                  = @abs_top_srcdir@/fsrc/nep_nextcdf4.F90 \
+                         @abs_top_srcdir@/docs/nextcdf4_fortran.md \
+                         @abs_top_srcdir@/src/nep.c \
                          @abs_top_srcdir@/src/pds4dispatch.c \
                          @abs_top_srcdir@/src/pds4file.c \
                          @abs_top_srcdir@/src/geotiffdispatch.c \

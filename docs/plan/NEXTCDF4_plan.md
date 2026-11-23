@@ -30,7 +30,7 @@ The temporary CMake option `NEP_INTERNAL_CONVERT` defaults OFF. ON routes suppor
 - Add read and write support for HDF5 reference types (object references and region references).
 - Add native support for complex number types via HDF5 compound types.
 - Fix the long-standing renaming bug for dimensions and variables.
-- Expose all new C APIs in the Fortran API in the same release.
+- Expose NEXTCDF-4 initialization, mode/new-type constants and float16/bfloat16 bit-buffer I/O through `module nep_nextcdf4` in v4.3.0 (Sprint 1R). The original all-new-C-APIs-in-the-same-release goal is narrowed explicitly: reference wrappers and general enhanced-type value interfaces are deferred beyond v4.3.0. See [Fortran binding](../nextcdf4_fortran.md).
 
 ### Non-Goals
 
