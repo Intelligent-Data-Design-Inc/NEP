@@ -210,6 +210,8 @@ int nx4_file_type(NC_GRP_INFO_T *grp, nc_type xtype, hid_t *typep);
 /** Produce an owned HDF5 memory datatype for an atomic or user type.
  */
 int nx4_memory_type(NC_GRP_INFO_T *grp, nc_type xtype, hid_t *typep);
+int nx4_storage_memory_type(hid_t memory, hid_t storage, hid_t *typep);
+int nx4_copy_data(NC *nc, nc_type xtype, const void *src, size_t count, void *dst);
 /** Resolve an HDF5 datatype to a registered committed user type by
  * object identity.
  */

@@ -532,8 +532,14 @@ atomic and user-defined bases, nested vlens, compounds/arrays
 containing vlens, `nc_put_vlen_element` borrowed descriptors,
 `nc_get_vlen_element` resolved-base-size copies, recursive
 `nc_reclaim_data*` ownership before close, and upstream interchange.
-`NC_STD_REF` remains excluded from type graphs; `NC_STRING` is Sprint
-1P.)
+`NC_STD_REF` remains excluded from type graphs. Sprint 1P adds standalone
+string reopen, string compound/array members and vlen bases throughout
+recursive type graphs, with owned attribute/fill/read payloads and
+bidirectional upstream interchange in NetCDF-4-model files. New strings
+are tagged UTF-8 without transcoding; legacy ASCII tags are preserved
+on existing datasets. Wider fixed-length HDF5 strings remain unsupported.
+Dynamic filled datasets allocate early to make missing-chunk reads safe
+in read-only sessions under HDF5 2.1.1.)
 
 ## Implementation Phases
 

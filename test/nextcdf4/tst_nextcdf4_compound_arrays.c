@@ -426,13 +426,13 @@ run_errors(void)
         if (nfields != 2) return 13;
     }
 
-    /* Reference and string members are rejected. */
+    /* Reference members are rejected; strings are supported. */
     if (nc_insert_compound(ncid, cmp, "r", 16, NC_STD_REF) != NC_EBADTYPE)
         return 14;
     if (nc_insert_array_compound(ncid, cmp, "r2", 16, NC_STD_REF, 1,
                                  dims1) != NC_EBADTYPE)
         return 15;
-    if (nc_insert_compound(ncid, cmp, "s", 16, NC_STRING) != NC_EBADTYPE)
+    if (nc_insert_compound(ncid, cmp, "s", 24, NC_STRING))
         return 16;
 
     /* Self-nesting is a cycle. */

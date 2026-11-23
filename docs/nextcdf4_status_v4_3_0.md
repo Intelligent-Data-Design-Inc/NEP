@@ -67,7 +67,7 @@ lines across 11 C files plus `nxt4internal.h`/`nxt4err.h`).
 
 ### Types
 
-- All standard atomic types plus `NC_STRING` (see caveats below).
+- All standard atomic types including standalone and nested `NC_STRING` (Sprint 1P).
 - Native-mode-only atomic types: `NC_FLOAT16`, `NC_BFLOAT16`,
   `NC_FLOAT8_E4M3/E5M2`, `NC_FLOAT6_E2M3/E3M2`, `NC_FLOAT4_E2M1`,
   `NC_COMPLEX`/`NC_DOUBLECOMPLEX` (native HDF5 2.x `H5T_COMPLEX_IEEE_F*` —
@@ -117,10 +117,15 @@ lines across 11 C files plus `nxt4internal.h`/`nxt4err.h`).
   read results reclaimed recursively via
   `nc_reclaim_data`/`nc_reclaim_data_all` before `nc_close`,
   deep-copied attribute and fill-value storage for variable-sized
-  types, `varsized` tracking through the whole non-string type graph,
-  and upstream interchange in both directions. Limits: `NC_STD_REF`
-  inside type graphs is unsupported, and `NC_STRING` members/values
-  are Sprint 1P.
+  types and upstream interchange in both directions. Sprint 1P extends
+  recursive `varsized` tracking and ownership to string members/bases,
+  fixes standalone string reopen, fill copies and partial-read cleanup,
+  and covers bidirectional interchange plus updates to upstream input.
+  New string storage is UTF-8-tagged without transcoding; legacy ASCII
+  tags are supported. Dynamic filled datasets use early allocation to
+  avoid read-only missing-chunk vlen-heap writes in HDF5 2.1.1, trading
+  sparse storage for safe fills. `NC_STD_REF` inside type graphs and
+  fixed-length HDF5 strings wider than one byte remain unsupported.
 - `nc_*_bfloat16` / `nc_*_float16` typed APIs in `libnep`
   (`src/nep_bfloat16.c`, `src/nep_float16.c`).
 
@@ -147,8 +152,8 @@ Probed with a small program linked against `build/src/libncnextcdf4.so`
 | # | Gap | Evidence |
 |---|-----|----------|
 | 1 | ~~**Variables/attributes of user-defined types are unusable**~~ — fixed in Sprint 1N1: `nc_def_var`/`nc_put_att` resolve user typeids through group-scoped lookup (`nx4_find_type`), uncommitted-type variables defer dataset creation until `_enddef`, and I/O uses the type's exact memory/file layout with matching-type or untyped access only. | Sprint 1N1 |
-| 2 | **Files containing `NC_STRING` variables cannot be opened** — partially fixed in Sprints 1N1/1N3: `load_one_var`/`read_hdf5_att` resolve committed compound/enum/opaque datatypes by object token (with `H5Tequal` fallback) and vlen datatypes load with recursive `varsized` tracking, so all non-string user-typed variables and attributes open and reopen correctly, including upstream files; `NC_STRING` datasets still fail `nc_open` with `NC_EBADTYPE`. | upstream `NC_NETCDF4` compound/enum/opaque/vlen file opens; `NC_STRING` var still fails |
-| 3 | **`NC_STRING` attributes are silently lost on reopen.** File opens, but `nc_get_att_string` returns `NC_ENOTATT` — the variable-length-string attribute is not loaded. | probe: `put_att_string` → close → open → `get_att_string` = `NC_ENOTATT` |
+| 2 | ~~**Files containing `NC_STRING` variables cannot be opened**~~ — fixed in Sprint 1P: detect variable-length HDF5 strings before one-byte `NC_CHAR`, load standalone and recursive string types, preserve character-set tags, and deep-copy/reclaim string fill/read buffers. | `tst_nextcdf4_string`: native/model reopen, upstream interchange and updates, legacy ASCII, clipped reads and repeated failed-open cleanup |
+| 3 | ~~**`NC_STRING` attributes are silently lost on reopen**~~ — fixed in Sprint 1P: standalone/nested string attributes load on groups and variables, recognized read failures propagate, and attribute/fill caches own independent payloads. | Focused regressions and two-mode `tst_strings`, `tst_strings2`, `tst_atts_string_rewrite` ports |
 | 4 | ~~**Four tests disabled**~~ — fixed in Sprint 1M: the abort was upstream netcdf-c's `FILEINFOFLAGS` covering only UDF slots 0–1, fixed upstream by the 64-slot `UDFMODEL` scheme (netcdf-c `main`, shipping in 4.10.2). `NEP_ENABLE_NEXTCDF4` now requires 64-slot headers at configure time (`NC_UDF` + `NC_MAX_UDF_FORMATS >= 64`, `FATAL_ERROR` on 10-slot) and all four tests are re-enabled unconditionally. Note: the flag-value ABI differs between the two schemes — a NEP build runs only against the scheme it was built for. | #379 |
 | 5 | ~~**Def-var setters recreate the HDF5 dataset**~~ — fixed in Sprint 1M: setters (`nc_def_var_fill`/`chunking`/`deflate`/`endian`/`fletcher32`/`filter`/`szip` via `nx4_mark_dcpl_dirty`; quantization is applied at data-conversion time and needs no rebuild) only update in-memory metadata and mark the variable dirty; `_enddef` rebuilds each dirty dataset once — detaching scales/dependents before `H5Ldelete`, re-attaching after — and rewrites user attributes in index order. Committed variables reject all dataset-property setters with `NC_ELATEDEF` (upstream parity), so written data can no longer be silently destroyed; a rebuilt var leaves one bounded orphaned object header. | #382 |
 | 6 | ~~**`NC_BFLOAT16` fill values don't work**~~ — fixed in Sprint 1M: `nx4_dcpl_fill` no longer widens the fill message through `H5Tget_native_type` (which returned a 4-byte float for bf16, causing a heap over-read and storing 0); `_FillValue` loads as a normal attribute on reopen (`nc_inq_att` finds it) while `var->fill_value` is recovered from the DCPL via `NEXTCDF4_memory_type`-sized buffers. | #377 |
@@ -188,11 +193,11 @@ Sprint 1 (deferred when v4.1.0 shipped docs+logging instead):
   Fortran API in the same release" is unmet: no Fortran wrappers for
   `nc_*_bfloat16`, `nc_*_float16`, `nc_ref_*`/`nc_deref_*`, or the new
   `nc_type` constants; `ftest/` has no NEXTCDF-4 test.
-- **Full upstream `nc_test4` suite validation** (Phase 5) — twelve
+- **Full upstream `nc_test4` suite validation** (Phase 5) — fifteen
   programs ported into `test/nextcdf4/nc_test4/` (`tst_rename` plus
   Sprint 1L2's `tst_camrun`, `tst_atts3`, `tst_dims`, `tst_vars`,
   `tst_atts1`, kept near-verbatim via the local
-  `nc_tests.h`/`err_macros.h` shims). All pass in native `NC_NEXTCDF4`
+  `nc_tests.h`/`err_macros.h` shims). Those first six pass in native `NC_NEXTCDF4`
   mode as of Sprint 1L2; `tst_dims` also reads the shipped upstream
   fixture `ref_tst_dims.nc`. Sprint 1N4 added the six user-type ports
   `tst_enums`, `tst_opaques`, `tst_compounds`, `tst_compounds2`,
@@ -208,10 +213,13 @@ Sprint 1 (deferred when v4.1.0 shipped docs+logging instead):
   (upstream parity), upstream dimscales named "This is a netCDF
   dimension but not a netCDF variable." resolve by link name, and
   reads past a dataset's physical extent on unlimited dims are
-  clipped to the extent with the tail deep-copied from the fill value
-  (vlen datasets now carry a zeroed-descriptor fill message so
-  unwritten elements read as empty vlens). String and mixed-feature
-  ports remain future work.
+  clipped to the extent with missing elements deep-copied from the fill
+  value (vlen datasets carry a zeroed-descriptor fill message).
+  Sprint 1P corrects multidimensional/strided fill placement and adds
+  `tst_strings`, `tst_strings2`, `tst_atts_string_rewrite` in both modes,
+  plus `tst_nextcdf4_string`, under `nextcdf4_strings`. Other string,
+  fill and mixed-feature ports remain future suite expansion; this is
+  not full upstream-suite completion.
 - **Provenance/`_NCProperties`** (`nxt4provenance.c` in the plan's source
   layout) and **in-memory image files** (`nxt4image.c`, optional) — not
   implemented.

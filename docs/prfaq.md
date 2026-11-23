@@ -282,6 +282,9 @@ nc_get_vara_float(grpid, varid, start, count, data);
 #### Q: Can I control NEXTCDF-4 fill, cache settings and group names?
 **A:** Yes, starting with v4.3.0 Sprint 1O. `nc_set_fill` sets the session default for newly defined eligible variables; existing variables and explicit per-variable overrides stay unchanged, and reopen resets the default to `NC_FILL`. `nc_set_var_chunk_cache` applies actual HDF5 cache settings even in read-only/data mode; overrides last only for the session, and `nc_get_var_chunk_cache` reports effective chunked settings. Group creation/rename work in native and `NC_NETCDF4_MODEL` modes, preserving descendants and data; classic-model groups remain unsupported. See [NEXTCDF-4](nextcdf4.md) for validation, fill exclusions and cache details.
 
+#### Q: Can NEXTCDF-4 store strings and nested string data?
+**A:** Yes, in native and NetCDF-4-model files, including strings in compound/array members and vlen bases. Values and attributes survive reopen; model-mode output interchanges with upstream netcdf-c, and NEXTCDF-4 can update upstream-created string files. Writes borrow your buffers, while reads and fill inquiries return owned payloads: use `nc_free_string` for standalone arrays and recursive `nc_reclaim_data` for nested values before closing the file. NULL standalone inputs/default fills read as empty strings; standalone string no-fill is rejected. New strings are UTF-8-tagged without transcoding, and legacy ASCII tags remain supported. Dynamic filled datasets allocate storage early to make read-only fills safe under HDF5 2.1.1, so sparse extensions may cost more storage. Wider fixed-length HDF5 strings, classic-model strings and reference nesting remain unsupported. See [NEXTCDF-4](nextcdf4.md) for layouts, ownership and selected test coverage.
+
 #### Q: Can I use NEP on Windows?
 **A:** Currently, NEP targets Linux and Unix platforms. Windows support may be added in future releases based on community demand.
 

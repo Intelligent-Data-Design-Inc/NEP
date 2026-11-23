@@ -638,10 +638,10 @@ run_errors(void)
     nc_type cmpid, vint, bad;
     int varid;
 
-    /* NC_STRING and NC_STD_REF bases. */
+    /* String bases work; reference bases remain unsupported. */
     if (nc_create(FILE_ERR, NC_NEXTCDF4, &ncid))
         return 1;
-    if (nc_def_vlen(ncid, "vs", NC_STRING, &bad) != NC_EBADTYPE)
+    if (nc_def_vlen(ncid, "vs", NC_STRING, &bad))
         return 2;
     if (nc_def_vlen(ncid, "vr", NC_STD_REF, &bad) != NC_EBADTYPE)
         return 2;
@@ -661,9 +661,9 @@ run_errors(void)
     if (nc_insert_compound(ncid, cmpid, "id",
                            offsetof(struct rec, id), NC_INT))
         return 3;
-    /* String field into a compound is rejected. */
-    if (nc_insert_compound(ncid, cmpid, "s", 0, NC_STRING) !=
-        NC_EBADTYPE)
+    /* String fields use pointer-sized storage. */
+    if (nc_def_compound(ncid, sizeof(char *), "cs", &bad) ||
+        nc_insert_compound(ncid, bad, "s", 0, NC_STRING))
         return 4;
     /* ...and a reference field. */
     if (nc_insert_compound(ncid, cmpid, "r", 0, NC_STD_REF) !=

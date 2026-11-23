@@ -152,13 +152,26 @@ type's exact `nc_inq_*` layout.
 ### Variable-length types and ownership
 
 Vlen types (`NEXTCDF4_def_vlen`) wrap `H5Tvlen_create` over any atomic
-or user-defined base, including other vlens; the type graph rejects
-`NC_STRING`, `NC_STD_REF`, unknown bases and cycles, and commits
+or user-defined base, including strings and other vlens; the type graph rejects
+`NC_STD_REF`, unknown bases and cycles, and commits
 bases before dependents via `commit_type_tree`. `NC_TYPE_INFO_T::
 varsized` is maintained recursively — a vlen is variable-sized, and a
 compound is variable-sized when any field (including fields of array
 fields) is — so I/O, attribute and fill paths can tell flat from
-dynamic values.
+dynamic values. String leaves make a compound dynamic; `NC_CHAR` is not
+pointer-bearing even though its synthetic metadata class is `NC_STRING`.
+Sprint 1P's `nx4_copy_data` recursively initializes copies and unwinds
+partial failures, including nested strings. `nx4_storage_memory_type`
+preserves stored string character-set tags while retaining native memory
+sizes, member offsets and array shapes. String fill caches hold an owned
+pointer-sized element buffer, never a bare character buffer. Recognized
+attribute-load failures propagate instead of silently dropping data.
+Dynamic filled datasets allocate early so read-only missing-chunk reads
+do not attempt vlen-heap writes in HDF5 2.1.1; this increases sparse-file
+storage costs. Scalar datasets omit `_Netcdf4Coordinates` rather than
+writing an empty attribute that upstream cannot parse. Clipped unlimited
+reads select real values into their full logical memory positions and
+supply each missing element independently, including strided selections.
 
 Elements are `nc_vlen_t {size_t len; void *p}` descriptors:
 

@@ -480,9 +480,14 @@ NEXTCDF4_map_hdf_type(nc_type xtype, hid_t *typep)
         return NC_NOERR;
     case NC_STRING:
         *typep = H5Tcopy(H5T_C_S1);
-        if (*typep >= 0) {
-            H5Tset_size(*typep, H5T_VARIABLE);
-            H5Tset_strpad(*typep, H5T_STR_NULLTERM);
+        if (*typep < 0)
+            return NC_EHDFERR;
+        if (H5Tset_size(*typep, H5T_VARIABLE) < 0 ||
+            H5Tset_strpad(*typep, H5T_STR_NULLTERM) < 0 ||
+            H5Tset_cset(*typep, H5T_CSET_UTF8) < 0) {
+            H5Tclose(*typep);
+            *typep = -1;
+            return NC_EHDFERR;
         }
         return NC_NOERR;
     default:
@@ -730,6 +735,7 @@ set_var_type(NC_VAR_INFO_T *var, nc_type xtype)
         type->nc_type_class = NC_INT;
     type->endianness = NC_ENDIAN_NATIVE;
     type->size = size;
+    type->varsized = xtype == NC_STRING;
     var->type_info = type;
     var->endianness = type->endianness;
     return NC_NOERR;
@@ -872,7 +878,7 @@ map_nc_type(hid_t htype, nc_type *xtypep)
 
     cls = H5Tget_class(htype);
     size = H5Tget_size(htype);
-    sign = H5Tget_sign(htype);
+    sign = cls == H5T_INTEGER ? H5Tget_sign(htype) : H5T_SGN_ERROR;
 
     if (cls == H5T_INTEGER) {
         switch (size) {
@@ -921,8 +927,11 @@ map_nc_type(hid_t htype, nc_type *xtypep)
                 return NC_EBADTYPE;
             return NC_NOERR;
         }
-    } else if (cls == H5T_STRING && size == 1) {
-        *xtypep = NC_CHAR;
+    } else if (cls == H5T_STRING) {
+        htri_t variable = H5Tis_variable_str(htype);
+        if (variable < 0) return NC_EHDFERR;
+        if (!variable && size != 1) return NC_EBADTYPE;
+        *xtypep = variable ? NC_STRING : NC_CHAR;
         return NC_NOERR;
     } else if (cls == H5T_COMPLEX) {
         if (size == 2 * sizeof(float)) {
@@ -1093,8 +1102,8 @@ nx4_type_varsized(NC_GRP_INFO_T *grp, nc_type xtype, int *vsp)
  * Deep-copies the attribute value: numeric data by `memcpy`,
  * `NC_STRING` values element-by-element (NULL elements become empty
  * strings), and variable-sized user types (vlens and compounds
- * containing them) recursively through netcdf-c's shared
- * `NC_copy_data()` — so the attribute record owns its data outright
+ * containing them) recursively through NEP's reclaim-safe
+ * `nx4_copy_data()` — so the attribute record owns its data outright
  * and the caller may mutate or free the input immediately.
  *
  * @param list Attribute index to add to.
@@ -1167,7 +1176,7 @@ add_att(NCindex *list, NC_OBJ *container, NC_GRP_INFO_T *grp,
                  * element; the top-level allocation stays owned here
                  * either way. On failure the partially copied value
                  * is reclaimed before the record is dropped. */
-                if ((ret = NC_copy_data(grp->nc4_info->controller,
+                if ((ret = nx4_copy_data(grp->nc4_info->controller,
                                         xtype, data, len, copy))) {
                     NC_reclaim_data(grp->nc4_info->controller, xtype,
                                     copy, len);
@@ -1217,7 +1226,7 @@ read_hdf5_att(hid_t loc, const char *name, NCindex *list, NC_OBJ *container,
     int close_ntype = 1;
     hssize_t npoints;
     size_t size;
-    size_t len;
+    size_t len = 0;
     void *data = NULL;
     int ret = NC_EHDFERR;
 
@@ -1234,8 +1243,10 @@ read_hdf5_att(hid_t loc, const char *name, NCindex *list, NC_OBJ *container,
          * resolves to its registered type record by object
          * identity. */
         NC_TYPE_INFO_T *utype = NULL;
-        if (nx4_hdf_type_match(grp, ftype, &utype) || !utype)
+        if (nx4_hdf_type_match(grp, ftype, &utype) || !utype) {
+            ret = NC_EBADTYPE;
             goto done;
+        }
         xtype = (nc_type)utype->hdr.id;
     }
     if (nx4_type_size(grp, xtype, &size))
@@ -1243,9 +1254,13 @@ read_hdf5_att(hid_t loc, const char *name, NCindex *list, NC_OBJ *container,
     len = (size_t)npoints;
     if (len > 0) {
         if (len > SIZE_MAX / size) { ret = NC_EINVAL; goto done; }
-        if (!(data = malloc(len * size)))
+        if (!(data = calloc(len, size))) {
+            ret = NC_ENOMEM;
             goto done;
-        if (xtype == NC_CHAR) {
+        }
+        if (xtype == NC_STRING) {
+            if ((ntype = H5Tcopy(ftype)) < 0) goto done;
+        } else if (xtype == NC_CHAR) {
             if ((ntype = H5Tcopy(H5T_C_S1)) < 0)
                 goto done;
             H5Tset_size(ntype, 1);
@@ -1266,8 +1281,20 @@ read_hdf5_att(hid_t loc, const char *name, NCindex *list, NC_OBJ *container,
         } else if (nx4_memory_type(grp, xtype, &ntype)) {
             goto done;
         }
-        if (H5Aread(attr, ntype, data) < 0)
+        {
+            int dynamic = 0;
+            hid_t matched = -1;
+            if ((ret = nx4_type_varsized(grp, xtype, &dynamic))) goto done;
+            if (dynamic) {
+                if ((ret = nx4_storage_memory_type(ntype, ftype, &matched))) goto done;
+                H5Tclose(ntype);
+                ntype = matched;
+            }
+        }
+        if (H5Aread(attr, ntype, data) < 0) {
+            ret = NC_EHDFERR;
             goto done;
+        }
     }
     if ((ret = add_att(list, container, grp, name, xtype, len, data, NULL)))
         goto done;
@@ -1686,9 +1713,9 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
 
     if ((ret = write_int_att(vinfo->hdf_dataset, NEXTCDF4_VARID_ATT,
                              var->hdr.id)) ||
-        (ret = write_int_array_att(vinfo->hdf_dataset,
+        (ndims && (ret = write_int_array_att(vinfo->hdf_dataset,
                                    NEXTCDF4_VARDIMIDS_ATT,
-                                   (const int *)var->dimids, ndims)))
+                                   (const int *)var->dimids, ndims))))
         goto fail;
     if (!coordinate) {
         for (i = 0; i < ndims; i++) {
@@ -1785,6 +1812,10 @@ nx4_dcpl_fill(hid_t dcpl, NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
      * unreadable to H5Dopen2 — reference datasets get no fill. */
     if (var->type_info->hdr.id == NC_STD_REF)
         return NC_NOERR;
+    if ((var->type_info->hdr.id == NC_STRING ||
+         (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID && var->type_info->varsized)) &&
+        H5Pset_alloc_time(dcpl, H5D_ALLOC_TIME_EARLY) < 0)
+        return NC_EHDFERR;
     if (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID &&
         var->type_info->varsized) {
         /* Variable-sized types do have an HDF5 fill representation —
@@ -1838,7 +1869,7 @@ nx4_dcpl_fill(hid_t dcpl, NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
          * the buffer (#377) — pass the dataset's own datatype. The
          * same applies to user-defined types: the fill value is
          * already in the file layout. */
-        if (var->type_info->hdr.id > NC_STRING)
+        if (var->type_info->hdr.id >= NC_STRING)
             fill_type = H5Tcopy(hdf_type);
         else
             fill_type = H5Tget_native_type(hdf_type, H5T_DIR_DEFAULT);
@@ -2051,9 +2082,9 @@ nx4_create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
 
     if ((ret = write_int_att(vinfo->hdf_dataset, NEXTCDF4_VARID_ATT,
                              var->hdr.id)) ||
-        (ret = write_int_array_att(vinfo->hdf_dataset,
+        (var->ndims && (ret = write_int_array_att(vinfo->hdf_dataset,
                                    NEXTCDF4_VARDIMIDS_ATT,
-                                   (const int *)var->dimids, var->ndims)))
+                                   (const int *)var->dimids, var->ndims))))
         goto fail;
 
     if (!coordinate) {
@@ -2230,12 +2261,15 @@ NEXTCDF4_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
     if ((ret = nx4_find_var_for_write(ncid, varid, &h5, &file, &grp, &var)))
         return ret;
 
+    if (var->type_info->hdr.id == NC_STRING && no_fill)
+        return NC_EINVAL;
     var->no_fill = no_fill ? 1 : 0;
     if (var->fill_value) {
         /* A variable-sized fill value owns nested payloads — reclaim
          * them before dropping the top-level buffer. */
-        if (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID &&
-            var->type_info->varsized)
+        if (var->type_info->hdr.id == NC_STRING ||
+            (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID &&
+             var->type_info->varsized))
             NC_reclaim_data(h5->controller,
                             (nc_type)var->type_info->hdr.id,
                             var->fill_value, 1);
@@ -2246,13 +2280,14 @@ NEXTCDF4_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
         size = var->type_info->size;
         if (!size)
             return NC_EBADTYPE;
-        if (!(var->fill_value = malloc(size)))
+        if (!(var->fill_value = calloc(1, size)))
             return NC_ENOMEM;
-        if (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID &&
-            var->type_info->varsized) {
+        if (var->type_info->hdr.id == NC_STRING ||
+            (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID &&
+             var->type_info->varsized)) {
             /* Deep-copy the vlen descriptor and its payload: the
              * caller's buffer stays caller-owned. */
-            if ((ret = NC_copy_data(h5->controller,
+            if ((ret = nx4_copy_data(h5->controller,
                                     (nc_type)var->type_info->hdr.id,
                                     fill_value, 1, var->fill_value))) {
                 NC_reclaim_data(h5->controller,
@@ -2427,7 +2462,14 @@ NEXTCDF4_inq_var_all(int ncid, int varid, char *name, nc_type *xtypep,
         *no_fillp = (int)var->no_fill;
     if (fill_valuep && !var->no_fill) {
         if (var->fill_value) {
-            memcpy(fill_valuep, var->fill_value, var->type_info->size);
+            if (var->type_info->hdr.id == NC_STRING ||
+                (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID && var->type_info->varsized)) {
+                memset(fill_valuep, 0, var->type_info->size);
+                if ((ret = nx4_copy_data(h5->controller, var->type_info->hdr.id,
+                                        var->fill_value, 1, fill_valuep)))
+                    return ret;
+            } else
+                memcpy(fill_valuep, var->fill_value, var->type_info->size);
         } else if (var->type_info->hdr.id > NC_STRING) {
             /* NEP-only atomics and user-defined types have no
              * upstream default; report the all-zero fill used at
@@ -2516,12 +2558,9 @@ nx4_write_att(hid_t loc, const NC_ATT_INFO_T *att, NC_GRP_INFO_T *grp)
     if (att->nc_typeid == NC_CHAR) {
         mem_type = hdf_type;
     } else if (att->nc_typeid == NC_STRING) {
-        mem_type = H5Tcopy(H5T_C_S1);
-        if (mem_type >= 0) {
-            H5Tset_size(mem_type, H5T_VARIABLE);
-            H5Tset_strpad(mem_type, H5T_STR_NULLTERM);
-        }
+        mem_type = H5Tcopy(hdf_type);
         close_mem = 1;
+        if (mem_type < 0) { ret = NC_EHDFERR; goto fail; }
     } else {
         /* nx4_memory_type() returns an owned handle for both atomic
          * and user-defined types. */
@@ -2767,23 +2806,22 @@ NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type datatype,
          * normally, below) and var->fill_value carry the value, the
          * same user-visible behavior upstream has. */
         if (var->fill_value) {
-            if (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID &&
-                var->type_info->varsized)
+            if (var->type_info->hdr.id == NC_STRING ||
+                (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID &&
+                 var->type_info->varsized))
                 NC_reclaim_data(h5->controller,
                                 (nc_type)var->type_info->hdr.id,
                                 var->fill_value, 1);
             free(var->fill_value);
             var->fill_value = NULL;
         }
-        if (datatype == NC_STRING)
-            var->fill_value = strdup(*(char **)data);
-        else if (!(var->fill_value = malloc(size)))
+        if (!(var->fill_value = calloc(1, size)))
             { free(data); return NC_ENOMEM; }
-        if (var->fill_value && datatype != NC_STRING) {
-            if (utype && utype->varsized) {
+        if (var->fill_value) {
+            if (datatype == NC_STRING || (utype && utype->varsized)) {
                 /* Dynamic fill values are deep-copied — the caller's
                  * vlen payload stays caller-owned. */
-                if ((ret = NC_copy_data(h5->controller, datatype,
+                if ((ret = nx4_copy_data(h5->controller, datatype,
                                         data, 1, var->fill_value))) {
                     NC_reclaim_data(h5->controller, datatype,
                                     var->fill_value, 1);
@@ -2963,6 +3001,7 @@ NEXTCDF4_get_att(int ncid, int varid, const char *name, void *value,
     if (!(att = find_att(list, name)))
         return NC_ENOTATT;
 
+    if (att->len && !value) return NC_EINVAL;
     if (memtype == NC_NAT) memtype = att->nc_typeid;
     if (att->nc_typeid >= NC_FIRSTUSERTYPEID) {
         /* User-defined types have no numeric conversion: the buffer
@@ -2979,10 +3018,15 @@ NEXTCDF4_get_att(int ncid, int varid, const char *name, void *value,
             char **src = (char **)att->data;
             char **dst = (char **)value;
             size_t i;
+            if (!value) return NC_EINVAL;
+            memset(dst, 0, att->len * sizeof(char *));
             for (i = 0; i < att->len; i++) {
-                dst[i] = strdup(src[i]);
-                if (!dst[i])
+                dst[i] = strdup(src[i] ? src[i] : "");
+                if (!dst[i]) {
+                    nc_free_string(i, dst);
+                    memset(dst, 0, att->len * sizeof(char *));
                     return NC_ENOMEM;
+                }
             }
             return NC_NOERR;
         } else {
@@ -2996,7 +3040,7 @@ NEXTCDF4_get_att(int ncid, int varid, const char *name, void *value,
              * disturbing the cached attribute. */
             if (memtype >= NC_FIRSTUSERTYPEID &&
                 !nx4_find_type(grp, memtype, &at) && at && at->varsized)
-                return NC_copy_data(h5->controller, memtype, att->data,
+                return nx4_copy_data(h5->controller, memtype, att->data,
                                     att->len, value);
             memcpy(value, att->data, att->len * size);
             return NC_NOERR;
@@ -4172,9 +4216,6 @@ load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
     int ret;
     (void)h5;
 
-    if (!(vinfo = calloc(1, sizeof(*vinfo))))
-        return NC_ENOMEM;
-
     if ((dset = H5Dopen2(hdf_grp, name, H5P_DEFAULT)) < 0) {
         free(vinfo);
         return NC_EHDFERR;
@@ -4233,6 +4274,10 @@ load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
         }
     }
 
+    if (!(vinfo = calloc(1, sizeof(*vinfo)))) {
+        ret = NC_ENOMEM;
+        goto done;
+    }
     if ((ret = nc4_var_list_add(grp, name, ndims, &var))) {
         free(vinfo);
         goto done;
@@ -4311,7 +4356,7 @@ load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
                     free(var->fill_value);
                     var->fill_value = NULL;
                 }
-                if (fsize && (var->fill_value = malloc(fsize))) {
+                if (fsize && (var->fill_value = calloc(1, fsize))) {
                     /* NEP-only types: `H5Tget_native_type()` widens
                      * them to a larger native type (bfloat16 -> a
                      * 4-byte float), overflowing `var->fill_value`
@@ -4387,6 +4432,7 @@ typedef struct {
     hid_t loc;
     int is_var;         /**< Nonzero when iterating a variable's dataset. */
     NC_GRP_INFO_T *grp; /**< Group resolving user-defined datatypes. */
+    int error; /**< Failure loading a supported attribute. */
 } att_iter_data_t;
 
 /**
@@ -4442,9 +4488,9 @@ load_att_cb(hid_t loc, const char *attr_name, const H5A_info_t *ainfo,
     if (is_reserved_att(attr_name) &&
         !(ad->is_var && !strcmp(attr_name, NC_FillValue)))
         return 0;
-    if (read_hdf5_att(loc, attr_name, ad->list, ad->container, ad->grp))
-        return 0; /* skip attributes that cannot be mapped */
-    return 0;
+    ad->error = read_hdf5_att(loc, attr_name, ad->list, ad->container, ad->grp);
+    if (ad->error == NC_EBADTYPE) ad->error = NC_NOERR;
+    return ad->error ? -1 : 0;
 }
 
 /**
@@ -4456,61 +4502,36 @@ load_att_cb(hid_t loc, const char *attr_name, const H5A_info_t *ainfo,
  * recovered earlier fills only the gap when no attribute exists.
  *
  * @param var Variable whose attribute index was just populated.
+ * @return NC_NOERR or a NetCDF allocation/type error.
  */
-static void
+static int
 nx4_fill_from_att(NC_VAR_INFO_T *var)
 {
     NC_ATT_INFO_T *att;
-    size_t size;
+    size_t size = var->type_info->size;
+    void *copy;
+    int ret;
+    NC *nc = var->container->nc4_info->controller;
 
     if (!(att = find_att(var->att, NC_FillValue)) || !att->data ||
         att->len < 1 || att->nc_typeid != var->type_info->hdr.id)
-        return;
-    if (att->nc_typeid == NC_STRING) {
-        char *copy = strdup(*(char **)att->data);
-        if (!copy)
-            return;
-        free(var->fill_value);
-        var->fill_value = copy;
-        return;
+        return NC_NOERR;
+    /* Variable-sized types (vlens and compounds containing them)
+     * deep-copy the descriptor and its payload so the fill value
+     * owns its data outright. */
+    if (!(copy = calloc(1, size))) return NC_ENOMEM;
+    if ((ret = nx4_copy_data(nc, att->nc_typeid, att->data, 1, copy))) {
+        free(copy);
+        return ret;
     }
-    if (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID) {
-        /* Variable-sized types (vlens and compounds containing them)
-         * deep-copy the descriptor and its payload so the fill value
-         * owns its data outright. */
-        NC_TYPE_INFO_T *ut = NULL;
-        void *copy;
-        if (!nx4_find_type(var->container, att->nc_typeid, &ut) || !ut ||
-            !ut->varsized) {
-            if (nx4_type_size(var->container, att->nc_typeid, &size))
-                return;
-            if (!(copy = malloc(size)))
-                return;
-            memcpy(copy, att->data, size);
-        } else {
-            size = var->type_info->size;
-            if (!(copy = malloc(size ? size : 1)))
-                return;
-            if (NC_copy_data(var->container->nc4_info->controller,
-                             att->nc_typeid, att->data, 1, copy)) {
-                free(copy);
-                return;
-            }
-        }
+    if (var->fill_value) {
+        if (att->nc_typeid == NC_STRING ||
+            (att->nc_typeid >= NC_FIRSTUSERTYPEID && var->type_info->varsized))
+            NC_reclaim_data(nc, att->nc_typeid, var->fill_value, 1);
         free(var->fill_value);
-        var->fill_value = copy;
-        return;
     }
-    if (NEXTCDF4_type_size(var->type_info->hdr.id, &size))
-        return;
-    {
-        void *copy = malloc(size);
-        if (!copy)
-            return;
-        memcpy(copy, att->data, size);
-        free(var->fill_value);
-        var->fill_value = copy;
-    }
+    var->fill_value = copy;
+    return NC_NOERR;
 }
 
 /**
@@ -4533,7 +4554,7 @@ load_variables(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
     NEXTCDF4_GRP_INFO_T *ginfo = grp->format_grp_info;
     hid_t hdf_grp = ginfo ? ginfo->hdf_group : file->rootid;
     var_list_t vl = {0};
-    att_iter_data_t ad;
+    att_iter_data_t ad = {0};
     int loaded = 0;
     int i;
     int ret;
@@ -4566,9 +4587,17 @@ load_variables(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
             ad.container = &lvar->hdr;
             ad.is_var = 1;
             ad.grp = grp;
-            H5Aiterate2(ad.loc, att_iter_index(ad.loc, 0), H5_ITER_INC,
-                        NULL, load_att_cb, &ad);
-            nx4_fill_from_att(lvar);
+            if (H5Aiterate2(ad.loc, att_iter_index(ad.loc, 0), H5_ITER_INC,
+                            NULL, load_att_cb, &ad) < 0) {
+                free_name_list(vl.names, vl.count);
+                free(vl.varids);
+                return ad.error ? ad.error : NC_EHDFERR;
+            }
+            if ((ret = nx4_fill_from_att(lvar))) {
+                free_name_list(vl.names, vl.count);
+                free(vl.varids);
+                return ret;
+            }
             loaded++;
         }
     } else {
@@ -4590,9 +4619,17 @@ load_variables(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
                     ad.container = &lvar->hdr;
                     ad.is_var = 1;
                     ad.grp = grp;
-                    H5Aiterate2(ad.loc, att_iter_index(ad.loc, 0),
-                                H5_ITER_INC, NULL, load_att_cb, &ad);
-                    nx4_fill_from_att(lvar);
+                    if (H5Aiterate2(ad.loc, att_iter_index(ad.loc, 0),
+                                    H5_ITER_INC, NULL, load_att_cb, &ad) < 0) {
+                        free_name_list(vl.names, vl.count);
+                        free(vl.varids);
+                        return ad.error ? ad.error : NC_EHDFERR;
+                    }
+                    if ((ret = nx4_fill_from_att(lvar))) {
+                        free_name_list(vl.names, vl.count);
+                        free(vl.varids);
+                        return ret;
+                    }
                     loaded++;
                     break;
                 }
@@ -4624,7 +4661,7 @@ load_group_attributes(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
 {
     NEXTCDF4_GRP_INFO_T *ginfo = grp->format_grp_info;
     hid_t hdf_grp = ginfo ? ginfo->hdf_group : file->rootid;
-    att_iter_data_t ad;
+    att_iter_data_t ad = {0};
     (void)file;
     (void)h5;
     ad.loc = hdf_grp;
@@ -4634,7 +4671,7 @@ load_group_attributes(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
     ad.grp = grp;
     if (H5Aiterate2(hdf_grp, att_iter_index(hdf_grp, 1), H5_ITER_INC,
                     NULL, load_att_cb, &ad) < 0)
-        return NC_EHDFERR;
+        return ad.error ? ad.error : NC_EHDFERR;
     grp->atts_read = 1;
     return NC_NOERR;
 }

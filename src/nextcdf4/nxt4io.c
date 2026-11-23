@@ -109,8 +109,12 @@ NEXTCDF4_memory_type(nc_type type, int *closep)
         {
             hid_t t = H5Tcopy(H5T_C_S1);
             if (t >= 0) {
-                H5Tset_size(t, H5T_VARIABLE);
-                H5Tset_strpad(t, H5T_STR_NULLTERM);
+                if (H5Tset_size(t, H5T_VARIABLE) < 0 ||
+                    H5Tset_strpad(t, H5T_STR_NULLTERM) < 0 ||
+                    H5Tset_cset(t, H5T_CSET_UTF8) < 0) {
+                    H5Tclose(t);
+                    return -1;
+                }
             }
             return t;
         }
@@ -244,13 +248,14 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
     hsize_t dims[NC_MAX_VAR_DIMS], newdims[NC_MAX_VAR_DIMS];
     hsize_t start[NC_MAX_VAR_DIMS], count[NC_MAX_VAR_DIMS], stride[NC_MAX_VAR_DIMS];
     hsize_t rcount[NC_MAX_VAR_DIMS];
-    size_t fill_steps[NC_MAX_VAR_DIMS];
+    hsize_t memory_dims[NC_MAX_VAR_DIMS], origin[NC_MAX_VAR_DIMS] = {0};
     hsize_t total = 1;
     int provide_fill = 0, no_read = 0;
     int ndims, i, extend = 0, ret, range_error = 0;
     void *converted = NULL, *io_data = data;
     nc_type xtype, io_type;
-    int converting;
+    int converting, dynamic = 0, read_started = 0;
+    char **string_write = NULL;
     size_t xtype_size;
 
     /* Resolve state, validate mode and memtype, bounds-check and
@@ -274,7 +279,6 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
         if ((ret = NEXTCDF4__enddef(ncid, 0, 0, 0, 0))) return ret;
     }
     if (vinfo->hdf_dataset < 0) return NC_ENOTVAR;
-    if (!data) return NC_EINVAL;
     /* The untyped nc_put_var/nc_get_var, var1 and vars calls pass
      * NC_NAT, meaning "the variable's own type"; resolve it so
      * NEXTCDF4_memory_type() gets a real type. */
@@ -287,7 +291,9 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
          * there is no numeric conversion. */
         if (memtype != var->type_info->hdr.id) return NC_EBADTYPE;
     } else if ((ret = check_memtype((nc_type)var->type_info->hdr.id, memtype))) return ret;
-    if ((ret = nx4_memory_type(grp, memtype, &mtype))) return ret;
+    if (memtype == NC_STRING) {
+        if ((mtype = H5Dget_type(vinfo->hdf_dataset)) < 0) return NC_EHDFERR;
+    } else if ((ret = nx4_memory_type(grp, memtype, &mtype))) return ret;
     close_mtype = 1;
     ndims = (int)var->ndims;
     if ((fspace = H5Dget_space(vinfo->hdf_dataset)) < 0) { ret = NC_EHDFERR; goto done; }
@@ -300,7 +306,7 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
         start[i] = startp[i]; count[i] = countp[i]; stride[i] = stridep ? (hsize_t)stridep[i] : 1;
         newdims[i] = dims[i];
         rcount[i] = countp[i];
-        fill_steps[i] = 0;
+        memory_dims[i] = countp[i];
         if (!countp[i]) { total = 0; continue; }
         if (countp[i] - 1 > (SIZE_MAX - startp[i]) / (size_t)stride[i]) { ret = NC_EEDGE; goto done; }
         last = startp[i] + (countp[i] - 1) * (size_t)stride[i];
@@ -319,7 +325,6 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
                                  stride[i] - 1) / stride[i];
                 else
                     rcount[i] = 0;
-                fill_steps[i] = countp[i] - (size_t)rcount[i];
                 count[i] = rcount[i];
                 provide_fill = 1;
             }
@@ -329,6 +334,7 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
     }
     if (!total) { ret = NC_NOERR; goto done; }
 prepare:
+    if (!data) { ret = NC_EINVAL; goto done; }
     xtype = (nc_type)var->type_info->hdr.id;
     converting = memtype != xtype || (writing && var->quantize_mode != NC_NOQUANTIZE);
     io_type = converting ? xtype : memtype;
@@ -378,6 +384,29 @@ prepare:
             H5Tclose(dt);
         }
     }
+    dynamic = xtype == NC_STRING ||
+              (xtype >= NC_FIRSTUSERTYPEID && var->type_info->varsized);
+    if (dynamic) {
+        hid_t stored = H5Dget_type(vinfo->hdf_dataset), matched = -1;
+        if (stored < 0) { ret = NC_EHDFERR; goto done; }
+        ret = nx4_storage_memory_type(mtype, stored, &matched);
+        H5Tclose(stored);
+        if (ret) goto done;
+        H5Tclose(mtype);
+        mtype = matched;
+    }
+    if (!writing && dynamic) {
+        memset(io_data, 0, (size_t)total * xtype_size);
+        read_started = 1;
+    }
+    if (writing && xtype == NC_STRING) {
+        if (!(string_write = malloc((size_t)total * sizeof(char *)))) {
+            ret = NC_ENOMEM; goto done;
+        }
+        for (size_t k = 0; k < (size_t)total; k++)
+            string_write[k] = ((char **)data)[k] ? ((char **)data)[k] : "";
+        io_data = string_write;
+    }
     if (extend) {
         if (H5Dset_extent(vinfo->hdf_dataset, newdims) < 0) { ret = NC_EHDFERR; goto done; }
         H5Sclose(fspace);
@@ -406,9 +435,13 @@ prepare:
         for (i = 0, no_read = 0; i < ndims; i++)
             if (!rcount[i]) no_read = 1;
     }
+    mspace = ndims ? H5Screate_simple(ndims, memory_dims, NULL) : H5Screate(H5S_SCALAR);
+    if (mspace < 0) { ret = NC_EHDFERR; goto done; }
     if (ndims && !no_read &&
         (H5Sselect_hyperslab(fspace, H5S_SELECT_SET, start, stride, count, NULL) < 0 ||
-         (mspace = H5Screate_simple(ndims, count, NULL)) < 0)) { ret = NC_EHDFERR; goto done; }
+         H5Sselect_hyperslab(mspace, H5S_SELECT_SET, origin, NULL, count, NULL) < 0)) {
+        ret = NC_EHDFERR; goto done;
+    }
     if (writing) {
         ret = H5Dwrite(vinfo->hdf_dataset, mtype, ndims ? mspace : H5S_ALL,
                        fspace, H5P_DEFAULT, io_data) < 0 ? NC_EHDFERR : NC_NOERR;
@@ -419,54 +452,40 @@ prepare:
         if (!no_read) {
             ret = H5Dread(vinfo->hdf_dataset, mtype, ndims ? mspace : H5S_ALL,
                           fspace, H5P_DEFAULT, io_data) < 0 ? NC_EHDFERR : NC_NOERR;
-            if (ret && xtype >= NC_FIRSTUSERTYPEID) {
-                /* A failed read of a variable-sized type (vlens and
-                 * compounds containing them) may have left
-                 * HDF5-allocated payloads in the buffer: reclaim them
-                 * so the error does not leak, then clear the
-                 * descriptors so the caller sees no dangling
-                 * pointers. */
-                NC_TYPE_INFO_T *ut = NULL;
-                if (!nx4_find_type(grp, xtype, &ut) && ut && ut->varsized) {
-                    H5E_BEGIN_TRY {
-                        H5Dvlen_reclaim(mtype, ndims ? mspace : H5S_ALL,
-                                        H5P_DEFAULT, io_data);
-                    } H5E_END_TRY;
-                    memset(io_data, 0, (size_t)total * xtype_size);
-                }
-            }
+            /* A failed read of a variable-sized type (strings, vlens
+             * and compounds containing them) is reclaimed at done,
+             * including values copied while supplying fill. */
         }
         if (!ret && provide_fill) {
-            /* Elements selected past the dataset extent on unlimited
-             * dims get the fill value, deep-copied element by element
-             * so variable-sized types carry owned payloads for
-             * nc_reclaim_data. The fill region is the tail of the
-             * caller's buffer after the elements HDF5 supplied. */
-            size_t real_size = xtype_size, fill_len = 1, k;
-            char *filldata;
+            /* Supply each missing logical element independently;
+             * multidimensional clipped selections are not a flat tail.
+             * Dynamic values receive independently owned payloads. */
             void *zero_fill = NULL;
             const void *fillvalue = var->fill_value;
-            for (i = 0; i < ndims; i++) {
-                real_size *= (size_t)rcount[i];
-                fill_len *= fill_steps[i] ? fill_steps[i] : 1;
-            }
+            char *empty = "";
             if (!fillvalue && xtype < NC_STRING) {
                 if ((ret = nc4_get_fill_value(h5, var, &zero_fill)))
                     goto done;
                 fillvalue = zero_fill;
             }
+            if (!fillvalue && xtype == NC_STRING) fillvalue = &empty;
             if (!fillvalue &&
                 !(fillvalue = zero_fill = calloc(1, xtype_size))) {
                 ret = NC_ENOMEM; goto done;
             }
-            filldata = (char *)io_data + real_size;
-            for (k = 0; k < fill_len; k++) {
-                if ((ret = NC_copy_data(h5->controller, xtype,
-                                        fillvalue, 1, filldata))) {
-                    free(zero_fill);
-                    goto done;
+            for (size_t k = 0; k < (size_t)total; k++) {
+                size_t index = k;
+                int missing = 0;
+                for (i = ndims - 1; i >= 0; i--) {
+                    if (index % countp[i] >= rcount[i]) missing = 1;
+                    index /= countp[i];
                 }
-                filldata += xtype_size;
+                if (!missing) continue;
+                void *dst = (char *)io_data + k * xtype_size;
+                if (xtype > NC_STRING && xtype < NC_FIRSTUSERTYPEID)
+                    memcpy(dst, fillvalue, xtype_size);
+                else if ((ret = nx4_copy_data(h5->controller, xtype,
+                                             fillvalue, 1, dst))) break;
             }
             free(zero_fill);
         }
@@ -475,6 +494,20 @@ prepare:
                                     &range_error, NULL, 0, NC_NOQUANTIZE, 0, 1);
     }
 done:
+    if (read_started && ret) {
+        NC_reclaim_data(h5->controller, xtype, io_data, (size_t)total);
+        memset(io_data, 0, (size_t)total * xtype_size);
+    }
+    if (read_started && !ret && xtype == NC_STRING) {
+        for (size_t k = 0; k < (size_t)total; k++)
+            if (!((char **)io_data)[k] && !(((char **)io_data)[k] = strdup(""))) {
+                NC_reclaim_data(h5->controller, xtype, io_data, (size_t)total);
+                memset(io_data, 0, (size_t)total * xtype_size);
+                ret = NC_ENOMEM;
+                break;
+            }
+    }
+    free(string_write);
     free(converted);
     if (mspace >= 0) H5Sclose(mspace);
     if (fspace >= 0) H5Sclose(fspace);

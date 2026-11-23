@@ -204,12 +204,13 @@ Plan: [docs/plan/v4.3.0-sprint1N4-upstream-user-type-tests.md](plan/v4.3.0-sprin
 Plan: [docs/plan/v4.3.0-sprint1O-fill-mode-cache-control-renaming-groups.md](plan/v4.3.0-sprint1O-fill-mode-cache-control-renaming-groups.md)
 
 #### Sprint 1P - NC_STRING
-Fix `NC_STRING` round-tripping (`docs/nextcdf4_status_v4_3_0.md` gaps 2-3):
+- Fix standalone string variable/attribute reopen and full string nesting (compound/array members, vlens of strings and recursive combinations) in native and `NC_NETCDF4_MODEL` modes.
+- Unify owned string/fill buffers, empty-string defaults, deep-copy/reclaim and partial-read cleanup; retain classic-model rejection and reject standalone string `NC_NOFILL`.
+- Require bidirectional upstream interchange plus NEXTCDF-4 updates to upstream-created string files; preserve legacy ASCII and upstream UTF-8 string storage compatibility.
+- Add focused string regressions and two-mode ports of `tst_strings`, `tst_strings2`, `tst_atts_string_rewrite`; existing normal/sanitizer CI runs them. Update behavior/status docs, keep CTest green and docs warning-free. No packaging changes.
+- Out of scope: wider fixed-length HDF5 strings (beyond v4.3.0), other upstream ports (future suite expansion), reference nesting (unsupported), provenance (1Q), Fortran (1R), release notes/publication (Sprint 2).
 
-- `map_nc_type`/loader: map variable-length string HDF5 datatypes back to `NC_STRING` so files with `NC_STRING` variables reopen instead of failing `NC_EBADTYPE`.
-- Load variable-length string attributes on open — currently they are silently dropped (`nc_get_att_string` returns `NC_ENOTATT` after reopen).
-- Correct string memory handling on read (`H5Dvlen_reclaim`/`nc_free_string` paths).
-- Tests: enabled reopen tests for `NC_STRING` variables and attributes; upstream `NC_NETCDF4` files with `NC_STRING` variables open read-only.
+Plan: [docs/plan/v4.3.0-sprint1P-nc-string.md](plan/v4.3.0-sprint1P-nc-string.md)
 
 #### Sprint 1Q - Provenance Attributes (_NCProperties/_IsNetcdf4/_SuperblockVersion)
 Write the standard hidden attributes upstream netcdf-c produces (`docs/nextcdf4_status_v4_3_0.md` gap 11):
@@ -227,6 +228,7 @@ Expose the NEXTCDF-4 C APIs through the Fortran binding (plan goal: "same releas
 - `nc_ref_*`/`nc_deref_*` Fortran wrappers, or an explicit documented decision to defer them.
 - `ftest/` coverage: `ftst_nextcdf4_*.F90` exercising create/types/I/O/reopen.
 - Out of scope: varm/other deprecated wrappers, Fortran support for the still-broken Sprint 1N/1P paths.
+- It may not be possible to support all user-defined types in Fortran, that's OK.
 
 
 #### Sprint 2 - 

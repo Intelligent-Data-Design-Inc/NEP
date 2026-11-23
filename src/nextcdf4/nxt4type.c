@@ -641,12 +641,10 @@ type_graph_contains(NC_FILE_INFO_T *h5, NC_TYPE_INFO_T *t,
 }
 
 /**
- * @brief Check whether @p t's type graph contains a string or
- * reference member anywhere.
+ * @brief Check whether @p t's type graph contains a reference member.
  *
- * `NC_STRING` values and `NC_STD_REF` tokens cannot legally nest
- * inside compounds or vlens (string member support is deferred;
- * references stay unsupported inside containers). The walk covers
+ * `NC_STD_REF` tokens cannot legally nest inside compounds or vlens.
+ * String members and bases are supported. The walk covers
  * compound fields, array elements and vlen bases recursively;
  * @p seen bounds the recursion on a malformed graph.
  *
@@ -664,14 +662,13 @@ type_graph_has_forbidden(NC_FILE_INFO_T *h5, NC_TYPE_INFO_T *t,
     if (!t)
         return 0;
     if (t->nc_type_class == NC_STRING)
-        return 1;
+        return 0;
     for (i = 0; i < nclistlength(seen); i++)
         if (nclistget(seen, i) == t)
             return 0;
     nclistpush(seen, t);
     if (t->nc_type_class == NC_VLEN) {
-        if (t->u.v.base_nc_typeid == NC_STRING ||
-            t->u.v.base_nc_typeid == NC_STD_REF)
+        if (t->u.v.base_nc_typeid == NC_STD_REF)
             return 1;
         if (t->u.v.base_nc_typeid >= NC_FIRSTUSERTYPEID) {
             NC_TYPE_INFO_T *m = NULL;
@@ -688,7 +685,7 @@ type_graph_has_forbidden(NC_FILE_INFO_T *h5, NC_TYPE_INFO_T *t,
         NC_TYPE_INFO_T *m = NULL;
         if (!f)
             continue;
-        if (f->nc_typeid == NC_STRING || f->nc_typeid == NC_STD_REF)
+        if (f->nc_typeid == NC_STD_REF)
             return 1;
         if (f->nc_typeid >= NC_FIRSTUSERTYPEID &&
             !nc4_find_type(h5, f->nc_typeid, &m) && m &&
@@ -699,7 +696,7 @@ type_graph_has_forbidden(NC_FILE_INFO_T *h5, NC_TYPE_INFO_T *t,
 }
 
 /**
- * @brief Reject a type graph containing strings or references.
+ * @brief Reject a type graph containing references.
  * @param h5 NetCDF-4 file state.
  * @param t Type record to inspect.
  * @return `NC_NOERR` when the graph is clean, `NC_EBADTYPE` otherwise.
@@ -720,11 +717,9 @@ check_graph_clean(NC_FILE_INFO_T *h5, NC_TYPE_INFO_T *t)
 /**
  * @brief Validate a compound member's element type.
  *
- * Atomic members use the file's compatibility rules with two fixed
- * exclusions — `NC_STRING` (Sprint 1P) and `NC_STD_REF` (documented
- * restriction). User-defined members may be any class except
- * `NC_STRING` — compounds, enums, opaques and vlens all nest — but
- * their member graph must contain no string or reference anywhere,
+ * Atomic members use the file's compatibility rules, excluding
+ * `NC_STD_REF`. Compounds, enums, opaques and vlens all nest, including
+ * string leaves, but their member graph must contain no references
  * and must not contain the container itself.
  *
  * @param file NEXTCDF-4 file state.
@@ -742,7 +737,7 @@ member_type_ok(NEXTCDF4_FILE_INFO_T *file, NC_GRP_INFO_T *grp,
     int cyclic, ret;
 
     if (xtype < NC_FIRSTUSERTYPEID) {
-        if (xtype == NC_STRING || xtype == NC_STD_REF)
+        if (xtype == NC_STD_REF)
             return NC_EBADTYPE;
         return NEXTCDF4_check_atomic_type(file, xtype);
     }
@@ -843,9 +838,9 @@ NEXTCDF4_insert_compound(int ncid, nc_type typeid, const char *name,
  * @brief Insert a scalar or fixed-size array field into a compound
  * type — the `nc_insert_array_compound()` dispatch entry.
  *
- * Members may be atomic types (excluding `NC_STRING` and
- * `NC_STD_REF`) or visible fixed-size user-defined types — compounds
- * nest. Validation happens entirely before `H5Tinsert` and the
+ * Members may be supported atomic types (excluding `NC_STD_REF`) or
+ * visible user-defined types, including strings and dynamic nesting.
+ * Validation happens entirely before `H5Tinsert` and the
  * metadata update, so a rejected call changes nothing.
  *
  * @param ncid NetCDF file identifier.
@@ -911,7 +906,7 @@ NEXTCDF4_insert_array_compound(int ncid, nc_type typeid, const char *name,
     }
 
     /* The member's element type must be legal here: standard atomic
-     * (minus strings/references) or a visible fixed-size user type
+     * (minus references) or a visible user type
      * that does not contain the container. */
     if ((ret = member_type_ok(file, grp, xtype, type)))
         return ret;
@@ -1046,8 +1041,8 @@ NEXTCDF4_inq_compound_fieldindex(int ncid, nc_type typeid, const char *name,
  *
  * A vlen variable stores a different number of elements per datum
  * (`nc_vlen_t` handles in memory, heap-allocated on disk). The base
- * type may be any supported atomic type except `NC_STRING` and
- * `NC_STD_REF`, or a visible user-defined type — compounds, enums,
+ * type may be any supported atomic type except `NC_STD_REF`, or a
+ * visible user-defined type — compounds, enums,
  * opaques and other vlens all nest.
  *
  * When the base is still uncommitted (a compound whose fields may
@@ -1095,10 +1090,10 @@ NEXTCDF4_def_vlen(int ncid, const char *name, nc_type base_typeid, nc_type *type
 
     /* Resolve the base: an atomic type under the file's compatibility
      * rules, or a visible user-defined type whose graph is free of
-     * strings and references. A vlen cannot reference itself, so no
+     * references. A vlen cannot reference itself, so no
      * cycle is possible here. */
     if (base_typeid < NC_FIRSTUSERTYPEID) {
-        if (base_typeid == NC_STRING || base_typeid == NC_STD_REF)
+        if (base_typeid == NC_STD_REF)
             return NC_EBADTYPE;
         if ((ret = NEXTCDF4_check_atomic_type(file, base_typeid)))
             return ret;
@@ -2049,4 +2044,128 @@ NEXTCDF4_inq_typeids(int ncid, int *ntypes, int *typeids)
         }
     }
     return NC_NOERR;
+}
+
+/**
+ * @brief Preserve storage string character sets in a native memory layout.
+ * @param memory Borrowed datatype describing the caller's layout.
+ * @param storage Borrowed stored datatype with matching members.
+ * @param typep Owned result, closed by the caller.
+ * @return NC_NOERR or NC_EHDFERR.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+nx4_storage_memory_type(hid_t memory, hid_t storage, hid_t *typep)
+{
+    H5T_class_t cls = H5Tget_class(memory);
+    hid_t result = -1, mb = -1, sb = -1, child = -1;
+    int ret = NC_EHDFERR;
+    if (cls == H5T_COMPOUND) {
+        int n = H5Tget_nmembers(memory);
+        if (n < 0 || (result = H5Tcreate(cls, H5Tget_size(memory))) < 0) goto done;
+        for (int i = 0; i < n; i++) {
+            char *name = H5Tget_member_name(memory, (unsigned)i);
+            int j = name ? H5Tget_member_index(storage, name) : -1;
+            mb = H5Tget_member_type(memory, (unsigned)i);
+            sb = j >= 0 ? H5Tget_member_type(storage, (unsigned)j) : -1;
+            int failed = !name || mb < 0 || sb < 0 ||
+                nx4_storage_memory_type(mb, sb, &child) ||
+                H5Tinsert(result, name, H5Tget_member_offset(memory, (unsigned)i), child) < 0;
+            if (name) H5free_memory(name);
+            if (failed) goto done;
+            H5Tclose(mb); mb = -1;
+            H5Tclose(sb); sb = -1;
+            H5Tclose(child); child = -1;
+        }
+    } else if (cls == H5T_ARRAY || cls == H5T_VLEN) {
+        if ((mb = H5Tget_super(memory)) < 0 || (sb = H5Tget_super(storage)) < 0 ||
+            nx4_storage_memory_type(mb, sb, &child)) goto done;
+        if (cls == H5T_VLEN) result = H5Tvlen_create(child);
+        else {
+            hsize_t dims[NC_MAX_VAR_DIMS];
+            int n = H5Tget_array_dims2(memory, dims);
+            if (n <= 0) goto done;
+            result = H5Tarray_create2(child, (unsigned)n, dims);
+        }
+    } else {
+        result = H5Tcopy(memory);
+        if (result >= 0 && cls == H5T_STRING &&
+            H5Tset_cset(result, H5Tget_cset(storage)) < 0) goto done;
+    }
+    if (result < 0) goto done;
+    *typep = result;
+    result = -1;
+    ret = NC_NOERR;
+done:
+    if (result >= 0) H5Tclose(result);
+    if (mb >= 0) H5Tclose(mb);
+    if (sb >= 0) H5Tclose(sb);
+    if (child >= 0) H5Tclose(child);
+    return ret;
+}
+
+/**
+ * @brief Deep-copy values with initialized, reclaim-safe partial results.
+ * @param nc File controller owning user-type metadata.
+ * @param xtype Atomic or user-defined type.
+ * @param src Borrowed source element buffer.
+ * @param count Number of elements.
+ * @param dst Uninitialized destination element buffer.
+ * @return NC_NOERR or a NetCDF error; failure leaves a zeroed destination.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+nx4_copy_data(NC *nc, nc_type xtype, const void *src, size_t count, void *dst)
+{
+    NC_FILE_INFO_T *h5 = nc->dispatchdata;
+    NC_TYPE_INFO_T *type = NULL;
+    size_t size;
+    int ret = NC_NOERR;
+    if (!count) return NC_NOERR;
+    if (!src || !dst) return NC_EINVAL;
+    if (xtype < NC_FIRSTUSERTYPEID) {
+        if ((ret = NEXTCDF4_type_size(xtype, &size))) return ret;
+    } else {
+        if (nc4_find_type(h5, xtype, &type) || !type) return NC_EBADTYPE;
+        size = type->size;
+    }
+    if (!size || count > SIZE_MAX / size) return NC_EINVAL;
+    memset(dst, 0, count * size);
+    if (xtype != NC_STRING && (!type || !type->varsized)) {
+        memcpy(dst, src, count * size);
+        return NC_NOERR;
+    }
+    for (size_t i = 0; i < count && !ret; i++) {
+        const char *s = (const char *)src + i * size;
+        char *d = (char *)dst + i * size;
+        if (xtype == NC_STRING) {
+            const char *value = *(char *const *)s;
+            if (!(*(char **)d = strdup(value ? value : ""))) ret = NC_ENOMEM;
+        } else if (type->nc_type_class == NC_VLEN) {
+            const nc_vlen_t *v = (const nc_vlen_t *)s;
+            nc_vlen_t *copy = (nc_vlen_t *)d;
+            size_t bs;
+            if ((ret = nx4_type_size(type->container, type->u.v.base_nc_typeid, &bs))) break;
+            if (!v->len) continue;
+            if (!v->p || v->len > SIZE_MAX / bs) { ret = NC_EINVAL; break; }
+            if (!(copy->p = calloc(v->len, bs))) { ret = NC_ENOMEM; break; }
+            copy->len = v->len;
+            ret = nx4_copy_data(nc, type->u.v.base_nc_typeid, v->p, v->len, copy->p);
+        } else if (type->nc_type_class == NC_COMPOUND) {
+            for (size_t j = 0; j < nclistlength(type->u.c.field) && !ret; j++) {
+                NC_FIELD_INFO_T *f = (NC_FIELD_INFO_T *)nclistget(type->u.c.field, j);
+                size_t n = 1;
+                for (int k = 0; k < f->ndims; k++) {
+                    if (n > SIZE_MAX / (size_t)f->dim_size[k]) { ret = NC_EINVAL; break; }
+                    n *= (size_t)f->dim_size[k];
+                }
+                if (!ret) ret = nx4_copy_data(nc, f->nc_typeid, s + f->offset, n, d + f->offset);
+            }
+        } else ret = NC_EBADTYPE;
+    }
+    if (ret) {
+        NC_reclaim_data(nc, xtype, dst, count);
+        memset(dst, 0, count * size);
+    }
+    return ret;
 }

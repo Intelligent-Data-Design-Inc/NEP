@@ -1,6 +1,15 @@
 # Build file for the NEXTCDF-4 test directory.
 
 if(HAVE_NEXTCDF4)
+    add_executable(tst_nextcdf4_string tst_nextcdf4_string.c)
+    target_link_libraries(tst_nextcdf4_string PRIVATE ncnextcdf4 ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
+    target_include_directories(tst_nextcdf4_string PRIVATE ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/string)
+    add_test(NAME tst_nextcdf4_string COMMAND tst_nextcdf4_string)
+    set_tests_properties(tst_nextcdf4_string PROPERTIES
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/string
+        LABELS nextcdf4_strings
+        ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
     foreach(control IN ITEMS fill_mode cache)
         set(target tst_nextcdf4_${control})
         add_executable(${target} ${target}.c)
@@ -224,7 +233,8 @@ if(HAVE_NEXTCDF4)
     # ccf52cb2afefc3faca9d6e0e281f7d07a0297446efa3987fb2fcc592314cdddd,
     # read through srcdir by tst_compounds.
     foreach(_nxt4_utype tst_enums tst_opaques tst_compounds
-            tst_compounds2 tst_vl tst_vlen_unlim)
+            tst_compounds2 tst_vl tst_vlen_unlim
+            tst_strings tst_strings2 tst_atts_string_rewrite)
         add_executable(${_nxt4_utype} nc_test4/${_nxt4_utype}.c)
         target_link_libraries(${_nxt4_utype} PRIVATE ncnextcdf4 ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
         target_include_directories(${_nxt4_utype} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/nc_test4 ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
@@ -238,8 +248,13 @@ if(HAVE_NEXTCDF4)
             else()
                 set(_nxt4_selector netcdf4)
             endif()
+            if(_nxt4_utype MATCHES "string")
+                set(_nxt4_label nextcdf4_strings)
+            else()
+                set(_nxt4_label nextcdf4_user_types)
+            endif()
             set_tests_properties(${_nxt4_utype}_${_nxt4_mode} PROPERTIES
-                LABELS nextcdf4_user_types
+                LABELS ${_nxt4_label}
                 ENVIRONMENT "NEP_NC_TEST4_MODEL=${_nxt4_selector};NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};srcdir=${CMAKE_CURRENT_SOURCE_DIR}/nc_test4;LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
         endforeach()
     endforeach()
