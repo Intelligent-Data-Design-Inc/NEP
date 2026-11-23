@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "geotiffdispatch.h"
+#include "src/geotiffinternal.h"
 
 #define TEST_FILE "MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif"
 #define ERR_CHECK(ret) do { if ((ret) != NC_NOERR) { \

@@ -19,7 +19,7 @@
 #include <time.h>
 
 #ifdef HAVE_GEOTIFF
-#include "geotiffdispatch.h"
+#include "src/geotiffinternal.h"
 #endif
 
 #define FILE_NAME "ABBA_2022_C61_HNL.tif"

@@ -12,7 +12,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "nep_nc4.h"
-#include "grib2dispatch.h"
+#include "grib2internal.h"
 #include <grib2.h>
 
 /** Maximum number of PDS/GDS/DRS template entries supported. */

@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "nep_nc4.h"
-#include "mmcifdispatch.h"
+#include "mmcifinternal.h"
 
 extern int nc4_var_list_add(NC_GRP_INFO_T *grp, const char *name, int ndims,
                             NC_VAR_INFO_T **var);

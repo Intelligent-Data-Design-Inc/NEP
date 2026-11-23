@@ -9,7 +9,7 @@
 
 #include "config.h"
 #include "nep_nc4.h"
-#include "cdfdispatch.h"
+#include "cdfinternal.h"
 /* Suppress warnings from external CDF library header */
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"

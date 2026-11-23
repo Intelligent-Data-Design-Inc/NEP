@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <netcdf.h>
-#include "geotiffdispatch.h"
+#include "geotiffinternal.h"
 #include "nep_nc4.h"
 
 #ifdef HAVE_GEOTIFF

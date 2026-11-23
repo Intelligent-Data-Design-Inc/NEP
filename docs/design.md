@@ -466,9 +466,9 @@ The GRIB2 UDF handler follows the same NC_Dispatch pattern used for CDF and GeoT
 
 | Struct | Location | Purpose |
 |--------|----------|---------|
-| `NC_GRIB2_FILE_INFO_T` | `include/grib2dispatch.h` | Per-file state: `g2cid`, `num_messages`, `num_products`, `num_x`/`num_y`, `*products` array |
-| `NC_GRIB2_PROD_INFO_T` | `include/grib2dispatch.h` | Per-product inventory: `msg_index`, `prod_index`, `discipline`, `category`, `param_number`, `nx`, `ny`, `bytes_to_msg`, `bytes_in_msg`, `abbrev[64]` |
-| `NC_VAR_GRIB2_INFO_T` | `include/grib2dispatch.h` | Per-variable: `msg_index`, `prod_index`, `bytes_to_msg`, `bytes_in_msg` (used by `get_vara` for direct file I/O) |
+| `NC_GRIB2_FILE_INFO_T` | `src/grib2internal.h` | Per-file state: `g2cid`, `num_messages`, `num_products`, `num_x`/`num_y`, `*products` array |
+| `NC_GRIB2_PROD_INFO_T` | `src/grib2internal.h` | Per-product inventory: `msg_index`, `prod_index`, `discipline`, `category`, `param_number`, `nx`, `ny`, `bytes_to_msg`, `bytes_in_msg`, `abbrev[64]` |
+| `NC_VAR_GRIB2_INFO_T` | `src/grib2internal.h` | Per-variable: `msg_index`, `prod_index`, `bytes_to_msg`, `bytes_in_msg` (used by `get_vara` for direct file I/O) |
 
 #### Memory Ownership
 - `NC_GRIB2_FILE_INFO_T.products` array: allocated in `NC_GRIB2_open()`, freed in `NC_GRIB2_close()`
@@ -506,7 +506,8 @@ The GRIB2 UDF handler follows the same NC_Dispatch pattern used for CDF and GeoT
 |------|---------|
 | `src/grib2dispatch.c` | NC_Dispatch table and `NC_GRIB2_initialize()` |
 | `src/grib2file.c` | `NC_GRIB2_open()`, `NC_GRIB2_close()`, `NC_GRIB2_get_vara()` |
-| `include/grib2dispatch.h` | Public header: `NC_GRIB2_FILE_INFO_T`, prototypes |
+| `include/grib2dispatch.h` | Installed public header: `NC_FORMATX_NC_GRIB2`, `NC_GRIB2_initialize()`/`NC_GRIB2_finalize()` |
+| `src/grib2internal.h` | Private header: `NC_GRIB2_FILE_INFO_T`/`NC_GRIB2_PROD_INFO_T`/`NC_VAR_GRIB2_INFO_T`, dispatch prototypes |
 
 ### Dependencies
 
@@ -585,8 +586,8 @@ NEP v2.0.0 adds support for FITS (Flexible Image Transport System) files through
 
 | Struct | Location | Purpose |
 |--------|----------|---------|
-| `NC_FITS_FILE_INFO_T` | `include/fitsdispatch.h` | Per-file: CFITSIO `fitsfile *`, path |
-| `NC_FITS_VAR_INFO_T` | `include/fitsdispatch.h` | Per-variable: `hdu_num`, `col_num` (0=image), `col_width` (string columns) |
+| `NC_FITS_FILE_INFO_T` | `src/fitsinternal.h` | Per-file: CFITSIO `fitsfile *`, path |
+| `NC_FITS_VAR_INFO_T` | `src/fitsinternal.h` | Per-variable: `hdu_num`, `col_num` (0=image), `col_width` (string columns) |
 
 #### `NC_FITS_get_vara()` Data Paths
 - **Image**: Reverses `start[]/count[]` into `fpixel[]/lpixel[]`, calls `fits_read_subset()`; CFITSIO applies `BSCALE`/`BZERO` automatically when reading into floating-point types
@@ -598,7 +599,8 @@ NEP v2.0.0 adds support for FITS (Flexible Image Transport System) files through
 |------|---------|
 | `src/fitsdispatch.c` | NC_Dispatch table and `NC_FITS_initialize()` / `NC_FITS_finalize()` |
 | `src/fitsfile.c` | `NC_FITS_open()`, `NC_FITS_close()`, `NC_FITS_get_vara()`, HDU readers |
-| `include/fitsdispatch.h` | Public header: `NC_FITS_FILE_INFO_T`, `NC_FITS_VAR_INFO_T`, prototypes |
+| `include/fitsdispatch.h` | Installed public header: `NC_FORMATX_NC_FITS`, `NC_FITS_initialize()`/`NC_FITS_finalize()` |
+| `src/fitsinternal.h` | Private header: `NC_FITS_FILE_INFO_T`, `NC_FITS_VAR_INFO_T`, dispatch prototypes |
 
 ### Dependencies
 
@@ -684,8 +686,8 @@ NEP v2.2.0 adds support for NASA/ESA Planetary Data System version 4 (PDS4) XML-
 
 | Struct | Location | Purpose |
 |--------|----------|---------|
-| `NC_PDS4_FILE_INFO_T` | `include/pds4dispatch.h` | Per-file: xmlDoc pointer, label path, data directory |
-| `NC_PDS4_VAR_INFO_T` | `include/pds4dispatch.h` | Per-variable: file offset, record length, field offset/length, table/ASCII flags, byte-order |
+| `NC_PDS4_FILE_INFO_T` | `src/pds4internal.h` | Per-file: xmlDoc pointer, label path, data directory |
+| `NC_PDS4_VAR_INFO_T` | `src/pds4internal.h` | Per-variable: file offset, record length, field offset/length, table/ASCII flags, byte-order |
 
 ### Source Files
 
@@ -693,7 +695,8 @@ NEP v2.2.0 adds support for NASA/ESA Planetary Data System version 4 (PDS4) XML-
 |------|---------|
 | `src/pds4dispatch.c` | NC_Dispatch table and `NC_PDS4_initialize()` / `NC_PDS4_finalize()` |
 | `src/pds4file.c` | `NC_PDS4_open()`, `NC_PDS4_close()`, `NC_PDS4_get_vara()`, XML metadata readers |
-| `include/pds4dispatch.h` | Public header: `NC_PDS4_FILE_INFO_T`, `NC_PDS4_VAR_INFO_T`, prototypes |
+| `include/pds4dispatch.h` | Installed public header: `NC_FORMATX_NC_PDS4`, `NC_PDS4_initialize()`/`NC_PDS4_finalize()` |
+| `src/pds4internal.h` | Private header: `NC_PDS4_FILE_INFO_T`, `NC_PDS4_VAR_INFO_T`, dispatch prototypes |
 
 ### Dependencies
 

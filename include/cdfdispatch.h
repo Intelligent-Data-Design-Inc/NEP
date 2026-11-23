@@ -1,6 +1,12 @@
 /**
- * @file
- * @brief Public types and prototypes for the CDF UDF dispatch layer.
+ * @file cdfdispatch.h
+ * @brief Public declarations for the CDF UDF backend.
+ *
+ * This header declares only what applications need — the
+ * initialize/finalize pair and the extended format identifier.
+ *
+ * This header may be included by downstream projects: it depends
+ * only on installed netcdf-c headers and `nep.h`.
  *
  * @author Edward Hartnett
  * @date 2025-11-23
@@ -9,8 +15,8 @@
 #ifndef _CDFDISPATCH_H
 #define _CDFDISPATCH_H
 
-#include "config.h"
-#include "ncdispatch.h"
+#include <netcdf.h>
+#include <netcdf_dispatch.h>
 #include "nep.h"
 
 /** CDF format uses UDF4 slot for dispatch table model field (see NEP.h for slot allocation) */
@@ -20,59 +26,15 @@
 #define NC_FORMATX_NC_CDF NC_FORMATX_UDF0
 #endif
 
-/** This is the max number of dimensions for a CDF SD dataset (from
- * CDF documentation). */
-#define NC_MAX_CDF_DIMS 32
-
-/* Stuff below is for cdf files. */
-typedef struct NC_VAR_CDF_INFO
-{
-    int sdsid;
-    int cdf_data_type;
-} NC_VAR_CDF_INFO_T;
-
-typedef struct NC_CDF_FILE_INFO
-{
-    void *id;
-} NC_CDF_FILE_INFO_T;
-
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
-    extern int
-    NC_CDF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
-                 void *parameters, const NC_Dispatch *, int);
+/** @brief Register the CDF dispatch table in its UDF slot. */
+extern NC_Dispatch *NC_CDF_initialize(void);
 
-    extern int
-    NC_CDF_abort(int ncid);
-
-    extern int
-    NC_CDF_close(int ncid, void *ignore);
-
-    extern int
-    NC_CDF_inq_format(int ncid, int *formatp);
-
-    extern int
-    NC_CDF_inq_format_extended(int ncid, int *formatp, int *modep);
-
-    extern int
-    NC_CDF_get_vara(int ncid, int varid, const size_t *start, const size_t *count,
-                     void *value, nc_type);
-
-    extern NC_Dispatch*
-    NC_CDF_initialize(void);
-
-    extern int
-    NC_CDF_finalize(void);
-
-#define CDF_INIT_OK() (NC_CDF_initialize() != NULL)
-#define CDF_INIT_AND_ASSIGN(ret) do { \
-        NC_Dispatch *_d = NC_CDF_initialize(); \
-        (ret) = (_d != NULL) ? NC_NOERR : NC_ENOTNC; \
-    } while(0)
-
-    extern const NC_Dispatch *CDF_dispatch_table;
+/** @brief Finalize process-wide CDF dispatch state. */
+extern int NC_CDF_finalize(void);
 
 #if defined(__cplusplus)
 }

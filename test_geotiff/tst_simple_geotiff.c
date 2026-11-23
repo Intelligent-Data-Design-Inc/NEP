@@ -17,7 +17,7 @@
 #include <netcdf.h>
 
 #ifdef HAVE_GEOTIFF
-#include "geotiffdispatch.h"
+#include "src/geotiffinternal.h"
 #include <tiffio.h>
 #endif
 

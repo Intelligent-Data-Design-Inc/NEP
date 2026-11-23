@@ -9,7 +9,7 @@
 
 #include "config.h"
 #include <stdlib.h>
-#include "geotiffdispatch.h"
+#include "geotiffinternal.h"
 #include "nc4dispatch.h"
 #include "hdf5dispatch.h"
 #include "netcdf_filter.h"

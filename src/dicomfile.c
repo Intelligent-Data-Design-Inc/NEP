@@ -30,7 +30,7 @@
 #include <string.h>
 #include <assert.h>
 #include "nep_nc4.h"
-#include "dicomdispatch.h"
+#include "dicominternal.h"
 
 /* Include libdicom and libjpeg headers if available */
 #ifdef HAVE_DICOM

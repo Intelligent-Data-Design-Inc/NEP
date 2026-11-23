@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "geotiffdispatch.h"
+#include "src/geotiffinternal.h"
 
 #ifdef HAVE_GEOTIFF
 #include <tiffio.h>

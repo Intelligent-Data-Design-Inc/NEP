@@ -499,7 +499,7 @@ The PDS4 XML label is mapped into the netCDF-4 in-memory model as follows:
   the referenced data file; byte-swaps binary types as needed; parses ASCII types
   via `strtod()`/`strtoll()`.
 
-**Per-Variable Layout Struct** (`NC_PDS4_VAR_INFO_T` in `include/pds4dispatch.h`):
+**Per-Variable Layout Struct** (`NC_PDS4_VAR_INFO_T` in `src/pds4internal.h`):
 
 Stored in `var->format_var_info` for every PDS4 variable. Fields:
 

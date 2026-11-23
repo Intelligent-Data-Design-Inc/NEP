@@ -85,15 +85,11 @@ See [docs/nextcdf4.md](docs/nextcdf4.md) for the full backend reference
 and [docs/nextcdf4_architecture.md](docs/nextcdf4_architecture.md) for
 how it works internally.
 
-### Example Programs
+### Companion Book
 
-NEP's example programs exercise NEP features: NEXTCDF-4 small-float and conversion demos (`examples/nextcdf4/`), disk-bound performance benchmarks (`examples/performance/`), UDF reader examples (`examples/dicom/`, `examples/pdb/`), and optional Python UDF visualizations (`examples/viz/`).
-
-The generic NetCDF teaching examples — classic NetCDF, NetCDF-4, NcZarr, OPeNDAP, parallel I/O, and all Fortran versions — moved to the [NetCDF Developer's Handbook](https://github.com/captainkirk99/NetCDF_Developers_Handbook) repository in v4.3.0, where they are maintained as companion code for the book.
-
-### Earth Observation Examples
-
-Mission-by-mission satellite-data examples, data-access instructions, and Python visualizations formerly hosted in NEP are maintained in the [Earth Observation in Practice](https://github.com/captainkirk99/Earth_Observation_in_Practice) repository.
+<a href="https://www.amazon.com/Earth-Observation-Practice-Mission-Mission/dp/B0HJRZ9F7L/">
+  <img src="docs/images/EO_in_practice_cover.png" alt="Cover of Earth Observation in Practice" width="240">
+</a>
 
 The companion book, [*Earth Observation in Practice: A Mission-by-Mission Guide to Reading Satellite Data with NetCDF and Python*](https://www.amazon.com/Earth-Observation-Practice-Mission-Mission/dp/B0HJRZ9F7L/), provides additional background and worked examples. These external resources are informational and are not build-time, run-time, test-time, or packaging dependencies of NEP.
 
