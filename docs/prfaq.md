@@ -277,7 +277,10 @@ nc_get_vara_float(grpid, varid, start, count, data);
 - LZ4/BZIP2 compression performance benchmarks are maintained by nep-compress.
 
 #### Q: Does NEP support parallel I/O?
-**A:** Yes, NEP is designed to work in HPC environments with parallel I/O operations. LZ4 compression is particularly well-suited for parallel workflows.
+**A:** NEP has MPI tests/examples using upstream NetCDF. The experimental NEXTCDF-4 backend does **not** support parallel I/O in v4.3.0; it is deferred to a future release. NEXTCDF-4 rejects parallel create/open flags and returns `NC_ENOTNC4` for `nc_var_par_access`. Memory-image files, SWMR and sharing modes are also unsupported; memory/sharing flags are rejected rather than silently ignored.
+
+#### Q: Can I control NEXTCDF-4 fill, cache settings and group names?
+**A:** Yes, starting with v4.3.0 Sprint 1O. `nc_set_fill` sets the session default for newly defined eligible variables; existing variables and explicit per-variable overrides stay unchanged, and reopen resets the default to `NC_FILL`. `nc_set_var_chunk_cache` applies actual HDF5 cache settings even in read-only/data mode; overrides last only for the session, and `nc_get_var_chunk_cache` reports effective chunked settings. Group creation/rename work in native and `NC_NETCDF4_MODEL` modes, preserving descendants and data; classic-model groups remain unsupported. See [NEXTCDF-4](nextcdf4.md) for validation, fill exclusions and cache details.
 
 #### Q: Can I use NEP on Windows?
 **A:** Currently, NEP targets Linux and Unix platforms. Windows support may be added in future releases based on community demand.

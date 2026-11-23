@@ -450,6 +450,11 @@ prepare:
                 real_size *= (size_t)rcount[i];
                 fill_len *= fill_steps[i] ? fill_steps[i] : 1;
             }
+            if (!fillvalue && xtype < NC_STRING) {
+                if ((ret = nc4_get_fill_value(h5, var, &zero_fill)))
+                    goto done;
+                fillvalue = zero_fill;
+            }
             if (!fillvalue &&
                 !(fillvalue = zero_fill = calloc(1, xtype_size))) {
                 ret = NC_ENOMEM; goto done;

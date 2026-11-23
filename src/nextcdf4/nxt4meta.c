@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <math.h>
 #include <hdf5_hl.h>
 #include "nclist.h"
 #include "nxt4internal.h"
@@ -39,6 +40,246 @@ static int nx4_rewrite_atts(hid_t loc, NCindex *list, NC_GRP_INFO_T *grp);
 static int nx4_reattach_dim(NC_GRP_INFO_T *grp, NC_DIM_INFO_T *dim,
                             hid_t old_dset, hid_t new_dset,
                             NC_VAR_INFO_T *skip);
+
+/**
+ * @brief Build an owned access-property list from a variable's session settings.
+ * @param var Variable holding bytes, slots and preemption in netCDF order.
+ * @param daplp Destination for the owned HDF5 property list.
+ * @return NC_NOERR or NC_EHDFERR.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+static int
+nx4_var_dapl(const NC_VAR_INFO_T *var, hid_t *daplp)
+{
+    hid_t dapl = H5Pcreate(H5P_DATASET_ACCESS);
+    if (dapl < 0)
+        return NC_EHDFERR;
+    if (H5Pset_chunk_cache(dapl, var->chunkcache.nelems,
+                           var->chunkcache.size, var->chunkcache.preemption) < 0) {
+        H5Pclose(dapl);
+        return NC_EHDFERR;
+    }
+    *daplp = dapl;
+    return NC_NOERR;
+}
+
+/**
+ * @brief Collect owned dataset-handle slots aliasing one HDF5 object.
+ * All aliases must close before opening with a different DAPL; otherwise HDF5
+ * retains the first open's raw-data cache even for newly opened handles.
+ * @param grp Subtree to search for variable and dimension-scale handles.
+ * @param target Open dataset used as the object-token comparison location.
+ * @param token Target object token.
+ * @param slots List of pointers to owned handle slots, not handles to close yet.
+ * @return NC_NOERR, NC_ENOMEM or NC_EHDFERR.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+static int
+nx4_cache_aliases(NC_GRP_INFO_T *grp, hid_t target,
+                   const H5O_token_t *token, NClist *slots)
+{
+    size_t i;
+    int kind;
+    for (kind = 0; kind < 2; kind++) {
+        NCindex *index = kind ? grp->dim : grp->vars;
+        for (i = 0; i < ncindexsize(index); i++) {
+            hid_t *slot = NULL;
+            H5O_info2_t info;
+            int cmp;
+            if (kind) {
+                NC_DIM_INFO_T *dim = (NC_DIM_INFO_T *)ncindexith(index, i);
+                NEXTCDF4_DIM_INFO_T *dinfo = dim->format_dim_info;
+                if (dinfo)
+                    slot = &dinfo->hdf_dataset;
+            } else {
+                NC_VAR_INFO_T *var = (NC_VAR_INFO_T *)ncindexith(index, i);
+                NEXTCDF4_VAR_INFO_T *vinfo = var->format_var_info;
+                if (vinfo)
+                    slot = &vinfo->hdf_dataset;
+            }
+            if (!slot || *slot < 0)
+                continue;
+            if (H5Oget_info3(*slot, &info, H5O_INFO_BASIC) < 0 ||
+                H5Otoken_cmp(target, token, &info.token, &cmp) < 0)
+                return NC_EHDFERR;
+            if (!cmp && !nclistpush(slots, slot))
+                return NC_ENOMEM;
+        }
+    }
+    for (i = 0; i < ncindexsize(grp->children); i++) {
+        int ret = nx4_cache_aliases((NC_GRP_INFO_T *)ncindexith(grp->children, i),
+                                     target, token, slots);
+        if (ret)
+            return ret;
+    }
+    return NC_NOERR;
+}
+
+/**
+ * @brief Reopen every owned alias of a variable with its requested cache.
+ * Object identity and metadata stay unchanged. If reopening fails, restore the
+ * previous DAPL where possible; a failed recovery leaves invalid, not stale,
+ * handles and returns an HDF5 error.
+ * @param grp Variable's containing group.
+ * @param var Variable whose session request should become effective.
+ * @return NC_NOERR, NC_ENOMEM or NC_EHDFERR.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+static int
+nx4_reopen_var_cache(NC_GRP_INFO_T *grp, NC_VAR_INFO_T *var)
+{
+    NEXTCDF4_VAR_INFO_T *vinfo = var->format_var_info;
+    NEXTCDF4_FILE_INFO_T *file = grp->nc4_info->format_file_info;
+    H5O_info2_t info;
+    NClist *slots = NULL;
+    char *path = NULL;
+    hid_t dapl = -1, old_dapl = -1;
+    ssize_t len;
+    size_t i;
+    int ret = NC_EHDFERR;
+
+    if (vinfo->hdf_dataset < 0)
+        return var->created ? NC_EHDFERR : NC_NOERR;
+    if ((ret = nx4_var_dapl(var, &dapl)))
+        return ret;
+    ret = NC_EHDFERR;
+    if ((old_dapl = H5Dget_access_plist(vinfo->hdf_dataset)) < 0 ||
+        H5Oget_info3(vinfo->hdf_dataset, &info, H5O_INFO_BASIC) < 0 ||
+        (len = H5Iget_name(vinfo->hdf_dataset, NULL, 0)) <= 0)
+        goto done;
+    if (!(path = malloc((size_t)len + 1)) || !(slots = nclistnew())) {
+        ret = NC_ENOMEM;
+        goto done;
+    }
+    if (H5Iget_name(vinfo->hdf_dataset, path, (size_t)len + 1) != len)
+        goto done;
+    if ((ret = nx4_cache_aliases(grp->nc4_info->root_grp, vinfo->hdf_dataset,
+                                 &info.token, slots)))
+        goto done;
+    ret = NC_EHDFERR;
+    if (!file->no_write && H5Fflush(file->hdfid, H5F_SCOPE_LOCAL) < 0)
+        goto done;
+    for (i = 0; i < nclistlength(slots); i++) {
+        hid_t *slot = nclistget(slots, i);
+        if (H5Dclose(*slot) < 0)
+            goto restore;
+        *slot = -1;
+    }
+    for (i = 0; i < nclistlength(slots); i++) {
+        hid_t *slot = nclistget(slots, i);
+        if ((*slot = H5Dopen2(file->hdfid, path, dapl)) < 0)
+            goto restore;
+    }
+    ret = NC_NOERR;
+    goto done;
+
+restore:
+    for (i = 0; i < nclistlength(slots); i++) {
+        hid_t *slot = nclistget(slots, i);
+        if (*slot >= 0 && H5Dclose(*slot) >= 0)
+            *slot = -1;
+    }
+    for (i = 0; i < nclistlength(slots); i++) {
+        hid_t *slot = nclistget(slots, i);
+        if (*slot < 0)
+            *slot = H5Dopen2(file->hdfid, path, old_dapl);
+    }
+done:
+    if (old_dapl >= 0)
+        H5Pclose(old_dapl);
+    H5Pclose(dapl);
+    nclistfree(slots);
+    free(path);
+    return ret;
+}
+
+/**
+ * @brief Apply session-only cache settings without recreating dataset storage.
+ * Read-only and data-mode calls are permitted. Pending datasets retain the
+ * request until creation; live datasets reopen all owned aliases together.
+ * @param ncid File or group identifier.
+ * @param varid Variable identifier within the group.
+ * @param size Cache capacity in bytes; zero disables raw chunk caching.
+ * @param nelems Hash slot count; zero is permitted.
+ * @param preemption Finite cache preemption weight in [0,1].
+ * @return NC_NOERR or an identifier, validation, memory or HDF5 error.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+NEXTCDF4_set_var_chunk_cache(int ncid, int varid, size_t size,
+                             size_t nelems, float preemption)
+{
+    NC_GRP_INFO_T *grp;
+    NC_VAR_INFO_T *var;
+    struct ChunkCache old;
+    int ret;
+
+    if ((ret = nc4_find_nc4_grp(ncid, &grp)))
+        return ret;
+    if (varid < 0 || !(var = (NC_VAR_INFO_T *)ncindexith(grp->vars, varid)))
+        return NC_ENOTVAR;
+    if (!isfinite(preemption) || preemption < 0 || preemption > 1)
+        return NC_EINVAL;
+    old = var->chunkcache;
+    var->chunkcache.size = size;
+    var->chunkcache.nelems = nelems;
+    var->chunkcache.preemption = preemption;
+    if ((ret = nx4_reopen_var_cache(grp, var)))
+        var->chunkcache = old;
+    return ret;
+}
+
+/**
+ * @brief Inquire effective chunk cache properties, allowing NULL outputs.
+ * A pending or nonchunked variable reports its stored session request. Live
+ * chunked variables report the DAPL actually attached to the dataset handle.
+ * @param ncid File or group identifier.
+ * @param varid Variable identifier within the group.
+ * @param sizep Optional byte-capacity destination.
+ * @param nelemsp Optional hash-slot destination.
+ * @param preemptionp Optional preemption destination.
+ * @return NC_NOERR or an identifier/HDF5 error.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+NEXTCDF4_get_var_chunk_cache(int ncid, int varid, size_t *sizep,
+                             size_t *nelemsp, float *preemptionp)
+{
+    NC_GRP_INFO_T *grp;
+    NC_VAR_INFO_T *var;
+    NEXTCDF4_VAR_INFO_T *vinfo;
+    size_t size, nelems;
+    double preemption;
+    int ret;
+
+    if ((ret = nc4_find_nc4_grp(ncid, &grp)))
+        return ret;
+    if (varid < 0 || !(var = (NC_VAR_INFO_T *)ncindexith(grp->vars, varid)))
+        return NC_ENOTVAR;
+    size = var->chunkcache.size;
+    nelems = var->chunkcache.nelems;
+    preemption = var->chunkcache.preemption;
+    vinfo = var->format_var_info;
+    if (vinfo->hdf_dataset < 0 && var->created)
+        return NC_EHDFERR;
+    if (vinfo->hdf_dataset >= 0 && var->storage == NC_CHUNKED) {
+        hid_t dapl = H5Dget_access_plist(vinfo->hdf_dataset);
+        if (dapl < 0)
+            return NC_EHDFERR;
+        ret = H5Pget_chunk_cache(dapl, &nelems, &size, &preemption) < 0
+            ? NC_EHDFERR : NC_NOERR;
+        H5Pclose(dapl);
+        if (ret)
+            return ret;
+    }
+    if (sizep)
+        *sizep = size;
+    if (nelemsp)
+        *nelemsp = nelems;
+    if (preemptionp)
+        *preemptionp = (float)preemption;
+    return NC_NOERR;
+}
 
 static const char *reserved_atts[] = {
     NEXTCDF4_BACKEND_ATT,
@@ -1256,6 +1497,7 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
     hid_t hdf_type = -1;
     hid_t space = -1;
     hid_t dcpl = -1;
+    hid_t dapl = -1;
     hid_t hdf_grp = -1;
     hsize_t dims[NC_MAX_VAR_DIMS];
     hsize_t maxdims[NC_MAX_VAR_DIMS];
@@ -1322,6 +1564,8 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
         goto fail;
     }
     var->format_var_info = vinfo;
+    if (xtype < NC_FIRSTUSERTYPEID && xtype != NC_STRING && xtype != NC_STD_REF)
+        var->no_fill = h5->fill_mode == NC_NOFILL;
 
     for (i = 0; i < ndims; i++) {
         NC_DIM_INFO_T *dim = NULL;
@@ -1406,6 +1650,8 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
             goto fail;
     }
 
+    if ((ret = nx4_var_dapl(var, &dapl)))
+        goto fail;
     if (coordinate) {
         NEXTCDF4_DIM_INFO_T *dinfo = var->dim[0]->format_dim_info;
         if (!dinfo || dinfo->hdf_dataset < 0) { ret = NC_EFILEMETA; goto fail; }
@@ -1422,7 +1668,7 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
             { ret = NC_EHDFERR; goto fail; }
         dinfo->hdf_dataset = H5Dcreate2(hdf_grp, name, hdf_type, space,
                                         H5P_DEFAULT, dcpl >= 0 ? dcpl : H5P_DEFAULT,
-                                        H5P_DEFAULT);
+                                        dapl);
         if (dinfo->hdf_dataset < 0 || H5DSset_scale(dinfo->hdf_dataset, name) < 0 ||
             (ret = write_int_att(dinfo->hdf_dataset, NEXTCDF4_DIMID_ATT,
                                  var->dimids[0])))
@@ -1430,11 +1676,11 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
         if ((ret = nx4_reattach_dim(grp, var->dim[0], -1,
                                   dinfo->hdf_dataset, var)))
             goto fail;
-        vinfo->hdf_dataset = H5Dopen2(hdf_grp, name, H5P_DEFAULT);
+        vinfo->hdf_dataset = H5Dopen2(hdf_grp, name, dapl);
     } else {
         vinfo->hdf_dataset = H5Dcreate2(hdf_grp, name, hdf_type, space,
                                         H5P_DEFAULT, dcpl >= 0 ? dcpl : H5P_DEFAULT,
-                                        H5P_DEFAULT);
+                                        dapl);
     }
     if (vinfo->hdf_dataset < 0) { ret = NC_EHDFERR; goto fail; }
 
@@ -1460,6 +1706,7 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
         *varidp = var->hdr.id;
     H5Tclose(hdf_type);
     H5Sclose(space);
+    H5Pclose(dapl);
     if (dcpl >= 0)
         H5Pclose(dcpl);
     return NC_NOERR;
@@ -1480,6 +1727,8 @@ fail:
         H5Tclose(hdf_type);
     if (space >= 0)
         H5Sclose(space);
+    if (dapl >= 0)
+        H5Pclose(dapl);
     if (dcpl >= 0)
         H5Pclose(dcpl);
     return ret;
@@ -1636,6 +1885,7 @@ nx4_create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
     hid_t hdf_type = -1;
     hid_t space = -1;
     hid_t dcpl = -1;
+    hid_t dapl = -1;
     hid_t old_dset = -1;
     hsize_t dims[NC_MAX_VAR_DIMS];
     hsize_t maxdims[NC_MAX_VAR_DIMS];
@@ -1768,6 +2018,8 @@ nx4_create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
     if (var->ndims > 0 &&
         (ret = nx4_apply_filters(dcpl, var)))
         goto fail;
+    if ((ret = nx4_var_dapl(var, &dapl)))
+        goto fail;
 
     if (coordinate) {
         NEXTCDF4_DIM_INFO_T *dinfo =
@@ -1777,18 +2029,18 @@ nx4_create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
             goto fail;
         }
         dinfo->hdf_dataset = H5Dcreate2(hdf_grp, var->hdr.name, hdf_type, space,
-                                        H5P_DEFAULT, dcpl, H5P_DEFAULT);
+                                        H5P_DEFAULT, dcpl, dapl);
         if (dinfo->hdf_dataset < 0 ||
             H5DSset_scale(dinfo->hdf_dataset, var->hdr.name) < 0 ||
             (ret = write_int_att(dinfo->hdf_dataset, NEXTCDF4_DIMID_ATT,
                                  var->dimids[0])))
             { if (!ret) ret = NC_EHDFERR; goto fail; }
-        vinfo->hdf_dataset = H5Dopen2(hdf_grp, var->hdr.name, H5P_DEFAULT);
+        vinfo->hdf_dataset = H5Dopen2(hdf_grp, var->hdr.name, dapl);
         if (vinfo->hdf_dataset < 0)
             { ret = NC_EHDFERR; goto fail; }
     } else {
         vinfo->hdf_dataset = H5Dcreate2(hdf_grp, var->hdr.name, hdf_type, space,
-                                        H5P_DEFAULT, dcpl, H5P_DEFAULT);
+                                        H5P_DEFAULT, dcpl, dapl);
         if (vinfo->hdf_dataset < 0)
             { ret = NC_EHDFERR; goto fail; }
     }
@@ -1835,6 +2087,7 @@ nx4_create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
     if ((ret = nx4_rewrite_atts(vinfo->hdf_dataset, var->att, grp)))
         goto fail;
 
+    H5Pclose(dapl);
     H5Tclose(hdf_type);
     H5Sclose(space);
     return NC_NOERR;
@@ -1844,6 +2097,8 @@ fail:
     if (vinfo)
         vinfo->hdf_dataset = -1;
     H5E_BEGIN_TRY { H5Ldelete(hdf_grp, var->hdr.name, H5P_DEFAULT); } H5E_END_TRY;
+    if (dapl >= 0)
+        H5Pclose(dapl);
     if (hdf_type >= 0)
         H5Tclose(hdf_type);
     if (space >= 0)
@@ -4106,6 +4361,7 @@ load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
         else
             var->endianness = NC_ENDIAN_NATIVE;
     }
+    ret = nx4_reopen_var_cache(grp, var);
 
 done:
     if (dset >= 0)
@@ -4668,10 +4924,11 @@ load_group_metadata(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
         return ret;
     if ((ret = load_children(file, h5, hdf_grp, grp)))
         return ret;
-    /* Unmarked non-NetCDF-4 HDF5 files must have at least dimensions or
-     * variables that follow the NetCDF-4 dimension-scale convention. */
+    /* A valid enhanced-model file may keep all data in subgroups or
+     * contain only committed types, with no root dimensions/variables. */
     if (grp == h5->root_grp && !file->backend_marked &&
-        ncindexsize(grp->dim) == 0 && ncindexsize(grp->vars) == 0)
+        ncindexsize(grp->dim) == 0 && ncindexsize(grp->vars) == 0 &&
+        ncindexsize(grp->children) == 0 && ncindexsize(grp->type) == 0)
         return NC_ENOTNC;
     return NC_NOERR;
 }

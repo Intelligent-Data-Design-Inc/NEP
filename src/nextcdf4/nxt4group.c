@@ -141,9 +141,8 @@ get_grp_from_ncid(int ncid, NC_FILE_INFO_T **h5, NC_GRP_INFO_T **grpp)
  * Validates define-mode write access, creates the HDF5 group under
  * the parent's `hid_t`, adds the matching `NC_GRP_INFO_T` to the
  * in-memory tree, and returns the child ncid. Groups are an
- * enhanced-model feature: both `NC_CLASSIC_MODEL` and
- * `NC_NETCDF4_MODEL` files reject this with `NC_ENOTNC4`, since
- * NEXTCDF-4's netcdf-4-model mode aims for upstream compatibility.
+ * enhanced-model feature: native and `NC_NETCDF4_MODEL` files accept
+ * them, while `NC_CLASSIC_MODEL` files return `NC_ENOTNC4`.
  *
  * @param ncid NetCDF file identifier of the parent group.
  * @param name Subgroup name.
@@ -171,8 +170,6 @@ NEXTCDF4_def_grp(int ncid, const char *name, int *grpidp)
         return ret;
 
     if (file->mode & NC_CLASSIC_MODEL)
-        return NC_ENOTNC4;
-    if (file->netcdf4_model)
         return NC_ENOTNC4;
 
     if ((ret = get_grp_hdf(parent, &parent_g)))
@@ -395,7 +392,7 @@ NEXTCDF4_inq_grpname_full(int ncid, size_t *lenp, char *name)
     if (lenp)
         *lenp = pos;
     if (name)
-        strncpy(name, path, NC_MAX_NAME);
+        memcpy(name, path, pos + 1);
     return NC_NOERR;
 }
 
@@ -438,4 +435,67 @@ int
 NEXTCDF4_inq_grp_full_ncid(int ncid, const char *full_name, int *grpidp)
 {
     return NEXTCDF4_inq_ncid(ncid, full_name, grpidp);
+}
+
+/**
+ * @brief Rename a populated enhanced-model group without changing object IDs.
+ * Moves only the parent link, retaining open descendants and their dimension
+ * and datatype relationships. Full names are derived from the updated tree.
+ * @param grpid Non-root group identifier.
+ * @param name New short name, normalized according to netCDF naming rules.
+ * @return NC_NOERR, a naming/access error, or NC_EHDFERR on link/flush failure.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+NEXTCDF4_rename_grp(int grpid, const char *name)
+{
+    NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
+    NC_GRP_INFO_T *grp;
+    NEXTCDF4_GRP_INFO_T *parent;
+    char normalized[NC_MAX_NAME + 1];
+    char *replacement, *oldname;
+    int ret;
+
+    if ((ret = NEXTCDF4_get_file(grpid, &h5, &file)) ||
+        (ret = get_grp_from_ncid(grpid, &h5, &grp)))
+        return ret;
+    if (file->no_write)
+        return NC_EPERM;
+    if (file->mode & NC_CLASSIC_MODEL)
+        return NC_ENOTNC4;
+    if (!grp->parent)
+        return NC_EBADGRPID;
+    if (!name)
+        return NC_EINVAL;
+    if ((ret = nc4_check_name(name, normalized)) ||
+        (ret = nc4_check_dup_name(grp->parent, normalized)))
+        return ret;
+    if (!(replacement = strdup(normalized)))
+        return NC_ENOMEM;
+    if ((ret = NEXTCDF4_check_write_define(h5, file))) {
+        free(replacement);
+        return ret;
+    }
+    parent = grp->parent->format_grp_info;
+    oldname = grp->hdr.name;
+    if (H5Lmove(parent->hdf_group, oldname, parent->hdf_group,
+                normalized, H5P_DEFAULT, H5P_DEFAULT) < 0) {
+        free(replacement);
+        return NC_EHDFERR;
+    }
+    grp->hdr.name = replacement;
+    if (!ncindexrebuild(grp->parent->children)) {
+        if (H5Lmove(parent->hdf_group, normalized, parent->hdf_group,
+                    oldname, H5P_DEFAULT, H5P_DEFAULT) < 0) {
+            free(oldname);
+            return NC_EHDFERR;
+        }
+        grp->hdr.name = oldname;
+        free(replacement);
+        ncindexrebuild(grp->parent->children);
+        return NC_ENOMEM;
+    }
+    free(oldname);
+    return H5Fflush(file->hdfid, H5F_SCOPE_LOCAL) < 0 ? NC_EHDFERR : NC_NOERR;
 }

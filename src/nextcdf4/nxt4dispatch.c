@@ -22,7 +22,8 @@
  * functions implemented by NEXTCDF-4 itself (`NEXTCDF4_*`), shared
  * netcdf-c helpers that work on the common `NC_*_INFO_T` metadata
  * (`NC4_*`), and stubs for unsupported operations (`NC_NOTNC4_*`,
- * `NC_NOOP_*`, `NC_RO_set_fill`).
+ * `NC_NOOP_*`). Fill defaults, group rename and chunk-cache settings
+ * use NEXTCDF-4 entries rather than unsupported-operation stubs.
  *
  * The struct has no designated initializers, so entries must appear
  * in the exact positional order netcdf-c defines. See
@@ -38,7 +39,7 @@ static const NC_Dispatch NEXTCDF4_dispatcher = {
     NEXTCDF4_sync,
     NEXTCDF4_abort,
     NEXTCDF4_close,
-    NC_RO_set_fill,
+    NEXTCDF4_set_fill,
     NEXTCDF4_inq_format,
     NEXTCDF4_inq_format_extended,
     NC4_inq,
@@ -80,7 +81,7 @@ static const NC_Dispatch NEXTCDF4_dispatcher = {
     NEXTCDF4_inq_typeids,
     NEXTCDF4_inq_type_equal,
     NEXTCDF4_def_grp,
-    NC_NOTNC4_rename_grp,
+    NEXTCDF4_rename_grp,
     NEXTCDF4_inq_user_type,
     NEXTCDF4_inq_typeid,
     NEXTCDF4_def_compound,
@@ -101,8 +102,8 @@ static const NC_Dispatch NEXTCDF4_dispatcher = {
     NEXTCDF4_def_var_chunking,
     NEXTCDF4_def_var_endian,
     NEXTCDF4_def_var_filter,
-    NC_NOTNC4_set_var_chunk_cache,
-    NC_NOTNC4_get_var_chunk_cache,
+    NEXTCDF4_set_var_chunk_cache,
+    NEXTCDF4_get_var_chunk_cache,
     NEXTCDF4_inq_var_filter_ids,
     NEXTCDF4_inq_var_filter_info,
     NEXTCDF4_def_var_quantize,

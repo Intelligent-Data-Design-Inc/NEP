@@ -135,11 +135,9 @@ lines across 11 C files plus `nxt4internal.h`/`nxt4err.h`).
 | API | Dispatch entry | Return |
 |-----|---------------|--------|
 | `nc_get_varm`/`nc_put_varm` | `NEXTCDF4_get_varm`/`put_varm` (`nxt4io.c`) | `NC_ENOTBUILT` — deliberate; mapped I/O is deprecated upstream |
+| `nc_var_par_access` | `NC_NOTNC4_var_par_access` stub | `NC_ENOTNC4` — parallel I/O deferred beyond v4.3.0 |
 
-| `nc_set_fill` | `NC_RO_set_fill` stub | `NC_EPERM` — file-level fill mode cannot be changed |
-| `nc_rename_grp` | `NC_NOTNC4_rename_grp` stub | `NC_ENOTNC4` — group rename unimplemented (dims/vars do rename) |
-| `nc_set_var_chunk_cache`/`nc_get_var_chunk_cache` | `NC_NOTNC4_*` stubs | `NC_ENOTNC4` |
-| `nc_var_par_access` | `NC_NOTNC4_var_par_access` stub | `NC_ENOTNC4` — no parallel I/O |
+Sprint 1O replaced the fill/cache/group-rename stubs: `nc_set_fill` controls a definition-time session default, cache setters/getters use real HDF5 DAPLs including live coordinate-alias reopen, and group creation/rename work in native and `NC_NETCDF4_MODEL` modes. See [NEXTCDF-4 controls](nextcdf4.md). Focused `tst_nextcdf4_fill_mode`/`tst_nextcdf4_cache` plus extended file/rename tests cover these paths in normal/sanitizer full CTest. Subgroup-only upstream files are accepted and descendant full paths are no longer truncated at `NC_MAX_NAME`.
 
 ## Broken / incomplete — verified against the built backend
 
@@ -157,7 +155,7 @@ Probed with a small program linked against `build/src/libncnextcdf4.so`
 | 7 | ~~**Installed `nextcdf4dispatch.h` is unusable downstream**~~ — fixed in Sprint 1M: the installed header no longer includes `config.h`/`ncdispatch.h` and now declares only `NC_FORMATX_NEXTCDF4`, the create/open/abort/close/sync/inq-format entries, `NC_NEXTCDF4_initialize`/`finalize`, and `NEXTCDF4_dispatch_table` against `netcdf.h`/`netcdf_dispatch.h`/`nep.h`; private declarations moved to `src/nextcdf4/nxt4internal.h`. Sibling installed dispatch headers share the original defect — tracked in #389. | #378 |
 | 8 | ~~**Small-float coordinate variables** — the design banned them but nothing enforces it.~~ Done in Sprint 1L1: allowed and documented; `tst_nextcdf4_var` covers bf16/f16 coord vars. | #380 |
 | 9 | **Conversion reads take an extra full-buffer pass** (performance, not correctness). | #386 |
-| 10 | **Mode flags not validated**: `NC_DISKLESS` is accepted but silently creates a file on disk; `NC_MPIIO`/`NC_MPIPOSIX`/`NC_SHARE`/`NC_PERSIST`/`NC_INMEMORY` are likewise neither honored nor rejected. | probe: `NC_NEXTCDF4|NC_DISKLESS` creates a real file |
+| 10 | ~~**Mode flags not validated**~~ — fixed in Sprint 1O: create/open reject `NC_DISKLESS`, `NC_INMEMORY`, `NC_MPIIO`/`NC_MPIPOSIX`, `NC_SHARE`, `NC_PERSIST` and `NC_MMAP` with `NC_EINVAL` before side effects. Upstream may preempt invalid combinations before dispatch. | `tst_nextcdf4_file`: missing-file and sentinel-preservation checks; memory opens use `nc_open_mem` to supply the image upstream requires |
 | 11 | **No provenance attributes written** — upstream writes `_NCProperties`, `_IsNetcdf4`, `_SuperblockVersion`; NEXTCDF-4 filters them on read but never writes them (planned `nxt4provenance.c` doesn't exist). | `nxt4meta.c` reserved list |
 | 12 | **`nc_inq_var_all` filter outputs never populated** (`idp`/`nparamsp`/`params` always empty) — noted in code as matching upstream's shared helper. | `nxt4meta.c` `NEXTCDF4_inq_var_all` |
 | 13 | ~~**`nc_put_att` on `_FillValue` rejected**~~ — fixed in Sprint 1L2: `_FillValue` is exempted from the reserved-att rule and validated upstream-style (len 1 → `NC_EINVAL`, type mismatch → `NC_EBADTYPE`, after data write → `NC_ELATEFILL`), mirrored into `var->fill_value`, and written to the DCPL (default `NC_FILL_*` when unset, so unwritten elements read back as fill). | Sprint 1L2 |
@@ -272,9 +270,8 @@ Owned by v4.3.0 Sprints 1L1–1R (see `docs/roadmap.md`), ordered by severity.
    `NC_BFLOAT16` fill-value loss (#377).~~ — done in Sprint 1M.
 5. ~~Fix the installed `nextcdf4dispatch.h` (#378) so applications can call
    `NC_NEXTCDF4_initialize()`.~~ — done in Sprint 1M.
-6. Validate or explicitly reject `NC_DISKLESS`/`NC_MPIIO`/`NC_SHARE`/
-   `NC_INMEMORY`/`NC_PERSIST` mode flags instead of ignoring them (gap 10).
-   → Sprint 1O
+6. ~~Validate unsupported memory/parallel/sharing mode flags (gap 10).~~
+   Done in Sprint 1O, including `NC_MMAP`; rejection preserves existing files.
 
 **Decisions — resolved 2026-11-21:**
 
@@ -284,9 +281,9 @@ Owned by v4.3.0 Sprints 1L1–1R (see `docs/roadmap.md`), ordered by severity.
 8. Complex storage — resolved: keep native `H5T_COMPLEX_IEEE_F*`; docs
    reconciled in Sprint 1N.
 9. ~~Close #376 and #381~~ — done 2026-11-21, along with #372.
-10. `nc_set_fill`/`nc_rename_grp`/per-var chunk cache — implement or
-    document in Sprint 1O. Parallel I/O — deferred to the next release;
-    mode flags rejected and deferral documented (Sprint 1O + release notes).
+10. `nc_set_fill`/`nc_rename_grp`/per-var chunk cache — implemented in
+    Sprint 1O, including model-mode groups and effective live cache settings.
+    Parallel I/O remains deferred beyond v4.3.0; Sprint 2 owns release notes.
 11. Provenance attributes — write `_NCProperties`/`_IsNetcdf4`/
     `_SuperblockVersion` like upstream (Sprint 1Q).
 

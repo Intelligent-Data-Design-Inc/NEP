@@ -4,6 +4,10 @@
 
 Always use the directory name `build` for local builds. If a `build` directory already exists, delete it before creating a new one. This keeps the workspace clean and ensures the existing `.gitignore` rules hide build artifacts.
 
+## Local Verification
+
+The development netcdf-c installation needs `PKG_CONFIG_PATH=/usr/local/netcdf-c/lib/pkgconfig` when CMake regenerates the existing build. Run `cmake --build build --parallel 8`, `ctest --test-dir build --output-on-failure` and `cmake --build build --target docs` (zero warnings). Focused NEXTCDF-4 controls use `ctest --test-dir build -L nextcdf4_controls --output-on-failure`; all these tests also run in the existing normal/sanitizer CI full suites. Ask before deleting an existing build tree.
+
 ## Conda
 
 - The conda recipe lives in `conda/recipe/`; the staged-recipes copy

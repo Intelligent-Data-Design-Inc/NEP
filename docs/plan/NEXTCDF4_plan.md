@@ -10,6 +10,12 @@ The goals are:
 - Maintain full read compatibility with existing NetCDF-4/HDF5 files.
 - Produce files that netcdf-c can still open when the `NC_NETCDF4_MODEL` compatibility flag is used.
 
+## Sprint 1O session controls
+
+File-level `NEXTCDF4_set_fill` changes the shared session default inherited at definition by eligible atomic variables; existing variables and user-type/string/reference fill handling are unchanged. `NEXTCDF4_set_var_chunk_cache`/`NEXTCDF4_get_var_chunk_cache` apply/query actual HDF5 access properties, including closing all coordinate-scale aliases before a live reopen; cache overrides are session-only. `NEXTCDF4_rename_grp` supports populated native/model-mode groups with normalized-name validation, stable IDs and flush-per-rename persistence; group creation is also enabled in `NC_NETCDF4_MODEL`. Classic-model groups remain unsupported. Focused tests run in normal/sanitizer full CTest; broader upstream ports remain future suite expansion.
+
+Create/open reject unsupported memory, sharing and parallel flags before side effects (`NC_DISKLESS`, `NC_INMEMORY`, `NC_MPIIO`/`NC_MPIPOSIX`, `NC_SHARE`, `NC_PERSIST`, `NC_MMAP` → `NC_EINVAL`). All NEXTCDF-4 parallel I/O, image files and SWMR move beyond v4.3.0; parallel access remains `NC_ENOTNC4`. No new dependency, installed API or packaging option is introduced. See [the detailed Sprint 1O plan](v4.3.0-sprint1O-fill-mode-cache-control-renaming-groups.md).
+
 ## Sprint 1G conversion experiment
 
 The temporary CMake option `NEP_INTERNAL_CONVERT` defaults OFF. ON routes supported numeric variable/attribute conversion and quantization through NEP-owned `nx4_convert_type()` in `nxt4convert.c`; it is not an upstream converter wrapper. The common native-memory mapper is `NEXTCDF4_memory_type()`. Numeric conversion precedes quantization; HDF5 retains byte-order/storage work; the IEEE float16 exception was removed in v4.3.0 Sprint 1J, which brought float16 into `nx4_convert_type()`. Bfloat16 narrowing uses NEP nearest/even rounding. `NEP_HAS_INTERNAL_CONVERT` reports the effective build setting. The standalone public bfloat16 functions remain in `libnep`, independent of this backend. OFF/ON CI tests the experiment. Sprint 1H adds completed-I/O `NC_ERANGE` reporting to both engines, separate performance comparisons and Ed's required review before the permanent decision and switch removal. The independent API and packaging contract stay unchanged. On-disk formats and model flags do not change.

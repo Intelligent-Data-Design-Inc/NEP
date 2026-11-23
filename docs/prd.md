@@ -21,6 +21,14 @@
 
 NEXTCDF-4 uses the private, NEP-owned `nx4_convert_type()` engine for all supported variable, attribute and quantized-write numeric conversions, made permanent in Sprint 1H after measured comparison with the HDF5 engine. The temporary `NEP_INTERNAL_CONVERT` option and `NEP_HAS_INTERNAL_CONVERT` marker were removed; setting the option fails at configure time, and a single NEXTCDF-4 CI job covers correctness. Conversion uses nearest/even bfloat16 and IEEE float16 narrowing; float16 joined the engine in Sprint 1J (v4.3.0) and its `H5Tconvert` path was removed. Unsupported FP8/FP6/FP4 conversions and the public bfloat16-wrapper contract remain unchanged. The engine reports completed-conversion `NC_ERANGE` for overflow/integer range errors (including nonfinite-to-integer), not precision loss, fractional truncation or floating underflow. Range-warning writes finish all values and may replace attributes/extend dimensions; structural and I/O errors take precedence. No Spack variant or new public conversion API is required.
 
+## NEXTCDF-4 session-control requirements (v4.3.0 Sprint 1O)
+
+- File-level `nc_set_fill` starts at `NC_FILL` per open session and affects only subsequently defined eligible atomic variables. Preserve existing variable settings, explicit `nc_def_var_fill` overrides and dynamic user-type/reference fill safety; reject read-only changes. File-default changes do not recreate datasets or persist a hidden attribute.
+- Per-variable cache setters apply actual HDF5 DAPL settings, including on already-open datasets and coordinate-scale aliases, with no data loss or storage recreation. Getters report effective chunked settings; nonchunked variables report stored requests. Allow read-only/data-mode tuning, zero bytes/slots and finite preemption in [0,1]; reset overrides to global defaults on reopen.
+- Support populated group creation/rename in native and `NC_NETCDF4_MODEL`, preserving IDs, descendants and upstream interchange. Flush renames, validate normalized names and parent namespace collisions, reject root/read-only/classic-model rename, and keep descendant path inquiry accurate.
+- Reject unsupported create/open flags before filesystem changes: `NC_DISKLESS`, `NC_INMEMORY`, `NC_MPIIO`/`NC_MPIPOSIX`, `NC_SHARE`, `NC_PERSIST`, `NC_MMAP` return backend `NC_EINVAL`; upstream may preempt invalid combinations. All NEXTCDF-4 parallel I/O moves beyond v4.3.0; `nc_var_par_access` remains `NC_ENOTNC4`. General NEP MPI tests use upstream NetCDF and are not NEXTCDF-4 support. Image files and SWMR remain deferred.
+- Focused control regressions run in existing normal and sanitizer full-suite CI; keep all CTest tests passing and documentation warning-free. New upstream ports and string support remain outside Sprint 1O. No packaging-contract change.
+
 ## 2. Core Architecture
 
 ### 2.1 NetCDF User Defined Format (UDF) System

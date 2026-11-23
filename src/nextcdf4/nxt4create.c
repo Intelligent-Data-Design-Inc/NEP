@@ -94,6 +94,8 @@ NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
      * and flush. */
     if (!path || !*path)
         return NC_EINVAL;
+    if ((ret = NEXTCDF4_check_mode(cmode)))
+        return ret;
     if ((ret = valid_create_mode(cmode)))
         return ret;
     if (H5get_libversion(&major, &minor, &release) < 0)

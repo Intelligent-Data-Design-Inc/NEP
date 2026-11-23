@@ -1,6 +1,18 @@
 # Build file for the NEXTCDF-4 test directory.
 
 if(HAVE_NEXTCDF4)
+    foreach(control IN ITEMS fill_mode cache)
+        set(target tst_nextcdf4_${control})
+        add_executable(${target} ${target}.c)
+        target_link_libraries(${target} PRIVATE ncnextcdf4 ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
+        target_include_directories(${target} PRIVATE ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+        file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${control})
+        add_test(NAME ${target} COMMAND ${target})
+        set_tests_properties(${target} PROPERTIES
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${control}
+            LABELS nextcdf4_controls
+            ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+    endforeach()
     add_executable(tst_nextcdf4_range tst_nextcdf4_range.c)
     target_link_libraries(tst_nextcdf4_range PRIVATE ncnextcdf4 ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES} m)
     target_include_directories(tst_nextcdf4_range PRIVATE ${NETCDF_INCLUDE_DIRS})
@@ -231,4 +243,6 @@ if(HAVE_NEXTCDF4)
                 ENVIRONMENT "NEP_NC_TEST4_MODEL=${_nxt4_selector};NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};srcdir=${CMAKE_CURRENT_SOURCE_DIR}/nc_test4;LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
         endforeach()
     endforeach()
+    set_tests_properties(tst_nextcdf4_group tst_nextcdf4_rename
+        tst_nextcdf4_file tst_nextcdf4_open PROPERTIES LABELS nextcdf4_controls)
 endif()

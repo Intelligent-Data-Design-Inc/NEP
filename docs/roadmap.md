@@ -194,14 +194,14 @@ Plan: [docs/plan/v4.3.0-sprint1N3-vlen-io-and-ownership.md](plan/v4.3.0-sprint1N
 Plan: [docs/plan/v4.3.0-sprint1N4-upstream-user-type-tests.md](plan/v4.3.0-sprint1N4-upstream-user-type-tests.md)
 
 #### Sprint 1O - Fill Mode, Cache Control, Renaming Groups
-Replace the remaining `NC_EPERM`/`NC_ENOTNC4` stubs with working semantics or an explicit decision (`docs/nextcdf4_status_v4_3_0.md`):
+- Implement `nc_set_fill` as a session default for subsequently defined eligible variables; preserve per-variable overrides, dynamic-type fill safety and existing data.
+- Implement real per-variable HDF5 chunk-cache settings on create/open and live-dataset reopen, including coordinate-handle aliases; no successful no-op.
+- Implement flush-per-rename `nc_rename_grp`; enable group creation and rename in native and `NC_NETCDF4_MODEL` modes, retaining classic-model rejection.
+- Reject unsupported memory/sharing/parallel create/open flags before side effects (`NC_DISKLESS`, `NC_INMEMORY`, `NC_MPIIO`/`NC_MPIPOSIX`, `NC_SHARE`, `NC_PERSIST`, `NC_MMAP`).
+- Add focused regressions to existing normal/sanitizer CI; update behavior/status docs, keep CTest green and docs warning-free. No packaging changes.
+- Out of scope: upstream test ports (future suite expansion), strings (1P), provenance (1Q), Fortran (1R), release notes (Sprint 2); parallel I/O, image files and SWMR move beyond v4.3.0.
 
-- `nc_set_fill`: implement file-level `NC_FILL`/`NC_NOFILL` mode, replacing the `NC_RO_set_fill` stub.
-- `nc_rename_grp`: rename a group with the same flush-per-rename discipline as dims/vars, replacing `NC_NOTNC4_rename_grp`.
-- `nc_set_var_chunk_cache`/`nc_get_var_chunk_cache`: back them with real `H5Pset/get_chunk_cache` calls, or document the no-op decision.
-- Validate create/open mode flags: reject (not silently ignore) `NC_DISKLESS`, `NC_INMEMORY`, `NC_MPIIO`/`NC_MPIPOSIX`, `NC_SHARE`, `NC_PERSIST`.
-- Parallel I/O is deferred to the next release: `var_par_access` stays `NC_ENOTNC4`, the parallel mode flags above are rejected, and the deferral is documented in `docs/nextcdf4.md`, `docs/prd.md`, `docs/prfaq.md` and the release notes.
-- Out of scope: in-memory image files (`nxt4image.c`), SWMR, all parallel I/O.
+Plan: [docs/plan/v4.3.0-sprint1O-fill-mode-cache-control-renaming-groups.md](plan/v4.3.0-sprint1O-fill-mode-cache-control-renaming-groups.md)
 
 #### Sprint 1P - NC_STRING
 Fix `NC_STRING` round-tripping (`docs/nextcdf4_status_v4_3_0.md` gaps 2-3):

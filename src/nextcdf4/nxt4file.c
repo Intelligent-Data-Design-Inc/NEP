@@ -231,6 +231,7 @@ NEXTCDF4_add_file(int ncid, const char *path, int mode,
         return NC_ENOMEM;
     }
     h5->no_write = file->no_write;
+    h5->fill_mode = NC_FILL;
     h5->root_grp->atts_read = 1;
     h5->format_file_info = file;
     {
@@ -698,5 +699,47 @@ NEXTCDF4_redef(int ncid)
             NC_NOERR;
     file->define_mode = 1;
     h5->flags |= NC_INDEF;
+    return NC_NOERR;
+}
+
+/**
+ * @brief Reject unsupported disk, memory, sharing and parallel modes.
+ * @param mode NetCDF create/open flags, including the UDF selector.
+ * @return NC_NOERR for supported flags, otherwise NC_EINVAL.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+NEXTCDF4_check_mode(int mode)
+{
+    return mode & (NC_DISKLESS | NC_INMEMORY | NC_MPIIO | NC_SHARE |
+                   NC_PERSIST | NC_MMAP) ? NC_EINVAL : NC_NOERR;
+}
+
+/**
+ * @brief Change the session default inherited by subsequently defined variables.
+ * Existing variables retain their fill properties; this does not enter define
+ * mode or persist a file-wide setting. Subgroup IDs address the same default.
+ * @param ncid File or group identifier.
+ * @param fillmode NC_FILL or NC_NOFILL.
+ * @param old_modep Optional destination for the previous session default.
+ * @return NC_NOERR, NC_EBADID, NC_EPERM for read-only files, or NC_EINVAL.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+NEXTCDF4_set_fill(int ncid, int fillmode, int *old_modep)
+{
+    NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
+    int ret;
+
+    if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
+        return ret;
+    if (file->no_write)
+        return NC_EPERM;
+    if (fillmode != NC_FILL && fillmode != NC_NOFILL)
+        return NC_EINVAL;
+    if (old_modep)
+        *old_modep = h5->fill_mode;
+    h5->fill_mode = fillmode;
     return NC_NOERR;
 }

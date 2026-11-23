@@ -43,8 +43,9 @@ fills that table three ways:
   delegate to the library's own `NC4_*` functions (`NC4_inq`,
   `NC4_inq_dimid`, `NC4_inq_att*`, `NC4_inq_varids`, ...), which work
   on the shared `NC_*_INFO_T` metadata structures.
-- **Stubs** — unsupported operations get `NC_NOTNC4_*`,
-  `NC_NOOP_*`, or `NC_RO_set_fill`.
+- **Stubs** — unsupported operations such as parallel variable access
+  retain `NC_NOTNC4_*`; fill, cache, group rename and filter availability
+  use NEXTCDF-4 implementations.
 
 The struct has no designated initializers, so table entries appear in
 exact positional order.
@@ -190,6 +191,14 @@ netcdf-c's `nc4_rec_grp_del_att_data`/`var_free` paths reclaim this
 owned storage at `nc_close`. `_FillValue` for variable-sized types
 takes the same deep-copy path both when written as an attribute and
 when mirrored into `var->fill_value`.
+
+## Session controls and persistent group links
+
+`NEXTCDF4_set_fill` updates shared `NC_FILE_INFO_T.fill_mode` without entering define mode or rewriting existing datasets. Definitions capture the default before eager creation; user-defined, string and reference fill rules are preserved. Opens start at `NC_FILL`. Per-variable fill overrides remain DCPL setters, distinct from this session default.
+
+`nx4_var_dapl` maps netCDF bytes/slots/float-preemption to HDF5 slots/bytes/double-preemption. Dataset creation and deferred rebuild use it; loaded variable handles are reopened with global NetCDF defaults. `nx4_reopen_var_cache` finds owned variable/scale aliases by object token, allocates its path/property lists before mutation, flushes writable files, closes all aliases, then reopens with the requested DAPL. On failure it attempts to restore the old access properties; no datasets or dimension attachments are recreated. Getters query live chunked DAPLs; pending/nonchunked variables retain their requests. Existing full-suite normal and sanitizer CI covers the `nextcdf4_controls` focused tests.
+
+`NEXTCDF4_rename_grp` validates normalized names and parent variable/group/type collisions, moves the HDF5 link, updates the parent child index and flushes. Open descendant IDs and object identities remain valid, and full-name inquiry derives new paths from the metadata tree. Native and NetCDF-4-model groups are supported; classic mode remains root-only. Unsupported memory, sharing and parallel flags are rejected by `NEXTCDF4_check_mode` before filesystem side effects; parallel access, image files and SWMR remain deferred beyond v4.3.0.
 
 ## Filters
 

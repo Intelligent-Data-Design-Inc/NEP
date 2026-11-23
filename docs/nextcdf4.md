@@ -67,6 +67,20 @@ NEXTCDF-4 availability is advertised at compile time through `nep_meta.h`:
 
 `NC_CLASSIC_MODEL` and `NC_NETCDF4_MODEL` are mutually exclusive.
 
+## Fill defaults, cache control and group renaming
+
+`nc_set_fill(ncid, NC_FILL/NC_NOFILL, &old_mode)` changes a session default shared by all groups. Each session begins with `NC_FILL`; eligible variables capture the default when defined, not at `nc_enddef`. Existing variables are unchanged. Standard numeric/character and NEP fixed-size numeric/complex/bitfield variables inherit it; strings, user-defined types and references retain their existing fill rules. `nc_def_var_fill` remains the per-variable override before commitment. Read-only calls return `NC_EPERM`, and invalid modes return `NC_EINVAL`. Unwritten no-fill values are unspecified. Changing the file default neither rebuilds datasets nor persists a new file-wide attribute.
+
+`nc_set_var_chunk_cache(ncid, varid, bytes, slots, preemption)` applies real HDF5 raw chunk-cache settings. Preemption must be finite and in [0,1]; zero bytes/slots are allowed. Calls work in define/data mode, read-only sessions and all compatibility modes. Pending variables retain requests until creation; live datasets reopen with the new access properties, closing/reopening coordinate-scale aliases together. Values, filters, attributes and dimension attachments are preserved. `nc_get_var_chunk_cache` reports effective live chunked-dataset properties (stored requests for pending/nonchunked variables) and accepts NULL outputs. Scalar/contiguous variables accept settings but have no raw chunk cache to tune. Overrides last only for the open session; definitions and opens start from `nc_set_chunk_cache` global defaults.
+
+`nc_rename_grp(grpid, name)` works in native and `NC_NETCDF4_MODEL` modes, as does group creation. Rename moves the parent link and flushes it, preserving group/descendant IDs, data, types and dimension relationships; inquiries immediately use the new path. Enhanced-mode rename may automatically enter define mode; call `nc_enddef` before subsequent reads. Root rename returns `NC_EBADGRPID`, read-only rename `NC_EPERM`, and duplicate names (including the existing name) `NC_ENAMEINUSE`. Classic-model groups remain unsupported (`NC_ENOTNC4`). Object-reference identity is preserved; previously saved path strings are not rewritten.
+
+## Unsupported file modes and parallel I/O
+
+NEXTCDF-4 is a serial disk-file backend in v4.3.0. Its create/open entries reject `NC_DISKLESS`, `NC_INMEMORY`, `NC_MPIIO`/`NC_MPIPOSIX` (aliases), `NC_SHARE`, `NC_PERSIST` and `NC_MMAP` with `NC_EINVAL`, before creating, clobbering or opening a file. NetCDF-C may reject incompatible flag combinations before backend dispatch. Use NetCDF-C's memory APIs when testing memory requests: passing `NC_INMEMORY` directly to ordinary `nc_open` without an image parameter can assert inside upstream model inference before NEXTCDF-4 is reached.
+
+All NEXTCDF-4 parallel I/O is deferred beyond v4.3.0; `nc_var_par_access` still returns `NC_ENOTNC4`. NEP's general MPI tests exercise upstream NetCDF, not NEXTCDF-4 parallel support. In-memory image files and SWMR are also unsupported.
+
 ## Diagnostics and Logging
 
 NEXTCDF-4 uses the distinct `ELOG(())` macro, patterned after netcdf-c's `LOG(())` convention in `libsrc4` and `libhdf5`. NEP logging is independent of the underlying NetCDF-C logging build. It is compiled in by default and can be disabled with `-DNEP_ENABLE_LOGGING=OFF`. Build-time availability is reported in `nep_meta.h`:

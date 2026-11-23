@@ -58,6 +58,8 @@ NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
      * attributes, then load the full metadata tree. */
     if (!path || !*path)
         return NC_EINVAL;
+    if ((ret = NEXTCDF4_check_mode(mode)))
+        return ret;
     if (access(path, F_OK) != 0)
         return NC_ENOTNC;
     H5E_BEGIN_TRY {

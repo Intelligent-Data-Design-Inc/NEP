@@ -15,6 +15,19 @@
 #include "nextcdf4dispatch.h"
 #include "nxt4err.h"
 
+/** @brief Validate unsupported create/open flags; return NC_EINVAL if present. */
+int NEXTCDF4_check_mode(int mode);
+/** @brief Set the session fill default for subsequently defined variables. */
+int NEXTCDF4_set_fill(int ncid, int fillmode, int *old_modep);
+/** @brief Rename a non-root enhanced-model group and flush its link. */
+int NEXTCDF4_rename_grp(int grpid, const char *name);
+/** @brief Set session cache parameters and reopen an existing dataset. */
+int NEXTCDF4_set_var_chunk_cache(int ncid, int varid, size_t size,
+                                size_t nelems, float preemption);
+/** @brief Inquire effective live chunk-cache settings or pending requests. */
+int NEXTCDF4_get_var_chunk_cache(int ncid, int varid, size_t *sizep,
+                                size_t *nelemsp, float *preemptionp);
+
 /** @brief Dispatch-table entry behind `nc_create()` with
  * `NC_NEXTCDF4`: creates the HDF5 file and writes the backend marker
  * attributes.
