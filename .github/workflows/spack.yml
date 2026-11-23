@@ -111,7 +111,9 @@ jobs:
           grep -q 'ftst_pdb_udf' "${log}"
           grep -q 'ftst_nextcdf4_types' "${log}"
           grep -q 'ftst_nextcdf4_small_float' "${log}"
-          grep -q 'ftst_nextcdf4_installed' "${log}"
+          # ftst_nextcdf4_installed is a ctest-only name with no build target
+          # and needs the installed tree, so it cannot appear in
+          # spack-build-out.txt; it runs in the nextcdf4 CI job instead.
 
       - name: Upload Spack logs
         if: failure()

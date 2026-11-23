@@ -13,8 +13,8 @@ backend can be called production-ready. Companion documents:
 NEXTCDF-4 is **experimental and off by default** (`-DNEP_ENABLE_NEXTCDF4=ON`,
 HDF5 2.1.1+, netcdf-c 4.10.1+ with UDF support). It occupies UDF slot 9
 (`NC_UDF9`, exposed as `NC_NEXTCDF4`) and requires explicit mode-flag
-selection for both create and open. Source lives in `src/nextcdf4/` (~8,700
-lines across 11 C files plus `nxt4internal.h`/`nxt4err.h`).
+selection for both create and open. Source lives in `src/nextcdf4/` (~12,100
+lines across 12 C files plus `nxt4internal.h`/`nxt4err.h`).
 
 ## Implemented
 
@@ -240,7 +240,53 @@ Sprint 1 (deferred when v4.1.0 shipped docs+logging instead):
   instrumented HDF5/netcdf-c/NEP under ASan+UBSan with leak detection
   (`ASAN_OPTIONS=detect_leaks=1:halt_on_error=1`,
   `UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1`) and runs the
-  full suite serially.
+  full suite serially. Sprint 1S added a `nextcdf4-coverage` job
+  (`nextcdf4.yml`): a `--coverage` build with Fortran enabled, full
+  ctest run, and an `lcov`/`genhtml` HTML report artifact —
+  report-only, warning below 50%.
+
+## Gap analysis — remaining for the NEXTCDF-4 release
+
+All v4.3.0 Sprint 1 sub-sprints (1 through 1S) have landed; the backend
+is feature-complete for this cycle. What remains falls into three
+groups.
+
+### Release mechanics (Sprint 2, `docs/roadmap.md`)
+
+- Tag v4.3.0 and write `docs/releases/v4.3.0.md` covering the HDF5
+  detection change, CMake 3.19 minimum, small-float/bfloat16 work,
+  generic filter support, reference types, and the `NC_REF_OBJECT`/
+  `NC_REF_REGION` → `NC_STD_REF` breaking change.
+- Spack: add `version("4.3.0")` with sha256; update
+  spack/spack-packages#5557 in place.
+- Conda (#374 part 2): update staged-recipes#34309 or the feedstock
+  depending on merge state; move the `conda.yml` lint step to the 4.3.0
+  tarball and set `context.version` to `4.3.1.dev0`.
+- README/prd/prfaq/conda-plan wording updates for GeoTIFF in 4.3.0;
+  document the deferrals in the release notes; close #374.
+
+### Open issues (none release-blocking)
+
+- #386 — conversion reads take an extra full-buffer pass (performance
+  only).
+- #389 — `config.h` leak in the six non-NEXTCDF-4 installed dispatch
+  headers (sibling defect, not this backend).
+- `nc_inq_var_all` filter outputs never populated — matches upstream's
+  shared helper (gap #12 above).
+
+### Deliberate deferrals beyond v4.3.0
+
+- `nextcopy`/`nextdump` tools (Phase 4); `nccopy`/`ncdump` remain the
+  tools for these files.
+- Parallel I/O (`nc_var_par_access` → `NC_ENOTNC4`), SWMR, in-memory
+  image files (`nxt4image.c`), mapped I/O (`get_varm`/`put_varm`,
+  deprecated upstream).
+- `NC_STD_REF` inside user-defined type graphs; fixed-length HDF5
+  strings wider than one byte.
+- Remaining upstream `nc_test4` ports (string/fill/mixed-feature) —
+  suite expansion continues post-release.
+- Fortran: reference wrappers and general enhanced-type value
+  interfaces, F77 bindings, half attributes, sanitizer-stack expansion.
 
 ## Deliberate non-goals (document, don't fix)
 
