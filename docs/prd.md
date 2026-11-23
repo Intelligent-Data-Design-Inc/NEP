@@ -64,44 +64,16 @@ Native and `NC_NETCDF4_MODEL` files support standalone and recursively nested st
 
 ---
 
-## 3. Historical Compression Features (v1.0.0, v1.1.0)
+## 3. Compression (moved to nep-compress in v4.2.0)
 
-These APIs shipped in earlier NEP releases and move to nep-compress in
-v4.2.0; the options below describe the old NEP build, not current build flags.
-
-### 3.1 LZ4 Compression
-- **High-Performance**: 2-3x faster compression/decompression than DEFLATE
-- **Speed Optimized**: Ideal for I/O-bound workflows
-- **Lossless**: Guarantees data integrity
-- **HPC Ready**: Designed for high-performance computing environments
-
-**C API:**
-- `nc_def_var_lz4(ncid, varid, level)` - Enable LZ4 compression
-- `nc_inq_var_lz4(ncid, varid, lz4p, levelp)` - Query LZ4 settings
-
-**Fortran API (v1.1.0):**
-- `nf90_def_var_lz4(ncid, varid, level)` - Enable LZ4 compression
-- `nf90_inq_var_lz4(ncid, varid, lz4p, levelp)` - Query LZ4 settings
-
-### 3.2 BZIP2 Compression
-- **High-Ratio**: Better compression ratios than DEFLATE
-- **Archival Optimized**: Ideal for long-term storage
-- **Block-Sorting Algorithm**: Effective for repetitive scientific data
-- **Lossless**: Guarantees data integrity
-
-**C API:**
-- `nc_def_var_bzip2(ncid, varid, level)` - Enable BZIP2 compression
-- `nc_inq_var_bzip2(ncid, varid, bzip2p, levelp)` - Query BZIP2 settings
-
-**Fortran API (v1.1.0):**
-- `nf90_def_var_bzip2(ncid, varid, level)` - Enable BZIP2 compression
-- `nf90_inq_var_bzip2(ncid, varid, bzip2p, levelp)` - Query BZIP2 settings
-
-### 3.3 Build Configuration
-**CMake:**
-- `NEP_BUILD_LZ4=ON/OFF` - Enable/disable LZ4 support (default: ON)
-- `NEP_BUILD_BZIP2=ON/OFF` - Enable/disable BZIP2 support (default: OFF)
-- `NEP_ENABLE_FORTRAN=ON/OFF` - Enable/disable Fortran wrappers (default: ON)
+LZ4/BZIP2 filter plugins, the `nc_def_var_lz4`/`nc_def_var_bzip2` C APIs,
+their `nf90_*` Fortran wrappers, compression tests, benchmarks and the
+`NEP_BUILD_LZ4`/`NEP_BUILD_BZIP2` options moved to
+[nep-compress](https://github.com/captainkirk99/nep-compress) in v4.2.0.
+Applications that used those APIs install nep-compress and update their
+include/module and link settings; file format compatibility is unchanged.
+NEP's NEXTCDF-4 backend still supports generic HDF5 filters through
+`nc_def_var_filter()` using plugins supplied by the environment.
 
 ---
 
@@ -169,8 +141,8 @@ spack install cdf
 ### 5.5 Conda Package (v4.2.0)
 - **In-repo recipe**: `conda/recipe/recipe.yaml` (v1 rattler-build format) builds the checkout; `conda/recipe/build.sh` passes the CMake options for the Conda package; local CMake builds are unchanged
 - **Staged copy**: `conda/make_staged_recipe.py` generates the staged-recipes recipe for the release tarball, so the two cannot drift; submission is tracked in `docs/conda-plan.md`
-- **Enabled features**: PDB, mmCIF, FITS and PDS4 readers, Fortran tests, and the `share/.ncrc` that registers the readers with conda-forge's `libnetcdf` 4.10.1
-- **Excluded**: GeoTIFF (needs `4d920c5`, post-4.2.0), DICOM, GRIB2, CDF and NEXTCDF-4 (need packages or versions conda-forge does not provide); Linux only
+- **Enabled features**: PDB, mmCIF, FITS, PDS4 and GeoTIFF (from the 4.3.0 package, with `geotiff`/`libtiff` host deps and `libncgeotiff` tests) readers, Fortran tests, and the `share/.ncrc` that registers the readers with conda-forge's `libnetcdf`
+- **Excluded**: DICOM, GRIB2, CDF and NEXTCDF-4 (need packages or versions conda-forge does not provide); Linux only
 - **CI workflow**: `.github/workflows/conda.yml` builds and tests the recipe against conda-forge pinnings and lints the staged copy on every push and PR
 - **Publication**: staged-recipes PR #34309, updated in place; the old v3.0.0 submission was LZ4-only and has been superseded
 
@@ -460,7 +432,7 @@ Parallel I/O builds are tested in a separate CI workflow (`ci-parallel.yml`) wit
 ## 10. Build Systems
 
 ### 10.1 CMake
-- Minimum version: 3.9+
+- Minimum version: 3.19+
 - Full feature support with configurable options
 - Documentation generation with Doxygen
 - Comprehensive test suite integration
@@ -519,8 +491,8 @@ Parallel I/O builds are tested in a separate CI workflow (`ci-parallel.yml`) wit
 ## 13. Dependencies
 
 ### 13.1 Core Dependencies
-- NetCDF-C v4.10.1+ (required)
-- HDF5 v2.1.1+ (required)
+- NetCDF-C v4.10.1+ (required; v4.10.2 or current main with the 64-slot UDF scheme for NEXTCDF-4)
+- HDF5 v1.14+ (required for format readers; NEXTCDF-4 requires HDF5 2.1.1)
 - CMake v3.19+ (build)
 
 ### 13.2 Optional Dependencies
@@ -779,8 +751,8 @@ cmake -B build -DNEP_ENABLE_NEXTCDF4=ON
 
 ### 18.5 Dependencies
 
-- netcdf-c 4.10.1 or newer built with UDF plugin and `NC_Dispatch` support (`NC_UDF9`).
-- HDF5 2.1.1 or newer (required).
+- netcdf-c with the 64-slot UDF scheme (v4.10.2 or current main), built with UDF plugin and `NC_Dispatch` support (`NC_UDF9`).
+- HDF5 2.1.1 (required).
 
 ### 18.6 Public API Additions
 
@@ -798,7 +770,29 @@ cmake -B build -DNEP_ENABLE_NEXTCDF4=ON
 - Typed calls on FP8/FP6/FP4 variables, and integer/text/string typed calls on any small float, return `NC_EBADTYPE` (`NC_ECHAR` for text).
 - Conversion engines can produce different exceptional output values; `NC_ERANGE` reports completed conversion, not transactional rejection (#381).
 - Object and region reference types round-trip as opaque tokens.
-- Tools (`nextcopy`, `nextdump`) and Fortran bindings are planned for v4.1.0.
+- Fortran bindings are limited to the `nep_nextcdf4` module (initialization, constants, float16/bfloat16 I/O); general enhanced-type value wrappers are deferred.
+- Tools (`nextcopy`, `nextdump`), parallel I/O, memory-image files and SWMR are deferred beyond v4.3.0.
+
+---
+
+## 19. PDB and mmCIF Format Support (v3.3.0, v3.4.0)
+
+### 19.1 Overview
+
+Two UDF handlers give read access to macromolecular structure files: the
+legacy fixed-column Protein Data Bank format (UDF7, `NEP_ENABLE_PDB`,
+default ON) and the modern PDBx/mmCIF format (UDF8,
+`NEP_ENABLE_MMCIF`, default OFF). Both use built-in parsers — no external
+library dependency.
+
+### 19.2 Features
+
+- **PDB**: RECORD-type parsing (ATOM/HETATM, HEADER, TITLE, SEQRES,
+  REMARK) mapped to NetCDF dimensions, variables and attributes.
+- **mmCIF**: CIF/STAR syntax loop and category/item mapping to NetCDF
+  groups, variables and attributes.
+- Read-only (`NC_NOWRITE`) access through `nc_open()` after
+  initialization or `.ncrc` autoload.
 
 ---
 
@@ -818,9 +812,15 @@ cmake -B build -DNEP_ENABLE_NEXTCDF4=ON
 - **v2.7.1** (July 2026): Documentation cleanup — per-format reference pages extracted from `docs/formats.md`, README PDS4 Tests section moved to `docs/pds4.md`, and design/prd/prfaq updated with New Horizons and v2.7.1 metadata
 - **v2.8.0** (July 2026): Optional Python visualization examples for enabled NEP readers, producing validated grayscale PNG and metadata outputs
 - **v3.0.0** (July 2026): DICOM reader via UDF6 with uncompressed single-frame, JPEG Baseline, and multi-frame pixel-data support
+- **v3.3.0**: Legacy PDB reader via UDF7
+- **v3.4.0**: PDBx/mmCIF reader via UDF8
+- **v4.0.0** (Aug 2026): NEXTCDF-4 optional NetCDF-4/HDF5 backend (UDF9) with full enhanced data model and new atomic types
+- **v4.1.0**: NEXTCDF-4 documentation suite and NEP logging; satellite-mission examples moved out of tree
+- **v4.2.0**: LZ4/BZIP2 compression moved to nep-compress; first conda-forge package (PDB, mmCIF, FITS, PDS4 readers)
+- **v4.3.0** (in development): NEXTCDF-4 maturation — strings and full user-type nesting, 16-bit float typed I/O and conversion engine, `NC_STD_REF` references, generic HDF5 filters, provenance attributes, fill/cache/group-rename, `nep_nextcdf4` Fortran module; CMake >= 3.19 with improved HDF5 detection; GeoTIFF in the conda package; CI code-coverage job
 
 ---
 
-*Document Version: 4.0.0*
-*Last Updated: August 2026*  
-*Status: Reflects features through v4.0.0*
+*Document Version: 4.3.0*
+*Last Updated: November 2026*  
+*Status: Reflects features through v4.3.0*

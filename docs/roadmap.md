@@ -229,6 +229,14 @@ Plan: [docs/plan/v4.3.0-sprint1Q-provenance-attributes.md](plan/v4.3.0-sprint1Q-
 
 Plan: [docs/plan/v4.3.0-sprint1R-fortran-wrappers.md](plan/v4.3.0-sprint1R-fortran-wrappers.md)
 
+#### Sprint 1S - CI and Docs
+- New `nextcdf4-coverage` job in `nextcdf4.yml` (geotiff-coverage pattern): `--coverage` build of the full enabled suite, full ctest run, `lcov`/`genhtml` HTML artifact; report-only, warn below 50%. No CMake coverage option, no Codecov.
+- Rewrite `README.md`, `docs/prd.md`, `docs/prfaq.md`, `docs/design.md` for 4.3.0: drop dated press-release framing, format list (Space: CDF/FITS/PDS4; Earth: GeoTIFF/GRIB2; Medical: DICOM; Bio: PDB/mmCIF) plus NEXTCDF-4 summary (drop-in netCDF-4 replacement, 16-bit floats, `NC_STD_REF`, latest superblocks, performance); compression reduced to a nep-compress pointer in the README; dependency floors corrected (netcdf-c ≥4.10.2, HDF5 2.1.1).
+- `src/nextcdf4/nxt4meta.c`: comment-only pass — walkthrough paragraphs and deeper `/**` blocks for the metadata load, `_enddef` dirty-var rebuild, att rewrite, and dim-scale re-attach machinery.
+- Out of scope: coverage gates/trends/Codecov, other `src/nextcdf4/*.c` files, code changes, release notes/tag/Spack bump/conda wording (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1S-ci-and-docs.md](plan/v4.3.0-sprint1S-ci-and-docs.md)
+
 
 #### Sprint 2 - 
 - Tag v4.3.0 and write `docs/releases/v4.3.0.md` (HDF5 detection change, CMake 3.19 minimum, conda GeoTIFF, Sprint 1A NEXTCDF-4 bfloat16 examples and `NEP_ZSTD_PLUGIN_DIR`, Sprint 1B typed small-float I/O and the `nc_*_bfloat16` functions, #376, Sprint 1C optimized benchmark results, the bfloat16 GDAS sample and `bfloat16_io_perf`, the #382 contiguous-layout fix, the fix for untyped `nc_put_var`/`nc_get_var`/`var1`/`vars` failing with `NC_EBADTYPE` on NEXTCDF-4, and Sprint 1K generic HDF5 filter support (`nc_def_var_filter`, szip/bzip2/zstd plugins, missing-plugin `NC_ENOFILTER`), and Sprint 1L reference types (`NC_REF_OBJECT`/`NC_REF_REGION` removed — a breaking API change — replaced by `NC_STD_REF`/`H5T_STD_REF` and the `nc_ref_*`/`nc_deref_*` API).

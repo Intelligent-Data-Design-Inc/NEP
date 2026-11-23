@@ -1,7 +1,7 @@
-# NEP – NetCDF Expansion Pack v2.7.1
+# NEP – NetCDF Expansion Pack v4.3.0
 ## Project Overview
 
-NEP provides NetCDF User Defined Format (UDF) readers and the NEXTCDF-4 backend. LZ4 and BZIP2 filter plugins and wrappers moved to [nep-compress](https://github.com/captainkirk99/nep-compress). Older releases also bundled those filters.
+NEP provides NetCDF User Defined Format (UDF) readers — NASA CDF, FITS, PDS4, GeoTIFF, GRIB2, DICOM, legacy PDB and PDBx/mmCIF — and the experimental NEXTCDF-4 backend, a drop-in replacement for netCDF-4/HDF5 with 16-bit floats, reference types and the latest HDF5 superblock support. LZ4 and BZIP2 filter plugins and wrappers moved to [nep-compress](https://github.com/captainkirk99/nep-compress). Older releases also bundled those filters.
 
 ## NEXTCDF-4 Fortran binding (v4.3.0 Sprint 1R)
 
@@ -34,9 +34,8 @@ Historical NEP releases bundled HDF5 filter plugins. In v4.2.0, nep-compress own
 
 1. **Core NetCDF API**: Standard API used by applications
 2. **HDF5 Filter Pipeline**: Compression filters integrated into HDF5 I/O operations
-3. **LZ4 Filter Plugin**: High-speed compression filter
-4. **BZIP2 Filter Plugin**: High-ratio compression filter
-5. **NetCDF-4/HDF5 Storage**: Compressed data files
+3. **External Filter Plugins**: LZ4/BZIP2/zstd and others supplied by nep-compress or the application environment, discovered through `HDF5_PLUGIN_PATH`
+4. **NetCDF-4/HDF5 Storage**: Compressed data files
 
 ```
 [Application Layer]
@@ -47,11 +46,11 @@ Historical NEP releases bundled HDF5 filter plugins. In v4.2.0, nep-compress own
        │
 [HDF5 Filter Pipeline]
        │
-┌──────┴──────┐
-│             │
-[LZ4 Filter]  [BZIP2 Filter]
-│             │
-└──────┬──────┘
+┌──────┴──────────────────┐
+│                         │
+[External Filter Plugins — nep-compress LZ4/BZIP2, system zstd/szip, ...]
+│                         │
+└──────┬──────────────────┘
        │
 [Compressed NetCDF-4/HDF5 Files]
 ```
@@ -103,7 +102,7 @@ Current netcdf-c `main` exposes 64 UDF slots (UDF0–UDF63). NEP assigns each fo
 
 Before v2.2.0, CDF and GRIB2 shared UDF slot 2 and were mutually exclusive. v2.2.0 Sprint 2 removes that restriction by moving CDF to its own slot. NEXTCDF-4 occupies UDF9 and has no magic-number registration because HDF5 files already belong to the built-in NetCDF-4 backend; applications select it explicitly with `NC_NEXTCDF4`.
 
-NEXTCDF-4 implements the full v4.0.0 feature set. `nc_create()` writes `_Nextcdf4Backend` and, in `NC_NETCDF4_MODEL` mode, `_Nextcdf4Model`; `nc_open()` validates those markers and reconstructs groups, dimensions, variables, attributes, and user-defined types from the HDF5 file. Native and `NC_CLASSIC_MODEL` files use HDF5 Superblock v3 (latest format bounds), while `NC_NETCDF4_MODEL` files use Superblock v1 for compatibility with upstream netcdf-c and HDF5 1.10.x. The implementation includes dimension-scale creation and attachment with `_Netcdf4Dimid` and `_Netcdf4Coordinates`, fixed-size and unlimited-dimension variable I/O, `nc_redef`/`nc_enddef` transitions, attribute put/get/rename/delete, arbitrarily nested groups, compound/enum/opaque/vlen user-defined types including vlens of user types, nested vlens, and compounds containing vlens (`NC_STRING` variables are not yet supported), chunking, compression, filters, fill values, endianness, quantization, correct dimension and variable renaming, small floating-point types (`NC_FLOAT16`, `NC_BFLOAT16`, FP8/FP6/FP4), complex numbers (`NC_COMPLEX`, `NC_DOUBLECOMPLEX`), bitfields (`NC_BITFIELD8/16/32/64`), and HDF5 references. NEXTCDF-4 supports the unified `H5T_STD_REF` reference datatype, exposed as a single opaque `nc_type` `NC_STD_REF` whose elements are 64-byte `H5R_ref_t` tokens (`nc_std_ref_t`). The `nc_ref_*`/`nc_deref_*` API in `src/nextcdf4/nxt4ref.c` creates and resolves object, region, and attribute references, including external-file targets; `nc_deref_*` return `NC_ENOTNC4` for external references.
+NEXTCDF-4 implements the full v4.0.0 feature set. `nc_create()` writes `_Nextcdf4Backend` and, in `NC_NETCDF4_MODEL` mode, `_Nextcdf4Model`; `nc_open()` validates those markers and reconstructs groups, dimensions, variables, attributes, and user-defined types from the HDF5 file. Native and `NC_CLASSIC_MODEL` files use HDF5 Superblock v3 (latest format bounds), while `NC_NETCDF4_MODEL` files use Superblock v1 for compatibility with upstream netcdf-c and HDF5 1.10.x. The implementation includes dimension-scale creation and attachment with `_Netcdf4Dimid` and `_Netcdf4Coordinates`, fixed-size and unlimited-dimension variable I/O, `nc_redef`/`nc_enddef` transitions, attribute put/get/rename/delete, arbitrarily nested groups, compound/enum/opaque/vlen user-defined types including vlens of user types, nested vlens, and compounds containing vlens, `NC_STRING` standalone and nested string values, chunking, compression, filters, fill values, endianness, quantization, correct dimension and variable renaming, small floating-point types (`NC_FLOAT16`, `NC_BFLOAT16`, FP8/FP6/FP4), complex numbers (`NC_COMPLEX`, `NC_DOUBLECOMPLEX`), bitfields (`NC_BITFIELD8/16/32/64`), and HDF5 references. NEXTCDF-4 supports the unified `H5T_STD_REF` reference datatype, exposed as a single opaque `nc_type` `NC_STD_REF` whose elements are 64-byte `H5R_ref_t` tokens (`nc_std_ref_t`). The `nc_ref_*`/`nc_deref_*` API in `src/nextcdf4/nxt4ref.c` creates and resolves object, region, and attribute references, including external-file targets; `nc_deref_*` return `NC_ENOTNC4` for external references.
 
 ## NEXTCDF-4 session controls (v4.3.0 Sprint 1O)
 
@@ -118,15 +117,17 @@ Create/open validate unsupported memory/sharing/parallel bits before side effect
 The project is structured as follows:
 - `/src` - Core C source code including UDF handlers and logging
 - `/src/nextcdf4` - NEXTCDF-4 rewrite of the NetCDF-4/HDF5 backend
-- `/ftest` - Fortran format-reader tests
+- `/fsrc` - Fortran source for the `nep_nextcdf4` module
+- `/ftest` - Fortran unit tests (format readers and NEXTCDF-4 binding)
 - `/include` - Public header files
 - `/test` - C unit tests for all features
-- `/ftest` - Fortran unit tests
 - `/test/data` - Test data files for CDF and GeoTIFF formats
+- `/examples` - C/Fortran example and benchmark programs
 - `/docs` - Project documentation
 - `/docs/releases` - Release notes for each version
 - `/.github/workflows` - CI/CD pipeline configurations
-- `/spack` - Spack package manager recipes
+- `/spack` - Spack overlay recipe and CI environment
+- `/conda` - Conda recipe and staged-recipes generator
 
 ## Compression Filter Design
 
@@ -151,6 +152,7 @@ The project uses GitHub Actions for CI/CD with comprehensive documentation integ
 - Custom dependency builds with caching for performance
 - Test execution via CTest
 - Format-reader testing and optional general NetCDF benchmarks
+- NEXTCDF-4 dedicated jobs: normal (full suite + docs), ASan/UBSan sanitizers, and an lcov code-coverage job that publishes an HTML coverage report artifact
 
 ### Documentation Integration
 - **Doxygen Build System Integration**: Documentation generation integrated with CMake
@@ -208,8 +210,8 @@ cmake -S . -B build -DNEP_BUILD_DOCUMENTATION=ON
 
 | Component | Required Library | Version | Source | Detection Method |
 |-----------|------------------|---------|--------|------------------|
-| Core | NetCDF-C | v4.10.1+ | Unidata | pkg-config, FindNetCDF.cmake |
-| Core | HDF5 | v2.1.1+ | HDF Group | pkg-config, FindHDF5.cmake |
+| Core | NetCDF-C | v4.10.1+ (v4.10.2+ / current main for NEXTCDF-4's 64-slot UDF) | Unidata | pkg-config, FindNetCDF.cmake |
+| Core | HDF5 | v1.14+ (v2.1.1 for NEXTCDF-4) | HDF Group | `cmake/NEPFindHDF5.cmake` imported targets |
 | DICOM Reader | libdicom + libjpeg | Latest | https://github.com/ImagingLib/libdicom + system | CMake `find_library`, `find_path`, and `find_package(JPEG)` |
 | Docs | Doxygen | Latest | Optional | find_package(Doxygen) |
 

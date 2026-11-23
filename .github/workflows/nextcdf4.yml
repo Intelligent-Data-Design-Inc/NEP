@@ -146,3 +146,90 @@ jobs:
             configure-san.log
             build-san/CMakeCache.txt
             build-san/Testing/Temporary/
+
+  nextcdf4-coverage:
+    name: nextcdf4-coverage
+    runs-on: ubuntu-latest
+    env:
+      NETCDF_SHA: 5baa62e6966d3e505b895574dafbd531a4aed360
+      DEPS: ${{ github.workspace }}/deps
+      PKG_CONFIG_PATH: ${{ github.workspace }}/deps/lib/pkgconfig
+      LD_LIBRARY_PATH: ${{ github.workspace }}/deps/lib
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        id: tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake make gcc gfortran m4 pkg-config zlib1g-dev lcov
+          gcc --version
+          gfortran --version
+          echo "compiler=$(gcc -dumpfullversion)-gfortran-$(gfortran -dumpfullversion)" >> "$GITHUB_OUTPUT"
+          cmake --version
+          lcov --version
+      - name: Cache dependencies
+        id: dependencies
+        uses: actions/cache@v4
+        with:
+          path: deps
+          key: nextcdf4-${{ runner.os }}-${{ runner.arch }}-gcc-${{ steps.tools.outputs.compiler }}-hdf5-2.1.1-netcdf-${{ env.NETCDF_SHA }}-fortran-4.6.2-1
+      - name: Build HDF5, NetCDF-C and NetCDF-Fortran
+        if: steps.dependencies.outputs.cache-hit != 'true'
+        run: |
+          curl --head --max-time 10 --retry 2 --retry-delay 5 https://github.com
+          curl -L --fail --max-time 120 --retry 2 --retry-delay 5 https://github.com/HDFGroup/hdf5/archive/refs/tags/2.1.1.tar.gz -o hdf5.tar.gz
+          tar -xzf hdf5.tar.gz
+          cmake -S hdf5-2.1.1 -B hdf5-2.1.1/build -DCMAKE_INSTALL_PREFIX="$DEPS" -DCMAKE_INSTALL_LIBDIR=lib -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DHDF5_BUILD_HL_LIB=ON -DHDF5_ENABLE_ZLIB_SUPPORT=ON
+          cmake --build hdf5-2.1.1/build --parallel 2
+          cmake --install hdf5-2.1.1/build
+          curl -L --fail --max-time 120 --retry 2 --retry-delay 5 "https://github.com/Unidata/netcdf-c/archive/$NETCDF_SHA.tar.gz" -o netcdf.tar.gz
+          tar -xzf netcdf.tar.gz
+          cmake -S "netcdf-c-$NETCDF_SHA" -B "netcdf-c-$NETCDF_SHA/build" -DCMAKE_INSTALL_PREFIX="$DEPS" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_PREFIX_PATH="$DEPS" -DBUILD_SHARED_LIBS=ON -DNETCDF_ENABLE_HDF5=ON -DNETCDF_ENABLE_DAP=OFF -DNETCDF_ENABLE_NCZARR=OFF -DNETCDF_ENABLE_BYTERANGE=OFF -DNETCDF_ENABLE_TESTS=OFF -DNETCDF_ENABLE_EXAMPLES=OFF -DNETCDF_ENABLE_PLUGINS=ON
+          cmake --build "netcdf-c-$NETCDF_SHA/build" --parallel 2
+          cmake --install "netcdf-c-$NETCDF_SHA/build"
+          curl -L --fail --max-time 120 --retry 2 --retry-delay 5 https://github.com/Unidata/netcdf-fortran/archive/refs/tags/v4.6.2.tar.gz -o netcdf-fortran.tar.gz
+          tar -xzf netcdf-fortran.tar.gz
+          cmake -S netcdf-fortran-4.6.2 -B netcdf-fortran-4.6.2/build -DCMAKE_INSTALL_PREFIX="$DEPS" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_PREFIX_PATH="$DEPS" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DENABLE_TESTS=OFF -DENABLE_DOXYGEN=OFF
+          cmake --build netcdf-fortran-4.6.2/build --parallel 2
+          cmake --install netcdf-fortran-4.6.2/build
+      - name: Configure with coverage instrumentation
+        run: |
+          "$DEPS/bin/nc-config" --all
+          cmake -S . -B build-cov -DCMAKE_PREFIX_PATH="$DEPS" -DHDF5_ROOT="$DEPS" -DNEP_ENABLE_NEXTCDF4=ON -DNEP_ENABLE_FORTRAN=ON -DNEP_BUILD_EXAMPLES=OFF -DNEP_ENABLE_BENCHMARKS=OFF -DNEP_BUILD_DOCUMENTATION=OFF -DCMAKE_C_FLAGS="--coverage -fprofile-arcs -ftest-coverage -O0" -DCMAKE_Fortran_FLAGS="--coverage -O0" -DCMAKE_EXE_LINKER_FLAGS="--coverage" -DCMAKE_SHARED_LINKER_FLAGS="--coverage" 2>&1 | tee configure-cov.log
+      - name: Build and test
+        run: |
+          cmake --build build-cov --parallel 2
+          ctest --test-dir build-cov --output-on-failure
+      - name: Generate coverage report
+        run: |
+          cd build-cov
+          lcov --capture --directory . --output-file coverage.info --ignore-errors unused,gcov
+          lcov --remove coverage.info '/usr/*' '*/deps/*' '*/test/*' '*/test_*/*' '*/ftest/*' '*/examples/*' '*/nc_test4/*' --output-file coverage_filtered.info --ignore-errors unused
+          lcov --list coverage_filtered.info
+          lcov --summary coverage_filtered.info
+          genhtml coverage_filtered.info --output-directory coverage_html
+      - name: Check coverage threshold
+        run: |
+          cd build-cov
+          COVERAGE=$(lcov --summary coverage_filtered.info 2>&1 | grep "lines" | awk '{print $2}' | sed 's/%//')
+          echo "Code coverage: $COVERAGE%"
+          if (( $(echo "$COVERAGE < 50" | bc -l) )); then
+            echo "Warning: Coverage is below 50% threshold"
+          else
+            echo "Coverage meets 50% threshold"
+          fi
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: nextcdf4-coverage
+          path: build-cov/coverage_html/
+          retention-days: 30
+      - name: Failure logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nextcdf4-coverage-logs
+          path: |
+            configure-cov.log
+            build-cov/CMakeCache.txt
+            build-cov/Testing/Temporary/

@@ -28,13 +28,6 @@ NEP extends NetCDF-C with scientific format readers, the NEXTCDF-4 backend,
 and examples covering advanced NetCDF use. LZ4/BZIP2 compression lives in
 [nep-compress](https://github.com/captainkirk99/nep-compress).
 
-### Compression
-
-For LZ4 or BZIP2 with NetCDF-4/HDF5, install
-[nep-compress](https://github.com/captainkirk99/nep-compress) separately.
-NEP continues to support generic HDF5 filters through NEXTCDF-4 but does
-not build or install compression plugins or filter-specific APIs.
-
 ### Multi-Format Readers
 
 Read other formats with the netcdf-c library, as if they were netCDF files.
@@ -42,12 +35,12 @@ Read other formats with the netcdf-c library, as if they were netCDF files.
 | Format | Domain |
 |---|---|
 | **NASA CDF** | Space physics (IMAP, MMS, Van Allen) |
-| **GeoTIFF** | Geospatial rasters, CF-1.8 CRS metadata |
-| **GRIB2** | NWP model output (GFS, NAM, HRRR, wave) |
 | **FITS** | Astronomical images and tables (HST, JWST) |
 | **PDS4** | NASA/ESA planetary science (Mars, Moon, etc.) |
+| **GeoTIFF** | Geospatial rasters, CF-1.8 CRS metadata |
+| **GRIB2** | NWP model output (GFS, NAM, HRRR, wave) |
 | **DICOM** | Medical imaging (CT, MR, XA, US) |
-| **Legacy PDB** | Protein/macromolecular structures (RCSB) |
+| **Legacy PDB / mmCIF** | Protein/macromolecular structures (RCSB) |
 
 All readers use the standard NetCDF UDF system. Once enabled, **existing C and Fortran programs require no code modification** — an existing Fortran program that calls `nf90_open()` and `nf90_get_var()` can read a FITS, CDF, GeoTIFF, GRIB2, or PDS4 file without changing code.
 
@@ -62,8 +55,35 @@ cmake -B build \
   -DNEP_ENABLE_FITS=ON \
   -DNEP_ENABLE_PDS4=ON \
   -DNEP_ENABLE_DICOM=ON \
-  -DNEP_ENABLE_PDB=ON
+  -DNEP_ENABLE_PDB=ON \
+  -DNEP_ENABLE_MMCIF=ON
 ```
+
+### NEXTCDF-4
+
+NEXTCDF-4 is NEP's clean-room, drop-in replacement backend for
+netCDF-4/HDF5, delivered as a UDF expansion pack (`-DNEP_ENABLE_NEXTCDF4=ON`,
+selected at run time with `NC_NEXTCDF4`). It is **experimental** in v4.3.0.
+
+- Full netCDF-4 data model: groups, unlimited dimensions, attributes,
+  user types (compound, enum, opaque, vlen), `NC_STRING`, filters
+  (`nc_def_var_filter` with deflate/fletcher32/szip/bzip2/zstd plugins),
+  chunking and quantize writes.
+- New atomic types: 16-bit floats (`NC_FLOAT16`, `NC_BFLOAT16`) with
+  NEP round-to-nearest-even conversion, FP8/FP6/FP4 storage types,
+  complex and bitfield types, and `NC_STD_REF` HDF5 reference tokens
+  with a `nc_ref_*`/`nc_deref_*` API.
+- Compatibility modes write files readable by upstream netCDF-c:
+  `NC_NETCDF4_MODEL` (Superblock v1) and `NC_CLASSIC_MODEL`.
+- Built on the latest HDF5: Superblock v3 in native mode, requiring
+  HDF5 2.1.1 and netcdf-c with the 64-slot UDF scheme.
+- An optional Fortran module `nep_nextcdf4` provides mode/type
+  constants and float16/bfloat16 I/O (see
+  [nextcdf4_fortran.md](docs/nextcdf4_fortran.md)).
+
+See [docs/nextcdf4.md](docs/nextcdf4.md) for the full backend reference
+and [docs/nextcdf4_architecture.md](docs/nextcdf4_architecture.md) for
+how it works internally.
 
 ### Example Programs
 
@@ -101,8 +121,9 @@ when upgrading an application that previously used NEP's `<nep.h>`,
 
 ### Build Requirements
 
-- **NetCDF-C >= 4.10.1** (required for UDF slots > 2, which NEP uses for FITS, CDF, and PDS4)
-- **HDF5 >= 2.1.1** (required by NetCDF-4)
+- **CMake >= 3.19**
+- **NetCDF-C >= 4.10.1** (required for UDF slots > 2, which NEP uses for FITS, CDF, and PDS4); NEXTCDF-4 additionally requires the 64-slot UDF scheme (netcdf-c >= 4.10.2 or current main)
+- **HDF5 >= 1.14.0** for the format readers; **HDF5 2.1.1** required by NEXTCDF-4
 - C compiler and, optionally, a Fortran 90+ compiler
 - Doxygen and Graphviz (only if building documentation)
 
@@ -173,6 +194,8 @@ that CMake found; set `HDF5_ROOT` to NetCDF-C's HDF5 to fix it.
 | `-DNEP_ENABLE_PDS4` | **OFF** | NASA/ESA PDS4 UDF handler (UDF5) |
 | `-DNEP_ENABLE_DICOM` | **OFF** | DICOM UDF handler (UDF6) |
 | `-DNEP_ENABLE_PDB` | ON | Legacy PDB UDF handler (UDF7) |
+| `-DNEP_ENABLE_MMCIF` | **OFF** | PDBx/mmCIF UDF handler (UDF8) |
+| `-DNEP_ENABLE_NEXTCDF4` | **OFF** | NEXTCDF-4 backend (UDF9) |
 | `-DNEP_BUILD_EXAMPLES` | ON | Example programs |
 | `-DNEP_ENABLE_BENCHMARKS` | OFF | Performance benchmark examples |
 | `-DNEP_ZSTD_PLUGIN_DIR` | (empty) | Directory with one HDF5 zstd plugin; enables the NEXTCDF-4 bfloat16 example tests |
@@ -190,6 +213,9 @@ no longer build filters in NEP and produce a migration warning.
 `-DNEP_ENABLE_FORTRAN` (default ON): enables Fortran format-reader tests
 in `ftest/` and Fortran examples in `examples/f_*/`. NEP no longer
 installs `nepf` or `nep.mod`. Requires NetCDF-Fortran and a Fortran compiler.
+When combined with `-DNEP_ENABLE_NEXTCDF4=ON` it also builds and installs
+the `nep_nextcdf4` module and `libnepnextcdf4f` (`NEP::nepnextcdf4f`),
+which requires NetCDF-Fortran >= 4.6.2.
 
 #### Format Readers
 
@@ -204,6 +230,8 @@ All format readers are independent — any combination can be enabled simultaneo
 | PDS4 | `-DNEP_ENABLE_PDS4` | UDF5 | libxml2 ≥ 2.9 |
 | DICOM | `-DNEP_ENABLE_DICOM` | UDF6 | libdicom, libjpeg / libjpeg-turbo |
 | Legacy PDB | `-DNEP_ENABLE_PDB` | UDF7 | None (built-in fixed-column parser) |
+| PDBx/mmCIF | `-DNEP_ENABLE_MMCIF` | UDF8 | None (built-in CIF parser) |
+| NEXTCDF-4 | `-DNEP_ENABLE_NEXTCDF4` | UDF9 | HDF5 2.1.1, netcdf-c 64-slot UDF |
 
 - NASA CDF library: https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/ (or `spack install cdf`)
 - CDF moved from UDF2 to UDF4 in v2.2.0; GRIB2 and CDF can now be enabled together.
@@ -288,9 +316,9 @@ Install the 4.2.0 package from conda-forge (Linux only):
 conda install -c conda-forge nep
 ```
 
-The package includes the PDB, mmCIF, FITS and PDS4 readers. GeoTIFF
-arrives in the next release; DICOM, GRIB2, CDF and NEXTCDF-4 are
-excluded because they need packages or versions conda-forge does not
+The package includes the PDB, mmCIF, FITS and PDS4 readers; GeoTIFF is
+enabled starting with the 4.3.0 package. DICOM, GRIB2, CDF and NEXTCDF-4
+are excluded because they need packages or versions conda-forge does not
 provide.
 
 Register the readers with NetCDF-C by appending the installed `.ncrc`

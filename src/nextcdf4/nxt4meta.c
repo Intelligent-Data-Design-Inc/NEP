@@ -138,6 +138,17 @@ nx4_reopen_var_cache(NC_GRP_INFO_T *grp, NC_VAR_INFO_T *var)
     size_t i;
     int ret = NC_EHDFERR;
 
+    /* HDF5 picks up a dataset's raw-chunk cache (DAPL) only at open
+     * time, so changing the cache means closing and reopening the
+     * dataset — and every other open handle that aliases the same
+     * object, because HDF5 keeps the first opener's cache otherwise.
+     * The sequence is: collect all alias handles by object token,
+     * flush, close them all, then reopen them by path with the new
+     * DAPL. If any step fails partway, reopen whatever was closed
+     * with the old DAPL so the caller is left with valid (if stale)
+     * handles rather than dangling ids. A variable whose dataset has
+     * not been created yet (user-typed variables defer creation to
+     * `_enddef`) just keeps the request for later. */
     if (vinfo->hdf_dataset < 0)
         return var->created ? NC_EHDFERR : NC_NOERR;
     if ((ret = nx4_var_dapl(var, &dapl)))
@@ -1230,6 +1241,17 @@ read_hdf5_att(hid_t loc, const char *name, NCindex *list, NC_OBJ *container,
     void *data = NULL;
     int ret = NC_EHDFERR;
 
+    /* Open the attribute, resolve its nc_type (atomic via
+     * map_nc_type(), else a committed user type by object identity),
+     * then choose the *memory* datatype to read with — that choice is
+     * the subtle part: strings read as their own vlen type, NC_CHAR
+     * as single bytes, anonymous (foreign, uncommitted) compounds
+     * through the packed native type, registered user types and
+     * atomics through nx4_memory_type(), and variable-sized results
+     * get their storage layout rewritten so HDF5 allocates payloads
+     * the caller later reclaims. The value lands in `data` and is
+     * deep-copied into the attribute index by add_att(); the read
+     * buffer and any HDF5-owned payloads are then released. */
     if ((attr = H5Aopen(loc, name, H5P_DEFAULT)) < 0)
         return NC_EHDFERR;
     if ((ftype = H5Aget_type(attr)) < 0)
@@ -1803,6 +1825,19 @@ nx4_dcpl_fill(hid_t dcpl, NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
     hid_t fill_type = -1;
     int ret = NC_NOERR;
 
+    /* Decision tree, in order: `no_fill` short-circuits to
+     * H5D_FILL_TIME_NEVER; reference datasets get no fill message at
+     * all (HDF5 cannot open a ref dataset that has one); variable-
+     * sized types force early allocation so read-only fills are safe,
+     * then store the zeroed-descriptor fill; other user types store
+     * only an explicit fill value in the variable's own file type;
+     * NEP-only atomic types (small floats, complex, bitfields) are
+     * absent from h5->alltypes so they synthesize a zeroed or
+     * explicit fill without consulting upstream's default table; and
+     * standard atomic types use upstream's nc4_get_fill_value(). The
+     * H5Pset_fill_value() call always passes the dataset's own file
+     * datatype, never H5Tget_native_type() — the widened native type
+     * would read past the fill buffer for 16-bit types (#377). */
     if (var->no_fill) {
         if (H5Pset_fill_time(dcpl, H5D_FILL_TIME_NEVER) < 0)
             return NC_EHDFERR;
@@ -1928,6 +1963,15 @@ nx4_create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
     coordinate = (var->ndims == 1 &&
                   !strcmp(var->hdr.name, var->dim[0]->hdr.name) &&
                   var->dim[0]->container == grp);
+
+    /* The function runs in five phases: (1) detach the dimension-
+     * scale references pointing at the dataset about to be deleted;
+     * (2) drop the old link and rebuild dataspace/DCPL from current
+     * settings — chunking, fill, endianness, filters; (3) create the
+     * new dataset (as the dim's scale dataset for coordinate vars);
+     * (4) rewrite the hidden id attributes and re-attach scales,
+     * including dependents of a coordinate variable; (5) restore the
+     * user attributes that the delete removed, in index order. */
 
     /* Recreation is delete-and-rebuild. Before the old dataset is
      * deleted, remove the dimension-scale references that point at
@@ -4289,6 +4333,19 @@ load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
     int ret;
     (void)h5;
 
+    /* Rebuild the variable's in-memory record in five phases:
+     * (1) open the dataset and resolve its nc_type — atomic via
+     * map_nc_type(), user-defined via HDF5 object identity against
+     * the committed types load_types() registered earlier;
+     * (2) recover rank and dims from the dataspace and the dimids
+     * from the hidden _Netcdf4Coordinates attribute (falling back to
+     * attached dimension scales for foreign files);
+     * (3) register the NC_VAR_INFO_T and reattach it to its
+     * dimension records and shared type record;
+     * (4) read the DCPL for chunking/storage, fill behavior and the
+     * filter pipeline;
+     * (5) mark meta_read/atts_read/created so netcdf-c treats the
+     * record as fully loaded rather than newly defined. */
     if ((dset = H5Dopen2(hdf_grp, name, H5P_DEFAULT)) < 0) {
         free(vinfo);
         return NC_EHDFERR;
@@ -4636,6 +4693,14 @@ load_variables(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
     int maxid = -1;
     int id;
 
+    /* Two load orders exist because nc4_var_list_add() assigns varids
+     * in registration order. NEXTCDF-4 files store each varid in the
+     * hidden _Netcdf4Varid attribute, so loading in stored-id order
+     * reproduces the create-time ids exactly; foreign files with no
+     * stored ids load in HDF5 link order. The two branches have
+     * identical bodies — load_one_var(), then iterate the dataset's
+     * attributes into the variable's index — and differ only in
+     * iteration order. */
     if (H5Literate(hdf_grp, H5_INDEX_NAME, H5_ITER_INC, NULL,
                    find_var_cb, &vl) < 0)
         return NC_EHDFERR;
