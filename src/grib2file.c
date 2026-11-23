@@ -547,7 +547,7 @@ NC_GRIB2_close(int ncid, void *ignore)
     /* Get GRIB2-specific info. */
     grib2_file = (NC_GRIB2_FILE_INFO_T *)h5->format_file_info;
     if (!grib2_file)
-        return NC_NOERR;
+        return nc4_nc4f_list_del(h5);
 
     /* Close the g2c file handle. */
     g2c_close(grib2_file->g2cid);
@@ -558,7 +558,8 @@ NC_GRIB2_close(int ncid, void *ignore)
     free(grib2_file);
     h5->format_file_info = NULL;
 
-    return NC_NOERR;
+    /* Free the shared metadata tree. */
+    return nc4_nc4f_list_del(h5);
 }
 
 /**

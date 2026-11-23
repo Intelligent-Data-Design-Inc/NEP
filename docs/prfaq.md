@@ -1,82 +1,31 @@
 # NEP (NetCDF Expansion Pack) - Press Release / FAQ
 
-## Press Release
+## About NEP at v4.3.0
 
-**FOR IMMEDIATE RELEASE**
+NEP (NetCDF Expansion Pack) is an open-source framework that extends
+NetCDF-C so existing C, Fortran and Python programs can read additional
+scientific data formats through the standard NetCDF API, with no code
+changes:
 
-### NetCDF Expansion Pack (NEP) v2.2.0 Adds NASA/ESA PDS4 Planetary Data Support
+- **Space**: NASA CDF space physics, FITS astronomy, NASA/ESA PDS4
+  planetary archives
+- **Earth**: GeoTIFF geospatial rasters, GRIB2 NWP model output
+- **Medical**: DICOM imaging
+- **Bio**: legacy PDB and PDBx/mmCIF macromolecular structures
 
-*Open-source framework now provides high-performance compression (LZ4/BZIP2) and transparent access to six scientific data formats — GeoTIFF, GRIB2, FITS, NASA CDF, and NASA/ESA PDS4 — through the standard NetCDF API*
+NEP also provides **NEXTCDF-4**, an experimental, backward-compatible
+drop-in replacement for the netCDF-4/HDF5 backend. NEXTCDF-4 adds 16-bit
+floating-point types, HDF5 reference types, the latest HDF5 superblock
+support, and performance improvements, while its compatibility modes
+write files readable by upstream netcdf-c.
 
-**July 2026** - The scientific computing community gains powerful new capabilities with NEP (NetCDF Expansion Pack) v2.2.0, an open-source framework that extends NetCDF-4 with high-performance compression and seamless access to multiple scientific data formats — now including NASA/ESA Planetary Data System version 4 (PDS4) planetary science data.
+LZ4/BZIP2 compression filters moved to the separate
+[nep-compress](https://github.com/captainkirk99/nep-compress) project in
+v4.2.0; install it alongside NEP for compression APIs and plugins.
 
-#### The Challenge
-
-Scientific researchers work with diverse data formats — NetCDF-4, NASA CDF space physics data, GeoTIFF geospatial imagery, GRIB2 meteorological model output, FITS astronomical data, and NASA/ESA PDS4 planetary science archives — often requiring format conversion before analysis. Large-scale data volumes demand efficient compression balancing storage savings with processing speed. Traditional workflows force scientists to convert data between formats, adding complexity and storage overhead.
-
-#### The Solution
-
-NEP provides a comprehensive solution with two key capabilities:
-
-**High-Performance Compression (v1.0.0, v1.1.0):**
-- **LZ4**: 2-3x faster compression than DEFLATE for real-time workflows and HPC environments
-- **BZIP2**: Superior compression ratios for archival storage and bandwidth-constrained scenarios
-- **C and Fortran APIs**: Full support for both languages with `nc_*` and `nf90_*` functions
-
-**Multi-Format UDF Handlers:**
-
-*GeoTIFF Support (v1.5.0, UDF0/UDF1):*
-- **Geospatial Data Access**: Read GeoTIFF raster data through standard NetCDF API
-- **Format Detection**: Automatic TIFF/GeoTIFF identification and validation
-- **Metadata Preservation**: Georeferencing, coordinate systems, and GeoTIFF tags accessible as NetCDF attributes
-- **Multi-Band Support**: Handle single and multi-band imagery with proper dimension mapping
-
-*GRIB2 Support (v1.7.0, UDF2):*
-- **Meteorological/Oceanographic Data Access**: Read GRIB2 NWP model output through the standard NetCDF API
-- **Full Grid Expansion**: Bitmap-aware data reading substitutes `_FillValue` for land-masked points
-- **Product Inventory**: All GRIB2 products exposed as named NC_FLOAT variables with `[y, x]` dimensions
-- **`.ncrc` Autoload**: Zero-code-change access — place `.ncrc` in home directory and `nc_open()` works on `.grib2` files
-
-*FITS Support (v2.0.0, UDF3):*
-- **Astronomical Data Access**: Read FITS files from HST, Chandra, JWST, and other instruments through the standard NetCDF API
-- **HDU Mapping**: Primary HDU in root group; each extension HDU becomes a named child group
-- **Full Data I/O**: `NC_FITS_get_vara()` reads pixel hyperslabs and table column data via CFITSIO
-- **Keyword Mapping**: Standard FITS keywords (`BUNIT`, `BZERO`, `BSCALE`, `BLANK`) mapped to NetCDF attributes
-
-*NASA CDF Support (v1.3.0, UDF4):*
-- **Transparent Access**: Read CDF space physics and satellite data through standard NetCDF API
-- **No Conversion Required**: Direct access to CDF files without format conversion
-- **Complete Metadata**: Full mapping of CDF variables, attributes, and types to NetCDF equivalents
-
-*NASA/ESA PDS4 Support (v2.2.0, UDF5):*
-- **Planetary Science Data Access**: Read PDS4 XML-labeled data products through the standard NetCDF API
-- **Array and Table Support**: Array images, binary tables, character tables, and delimited tables fully supported
-- **Metadata Mapping**: `Identification_Area` and `Observation_Area` become global attributes; each `File_Area_Observational` becomes a child group
-- **Full Data I/O**: `NC_PDS4_get_vara()` reads array hyperslabs and table field values with automatic byte-order conversion
-
-**Example Programs (v2.1.0+):**
-- **Learning Resources**: Comprehensive example programs in C and Fortran demonstrating NetCDF API usage
-- **Companion Code**: Examples accompany *The NetCDF Developer's Handbook: The Authoritative Guide to Writing High-Performance Programs for Scientific Data Management, Second Edition* (https://www.amazon.com/dp/B0H7Q1Z75L)
-- **Multiple Categories**: Classic NetCDF, NetCDF-4, NcZarr, OPeNDAP, parallel I/O, and performance examples
-
-This comprehensive framework enables scientists to:
-
-- **Eliminate format conversion**: Access CDF, GeoTIFF, GRIB2, FITS, and PDS4 files directly through the NetCDF API
-- **Optimize compression**: Choose LZ4 for speed or BZIP2 for compression ratio
-- **Process data faster**: LZ4 delivers 2-3x faster compression/decompression than DEFLATE
-- **Simplify workflows**: Use familiar NetCDF API for six scientific data formats
-- **Maintain data integrity**: Lossless compression and accurate metadata mapping
-- **Deploy easily**: Spack package manager support for HPC environments
-
-"NEP has grown into a truly multi-format scientific data framework," said Ed Hartnett, Principal Architect. "Version 2.2.0 completes our planetary science support with full PDS4 reading — array images, binary tables, and character tables are now directly accessible through the same NetCDF API scientists already use for CDF, GeoTIFF, GRIB2, and FITS data. Six formats, one API, no conversion."
-
-
-#### Availability
-
-NEP v2.2.0 is available now as open-source software. Installation options include:
-- **Source Build**: CMake build system
-- **Spack Package Manager**: `spack install nep` for HPC environments
-- **Documentation**: Complete API documentation at https://intelligent-data-design-inc.github.io/NEP/
+Installation: CMake from source, `spack install nep` for HPC
+environments, or `conda install -c conda-forge nep` (Linux).
+Documentation: https://intelligent-data-design-inc.github.io/NEP/
 
 ---
 
@@ -86,9 +35,9 @@ NEP v2.2.0 is available now as open-source software. Installation options includ
 
 #### Q: What is NEP?
 **A:** NEP (NetCDF Expansion Pack) extends NetCDF-C with:
-- User Defined Format (UDF) handlers for GeoTIFF, GRIB2, FITS, NASA CDF, and NASA/ESA PDS4 files
-- The optional NEXTCDF-4 backend and format support for C/Fortran applications
-- Spack package manager support for simplified HPC deployment
+- User Defined Format (UDF) handlers for NASA CDF, FITS, PDS4, GeoTIFF, GRIB2, DICOM, legacy PDB and PDBx/mmCIF files
+- The optional NEXTCDF-4 backend, a drop-in replacement for netCDF-4/HDF5 with new atomic types, reference types and the latest HDF5 superblock support
+- Spack package manager and conda-forge support for simplified deployment
 - Comprehensive example programs as companion code to *The NetCDF Developer's Handbook, Second Edition*
 
 LZ4/BZIP2 compression lives in [nep-compress](https://github.com/captainkirk99/nep-compress).
@@ -115,26 +64,12 @@ LZ4/BZIP2 compression lives in [nep-compress](https://github.com/captainkirk99/n
 
 #### Q: What compression algorithms does NEP support?
 **A:** NEP no longer bundles compression plugins or LZ4/BZIP2 wrappers.
-Use [nep-compress](https://github.com/captainkirk99/nep-compress)
-for the following algorithms:
-
-**LZ4 Compression:**
-- **Purpose**: Speed-optimized for real-time and HPC workflows
-- **Speed**: 2-3x faster compression/decompression than DEFLATE
-- **Ratio**: Good compression ratios, slightly lower than DEFLATE
-- **Use Case**: Real-time data processing, HPC I/O optimization, speed-critical workflows
-
-**BZIP2 Compression:**
-- **Purpose**: Compression ratio-optimized for archival storage
-- **Ratio**: Better compression ratios than DEFLATE
-- **Speed**: Slower than LZ4 but faster than most high-ratio algorithms
-- **Use Case**: Long-term archival, bandwidth-constrained transfers, storage optimization
-
-#### Q: When should I use LZ4 vs BZIP2?
-**A:**
-- **Use LZ4 when**: I/O speed is critical, working with real-time data, running on HPC systems, need fast decompression
-- **Use BZIP2 when**: Storage space is limited, archiving data long-term, transferring over slow networks, compression ratio matters most
-- **Both are lossless**: Choose based on your workflow priorities—speed or compression ratio
+Install [nep-compress](https://github.com/captainkirk99/nep-compress) for
+LZ4 (speed-optimized, 2-3x faster than DEFLATE) and BZIP2 (ratio-optimized
+for archival storage), including its C and Fortran wrapper APIs and HDF5
+plugins. Through NEXTCDF-4, NEP itself supports generic HDF5 filters via
+`nc_def_var_filter()` — including deflate, fletcher32, szip, bzip2 and
+zstd plugins — but does not ship filter-specific convenience APIs.
 
 #### Q: Do I need to modify my existing NetCDF code?
 **A:** Format readers work with standard NetCDF applications once enabled. For the LZ4/BZIP2 wrapper APIs, update the include/module and link settings to use nep-compress:
@@ -148,16 +83,14 @@ for the following algorithms:
 All features integrate seamlessly with the standard NetCDF API.
 
 #### Q: Does NEP provide example programs to help me learn?
-**A:** Yes! NEP includes comprehensive example programs in both C and Fortran, updated for v2.1.0 as companion code for *The NetCDF Developer's Handbook: The Authoritative Guide to Writing High-Performance Programs for Scientific Data Management, Second Edition*:
-- **Classic NetCDF examples**: Basic 2D arrays, coordinate variables, format variants, size limits, unlimited dimensions, 4D variables
-- **NetCDF-4 examples**: NetCDF-4 files, compression, chunking, multiple unlimited dimensions, user-defined types
-- **NcZarr examples**: Local NcZarr stores, chunking, compression, enhanced data model with hierarchical groups
-- **OPeNDAP examples**: Remote data access with constraint expressions and timing instrumentation
-- **Parallel I/O examples**: MPI collective I/O with domain decomposition (C and Fortran)
-- **Performance examples**: General NetCDF benchmarks (`NEP_ENABLE_BENCHMARKS`); LZ4/BZIP2 benchmarks moved to nep-compress
-- **Dual language support**: All examples available in both C and Fortran
+**A:** Yes! NEP's example programs exercise NEP features and run as tests:
+- **NEXTCDF-4 examples**: float16/bfloat16 I/O, sample generators, and conversion benchmarks (`examples/nextcdf4/`)
+- **Performance examples**: Disk-bound NetCDF benchmarks (`examples/performance/`, `NEP_ENABLE_BENCHMARKS`); LZ4/BZIP2 benchmarks moved to nep-compress
+- **UDF reader examples**: DICOM and PDB readers (`examples/dicom/`, `examples/pdb/`)
 - **Built and tested**: Examples build with NEP and run as tests
 - **Location**: All examples in the `examples/` directory with detailed README
+
+The generic NetCDF teaching examples (classic NetCDF, NetCDF-4, NcZarr, OPeNDAP, parallel I/O, and all Fortran versions) moved to the [NetCDF Developer's Handbook](https://github.com/captainkirk99/NetCDF_Developers_Handbook) repository in v4.3.0, where they remain companion code for *The NetCDF Developer's Handbook, Second Edition*.
 
 #### Q: Does NEP provide visualization examples?
 **A:** Yes. Optional Python examples in `examples/viz/` open enabled FITS, CDF, GeoTIFF, GRIB2, and PDS4 UDF files directly through `netCDF4.Dataset` and create static grayscale PNG plots with companion metadata files. Enable them with `-DNEP_ENABLE_VIZ_EXAMPLES=ON` or `--enable-viz-examples`. Their source-root `.venv` must build `netCDF4` from source against the same NetCDF-C library as NEP; bundled-libnetcdf wheels cannot load the NEP UDF handlers. Tests use the build-tree `.ncrc` configuration and validate output metadata, grayscale pixels, and publication size limits. The plots and metadata remain in the build tree and are not installed.
@@ -190,15 +123,16 @@ There is no magic-number dispatch for NEXTCDF-4 because HDF5 files are already o
 #### Q: What are the system requirements?
 **A:** 
 - **Operating System**: Linux or Unix
-- **Core Libraries**: NetCDF-C (v4.9+), HDF5 (v1.12+)
-- **Fortran Support (optional)**: NetCDF-Fortran (v4.6.2+; zstd API requires 4.6.0+)
+- **Core Libraries**: NetCDF-C (v4.10.1+), HDF5 (v1.14+)
+- **Fortran Support (optional)**: NetCDF-Fortran (v4.6.2+ required for the NEXTCDF-4 binding)
 - **CDF Support (optional)**: NASA CDF Library (v3.9.x)
 - **GeoTIFF Support (optional)**: libgeotiff, libtiff
 - **GRIB2 Support (optional)**: NOAA NCEPLIBS-g2c (≥ 2.1.0), libjasper (≥ 3.0.0)
 - **FITS Support (optional)**: CFITSIO (≥ 3.0; locally `/usr/local/cfitsio-4.6.4/`; CI: apt `libcfitsio-dev`)
 - **PDS4 Support (optional)**: libxml2 (`libxml2-dev` on Ubuntu)
-- **NEXTCDF-4 Support (optional)**: HDF5 2.1.1+ (required); netcdf-c 4.10.1+ with UDF plugin and `NC_UDF9` support
-- **Build Tools**: CMake (v3.9+)
+- **DICOM Support (optional)**: libdicom, libjpeg/libjpeg-turbo, libgdcm
+- **NEXTCDF-4 Support (optional)**: HDF5 2.1.1 (required); netcdf-c with the 64-slot UDF scheme (v4.10.2 or current main) and `NC_UDF9` support
+- **Build Tools**: CMake (v3.19+)
 - **Documentation (optional)**: Doxygen and Graphviz
 
 #### Q: How do I install NEP?
@@ -277,20 +211,26 @@ nc_get_vara_float(grpid, varid, start, count, data);
 - LZ4/BZIP2 compression performance benchmarks are maintained by nep-compress.
 
 #### Q: Does NEP support parallel I/O?
-**A:** Yes, NEP is designed to work in HPC environments with parallel I/O operations. LZ4 compression is particularly well-suited for parallel workflows.
+**A:** NEP has MPI test programs using upstream NetCDF (`NEP_ENABLE_PARALLEL_TESTS`); the parallel I/O example programs moved to the NetCDF Developer's Handbook repository in v4.3.0. The experimental NEXTCDF-4 backend does **not** support parallel I/O in v4.3.0; it is deferred to a future release. NEXTCDF-4 rejects parallel create/open flags and returns `NC_ENOTNC4` for `nc_var_par_access`. Memory-image files, SWMR and sharing modes are also unsupported; memory/sharing flags are rejected rather than silently ignored.
+
+#### Q: Can I control NEXTCDF-4 fill, cache settings and group names?
+**A:** Yes, starting with v4.3.0 Sprint 1O. `nc_set_fill` sets the session default for newly defined eligible variables; existing variables and explicit per-variable overrides stay unchanged, and reopen resets the default to `NC_FILL`. `nc_set_var_chunk_cache` applies actual HDF5 cache settings even in read-only/data mode; overrides last only for the session, and `nc_get_var_chunk_cache` reports effective chunked settings. Group creation/rename work in native and `NC_NETCDF4_MODEL` modes, preserving descendants and data; classic-model groups remain unsupported. See [NEXTCDF-4](nextcdf4.md) for validation, fill exclusions and cache details.
+
+#### Q: Can NEXTCDF-4 store strings and nested string data?
+**A:** Yes, in native and NetCDF-4-model files, including strings in compound/array members and vlen bases. Values and attributes survive reopen; model-mode output interchanges with upstream netcdf-c, and NEXTCDF-4 can update upstream-created string files. Writes borrow your buffers, while reads and fill inquiries return owned payloads: use `nc_free_string` for standalone arrays and recursive `nc_reclaim_data` for nested values before closing the file. NULL standalone inputs/default fills read as empty strings; standalone string no-fill is rejected. New strings are UTF-8-tagged without transcoding, and legacy ASCII tags remain supported. Dynamic filled datasets allocate storage early to make read-only fills safe under HDF5 2.1.1, so sparse extensions may cost more storage. Wider fixed-length HDF5 strings, classic-model strings and reference nesting remain unsupported. See [NEXTCDF-4](nextcdf4.md) for layouts, ownership and selected test coverage.
+
+#### Q: Can I use NEXTCDF-4 from Fortran?
+**A:** Enable both NEXTCDF-4 and Fortran and use `netcdf` plus `nep_nextcdf4`.
+NetCDF-Fortran >=4.6.2 and compatible compiler modules are required. The installed
+`NEP::nepnextcdf4f` target provides initialization, mode/new-type constants and
+scalar–rank-7 float16/bfloat16 bit-buffer I/O with one-based Fortran selections.
+Standard real32/real64 NetCDF-Fortran I/O performs numeric half conversion; the new
+wrappers exchange raw `integer(c_int16_t)` encodings. Reference wrappers and general
+enhanced-type value interfaces are deferred beyond v4.3.0; constants alone do not
+supply them. See [NEXTCDF-4 Fortran](nextcdf4_fortran.md) for linkage and an example.
 
 #### Q: Can I use NEP on Windows?
 **A:** Currently, NEP targets Linux and Unix platforms. Windows support may be added in future releases based on community demand.
-
-### Compression Algorithms
-
-#### Q: What compression algorithms does NEP v1.1.0 support?
-**A:** NEP v1.1.0 supports two lossless compression algorithms:
-- **LZ4**: High-speed compression for real-time and HPC workflows
-- **BZIP2**: High-ratio compression for archival storage and bandwidth-constrained scenarios
-
-#### Q: Can I use both LZ4 and BZIP2 in the same application?
-**A:** Yes! You can choose different compression algorithms for different variables or files based on your specific requirements.
 
 ### Development and Community
 
@@ -312,18 +252,12 @@ nc_get_vara_float(grpid, varid, start, count, data);
 **A:** Yes. NEP's format handlers work with NetCDF-Fortran applications. The old `module nep` compression wrappers moved to `module nep_compress`; install nep-compress for `nf90_def_var_lz4`, `nf90_inq_var_lz4`, `nf90_def_var_bzip2`, and `nf90_inq_var_bzip2`.
 
 #### Q: What is the current version?
-**A:** NEP v4.0.0 is the current release (August 2026), providing:
-- LZ4 and BZIP2 compression shipped in earlier releases; v4.2 moves their APIs to nep-compress
-- GeoTIFF geospatial raster support via UDF handler (UDF0/UDF1)
-- GRIB2 meteorological/oceanographic data support via UDF handler (UDF2)
-- FITS astronomical data support via UDF handler (UDF3)
-- NASA CDF space physics data support via UDF handler (UDF4)
-- NASA/ESA PDS4 planetary science data support via UDF handler (UDF5), including New Horizons Alice mission data
-- DICOM medical imaging support via UDF handler (UDF6), including uncompressed and JPEG Baseline multi-frame pixel data
-- NEXTCDF-4 optional NetCDF-4/HDF5 backend (UDF9) with new atomic types and enhanced metadata model
-- All format readers can be enabled simultaneously with the NEXTCDF-4 backend
-- Complete upstream-compatible Spack variants for every reader and utility with available upstream dependencies
-- Comprehensive documentation, CI testing, and example programs.
+**A:** NEP v4.3.0 is in development (release tag pending), providing:
+- Format readers for NASA CDF (UDF4), FITS (UDF3), PDS4 (UDF5), GeoTIFF (UDF0/UDF1), GRIB2 (UDF2), DICOM (UDF6), legacy PDB (UDF7) and PDBx/mmCIF (UDF8)
+- The experimental NEXTCDF-4 backend (UDF9): full enhanced data model including strings and nested user types, 16-bit floats with NEP round-to-nearest-even conversion and typed `nc_*_float16`/`nc_*_bfloat16` APIs, `NC_STD_REF` reference types, generic `nc_def_var_filter` HDF5 filter support, provenance attributes, `nc_set_fill`/chunk-cache/group-rename support, `NC_NETCDF4_MODEL` and `NC_CLASSIC_MODEL` compatibility modes, and the optional `nep_nextcdf4` Fortran module
+- CMake >= 3.19 with improved HDF5 detection; Spack and conda-forge packaging
+- LZ4/BZIP2 compression via the separate nep-compress project
+- Comprehensive documentation, CI testing (including sanitizer and coverage jobs), and example programs.
 
 #### Q: What formats does NEP support?
 **A:** NEP supports multiple scientific data formats through the NetCDF UDF system:
@@ -333,25 +267,24 @@ nc_get_vara_float(grpid, varid, start, count, data);
 - **FITS** (v2.0.0, UDF3): Astronomical images and tables from HST, JWST, Chandra via UDF handler
 - **NASA CDF** (v1.3.0, UDF4): Space physics and satellite data via UDF handler
 - **NASA/ESA PDS4** (v2.2.0, UDF5): Planetary science arrays and tables via UDF handler
+- **DICOM** (v3.0.0, UDF6): Medical imaging via UDF handler
+- **Legacy PDB** (v3.3.0, UDF7) and **PDBx/mmCIF** (v3.4.0, UDF8): Macromolecular structures via UDF handlers
 - **NEXTCDF-4** (v4.0.0, UDF9): Optional NetCDF-4/HDF5 backend with new atomic types and enhanced metadata model
 All formats accessible through the standard NetCDF API.
 
 #### Q: How stable is NEP?
 **A:** NEP is production-ready and thoroughly tested:
-- **v1.0.0-v2.5.0**: All releases maintain backward compatibility
-- **v3.0.0-v4.0.0**: All releases maintain backward compatibility; v4.0.0 adds the optional NEXTCDF-4 backend and new atomic types
-- **v4.1.0** is in preparation; no breaking changes are planned
-- **v4.2.0** moves LZ4/BZIP2 APIs and plugins to nep-compress; applications using those APIs must update their build configuration
-- **Breaking change note**: v2.2.0 changed GeoTIFF, GRIB2, and FITS defaults from ON to OFF; explicit enable flags required for these formats
-- **Comprehensive testing**: Extensive test suites and CI validation (ci.yml, ci-fits.yml, ci-formats.yml, ci-parallel.yml, ci-nextcdf4.yml)
+- **Format readers**: stable across v1.x–v4.x releases
+- **NEXTCDF-4**: experimental in v4.3.0 — functional for the enhanced data model, but some upstream edge cases remain unimplemented and parallel/memory/SWMR modes are rejected
+- **v4.2.0** moved LZ4/BZIP2 APIs and plugins to nep-compress; applications using those APIs must update their build configuration
+- **Breaking change notes**: v2.2.0 changed GeoTIFF/GRIB2/FITS defaults from ON to OFF; v4.3.0 removed the deprecated `NC_REF_OBJECT`/`NC_REF_REGION` constants in favor of `NC_STD_REF`
+- **Comprehensive testing**: Extensive test suites and CI validation (ci.yml, ci-fits.yml, ci-formats.yml, ci-parallel.yml, nextcdf4.yml with normal, sanitizer and coverage jobs)
 - **Real-world data**: Tested with NASA IMAP MAG, MODIS imagery, NOAA GDAS GRIB2, HST WFPC2 FITS, PDS4 MRO CRISM data, and NEXTCDF-4 round-trip files
 
 ### Use Cases
 
 #### Q: What are typical use cases for NEP?
 **A:** 
-- **Weather forecasting**: Fast compression of large meteorological datasets with LZ4; direct GRIB2 NWP output access
-- **Climate modeling**: Efficient storage and access to simulation outputs with BZIP2
 - **Space physics research**: Direct access to NASA CDF satellite and mission data (IMAP, MMS, Van Allen Probes)
 - **Geospatial analysis**: Read GeoTIFF satellite imagery, land cover, and digital elevation models
 - **Remote sensing workflows**: Process MODIS, Landsat, and aerial photography in GeoTIFF format
@@ -359,19 +292,16 @@ All formats accessible through the standard NetCDF API.
 - **Operational meteorology**: Read NWP model output (GFS, NAM, HRRR) in GRIB2 format through the NetCDF API
 - **Astronomical data analysis**: Read HST, Chandra, and JWST FITS files with standard NetCDF API; no CFITSIO application code required
 - **Planetary science**: Access NASA/ESA PDS4 planetary data archives (e.g., MRO CRISM, Cassini, New Horizons, Voyager) through the NetCDF API
-- **HPC workflows**: Improve I/O performance with fast LZ4 compression
-- **Data archival**: Maximize storage efficiency with BZIP2 compression
-- **NEXTCDF-4 workflows**: Write NetCDF-4 files with modern HDF5 Superblock v3, new small floating-point and complex types, and corrected dimension/variable renaming
-- **Multi-format analysis**: Unified NetCDF API for NetCDF-4, NEXTCDF-4, CDF, GeoTIFF, GRIB2, FITS, and PDS4 data
+- **Medical imaging**: Read DICOM CT/MR/XA/US objects, including multi-frame pixel data, through the NetCDF API
+- **Structural biology**: Read PDB and mmCIF macromolecular structure files through the NetCDF API
+- **NEXTCDF-4 workflows**: Write NetCDF-4 files with modern HDF5 Superblock v3, new small floating-point and complex types, `NC_STD_REF` references, and corrected dimension/variable renaming
+- **Multi-format analysis**: Unified NetCDF API for NetCDF-4, NEXTCDF-4, CDF, GeoTIFF, GRIB2, FITS, PDS4, DICOM, PDB and mmCIF data
 
-#### Q: Can NEP handle real-time data streams?
-**A:** Yes! LZ4's high-speed compression makes it ideal for real-time or near-real-time data processing where low latency is critical.
-
-#### Q: Is NEP suitable for archival storage?
-**A:** Yes! BZIP2 provides excellent compression ratios ideal for archival storage. LZ4 provides good compression ratios suitable for many scenarios. NEP allows you to choose the right algorithm based on your priorities—speed or compression ratio.
+#### Q: Is NEP suitable for real-time or archival data storage?
+**A:** For compression-heavy workflows, pair NEP with nep-compress — its LZ4 plugin suits real-time/low-latency processing and BZIP2 suits archival storage. NEP's own contribution is direct format access and the NEXTCDF-4 backend.
 
 #### Q: How does NEP benefit HPC environments?
-**A:** NEP supports scientific format access and parallel I/O examples. For fast LZ4 compression use nep-compress alongside NEP.
+**A:** NEP supports scientific format access and parallel I/O test programs. For fast LZ4 compression use nep-compress alongside NEP.
 
 ---
 
@@ -411,7 +341,10 @@ For more information:
 - **v2.8.0** (Jul 2026): Optional Python visualization examples with validated grayscale PNG and metadata outputs
 - **v3.0.0** (Jul 2026): DICOM UDF reader for uncompressed, JPEG Baseline, and multi-frame imaging objects
 - **v4.0.0** (Aug 2026): NEXTCDF-4 optional NetCDF-4/HDF5 backend (UDF9) with full enhanced data model, new atomic types (float16, bfloat16, FP8/FP6/FP4, complex, bitfield, reference), Superblock v3 default, and `NC_NETCDF4_MODEL` compatibility mode
+- **v4.1.0**: NEXTCDF-4 documentation suite and NEP logging (`ELOG`/`nep_set_log_level`); standalone satellite-mission examples moved to Earth_Observation_in_Practice
+- **v4.2.0**: LZ4/BZIP2 compression APIs, plugins, tests and benchmarks moved to the nep-compress project; NEP is format-readers + NEXTCDF-4 only; first conda-forge package
+- **v4.3.0** (in development): NEXTCDF-4 maturation — strings and full user-type nesting, 16-bit float typed I/O and conversion engine, `NC_STD_REF` references, generic HDF5 filters, provenance attributes, fill/cache/group-rename, Fortran binding; CMake >= 3.19 with improved HDF5 detection; GeoTIFF in the conda package
 
 ---
 
-*Last Updated: August 2026 (v4.0.0)*
+*Last Updated: November 2026 (v4.3.0)*

@@ -1059,7 +1059,7 @@ NC_FITS_close(int ncid, void *ignore)
     /* Get FITS-specific info. */
     fits_file = (NC_FITS_FILE_INFO_T *)h5->format_file_info;
     if (!fits_file)
-        return NC_NOERR;
+        return nc4_nc4f_list_del(h5);
 
     /* Close CFITSIO file if it was opened. */
 #ifdef HAVE_FITS
@@ -1076,7 +1076,8 @@ NC_FITS_close(int ncid, void *ignore)
     free(fits_file);
     h5->format_file_info = NULL;
 
-    return NC_NOERR;
+    /* Free the shared metadata tree. */
+    return nc4_nc4f_list_del(h5);
 }
 
 /**
@@ -1105,7 +1106,7 @@ NC_FITS_abort(int ncid)
     /* Get FITS-specific info. */
     fits_file = (NC_FITS_FILE_INFO_T *)h5->format_file_info;
     if (!fits_file)
-        return NC_NOERR;
+        return nc4_nc4f_list_del(h5);
 
     /* Close CFITSIO file if it was opened. */
 #ifdef HAVE_FITS
@@ -1122,7 +1123,8 @@ NC_FITS_abort(int ncid)
     free(fits_file);
     h5->format_file_info = NULL;
 
-    return NC_NOERR;
+    /* Free the shared metadata tree. */
+    return nc4_nc4f_list_del(h5);
 }
 
 /**

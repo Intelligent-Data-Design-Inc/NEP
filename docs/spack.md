@@ -44,7 +44,15 @@ The CDF and DICOM readers are not available through Spack: there is no
 and no `gdcm` package for the DICOM dependencies. The recipe keeps the
 `cdf` variant commented out until #2797 merges.
 
-### Fortran Format Tests
+### Fortran Bindings and Format Tests
+
+On `main` and releases >=4.3.0, `+fortran+nextcdf4` also installs
+`lib/libnepnextcdf4f.so` and `include/nep/nep_nextcdf4.mod`, exported as
+`NEP::nepnextcdf4f`. This combination requires NetCDF-Fortran >=4.6.2; no new
+variant or plugin directory is needed. Reader-only builds and 4.2.0 retain their
+previous dependency/install contract. See [NEXTCDF-4 Fortran](nextcdf4_fortran.md).
+The overlay's dependency/install-check changes ship upstream in Sprint 2's next
+version-bump PR, following “Updating the upstream PR” below.
 ```bash
 # With Fortran format-reader tests (default)
 spack install nep+fortran

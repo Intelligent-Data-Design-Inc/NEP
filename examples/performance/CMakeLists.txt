@@ -96,12 +96,10 @@ add_executable(zstandard zstandard.c)
 perf_target(zstandard)
 target_link_libraries(zstandard PRIVATE ${NC_LIBS_LIST} ${NEP_HDF5_LIBRARIES} m)
 
-# Zstandard, zlib/DEFLATE and SZIP use NetCDF-C/HDF5 APIs; keep them in NEP.
-# lossless.c and quantize.c also call the moved LZ4/BZIP2 wrappers. Preserve
-# their sources but leave their targets and tests disabled until a later release
-# explicitly adds nep-compress as a dependency:
-# add_executable(lossless lossless.c)
-# add_executable(quantize quantize.c)
+# Chunking-strategy benchmark (moved from examples/netcdf-4/ in v4.3.0).
+add_executable(chunking_performance chunking_performance.c)
+perf_target(chunking_performance)
+target_link_libraries(chunking_performance PRIVATE ${NC_LIBS_LIST} ${NEP_HDF5_LIBRARIES} m)
 
 # SZIP-dependent example (only if SZIP library is available)
 if(HAVE_SZIP)
@@ -145,6 +143,22 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../validate_cdl.sh.in
 
 # CDL validation for cache_tuning (only when benchmarks enabled)
 if(NEP_ENABLE_BENCHMARKS AND BUILD_TESTING)
+    # chunking_performance writes chunk_{contiguous,time_optimized,
+    # spatial_optimized,balanced}.nc; validate each against expected CDL.
+    add_test(NAME chunking_performance
+             COMMAND chunking_performance
+             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    set_tests_properties(chunking_performance PROPERTIES
+        ENVIRONMENT "LD_LIBRARY_PATH=${HDF5_LIB_DIR}:${NC_LIBDIR}:$ENV{LD_LIBRARY_PATH}")
+    foreach(_layout contiguous time_optimized spatial_optimized balanced)
+        add_test(NAME chunking_performance_validate_${_layout}
+                 COMMAND bash validate_cdl.sh chunking_performance chunk_${_layout}.nc
+                         ${CMAKE_CURRENT_SOURCE_DIR}/../expected_output/chunking_performance_${_layout}_expected.cdl)
+        set_tests_properties(chunking_performance_validate_${_layout} PROPERTIES
+            DEPENDS chunking_performance
+            ENVIRONMENT "LD_LIBRARY_PATH=${HDF5_LIB_DIR}:${NC_LIBDIR}:$ENV{LD_LIBRARY_PATH}")
+    endforeach()
+
     # Compare metadata only: ncdump -s shows the storage attributes; the
     # version-specific global attributes are stripped before diffing.
     add_test(NAME cache_tuning_validate

@@ -15,6 +15,19 @@
 #include "nextcdf4dispatch.h"
 #include "nxt4err.h"
 
+/** @brief Validate unsupported create/open flags; return NC_EINVAL if present. */
+int NEXTCDF4_check_mode(int mode);
+/** @brief Set the session fill default for subsequently defined variables. */
+int NEXTCDF4_set_fill(int ncid, int fillmode, int *old_modep);
+/** @brief Rename a non-root enhanced-model group and flush its link. */
+int NEXTCDF4_rename_grp(int grpid, const char *name);
+/** @brief Set session cache parameters and reopen an existing dataset. */
+int NEXTCDF4_set_var_chunk_cache(int ncid, int varid, size_t size,
+                                size_t nelems, float preemption);
+/** @brief Inquire effective live chunk-cache settings or pending requests. */
+int NEXTCDF4_get_var_chunk_cache(int ncid, int varid, size_t *sizep,
+                                size_t *nelemsp, float *preemptionp);
+
 /** @brief Dispatch-table entry behind `nc_create()` with
  * `NC_NEXTCDF4`: creates the HDF5 file and writes the backend marker
  * attributes.
@@ -103,6 +116,13 @@ typedef struct NEXTCDF4_FILE_INFO
     int define_mode;    /**< Nonzero while the file is in define mode. */
     int netcdf4_model;  /**< Nonzero for `NC_NETCDF4_MODEL` compatibility mode. */
     int backend_marked; /**< Nonzero when the NEXTCDF-4 backend marker is present. */
+    int created_by_us;  /**< Nonzero when this session created the file;
+                         * only such files get a fresh `_NCProperties`
+                         * stamp — an opened file keeps whatever
+                         * provenance it already carried. */
+    char *ncproperties; /**< Owned `_NCProperties` value: built at create,
+                         * read from the file at open, or NULL when the
+                         * file has none. */
 } NEXTCDF4_FILE_INFO_T;
 
 /** @brief NEXTCDF-4-private state hung off
@@ -110,6 +130,10 @@ typedef struct NEXTCDF4_FILE_INFO
 typedef struct NEXTCDF4_GRP_INFO
 {
     hid_t hdf_group;    /**< Open HDF5 group identifier, or a negative value. */
+    int atts_pending;   /**< Nonzero when one or more group attributes could
+                         * not be written yet (their datatype is an
+                         * uncommitted user type); they are materialized at
+                         * `_enddef` in index order. */
 } NEXTCDF4_GRP_INFO_T;
 
 /** @brief NEXTCDF-4-private state hung off
@@ -135,6 +159,11 @@ typedef struct NEXTCDF4_VAR_INFO
                          * properties that require the dataset to be
                          * rebuilt; the rebuild happens once at
                          * `_enddef`. */
+    int atts_pending;   /**< Nonzero when one or more variable attributes
+                         * could not be written yet (the dataset is
+                         * deferred or their datatype is an uncommitted
+                         * user type); they are materialized at
+                         * `_enddef` in index order. */
 } NEXTCDF4_VAR_INFO_T;
 
 /** @brief NEXTCDF-4-private state hung off
@@ -156,6 +185,17 @@ int NEXTCDF4_get_file(int ncid, NC_FILE_INFO_T **h5p,
 /** Close HDF5 identifiers and free per-file state.
  */
 int NEXTCDF4_free_file(NEXTCDF4_FILE_INFO_T *file);
+/** Build the `_NCProperties` value for a newly created file. */
+int nx4_build_ncproperties(char **out);
+/** Read an existing `_NCProperties` attribute into file state. */
+int nx4_read_ncproperties(NEXTCDF4_FILE_INFO_T *file);
+/** Write `_NCProperties`/`_nc3_strict` to a file created this session. */
+int nx4_write_provenance(NEXTCDF4_FILE_INFO_T *file);
+/** Answer a name lookup for a stored or virtual provenance attribute. */
+int nx4_get_att_special(NEXTCDF4_FILE_INFO_T *file, const char *name,
+                        nc_type *xtypep, nc_type mem_type, size_t *lenp,
+                        int *attnump, void *data);
+
 /** Write NEXTCDF-4 provenance and compatibility markers.
  */
 int NEXTCDF4_write_markers(NEXTCDF4_FILE_INFO_T *file);
@@ -170,6 +210,39 @@ int NEXTCDF4_check_write_define(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file);
 /** Map a fixed-size NetCDF atomic type to its HDF5 datatype.
  */
 int NEXTCDF4_map_hdf_type(nc_type xtype, hid_t *typep);
+
+/** Find a user-defined type visible from a group.
+ */
+/** Recursively close HDF5 objects and free per-group format info. */
+void nx4_close_group_hdf(NC_GRP_INFO_T *grp);
+void nx4_scrub_extended_atomic_data(NC_GRP_INFO_T *grp);
+
+int nx4_find_type(NC_GRP_INFO_T *grp, nc_type xtype,
+                  NC_TYPE_INFO_T **typep);
+/** Resolve the in-memory size of an atomic or user-defined type.
+ */
+int nx4_type_size(NC_GRP_INFO_T *grp, nc_type xtype, size_t *sizep);
+/** Produce an owned HDF5 file datatype for an atomic or user type.
+ */
+int nx4_file_type(NC_GRP_INFO_T *grp, nc_type xtype, hid_t *typep);
+/** Produce an owned HDF5 memory datatype for an atomic or user type.
+ */
+int nx4_memory_type(NC_GRP_INFO_T *grp, nc_type xtype, hid_t *typep);
+int nx4_storage_memory_type(hid_t memory, hid_t storage, hid_t *typep);
+int nx4_copy_data(NC *nc, nc_type xtype, const void *src, size_t count, void *dst);
+/** Resolve an HDF5 datatype to a registered committed user type by
+ * object identity.
+ */
+int nx4_hdf_type_match(NC_GRP_INFO_T *grp, hid_t htype,
+                       NC_TYPE_INFO_T **typep);
+/** Release a type's NEXTCDF-4-private record and HDF5 datatype
+ * handle.
+ */
+void nx4_free_type_info(NC_TYPE_INFO_T *type);
+/** Materialize attributes deferred on pending types or datasets at
+ * `_enddef`.
+ */
+int nx4_flush_pending_atts(NC_GRP_INFO_T *grp);
 
 /** Return the in-memory size of a fixed-size NetCDF atomic type.
  */
@@ -312,6 +385,10 @@ int NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type xtype,
  */
 int NEXTCDF4_inq_att(int ncid, int varid, const char *name,
                      nc_type *xtypep, size_t *lenp);
+
+/** Learn an attribute's index by name.
+ */
+int NEXTCDF4_inq_attid(int ncid, int varid, const char *name, int *attnump);
 
 /** Get an attribute from the root group or a variable.
  */

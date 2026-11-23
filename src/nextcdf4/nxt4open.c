@@ -58,6 +58,8 @@ NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
      * attributes, then load the full metadata tree. */
     if (!path || !*path)
         return NC_EINVAL;
+    if ((ret = NEXTCDF4_check_mode(mode)))
+        return ret;
     if (access(path, F_OK) != 0)
         return NC_ENOTNC;
     H5E_BEGIN_TRY {
@@ -90,6 +92,8 @@ NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
         ((NEXTCDF4_GRP_INFO_T *)h5->root_grp->format_grp_info)->hdf_group = file->rootid;
     if ((ret = NEXTCDF4_read_markers(file)))
         goto fail;
+    if ((ret = nx4_read_ncproperties(file)))
+        goto fail;
     h5->root_grp->atts_read = 0;
     if ((ret = NEXTCDF4_load_metadata(file, h5)))
         goto fail;
@@ -98,6 +102,10 @@ NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
 fail:
     if (fapl >= 0)
         H5Pclose(fapl);
+    if (h5) {
+        nx4_close_group_hdf(h5->root_grp);
+        nx4_scrub_extended_atomic_data(h5->root_grp);
+    }
     NEXTCDF4_free_file(file);
     nc4_file_list_del(ncid);
     return ret;

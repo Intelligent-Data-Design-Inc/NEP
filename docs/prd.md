@@ -10,16 +10,44 @@
 - Simplify installation and deployment in HPC environments
 
 ### 1.3 Success Metrics
-- Preserve NEP format APIs; v4.2.0 moves LZ4/BZIP2 calls to a separately linked library. NEXTCDF-4's structural detection of `NC_COMPLEX`/`NC_DOUBLECOMPLEX` may also reinterpret an exactly matching two-member user-defined compound; document both exceptions in release notes
+- Preserve NEP format APIs; v4.2.0 moves LZ4/BZIP2 calls to a separately linked library — document the exception in release notes. NEXTCDF-4 stores `NC_COMPLEX`/`NC_DOUBLECOMPLEX` as native HDF5 `H5T_COMPLEX` types, so a user compound with `{r, i}` members is never reinterpreted
 - Compression is independently tested in nep-compress
 - Successful integration with scientific data workflows
 - Comprehensive test coverage and CI validation
 
 ---
 
+## NEXTCDF-4 Fortran requirements (v4.3.0 Sprint 1R)
+
+When NEXTCDF-4 and Fortran are ON, install `nep_nextcdf4.mod` under `include/nep`
+and `libnepnextcdf4f` in the configured library directory; export
+`NEP::nepnextcdf4f`. Require NetCDF-Fortran >=4.6.2 and a compatible compiler/module
+instead of silently omitting this binding. Supply explicit initialization,
+mode/new-type constants and scalar–rank-7 `nf90_{get,put}_var_{float16,bfloat16}`
+generics using raw `integer(c_int16_t)` bits, one-based indices/variable IDs and
+Fortran-order optional start/count/stride. Preserve completed-I/O range warnings
+and unselected read elements. Test focused I/O/types/reopen and an installed
+consumer in normal NEXTCDF-4 CI; retain C sanitizer coverage and warning-free docs.
+Spack reuses existing variants with version-gated dependencies/install checks;
+conda disables NEXTCDF-4 and is unchanged. Reference wrappers and broader
+enhanced-type value interfaces are deferred beyond v4.3.0, explicitly narrowing
+the original same-release parity goal. See [Fortran binding](nextcdf4_fortran.md).
+
 ## NEXTCDF-4 internal conversion requirement
 
 NEXTCDF-4 uses the private, NEP-owned `nx4_convert_type()` engine for all supported variable, attribute and quantized-write numeric conversions, made permanent in Sprint 1H after measured comparison with the HDF5 engine. The temporary `NEP_INTERNAL_CONVERT` option and `NEP_HAS_INTERNAL_CONVERT` marker were removed; setting the option fails at configure time, and a single NEXTCDF-4 CI job covers correctness. Conversion uses nearest/even bfloat16 and IEEE float16 narrowing; float16 joined the engine in Sprint 1J (v4.3.0) and its `H5Tconvert` path was removed. Unsupported FP8/FP6/FP4 conversions and the public bfloat16-wrapper contract remain unchanged. The engine reports completed-conversion `NC_ERANGE` for overflow/integer range errors (including nonfinite-to-integer), not precision loss, fractional truncation or floating underflow. Range-warning writes finish all values and may replace attributes/extend dimensions; structural and I/O errors take precedence. No Spack variant or new public conversion API is required.
+
+## NEXTCDF-4 string requirements (v4.3.0 Sprint 1P)
+
+Native and `NC_NETCDF4_MODEL` files support standalone and recursively nested strings in variables and attributes, with close/reopen, upstream interchange and updates to upstream-created files. Applications retain write buffers and own successful read results; nested reclamation requires live file/type context. Standalone NULL inputs become empty strings, default string fill is empty, and standalone string `NC_NOFILL` is rejected. Custom fill inquiries return independent payloads. New UTF-8 and existing ASCII storage tags are handled without transcoding. Dynamic filled datasets allocate early for safe read-only fills under HDF5 2.1.1, with increased sparse storage costs. Preserve `NC_CHAR`, classic-model restrictions and reference-nesting rejection; wider fixed-length HDF5 strings remain out of scope. The focused string test and three two-mode upstream ports run in existing normal/sanitizer full suites. No dependency, build-option, installed-interface or package-recipe changes are required.
+
+## NEXTCDF-4 session-control requirements (v4.3.0 Sprint 1O)
+
+- File-level `nc_set_fill` starts at `NC_FILL` per open session and affects only subsequently defined eligible atomic variables. Preserve existing variable settings, explicit `nc_def_var_fill` overrides and dynamic user-type/reference fill safety; reject read-only changes. File-default changes do not recreate datasets or persist a hidden attribute.
+- Per-variable cache setters apply actual HDF5 DAPL settings, including on already-open datasets and coordinate-scale aliases, with no data loss or storage recreation. Getters report effective chunked settings; nonchunked variables report stored requests. Allow read-only/data-mode tuning, zero bytes/slots and finite preemption in [0,1]; reset overrides to global defaults on reopen.
+- Support populated group creation/rename in native and `NC_NETCDF4_MODEL`, preserving IDs, descendants and upstream interchange. Flush renames, validate normalized names and parent namespace collisions, reject root/read-only/classic-model rename, and keep descendant path inquiry accurate.
+- Reject unsupported create/open flags before filesystem changes: `NC_DISKLESS`, `NC_INMEMORY`, `NC_MPIIO`/`NC_MPIPOSIX`, `NC_SHARE`, `NC_PERSIST`, `NC_MMAP` return backend `NC_EINVAL`; upstream may preempt invalid combinations. All NEXTCDF-4 parallel I/O moves beyond v4.3.0; `nc_var_par_access` remains `NC_ENOTNC4`. General NEP MPI tests use upstream NetCDF and are not NEXTCDF-4 support. Image files and SWMR remain deferred.
+- Focused control regressions run in existing normal and sanitizer full-suite CI; keep all CTest tests passing and documentation warning-free. New upstream ports and string support remain outside Sprint 1O. No packaging-contract change.
 
 ## 2. Core Architecture
 
@@ -36,44 +64,16 @@ NEXTCDF-4 uses the private, NEP-owned `nx4_convert_type()` engine for all suppor
 
 ---
 
-## 3. Historical Compression Features (v1.0.0, v1.1.0)
+## 3. Compression (moved to nep-compress in v4.2.0)
 
-These APIs shipped in earlier NEP releases and move to nep-compress in
-v4.2.0; the options below describe the old NEP build, not current build flags.
-
-### 3.1 LZ4 Compression
-- **High-Performance**: 2-3x faster compression/decompression than DEFLATE
-- **Speed Optimized**: Ideal for I/O-bound workflows
-- **Lossless**: Guarantees data integrity
-- **HPC Ready**: Designed for high-performance computing environments
-
-**C API:**
-- `nc_def_var_lz4(ncid, varid, level)` - Enable LZ4 compression
-- `nc_inq_var_lz4(ncid, varid, lz4p, levelp)` - Query LZ4 settings
-
-**Fortran API (v1.1.0):**
-- `nf90_def_var_lz4(ncid, varid, level)` - Enable LZ4 compression
-- `nf90_inq_var_lz4(ncid, varid, lz4p, levelp)` - Query LZ4 settings
-
-### 3.2 BZIP2 Compression
-- **High-Ratio**: Better compression ratios than DEFLATE
-- **Archival Optimized**: Ideal for long-term storage
-- **Block-Sorting Algorithm**: Effective for repetitive scientific data
-- **Lossless**: Guarantees data integrity
-
-**C API:**
-- `nc_def_var_bzip2(ncid, varid, level)` - Enable BZIP2 compression
-- `nc_inq_var_bzip2(ncid, varid, bzip2p, levelp)` - Query BZIP2 settings
-
-**Fortran API (v1.1.0):**
-- `nf90_def_var_bzip2(ncid, varid, level)` - Enable BZIP2 compression
-- `nf90_inq_var_bzip2(ncid, varid, bzip2p, levelp)` - Query BZIP2 settings
-
-### 3.3 Build Configuration
-**CMake:**
-- `NEP_BUILD_LZ4=ON/OFF` - Enable/disable LZ4 support (default: ON)
-- `NEP_BUILD_BZIP2=ON/OFF` - Enable/disable BZIP2 support (default: OFF)
-- `NEP_ENABLE_FORTRAN=ON/OFF` - Enable/disable Fortran wrappers (default: ON)
+LZ4/BZIP2 filter plugins, the `nc_def_var_lz4`/`nc_def_var_bzip2` C APIs,
+their `nf90_*` Fortran wrappers, compression tests, benchmarks and the
+`NEP_BUILD_LZ4`/`NEP_BUILD_BZIP2` options moved to
+[nep-compress](https://github.com/captainkirk99/nep-compress) in v4.2.0.
+Applications that used those APIs install nep-compress and update their
+include/module and link settings; file format compatibility is unchanged.
+NEP's NEXTCDF-4 backend still supports generic HDF5 filters through
+`nc_def_var_filter()` using plugins supplied by the environment.
 
 ---
 
@@ -141,8 +141,8 @@ spack install cdf
 ### 5.5 Conda Package (v4.2.0)
 - **In-repo recipe**: `conda/recipe/recipe.yaml` (v1 rattler-build format) builds the checkout; `conda/recipe/build.sh` passes the CMake options for the Conda package; local CMake builds are unchanged
 - **Staged copy**: `conda/make_staged_recipe.py` generates the staged-recipes recipe for the release tarball, so the two cannot drift; submission is tracked in `docs/conda-plan.md`
-- **Enabled features**: PDB, mmCIF, FITS and PDS4 readers, Fortran tests, and the `share/.ncrc` that registers the readers with conda-forge's `libnetcdf` 4.10.1
-- **Excluded**: GeoTIFF (needs `4d920c5`, post-4.2.0), DICOM, GRIB2, CDF and NEXTCDF-4 (need packages or versions conda-forge does not provide); Linux only
+- **Enabled features**: PDB, mmCIF, FITS, PDS4 and GeoTIFF (from the 4.3.0 package, with `geotiff`/`libtiff` host deps and `libncgeotiff` tests) readers, Fortran tests, and the `share/.ncrc` that registers the readers with conda-forge's `libnetcdf`
+- **Excluded**: DICOM, GRIB2, CDF and NEXTCDF-4 (need packages or versions conda-forge does not provide); Linux only
 - **CI workflow**: `.github/workflows/conda.yml` builds and tests the recipe against conda-forge pinnings and lints the staged copy on every push and PR
 - **Publication**: staged-recipes PR #34309, updated in place; the old v3.0.0 submission was LZ4-only and has been superseded
 
@@ -247,85 +247,37 @@ GRIB2 (General Regularly-distributed Information in Binary form, Edition 2) supp
 ## 8. Example Programs (v3.5.1)
 
 ### 8.1 Overview
-Comprehensive example programs in C and Fortran demonstrating NetCDF API usage for learning and reference purposes.
+Example programs exercising NEP features: the NEXTCDF-4 backend, the UDF format readers, and the disk-bound performance benchmarks. The generic NetCDF teaching examples (classic NetCDF, NetCDF-4, NcZarr, OPeNDAP, parallel I/O, and all Fortran versions) moved to the [NetCDF Developer's Handbook](https://github.com/captainkirk99/NetCDF_Developers_Handbook) repository in v4.3.0.
 
 ### 8.2 Features
-- **Dual Language Support**: All examples provided in both C and Fortran
 - **Read and Write Operations**: Each example creates a NetCDF file and reads it back to demonstrate both operations
 - **Test Integration**: Examples run as automated tests to ensure correctness
-- **Multiple Categories**: Classic NetCDF and NetCDF-4 examples covering basic to advanced features
-- **Educational Value**: Demonstrates best practices and common usage patterns
+- **Disk-Bound Benchmarks**: Performance timing includes `fsync` on writes and a page-cache drop before reads (`examples/perf_disk.h`)
 
 ### 8.3 Example Categories
 
-#### Classic NetCDF Examples (C)
-Located in `examples/classic/`:
-- `simple_2D.c` - Basic 2D array creation and writing
-- `coord_vars.c` - Working with coordinate variables
-- `format_variants.c` - Different NetCDF format variants (classic, 64-bit offset, CDF-5)
-- `size_limits.c` - Demonstrating size and dimension limits
-- `unlimited_dim.c` - Using unlimited dimensions for time series data
-- `var4d.c` - Creating and writing 4-dimensional variables
-
-#### NetCDF-4 Examples (C)
-Located in `examples/netcdf-4/`:
-- `simple_nc4.c` - Basic NetCDF-4 file creation
-- `compression.c` - Using compression filters (deflate, shuffle)
-- `chunking_performance.c` - Chunking strategies and performance
-- `multi_unlimited.c` - Multiple unlimited dimensions (NetCDF-4 feature)
-- `user_types.c` - User-defined compound and enum types
-
-#### Classic NetCDF Examples (Fortran)
-Located in `examples/f_classic/`:
-- `f_simple_2D.f90` - Basic 2D array in Fortran
-- `f_coord_vars.f90` - Coordinate variables in Fortran
-- `f_format_variants.f90` - Format variants in Fortran
-- `f_size_limits.f90` - Size limits in Fortran
-- `f_unlimited_dim.f90` - Unlimited dimensions in Fortran
-- `f_var4d.f90` - 4D variables in Fortran
-
-#### NetCDF-4 Examples (Fortran)
-Located in `examples/f_netcdf-4/`:
-- `f_simple_nc4.f90` - Basic NetCDF-4 in Fortran
-- `f_compression.f90` - Compression in Fortran
-- `f_chunking_performance.f90` - Chunking in Fortran
-- `f_multi_unlimited.f90` - Multiple unlimited dimensions in Fortran
-- `f_user_types.f90` - User-defined types in Fortran
+#### NEXTCDF-4 Examples (C)
+Located in `examples/nextcdf4/` (built when `-DNEP_ENABLE_NEXTCDF4=ON`):
+- `bfloat16.c` / `float16.c` - Store real GDAS temperature data as `NC_BFLOAT16` / `NC_FLOAT16`
+- `make_bfloat16_sample.c` / `make_float16_sample.c` - Convert the GDAS sample to small-float files
+- `bfloat16_perf.c`, `bfloat16_io_perf.c`, `float16_perf.c`, `float16_io_perf.c`, `conversion_perf.c` - Size and I/O benchmarks with CSV output
 
 #### Performance Examples (C)
 Located in `examples/performance/`:
 - `cache_tuning.c` - Chunk cache configuration: default vs enlarged cache, file-level vs variable-level settings, cache thrashing detection
 - `chunking.c` - Chunk shape selection: time-optimized vs column-optimized chunks across time-slab and column-profile access patterns; outputs CSV (`chunk_shape,access_pattern,elapsed_s,MB_per_s`) suitable for plotting
+- `chunking_performance.c` - Chunking strategies across contiguous, time-optimized, spatial-optimized, and balanced layouts (moved from `examples/netcdf-4/` in v4.3.0)
 - `deflate.c` - Deflate compression: zlib levels 0–9 with and without the shuffle filter across all 20 combinations; outputs CSV (`deflate_level,shuffle,compressed_bytes,ratio,write_s,read_s`) with compressed file size, compression ratio, write time, and read time
+- `zstandard.c` - Zstandard compression benchmarking via the HDF5 plugin
+- `szip.c` - SZIP compression benchmarking (built only when an SZIP library is found)
 - `fill_values.c` - Fill value handling performance: demonstrates fill mode NC_FILL vs NC_NOFILL across classic and NetCDF-4 formats; outputs CSV (`format,fill_mode,write_s,read_s,file_bytes`) with write time, read time, and file size
 - `endianness.c` - Endianness handling performance: demonstrates byte order (NC_ENDIAN_NATIVE, NC_ENDIAN_LITTLE, NC_ENDIAN_BIG) effects on write/read performance in NetCDF-4/HDF5 files; outputs CSV (`endian_mode,write_s,read_s,file_bytes`) with write time, read time, and file size
 
-**Note**: Performance examples are excluded from regular CI. They are built and run only when `NEP_ENABLE_BENCHMARKS=ON` is specified. All four examples operate on a 500×180×360 (time×lat×lon) NC_FLOAT temperature dataset matching a meteorological grid.
+**Note**: Performance examples are excluded from regular CI. They are built and run only when `NEP_ENABLE_BENCHMARKS=ON` is specified.
 
-#### NcZarr Examples (v1.11.0)
-Located in `examples/nczarr/`:
-
-**C examples** (Sprint 1):
-- `nczarr_simple.c` - Create, write, and read a local NcZarr dataset; demonstrates `file://simple_nczarr.zarr#mode=nczarr` URL, dimensions, variables, attributes, and data verification
-
-**Fortran examples** (Sprint 2):
-- `f_nczarr_simple.f90` - Fortran equivalent of `nczarr_simple.c`; produces the same 4×5 `temperature(y, x)` dataset at `file://f_simple_nczarr.zarr#mode=nczarr`; demonstrates Fortran column-major dimension ordering with NcZarr
-
-**C examples** (Sprint 3):
-- `nczarr_chunking.c` - Explicit chunk shape selection (2×5) for NcZarr; demonstrates `nc_def_var_chunking()` and `nc_inq_var_chunking()` with metadata verification
-- `nczarr_compression.c` - Deflate level 4 + shuffle compression on a chunked NcZarr variable; demonstrates the recommended workflow of setting chunk shape before applying `nc_def_var_deflate()`
-
-**Fortran examples** (Sprint 3):
-- `f_nczarr_chunking.f90` - Fortran equivalent of `nczarr_chunking.c`; demonstrates `nf90_def_var_chunking()` with Fortran column-major dimension ordering
-- `f_nczarr_compression.f90` - Fortran equivalent of `nczarr_compression.c`; demonstrates `nf90_def_var_deflate()` with explicit chunking
-
-**C example** (Sprint 4):
-- `nczarr_enhanced.c` — Enhanced data model in NcZarr: root group with `time` (unlimited) × `x=5` dimensions, `temperature(time,x)` and `pressure(time,x)` variables; child group `obs/` with an independent `station` (unlimited) dimension and `obs_value(station)`, `obs_time(station)` variables. Demonstrates `nc_def_grp()`, per-group unlimited dimensions, and `nc_inq_grp_ncid()`. Note: NcZarr supports groups and unlimited dims from the enhanced model; user-defined types (enum, compound) require HDF5 storage.
-
-**Fortran example** (Sprint 4):
-- `f_nczarr_enhanced.f90` — Fortran equivalent of `nczarr_enhanced.c`; demonstrates `nf90_def_grp()`, `nf90_def_dim()` with `NF90_UNLIMITED` in a child group, and `nf90_inq_grp_ncid()` with full C/Fortran parity.
-
-**Note**: NcZarr examples are only built when NetCDF-C reports NcZarr support (`NC_HAS_NCZARR` in `netcdf_meta.h`) and examples are enabled. The Fortran examples additionally require `NEP_ENABLE_FORTRAN=ON`. Each example writes to a distinct Zarr directory store to allow safe parallel test execution.
+#### UDF Reader Examples (C)
+- `examples/dicom/dicom_read.c` - Read a DICOM file through the DICOM UDF handler (built when `-DNEP_ENABLE_DICOM=ON`)
+- `examples/pdb/pdb_read.c` - Read a PDB file through the PDB UDF handler (built when `-DNEP_ENABLE_PDB=ON`)
 
 #### Visualization Examples (v2.7.0)
 
@@ -338,10 +290,8 @@ Located in `examples/viz/`, optional Python visualization examples open enabled 
 - `NEP_ENABLE_VIZ_EXAMPLES=ON/OFF` - Enable/disable Python visualization examples (default: OFF)
 
 ### 8.5 Dependencies
-- NetCDF-C library (required for C examples)
-- NetCDF-Fortran library (required for Fortran examples)
+- NetCDF-C library
 - C99 compiler
-- Fortran 90+ compiler (for Fortran examples)
 - Python 3 virtual environment with NumPy, Matplotlib, and source-built `netCDF4` (for visualization examples)
 
 ### 8.6 Usage
@@ -349,14 +299,14 @@ Examples are automatically built and run as tests:
 
 ```bash
 # CMake
-cmake -B build
+cmake -B build -DNEP_BUILD_EXAMPLES=ON
 cmake --build build
 ctest --test-dir build
 
 ```
 
 ### 8.7 Output Validation
-Example output is validated to ensure correctness across code changes. Each example creates NetCDF files demonstrating the features being illustrated.
+Example output is validated to ensure correctness across code changes. Each example creates NetCDF files demonstrating the features being illustrated. `examples/expected_output/` holds expected CDL for the `cache_tuning` and `chunking_performance` validation tests.
 
 ---
 
@@ -387,44 +337,13 @@ Parallel I/O:
 
 ### 9.5 Example Programs
 
-NEP includes parallel I/O example programs demonstrating collective NetCDF-4/HDF5 I/O in `examples/parallelIO/`:
-
-**C: `square16_par.c`**
-- Creates a 16×16 integer dataset using 4 MPI ranks
-- Each rank writes an 8×8 quadrant filled with its rank number (0-3)
-- Uses `nc_create_par()`, `nc_var_par_access(NC_COLLECTIVE)`, and `nc_put_vara_int()`
-- Includes parallel read-back verification with `nc_open_par()` and `nc_get_vara_int()`
-- Requires exactly 4 MPI processes
-
-**Fortran: `f_square16_par.f90`**
-- Identical functionality to C version
-- Uses `nf90_create_par()`, `nf90_var_par_access(NF90_COLLECTIVE)`, and `nf90_put_var()`
-- Demonstrates Fortran 90 NetCDF parallel I/O patterns
-
-**Data Decomposition:**
-```
-Global 16x16 grid:
-+--------+--------+
-| Rank 0 | Rank 1 |
-| (0,0)  | (8,0)  |
-+--------+--------+
-| Rank 2 | Rank 3 |
-| (0,8)  | (8,8)  |
-+--------+--------+
-```
-Each rank fills its quadrant with its rank number.
-
-**Running:**
-```bash
-mpiexec -n 4 ./square16_par
-ncdump square16_par.nc
-```
+The parallel I/O example programs (`square16_par.c`, `f_square16_par.f90`) moved to the [NetCDF Developer's Handbook](https://github.com/captainkirk99/NetCDF_Developers_Handbook) repository in v4.3.0. `NEP_ENABLE_PARALLEL_TESTS` still builds and runs NEP's own MPI test programs under `test/`/`ftest/`.
 
 ### 9.6 CI Integration
 Parallel I/O builds are tested in a separate CI workflow (`ci-parallel.yml`) with:
 - CMake build with OpenMPI
 - All dependencies (HDF5, NetCDF-C, NetCDF-Fortran) built with MPI compilers
-- Parallel test directory structure for parallel I/O examples
+- Parallel test programs run via `mpiexec`
 - ncdump verification of parallel output files
 
 ---
@@ -432,7 +351,7 @@ Parallel I/O builds are tested in a separate CI workflow (`ci-parallel.yml`) wit
 ## 10. Build Systems
 
 ### 10.1 CMake
-- Minimum version: 3.9+
+- Minimum version: 3.19+
 - Full feature support with configurable options
 - Documentation generation with Doxygen
 - Comprehensive test suite integration
@@ -491,8 +410,8 @@ Parallel I/O builds are tested in a separate CI workflow (`ci-parallel.yml`) wit
 ## 13. Dependencies
 
 ### 13.1 Core Dependencies
-- NetCDF-C v4.10.1+ (required)
-- HDF5 v2.1.1+ (required)
+- NetCDF-C v4.10.1+ (required; v4.10.2 or current main with the 64-slot UDF scheme for NEXTCDF-4)
+- HDF5 v1.14+ (required for format readers; NEXTCDF-4 requires HDF5 2.1.1)
 - CMake v3.19+ (build)
 
 ### 13.2 Optional Dependencies
@@ -751,8 +670,8 @@ cmake -B build -DNEP_ENABLE_NEXTCDF4=ON
 
 ### 18.5 Dependencies
 
-- netcdf-c 4.10.1 or newer built with UDF plugin and `NC_Dispatch` support (`NC_UDF9`).
-- HDF5 2.1.1 or newer (required).
+- netcdf-c with the 64-slot UDF scheme (v4.10.2 or current main), built with UDF plugin and `NC_Dispatch` support (`NC_UDF9`).
+- HDF5 2.1.1 (required).
 
 ### 18.6 Public API Additions
 
@@ -770,7 +689,29 @@ cmake -B build -DNEP_ENABLE_NEXTCDF4=ON
 - Typed calls on FP8/FP6/FP4 variables, and integer/text/string typed calls on any small float, return `NC_EBADTYPE` (`NC_ECHAR` for text).
 - Conversion engines can produce different exceptional output values; `NC_ERANGE` reports completed conversion, not transactional rejection (#381).
 - Object and region reference types round-trip as opaque tokens.
-- Tools (`nextcopy`, `nextdump`) and Fortran bindings are planned for v4.1.0.
+- Fortran bindings are limited to the `nep_nextcdf4` module (initialization, constants, float16/bfloat16 I/O); general enhanced-type value wrappers are deferred.
+- Tools (`nextcopy`, `nextdump`), parallel I/O, memory-image files and SWMR are deferred beyond v4.3.0.
+
+---
+
+## 19. PDB and mmCIF Format Support (v3.3.0, v3.4.0)
+
+### 19.1 Overview
+
+Two UDF handlers give read access to macromolecular structure files: the
+legacy fixed-column Protein Data Bank format (UDF7, `NEP_ENABLE_PDB`,
+default ON) and the modern PDBx/mmCIF format (UDF8,
+`NEP_ENABLE_MMCIF`, default OFF). Both use built-in parsers — no external
+library dependency.
+
+### 19.2 Features
+
+- **PDB**: RECORD-type parsing (ATOM/HETATM, HEADER, TITLE, SEQRES,
+  REMARK) mapped to NetCDF dimensions, variables and attributes.
+- **mmCIF**: CIF/STAR syntax loop and category/item mapping to NetCDF
+  groups, variables and attributes.
+- Read-only (`NC_NOWRITE`) access through `nc_open()` after
+  initialization or `.ncrc` autoload.
 
 ---
 
@@ -790,9 +731,15 @@ cmake -B build -DNEP_ENABLE_NEXTCDF4=ON
 - **v2.7.1** (July 2026): Documentation cleanup — per-format reference pages extracted from `docs/formats.md`, README PDS4 Tests section moved to `docs/pds4.md`, and design/prd/prfaq updated with New Horizons and v2.7.1 metadata
 - **v2.8.0** (July 2026): Optional Python visualization examples for enabled NEP readers, producing validated grayscale PNG and metadata outputs
 - **v3.0.0** (July 2026): DICOM reader via UDF6 with uncompressed single-frame, JPEG Baseline, and multi-frame pixel-data support
+- **v3.3.0**: Legacy PDB reader via UDF7
+- **v3.4.0**: PDBx/mmCIF reader via UDF8
+- **v4.0.0** (Aug 2026): NEXTCDF-4 optional NetCDF-4/HDF5 backend (UDF9) with full enhanced data model and new atomic types
+- **v4.1.0**: NEXTCDF-4 documentation suite and NEP logging; satellite-mission examples moved out of tree
+- **v4.2.0**: LZ4/BZIP2 compression moved to nep-compress; first conda-forge package (PDB, mmCIF, FITS, PDS4 readers)
+- **v4.3.0** (in development): NEXTCDF-4 maturation — strings and full user-type nesting, 16-bit float typed I/O and conversion engine, `NC_STD_REF` references, generic HDF5 filters, provenance attributes, fill/cache/group-rename, `nep_nextcdf4` Fortran module; CMake >= 3.19 with improved HDF5 detection; GeoTIFF in the conda package; CI code-coverage job
 
 ---
 
-*Document Version: 4.0.0*
-*Last Updated: August 2026*  
-*Status: Reflects features through v4.0.0*
+*Document Version: 4.3.0*
+*Last Updated: November 2026*  
+*Status: Reflects features through v4.3.0*

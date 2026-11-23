@@ -43,8 +43,9 @@ fills that table three ways:
   delegate to the library's own `NC4_*` functions (`NC4_inq`,
   `NC4_inq_dimid`, `NC4_inq_att*`, `NC4_inq_varids`, ...), which work
   on the shared `NC_*_INFO_T` metadata structures.
-- **Stubs** — unsupported operations get `NC_NOTNC4_*`,
-  `NC_NOOP_*`, or `NC_RO_set_fill`.
+- **Stubs** — unsupported operations such as parallel variable access
+  retain `NC_NOTNC4_*`; fill, cache, group rename and filter availability
+  use NEXTCDF-4 implementations.
 
 The struct has no designated initializers, so table entries appear in
 exact positional order.
@@ -60,7 +61,7 @@ NEXTCDF-4's private structs are declared in
 
 | Struct | Hangs off | Holds |
 | ------ | --------- | ----- |
-| `NEXTCDF4_FILE_INFO_T` | `NC_FILE_INFO_T` | `hdfid` (the HDF5 file), `rootid`, `path`, `mode`, `no_write`, `define_mode`, `netcdf4_model`, `backend_marked` |
+| `NEXTCDF4_FILE_INFO_T` | `NC_FILE_INFO_T` | `hdfid` (the HDF5 file), `rootid`, `path`, `mode`, `no_write`, `define_mode`, `netcdf4_model`, `backend_marked`, `created_by_us`, `ncproperties` |
 | `NEXTCDF4_GRP_INFO_T` | `NC_GRP_INFO_T` | open `hid_t` for the HDF5 group |
 | `NEXTCDF4_DIM_INFO_T` | `NC_DIM_INFO_T` | `hid_t` of the dimension-scale dataset |
 | `NEXTCDF4_VAR_INFO_T` | `NC_VAR_INFO_T` | `hid_t` of the variable dataset plus `flags` (e.g. `NC_HDF5_VAR_FILTER_MISSING`); the filter pipeline itself lives on the shared `NC_VAR_INFO_T::filters` list |
@@ -93,6 +94,39 @@ that use them. `_Netcdf4Coordinates` records a variable's dimids so
 open can map ids fast; dimension-scale matching is the fallback for
 files written without it.
 
+## Provenance attributes
+
+`nxt4provenance.c` reproduces upstream's provenance surface so
+third-party tools cannot tell a NEXTCDF-4 file from an upstream
+NetCDF-4 file:
+
+- `_NCProperties` is built at create
+  (`version=2,netcdf=<libvers>,hdf5=<libvers>,nextcdf4=<NEP_VERSION>`)
+  and stored on the root group at `_enddef`/`nc_sync`/`nc_close` —
+  upstream's deferred-write point — as a fixed-length ASCII string of
+  `strlen` bytes with `H5T_STR_NULLTERM` padding. `_nc3_strict` = 1 is
+  stored alongside it for `NC_CLASSIC_MODEL` files. Neither is ever
+  overwritten, and only `created_by_us` files are stamped: an updated
+  file keeps its original stamp, and a stamp-less foreign file stays
+  unstamped.
+- `_IsNetcdf4` and `_SuperblockVersion` are never stored.
+  `NEXTCDF4_inq_att`/`NEXTCDF4_inq_attid`/`NEXTCDF4_get_att`
+  intercept those names (plus `_NCProperties`, answered from the
+  in-memory `file->ncproperties`) on `NC_GLOBAL` lookups and call
+  `nx4_get_att_special`, mirroring upstream's `nc4_get_att_special`:
+  `NC_INT`/len 1, integer-memtype conversion, `NC_EATTMETA` for attnum
+  inquiries, `NC_ENOTATT` when the file has no `_NCProperties`. The
+  names never appear in `nc_inq_natts`/`nc_inq_attname` results —
+  upstream's `NAMEONLYFLAG` semantics.
+- `_IsNetcdf4`'s value follows upstream's `NC4_isnetcdf4`: 1 when
+  `_nc3_strict` or `_NCProperties` exists at root (or the file was
+  created this session), else an `H5Ovisit` walk that requires at
+  least two objects carrying NetCDF-4 marker attributes.
+  `_SuperblockVersion` reads the FCPL `super` field via
+  `H5Pget_version` — the equivalent of upstream's exported
+  `NC4_hdf5get_superblock`, reimplemented because upstream's walker
+  depends on upstream-private struct layouts.
+
 ## Metadata lifecycle
 
 A NEXTCDF-4 file is in **define mode** while dimensions, variables,
@@ -111,6 +145,106 @@ through `NEXTCDF4__enddef`/`NEXTCDF4_redef` in `nxt4file.c`.
 - **I/O** (`nxt4io.c`): `get/put_vara`, `get/put_vars` select a
   hyperslab on the variable's dataset and run `H5Dread`/`H5Dwrite`
   with a memory datatype.
+
+## User-defined types
+
+Type ids at or above `NC_FIRSTUSERTYPEID` (32) are user-defined types;
+lower ids are atomic or NEP extended types. `nxt4type.c` provides the
+context-aware plumbing that every consumer routes through:
+
+- `nx4_find_type(grp, xtype)` resolves a type id by walking the group
+  and its ancestors — types are group-scoped and visible to
+  descendants, matching netCDF's visibility rules.
+- `nx4_type_size`, `nx4_file_type` and `nx4_memory_type` resolve the
+  element size, the committed HDF5 file datatype and a rebuilt
+  native-layout memory datatype for any type, atomic or user-defined.
+  For a committed type `nx4_file_type` returns the committed `hid_t`
+  itself (refcount-bumped) rather than a `H5Tcopy`, so datasets and
+  attributes share the named datatype's object identity; copies would
+  produce anonymous stored types that break reload resolution.
+
+Committed datatypes are written at `_enddef` (`NEXTCDF4_write_types`);
+variables defined over a not-yet-committed type defer dataset creation
+until then, and attributes over them queue similarly. At open, each
+group's committed datatypes are loaded **before** variables and
+attributes (`load_types`/`load_one_type` in `nxt4meta.c`), so a
+dataset or attribute whose datatype is a shared committed type
+resolves it back to the registered `NC_TYPE_INFO_T` by object token
+(`nx4_hdf_type_match`, with an `H5Tequal` structural fallback for
+anonymously stored types).
+
+User-type I/O is matching-type or untyped only: `var_io` rejects a
+typed request for a different memtype with `NC_EBADTYPE` and never
+routes user types through `nx4_convert_type`. The memory datatype is
+rebuilt field-by-field for compounds (native-endian members at the
+recorded offsets), as `H5Tenum_create` over the integer base for
+enums, and as a plain `H5T_OPAQUE` for opaque types, so HDF5 handles
+byte-order conversion while the element layout the caller sees is the
+type's exact `nc_inq_*` layout.
+
+### Variable-length types and ownership
+
+Vlen types (`NEXTCDF4_def_vlen`) wrap `H5Tvlen_create` over any atomic
+or user-defined base, including strings and other vlens; the type graph rejects
+`NC_STD_REF`, unknown bases and cycles, and commits
+bases before dependents via `commit_type_tree`. `NC_TYPE_INFO_T::
+varsized` is maintained recursively — a vlen is variable-sized, and a
+compound is variable-sized when any field (including fields of array
+fields) is — so I/O, attribute and fill paths can tell flat from
+dynamic values. String leaves make a compound dynamic; `NC_CHAR` is not
+pointer-bearing even though its synthetic metadata class is `NC_STRING`.
+Sprint 1P's `nx4_copy_data` recursively initializes copies and unwinds
+partial failures, including nested strings. `nx4_storage_memory_type`
+preserves stored string character-set tags while retaining native memory
+sizes, member offsets and array shapes. String fill caches hold an owned
+pointer-sized element buffer, never a bare character buffer. Recognized
+attribute-load failures propagate instead of silently dropping data.
+Dynamic filled datasets allocate early so read-only missing-chunk reads
+do not attempt vlen-heap writes in HDF5 2.1.1; this increases sparse-file
+storage costs. Scalar datasets omit `_Netcdf4Coordinates` rather than
+writing an empty attribute that upstream cannot parse. Clipped unlimited
+reads select real values into their full logical memory positions and
+supply each missing element independently, including strided selections.
+
+Elements are `nc_vlen_t {size_t len; void *p}` descriptors:
+
+- `NEXTCDF4_put_vlen_element` **borrows** the caller's payload: it
+  stores `len` and `p` verbatim and never copies or frees `data`. The
+  payload must stay valid until the subsequent `nc_put_var*` call
+  completes; the caller still owns and frees it.
+- `NEXTCDF4_get_vlen_element` copies `len *` resolved base-memory-size
+  bytes into caller storage (upstream's hard-coded 4-byte size is a
+  bug for doubles, compounds and most bases and is not reproduced).
+
+Read results (`nc_get_var*`, `nc_get_att`) are **owned deep copies**:
+HDF5's read buffer is handed to the caller and must be freed with
+`nc_reclaim_data` (recursive over nested vlens and dynamic compound
+fields; does not free the top-level buffer) or `nc_reclaim_data_all`
+(frees it too). The legacy `nc_free_vlen`/`nc_free_vlens`/
+`nc_free_string` helpers are flat-only. Reclaim must happen before
+`nc_close` — `NC_reclaim_data` needs valid file and type context, and
+on the 64-slot UDF scheme the controller resolves the UDF9 dispatch
+correctly (10-slot headers could abort, which is why the build
+requires the 64-slot scheme). On a failed variable read any
+HDF5-allocated payloads are reclaimed recursively before the error is
+returned.
+
+Attribute and fill-value metadata that lives in memory is stored
+**deep-copied** (`nc_copy_data` into caller-independent storage for
+dynamic types), so a `nc_put_att` caller may free or reuse its payload
+immediately and every `nc_get_att` returns a fresh independent copy.
+netcdf-c's `nc4_rec_grp_del_att_data`/`var_free` paths reclaim this
+owned storage at `nc_close`. `_FillValue` for variable-sized types
+takes the same deep-copy path both when written as an attribute and
+when mirrored into `var->fill_value`.
+
+## Session controls and persistent group links
+
+`NEXTCDF4_set_fill` updates shared `NC_FILE_INFO_T.fill_mode` without entering define mode or rewriting existing datasets. Definitions capture the default before eager creation; user-defined, string and reference fill rules are preserved. Opens start at `NC_FILL`. Per-variable fill overrides remain DCPL setters, distinct from this session default.
+
+`nx4_var_dapl` maps netCDF bytes/slots/float-preemption to HDF5 slots/bytes/double-preemption. Dataset creation and deferred rebuild use it; loaded variable handles are reopened with global NetCDF defaults. `nx4_reopen_var_cache` finds owned variable/scale aliases by object token, allocates its path/property lists before mutation, flushes writable files, closes all aliases, then reopens with the requested DAPL. On failure it attempts to restore the old access properties; no datasets or dimension attachments are recreated. Getters query live chunked DAPLs; pending/nonchunked variables retain their requests. Existing full-suite normal and sanitizer CI covers the `nextcdf4_controls` focused tests.
+
+`NEXTCDF4_rename_grp` validates normalized names and parent variable/group/type collisions, moves the HDF5 link, updates the parent child index and flushes. Open descendant IDs and object identities remain valid, and full-name inquiry derives new paths from the metadata tree. Native and NetCDF-4-model groups are supported; classic mode remains root-only. Unsupported memory, sharing and parallel flags are rejected by `NEXTCDF4_check_mode` before filesystem side effects; parallel access, image files and SWMR remain deferred beyond v4.3.0.
 
 ## Filters
 

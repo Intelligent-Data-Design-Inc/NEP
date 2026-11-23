@@ -63,6 +63,8 @@ jobs:
           spack repo add spack/repos/spack_repo/nep
           spack spec nep@4.2.0 ^netcdf-c@main
           spack spec nep@main+docs+parallel ^netcdf-c@main+mpi ^mpich
+          spack spec nep@main+fortran+nextcdf4 ^netcdf-c@main~mpi
+          spack spec nep@main~fortran+nextcdf4 ^netcdf-c@main~mpi
 
       - name: Concretize
         shell: spack-bash {0}
@@ -101,10 +103,17 @@ jobs:
           gzip -dc "${prefix}/.spack/spack-build-out.txt.gz" > "${log}"
           test -f "${prefix}/lib/libncmmcif.so"
           test -f "${prefix}/lib/libncnextcdf4.so"
+          test -f "${prefix}/lib/libnepnextcdf4f.so"
+          test -f "${prefix}/include/nep/nep_nextcdf4.mod"
           test -f "${prefix}/share/.ncrc"
           grep -q 'tst_mmcif_udf' "${log}"
           grep -q 'tst_pdb_udf' "${log}"
           grep -q 'ftst_pdb_udf' "${log}"
+          grep -q 'ftst_nextcdf4_types' "${log}"
+          grep -q 'ftst_nextcdf4_small_float' "${log}"
+          # ftst_nextcdf4_installed is a ctest-only name with no build target
+          # and needs the installed tree, so it cannot appear in
+          # spack-build-out.txt; it runs in the nextcdf4 CI job instead.
 
       - name: Upload Spack logs
         if: failure()

@@ -6,6 +6,16 @@ NEXTCDF-4 is a clean-room rewrite of the NetCDF-4/HDF5 backend delivered as a NE
 
 > **Experimental**: NEXTCDF-4 is experimental and under active development. Not all NetCDF-4 features are implemented; see the Known Limitations section below.
 
+## Fortran binding
+
+With NEXTCDF-4 and Fortran enabled, `use nep_nextcdf4` provides initialization,
+mode/type constants and `nf90_{get,put}_var_{float16,bfloat16}` bit-buffer generics
+(scalar–rank 7, optional start/count/stride). NetCDF-Fortran >=4.6.2 and compatible
+compiler modules are required. See [NEXTCDF-4 Fortran](nextcdf4_fortran.md) for
+one-based selection conventions, installed `NEP::nepnextcdf4f` linkage and a
+complete example. Reference wrappers and broader enhanced-type value interfaces
+are deferred beyond v4.3.0; exported constants alone do not provide those interfaces.
+
 ## Internal conversion engine
 
 NEXTCDF-4 converts all supported numeric variable and attribute data with the private, NEP-owned `nx4_convert_type()` engine, selected as the permanent engine after Sprint 1H's OFF/ON comparison. It replaced the temporary `NEP_INTERNAL_CONVERT` CMake option; passing that option now fails at configure time. There is no runtime or file-format switch.
@@ -67,6 +77,20 @@ NEXTCDF-4 availability is advertised at compile time through `nep_meta.h`:
 
 `NC_CLASSIC_MODEL` and `NC_NETCDF4_MODEL` are mutually exclusive.
 
+## Fill defaults, cache control and group renaming
+
+`nc_set_fill(ncid, NC_FILL/NC_NOFILL, &old_mode)` changes a session default shared by all groups. Each session begins with `NC_FILL`; eligible variables capture the default when defined, not at `nc_enddef`. Existing variables are unchanged. Standard numeric/character and NEP fixed-size numeric/complex/bitfield variables inherit it; strings, user-defined types and references retain their existing fill rules. `nc_def_var_fill` remains the per-variable override before commitment. Read-only calls return `NC_EPERM`, and invalid modes return `NC_EINVAL`. Unwritten no-fill values are unspecified. Changing the file default neither rebuilds datasets nor persists a new file-wide attribute.
+
+`nc_set_var_chunk_cache(ncid, varid, bytes, slots, preemption)` applies real HDF5 raw chunk-cache settings. Preemption must be finite and in [0,1]; zero bytes/slots are allowed. Calls work in define/data mode, read-only sessions and all compatibility modes. Pending variables retain requests until creation; live datasets reopen with the new access properties, closing/reopening coordinate-scale aliases together. Values, filters, attributes and dimension attachments are preserved. `nc_get_var_chunk_cache` reports effective live chunked-dataset properties (stored requests for pending/nonchunked variables) and accepts NULL outputs. Scalar/contiguous variables accept settings but have no raw chunk cache to tune. Overrides last only for the open session; definitions and opens start from `nc_set_chunk_cache` global defaults.
+
+`nc_rename_grp(grpid, name)` works in native and `NC_NETCDF4_MODEL` modes, as does group creation. Rename moves the parent link and flushes it, preserving group/descendant IDs, data, types and dimension relationships; inquiries immediately use the new path. Enhanced-mode rename may automatically enter define mode; call `nc_enddef` before subsequent reads. Root rename returns `NC_EBADGRPID`, read-only rename `NC_EPERM`, and duplicate names (including the existing name) `NC_ENAMEINUSE`. Classic-model groups remain unsupported (`NC_ENOTNC4`). Object-reference identity is preserved; previously saved path strings are not rewritten.
+
+## Unsupported file modes and parallel I/O
+
+NEXTCDF-4 is a serial disk-file backend in v4.3.0. Its create/open entries reject `NC_DISKLESS`, `NC_INMEMORY`, `NC_MPIIO`/`NC_MPIPOSIX` (aliases), `NC_SHARE`, `NC_PERSIST` and `NC_MMAP` with `NC_EINVAL`, before creating, clobbering or opening a file. NetCDF-C may reject incompatible flag combinations before backend dispatch. Use NetCDF-C's memory APIs when testing memory requests: passing `NC_INMEMORY` directly to ordinary `nc_open` without an image parameter can assert inside upstream model inference before NEXTCDF-4 is reached.
+
+All NEXTCDF-4 parallel I/O is deferred beyond v4.3.0; `nc_var_par_access` still returns `NC_ENOTNC4`. NEP's general MPI tests exercise upstream NetCDF, not NEXTCDF-4 parallel support. In-memory image files and SWMR are also unsupported.
+
 ## Diagnostics and Logging
 
 NEXTCDF-4 uses the distinct `ELOG(())` macro, patterned after netcdf-c's `LOG(())` convention in `libsrc4` and `libhdf5`. NEP logging is independent of the underlying NetCDF-C logging build. It is compiled in by default and can be disabled with `-DNEP_ENABLE_LOGGING=OFF`. Build-time availability is reported in `nep_meta.h`:
@@ -108,12 +132,57 @@ Messages are written to `stderr`. Instrumented NEXTCDF-4 paths include file crea
 | `NC_FLOAT6_E2M3` | `H5T_FLOAT_F6E2M3` | Native only |
 | `NC_FLOAT6_E3M2` | `H5T_FLOAT_F6E3M2` | Native only |
 | `NC_FLOAT4_E2M1` | `H5T_FLOAT_F4E2M1` | Native only |
-| `NC_COMPLEX` | compound `{r: f32, i: f32}` | Native only |
-| `NC_DOUBLECOMPLEX` | compound `{r: f64, i: f64}` | Native only |
+| `NC_COMPLEX` | `H5T_COMPLEX` over `H5T_NATIVE_FLOAT` | Native only |
+| `NC_DOUBLECOMPLEX` | `H5T_COMPLEX` over `H5T_NATIVE_DOUBLE` | Native only |
 | `NC_BITFIELD8/16/32/64` | `H5T_STD_B*LE/BE` | Native only |
 | `NC_STD_REF` | `H5T_STD_REF` | Native only |
 
-Small floating-point and bitfield types are exchanged as raw bit patterns by the untyped calls; `NC_FLOAT16` and `NC_BFLOAT16` also accept typed `float`/`double` calls (see [NEXTCDF4_float16.md](NEXTCDF4_float16.md)). Complex numbers use the memory layout `{ float r; float i; }` or `{ double r; double i; }`. `NC_STD_REF` variables store 64-byte `H5R_ref_t` reference tokens; the `nc_ref_*`/`nc_deref_*` functions create and resolve them.
+Small floating-point and bitfield types are exchanged as raw bit patterns by the untyped calls; `NC_FLOAT16` and `NC_BFLOAT16` also accept typed `float`/`double` calls (see [NEXTCDF4_float16.md](NEXTCDF4_float16.md)). Complex numbers use the memory layout `{ float r; float i; }` or `{ double r; double i; }` but are stored as native HDF5 2.x `H5T_COMPLEX` datatypes, not as ordinary compounds — a user compound with `{r,i}` fields remains an ordinary user compound. `NC_STD_REF` variables store 64-byte `H5R_ref_t` reference tokens; the `nc_ref_*`/`nc_deref_*` functions create and resolve them.
+
+## User-Defined Types
+
+NEXTCDF-4 supports the enhanced-model user types — compounds (with atomic, enum, opaque, array, nested-compound and vlen fields), integer enums, fixed-size opaque types and variable-length types — as variables and attributes in both native and `NC_NETCDF4_MODEL` files, fully interchangeable with upstream NetCDF-4:
+
+```c
+struct sample { int id; float temp; unsigned char flag; };
+nc_type cmpid, enumid, opid;
+
+nc_def_compound(ncid, sizeof(struct sample), "sample", &cmpid);
+nc_insert_compound(ncid, cmpid, "id",   offsetof(struct sample, id),   NC_INT);
+nc_insert_compound(ncid, cmpid, "temp", offsetof(struct sample, temp), NC_FLOAT);
+nc_insert_compound(ncid, cmpid, "flag", offsetof(struct sample, flag), NC_UBYTE);
+
+nc_def_enum(ncid, NC_INT, "cloud_class", &enumid);
+nc_insert_enum(ncid, enumid, "clear",  &((int){0}));
+nc_insert_enum(ncid, enumid, "cumulus",&((int){1}));
+
+nc_def_opaque(ncid, 8, "blob", &opid);
+
+nc_def_var(ncid, "samples", cmpid, 1, &dimid, &varid);
+nc_enddef(ncid);              /* types commit here */
+nc_put_var(ncid, varid, data);          /* untyped access copies raw elements */
+```
+
+Semantics:
+
+- Types are group-scoped and visible to descendant groups; committed datatypes are written at `_enddef` and member inserts are rejected afterwards (`NC_ENOTINDEFINE`).
+- I/O is matching-type or untyped (`nc_put/get_var`, `var1`, `vara`, `vars`); typed calls that request numeric conversion of a user type return `NC_EBADTYPE`. Memory and file layouts are the type's exact sizes and field offsets — no conversion engine is involved.
+- Attributes of user types work the same way (`nc_put_att`/`nc_get_att` with the user typeid or untyped), including zero-length attributes, and preserve their type across close/reopen.
+- Classic-model files reject all user-type calls (`NC_ENOTNC4`).
+- Compounds nest: fields may be other fixed-size compounds, enums, opaques, or fixed-size multidimensional arrays (`nc_insert_array_compound`) of any of those. Nested types are committed before their containers and each group tracks link creation order, so upstream netCDF reads the types back in dependency order.
+- For compounds containing nested compound members, NEXTCDF-4 writes a lossless declared-layout record per element (upstream's own convention under HDF5 2.1.1 overflows dataset storage and loses the last record's tail). Foreign files written with upstream's serialized-compound layout are read through the packed native datatype, matching upstream's own read capability.
+- Variable-length (`nc_def_vlen`) types work end to end: vlens of atomic and user-defined bases, nested vlens, and compounds (and array fields) containing vlens, for variables and attributes in native and `NC_NETCDF4_MODEL` modes. Vlen elements are `nc_vlen_t {size_t len; void *p}` descriptors. `nc_put_vlen_element` borrows the caller's payload pointer (the data must stay valid until `nc_put_var*` completes); `nc_get_vlen_element` copies `len * base_size` bytes into caller storage. Reads return deep copies owned by the caller — free them with `nc_reclaim_data` (recursive, frees nested payloads only) or `nc_reclaim_data_all` (also frees the top-level buffer), and always reclaim before `nc_close` while file/type context exists. The legacy `nc_free_vlen`/`nc_free_vlens`/`nc_free_string` helpers are flat-only: use `nc_reclaim_data*` for anything nested. `nc_copy_data`/`nc_copy_data_all` deep-copy dynamic values into caller-provided or fresh top-level storage.
+- Strings (Sprint 1P): `NC_STRING` variables and attributes survive close/reopen in native and `NC_NETCDF4_MODEL` files. Strings may also be scalar or array compound members, vlen bases, and leaves of recursively nested compound/vlen graphs. `NC_STD_REF` remains excluded from user-defined type graphs; classic-model files reject strings and user types.
+
+### Strings, fills and ownership
+
+Each standalone string element is a `char *`; an array is a `char **`. Vlen-of-string payloads are arrays of pointers, not character arrays. Compound string fields use pointer-sized slots at the declared offsets. Write calls borrow application buffers for the duration of the call; attribute and fill caches deep-copy their contents. NULL standalone input elements are normalized to empty strings. String values are NUL-terminated: bytes after the first NUL are not part of the value. New files tag variable-length strings as UTF-8, matching upstream, without validating, normalizing or transcoding payload bytes. Legacy ASCII-tagged variable-length strings remain readable and writable; memory datatypes preserve stored character-set tags recursively.
+
+Successful reads return independently owned payloads. Free standalone arrays with `nc_free_string(count, values)`; this releases the strings, not the pointer array. Use `nc_reclaim_data(ncid, xtype, values, count)` for nested values, then free an allocated outer buffer yourself, or use `nc_reclaim_data_all` for both. Reclaim nested values before closing the file because type metadata is needed. Vlen element helpers still borrow/copy descriptors and pointer values; those aliases are not additional owned deep copies.
+
+Standalone string variables default to an allocated empty string on read. Custom `nc_def_var_fill`/`_FillValue` strings are owned internally, and fill inquiries return independent copies. `nc_def_var_fill(..., NC_NOFILL, ...)` returns `NC_EINVAL` for standalone strings. File-wide fill defaults do not change string/user-type fill rules. Dynamic user-type defaults remain zeroed descriptors (empty vlens/null embedded pointers). Dynamic filled datasets use early HDF5 allocation at creation/extension: this materializes fills while writable, avoiding HDF5 2.1.1's attempt to write a vlen heap when reading an unallocated chunk read-only. Large sparse dynamic datasets can therefore consume more storage when extended.
+
+`NC_NETCDF4_MODEL` string output is readable by upstream netcdf-c; NEXTCDF-4 can read and update upstream-created string variables/attributes and nested types. Foreign anonymous compound reads retain the packed-native-layout limitation described above. One-byte fixed-length HDF5 strings remain `NC_CHAR`; wider fixed-length HDF5 strings are unsupported. This is selected string interoperability, not support for every HDF5 schema or the entire upstream test suite. The three upstream ports `tst_strings`, `tst_strings2` and `tst_atts_string_rewrite` run in both modes alongside focused regressions under the `nextcdf4_strings` CTest label and the existing normal/sanitizer CI jobs.
 
 ## Storage and Metadata
 
@@ -128,6 +197,17 @@ NEXTCDF-4 stores NetCDF dimensions as HDF5 dimension scales and attaches them to
 | `_Netcdf4Coordinates` | variable | Stores the variable's dimension IDs |
 
 These attributes are filtered from user-visible attribute lists.
+
+NEXTCDF-4 also writes the upstream provenance attributes so `h5dump`, `ncdump -s` and third-party tools treat its files exactly like upstream NetCDF-4 files:
+
+| Attribute | Storage | Content |
+|-----------|---------|---------|
+| `_NCProperties` | stored on root group | `version=2,netcdf=<netcdf-c version>,hdf5=<HDF5 version>,nextcdf4=<NEP version>` — upstream's shape plus a `nextcdf4` key |
+| `_nc3_strict` | stored on root group | `1` (int), `NC_CLASSIC_MODEL` files only |
+| `_IsNetcdf4` | virtual | `1` when the file carries netCDF-4 markers; synthesized on name lookup |
+| `_SuperblockVersion` | virtual | the HDF5 FCPL superblock version; synthesized on name lookup |
+
+Like upstream, `_NCProperties`/`_nc3_strict` are written at `_enddef`/`nc_sync`/`nc_close`, only for files NEXTCDF-4 created, and never overwrite an existing stamp — an updated file keeps its original creator's provenance, and a file that never had a stamp stays unstamped. `_IsNetcdf4` and `_SuperblockVersion` are never stored: `nc_inq_att`/`nc_get_att` answer them by name on the global attribute list (`NC_INT`, length 1), `nc_inq_attid` returns `NC_EATTMETA`, and none of the names appear in `nc_inq_natts`/`nc_inq_attname`. `_Format` is synthesized by tools from `nc_inq_format` (`NC_FORMAT_NETCDF4`), not stored. All of these names remain reserved — `nc_put_att`/`nc_rename_att`/`nc_del_att` reject them.
 
 ## Filters
 

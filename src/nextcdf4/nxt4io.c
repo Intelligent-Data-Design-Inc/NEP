@@ -9,6 +9,7 @@
 #include "config.h"
 #include <limits.h>
 #include <stdlib.h>
+#include <string.h>
 #include "nxt4internal.h"
 
 /**
@@ -108,8 +109,12 @@ NEXTCDF4_memory_type(nc_type type, int *closep)
         {
             hid_t t = H5Tcopy(H5T_C_S1);
             if (t >= 0) {
-                H5Tset_size(t, H5T_VARIABLE);
-                H5Tset_strpad(t, H5T_STR_NULLTERM);
+                if (H5Tset_size(t, H5T_VARIABLE) < 0 ||
+                    H5Tset_strpad(t, H5T_STR_NULLTERM) < 0 ||
+                    H5Tset_cset(t, H5T_CSET_UTF8) < 0) {
+                    H5Tclose(t);
+                    return -1;
+                }
             }
             return t;
         }
@@ -242,11 +247,15 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
     int close_mtype = 0;
     hsize_t dims[NC_MAX_VAR_DIMS], newdims[NC_MAX_VAR_DIMS];
     hsize_t start[NC_MAX_VAR_DIMS], count[NC_MAX_VAR_DIMS], stride[NC_MAX_VAR_DIMS];
+    hsize_t rcount[NC_MAX_VAR_DIMS];
+    hsize_t memory_dims[NC_MAX_VAR_DIMS], origin[NC_MAX_VAR_DIMS] = {0};
     hsize_t total = 1;
+    int provide_fill = 0, no_read = 0;
     int ndims, i, extend = 0, ret, range_error = 0;
     void *converted = NULL, *io_data = data;
     nc_type xtype, io_type;
-    int converting;
+    int converting, dynamic = 0, read_started = 0;
+    char **string_write = NULL;
     size_t xtype_size;
 
     /* Resolve state, validate mode and memtype, bounds-check and
@@ -255,19 +264,21 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
      * so every HDF5 handle is closed exactly once. */
     if ((ret = NEXTCDF4_get_file(ncid, &h5, &file))) return ret;
     if ((ret = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var))) return ret;
-    if (!var || !(vinfo = var->format_var_info) || vinfo->hdf_dataset < 0) return NC_ENOTVAR;
+    if (!var || !(vinfo = var->format_var_info)) return NC_ENOTVAR;
     /* A variable opened with a missing mandatory filter plugin keeps
      * its metadata readable but rejects all data I/O. */
     if (vinfo->flags & NC_HDF5_VAR_FILTER_MISSING) return NC_ENOFILTER;
     if (writing && file->no_write) return NC_EPERM;
     /* Upstream leaves define mode automatically when a write arrives;
      * nc_close does the same below. Reads in define mode keep NEP's
-     * NC_EINDEFINE rule. */
+     * NC_EINDEFINE rule. The auto-enddef must run before the dataset
+     * check: a user-typed variable's dataset exists only after the
+     * deferred creation `_enddef` performs. */
     if (file->define_mode) {
         if (!writing) return NC_EINDEFINE;
         if ((ret = NEXTCDF4__enddef(ncid, 0, 0, 0, 0))) return ret;
     }
-    if (!data) return NC_EINVAL;
+    if (vinfo->hdf_dataset < 0) return NC_ENOTVAR;
     /* The untyped nc_put_var/nc_get_var, var1 and vars calls pass
      * NC_NAT, meaning "the variable's own type"; resolve it so
      * NEXTCDF4_memory_type() gets a real type. */
@@ -275,8 +286,15 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
     /* Reject memtypes not allowed for small-float variables before any
      * HDF5 call, so a rejected call touches neither buffer nor file. */
     if ((memtype == NC_CHAR) != (var->type_info->hdr.id == NC_CHAR)) return NC_ECHAR;
-    if ((ret = check_memtype((nc_type)var->type_info->hdr.id, memtype))) return ret;
-    if ((mtype = NEXTCDF4_memory_type(memtype, &close_mtype)) < 0) return NC_EBADTYPE;
+    if (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID) {
+        /* User-defined types take matching-type or untyped I/O only;
+         * there is no numeric conversion. */
+        if (memtype != var->type_info->hdr.id) return NC_EBADTYPE;
+    } else if ((ret = check_memtype((nc_type)var->type_info->hdr.id, memtype))) return ret;
+    if (memtype == NC_STRING) {
+        if ((mtype = H5Dget_type(vinfo->hdf_dataset)) < 0) return NC_EHDFERR;
+    } else if ((ret = nx4_memory_type(grp, memtype, &mtype))) return ret;
+    close_mtype = 1;
     ndims = (int)var->ndims;
     if ((fspace = H5Dget_space(vinfo->hdf_dataset)) < 0) { ret = NC_EHDFERR; goto done; }
     if (!ndims) goto prepare;
@@ -287,23 +305,40 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
         if (stridep && stridep[i] <= 0) { ret = NC_ESTRIDE; goto done; }
         start[i] = startp[i]; count[i] = countp[i]; stride[i] = stridep ? (hsize_t)stridep[i] : 1;
         newdims[i] = dims[i];
+        rcount[i] = countp[i];
+        memory_dims[i] = countp[i];
         if (!countp[i]) { total = 0; continue; }
         if (countp[i] - 1 > (SIZE_MAX - startp[i]) / (size_t)stride[i]) { ret = NC_EEDGE; goto done; }
         last = startp[i] + (countp[i] - 1) * (size_t)stride[i];
         if (last == SIZE_MAX) { ret = NC_EEDGE; goto done; }
         if (last >= dims[i]) {
-            if (!writing || !var->dim[i]->unlimited) { ret = NC_EEDGE; goto done; }
-            newdims[i] = (hsize_t)last + 1; extend = 1;
+            if (!var->dim[i]->unlimited) { ret = NC_EEDGE; goto done; }
+            if (writing) {
+                newdims[i] = (hsize_t)last + 1; extend = 1;
+            } else {
+                /* Reads legitimately select past the physical extent
+                 * on an unlimited dim: clip the hyperslab to what the
+                 * dataset actually holds and fill the tail with the
+                 * variable's fill value, as upstream does. */
+                if (start[i] < dims[i])
+                    rcount[i] = (dims[i] - (hsize_t)start[i] +
+                                 stride[i] - 1) / stride[i];
+                else
+                    rcount[i] = 0;
+                count[i] = rcount[i];
+                provide_fill = 1;
+            }
         }
         if (total && countp[i] > SIZE_MAX / total) { ret = NC_EINVAL; goto done; }
         total *= countp[i];
     }
     if (!total) { ret = NC_NOERR; goto done; }
 prepare:
+    if (!data) { ret = NC_EINVAL; goto done; }
     xtype = (nc_type)var->type_info->hdr.id;
     converting = memtype != xtype || (writing && var->quantize_mode != NC_NOQUANTIZE);
     io_type = converting ? xtype : memtype;
-    if ((ret = NEXTCDF4_type_size(xtype, &xtype_size))) goto done;
+    if ((ret = nx4_type_size(grp, xtype, &xtype_size))) goto done;
     if (total > SIZE_MAX / xtype_size) { ret = NC_EINVAL; goto done; }
     if (converting) {
         /* A dry-run call with no buffers lets the engine report
@@ -320,7 +355,57 @@ prepare:
         if (writing && (ret = nx4_convert_type(data, converted, source, target, (size_t)total,
                                                &range_error, var->fill_value, 0, mode, var->nsd, 1))) goto done;
         if (close_mtype) { H5Tclose(mtype); close_mtype = 0; }
-        if ((mtype = NEXTCDF4_memory_type(io_type, &close_mtype)) < 0) { ret = NC_EBADTYPE; goto done; }
+        if ((ret = nx4_memory_type(grp, io_type, &mtype))) goto done;
+        close_mtype = 1;
+    }
+    if (!converting && xtype >= NC_FIRSTUSERTYPEID) {
+        /* A compound variable whose stored datatype is anonymous was
+         * written by a foreign library (upstream netCDF stores an
+         * anonymous copy on its datasets). Those files use HDF5's
+         * serialized-compound layout, which decodes correctly only
+         * through the packed native datatype — the same memtype
+         * upstream itself uses. Our own datasets keep the committed
+         * datatype and the declared-layout memory type. */
+        NC_TYPE_INFO_T *ut = NULL;
+        hid_t dt;
+        if (!nx4_find_type(grp, xtype, &ut) && ut &&
+            ut->nc_type_class == NC_COMPOUND &&
+            (dt = H5Dget_type(vinfo->hdf_dataset)) >= 0) {
+            if (H5Tcommitted(dt) <= 0) {
+                if (close_mtype)
+                    H5Tclose(mtype);
+                if ((mtype = H5Tget_native_type(dt, H5T_DIR_DEFAULT)) < 0) {
+                    H5Tclose(dt);
+                    ret = NC_EHDFERR;
+                    goto done;
+                }
+                close_mtype = 1;
+            }
+            H5Tclose(dt);
+        }
+    }
+    dynamic = xtype == NC_STRING ||
+              (xtype >= NC_FIRSTUSERTYPEID && var->type_info->varsized);
+    if (dynamic) {
+        hid_t stored = H5Dget_type(vinfo->hdf_dataset), matched = -1;
+        if (stored < 0) { ret = NC_EHDFERR; goto done; }
+        ret = nx4_storage_memory_type(mtype, stored, &matched);
+        H5Tclose(stored);
+        if (ret) goto done;
+        H5Tclose(mtype);
+        mtype = matched;
+    }
+    if (!writing && dynamic) {
+        memset(io_data, 0, (size_t)total * xtype_size);
+        read_started = 1;
+    }
+    if (writing && xtype == NC_STRING) {
+        if (!(string_write = malloc((size_t)total * sizeof(char *)))) {
+            ret = NC_ENOMEM; goto done;
+        }
+        for (size_t k = 0; k < (size_t)total; k++)
+            string_write[k] = ((char **)data)[k] ? ((char **)data)[k] : "";
+        io_data = string_write;
     }
     if (extend) {
         if (H5Dset_extent(vinfo->hdf_dataset, newdims) < 0) { ret = NC_EHDFERR; goto done; }
@@ -344,8 +429,19 @@ prepare:
             }
         }
     }
-    if (ndims && (H5Sselect_hyperslab(fspace, H5S_SELECT_SET, start, stride, count, NULL) < 0 ||
-        (mspace = H5Screate_simple(ndims, count, NULL)) < 0)) { ret = NC_EHDFERR; goto done; }
+    if (!writing) {
+        /* A zero count on any dimension means nothing to read from
+         * disk — the whole region is fill. */
+        for (i = 0, no_read = 0; i < ndims; i++)
+            if (!rcount[i]) no_read = 1;
+    }
+    mspace = ndims ? H5Screate_simple(ndims, memory_dims, NULL) : H5Screate(H5S_SCALAR);
+    if (mspace < 0) { ret = NC_EHDFERR; goto done; }
+    if (ndims && !no_read &&
+        (H5Sselect_hyperslab(fspace, H5S_SELECT_SET, start, stride, count, NULL) < 0 ||
+         H5Sselect_hyperslab(mspace, H5S_SELECT_SET, origin, NULL, count, NULL) < 0)) {
+        ret = NC_EHDFERR; goto done;
+    }
     if (writing) {
         ret = H5Dwrite(vinfo->hdf_dataset, mtype, ndims ? mspace : H5S_ALL,
                        fspace, H5P_DEFAULT, io_data) < 0 ? NC_EHDFERR : NC_NOERR;
@@ -353,13 +449,65 @@ prepare:
             var->written_to = 1;
     }
     else {
-        ret = H5Dread(vinfo->hdf_dataset, mtype, ndims ? mspace : H5S_ALL,
-                      fspace, H5P_DEFAULT, io_data) < 0 ? NC_EHDFERR : NC_NOERR;
+        if (!no_read) {
+            ret = H5Dread(vinfo->hdf_dataset, mtype, ndims ? mspace : H5S_ALL,
+                          fspace, H5P_DEFAULT, io_data) < 0 ? NC_EHDFERR : NC_NOERR;
+            /* A failed read of a variable-sized type (strings, vlens
+             * and compounds containing them) is reclaimed at done,
+             * including values copied while supplying fill. */
+        }
+        if (!ret && provide_fill) {
+            /* Supply each missing logical element independently;
+             * multidimensional clipped selections are not a flat tail.
+             * Dynamic values receive independently owned payloads. */
+            void *zero_fill = NULL;
+            const void *fillvalue = var->fill_value;
+            char *empty = "";
+            if (!fillvalue && xtype < NC_STRING) {
+                if ((ret = nc4_get_fill_value(h5, var, &zero_fill)))
+                    goto done;
+                fillvalue = zero_fill;
+            }
+            if (!fillvalue && xtype == NC_STRING) fillvalue = &empty;
+            if (!fillvalue &&
+                !(fillvalue = zero_fill = calloc(1, xtype_size))) {
+                ret = NC_ENOMEM; goto done;
+            }
+            for (size_t k = 0; k < (size_t)total; k++) {
+                size_t index = k;
+                int missing = 0;
+                for (i = ndims - 1; i >= 0; i--) {
+                    if (index % countp[i] >= rcount[i]) missing = 1;
+                    index /= countp[i];
+                }
+                if (!missing) continue;
+                void *dst = (char *)io_data + k * xtype_size;
+                if (xtype > NC_STRING && xtype < NC_FIRSTUSERTYPEID)
+                    memcpy(dst, fillvalue, xtype_size);
+                else if ((ret = nx4_copy_data(h5->controller, xtype,
+                                             fillvalue, 1, dst))) break;
+            }
+            free(zero_fill);
+        }
         if (!ret && converting)
             ret = nx4_convert_type(converted, data, xtype, memtype, (size_t)total,
                                     &range_error, NULL, 0, NC_NOQUANTIZE, 0, 1);
     }
 done:
+    if (read_started && ret) {
+        NC_reclaim_data(h5->controller, xtype, io_data, (size_t)total);
+        memset(io_data, 0, (size_t)total * xtype_size);
+    }
+    if (read_started && !ret && xtype == NC_STRING) {
+        for (size_t k = 0; k < (size_t)total; k++)
+            if (!((char **)io_data)[k] && !(((char **)io_data)[k] = strdup(""))) {
+                NC_reclaim_data(h5->controller, xtype, io_data, (size_t)total);
+                memset(io_data, 0, (size_t)total * xtype_size);
+                ret = NC_ENOMEM;
+                break;
+            }
+    }
+    free(string_write);
     free(converted);
     if (mspace >= 0) H5Sclose(mspace);
     if (fspace >= 0) H5Sclose(fspace);

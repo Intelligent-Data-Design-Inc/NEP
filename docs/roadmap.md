@@ -1,6 +1,6 @@
 # NEP Development Roadmap
 
-### V4.3.0 -
+### V4.3.0 - NEXTCDF4 Development
 
 #### Sprint 1 - Fix Issues 372 and 374
 - #372: find HDF5 without a version in new `cmake/NEPFindHDF5.cmake` (1.14.0 minimum enforced, NEXTCDF-4 2.1.1 check kept); link every target through FindHDF5's `hdf5::hdf5_hl`/`HDF5::HDF5` imported targets; CMake minimum 3.19.
@@ -159,52 +159,93 @@ Fix the four open NEXTCDF-4 defect issues:
 
 Plan: [docs/plan/v4.3.0-sprint1M-fix-nextcdf4-issues.md](plan/v4.3.0-sprint1M-fix-nextcdf4-issues.md)
 
-#### Sprint 1N - User Defined Types
-Make compound/vlen/enum/opaque types usable end-to-end, not just definable (`docs/nextcdf4_status_v4_3_0.md` gaps 1-2):
+#### Sprint 1N1 - Fixed-Size User Types
+- Context-aware user-type resolution; compound (scalar atomic fields), enum and opaque variables/attributes work through I/O, complete inquiries and reopen.
+- Load committed types before values; preserve type identity, native memory layouts, ownership, fill behavior and deferred setter rebuilds.
+- Native and `NC_NETCDF4_MODEL` coverage, classic-mode rejections and bidirectional upstream interchange; focused enabled tests.
+- Keep native HDF5 complex storage and correct stale compound-layout docs; ordinary `{r,i}` compounds remain user types. No packaging changes.
+- Out of scope: nesting/array fields (1N2), vlens/sanitizer CI (1N3), upstream ports (1N4), strings (1P), reference members (unsupported), release notes (Sprint 2).
 
-- `nc_def_var` and `nc_put_att` accept user typeids: resolve them through the file's `NC_TYPE_INFO_T` list instead of the atomic-only `NEXTCDF4_check_atomic_type`.
-- `load_one_var` resolves datasets whose datatype is a committed type to the loaded user type, so files with user-typed variables open — both NEXTCDF-4's own and upstream `NC_NETCDF4` files.
-- Implement `nc_insert_array_compound` (currently `NC_ENOTBUILT`).
-- Implement `nc_put_vlen_element`/`nc_get_vlen_element` and vlen-variable I/O end to end.
-- Keep `NC_COMPLEX`/`NC_DOUBLECOMPLEX` on the native HDF5 2.x `H5T_COMPLEX_IEEE_F*` datatypes (already implemented and the easy path); update `docs/nextcdf4.md` and `docs/plan/NEXTCDF4_plan.md`, which still describe the compound `{r, i}` layout. Only fall back to `{r, i}` if native complex proves unworkable.
-- Tests: round-trip a variable and attribute of each user type; open an upstream `NC_NETCDF4` file with a compound variable.
-- Out of scope: reference types inside compounds (documented restriction).
+Plan: [docs/plan/v4.3.0-sprint1N1-fixed-size-user-types.md](plan/v4.3.0-sprint1N1-fixed-size-user-types.md)
+
+#### Sprint 1N2 - Nested Types and Array Fields
+- Implement `nc_insert_array_compound` and fixed-size nesting, sharing scalar insertion, recursive layout/visibility checks and dependency-ordered type commit/load.
+- Preserve complete member metadata, rank/shapes, enum/opaque members and arrays of compounds; reject cycles, invalid shapes/offsets and nested references.
+- Focused tests in native and `NC_NETCDF4_MODEL` modes, including upstream interchange; update type docs. No packaging/CI changes.
+- Out of scope: dynamic nesting/vlens (1N3), upstream ports (1N4), strings (1P), reference members (unsupported), release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1N2-nested-types-and-array-fields.md](plan/v4.3.0-sprint1N2-nested-types-and-array-fields.md)
+
+#### Sprint 1N3 - Vlen I/O and Ownership
+- Vlen variables/attributes and full non-string nesting (vlens of user types, nested vlens, compounds/arrays containing vlens) in native and `NC_NETCDF4_MODEL` modes.
+- Implement `nc_put_vlen_element`/`nc_get_vlen_element` with resolved base sizes; define borrowed descriptors versus owned read/deep-copy results and recursive reclamation.
+- Focused fill, unlimited/strided I/O, reopen, ownership and upstream-interchange tests; update docs. No packaging changes.
+- New `nextcdf4-sanitizers` CI job builds instrumented dependencies and NEP with ASan/UBSan plus leak detection; normal full CTest/docs checks retained.
+- Out of scope: selected upstream ports (1N4), all string-value work (1P), nested references (unsupported), release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1N3-vlen-io-and-ownership.md](plan/v4.3.0-sprint1N3-vlen-io-and-ownership.md)
+
+#### Sprint 1N4 - Upstream User-Type Tests
+- Port pinned upstream `tst_enums`, `tst_opaques`, `tst_compounds`, `tst_compounds2`, `tst_vl`, `tst_vlen_unlim` using existing shims; preserve UCAR notices and the upstream compound fixture.
+- Run each port in native and `NC_NETCDF4_MODEL` modes with isolated working directories, in normal and sanitizer CI; fix in-scope failures without weakening or disabling assertions.
+- Update the status doc with exact two-mode coverage; full CTest remains green and docs warning-free. No packaging changes.
+- Out of scope: remaining/mixed-feature upstream ports (future suite expansion), strings (1P), reference nesting (unsupported), release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1N4-upstream-user-type-tests.md](plan/v4.3.0-sprint1N4-upstream-user-type-tests.md)
 
 #### Sprint 1O - Fill Mode, Cache Control, Renaming Groups
-Replace the remaining `NC_EPERM`/`NC_ENOTNC4` stubs with working semantics or an explicit decision (`docs/nextcdf4_status_v4_3_0.md`):
+- Implement `nc_set_fill` as a session default for subsequently defined eligible variables; preserve per-variable overrides, dynamic-type fill safety and existing data.
+- Implement real per-variable HDF5 chunk-cache settings on create/open and live-dataset reopen, including coordinate-handle aliases; no successful no-op.
+- Implement flush-per-rename `nc_rename_grp`; enable group creation and rename in native and `NC_NETCDF4_MODEL` modes, retaining classic-model rejection.
+- Reject unsupported memory/sharing/parallel create/open flags before side effects (`NC_DISKLESS`, `NC_INMEMORY`, `NC_MPIIO`/`NC_MPIPOSIX`, `NC_SHARE`, `NC_PERSIST`, `NC_MMAP`).
+- Add focused regressions to existing normal/sanitizer CI; update behavior/status docs, keep CTest green and docs warning-free. No packaging changes.
+- Out of scope: upstream test ports (future suite expansion), strings (1P), provenance (1Q), Fortran (1R), release notes (Sprint 2); parallel I/O, image files and SWMR move beyond v4.3.0.
 
-- `nc_set_fill`: implement file-level `NC_FILL`/`NC_NOFILL` mode, replacing the `NC_RO_set_fill` stub.
-- `nc_rename_grp`: rename a group with the same flush-per-rename discipline as dims/vars, replacing `NC_NOTNC4_rename_grp`.
-- `nc_set_var_chunk_cache`/`nc_get_var_chunk_cache`: back them with real `H5Pset/get_chunk_cache` calls, or document the no-op decision.
-- Validate create/open mode flags: reject (not silently ignore) `NC_DISKLESS`, `NC_INMEMORY`, `NC_MPIIO`/`NC_MPIPOSIX`, `NC_SHARE`, `NC_PERSIST`.
-- Parallel I/O is deferred to the next release: `var_par_access` stays `NC_ENOTNC4`, the parallel mode flags above are rejected, and the deferral is documented in `docs/nextcdf4.md`, `docs/prd.md`, `docs/prfaq.md` and the release notes.
-- Out of scope: in-memory image files (`nxt4image.c`), SWMR, all parallel I/O.
+Plan: [docs/plan/v4.3.0-sprint1O-fill-mode-cache-control-renaming-groups.md](plan/v4.3.0-sprint1O-fill-mode-cache-control-renaming-groups.md)
 
 #### Sprint 1P - NC_STRING
-Fix `NC_STRING` round-tripping (`docs/nextcdf4_status_v4_3_0.md` gaps 2-3):
+- Fix standalone string variable/attribute reopen and full string nesting (compound/array members, vlens of strings and recursive combinations) in native and `NC_NETCDF4_MODEL` modes.
+- Unify owned string/fill buffers, empty-string defaults, deep-copy/reclaim and partial-read cleanup; retain classic-model rejection and reject standalone string `NC_NOFILL`.
+- Require bidirectional upstream interchange plus NEXTCDF-4 updates to upstream-created string files; preserve legacy ASCII and upstream UTF-8 string storage compatibility.
+- Add focused string regressions and two-mode ports of `tst_strings`, `tst_strings2`, `tst_atts_string_rewrite`; existing normal/sanitizer CI runs them. Update behavior/status docs, keep CTest green and docs warning-free. No packaging changes.
+- Out of scope: wider fixed-length HDF5 strings (beyond v4.3.0), other upstream ports (future suite expansion), reference nesting (unsupported), provenance (1Q), Fortran (1R), release notes/publication (Sprint 2).
 
-- `map_nc_type`/loader: map variable-length string HDF5 datatypes back to `NC_STRING` so files with `NC_STRING` variables reopen instead of failing `NC_EBADTYPE`.
-- Load variable-length string attributes on open — currently they are silently dropped (`nc_get_att_string` returns `NC_ENOTATT` after reopen).
-- Correct string memory handling on read (`H5Dvlen_reclaim`/`nc_free_string` paths).
-- Tests: enabled reopen tests for `NC_STRING` variables and attributes; upstream `NC_NETCDF4` files with `NC_STRING` variables open read-only.
+Plan: [docs/plan/v4.3.0-sprint1P-nc-string.md](plan/v4.3.0-sprint1P-nc-string.md)
 
 #### Sprint 1Q - Provenance Attributes (_NCProperties/_IsNetcdf4/_SuperblockVersion)
-Write the standard hidden attributes upstream netcdf-c produces (`docs/nextcdf4_status_v4_3_0.md` gap 11):
+- New `src/nextcdf4/nxt4provenance.c`: deferred `_NCProperties` write at `_enddef`/`nc_sync`/`nc_close` (never overwriting an existing stamp) as `version=2,netcdf=...,hdf5=...,nextcdf4=4.3.0`, plus `_nc3_strict`=1 on `NC_CLASSIC_MODEL` files — upstream storage parity.
+- `_IsNetcdf4`/`_SuperblockVersion` stay virtual: synthesized in `inq_att`/`inq_attid`/`get_att` on `NC_GLOBAL` name lookups, mirroring `nc4_get_att_special` (`NC_EATTMETA` attnum, `NC_INT`/len 1, memtype conversion).
+- Foreign files without `_NCProperties` are left unstamped; `_Format` needs no backend work (ncdump synthesizes it). New `tst_nextcdf4_provenance` under `nextcdf4_controls`; no packaging changes.
+- Out of scope: Fortran (1R), `nextcopy`/`nextdump`, parallel/SWMR/in-memory files, user-injected property keys, remaining nc_test4 ports, release notes (Sprint 2).
 
-- Write `_NCProperties` (`version=2,netcdf=...,hdf5=...`) and `_SuperblockVersion` on every file; `_IsNetcdf4` where upstream writes it.
-- Parse and preserve them on open; they are already filtered from user-visible attribute lists.
-- Decide the `_Format`/`_nc3_strict` behavior for `NC_CLASSIC_MODEL` files.
-- Goal: `h5dump`/`ncdump` and third-party tools treat NEXTCDF-4 files like upstream NetCDF-4 files.
+Plan: [docs/plan/v4.3.0-sprint1Q-provenance-attributes.md](plan/v4.3.0-sprint1Q-provenance-attributes.md)
 
 #### Sprint 1R - Fortran Wrappers
-Expose the NEXTCDF-4 C APIs through the Fortran binding (plan goal: "same release" as the C API):
+- Install `module nep_nextcdf4` / `libnepnextcdf4f` (`NEP::nepnextcdf4f`) when NEXTCDF-4 and Fortran are enabled; require NetCDF-Fortran >=4.6.2 for that combination.
+- Export initialization, mode/new-type constants and `nf90_{get,put}_var_{float16,bfloat16}` generics (scalar–rank 7, optional start/count/stride); raw `integer(c_int16_t)` bits, 1-based Fortran indices and dimension order.
+- Add focused create/types/I/O/reopen tests and an installed consumer; enable Fortran in normal NEXTCDF-4 CI, retaining C-only sanitizer coverage and warning-free docs.
+- Update the Spack overlay's conditional dependency/install checks using existing variants; upstream copy ships with Sprint 2's version-bump PR. Conda is unchanged.
+- Out of scope: reference wrappers and general enhanced-type value interfaces (beyond v4.3.0), varm/F77/half attributes, Fortran sanitizer expansion, release notes/publication (Sprint 2).
 
-- Fortran wrappers for `nc_{get,put}_{var,var1,vara,vars}_bfloat16` and the `_float16` family, with matching parameter types.
-- Fortran constants for `NC_NEXTCDF4`, `NC_NETCDF4_MODEL`, and the new `nc_type` values (small floats, complex, bitfields, `NC_STD_REF`).
-- `nc_ref_*`/`nc_deref_*` Fortran wrappers, or an explicit documented decision to defer them.
-- `ftest/` coverage: `ftst_nextcdf4_*.F90` exercising create/types/I/O/reopen.
-- Out of scope: varm/other deprecated wrappers, Fortran support for the still-broken Sprint 1N/1P paths.
+Plan: [docs/plan/v4.3.0-sprint1R-fortran-wrappers.md](plan/v4.3.0-sprint1R-fortran-wrappers.md)
 
+#### Sprint 1S - CI and Docs
+- New `nextcdf4-coverage` job in `nextcdf4.yml` (geotiff-coverage pattern): `--coverage` build of the full enabled suite, full ctest run, `lcov`/`genhtml` HTML artifact; report-only, warn below 50%. No CMake coverage option, no Codecov.
+- Rewrite `README.md`, `docs/prd.md`, `docs/prfaq.md`, `docs/design.md` for 4.3.0: drop dated press-release framing, format list (Space: CDF/FITS/PDS4; Earth: GeoTIFF/GRIB2; Medical: DICOM; Bio: PDB/mmCIF) plus NEXTCDF-4 summary (drop-in netCDF-4 replacement, 16-bit floats, `NC_STD_REF`, latest superblocks, performance); compression reduced to a nep-compress pointer in the README; dependency floors corrected (netcdf-c ≥4.10.2, HDF5 2.1.1).
+- `src/nextcdf4/nxt4meta.c`: comment-only pass — walkthrough paragraphs and deeper `/**` blocks for the metadata load, `_enddef` dirty-var rebuild, att rewrite, and dim-scale re-attach machinery.
+- Out of scope: coverage gates/trends/Codecov, other `src/nextcdf4/*.c` files, code changes, release notes/tag/Spack bump/conda wording (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1S-ci-and-docs.md](plan/v4.3.0-sprint1S-ci-and-docs.md)
+
+#### Sprint 1T - Example Programs
+- Both book repos verified on GitHub: `captainkirk99/NetCDF_Developers_Handbook` holds all eight moved example dirs (`docs/nep-handoff.md` lists every file); `Earth_Observation_in_Practice` holds the mission examples removed in v4.1.0 Sprint 3.
+- Delete `examples/{classic,netcdf-4,nczarr,opendap,parallelIO,f_classic,f_netcdf-4}` plus `generate_all_cdl.sh` and all `expected_output/` files except `README.md`, `cache_tuning_expected.cdl`, and the four `chunking_performance_*_expected.cdl` files.
+- Keep `examples/performance/` (NEP holds the authoritative Sprint 1C-1E `perf_disk.h` benchmark sources; the book repo's copies are older); move `netcdf-4/chunking_performance.c` into it. Delete dead `lossless.c`/`quantize.c` (LZ4/BZIP2 API moved to nep-compress in v4.2.0) and their artifacts.
+- Remove `NEP_ENABLE_OPENDAP_EXAMPLES` (emit `NEP_HAS_OPENDAP 0`); keep `NEP_ENABLE_BENCHMARKS`, `NEP_ENABLE_PARALLEL_TESTS`, `HAVE_NCZARR` for non-example users.
+- Delete `docs/ch3-fill-values.md` and `docs/background/NetCDF_Developers_Handbook_1_10.{md,sdi}`; rewrite `README.md`, `docs/examples.md`, `prd.md`, `prfaq.md`, `design.md`, `mainpage.md`, `NEP_abstract.md`, `examples/README.md`, `nep_skill.md`, `.devin/skills/nep-examples.md`, `.devin/workflows/edit.md` to point at the handbook repo.
+- No Spack/conda recipe changes; remaining dirs: `nextcdf4/`, `dicom/`, `pdb/`, `viz/`, `performance/`.
+
+Plan: [docs/plan/v4.3.0-sprint1T-example-programs.md](plan/v4.3.0-sprint1T-example-programs.md)
 
 #### Sprint 2 - 
 - Tag v4.3.0 and write `docs/releases/v4.3.0.md` (HDF5 detection change, CMake 3.19 minimum, conda GeoTIFF, Sprint 1A NEXTCDF-4 bfloat16 examples and `NEP_ZSTD_PLUGIN_DIR`, Sprint 1B typed small-float I/O and the `nc_*_bfloat16` functions, #376, Sprint 1C optimized benchmark results, the bfloat16 GDAS sample and `bfloat16_io_perf`, the #382 contiguous-layout fix, the fix for untyped `nc_put_var`/`nc_get_var`/`var1`/`vars` failing with `NC_EBADTYPE` on NEXTCDF-4, and Sprint 1K generic HDF5 filter support (`nc_def_var_filter`, szip/bzip2/zstd plugins, missing-plugin `NC_ENOFILTER`), and Sprint 1L reference types (`NC_REF_OBJECT`/`NC_REF_REGION` removed — a breaking API change — replaced by `NC_STD_REF`/`H5T_STD_REF` and the `nc_ref_*`/`nc_deref_*` API).
@@ -212,6 +253,7 @@ Expose the NEXTCDF-4 C APIs through the Fortran binding (plan goal: "same releas
 - Conda (#374 part 2): if #34309 is still open, regenerate the staged copy for 4.3.0, push it to `nep-3.0.0` and update the PR body; if merged, make the GeoTIFF change on the feedstock and drop the staged lint/micromamba steps. Move the `conda.yml` lint step to the 4.3.0 tarball and set `context.version` to `4.3.1.dev0`.
 - Update the README "Conda Installation", `docs/prd.md` section 5.5, `docs/prfaq.md` and the `docs/conda-plan.md` Status table for GeoTIFF in 4.3.0.
 - Document the deferrals in the release notes: `nextcopy`/`nextdump` (NEXTCDF-4 Phase 4 tools) and all NEXTCDF-4 parallel I/O move to a future release.
+- Release notes also cover the Sprint 1T example removal: generic netCDF examples deleted (now maintained in `captainkirk99/NetCDF_Developers_Handbook`), `NEP_ENABLE_OPENDAP_EXAMPLES` removed, `examples/performance/` retained.
 - Close #374 (#372 was closed 2026-11-21 — Sprint 1 work landed).
 
 

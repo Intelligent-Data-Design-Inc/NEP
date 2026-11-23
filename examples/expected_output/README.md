@@ -1,6 +1,8 @@
 # Expected Output CDL Files
 
-This directory contains expected CDL (Common Data Language) output files for NetCDF example programs. These files serve as regression test baselines to ensure examples continue producing correct output across code changes.
+This directory contains expected CDL (Common Data Language) output files for the example programs that remain in NEP: `cache_tuning` and `chunking_performance` in `examples/performance/`. These files serve as regression test baselines to ensure examples continue producing correct output across code changes.
+
+The expected files for the generic NetCDF teaching examples moved with those examples to the [NetCDF Developer's Handbook](https://github.com/captainkirk99/NetCDF_Developers_Handbook) repository in v4.3.0.
 
 ## Purpose
 
@@ -8,28 +10,23 @@ CDL files are human-readable text representations of NetCDF file structure and d
 
 - Detect unintended changes to example output
 - Verify examples produce correct NetCDF structure
-- Ensure C and Fortran versions produce equivalent output
 - Catch regressions during development
 
 ## File Naming Convention
 
-Expected CDL files follow the pattern: `<example_name>_expected.cdl`
+Expected CDL files follow the pattern: `<example_name>_<variant>_expected.cdl`
 
-Examples:
-- `quickstart_expected.cdl` - Expected output for `quickstart.c`
-- `f_quickstart_expected.cdl` - Expected output for `f_quickstart.f90`
-- `simple_2D_expected.cdl` - Expected output for `simple_2D.c`
+- `cache_tuning_expected.cdl` - Expected `ncdump -h -s` metadata for `cache_tuning`'s `cache_test.nc`
+- `chunking_performance_{contiguous,time_optimized,spatial_optimized,balanced}_expected.cdl` - Expected `ncdump` output for each of the four files `chunking_performance` writes
 
 ## How Tests Work
 
-Each example has a corresponding test script (e.g., `test_quickstart.sh`) that:
+The `cache_tuning_validate` and `chunking_performance_validate_*` CTest tests:
 
-1. Runs the example program
-2. Generates CDL from the output NetCDF file using `ncdump`
-3. Compares the generated CDL with the expected CDL file
-4. Reports success if they match, failure if they differ
-
-The comparison ignores the filename in the CDL header (e.g., `netcdf quickstart` vs `netcdf f_quickstart`) to allow C and Fortran versions to use different filenames.
+1. Run the example program (via a `DEPENDS` test or inline)
+2. Generate CDL from the output NetCDF file(s) using `ncdump` (through `validate_cdl.sh`, generated from `../validate_cdl.sh.in`)
+3. Compare the generated CDL with the expected CDL file
+4. Report success if they match, failure if they differ
 
 ## When to Regenerate Baselines
 
@@ -37,7 +34,6 @@ Regenerate expected CDL files when:
 
 - **Intentional changes**: You modify an example to produce different output
 - **Format changes**: NetCDF library updates change CDL formatting
-- **New examples**: You add a new example program
 
 **Do NOT regenerate** for:
 - Bug fixes that restore correct behavior
@@ -46,32 +42,17 @@ Regenerate expected CDL files when:
 
 ## How to Regenerate Baselines
 
-### For a Single Example
-
 ```bash
 # Build and run the example
-cd build/examples/classic
-./quickstart
+cd build/examples/performance
+./cache_tuning
+./chunking_performance
 
-# Generate new baseline
-ncdump quickstart.nc > ../../examples/expected_output/quickstart_expected.cdl
-
-# Verify the output is correct
-cat ../../examples/expected_output/quickstart_expected.cdl
-```
-
-### For All Examples
-
-```bash
-# From build directory
-cd build
-
-# Run all examples
-ctest --output-on-failure
-
-# For each example that needs regeneration:
-cd examples/classic
-ncdump <example>.nc > ../../examples/expected_output/<example>_expected.cdl
+# Generate new baselines
+ncdump -h -s cache_test.nc > ../../examples/expected_output/cache_tuning_expected.cdl
+for f in contiguous time_optimized spatial_optimized balanced; do
+    ncdump chunk_${f}.nc > ../../examples/expected_output/chunking_performance_${f}_expected.cdl
+done
 ```
 
 ## Verifying Correctness
@@ -81,60 +62,9 @@ Before committing regenerated baselines, manually verify:
 1. **Dimensions**: Correct names and sizes
 2. **Variables**: Correct names, types, and dimensions
 3. **Attributes**: Correct names and values (global and variable)
-4. **Data**: Correct values in expected format
-5. **Structure**: Overall file structure is logical
-
-## C vs Fortran Equivalence
-
-C and Fortran versions of the same example should produce **identical** CDL output except for the filename in the header. For example:
-
-**quickstart_expected.cdl:**
-```
-netcdf quickstart {
-dimensions:
-    X = 2 ;
-    Y = 3 ;
-...
-```
-
-**f_quickstart_expected.cdl:**
-```
-netcdf f_quickstart {
-dimensions:
-    X = 2 ;
-    Y = 3 ;
-...
-```
-
-Everything after the first line should be identical. If they differ, investigate why - it may indicate a bug in one implementation.
-
-## Multi-File Examples
-
-Some examples create multiple output files (e.g., `format_variants.c` creates three files). These have multiple expected CDL files:
-
-- `format_variants_classic_expected.cdl`
-- `format_variants_64bit_offset_expected.cdl`
-- `format_variants_64bit_data_expected.cdl`
-
-Each file is validated separately by the test script.
+4. **Structure**: Overall file structure is logical
 
 ## Troubleshooting
-
-### Test Fails After Regeneration
-
-If a test still fails after regenerating the baseline:
-1. Check that you regenerated from the correct example output
-2. Verify the example ran successfully (check exit code)
-3. Ensure `ncdump` is using the correct NetCDF library version
-4. Check for trailing whitespace or line ending differences
-
-### C and Fortran Outputs Differ
-
-If C and Fortran versions produce different CDL:
-1. Check array dimension ordering (C row-major vs Fortran column-major)
-2. Verify data generation loops are equivalent
-3. Check for endianness issues
-4. Review attribute string handling
 
 ### CDL Format Changes
 
@@ -143,19 +73,8 @@ If NetCDF library updates change CDL formatting:
 2. Document the change in commit message
 3. Verify the actual NetCDF file structure is unchanged (only formatting differs)
 
-## Integration with Build Systems
-
-### CMake
-
-CDL validation tests are automatically added when `BUILD_EXAMPLES=ON`:
-
-```cmake
-add_test(NAME quickstart_cdl 
-         COMMAND bash test_quickstart.sh)
-```
-
 ## References
 
 - NetCDF CDL documentation: https://docs.unidata.ucar.edu/netcdf-c/current/netcdf_utilities_guide.html
 - ncdump utility: https://docs.unidata.ucar.edu/netcdf-c/current/ncdump_guide.html
-- Example programs: `../classic/`, `../f_classic/`, `../netcdf-4/`, `../f_netcdf-4/`
+- Example programs: `../performance/`

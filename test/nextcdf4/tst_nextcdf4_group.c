@@ -253,6 +253,24 @@ test_strings(void)
     nc_free_string(2, out_str);
 
     CHECK(nc_close(ncid));
+    CHECK(nc_open(FILE_NAME, NC_NEXTCDF4, &ncid));
+    memset(out_str, 0, sizeof(out_str));
+    CHECK(nc_get_att_string(ncid, NC_GLOBAL, "att_str", out_str));
+    if (strcmp(in_str[0], out_str[0]) || strcmp(in_str[1], out_str[1]))
+        return 1;
+    CHECK(nc_free_string(2, out_str));
+    {
+        size_t start[1] = {0}, count[1] = {2};
+        memset(out_str, 0, sizeof(out_str));
+        CHECK(nc_get_vara_string(ncid, var_str, start, count, out_str));
+        if (strcmp(in_str[0], out_str[0]) || strcmp(in_str[1], out_str[1]))
+            return 1;
+        CHECK(nc_free_string(2, out_str));
+        count[0] = 4;
+        CHECK(nc_get_vara_text(ncid, var_char, start, count, out_text));
+        if (memcmp(in_text, out_text, 4)) return 1;
+    }
+    CHECK(nc_close(ncid));
     unlink(FILE_NAME);
     return 0;
 }

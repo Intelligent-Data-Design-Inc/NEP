@@ -11,6 +11,9 @@
 #include <netcdf.h>
 #include "nep.h"
 #include "nextcdf4dispatch.h"
+#include "nxt4internal.h"
+#include <netcdf_mem.h>
+#include <stdlib.h>
 
 /** NEXTCDF-4 file created by the lifecycle test. */
 #define FILE_NAME "tst_nextcdf4_file.h5"
@@ -96,6 +99,58 @@ done:
     return failed;
 }
 
+/* Author: Edward Hartnett, Intelligent Data Design, Inc. */
+static int
+check_unsupported_modes(void)
+{
+    const int flags[] = {NC_DISKLESS, NC_INMEMORY, NC_MPIIO,
+                         NC_SHARE, NC_PERSIST, NC_MMAP,
+                         NC_DISKLESS | NC_PERSIST};
+    size_t i;
+    int ncid, varid, value = 12345, got;
+    for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
+        int rw;
+        unlink(MISSING_FILE);
+        if (nc_create(MISSING_FILE, NC_NEXTCDF4 | flags[i], &ncid) != NC_EINVAL ||
+            access(MISSING_FILE, F_OK) == 0)
+            return 1;
+        if (nc_create(FILE_NAME, NC_NEXTCDF4, &ncid) ||
+            nc_def_var(ncid, "sentinel", NC_INT, 0, NULL, &varid) ||
+            nc_put_var_int(ncid, varid, &value) || nc_close(ncid))
+            return 1;
+        if (nc_create(FILE_NAME, NC_NEXTCDF4 | flags[i], &ncid) != NC_EINVAL)
+            return 1;
+        if (NEXTCDF4_check_mode(NC_NEXTCDF4 | flags[i]) != NC_EINVAL)
+            return 1;
+        for (rw = 0; rw <= 1; rw++) {
+            if (flags[i] == NC_INMEMORY) {
+                FILE *fp = fopen(FILE_NAME, "rb");
+                long size;
+                void *image;
+                int ret;
+                if (!fp || fseek(fp, 0, SEEK_END) || (size = ftell(fp)) <= 0 ||
+                    fseek(fp, 0, SEEK_SET) || !(image = malloc((size_t)size)))
+                    return 1;
+                if (fread(image, 1, (size_t)size, fp) != (size_t)size || fclose(fp)) {
+                    free(image);
+                    return 1;
+                }
+                ret = nc_open_mem(FILE_NAME, NC_NEXTCDF4 | rw, (size_t)size, image, &ncid);
+                free(image);
+                if (ret != NC_EINVAL)
+                    return 1;
+            } else if (nc_open(FILE_NAME, NC_NEXTCDF4 | flags[i] | rw, &ncid) != NC_EINVAL) {
+                return 1;
+            }
+        }
+        if (nc_open(FILE_NAME, NC_NEXTCDF4, &ncid) ||
+            nc_inq_varid(ncid, "sentinel", &varid) ||
+            nc_get_var_int(ncid, varid, &got) || got != value || nc_close(ncid))
+            return 1;
+    }
+    return 0;
+}
+
 /** @return Zero when all NEXTCDF-4 file lifecycle checks pass. */
 int
 main(void)
@@ -113,6 +168,10 @@ main(void)
     if (!NC_NEXTCDF4_initialize())
         return 1;
 
+    if (check_unsupported_modes()) {
+        fprintf(stderr, "unsupported mode validation failed\n");
+        return 1;
+    }
     ret = nc_create(FILE_NAME, NC_NEXTCDF4 | NC_CLOBBER, &ncid);
     closed_ncid = ncid;
     if (ret != NC_NOERR || check_empty(ncid) || nc_close(ncid) != NC_NOERR) {

@@ -94,6 +94,8 @@ NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
      * and flush. */
     if (!path || !*path)
         return NC_EINVAL;
+    if ((ret = NEXTCDF4_check_mode(cmode)))
+        return ret;
     if ((ret = valid_create_mode(cmode)))
         return ret;
     if (H5get_libversion(&major, &minor, &release) < 0)
@@ -124,9 +126,13 @@ NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
     if (H5Pset_libver_bounds(fapl, bound, bound) < 0)
         EBAIL2(NC_EHDFERR);
     flags = (cmode & NC_NOCLOBBER) ? H5F_ACC_EXCL : H5F_ACC_TRUNC;
-    /* Track attribute creation order on the root group, as upstream
-     * does, so global nc_inq_attname() returns creation order. */
+    /* Track link and attribute creation order on the root group, as
+     * upstream does: nc_inq_attname() returns creation order, and
+     * readers iterate committed datatypes in commit order, which the
+     * dependency-ordered type writer relies on for nested members. */
     if ((fcpl = H5Pcreate(H5P_FILE_CREATE)) < 0 ||
+        H5Pset_link_creation_order(fcpl, H5P_CRT_ORDER_TRACKED |
+                                   H5P_CRT_ORDER_INDEXED) < 0 ||
         H5Pset_attr_creation_order(fcpl, H5P_CRT_ORDER_TRACKED |
                                    H5P_CRT_ORDER_INDEXED) < 0)
         EBAIL2(NC_EHDFERR);
@@ -150,6 +156,12 @@ NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
         EBAIL2(NC_EHDFERR);
     if ((ret = NEXTCDF4_write_markers(file)))
         EBAIL(ret);
+    /* The _NCProperties string is built now so name lookups answer
+     * during this session; the attribute itself is deferred to
+     * _enddef/sync/close like upstream. */
+    file->created_by_us = 1;
+    if ((ret = nx4_build_ncproperties(&file->ncproperties)))
+        EBAIL(ret);
     if (H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0)
         EBAIL2(NC_EHDFERR);
     if (h5->root_grp->format_grp_info)
@@ -162,6 +174,10 @@ fail:
         H5Pclose(fapl);
     if (fcpl >= 0)
         H5Pclose(fcpl);
+    if (h5) {
+        nx4_close_group_hdf(h5->root_grp);
+        nx4_scrub_extended_atomic_data(h5->root_grp);
+    }
     NEXTCDF4_free_file(file);
     nc4_file_list_del(ncid);
     if (!existed && ret != NC_EEXIST)

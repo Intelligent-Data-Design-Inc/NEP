@@ -1148,7 +1148,7 @@ NC_DICOM_close(int ncid, void *ignore)
 
     dicom_file = (NC_DICOM_FILE_INFO_T *)h5->format_file_info;
     if (!dicom_file)
-        return NC_NOERR;
+        return nc4_nc4f_list_del(h5);
 
 #ifdef HAVE_DICOM
     if (dicom_file->filehandle)
@@ -1160,7 +1160,8 @@ NC_DICOM_close(int ncid, void *ignore)
     free(dicom_file);
     h5->format_file_info = NULL;
 
-    return NC_NOERR;
+    /* Free the shared metadata tree. */
+    return nc4_nc4f_list_del(h5);
 }
 
 /**
@@ -1184,7 +1185,7 @@ NC_DICOM_abort(int ncid)
 
     dicom_file = (NC_DICOM_FILE_INFO_T *)h5->format_file_info;
     if (!dicom_file)
-        return NC_NOERR;
+        return nc4_nc4f_list_del(h5);
 
 #ifdef HAVE_DICOM
     if (dicom_file->filehandle)
@@ -1196,7 +1197,8 @@ NC_DICOM_abort(int ncid)
     free(dicom_file);
     h5->format_file_info = NULL;
 
-    return NC_NOERR;
+    /* Free the shared metadata tree. */
+    return nc4_nc4f_list_del(h5);
 }
 
 /**

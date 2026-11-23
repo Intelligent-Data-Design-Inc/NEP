@@ -787,7 +787,7 @@ NC_CDF_close(int ncid, void *ignore)
     /* Get CDF-specific info */
     cdf_file = (NC_CDF_FILE_INFO_T *)h5->format_file_info;
     if (!cdf_file)
-        return NC_NOERR;
+        return nc4_nc4f_list_del(h5);
     
     /* Close CDF file */
     status = CDFcloseCDF((CDFid)cdf_file->id);
@@ -799,6 +799,9 @@ NC_CDF_close(int ncid, void *ignore)
     /* Free CDF-specific info */
     free(cdf_file);
     h5->format_file_info = NULL;
-    
+
+    /* Free the shared metadata tree. */
+    nc4_nc4f_list_del(h5);
+
     return (status == CDF_OK) ? NC_NOERR : NC_EHDFERR;
 }

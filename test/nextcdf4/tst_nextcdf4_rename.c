@@ -281,6 +281,98 @@ test_rename_var(void)
     return 0;
 }
 
+/* Author: Edward Hartnett, Intelligent Data Design, Inc. */
+static int
+test_rename_groups(void)
+{
+    int modes[] = {0, NC_NETCDF4_MODEL};
+    size_t m;
+    for (m = 0; m < sizeof(modes) / sizeof(modes[0]); m++) {
+        int ncid, grp, child, sibling, dim, var, id, value = 19, out;
+        nc_type type;
+        nc_std_ref_t ref = {0};
+        char longname[201], path[1024], expected[1024];
+        size_t len;
+        memset(longname, 'a', 200);
+        longname[200] = '\0';
+#define GROUP_CHECK(call) do { int r = (call); if (r) { \
+    fprintf(stderr, "%d: %s: %s\n", __LINE__, #call, nc_strerror(r)); return 1; } } while (0)
+#define GROUP_REQUIRE(test) do { if (!(test)) { \
+    fprintf(stderr, "%d: %s\n", __LINE__, #test); return 1; } } while (0)
+        GROUP_CHECK(nc_create(FILE_NAME, NC_NEXTCDF4 | modes[m], &ncid));
+        GROUP_CHECK(nc_def_dim(ncid, "x", 1, &dim));
+        GROUP_CHECK(nc_def_opaque(ncid, sizeof(int), "root_type", &type));
+        GROUP_CHECK(nc_def_grp(ncid, "original", &grp));
+        GROUP_CHECK(nc_def_grp(ncid, "sibling", &sibling));
+        GROUP_CHECK(nc_def_grp(grp, longname, &child));
+        GROUP_CHECK(nc_def_var(child, "data", NC_INT, 1, &dim, &var));
+        GROUP_CHECK(nc_put_att_int(grp, NC_GLOBAL, "tag", NC_INT, 1, &value));
+        GROUP_REQUIRE(nc_rename_grp(ncid, "root") == NC_EBADGRPID);
+        GROUP_REQUIRE(nc_rename_grp(grp, "sibling") == NC_ENAMEINUSE);
+        GROUP_REQUIRE(nc_rename_grp(grp, "root_type") == NC_ENAMEINUSE);
+        GROUP_REQUIRE(nc_rename_grp(grp, "bad/name") == NC_EBADNAME);
+        GROUP_REQUIRE(nc_rename_grp(grp, NULL) == NC_EINVAL);
+        GROUP_REQUIRE(nc_rename_grp(grp, "original") == NC_ENAMEINUSE);
+        GROUP_CHECK(nc_rename_grp(grp, "renamed"));
+        GROUP_CHECK(nc_enddef(ncid));
+        GROUP_CHECK(nc_put_var_int(child, var, &value));
+        if (!modes[m])
+            GROUP_CHECK(nc_ref_object(ncid, NC_REF_OBJ_GRP, child, &ref));
+        GROUP_CHECK(nc_rename_grp(grp, longname));
+        snprintf(expected, sizeof(expected), "/%s/%s", longname, longname);
+        GROUP_CHECK(nc_inq_grpname_full(child, &len, path));
+        GROUP_REQUIRE(len == strlen(expected) && !strcmp(path, expected));
+        GROUP_CHECK(nc_inq_grp_full_ncid(ncid, expected, &id));
+        GROUP_REQUIRE(id == child);
+        if (!modes[m]) {
+            int kind, target;
+            GROUP_CHECK(nc_deref_object(ncid, &ref, &kind, &target, &id));
+            GROUP_REQUIRE(kind == NC_REF_OBJ_GRP && target == child && id == child);
+            GROUP_CHECK(nc_ref_free(&ref));
+        }
+        GROUP_REQUIRE(nc_inq_ncid(ncid, "original", &id) != NC_NOERR);
+        GROUP_REQUIRE(nc_inq_ncid(ncid, "renamed", &id) != NC_NOERR);
+        GROUP_CHECK(nc_enddef(ncid));
+        GROUP_CHECK(nc_get_var_int(child, var, &out));
+        GROUP_REQUIRE(out == value);
+        GROUP_CHECK(nc_get_att_int(grp, NC_GLOBAL, "tag", &out));
+        GROUP_REQUIRE(out == value);
+        GROUP_CHECK(nc_close(ncid));
+        GROUP_CHECK(nc_open(FILE_NAME, NC_NEXTCDF4, &ncid));
+        GROUP_CHECK(nc_inq_grp_full_ncid(ncid, expected, &child));
+        GROUP_CHECK(nc_inq_varid(child, "data", &var));
+        GROUP_CHECK(nc_get_var_int(child, var, &out));
+        GROUP_REQUIRE(out == value);
+        GROUP_REQUIRE(nc_rename_grp(child, "denied") == NC_EPERM);
+        GROUP_CHECK(nc_close(ncid));
+        if (modes[m]) {
+            GROUP_CHECK(nc_open(FILE_NAME, NC_NOWRITE, &ncid));
+            GROUP_CHECK(nc_inq_grp_full_ncid(ncid, expected, &child));
+            GROUP_CHECK(nc_inq_varid(child, "data", &var));
+            GROUP_CHECK(nc_get_var_int(child, var, &out));
+            GROUP_REQUIRE(out == value);
+            GROUP_CHECK(nc_close(ncid));
+            GROUP_CHECK(nc_create(FILE_NAME, NC_NETCDF4, &ncid));
+            GROUP_CHECK(nc_def_grp(ncid, "upstream", &grp));
+            GROUP_CHECK(nc_def_var(grp, "data", NC_INT, 0, NULL, &var));
+            GROUP_CHECK(nc_put_var_int(grp, var, &value));
+            GROUP_CHECK(nc_close(ncid));
+            GROUP_CHECK(nc_open(FILE_NAME, NC_NEXTCDF4 | NC_WRITE, &ncid));
+            GROUP_CHECK(nc_inq_ncid(ncid, "upstream", &grp));
+            GROUP_CHECK(nc_rename_grp(grp, "new"));
+            GROUP_CHECK(nc_close(ncid));
+            GROUP_CHECK(nc_open(FILE_NAME, NC_NOWRITE, &ncid));
+            GROUP_CHECK(nc_inq_ncid(ncid, "new", &grp));
+            GROUP_CHECK(nc_get_var_int(grp, var, &out));
+            GROUP_REQUIRE(out == value);
+            GROUP_CHECK(nc_close(ncid));
+        }
+#undef GROUP_CHECK
+#undef GROUP_REQUIRE
+    }
+    return 0;
+}
+
 int
 main(void)
 {
@@ -288,6 +380,7 @@ main(void)
         const char *name;
         int (*fn)(void);
     } tests[] = {
+        {"test_rename_groups", test_rename_groups},
         {"test_rename_dim", test_rename_dim},
         {"test_rename_coord_var", test_rename_coord_var},
         {"test_rename_dim_with_coord", test_rename_dim_with_coord},

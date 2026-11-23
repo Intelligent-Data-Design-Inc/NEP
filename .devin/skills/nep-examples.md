@@ -2,11 +2,14 @@
 
 ## Overview
 
-NEP example files demonstrate library features and serve as integration tests. They are located in `examples/` with subdirectories for each format:
-- `examples/classic/` - Classic NetCDF-3 examples
-- `examples/netcdf-4/` - NetCDF-4/HDF5 examples
-- `examples/f_classic/` - Fortran classic examples
-- `examples/f_netcdf-4/` - Fortran NetCDF-4 examples
+NEP example files demonstrate library features and serve as integration tests. They are located in `examples/` with subdirectories for each feature area:
+- `examples/nextcdf4/` - NEXTCDF-4 backend examples (float16, bfloat16, conversion benchmarks)
+- `examples/performance/` - Disk-bound performance benchmarks
+- `examples/dicom/` - DICOM UDF reader example
+- `examples/pdb/` - PDB UDF reader example
+- `examples/viz/` - Python visualization examples for UDF formats
+
+Generic NetCDF teaching examples (classic, NetCDF-4, NcZarr, OPeNDAP, parallel I/O, and Fortran versions) moved to https://github.com/captainkirk99/NetCDF_Developers_Handbook in v4.3.0.
 
 ## Programming Rules
 

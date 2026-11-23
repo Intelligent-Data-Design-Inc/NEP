@@ -15,4 +15,4 @@ When asked to produce draft text:
 - Keep paragraphs to 3-5 sentences
 - Use headers, bullet lists, and code blocks sparingly, most things should be explained with text.
 
-All code examples must come from the programs in the `examples/` directory (C examples in `examples/classic/` and `examples/f_classic/`, NetCDF-4 examples in `examples/netcdf-4/` and `examples/f_netcdf-4/`). Show each example in both C and Fortran.
+All code examples must come from the example programs. The C and Fortran teaching examples moved to https://github.com/captainkirk99/NetCDF_Developers_Handbook (under `examples/`); NEP's own `examples/` now holds only NEP-feature programs (`nextcdf4/`, `performance/`, `dicom/`, `pdb/`, `viz/`). Show each book example in both C and Fortran from the handbook repository.

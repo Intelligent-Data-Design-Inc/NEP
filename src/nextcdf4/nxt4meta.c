@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <math.h>
 #include <hdf5_hl.h>
 #include "nclist.h"
 #include "nxt4internal.h"
@@ -35,10 +36,261 @@
 static int nx4_set_att_order(hid_t ocpl);
 static int nx4_dcpl_fill(hid_t dcpl, NC_FILE_INFO_T *h5,
                          NC_VAR_INFO_T *var, hid_t hdf_type);
-static int nx4_rewrite_atts(hid_t loc, NCindex *list);
+static int nx4_rewrite_atts(hid_t loc, NCindex *list, NC_GRP_INFO_T *grp);
 static int nx4_reattach_dim(NC_GRP_INFO_T *grp, NC_DIM_INFO_T *dim,
                             hid_t old_dset, hid_t new_dset,
                             NC_VAR_INFO_T *skip);
+
+/**
+ * @brief Build an owned access-property list from a variable's session settings.
+ * @param var Variable holding bytes, slots and preemption in netCDF order.
+ * @param daplp Destination for the owned HDF5 property list.
+ * @return NC_NOERR or NC_EHDFERR.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+static int
+nx4_var_dapl(const NC_VAR_INFO_T *var, hid_t *daplp)
+{
+    hid_t dapl = H5Pcreate(H5P_DATASET_ACCESS);
+    if (dapl < 0)
+        return NC_EHDFERR;
+    if (H5Pset_chunk_cache(dapl, var->chunkcache.nelems,
+                           var->chunkcache.size, var->chunkcache.preemption) < 0) {
+        H5Pclose(dapl);
+        return NC_EHDFERR;
+    }
+    *daplp = dapl;
+    return NC_NOERR;
+}
+
+/**
+ * @brief Collect owned dataset-handle slots aliasing one HDF5 object.
+ * All aliases must close before opening with a different DAPL; otherwise HDF5
+ * retains the first open's raw-data cache even for newly opened handles.
+ * @param grp Subtree to search for variable and dimension-scale handles.
+ * @param target Open dataset used as the object-token comparison location.
+ * @param token Target object token.
+ * @param slots List of pointers to owned handle slots, not handles to close yet.
+ * @return NC_NOERR, NC_ENOMEM or NC_EHDFERR.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+static int
+nx4_cache_aliases(NC_GRP_INFO_T *grp, hid_t target,
+                   const H5O_token_t *token, NClist *slots)
+{
+    size_t i;
+    int kind;
+    for (kind = 0; kind < 2; kind++) {
+        NCindex *index = kind ? grp->dim : grp->vars;
+        for (i = 0; i < ncindexsize(index); i++) {
+            hid_t *slot = NULL;
+            H5O_info2_t info;
+            int cmp;
+            if (kind) {
+                NC_DIM_INFO_T *dim = (NC_DIM_INFO_T *)ncindexith(index, i);
+                NEXTCDF4_DIM_INFO_T *dinfo = dim->format_dim_info;
+                if (dinfo)
+                    slot = &dinfo->hdf_dataset;
+            } else {
+                NC_VAR_INFO_T *var = (NC_VAR_INFO_T *)ncindexith(index, i);
+                NEXTCDF4_VAR_INFO_T *vinfo = var->format_var_info;
+                if (vinfo)
+                    slot = &vinfo->hdf_dataset;
+            }
+            if (!slot || *slot < 0)
+                continue;
+            if (H5Oget_info3(*slot, &info, H5O_INFO_BASIC) < 0 ||
+                H5Otoken_cmp(target, token, &info.token, &cmp) < 0)
+                return NC_EHDFERR;
+            if (!cmp && !nclistpush(slots, slot))
+                return NC_ENOMEM;
+        }
+    }
+    for (i = 0; i < ncindexsize(grp->children); i++) {
+        int ret = nx4_cache_aliases((NC_GRP_INFO_T *)ncindexith(grp->children, i),
+                                     target, token, slots);
+        if (ret)
+            return ret;
+    }
+    return NC_NOERR;
+}
+
+/**
+ * @brief Reopen every owned alias of a variable with its requested cache.
+ * Object identity and metadata stay unchanged. If reopening fails, restore the
+ * previous DAPL where possible; a failed recovery leaves invalid, not stale,
+ * handles and returns an HDF5 error.
+ * @param grp Variable's containing group.
+ * @param var Variable whose session request should become effective.
+ * @return NC_NOERR, NC_ENOMEM or NC_EHDFERR.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+static int
+nx4_reopen_var_cache(NC_GRP_INFO_T *grp, NC_VAR_INFO_T *var)
+{
+    NEXTCDF4_VAR_INFO_T *vinfo = var->format_var_info;
+    NEXTCDF4_FILE_INFO_T *file = grp->nc4_info->format_file_info;
+    H5O_info2_t info;
+    NClist *slots = NULL;
+    char *path = NULL;
+    hid_t dapl = -1, old_dapl = -1;
+    ssize_t len;
+    size_t i;
+    int ret = NC_EHDFERR;
+
+    /* HDF5 picks up a dataset's raw-chunk cache (DAPL) only at open
+     * time, so changing the cache means closing and reopening the
+     * dataset — and every other open handle that aliases the same
+     * object, because HDF5 keeps the first opener's cache otherwise.
+     * The sequence is: collect all alias handles by object token,
+     * flush, close them all, then reopen them by path with the new
+     * DAPL. If any step fails partway, reopen whatever was closed
+     * with the old DAPL so the caller is left with valid (if stale)
+     * handles rather than dangling ids. A variable whose dataset has
+     * not been created yet (user-typed variables defer creation to
+     * `_enddef`) just keeps the request for later. */
+    if (vinfo->hdf_dataset < 0)
+        return var->created ? NC_EHDFERR : NC_NOERR;
+    if ((ret = nx4_var_dapl(var, &dapl)))
+        return ret;
+    ret = NC_EHDFERR;
+    if ((old_dapl = H5Dget_access_plist(vinfo->hdf_dataset)) < 0 ||
+        H5Oget_info3(vinfo->hdf_dataset, &info, H5O_INFO_BASIC) < 0 ||
+        (len = H5Iget_name(vinfo->hdf_dataset, NULL, 0)) <= 0)
+        goto done;
+    if (!(path = malloc((size_t)len + 1)) || !(slots = nclistnew())) {
+        ret = NC_ENOMEM;
+        goto done;
+    }
+    if (H5Iget_name(vinfo->hdf_dataset, path, (size_t)len + 1) != len)
+        goto done;
+    if ((ret = nx4_cache_aliases(grp->nc4_info->root_grp, vinfo->hdf_dataset,
+                                 &info.token, slots)))
+        goto done;
+    ret = NC_EHDFERR;
+    if (!file->no_write && H5Fflush(file->hdfid, H5F_SCOPE_LOCAL) < 0)
+        goto done;
+    for (i = 0; i < nclistlength(slots); i++) {
+        hid_t *slot = nclistget(slots, i);
+        if (H5Dclose(*slot) < 0)
+            goto restore;
+        *slot = -1;
+    }
+    for (i = 0; i < nclistlength(slots); i++) {
+        hid_t *slot = nclistget(slots, i);
+        if ((*slot = H5Dopen2(file->hdfid, path, dapl)) < 0)
+            goto restore;
+    }
+    ret = NC_NOERR;
+    goto done;
+
+restore:
+    for (i = 0; i < nclistlength(slots); i++) {
+        hid_t *slot = nclistget(slots, i);
+        if (*slot >= 0 && H5Dclose(*slot) >= 0)
+            *slot = -1;
+    }
+    for (i = 0; i < nclistlength(slots); i++) {
+        hid_t *slot = nclistget(slots, i);
+        if (*slot < 0)
+            *slot = H5Dopen2(file->hdfid, path, old_dapl);
+    }
+done:
+    if (old_dapl >= 0)
+        H5Pclose(old_dapl);
+    H5Pclose(dapl);
+    nclistfree(slots);
+    free(path);
+    return ret;
+}
+
+/**
+ * @brief Apply session-only cache settings without recreating dataset storage.
+ * Read-only and data-mode calls are permitted. Pending datasets retain the
+ * request until creation; live datasets reopen all owned aliases together.
+ * @param ncid File or group identifier.
+ * @param varid Variable identifier within the group.
+ * @param size Cache capacity in bytes; zero disables raw chunk caching.
+ * @param nelems Hash slot count; zero is permitted.
+ * @param preemption Finite cache preemption weight in [0,1].
+ * @return NC_NOERR or an identifier, validation, memory or HDF5 error.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+NEXTCDF4_set_var_chunk_cache(int ncid, int varid, size_t size,
+                             size_t nelems, float preemption)
+{
+    NC_GRP_INFO_T *grp;
+    NC_VAR_INFO_T *var;
+    struct ChunkCache old;
+    int ret;
+
+    if ((ret = nc4_find_nc4_grp(ncid, &grp)))
+        return ret;
+    if (varid < 0 || !(var = (NC_VAR_INFO_T *)ncindexith(grp->vars, varid)))
+        return NC_ENOTVAR;
+    if (!isfinite(preemption) || preemption < 0 || preemption > 1)
+        return NC_EINVAL;
+    old = var->chunkcache;
+    var->chunkcache.size = size;
+    var->chunkcache.nelems = nelems;
+    var->chunkcache.preemption = preemption;
+    if ((ret = nx4_reopen_var_cache(grp, var)))
+        var->chunkcache = old;
+    return ret;
+}
+
+/**
+ * @brief Inquire effective chunk cache properties, allowing NULL outputs.
+ * A pending or nonchunked variable reports its stored session request. Live
+ * chunked variables report the DAPL actually attached to the dataset handle.
+ * @param ncid File or group identifier.
+ * @param varid Variable identifier within the group.
+ * @param sizep Optional byte-capacity destination.
+ * @param nelemsp Optional hash-slot destination.
+ * @param preemptionp Optional preemption destination.
+ * @return NC_NOERR or an identifier/HDF5 error.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+NEXTCDF4_get_var_chunk_cache(int ncid, int varid, size_t *sizep,
+                             size_t *nelemsp, float *preemptionp)
+{
+    NC_GRP_INFO_T *grp;
+    NC_VAR_INFO_T *var;
+    NEXTCDF4_VAR_INFO_T *vinfo;
+    size_t size, nelems;
+    double preemption;
+    int ret;
+
+    if ((ret = nc4_find_nc4_grp(ncid, &grp)))
+        return ret;
+    if (varid < 0 || !(var = (NC_VAR_INFO_T *)ncindexith(grp->vars, varid)))
+        return NC_ENOTVAR;
+    size = var->chunkcache.size;
+    nelems = var->chunkcache.nelems;
+    preemption = var->chunkcache.preemption;
+    vinfo = var->format_var_info;
+    if (vinfo->hdf_dataset < 0 && var->created)
+        return NC_EHDFERR;
+    if (vinfo->hdf_dataset >= 0 && var->storage == NC_CHUNKED) {
+        hid_t dapl = H5Dget_access_plist(vinfo->hdf_dataset);
+        if (dapl < 0)
+            return NC_EHDFERR;
+        ret = H5Pget_chunk_cache(dapl, &nelems, &size, &preemption) < 0
+            ? NC_EHDFERR : NC_NOERR;
+        H5Pclose(dapl);
+        if (ret)
+            return ret;
+    }
+    if (sizep)
+        *sizep = size;
+    if (nelemsp)
+        *nelemsp = nelems;
+    if (preemptionp)
+        *preemptionp = (float)preemption;
+    return NC_NOERR;
+}
 
 static const char *reserved_atts[] = {
     NEXTCDF4_BACKEND_ATT,
@@ -239,9 +491,14 @@ NEXTCDF4_map_hdf_type(nc_type xtype, hid_t *typep)
         return NC_NOERR;
     case NC_STRING:
         *typep = H5Tcopy(H5T_C_S1);
-        if (*typep >= 0) {
-            H5Tset_size(*typep, H5T_VARIABLE);
-            H5Tset_strpad(*typep, H5T_STR_NULLTERM);
+        if (*typep < 0)
+            return NC_EHDFERR;
+        if (H5Tset_size(*typep, H5T_VARIABLE) < 0 ||
+            H5Tset_strpad(*typep, H5T_STR_NULLTERM) < 0 ||
+            H5Tset_cset(*typep, H5T_CSET_UTF8) < 0) {
+            H5Tclose(*typep);
+            *typep = -1;
+            return NC_EHDFERR;
         }
         return NC_NOERR;
     default:
@@ -405,12 +662,10 @@ NEXTCDF4_check_atomic_type(NEXTCDF4_FILE_INFO_T *file, nc_type xtype)
     case NC_UINT:
     case NC_INT64:
     case NC_UINT64:
-        is_ok = !file->netcdf4_model && !(file->mode & NC_CLASSIC_MODEL);
+        is_ok = !(file->mode & NC_CLASSIC_MODEL);
         break;
     case NC_STRING:
-        return (!file->netcdf4_model && !(file->mode & NC_CLASSIC_MODEL))
-            ? NC_NOERR
-            : NC_EBADTYPE;
+        return (file->mode & NC_CLASSIC_MODEL) ? NC_EBADTYPE : NC_NOERR;
     case NC_FLOAT16:
     case NC_BFLOAT16:
     case NC_FLOAT8_E4M3:
@@ -491,6 +746,7 @@ set_var_type(NC_VAR_INFO_T *var, nc_type xtype)
         type->nc_type_class = NC_INT;
     type->endianness = NC_ENDIAN_NATIVE;
     type->size = size;
+    type->varsized = xtype == NC_STRING;
     var->type_info = type;
     var->endianness = type->endianness;
     return NC_NOERR;
@@ -633,7 +889,7 @@ map_nc_type(hid_t htype, nc_type *xtypep)
 
     cls = H5Tget_class(htype);
     size = H5Tget_size(htype);
-    sign = H5Tget_sign(htype);
+    sign = cls == H5T_INTEGER ? H5Tget_sign(htype) : H5T_SGN_ERROR;
 
     if (cls == H5T_INTEGER) {
         switch (size) {
@@ -682,8 +938,11 @@ map_nc_type(hid_t htype, nc_type *xtypep)
                 return NC_EBADTYPE;
             return NC_NOERR;
         }
-    } else if (cls == H5T_STRING && size == 1) {
-        *xtypep = NC_CHAR;
+    } else if (cls == H5T_STRING) {
+        htri_t variable = H5Tis_variable_str(htype);
+        if (variable < 0) return NC_EHDFERR;
+        if (!variable && size != 1) return NC_EBADTYPE;
+        *xtypep = variable ? NC_STRING : NC_CHAR;
         return NC_NOERR;
     } else if (cls == H5T_COMPLEX) {
         if (size == 2 * sizeof(float)) {
@@ -727,11 +986,13 @@ map_nc_type(hid_t htype, nc_type *xtypep)
  * to.
  *
  * @param grp Group.
- * @param var Variable, or NULL for a global attribute.
+ * @param var Variable, or NULL for a group (global) attribute.
  * @param listp Destination for the attribute index.
- * @param locp Destination for the HDF5 location identifier.
- * @return `NC_NOERR` or `NC_EBADID` when the variable's HDF5 dataset
- * is not open.
+ * @param locp Destination for the HDF5 location identifier — a
+ * negative value when the variable's dataset has not been created
+ * yet (user-defined types defer it to `_enddef`), in which case the
+ * caller must skip HDF5 writes and mark the attributes pending.
+ * @return `NC_NOERR` on success.
  */
 static int
 get_att_context(NC_GRP_INFO_T *grp, NC_VAR_INFO_T *var, NCindex **listp,
@@ -739,14 +1000,13 @@ get_att_context(NC_GRP_INFO_T *grp, NC_VAR_INFO_T *var, NCindex **listp,
 {
     if (var) {
         NEXTCDF4_VAR_INFO_T *vinfo = var->format_var_info;
-        if (vinfo && vinfo->hdf_dataset >= 0)
-            *locp = vinfo->hdf_dataset;
-        else
-            return NC_EBADID;
+        *locp = (vinfo) ? vinfo->hdf_dataset : -1;
         *listp = var->att;
     } else {
+        NEXTCDF4_GRP_INFO_T *ginfo = grp->format_grp_info;
         NEXTCDF4_FILE_INFO_T *file = grp->nc4_info->format_file_info;
-        *locp = file->rootid;
+        *locp = (ginfo && ginfo->hdf_group >= 0) ? ginfo->hdf_group
+                                               : file->rootid;
         *listp = grp->att;
     }
     return NC_NOERR;
@@ -785,6 +1045,16 @@ nx4_att_list_del(NCindex *list, NC_ATT_INFO_T *att)
             a->hdr.id = (int)i;
     }
     ncindexrebuild(list);
+    if (att->nc_typeid > NC_MAX_ATOMIC_TYPE &&
+        att->nc_typeid < NC_FIRSTUSERTYPEID) {
+        /* nc4_att_free() reclaims through NC_reclaim_data(), which
+         * cannot resolve the NEP extended atomic ids — free the flat
+         * payload here so its error path drops the record only. */
+        free(att->data);
+        att->data = NULL;
+        att->len = 0;
+        att->nc_typeid = NC_BYTE;
+    }
     nc4_att_free(att);
     return NC_NOERR;
 }
@@ -808,34 +1078,73 @@ find_att(NCindex *list, const char *name)
 }
 
 /**
+ * @brief Report whether a type is (transitively) variable-sized.
+ *
+ * Dynamic types — vlens and compounds containing them — carry
+ * pointers inside each element, so values must be deep-copied and
+ * reclaimed rather than `memcpy`'d and `free`'d.
+ *
+ * @param grp Group used to resolve user-defined types.
+ * @param xtype NetCDF atomic or user-defined type.
+ * @param vsp Destination for the variable-sized flag.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+static int
+nx4_type_varsized(NC_GRP_INFO_T *grp, nc_type xtype, int *vsp)
+{
+    NC_TYPE_INFO_T *t = NULL;
+
+    *vsp = 0;
+    if (xtype == NC_STRING) {
+        *vsp = 1;
+        return NC_NOERR;
+    }
+    if (xtype < NC_FIRSTUSERTYPEID)
+        return NC_NOERR;
+    if (nx4_find_type(grp, xtype, &t) || !t)
+        return NC_EBADTYPE;
+    *vsp = t->varsized;
+    return NC_NOERR;
+}
+
+/**
  * @brief Allocate and add a new attribute to the in-memory model.
  *
  * Deep-copies the attribute value: numeric data by `memcpy`,
  * `NC_STRING` values element-by-element (NULL elements become empty
- * strings), so the attribute record owns its data outright.
+ * strings), and variable-sized user types (vlens and compounds
+ * containing them) recursively through NEP's reclaim-safe
+ * `nx4_copy_data()` — so the attribute record owns its data outright
+ * and the caller may mutate or free the input immediately.
  *
  * @param list Attribute index to add to.
  * @param container Object that owns the attribute (group or var `hdr`).
+ * @param grp Group used to resolve user-defined type sizes.
  * @param name Name.
- * @param xtype NetCDF atomic type.
+ * @param xtype NetCDF atomic or user-defined type.
  * @param len Number of elements.
  * @param data Data buffer.
  * @param attp Destination for the new attribute.
  * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 static int
-add_att(NCindex *list, NC_OBJ *container, const char *name,
-        nc_type xtype, size_t len, const void *data,
+add_att(NCindex *list, NC_OBJ *container, NC_GRP_INFO_T *grp,
+        const char *name, nc_type xtype, size_t len, const void *data,
         NC_ATT_INFO_T **attp)
 {
     NC_ATT_INFO_T *att = NULL;
     size_t size;
     void *copy = NULL;
+    int varsized = 0;
     int ret;
     size_t i;
 
     if ((ret = nc4_att_list_add(list, name, &att)))
         return ret;
+    if ((ret = nx4_type_varsized(grp, xtype, &varsized))) {
+        nc4_att_list_del(list, att);
+        return ret;
+    }
     if (len > 0) {
         if (xtype == NC_STRING) {
             const char **src = (const char **)data;
@@ -861,13 +1170,34 @@ add_att(NCindex *list, NC_OBJ *container, const char *name,
             copy = cp;
             size = sizeof(char *);
         } else {
-            if ((ret = NEXTCDF4_type_size(xtype, &size)))
+            if ((ret = nx4_type_size(grp, xtype, &size))) {
+                nc4_att_list_del(list, att);
                 return ret;
+            }
+            if (len > SIZE_MAX / size) {
+                nc4_att_list_del(list, att);
+                return NC_EINVAL;
+            }
             if (!(copy = malloc(len * size))) {
                 nc4_att_list_del(list, att);
                 return NC_ENOMEM;
             }
-            memcpy(copy, data, len * size);
+            if (varsized) {
+                /* Dynamic payloads are deep-copied element by
+                 * element; the top-level allocation stays owned here
+                 * either way. On failure the partially copied value
+                 * is reclaimed before the record is dropped. */
+                if ((ret = nx4_copy_data(grp->nc4_info->controller,
+                                        xtype, data, len, copy))) {
+                    NC_reclaim_data(grp->nc4_info->controller, xtype,
+                                    copy, len);
+                    free(copy);
+                    nc4_att_list_del(list, att);
+                    return ret;
+                }
+            } else {
+                memcpy(copy, data, len * size);
+            }
         }
     }
     att->nc_typeid = xtype;
@@ -892,23 +1222,36 @@ add_att(NCindex *list, NC_OBJ *container, const char *name,
  * @param name Name.
  * @param list Attribute index to add to.
  * @param container Object that owns the attribute.
+ * @param grp Group used to resolve committed user-defined datatypes.
  * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 static int
-read_hdf5_att(hid_t loc, const char *name, NCindex *list, NC_OBJ *container)
+read_hdf5_att(hid_t loc, const char *name, NCindex *list, NC_OBJ *container,
+              NC_GRP_INFO_T *grp)
 {
     hid_t attr = -1;
     hid_t ftype = -1;
     hid_t fspace = -1;
     hid_t ntype = -1;
     nc_type xtype = NC_NAT;
-    int close_ntype = 0;
+    int close_ntype = 1;
     hssize_t npoints;
     size_t size;
-    size_t len;
+    size_t len = 0;
     void *data = NULL;
     int ret = NC_EHDFERR;
 
+    /* Open the attribute, resolve its nc_type (atomic via
+     * map_nc_type(), else a committed user type by object identity),
+     * then choose the *memory* datatype to read with — that choice is
+     * the subtle part: strings read as their own vlen type, NC_CHAR
+     * as single bytes, anonymous (foreign, uncommitted) compounds
+     * through the packed native type, registered user types and
+     * atomics through nx4_memory_type(), and variable-sized results
+     * get their storage layout rewritten so HDF5 allocates payloads
+     * the caller later reclaims. The value lands in `data` and is
+     * deep-copied into the attribute index by add_att(); the read
+     * buffer and any HDF5-owned payloads are then released. */
     if ((attr = H5Aopen(loc, name, H5P_DEFAULT)) < 0)
         return NC_EHDFERR;
     if ((ftype = H5Aget_type(attr)) < 0)
@@ -917,35 +1260,79 @@ read_hdf5_att(hid_t loc, const char *name, NCindex *list, NC_OBJ *container)
         goto done;
     if ((npoints = H5Sget_simple_extent_npoints(fspace)) < 0)
         goto done;
-    if (map_nc_type(ftype, &xtype))
-        goto done;
-    if (NEXTCDF4_type_size(xtype, &size))
+    if (map_nc_type(ftype, &xtype)) {
+        /* Not an atomic type: a committed user-defined datatype
+         * resolves to its registered type record by object
+         * identity. */
+        NC_TYPE_INFO_T *utype = NULL;
+        if (nx4_hdf_type_match(grp, ftype, &utype) || !utype) {
+            ret = NC_EBADTYPE;
+            goto done;
+        }
+        xtype = (nc_type)utype->hdr.id;
+    }
+    if (nx4_type_size(grp, xtype, &size))
         goto done;
     len = (size_t)npoints;
     if (len > 0) {
         if (len > SIZE_MAX / size) { ret = NC_EINVAL; goto done; }
-        if (!(data = malloc(len * size)))
+        if (!(data = calloc(len, size))) {
+            ret = NC_ENOMEM;
             goto done;
-        if (xtype == NC_CHAR) {
+        }
+        if (xtype == NC_STRING) {
+            if ((ntype = H5Tcopy(ftype)) < 0) goto done;
+        } else if (xtype == NC_CHAR) {
             if ((ntype = H5Tcopy(H5T_C_S1)) < 0)
                 goto done;
-            close_ntype = 1;
             H5Tset_size(ntype, 1);
             H5Tset_strpad(ntype, H5T_STR_NULLPAD);
-        } else {
-            ntype = NEXTCDF4_memory_type(xtype, &close_ntype);
+        } else if (xtype >= NC_FIRSTUSERTYPEID && H5Tcommitted(ftype) <= 0) {
+            /* Anonymous compound datatype: a foreign (upstream)
+             * file — its serialized-compound layout decodes only
+             * through the packed native datatype. */
+            NC_TYPE_INFO_T *ut = NULL;
+            if (!nx4_find_type(grp, xtype, &ut) && ut &&
+                ut->nc_type_class == NC_COMPOUND) {
+                if ((ntype = H5Tget_native_type(ftype,
+                                                H5T_DIR_DEFAULT)) < 0)
+                    goto done;
+            } else if (nx4_memory_type(grp, xtype, &ntype)) {
+                goto done;
+            }
+        } else if (nx4_memory_type(grp, xtype, &ntype)) {
+            goto done;
         }
-        if (ntype < 0)
+        {
+            int dynamic = 0;
+            hid_t matched = -1;
+            if ((ret = nx4_type_varsized(grp, xtype, &dynamic))) goto done;
+            if (dynamic) {
+                if ((ret = nx4_storage_memory_type(ntype, ftype, &matched))) goto done;
+                H5Tclose(ntype);
+                ntype = matched;
+            }
+        }
+        if (H5Aread(attr, ntype, data) < 0) {
+            ret = NC_EHDFERR;
             goto done;
-        if (H5Aread(attr, ntype, data) < 0)
-            goto done;
+        }
     }
-    if ((ret = add_att(list, container, name, xtype, len, data, NULL)))
+    if ((ret = add_att(list, container, grp, name, xtype, len, data, NULL)))
         goto done;
     ret = NC_NOERR;
 
 done:
-    free(data);
+    if (data) {
+        /* Variable-sized types (vlens and compounds containing
+         * them): add_att() deep-copied the value, so the
+         * HDF5-allocated payloads in the read buffer are reclaimed
+         * before the top-level buffer is freed. */
+        int vs = 0;
+        if (!nx4_type_varsized(grp, xtype, &vs) && vs)
+            NC_reclaim_data(grp->nc4_info->controller, xtype, data, len);
+        free(data);
+    }
     if (close_ntype && ntype >= 0)
         H5Tclose(ntype);
     if (fspace >= 0)
@@ -1159,6 +1546,7 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
     hid_t hdf_type = -1;
     hid_t space = -1;
     hid_t dcpl = -1;
+    hid_t dapl = -1;
     hid_t hdf_grp = -1;
     hsize_t dims[NC_MAX_VAR_DIMS];
     hsize_t maxdims[NC_MAX_VAR_DIMS];
@@ -1178,7 +1566,13 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
         return ret;
     if ((ret = NEXTCDF4_check_write_define(h5, file)))
         return ret;
-    if ((ret = NEXTCDF4_check_atomic_type(file, xtype)))
+    if (xtype >= NC_FIRSTUSERTYPEID) {
+        /* User-defined types are an enhanced-model feature; both
+         * native and NC_NETCDF4_MODEL files accept them (the model
+         * mode only restricts which *atomic* types may appear). */
+        if (file->mode & NC_CLASSIC_MODEL)
+            return NC_ENOTNC4;
+    } else if ((ret = NEXTCDF4_check_atomic_type(file, xtype)))
         return ret;
     if (ndims < 0 || ndims > NC_MAX_VAR_DIMS)
         return NC_EINVAL;
@@ -1199,9 +1593,18 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
 
     if ((ret = nc4_var_list_add(grp, name, ndims, &var)))
         goto fail;
-    if ((ret = nc4_var_set_ndims(var, ndims)))
-        goto fail;
-    if ((ret = set_var_type(var, xtype)))
+    if (xtype >= NC_FIRSTUSERTYPEID) {
+        /* The variable shares the group's type record — the
+         * reference count balances the group's own ownership with
+         * each variable using it (nc4_var_free decrements). */
+        NC_TYPE_INFO_T *utype = NULL;
+        if (nx4_find_type(grp, xtype, &utype) || !utype) {
+            ret = NC_EBADTYPE;
+            goto fail;
+        }
+        var->type_info = utype;
+        utype->rc++;
+    } else if ((ret = set_var_type(var, xtype)))
         goto fail;
     /* The filter list exists from birth, as upstream does in
      * NC4_HDF5_def_var, so NC4_hdf5_addfilter can snapshot it. */
@@ -1210,6 +1613,8 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
         goto fail;
     }
     var->format_var_info = vinfo;
+    if (xtype < NC_FIRSTUSERTYPEID && xtype != NC_STRING && xtype != NC_STD_REF)
+        var->no_fill = h5->fill_mode == NC_NOFILL;
 
     for (i = 0; i < ndims; i++) {
         NC_DIM_INFO_T *dim = NULL;
@@ -1235,9 +1640,9 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
             if (var->dim[i]->unlimited)
                 n_unlim++;
         if (n_unlim > 1)
-            return NC_EINVAL;
+            { ret = NC_EINVAL; goto fail; }
         if (n_unlim == 1 && ndims > 0 && !var->dim[0]->unlimited)
-            return NC_EINVAL;
+            { ret = NC_EINVAL; goto fail; }
     }
 
     /* -1 marks "storage not specified": the dataset is created
@@ -1245,6 +1650,19 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
      * otherwise, and a later def-var setter must not change that
      * layout (#382). */
     var->storage = has_unlimited ? NC_CHUNKED : -1;
+
+    if (xtype >= NC_FIRSTUSERTYPEID) {
+        /* Committed datatypes exist only once `_enddef` commits the
+         * group's user types, so a user-typed variable's dataset is
+         * deferred to nx4_create_var_dataset() then — including the
+         * coordinate-variable scale swap, dimension-scale attachment
+         * and hidden id attributes. Inquiries and def-var setters
+         * work on the in-memory record meanwhile. */
+        vinfo->hdf_dataset = -1;
+        if (varidp)
+            *varidp = var->hdr.id;
+        return NC_NOERR;
+    }
 
     coordinate = ndims == 1 && !strcmp(name, var->dim[0]->hdr.name) &&
                  var->dim[0]->container == grp;
@@ -1281,6 +1699,8 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
             goto fail;
     }
 
+    if ((ret = nx4_var_dapl(var, &dapl)))
+        goto fail;
     if (coordinate) {
         NEXTCDF4_DIM_INFO_T *dinfo = var->dim[0]->format_dim_info;
         if (!dinfo || dinfo->hdf_dataset < 0) { ret = NC_EFILEMETA; goto fail; }
@@ -1297,7 +1717,7 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
             { ret = NC_EHDFERR; goto fail; }
         dinfo->hdf_dataset = H5Dcreate2(hdf_grp, name, hdf_type, space,
                                         H5P_DEFAULT, dcpl >= 0 ? dcpl : H5P_DEFAULT,
-                                        H5P_DEFAULT);
+                                        dapl);
         if (dinfo->hdf_dataset < 0 || H5DSset_scale(dinfo->hdf_dataset, name) < 0 ||
             (ret = write_int_att(dinfo->hdf_dataset, NEXTCDF4_DIMID_ATT,
                                  var->dimids[0])))
@@ -1305,19 +1725,19 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
         if ((ret = nx4_reattach_dim(grp, var->dim[0], -1,
                                   dinfo->hdf_dataset, var)))
             goto fail;
-        vinfo->hdf_dataset = H5Dopen2(hdf_grp, name, H5P_DEFAULT);
+        vinfo->hdf_dataset = H5Dopen2(hdf_grp, name, dapl);
     } else {
         vinfo->hdf_dataset = H5Dcreate2(hdf_grp, name, hdf_type, space,
                                         H5P_DEFAULT, dcpl >= 0 ? dcpl : H5P_DEFAULT,
-                                        H5P_DEFAULT);
+                                        dapl);
     }
     if (vinfo->hdf_dataset < 0) { ret = NC_EHDFERR; goto fail; }
 
     if ((ret = write_int_att(vinfo->hdf_dataset, NEXTCDF4_VARID_ATT,
                              var->hdr.id)) ||
-        (ret = write_int_array_att(vinfo->hdf_dataset,
+        (ndims && (ret = write_int_array_att(vinfo->hdf_dataset,
                                    NEXTCDF4_VARDIMIDS_ATT,
-                                   (const int *)var->dimids, ndims)))
+                                   (const int *)var->dimids, ndims))))
         goto fail;
     if (!coordinate) {
         for (i = 0; i < ndims; i++) {
@@ -1335,6 +1755,7 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
         *varidp = var->hdr.id;
     H5Tclose(hdf_type);
     H5Sclose(space);
+    H5Pclose(dapl);
     if (dcpl >= 0)
         H5Pclose(dcpl);
     return NC_NOERR;
@@ -1344,13 +1765,19 @@ fail:
         if (vinfo && vinfo->hdf_dataset >= 0)
             H5Dclose(vinfo->hdf_dataset);
     } H5E_END_TRY;
-    if (var)
+    if (var) {
+        /* var_free() does not know about the HDF5 filter list —
+         * release it before the record is deleted. */
+        NC4_hdf5_filter_freelist(var);
         nc4_var_list_del(grp, var);
+    }
     free(vinfo);
     if (hdf_type >= 0)
         H5Tclose(hdf_type);
     if (space >= 0)
         H5Sclose(space);
+    if (dapl >= 0)
+        H5Pclose(dapl);
     if (dcpl >= 0)
         H5Pclose(dcpl);
     return ret;
@@ -1398,6 +1825,19 @@ nx4_dcpl_fill(hid_t dcpl, NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
     hid_t fill_type = -1;
     int ret = NC_NOERR;
 
+    /* Decision tree, in order: `no_fill` short-circuits to
+     * H5D_FILL_TIME_NEVER; reference datasets get no fill message at
+     * all (HDF5 cannot open a ref dataset that has one); variable-
+     * sized types force early allocation so read-only fills are safe,
+     * then store the zeroed-descriptor fill; other user types store
+     * only an explicit fill value in the variable's own file type;
+     * NEP-only atomic types (small floats, complex, bitfields) are
+     * absent from h5->alltypes so they synthesize a zeroed or
+     * explicit fill without consulting upstream's default table; and
+     * standard atomic types use upstream's nc4_get_fill_value(). The
+     * H5Pset_fill_value() call always passes the dataset's own file
+     * datatype, never H5Tget_native_type() — the widened native type
+     * would read past the fill buffer for 16-bit types (#377). */
     if (var->no_fill) {
         if (H5Pset_fill_time(dcpl, H5D_FILL_TIME_NEVER) < 0)
             return NC_EHDFERR;
@@ -1407,7 +1847,43 @@ nx4_dcpl_fill(hid_t dcpl, NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
      * unreadable to H5Dopen2 — reference datasets get no fill. */
     if (var->type_info->hdr.id == NC_STD_REF)
         return NC_NOERR;
-    if (var->type_info->hdr.id > NC_STRING) {
+    if ((var->type_info->hdr.id == NC_STRING ||
+         (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID && var->type_info->varsized)) &&
+        H5Pset_alloc_time(dcpl, H5D_ALLOC_TIME_EARLY) < 0)
+        return NC_EHDFERR;
+    if (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID &&
+        var->type_info->varsized) {
+        /* Variable-sized types do have an HDF5 fill representation —
+         * the zeroed descriptor (empty vlens, null embedded heaps).
+         * Without an explicit fill message H5Dread fails outright on
+         * unwritten elements of a vlen dataset instead of returning
+         * empty vlens. var->fill_value is a deep copy owned by the
+         * variable, so shallow-copying its descriptor into the fill
+         * message is safe: H5Pset_fill_value serializes it at create
+         * time. */
+        if (!(fillp = calloc(1, var->type_info->size)))
+            return NC_ENOMEM;
+        if (var->fill_value)
+            memcpy(fillp, var->fill_value, var->type_info->size);
+        if (H5Pset_fill_value(dcpl, hdf_type, fillp) < 0) {
+            free(fillp);
+            return NC_EHDFERR;
+        }
+        free(fillp);
+        return NC_NOERR;
+    }
+    if (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID) {
+        /* User-defined types have no netCDF default fill, matching
+         * upstream: only an explicit `nc_def_var_fill`/`_FillValue`
+         * value is stored in the DCPL, in the variable's own type.
+         * Unwritten elements otherwise read back whatever HDF5's
+         * default fill produces. */
+        if (!var->fill_value)
+            return NC_NOERR;
+        if (!(fillp = malloc(var->type_info->size)))
+            return NC_ENOMEM;
+        memcpy(fillp, var->fill_value, var->type_info->size);
+    } else if (var->type_info->hdr.id > NC_STRING) {
         /* NEP-only atomic types have no entry in `h5->alltypes`, so
          * upstream's nc4_get_fill_value() reports NC_EBADTYPID.
          * Default to an all-zero fill (positive zero for the small
@@ -1425,8 +1901,10 @@ nx4_dcpl_fill(hid_t dcpl, NC_FILE_INFO_T *h5, NC_VAR_INFO_T *var,
         /* NEP-only atomic types: `fillp` holds raw file-format bytes
          * and `H5Tget_native_type()` widens them to the nearest native
          * type (bfloat16 -> a 4-byte native float), which reads past
-         * the buffer (#377) — pass the dataset's own datatype. */
-        if (var->type_info->hdr.id > NC_STRING)
+         * the buffer (#377) — pass the dataset's own datatype. The
+         * same applies to user-defined types: the fill value is
+         * already in the file layout. */
+        if (var->type_info->hdr.id >= NC_STRING)
             fill_type = H5Tcopy(hdf_type);
         else
             fill_type = H5Tget_native_type(hdf_type, H5T_DIR_DEFAULT);
@@ -1473,6 +1951,7 @@ nx4_create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
     hid_t hdf_type = -1;
     hid_t space = -1;
     hid_t dcpl = -1;
+    hid_t dapl = -1;
     hid_t old_dset = -1;
     hsize_t dims[NC_MAX_VAR_DIMS];
     hsize_t maxdims[NC_MAX_VAR_DIMS];
@@ -1484,6 +1963,15 @@ nx4_create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
     coordinate = (var->ndims == 1 &&
                   !strcmp(var->hdr.name, var->dim[0]->hdr.name) &&
                   var->dim[0]->container == grp);
+
+    /* The function runs in five phases: (1) detach the dimension-
+     * scale references pointing at the dataset about to be deleted;
+     * (2) drop the old link and rebuild dataspace/DCPL from current
+     * settings — chunking, fill, endianness, filters; (3) create the
+     * new dataset (as the dim's scale dataset for coordinate vars);
+     * (4) rewrite the hidden id attributes and re-attach scales,
+     * including dependents of a coordinate variable; (5) restore the
+     * user attributes that the delete removed, in index order. */
 
     /* Recreation is delete-and-rebuild. Before the old dataset is
      * deleted, remove the dimension-scale references that point at
@@ -1539,7 +2027,10 @@ nx4_create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
         H5Ldelete(hdf_grp, var->hdr.name, H5P_DEFAULT);
     } H5E_END_TRY;
 
-    if ((ret = NEXTCDF4_map_hdf_type(var->type_info->hdr.id, &hdf_type)))
+    /* Atomic variables map their type directly; user-defined types
+     * copy the committed datatype so the dataset stays linked to the
+     * named type. */
+    if ((ret = nx4_file_type(grp, var->type_info->hdr.id, &hdf_type)))
         return ret;
 
     for (i = 0; i < (int)var->ndims; i++) {
@@ -1552,10 +2043,12 @@ nx4_create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
         }
     }
 
-    if (var->endianness == NC_ENDIAN_BIG)
-        H5Tset_order(hdf_type, H5T_ORDER_BE);
-    else if (var->endianness == NC_ENDIAN_LITTLE)
-        H5Tset_order(hdf_type, H5T_ORDER_LE);
+    if (var->type_info->hdr.id < NC_FIRSTUSERTYPEID) {
+        if (var->endianness == NC_ENDIAN_BIG)
+            H5Tset_order(hdf_type, H5T_ORDER_BE);
+        else if (var->endianness == NC_ENDIAN_LITTLE)
+            H5Tset_order(hdf_type, H5T_ORDER_LE);
+    }
 
     if (var->ndims == 0) {
         if ((space = H5Screate(H5S_SCALAR)) < 0) {
@@ -1600,6 +2093,8 @@ nx4_create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
     if (var->ndims > 0 &&
         (ret = nx4_apply_filters(dcpl, var)))
         goto fail;
+    if ((ret = nx4_var_dapl(var, &dapl)))
+        goto fail;
 
     if (coordinate) {
         NEXTCDF4_DIM_INFO_T *dinfo =
@@ -1609,18 +2104,18 @@ nx4_create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
             goto fail;
         }
         dinfo->hdf_dataset = H5Dcreate2(hdf_grp, var->hdr.name, hdf_type, space,
-                                        H5P_DEFAULT, dcpl, H5P_DEFAULT);
+                                        H5P_DEFAULT, dcpl, dapl);
         if (dinfo->hdf_dataset < 0 ||
             H5DSset_scale(dinfo->hdf_dataset, var->hdr.name) < 0 ||
             (ret = write_int_att(dinfo->hdf_dataset, NEXTCDF4_DIMID_ATT,
                                  var->dimids[0])))
             { if (!ret) ret = NC_EHDFERR; goto fail; }
-        vinfo->hdf_dataset = H5Dopen2(hdf_grp, var->hdr.name, H5P_DEFAULT);
+        vinfo->hdf_dataset = H5Dopen2(hdf_grp, var->hdr.name, dapl);
         if (vinfo->hdf_dataset < 0)
             { ret = NC_EHDFERR; goto fail; }
     } else {
         vinfo->hdf_dataset = H5Dcreate2(hdf_grp, var->hdr.name, hdf_type, space,
-                                        H5P_DEFAULT, dcpl, H5P_DEFAULT);
+                                        H5P_DEFAULT, dcpl, dapl);
         if (vinfo->hdf_dataset < 0)
             { ret = NC_EHDFERR; goto fail; }
     }
@@ -1631,9 +2126,9 @@ nx4_create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
 
     if ((ret = write_int_att(vinfo->hdf_dataset, NEXTCDF4_VARID_ATT,
                              var->hdr.id)) ||
-        (ret = write_int_array_att(vinfo->hdf_dataset,
+        (var->ndims && (ret = write_int_array_att(vinfo->hdf_dataset,
                                    NEXTCDF4_VARDIMIDS_ATT,
-                                   (const int *)var->dimids, var->ndims)))
+                                   (const int *)var->dimids, var->ndims))))
         goto fail;
 
     if (!coordinate) {
@@ -1664,9 +2159,10 @@ nx4_create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
      * id attributes were rewritten above; restore the user's
      * attributes in index order. On first creation the list is
      * empty. */
-    if ((ret = nx4_rewrite_atts(vinfo->hdf_dataset, var->att)))
+    if ((ret = nx4_rewrite_atts(vinfo->hdf_dataset, var->att, grp)))
         goto fail;
 
+    H5Pclose(dapl);
     H5Tclose(hdf_type);
     H5Sclose(space);
     return NC_NOERR;
@@ -1676,6 +2172,8 @@ fail:
     if (vinfo)
         vinfo->hdf_dataset = -1;
     H5E_BEGIN_TRY { H5Ldelete(hdf_grp, var->hdr.name, H5P_DEFAULT); } H5E_END_TRY;
+    if (dapl >= 0)
+        H5Pclose(dapl);
     if (hdf_type >= 0)
         H5Tclose(hdf_type);
     if (space >= 0)
@@ -1807,17 +2305,45 @@ NEXTCDF4_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
     if ((ret = nx4_find_var_for_write(ncid, varid, &h5, &file, &grp, &var)))
         return ret;
 
+    if (var->type_info->hdr.id == NC_STRING && no_fill)
+        return NC_EINVAL;
     var->no_fill = no_fill ? 1 : 0;
     if (var->fill_value) {
+        /* A variable-sized fill value owns nested payloads — reclaim
+         * them before dropping the top-level buffer. */
+        if (var->type_info->hdr.id == NC_STRING ||
+            (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID &&
+             var->type_info->varsized))
+            NC_reclaim_data(h5->controller,
+                            (nc_type)var->type_info->hdr.id,
+                            var->fill_value, 1);
         free(var->fill_value);
         var->fill_value = NULL;
     }
     if (!no_fill && fill_value) {
-        if ((ret = NEXTCDF4_type_size(var->type_info->hdr.id, &size)))
-            return ret;
-        if (!(var->fill_value = malloc(size)))
+        size = var->type_info->size;
+        if (!size)
+            return NC_EBADTYPE;
+        if (!(var->fill_value = calloc(1, size)))
             return NC_ENOMEM;
-        memcpy(var->fill_value, fill_value, size);
+        if (var->type_info->hdr.id == NC_STRING ||
+            (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID &&
+             var->type_info->varsized)) {
+            /* Deep-copy the vlen descriptor and its payload: the
+             * caller's buffer stays caller-owned. */
+            if ((ret = nx4_copy_data(h5->controller,
+                                    (nc_type)var->type_info->hdr.id,
+                                    fill_value, 1, var->fill_value))) {
+                NC_reclaim_data(h5->controller,
+                                (nc_type)var->type_info->hdr.id,
+                                var->fill_value, 1);
+                free(var->fill_value);
+                var->fill_value = NULL;
+                return ret;
+            }
+        } else {
+            memcpy(var->fill_value, fill_value, size);
+        }
         var->fill_val_changed = 1;
     }
 
@@ -1940,7 +2466,6 @@ NEXTCDF4_inq_var_all(int ncid, int varid, char *name, nc_type *xtypep,
     NC_GRP_INFO_T *grp;
     NC_VAR_INFO_T *var;
     struct NC_HDF5_Filter *fspec = NULL;
-    size_t size;
     int i, ret;
 
     if ((ret = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var)))
@@ -1981,15 +2506,19 @@ NEXTCDF4_inq_var_all(int ncid, int varid, char *name, nc_type *xtypep,
         *no_fillp = (int)var->no_fill;
     if (fill_valuep && !var->no_fill) {
         if (var->fill_value) {
-            if ((ret = NEXTCDF4_type_size(var->type_info->hdr.id, &size)))
-                return ret;
-            memcpy(fill_valuep, var->fill_value, size);
+            if (var->type_info->hdr.id == NC_STRING ||
+                (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID && var->type_info->varsized)) {
+                memset(fill_valuep, 0, var->type_info->size);
+                if ((ret = nx4_copy_data(h5->controller, var->type_info->hdr.id,
+                                        var->fill_value, 1, fill_valuep)))
+                    return ret;
+            } else
+                memcpy(fill_valuep, var->fill_value, var->type_info->size);
         } else if (var->type_info->hdr.id > NC_STRING) {
-            /* NEP-only atomics: no upstream default exists; report
-             * the all-zero fill used at dataset creation. */
-            if ((ret = NEXTCDF4_type_size(var->type_info->hdr.id, &size)))
-                return ret;
-            memset(fill_valuep, 0, size);
+            /* NEP-only atomics and user-defined types have no
+             * upstream default; report the all-zero fill used at
+             * dataset creation. */
+            memset(fill_valuep, 0, var->type_info->size);
         } else if ((ret = nc4_get_default_fill_value(var->type_info,
                                                      fill_valuep)))
             return ret;
@@ -2048,17 +2577,18 @@ NEXTCDF4_inq_var(int ncid, int varid, char *name, nc_type *xtypep,
  *
  * @param loc HDF5 object (dataset or group) to write on.
  * @param att Attribute to write.
+ * @param grp Group used to resolve user-defined datatypes.
  * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 static int
-nx4_write_att(hid_t loc, const NC_ATT_INFO_T *att)
+nx4_write_att(hid_t loc, const NC_ATT_INFO_T *att, NC_GRP_INFO_T *grp)
 {
     hid_t hdf_type = -1, space = -1, aid = -1, mem_type = -1;
     hsize_t hlen = att->len;
     int close_mem = 0;
     int ret;
 
-    if ((ret = NEXTCDF4_map_hdf_type((nc_type)att->nc_typeid, &hdf_type)))
+    if ((ret = nx4_file_type(grp, (nc_type)att->nc_typeid, &hdf_type)))
         return ret;
     if (att->len == 0) {
         if ((space = H5Screate(H5S_NULL)) < 0) {
@@ -2072,15 +2602,16 @@ nx4_write_att(hid_t loc, const NC_ATT_INFO_T *att)
     if (att->nc_typeid == NC_CHAR) {
         mem_type = hdf_type;
     } else if (att->nc_typeid == NC_STRING) {
-        mem_type = H5Tcopy(H5T_C_S1);
-        if (mem_type >= 0) {
-            H5Tset_size(mem_type, H5T_VARIABLE);
-            H5Tset_strpad(mem_type, H5T_STR_NULLTERM);
-        }
+        mem_type = H5Tcopy(hdf_type);
         close_mem = 1;
+        if (mem_type < 0) { ret = NC_EHDFERR; goto fail; }
     } else {
-        mem_type = NEXTCDF4_memory_type((nc_type)att->nc_typeid, &close_mem);
-        if (mem_type < 0) { ret = NC_EBADTYPE; goto fail; }
+        /* nx4_memory_type() returns an owned handle for both atomic
+         * and user-defined types. */
+        if ((ret = nx4_memory_type(grp, (nc_type)att->nc_typeid,
+                                   &mem_type)))
+            goto fail;
+        close_mem = 1;
     }
     if ((aid = H5Acreate2(loc, att->hdr.name, hdf_type, space,
                           H5P_DEFAULT, H5P_DEFAULT)) < 0) {
@@ -2118,10 +2649,11 @@ fail:
  *
  * @param loc HDF5 object (dataset or group).
  * @param list Attribute index.
+ * @param grp Group used to resolve user-defined datatypes.
  * @return `NC_NOERR` on success, or a NetCDF error code.
  */
 static int
-nx4_rewrite_atts(hid_t loc, NCindex *list)
+nx4_rewrite_atts(hid_t loc, NCindex *list, NC_GRP_INFO_T *grp)
 {
     size_t i;
     int ret;
@@ -2135,7 +2667,60 @@ nx4_rewrite_atts(hid_t loc, NCindex *list)
     }
     for (i = 0; i < ncindexsize(list); i++) {
         NC_ATT_INFO_T *a = (NC_ATT_INFO_T *)ncindexith(list, i);
-        if (a && (ret = nx4_write_att(loc, a)))
+        if (a && (ret = nx4_write_att(loc, a, grp)))
+            return ret;
+    }
+    return NC_NOERR;
+}
+
+/**
+ * @brief Materialize attributes deferred while their datatype or
+ * dataset was pending — called at `_enddef`.
+ *
+ * Attributes whose datatype was an uncommitted user type, or that
+ * live on a user-typed variable whose dataset did not exist yet,
+ * are marked `atts_pending` on the owning group/variable. Once
+ * NEXTCDF4_write_types() and the deferred dataset creations have
+ * run, this rewrites the pending objects' attribute lists in index
+ * order, preserving definition order on disk.
+ *
+ * @param grp Group to walk (recursively).
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+int
+nx4_flush_pending_atts(NC_GRP_INFO_T *grp)
+{
+    NEXTCDF4_GRP_INFO_T *ginfo = grp->format_grp_info;
+    NEXTCDF4_FILE_INFO_T *file = grp->nc4_info->format_file_info;
+    size_t i;
+    int ret;
+
+    if (ginfo && ginfo->atts_pending) {
+        hid_t loc = ginfo->hdf_group >= 0 ? ginfo->hdf_group : file->rootid;
+        if ((ret = nx4_rewrite_atts(loc, grp->att, grp)))
+            return ret;
+        ginfo->atts_pending = 0;
+    }
+
+    for (i = 0; i < ncindexsize(grp->vars); i++) {
+        NC_VAR_INFO_T *var = (NC_VAR_INFO_T *)ncindexith(grp->vars, i);
+        NEXTCDF4_VAR_INFO_T *vinfo;
+        if (!var || !(vinfo = var->format_var_info))
+            continue;
+        if (vinfo->atts_pending) {
+            if (vinfo->hdf_dataset < 0)
+                return NC_EFILEMETA;
+            if ((ret = nx4_rewrite_atts(vinfo->hdf_dataset, var->att,
+                                        grp)))
+                return ret;
+            vinfo->atts_pending = 0;
+        }
+    }
+
+    for (i = 0; i < ncindexsize(grp->children); i++) {
+        NC_GRP_INFO_T *child =
+            (NC_GRP_INFO_T *)ncindexith(grp->children, i);
+        if (child && (ret = nx4_flush_pending_atts(child)))
             return ret;
     }
     return NC_NOERR;
@@ -2170,16 +2755,14 @@ NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type datatype,
     NEXTCDF4_FILE_INFO_T *file;
     NC_GRP_INFO_T *grp;
     NC_VAR_INFO_T *var = NULL;
+    NEXTCDF4_VAR_INFO_T *vinfo = NULL;
+    NC_TYPE_INFO_T *utype = NULL;
     NCindex *list;
     hid_t loc;
     NC_ATT_INFO_T *att;
     size_t size;
     void *data = NULL;
-    hid_t hdf_type = -1;
-    hid_t space = -1;
-    hid_t attr = -1, mem_type = -1;
-    int close_mem = 0;
-    hsize_t hlen = len;
+    int pending = 0;
     int range_error = 0;
     int ret;
 
@@ -2187,25 +2770,39 @@ NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type datatype,
         return ret;
     if ((ret = NEXTCDF4_check_write_define(h5, file)))
         return ret;
-    /* Upstream hdf5attr.c semantics: classic-model files accept only
-     * the six classic attribute types. */
-    if (file->mode & NC_CLASSIC_MODEL && datatype > NC_DOUBLE)
-        return NC_ESTRICTNC3;
-    if ((ret = NEXTCDF4_check_atomic_type(file, datatype)))
-        return ret;
     if (!name) return NC_EINVAL;
     if ((ret = NC_check_name(name)))
         return ret;
     if (is_reserved_att(name) && strcmp(name, NC_FillValue))
         return NC_EBADNAME;
     if (varid == NC_GLOBAL) {
-        grp = h5->root_grp;
+        /* A subgroup ncid's global attributes live on that group, so
+         * locally defined types resolve in the right scope. */
+        if ((ret = nc4_find_nc4_grp(ncid, &grp)))
+            return ret;
         var = NULL;
     } else {
         if ((ret = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var)))
             return ret;
         if (!var)
             return NC_ENOTVAR;
+        vinfo = var->format_var_info;
+    }
+
+    if (datatype >= NC_FIRSTUSERTYPEID) {
+        /* User-defined attribute types are an enhanced-model feature
+         * and must be visible from the owning group's scope. */
+        if (file->mode & NC_CLASSIC_MODEL)
+            return NC_ENOTNC4;
+        if (nx4_find_type(grp, datatype, &utype) || !utype)
+            return NC_EBADTYPE;
+    } else {
+        /* Upstream hdf5attr.c semantics: classic-model files accept
+         * only the six classic attribute types. */
+        if (file->mode & NC_CLASSIC_MODEL && datatype > NC_DOUBLE)
+            return NC_ESTRICTNC3;
+        if ((ret = NEXTCDF4_check_atomic_type(file, datatype)))
+            return ret;
     }
 
     if (var && !strcmp(name, NC_FillValue)) {
@@ -2224,11 +2821,17 @@ NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type datatype,
         return ret;
 
     if (memtype == NC_NAT) memtype = datatype;
-    if ((ret = nx4_convert_type(NULL, NULL, memtype, datatype, 0, &range_error,
-                                NULL, 0, NC_NOQUANTIZE, 0, 0)) && datatype != memtype)
+    if (utype) {
+        /* User-defined types have no numeric conversion: the buffer
+         * must carry the attribute's own type. */
+        if (memtype != datatype)
+            return NC_EBADTYPE;
+    } else if ((ret = nx4_convert_type(NULL, NULL, memtype, datatype, 0,
+                                       &range_error, NULL, 0, NC_NOQUANTIZE,
+                                       0, 0)) && datatype != memtype)
         return ret;
     if (len && !value) return NC_EINVAL;
-    if ((ret = NEXTCDF4_type_size(datatype, &size))) return ret;
+    if ((ret = nx4_type_size(grp, datatype, &size))) return ret;
     if (len > SIZE_MAX / size) return NC_EINVAL;
     if (len) {
         if (!(data = malloc(len * size))) return NC_ENOMEM;
@@ -2246,19 +2849,50 @@ NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type datatype,
          * DCPL is immutable — the attribute (which is written
          * normally, below) and var->fill_value carry the value, the
          * same user-visible behavior upstream has. */
-        free(var->fill_value);
-        if (datatype == NC_STRING)
-            var->fill_value = strdup(*(char **)data);
-        else if (!(var->fill_value = malloc(size)))
+        if (var->fill_value) {
+            if (var->type_info->hdr.id == NC_STRING ||
+                (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID &&
+                 var->type_info->varsized))
+                NC_reclaim_data(h5->controller,
+                                (nc_type)var->type_info->hdr.id,
+                                var->fill_value, 1);
+            free(var->fill_value);
+            var->fill_value = NULL;
+        }
+        if (!(var->fill_value = calloc(1, size)))
             { free(data); return NC_ENOMEM; }
-        if (var->fill_value && datatype != NC_STRING)
-            memcpy(var->fill_value, data, size);
+        if (var->fill_value) {
+            if (datatype == NC_STRING || (utype && utype->varsized)) {
+                /* Dynamic fill values are deep-copied — the caller's
+                 * vlen payload stays caller-owned. */
+                if ((ret = nx4_copy_data(h5->controller, datatype,
+                                        data, 1, var->fill_value))) {
+                    NC_reclaim_data(h5->controller, datatype,
+                                    var->fill_value, 1);
+                    free(var->fill_value);
+                    var->fill_value = NULL;
+                    free(data);
+                    return ret;
+                }
+            } else {
+                memcpy(var->fill_value, data, size);
+            }
+        }
         if (!var->fill_value)
             { free(data); return NC_ENOMEM; }
         var->fill_val_changed = 1;
         if (!var->created)
             ((NEXTCDF4_VAR_INFO_T *)var->format_var_info)->dcpl_dirty = 1;
     }
+
+    /* The HDF5 write is deferred when the attribute's datatype is
+     * still uncommitted (compound/enum members may still be added)
+     * or when the owning variable's dataset does not exist yet. The
+     * in-memory record keeps definition order; `_enddef`
+     * materializes the list. */
+    pending = (vinfo && vinfo->hdf_dataset < 0) ||
+              (utype && !utype->committed) ||
+              loc < 0;
 
     /* Replace an existing attribute of the same name. Upstream keeps
      * the attribute's index position, so the record is deleted and a
@@ -2269,8 +2903,8 @@ NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type datatype,
             if (ncindexith(list, pos) == (NC_OBJ *)att)
                 break;
         nx4_att_list_del(list, att);
-        if ((ret = add_att(list, var ? &var->hdr : &grp->hdr, name, datatype,
-                           len, data, &att)))
+        if ((ret = add_att(list, var ? &var->hdr : &grp->hdr, grp, name,
+                           datatype, len, data, &att)))
             goto fail;
         ncindexidel(list, ncindexsize(list) - 1);
         nclistinsert(list->list, pos, (NC_OBJ *)att);
@@ -2280,13 +2914,19 @@ NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type datatype,
                 a->hdr.id = (int)pos;
         }
         ncindexrebuild(list);
-        if ((ret = nx4_rewrite_atts(loc, list)))
+        if (pending) {
+            if (vinfo) vinfo->atts_pending = 1;
+            else ((NEXTCDF4_GRP_INFO_T *)grp->format_grp_info)->atts_pending = 1;
+        } else if ((ret = nx4_rewrite_atts(loc, list, grp)))
             goto fail;
     } else {
-        if ((ret = add_att(list, var ? &var->hdr : &grp->hdr, name, datatype,
-                           len, data, &att)))
+        if ((ret = add_att(list, var ? &var->hdr : &grp->hdr, grp, name,
+                           datatype, len, data, &att)))
             goto fail;
-        if ((ret = nx4_write_att(loc, att)))
+        if (pending) {
+            if (vinfo) vinfo->atts_pending = 1;
+            else ((NEXTCDF4_GRP_INFO_T *)grp->format_grp_info)->atts_pending = 1;
+        } else if ((ret = nx4_write_att(loc, att, grp)))
             goto fail;
     }
     if (data) {
@@ -2329,15 +2969,17 @@ NEXTCDF4_inq_att(int ncid, int varid, const char *name, nc_type *xtypep,
     NCindex *list;
     hid_t loc;
     NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
     NC_GRP_INFO_T *grp;
     NC_VAR_INFO_T *var = NULL;
     NC_ATT_INFO_T *att;
     int ret;
 
-    if ((ret = NEXTCDF4_get_file(ncid, &h5, NULL)))
+    if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
         return ret;
     if (varid == NC_GLOBAL) {
-        grp = h5->root_grp;
+        if ((ret = nc4_find_nc4_grp(ncid, &grp)))
+            return ret;
         var = NULL;
     } else {
         if ((ret = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var)))
@@ -2345,6 +2987,14 @@ NEXTCDF4_inq_att(int ncid, int varid, const char *name, nc_type *xtypep,
         if (!var)
             return NC_ENOTVAR;
     }
+    /* Provenance attributes answer to name lookups on the global
+     * attribute list even though they never appear in it (upstream's
+     * NAMEONLYFLAG semantics). */
+    if (!var && (!strcmp(name, "_NCProperties") ||
+                 !strcmp(name, "_IsNetcdf4") ||
+                 !strcmp(name, "_SuperblockVersion")))
+        return nx4_get_att_special(file, name, xtypep, NC_NAT, lenp,
+                                   NULL, NULL);
     if ((ret = get_att_context(grp, var, &list, &loc)))
         return ret;
     if (!(att = find_att(list, name)))
@@ -2353,6 +3003,62 @@ NEXTCDF4_inq_att(int ncid, int varid, const char *name, nc_type *xtypep,
         *xtypep = att->nc_typeid;
     if (lenp)
         *lenp = att->len;
+    return NC_NOERR;
+}
+
+/**
+ * @brief Learn an attribute's index by name — the `nc_inq_attid()`
+ * dispatch entry.
+ *
+ * The shared `NC4_inq_attid` cannot intercept the provenance names,
+ * which live outside the attribute index; this entry answers them
+ * with upstream's `NC_EATTMETA` (virtual attributes have no index)
+ * and otherwise returns the attribute's position in the index.
+ *
+ * @param ncid NetCDF file identifier.
+ * @param varid Variable id or `NC_GLOBAL`.
+ * @param name Attribute name.
+ * @param attnump Destination for the attribute index.
+ * @return `NC_NOERR` on success, `NC_EATTMETA` for a provenance name,
+ * `NC_ENOTATT` when the attribute does not exist, or a NetCDF error
+ * code.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+NEXTCDF4_inq_attid(int ncid, int varid, const char *name, int *attnump)
+{
+    NCindex *list;
+    hid_t loc;
+    NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
+    NC_GRP_INFO_T *grp;
+    NC_VAR_INFO_T *var = NULL;
+    NC_ATT_INFO_T *att;
+    int ret;
+
+    if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
+        return ret;
+    if (varid == NC_GLOBAL) {
+        if ((ret = nc4_find_nc4_grp(ncid, &grp)))
+            return ret;
+        var = NULL;
+    } else {
+        if ((ret = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var)))
+            return ret;
+        if (!var)
+            return NC_ENOTVAR;
+    }
+    if (!var && (!strcmp(name, "_NCProperties") ||
+                 !strcmp(name, "_IsNetcdf4") ||
+                 !strcmp(name, "_SuperblockVersion")))
+        return nx4_get_att_special(file, name, NULL, NC_NAT, NULL,
+                                   attnump, NULL);
+    if ((ret = get_att_context(grp, var, &list, &loc)))
+        return ret;
+    if (!(att = find_att(list, name)))
+        return NC_ENOTATT;
+    if (attnump)
+        *attnump = (int)att->hdr.id;
     return NC_NOERR;
 }
 
@@ -2380,16 +3086,18 @@ NEXTCDF4_get_att(int ncid, int varid, const char *name, void *value,
     NCindex *list;
     hid_t loc;
     NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
     NC_GRP_INFO_T *grp;
     NC_VAR_INFO_T *var = NULL;
     NC_ATT_INFO_T *att;
     int range_error;
     int ret;
 
-    if ((ret = NEXTCDF4_get_file(ncid, &h5, NULL)))
+    if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
         return ret;
     if (varid == NC_GLOBAL) {
-        grp = h5->root_grp;
+        if ((ret = nc4_find_nc4_grp(ncid, &grp)))
+            return ret;
         var = NULL;
     } else {
         if ((ret = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var)))
@@ -2397,31 +3105,60 @@ NEXTCDF4_get_att(int ncid, int varid, const char *name, void *value,
         if (!var)
             return NC_ENOTVAR;
     }
+    /* Virtual/stored provenance attributes answer to name lookups
+     * without living in the attribute index. */
+    if (!var && (!strcmp(name, "_NCProperties") ||
+                 !strcmp(name, "_IsNetcdf4") ||
+                 !strcmp(name, "_SuperblockVersion")))
+        return nx4_get_att_special(file, name, NULL, memtype, NULL,
+                                   NULL, value);
     if ((ret = get_att_context(grp, var, &list, &loc)))
         return ret;
 
     if (!(att = find_att(list, name)))
         return NC_ENOTATT;
 
+    if (att->len && !value) return NC_EINVAL;
     if (memtype == NC_NAT) memtype = att->nc_typeid;
-    if (att->nc_typeid != memtype &&
-        (ret = nx4_convert_type(NULL, NULL, att->nc_typeid, memtype, 0,
-                                &range_error, NULL, 0, NC_NOQUANTIZE, 0, 0))) return ret;
+    if (att->nc_typeid >= NC_FIRSTUSERTYPEID) {
+        /* User-defined types have no numeric conversion: the buffer
+         * must carry the attribute's own type. */
+        if (memtype != att->nc_typeid)
+            return NC_EBADTYPE;
+    } else if (att->nc_typeid != memtype &&
+               (ret = nx4_convert_type(NULL, NULL, att->nc_typeid, memtype, 0,
+                                       &range_error, NULL, 0, NC_NOQUANTIZE,
+                                       0, 0)))
+        return ret;
     if (att->nc_typeid == memtype && att->len > 0) {
         if (memtype == NC_STRING) {
             char **src = (char **)att->data;
             char **dst = (char **)value;
             size_t i;
+            if (!value) return NC_EINVAL;
+            memset(dst, 0, att->len * sizeof(char *));
             for (i = 0; i < att->len; i++) {
-                dst[i] = strdup(src[i]);
-                if (!dst[i])
+                dst[i] = strdup(src[i] ? src[i] : "");
+                if (!dst[i]) {
+                    nc_free_string(i, dst);
+                    memset(dst, 0, att->len * sizeof(char *));
                     return NC_ENOMEM;
+                }
             }
             return NC_NOERR;
         } else {
+            NC_TYPE_INFO_T *at = NULL;
             size_t size;
-            if ((ret = NEXTCDF4_type_size(memtype, &size)))
+            if ((ret = nx4_type_size(grp, memtype, &size)))
                 return ret;
+            /* Variable-sized types (vlens and compounds containing
+             * them) are deep-copied: the caller receives owned
+             * payloads it can reclaim with nc_reclaim_data() without
+             * disturbing the cached attribute. */
+            if (memtype >= NC_FIRSTUSERTYPEID &&
+                !nx4_find_type(grp, memtype, &at) && at && at->varsized)
+                return nx4_copy_data(h5->controller, memtype, att->data,
+                                    att->len, value);
             memcpy(value, att->data, att->len * size);
             return NC_NOERR;
         }
@@ -2471,7 +3208,8 @@ NEXTCDF4_rename_att(int ncid, int varid, const char *name, const char *newname)
     if (is_reserved_att(newname))
         return NC_EBADNAME;
     if (varid == NC_GLOBAL) {
-        grp = h5->root_grp;
+        if ((ret = nc4_find_nc4_grp(ncid, &grp)))
+            return ret;
         var = NULL;
     } else {
         if ((ret = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var)))
@@ -2489,18 +3227,30 @@ NEXTCDF4_rename_att(int ncid, int varid, const char *name, const char *newname)
     /* Upstream semantics: the rename keeps the attribute's index
      * position — only the name changes in place, then the object's
      * attributes are rewritten in index order so the on-disk
-     * creation order matches. */
+     * creation order matches. A pending object (deferred dataset or
+     * uncommitted datatype) just stays pending. */
     free(att->hdr.name);
     if (!(att->hdr.name = strdup(newname)))
         return NC_ENOMEM;
     if (!ncindexrebuild(list))
         return NC_EINTERNAL;
 
-    H5E_BEGIN_TRY {
-        H5Adelete(loc, name);
-    } H5E_END_TRY;
-    if ((ret = nx4_rewrite_atts(loc, list)))
-        return ret;
+    if (loc >= 0) {
+        NC_TYPE_INFO_T *utype = NULL;
+        nx4_find_type(grp, att->nc_typeid, &utype);
+        if (utype && !utype->committed) {
+            if (var)
+                ((NEXTCDF4_VAR_INFO_T *)var->format_var_info)->atts_pending = 1;
+            else
+                ((NEXTCDF4_GRP_INFO_T *)grp->format_grp_info)->atts_pending = 1;
+        } else {
+            H5E_BEGIN_TRY {
+                H5Adelete(loc, name);
+            } H5E_END_TRY;
+            if ((ret = nx4_rewrite_atts(loc, list, grp)))
+                return ret;
+        }
+    }
 
     if (H5Fflush(file->hdfid, H5F_SCOPE_LOCAL) < 0)
         return NC_EHDFERR;
@@ -3024,7 +3774,8 @@ NEXTCDF4_del_att(int ncid, int varid, const char *name)
     if ((ret = NEXTCDF4_check_write_define(h5, file)))
         return ret;
     if (varid == NC_GLOBAL) {
-        grp = h5->root_grp;
+        if ((ret = nc4_find_nc4_grp(ncid, &grp)))
+            return ret;
         var = NULL;
     } else {
         if ((ret = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var)))
@@ -3037,9 +3788,10 @@ NEXTCDF4_del_att(int ncid, int varid, const char *name)
     if (!(att = find_att(list, name)))
         return NC_ENOTATT;
 
-    H5E_BEGIN_TRY {
-        H5Adelete(loc, name);
-    } H5E_END_TRY;
+    if (loc >= 0)
+        H5E_BEGIN_TRY {
+            H5Adelete(loc, name);
+        } H5E_END_TRY;
     nx4_att_list_del(list, att);
     return NC_NOERR;
 }
@@ -3476,6 +4228,17 @@ scale_resolve_visitor(hid_t did, unsigned int dim, hid_t dsid, void *op_data)
         if (name[0])
             diminfo = find_dim_by_name(r->grp, name);
     }
+    if (!diminfo) {
+        /* Upstream scales for dimensions without coordinate variables
+         * carry a NAME of "This is a netCDF dimension but not a
+         * netCDF variable." — useless for matching. The scale's own
+         * link name is the dimension name instead. */
+        ssize_t nlen = H5Iget_name(dsid, name, sizeof(name));
+        if (nlen > 0) {
+            char *base = strrchr(name, '/');
+            diminfo = find_dim_by_name(r->grp, base ? base + 1 : name);
+        }
+    }
     if (diminfo) {
         *r->dimid = diminfo->hdr.id;
         r->found = 1;
@@ -3570,9 +4333,19 @@ load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
     int ret;
     (void)h5;
 
-    if (!(vinfo = calloc(1, sizeof(*vinfo))))
-        return NC_ENOMEM;
-
+    /* Rebuild the variable's in-memory record in five phases:
+     * (1) open the dataset and resolve its nc_type — atomic via
+     * map_nc_type(), user-defined via HDF5 object identity against
+     * the committed types load_types() registered earlier;
+     * (2) recover rank and dims from the dataspace and the dimids
+     * from the hidden _Netcdf4Coordinates attribute (falling back to
+     * attached dimension scales for foreign files);
+     * (3) register the NC_VAR_INFO_T and reattach it to its
+     * dimension records and shared type record;
+     * (4) read the DCPL for chunking/storage, fill behavior and the
+     * filter pipeline;
+     * (5) mark meta_read/atts_read/created so netcdf-c treats the
+     * record as fully loaded rather than newly defined. */
     if ((dset = H5Dopen2(hdf_grp, name, H5P_DEFAULT)) < 0) {
         free(vinfo);
         return NC_EHDFERR;
@@ -3584,8 +4357,15 @@ load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
         goto done;
     }
     if (map_nc_type(ftype, &xtype)) {
-        ret = NC_EBADTYPE;
-        goto done;
+        /* Not an atomic type: a variable created from a committed
+         * user type resolves to the registered type record by HDF5
+         * object identity. */
+        NC_TYPE_INFO_T *utype = NULL;
+        if (nx4_hdf_type_match(grp, ftype, &utype) || !utype) {
+            ret = NC_EBADTYPE;
+            goto done;
+        }
+        xtype = (nc_type)utype->hdr.id;
     }
     if ((ndims = H5Sget_simple_extent_ndims(space)) < 0) {
         ret = NC_EHDFERR;
@@ -3624,15 +4404,27 @@ load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
         }
     }
 
+    if (!(vinfo = calloc(1, sizeof(*vinfo)))) {
+        ret = NC_ENOMEM;
+        goto done;
+    }
     if ((ret = nc4_var_list_add(grp, name, ndims, &var))) {
         free(vinfo);
         goto done;
     }
-    if ((ret = nc4_var_set_ndims(var, ndims))) {
-        free(vinfo);
-        goto done;
-    }
-    if ((ret = set_var_type(var, xtype))) {
+    if (xtype >= NC_FIRSTUSERTYPEID) {
+        /* Share the committed type record; the reference count
+         * balances the group's ownership with each variable using
+         * it. */
+        NC_TYPE_INFO_T *utype = NULL;
+        if ((ret = nx4_find_type(grp, xtype, &utype)) || !utype) {
+            free(vinfo);
+            ret = ret ? ret : NC_EBADTYPE;
+            goto done;
+        }
+        var->type_info = utype;
+        utype->rc++;
+    } else if ((ret = set_var_type(var, xtype))) {
         free(vinfo);
         goto done;
     }
@@ -3689,26 +4481,31 @@ load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
                 var->no_fill = 1;
 
             if (!var->no_fill) {
-                size_t fsize;
+                size_t fsize = var->type_info->size;
                 if (var->fill_value) {
                     free(var->fill_value);
                     var->fill_value = NULL;
                 }
-                if (!NEXTCDF4_type_size(xtype, &fsize) &&
-                    (var->fill_value = malloc(fsize))) {
+                if (fsize && (var->fill_value = calloc(1, fsize))) {
                     /* NEP-only types: `H5Tget_native_type()` widens
                      * them to a larger native type (bfloat16 -> a
                      * 4-byte float), overflowing `var->fill_value`
                      * (#377) — the memory type keeps the on-disk
-                     * size. */
-                    int close_mem = 0;
-                    hid_t mem_type;
+                     * size. User-defined types keep their own
+                     * layout. */
+                    hid_t mem_type = -1;
                     int rv;
-                    if (xtype > NC_STRING)
+                    if (xtype >= NC_FIRSTUSERTYPEID)
+                        nx4_memory_type(grp, xtype, &mem_type);
+                    else if (xtype > NC_STRING) {
+                        int close_mem = 0;
                         mem_type = NEXTCDF4_memory_type(xtype, &close_mem);
-                    else {
+                        if (mem_type >= 0 && !close_mem) {
+                            hid_t c = H5Tcopy(mem_type);
+                            mem_type = c;
+                        }
+                    } else {
                         mem_type = H5Tget_native_type(ftype, H5T_DIR_DEFAULT);
-                        close_mem = (mem_type >= 0);
                     }
                     if (mem_type < 0) {
                         free(var->fill_value);
@@ -3719,8 +4516,7 @@ load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
                             free(var->fill_value);
                             var->fill_value = NULL;
                         }
-                        if (close_mem)
-                            H5Tclose(mem_type);
+                        H5Tclose(mem_type);
                     }
                 }
             }
@@ -3730,7 +4526,9 @@ load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
             H5Pclose(dcpl);
         }
 
-        order = H5Tget_order(ftype);
+        H5E_BEGIN_TRY {
+            order = H5Tget_order(ftype);
+        } H5E_END_TRY;
         if (order == H5T_ORDER_BE)
             var->endianness = NC_ENDIAN_BIG;
         else if (order == H5T_ORDER_LE)
@@ -3738,6 +4536,7 @@ load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
         else
             var->endianness = NC_ENDIAN_NATIVE;
     }
+    ret = nx4_reopen_var_cache(grp, var);
 
 done:
     if (dset >= 0)
@@ -3762,6 +4561,8 @@ typedef struct {
     NC_OBJ *container;
     hid_t loc;
     int is_var;         /**< Nonzero when iterating a variable's dataset. */
+    NC_GRP_INFO_T *grp; /**< Group resolving user-defined datatypes. */
+    int error; /**< Failure loading a supported attribute. */
 } att_iter_data_t;
 
 /**
@@ -3817,9 +4618,9 @@ load_att_cb(hid_t loc, const char *attr_name, const H5A_info_t *ainfo,
     if (is_reserved_att(attr_name) &&
         !(ad->is_var && !strcmp(attr_name, NC_FillValue)))
         return 0;
-    if (read_hdf5_att(loc, attr_name, ad->list, ad->container))
-        return 0; /* skip attributes that cannot be mapped */
-    return 0;
+    ad->error = read_hdf5_att(loc, attr_name, ad->list, ad->container, ad->grp);
+    if (ad->error == NC_EBADTYPE) ad->error = NC_NOERR;
+    return ad->error ? -1 : 0;
 }
 
 /**
@@ -3831,34 +4632,36 @@ load_att_cb(hid_t loc, const char *attr_name, const H5A_info_t *ainfo,
  * recovered earlier fills only the gap when no attribute exists.
  *
  * @param var Variable whose attribute index was just populated.
+ * @return NC_NOERR or a NetCDF allocation/type error.
  */
-static void
+static int
 nx4_fill_from_att(NC_VAR_INFO_T *var)
 {
     NC_ATT_INFO_T *att;
-    size_t size;
+    size_t size = var->type_info->size;
+    void *copy;
+    int ret;
+    NC *nc = var->container->nc4_info->controller;
 
     if (!(att = find_att(var->att, NC_FillValue)) || !att->data ||
         att->len < 1 || att->nc_typeid != var->type_info->hdr.id)
-        return;
-    if (att->nc_typeid == NC_STRING) {
-        char *copy = strdup(*(char **)att->data);
-        if (!copy)
-            return;
-        free(var->fill_value);
-        var->fill_value = copy;
-        return;
+        return NC_NOERR;
+    /* Variable-sized types (vlens and compounds containing them)
+     * deep-copy the descriptor and its payload so the fill value
+     * owns its data outright. */
+    if (!(copy = calloc(1, size))) return NC_ENOMEM;
+    if ((ret = nx4_copy_data(nc, att->nc_typeid, att->data, 1, copy))) {
+        free(copy);
+        return ret;
     }
-    if (NEXTCDF4_type_size(var->type_info->hdr.id, &size))
-        return;
-    {
-        void *copy = malloc(size);
-        if (!copy)
-            return;
-        memcpy(copy, att->data, size);
+    if (var->fill_value) {
+        if (att->nc_typeid == NC_STRING ||
+            (att->nc_typeid >= NC_FIRSTUSERTYPEID && var->type_info->varsized))
+            NC_reclaim_data(nc, att->nc_typeid, var->fill_value, 1);
         free(var->fill_value);
-        var->fill_value = copy;
     }
+    var->fill_value = copy;
+    return NC_NOERR;
 }
 
 /**
@@ -3881,7 +4684,7 @@ load_variables(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
     NEXTCDF4_GRP_INFO_T *ginfo = grp->format_grp_info;
     hid_t hdf_grp = ginfo ? ginfo->hdf_group : file->rootid;
     var_list_t vl = {0};
-    att_iter_data_t ad;
+    att_iter_data_t ad = {0};
     int loaded = 0;
     int i;
     int ret;
@@ -3890,6 +4693,14 @@ load_variables(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
     int maxid = -1;
     int id;
 
+    /* Two load orders exist because nc4_var_list_add() assigns varids
+     * in registration order. NEXTCDF-4 files store each varid in the
+     * hidden _Netcdf4Varid attribute, so loading in stored-id order
+     * reproduces the create-time ids exactly; foreign files with no
+     * stored ids load in HDF5 link order. The two branches have
+     * identical bodies — load_one_var(), then iterate the dataset's
+     * attributes into the variable's index — and differ only in
+     * iteration order. */
     if (H5Literate(hdf_grp, H5_INDEX_NAME, H5_ITER_INC, NULL,
                    find_var_cb, &vl) < 0)
         return NC_EHDFERR;
@@ -3913,9 +4724,18 @@ load_variables(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
             ad.list = lvar->att;
             ad.container = &lvar->hdr;
             ad.is_var = 1;
-            H5Aiterate2(ad.loc, att_iter_index(ad.loc, 0), H5_ITER_INC,
-                        NULL, load_att_cb, &ad);
-            nx4_fill_from_att(lvar);
+            ad.grp = grp;
+            if (H5Aiterate2(ad.loc, att_iter_index(ad.loc, 0), H5_ITER_INC,
+                            NULL, load_att_cb, &ad) < 0) {
+                free_name_list(vl.names, vl.count);
+                free(vl.varids);
+                return ad.error ? ad.error : NC_EHDFERR;
+            }
+            if ((ret = nx4_fill_from_att(lvar))) {
+                free_name_list(vl.names, vl.count);
+                free(vl.varids);
+                return ret;
+            }
             loaded++;
         }
     } else {
@@ -3936,9 +4756,18 @@ load_variables(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
                     ad.list = lvar->att;
                     ad.container = &lvar->hdr;
                     ad.is_var = 1;
-                    H5Aiterate2(ad.loc, att_iter_index(ad.loc, 0),
-                                H5_ITER_INC, NULL, load_att_cb, &ad);
-                    nx4_fill_from_att(lvar);
+                    ad.grp = grp;
+                    if (H5Aiterate2(ad.loc, att_iter_index(ad.loc, 0),
+                                    H5_ITER_INC, NULL, load_att_cb, &ad) < 0) {
+                        free_name_list(vl.names, vl.count);
+                        free(vl.varids);
+                        return ad.error ? ad.error : NC_EHDFERR;
+                    }
+                    if ((ret = nx4_fill_from_att(lvar))) {
+                        free_name_list(vl.names, vl.count);
+                        free(vl.varids);
+                        return ret;
+                    }
                     loaded++;
                     break;
                 }
@@ -3970,16 +4799,17 @@ load_group_attributes(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
 {
     NEXTCDF4_GRP_INFO_T *ginfo = grp->format_grp_info;
     hid_t hdf_grp = ginfo ? ginfo->hdf_group : file->rootid;
-    att_iter_data_t ad;
+    att_iter_data_t ad = {0};
     (void)file;
     (void)h5;
     ad.loc = hdf_grp;
     ad.list = grp->att;
     ad.container = &grp->hdr;
     ad.is_var = 0;
+    ad.grp = grp;
     if (H5Aiterate2(hdf_grp, att_iter_index(hdf_grp, 1), H5_ITER_INC,
                     NULL, load_att_cb, &ad) < 0)
-        return NC_EHDFERR;
+        return ad.error ? ad.error : NC_EHDFERR;
     grp->atts_read = 1;
     return NC_NOERR;
 }
@@ -3998,6 +4828,8 @@ typedef struct {
 static int load_children(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
                          hid_t parent_hdf, NC_GRP_INFO_T *parent);
 static int load_one_type(NC_GRP_INFO_T *grp, hid_t htype, const char *name);
+static int load_types(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
+                      NC_GRP_INFO_T *grp);
 
 /**
  * @brief Load one committed HDF5 datatype into the in-memory type
@@ -4021,8 +4853,6 @@ load_one_type(NC_GRP_INFO_T *grp, hid_t htype, const char *name)
     NEXTCDF4_TYPE_INFO_T *tinfo;
     H5T_class_t cls;
     size_t size = 0;
-    hid_t super = -1;
-    nc_type xtype;
     int ret;
 
     cls = H5Tget_class(htype);
@@ -4043,6 +4873,10 @@ load_one_type(NC_GRP_INFO_T *grp, hid_t htype, const char *name)
     tinfo->hdf_type = htype;
     type->format_type_info = tinfo;
 
+    /* Register the record and class now; members are filled in the
+     * second pass of load_types() so that a committed member type
+     * appearing later in link order is already registered when its
+     * container resolves members by object identity. */
     switch (cls) {
     case H5T_COMPOUND:
         type->nc_type_class = NC_COMPOUND;
@@ -4051,41 +4885,196 @@ load_one_type(NC_GRP_INFO_T *grp, hid_t htype, const char *name)
     case H5T_ENUM:
         type->nc_type_class = NC_ENUM;
         type->u.e.enum_member = nclistnew();
-        if ((super = H5Tget_super(htype)) < 0)
-            return NC_EHDFERR;
-        if (map_nc_type(super, &xtype) == NC_NOERR)
-            type->u.e.base_nc_typeid = xtype;
-        H5Tclose(super);
         break;
     case H5T_OPAQUE:
         type->nc_type_class = NC_OPAQUE;
         break;
     case H5T_VLEN:
         type->nc_type_class = NC_VLEN;
-        if ((super = H5Tget_super(htype)) >= 0) {
-            if (map_nc_type(super, &xtype) == NC_NOERR)
-                type->u.v.base_nc_typeid = xtype;
-            H5Tclose(super);
-        }
         break;
     case H5T_STRING:
         type->nc_type_class = NC_STRING;
         break;
     default:
+        ret = NC_EBADTYPE;
+        goto fail;
+    }
+    type->committed = NC_TRUE;
+    /* Mark vlens (and later, compounds containing them) variable-
+     * sized so nc_copy_data/nc_reclaim_data walk their payloads. */
+    NC4_set_varsize(type);
+
+    return NC_NOERR;
+
+fail:
+    /* The record is already on the group's type index; leave it for
+     * group teardown. The caller still owns @p htype and closes it —
+     * drop only the private wrapper record. */
+    if (type && type->format_type_info) {
+        free(type->format_type_info);
+        type->format_type_info = NULL;
+    }
+    return ret;
+}
+
+/**
+ * @brief Fill the members of a registered type record from its HDF5
+ * datatype.
+ *
+ * Second pass of load_types(): runs once every committed datatype in
+ * the group has a registered record, so compound member types and
+ * vlen bases resolve through nx4_hdf_type_match() regardless of the
+ * order HDF5 links were iterated. Array members recover their rank
+ * and shape via H5Tget_array_ndims()/H5Tget_array_dims().
+ *
+ * @param grp Group.
+ * @param type Type record with `format_type_info` populated.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+static int
+load_type_members(NC_GRP_INFO_T *grp, NC_TYPE_INFO_T *type)
+{
+    NEXTCDF4_TYPE_INFO_T *tinfo =
+        (NEXTCDF4_TYPE_INFO_T *)type->format_type_info;
+    hid_t htype = tinfo->hdf_type;
+    size_t size = type->size;
+    hid_t super = -1;
+    nc_type xtype;
+    int ret;
+
+    switch (type->nc_type_class) {
+    case NC_COMPOUND: {
+        int nmem, m;
+        if ((nmem = H5Tget_nmembers(htype)) < 0)
+            return NC_EHDFERR;
+        for (m = 0; m < nmem; m++) {
+            char *mname = H5Tget_member_name(htype, (unsigned)m);
+            size_t moff = H5Tget_member_offset(htype, (unsigned)m);
+            hid_t mtype = -1;
+            nc_type mxtype = NC_NAT;
+            int mndims = 0;
+            int mdims[NC_MAX_VAR_DIMS];
+
+            if (!mname)
+                return NC_EHDFERR;
+            if ((mtype = H5Tget_member_type(htype, (unsigned)m)) < 0) {
+                H5free_memory(mname);
+                return NC_EHDFERR;
+            }
+            if (H5Tget_class(mtype) == H5T_ARRAY) {
+                /* Fixed-size array member: record the shape and
+                 * resolve the element type, atomic or user-defined. */
+                hsize_t adims[NC_MAX_VAR_DIMS];
+                hid_t base = -1;
+                if ((mndims = H5Tget_array_ndims(mtype)) < 0 ||
+                    mndims > NC_MAX_VAR_DIMS ||
+                    H5Tget_array_dims(mtype, adims) < 0) {
+                    H5Tclose(mtype);
+                    H5free_memory(mname);
+                    return NC_EHDFERR;
+                }
+                if ((base = H5Tget_super(mtype)) < 0) {
+                    H5Tclose(mtype);
+                    H5free_memory(mname);
+                    return NC_EHDFERR;
+                }
+                if (map_nc_type(base, &mxtype)) {
+                    NC_TYPE_INFO_T *ut = NULL;
+                    if (nx4_hdf_type_match(grp, base, &ut) || !ut) {
+                        H5Tclose(base);
+                        H5Tclose(mtype);
+                        H5free_memory(mname);
+                        return NC_EBADTYPE;
+                    }
+                    mxtype = (nc_type)ut->hdr.id;
+                }
+                H5Tclose(base);
+                for (ret = 0; ret < mndims; ret++)
+                    mdims[ret] = (int)adims[ret];
+                ret = NC_NOERR;
+            } else if (map_nc_type(mtype, &mxtype)) {
+                /* A committed member type resolves to its registered
+                 * record by object identity. */
+                NC_TYPE_INFO_T *ut = NULL;
+                if (nx4_hdf_type_match(grp, mtype, &ut) || !ut) {
+                    H5Tclose(mtype);
+                    H5free_memory(mname);
+                    return NC_EBADTYPE;
+                }
+                mxtype = (nc_type)ut->hdr.id;
+            }
+            H5Tclose(mtype);
+            ret = nc4_field_list_add(type, mname, moff, mxtype, mndims,
+                                     mndims ? mdims : NULL);
+            H5free_memory(mname);
+            if (ret)
+                return ret;
+            /* A member that is (transitively) variable-sized makes
+             * the whole compound variable-sized. */
+            NC4_recheck_varsize(type, mxtype);
+        }
         break;
     }
-
+    case NC_ENUM: {
+        int nmem, m;
+        if ((super = H5Tget_super(htype)) < 0)
+            return NC_EHDFERR;
+        if (map_nc_type(super, &xtype) == NC_NOERR)
+            type->u.e.base_nc_typeid = xtype;
+        else {
+            H5Tclose(super);
+            return NC_EBADTYPE;
+        }
+        H5Tclose(super);
+        if ((nmem = H5Tget_nmembers(htype)) < 0)
+            return NC_EHDFERR;
+        for (m = 0; m < nmem; m++) {
+            char *mname = H5Tget_member_name(htype, (unsigned)m);
+            void *mval = NULL;
+            if (!mname)
+                return NC_EHDFERR;
+            if (!(mval = malloc(size ? size : 1)) ||
+                H5Tenum_valueof(htype, mname, mval) < 0) {
+                free(mval);
+                H5free_memory(mname);
+                return NC_EHDFERR;
+            }
+            ret = nc4_enum_member_add(type, size, mname, mval);
+            free(mval);
+            H5free_memory(mname);
+            if (ret)
+                return ret;
+        }
+        break;
+    }
+    case NC_VLEN:
+        if ((super = H5Tget_super(htype)) >= 0) {
+            if (map_nc_type(super, &xtype) == NC_NOERR)
+                type->u.v.base_nc_typeid = xtype;
+            else {
+                NC_TYPE_INFO_T *ut = NULL;
+                if (!nx4_hdf_type_match(grp, super, &ut) && ut)
+                    type->u.v.base_nc_typeid = (nc_type)ut->hdr.id;
+            }
+            H5Tclose(super);
+        }
+        break;
+    default:
+        /* OPAQUE and STRING carry no members. */
+        break;
+    }
     return NC_NOERR;
 }
 
 /**
- * @brief Load one group's full metadata: dimensions, variables,
- * attributes, then children recursively.
+ * @brief Load one group's full metadata: dimensions, committed
+ * types, variables, attributes, then children recursively.
  *
- * Order matters — dimensions must exist before variables resolve
- * their dimids, and children load last. An unmarked root group with
- * nothing loadable is rejected (`NC_ENOTNC`): a plain HDF5 file with
- * no netCDF structure is not a netCDF file.
+ * Order matters — dimensions and committed types must exist before
+ * variables resolve their dimids and datatypes, and children load
+ * last so their parent's types are visible to them. An unmarked
+ * root group with nothing loadable is rejected (`NC_ENOTNC`): a
+ * plain HDF5 file with no netCDF structure is not a netCDF file.
  *
  * @param file NEXTCDF-4 file state.
  * @param h5 NetCDF-4 file state.
@@ -4102,16 +5091,19 @@ load_group_metadata(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
 
     if ((ret = load_dimensions(file, h5, grp)))
         return ret;
+    if ((ret = load_types(file, h5, grp)))
+        return ret;
     if ((ret = load_variables(file, h5, grp)))
         return ret;
     if ((ret = load_group_attributes(file, h5, grp)))
         return ret;
     if ((ret = load_children(file, h5, hdf_grp, grp)))
         return ret;
-    /* Unmarked non-NetCDF-4 HDF5 files must have at least dimensions or
-     * variables that follow the NetCDF-4 dimension-scale convention. */
+    /* A valid enhanced-model file may keep all data in subgroups or
+     * contain only committed types, with no root dimensions/variables. */
     if (grp == h5->root_grp && !file->backend_marked &&
-        ncindexsize(grp->dim) == 0 && ncindexsize(grp->vars) == 0)
+        ncindexsize(grp->dim) == 0 && ncindexsize(grp->vars) == 0 &&
+        ncindexsize(grp->children) == 0 && ncindexsize(grp->type) == 0)
         return NC_ENOTNC;
     return NC_NOERR;
 }
@@ -4161,13 +5153,79 @@ fail:
 }
 
 /**
+ * @brief `H5Literate` callback loading one committed datatype.
+ *
+ * Committed datatypes are the on-disk form of user-defined types.
+ * They must all be registered — and their members populated — before
+ * any variable or attribute that references them is loaded, so this
+ * pass runs ahead of load_variables()/load_group_attributes().
+ *
+ * @param loc HDF5 location identifier.
+ * @param name Name.
+ * @param info Link info (unused).
+ * @param op_data load_children_data_t iteration context.
+ * @return 0 to continue iteration, -1 on load failure.
+ */
+static herr_t
+load_type_cb(hid_t loc, const char *name, const H5L_info_t *info, void *op_data)
+{
+    load_children_data_t *ld = op_data;
+    hid_t child_t = -1;
+    (void)info;
+
+    H5E_BEGIN_TRY {
+        child_t = H5Topen2(loc, name, H5P_DEFAULT);
+    } H5E_END_TRY;
+    if (child_t >= 0) {
+        if (load_one_type(ld->parent, child_t, name)) {
+            H5Tclose(child_t);
+            return -1;
+        }
+    }
+    return 0;
+}
+
+/**
+ * @brief Register every committed datatype in a group.
+ * @param file NEXTCDF-4 file state.
+ * @param h5 NetCDF-4 file state.
+ * @param grp Group.
+ * @return `NC_NOERR` on success, or a NetCDF error code.
+ */
+static int
+load_types(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
+           NC_GRP_INFO_T *grp)
+{
+    NEXTCDF4_GRP_INFO_T *ginfo = grp->format_grp_info;
+    hid_t hdf_grp = ginfo ? ginfo->hdf_group : file->rootid;
+    load_children_data_t ld = {file, h5, grp, hdf_grp};
+
+    if (H5Literate(hdf_grp, H5_INDEX_NAME, H5_ITER_INC, NULL,
+                   load_type_cb, &ld) < 0)
+        return NC_EHDFERR;
+
+    /* Second pass: fill compound/enum/vlen members now that every
+     * committed datatype in the group has a registered record. */
+    {
+        size_t i;
+        for (i = 0; i < ncindexsize(grp->type); i++) {
+            NC_TYPE_INFO_T *type =
+                (NC_TYPE_INFO_T *)ncindexith(grp->type, i);
+            int ret;
+            if (type && (ret = load_type_members(grp, type)))
+                return ret;
+        }
+    }
+    return NC_NOERR;
+}
+
+/**
  * @brief `H5Literate` callback dispatching each child link to the
  * right loader.
  *
- * Links that open as groups become subgroups (load_one_group); links
- * that open as committed datatypes become user-defined types
- * (load_one_type); datasets were already handled by the variable
- * pass. Anything else is skipped.
+ * Links that open as groups become subgroups (load_one_group);
+ * committed datatypes were already registered by the load_types()
+ * pass and datasets by the variable pass. Anything else is skipped.
  *
  * @param loc HDF5 location identifier.
  * @param name Name.
@@ -4180,7 +5238,6 @@ load_children_cb(hid_t loc, const char *name, const H5L_info_t *info, void *op_d
 {
     load_children_data_t *ld = op_data;
     hid_t child_g = -1;
-    hid_t child_t = -1;
     (void)info;
 
     H5E_BEGIN_TRY {
@@ -4189,17 +5246,6 @@ load_children_cb(hid_t loc, const char *name, const H5L_info_t *info, void *op_d
     if (child_g >= 0) {
         if (load_one_group(ld->file, ld->h5, ld->parent, loc, name)) {
             H5Gclose(child_g);
-            return -1;
-        }
-        return 0;
-    }
-
-    H5E_BEGIN_TRY {
-        child_t = H5Topen2(loc, name, H5P_DEFAULT);
-    } H5E_END_TRY;
-    if (child_t >= 0) {
-        if (load_one_type(ld->parent, child_t, name)) {
-            H5Tclose(child_t);
             return -1;
         }
         return 0;

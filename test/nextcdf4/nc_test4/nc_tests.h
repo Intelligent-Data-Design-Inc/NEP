@@ -36,4 +36,22 @@
 #define NUM_NETCDF_TYPES 12
 #define NC_MAX_FILENAME 4096
 
+/* Sprint 1N4 test-only mode selector: returns NC_NEXTCDF4 for
+ * NEP_NC_TEST4_MODEL unset, empty or "native", and
+ * NC_NEXTCDF4 | NC_NETCDF4_MODEL for "netcdf4". Any other value is an
+ * error so tests fail loudly instead of silently selecting a mode. */
+static int
+nep_nc_test4_create_mode(void)
+{
+    const char *mode = getenv("NEP_NC_TEST4_MODEL");
+
+    if (!mode || !*mode || !strcmp(mode, "native"))
+        return NC_NEXTCDF4;
+    if (!strcmp(mode, "netcdf4"))
+        return NC_NEXTCDF4 | NC_NETCDF4_MODEL;
+    fprintf(stderr, "nep_nc_test4_create_mode: bad NEP_NC_TEST4_MODEL "
+            "'%s' (want 'native' or 'netcdf4')\n", mode);
+    exit(2);
+}
+
 #endif /* _NC_TESTS_H */

@@ -88,9 +88,12 @@ NetCDF-C (with the upstream UDF rewrite) provides 64 UDF slots (0-63), accessed 
 ├── test_cdf/                # CDF-specific tests
 ├── test_geotiff/            # GeoTIFF-specific tests
 ├── test_h5/                 # HDF5-specific tests
-├── examples/                # Example programs
-│   ├── netcdf-4/            # NetCDF-4 examples
-│   └── classic/             # Classic NetCDF examples
+├── examples/                # Example programs (NEP features only)
+│   ├── nextcdf4/            # NEXTCDF-4 examples (float16, bfloat16)
+│   ├── performance/         # Disk-bound performance benchmarks
+│   ├── dicom/               # DICOM UDF reader example
+│   ├── pdb/                 # PDB UDF reader example
+│   └── viz/                 # Python UDF visualization examples
 ├── docs/                    # Documentation
 │   ├── design.md            # Architecture design document
 │   ├── prd.md               # Product Requirements Document
@@ -204,9 +207,12 @@ ctest -V
 
 ```bash
 # After building with -DNEP_BUILD_EXAMPLES=ON
-./examples/netcdf-4/compression
-./examples/netcdf-4/simple_nc4
+./examples/nextcdf4/float16
+./examples/performance/deflate
 ```
+
+Generic NetCDF teaching examples moved to
+https://github.com/captainkirk99/NetCDF_Developers_Handbook in v4.3.0.
 
 ## Dependencies
 

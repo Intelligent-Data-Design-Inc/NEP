@@ -1,0 +1,44 @@
+  subroutine rank_@RANK@()
+    integer :: n,ids(@RANK@),v,b,sf,sb,j
+    integer(c_int16_t) :: a(@EXTENTS@),out(@EXTENTS@),scalar
+    integer :: starts(@RANK@),counts(@RANK@)
+    call check(nf90_create('rank@RANK@.nc',nf90_nextcdf4,n))
+    do j=1,@RANK@
+      block
+        character(len=12) :: name
+        write(name,'(a,i0)') 'dim',j
+        call check(nf90_def_dim(n,trim(name),2,ids(j)))
+      end block
+    enddo
+    call check(nf90_def_var(n,'half',nf90_float16,ids,v))
+    call check(nf90_def_var(n,'bhalf',nf90_bfloat16,ids,b))
+    call check(nf90_def_var(n,'scalar_half',nf90_float16,sf))
+    call check(nf90_def_var(n,'scalar_bhalf',nf90_bfloat16,sb))
+    call check(nf90_enddef(n))
+    a=int(z'bc00',c_int16_t)
+    call check(nf90_put_var_float16(n,v,a))
+    call check(nf90_put_var_bfloat16(n,b,a))
+    starts=1; counts=2
+    call check(nf90_put_var_float16(n,v,a,start=starts,count=counts))
+    call check(nf90_put_var_bfloat16(n,b,a,start=starts,stride=starts))
+    call check(nf90_put_var_float16(n,v,a(@FIRST@),start=starts))
+    call check(nf90_put_var_bfloat16(n,b,a(@FIRST@),start=starts))
+    scalar=int(z'8000',c_int16_t)
+    call check(nf90_put_var_bfloat16(n,sb,scalar))
+    call check(nf90_get_var_bfloat16(n,sb,scalar))
+    call check(nf90_put_var_bfloat16(n,sb,scalar,start=[integer::]))
+    call check(nf90_get_var_bfloat16(n,sb,scalar,count=[integer::]))
+    call check(nf90_close(n))
+    call check(nf90_open('rank@RANK@.nc',nf90_nextcdf4,n))
+    call check(nf90_get_var_float16(n,v,out))
+    if(any(out/=a)) stop 10
+    call check(nf90_get_var_bfloat16(n,b,out))
+    if(any(out/=a)) stop 11
+    call check(nf90_get_var_float16(n,v,out,start=starts,stride=starts))
+    if(any(out/=a)) stop 12
+    call check(nf90_get_var_bfloat16(n,b,out,start=starts,count=counts))
+    if(any(out/=a)) stop 13
+    call check(nf90_get_var_float16(n,v,out(@FIRST@),start=starts))
+    call check(nf90_get_var_bfloat16(n,b,out(@FIRST@),start=starts))
+    call check(nf90_close(n))
+  end subroutine

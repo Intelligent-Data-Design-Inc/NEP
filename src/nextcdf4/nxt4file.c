@@ -23,8 +23,8 @@
  *
  * @param grp Group.
  */
-static void
-close_group_hdf(NC_GRP_INFO_T *grp)
+void
+nx4_close_group_hdf(NC_GRP_INFO_T *grp)
 {
     size_t i;
     NEXTCDF4_GRP_INFO_T *ginfo;
@@ -62,17 +62,95 @@ close_group_hdf(NC_GRP_INFO_T *grp)
     for (i = 0; i < ncindexsize(grp->dim); i++) {
         NC_DIM_INFO_T *dim = (NC_DIM_INFO_T *)ncindexith(grp->dim, i);
         NEXTCDF4_DIM_INFO_T *dinfo;
-        if (dim && (dinfo = (NEXTCDF4_DIM_INFO_T *)dim->format_dim_info) &&
-            dinfo->hdf_dataset >= 0) {
-            H5E_BEGIN_TRY {
-                H5Dclose(dinfo->hdf_dataset);
-            } H5E_END_TRY;
-            dinfo->hdf_dataset = -1;
+        if (dim && (dinfo = (NEXTCDF4_DIM_INFO_T *)dim->format_dim_info)) {
+            if (dinfo->hdf_dataset >= 0) {
+                H5E_BEGIN_TRY {
+                    H5Dclose(dinfo->hdf_dataset);
+                } H5E_END_TRY;
+            }
+            free(dinfo);
+            dim->format_dim_info = NULL;
         }
     }
 
+    /* Committed/transient datatypes close after every dependent
+     * object (variables above) is finished, before the shared
+     * metadata records are deleted by nc4_file_list_del(). */
+    if (grp->type)
+        for (i = 0; i < ncindexsize(grp->type); i++) {
+            NC_TYPE_INFO_T *type =
+                (NC_TYPE_INFO_T *)ncindexith(grp->type, i);
+            if (type)
+                nx4_free_type_info(type);
+        }
+
     for (i = 0; i < ncindexsize(grp->children); i++)
-        close_group_hdf((NC_GRP_INFO_T *)ncindexith(grp->children, i));
+        nx4_close_group_hdf((NC_GRP_INFO_T *)ncindexith(grp->children, i));
+}
+
+/**
+ * @brief Release attribute data and variable fill values that
+ * netcdf-c's teardown cannot reclaim.
+ *
+ * `nc4_file_list_del()` reclaims every `att->data` and
+ * `var->fill_value` through `NC_reclaim_data()`, which routes any
+ * type id above `NC_MAX_ATOMIC_TYPE` to `nc4_find_type()`. The NEP
+ * extended atomic types (`NC_FLOAT16` through the ids below
+ * `NC_FIRSTUSERTYPEID`) are not registered user types, so the lookup
+ * fails and the recursive teardown aborts early, leaking the whole
+ * group/var/att tree. Their payloads are flat `malloc`'d blocks — no
+ * nested allocations — so they are released here directly and the
+ * attribute's type id is rewritten to `NC_BYTE` so upstream's
+ * reclaim pass skips it.
+ *
+ * Must run after all attribute/fill metadata has been materialized
+ * to HDF5 and immediately before `nc4_file_list_del()`.
+ *
+ * @param grp Root group to scrub; recurses into children.
+ */
+void
+nx4_scrub_extended_atomic_data(NC_GRP_INFO_T *grp)
+{
+    size_t i, j;
+
+    if (!grp)
+        return;
+    for (i = 0; i < ncindexsize(grp->att); i++) {
+        NC_ATT_INFO_T *att = (NC_ATT_INFO_T *)ncindexith(grp->att, i);
+        if (att && att->nc_typeid > NC_MAX_ATOMIC_TYPE &&
+            att->nc_typeid < NC_FIRSTUSERTYPEID) {
+            free(att->data);
+            att->data = NULL;
+            att->len = 0;
+            att->dirty = 0;
+            att->nc_typeid = NC_BYTE;
+        }
+    }
+    for (i = 0; i < ncindexsize(grp->vars); i++) {
+        NC_VAR_INFO_T *var = (NC_VAR_INFO_T *)ncindexith(grp->vars, i);
+        if (!var)
+            continue;
+        for (j = 0; j < ncindexsize(var->att); j++) {
+            NC_ATT_INFO_T *att = (NC_ATT_INFO_T *)ncindexith(var->att, j);
+            if (att && att->nc_typeid > NC_MAX_ATOMIC_TYPE &&
+                att->nc_typeid < NC_FIRSTUSERTYPEID) {
+                free(att->data);
+                att->data = NULL;
+                att->len = 0;
+                att->dirty = 0;
+                att->nc_typeid = NC_BYTE;
+            }
+        }
+        if (var->fill_value && var->type_info &&
+            var->type_info->hdr.id > NC_MAX_ATOMIC_TYPE &&
+            var->type_info->hdr.id < NC_FIRSTUSERTYPEID) {
+            free(var->fill_value);
+            var->fill_value = NULL;
+        }
+    }
+    for (i = 0; i < ncindexsize(grp->children); i++)
+        nx4_scrub_extended_atomic_data(
+            (NC_GRP_INFO_T *)ncindexith(grp->children, i));
 }
 
 /**
@@ -104,6 +182,7 @@ NEXTCDF4_free_file(NEXTCDF4_FILE_INFO_T *file)
         ELOG((3, "%s: hdfid=%ld nobj=%d ret=%d", __func__, (long)file->hdfid, nobj, ret));
     }
     free(file->path);
+    free(file->ncproperties);
     free(file);
     return ret;
 }
@@ -153,6 +232,7 @@ NEXTCDF4_add_file(int ncid, const char *path, int mode,
         return NC_ENOMEM;
     }
     h5->no_write = file->no_write;
+    h5->fill_mode = NC_FILL;
     h5->root_grp->atts_read = 1;
     h5->format_file_info = file;
     {
@@ -367,6 +447,8 @@ NEXTCDF4_sync(int ncid)
         return ret;
     if (file->no_write)
         return NC_NOERR;
+    if ((ret = nx4_write_provenance(file)))
+        return ret;
     return H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0 ? NC_EHDFERR : NC_NOERR;
 }
 
@@ -400,11 +482,16 @@ NEXTCDF4_close(int ncid, void *parameters)
         if ((ret = NEXTCDF4__enddef(ncid, 0, 0, 0, 0)))
             return ret;
     }
-    close_group_hdf(h5->root_grp);
+    nx4_close_group_hdf(h5->root_grp);
     h5->format_file_info = NULL;
-    if (!file->no_write && H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0)
-        close_ret = NC_EHDFERR;
+    if (!file->no_write) {
+        if ((ret = nx4_write_provenance(file)))
+            close_ret = ret;
+        if (H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0)
+            close_ret = NC_EHDFERR;
+    }
     ret = NEXTCDF4_free_file(file);
+    nx4_scrub_extended_atomic_data(h5->root_grp);
     nc4_file_list_del(ncid);
     return close_ret ? close_ret : ret;
 }
@@ -506,7 +593,13 @@ commit_group_vars(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file,
         NEXTCDF4_VAR_INFO_T *vinfo;
         if (!var || !(vinfo = var->format_var_info))
             continue;
-        if (vinfo->dcpl_dirty && vinfo->hdf_dataset >= 0) {
+        if (vinfo->hdf_dataset < 0) {
+            /* A user-typed variable's dataset is created only now,
+             * after NEXTCDF4_write_types() committed its datatype. */
+            if ((ret = nx4_create_var_dataset(var, h5, file, grp)))
+                return ret;
+            vinfo->dcpl_dirty = 0;
+        } else if (vinfo->dcpl_dirty) {
             if ((ret = nx4_create_var_dataset(var, h5, file, grp)))
                 return ret;
             vinfo->dcpl_dirty = 0;
@@ -521,6 +614,10 @@ commit_group_vars(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file,
             var->created = 1;
         }
     }
+    /* Attributes deferred on uncommitted types or deferred datasets
+     * are materialized now, in definition order. */
+    if ((ret = nx4_flush_pending_atts(grp)))
+        return ret;
     for (i = 0; i < ncindexsize(grp->children); i++) {
         NC_GRP_INFO_T *child =
             (NC_GRP_INFO_T *)ncindexith(grp->children, i);
@@ -574,6 +671,10 @@ NEXTCDF4__enddef(int ncid, size_t h_minfree, size_t v_align,
         return ret;
     if ((ret = commit_group_vars(h5, file, h5->root_grp)))
         return ret;
+    /* Upstream writes provenance inside the same deferred-metadata
+     * pass: _NCProperties and _nc3_strict land here, not at create. */
+    if ((ret = nx4_write_provenance(file)))
+        return ret;
     if (H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0)
         return NC_EHDFERR;
     file->define_mode = 0;
@@ -605,8 +706,51 @@ NEXTCDF4_redef(int ncid)
     if (file->no_write)
         return NC_EPERM;
     if (file->define_mode)
-        return NC_EINVAL;
+        return (file->mode & NC_CLASSIC_MODEL) ? NC_EINDEFINE :
+            NC_NOERR;
     file->define_mode = 1;
     h5->flags |= NC_INDEF;
+    return NC_NOERR;
+}
+
+/**
+ * @brief Reject unsupported disk, memory, sharing and parallel modes.
+ * @param mode NetCDF create/open flags, including the UDF selector.
+ * @return NC_NOERR for supported flags, otherwise NC_EINVAL.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+NEXTCDF4_check_mode(int mode)
+{
+    return mode & (NC_DISKLESS | NC_INMEMORY | NC_MPIIO | NC_SHARE |
+                   NC_PERSIST | NC_MMAP) ? NC_EINVAL : NC_NOERR;
+}
+
+/**
+ * @brief Change the session default inherited by subsequently defined variables.
+ * Existing variables retain their fill properties; this does not enter define
+ * mode or persist a file-wide setting. Subgroup IDs address the same default.
+ * @param ncid File or group identifier.
+ * @param fillmode NC_FILL or NC_NOFILL.
+ * @param old_modep Optional destination for the previous session default.
+ * @return NC_NOERR, NC_EBADID, NC_EPERM for read-only files, or NC_EINVAL.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+NEXTCDF4_set_fill(int ncid, int fillmode, int *old_modep)
+{
+    NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
+    int ret;
+
+    if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
+        return ret;
+    if (file->no_write)
+        return NC_EPERM;
+    if (fillmode != NC_FILL && fillmode != NC_NOFILL)
+        return NC_EINVAL;
+    if (old_modep)
+        *old_modep = h5->fill_mode;
+    h5->fill_mode = fillmode;
     return NC_NOERR;
 }

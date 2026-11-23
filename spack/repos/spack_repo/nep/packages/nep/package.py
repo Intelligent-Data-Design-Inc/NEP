@@ -26,7 +26,7 @@ class Nep(CMakePackage):
     version("4.2.0", sha256="18656ce4f7095f3e52234645224144d2558ff001a7444fcc9b6ed7b7e718eccd")
 
     variant("docs", default=True, description="Build documentation with Doxygen")
-    variant("fortran", default=True, description="Build Fortran format reader tests")
+    variant("fortran", default=True, description="Build Fortran bindings and format reader tests")
     variant("fits", default=False, description="Enable FITS reader support via CFITSIO")
     variant("geotiff", default=False, description="Enable GeoTIFF reader support via libgeotiff")
     variant("grib2", default=False, description="Enable GRIB2 reader support via NCEPLIBS-g2c")
@@ -73,6 +73,8 @@ class Nep(CMakePackage):
     # NC_reclaim_data for slots >= 2.
     depends_on("netcdf-c@4.10.2:", when="+nextcdf4 @4.3.0:", type=("build", "link"))
     depends_on("netcdf-fortran", when="+fortran", type=("build", "link"))
+    depends_on("netcdf-fortran@4.6.2:", when="@4.3.0: +fortran +nextcdf4", type=("build", "link"))
+    depends_on("netcdf-fortran@4.6.2:", when="@main +fortran +nextcdf4", type=("build", "link"))
     depends_on("cfitsio", when="+fits", type=("build", "link"))
     depends_on("libgeotiff", when="+geotiff", type=("build", "link"))
     depends_on("g2c", when="+grib2", type=("build", "link"))
@@ -142,3 +144,8 @@ class Nep(CMakePackage):
                 assert os.path.exists(join_path(self.prefix.lib, lib_name))
         if any_reader:
             assert os.path.exists(join_path(self.prefix.share, ".ncrc"))
+        if (
+            self.spec.satisfies("@main") or self.spec.satisfies("@4.3.0:")
+        ) and self.spec.satisfies("+fortran +nextcdf4"):
+            assert os.path.exists(join_path(self.prefix.lib, "libnepnextcdf4f.so"))
+            assert os.path.exists(join_path(self.prefix.include, "nep", "nep_nextcdf4.mod"))

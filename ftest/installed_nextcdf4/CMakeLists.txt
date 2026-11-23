@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.19)
+project(NEPFortranConsumer LANGUAGES Fortran)
+find_package(NEP CONFIG REQUIRED)
+add_executable(consumer consumer.F90)
+target_link_libraries(consumer PRIVATE NEP::nepnextcdf4f)
+enable_testing()
+add_test(NAME consumer COMMAND consumer)
