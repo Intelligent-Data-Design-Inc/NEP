@@ -1202,7 +1202,8 @@ NC_MMCIF_close(int ncid, void *ignore)
     mmcif_free_file_info(mmcif_file);
     h5->format_file_info = NULL;
 
-    return NC_NOERR;
+    /* Free the shared metadata tree. */
+    return nc4_nc4f_list_del(h5);
 }
 
 /**
@@ -1230,7 +1231,8 @@ NC_MMCIF_abort(int ncid)
     mmcif_free_file_info(mmcif_file);
     h5->format_file_info = NULL;
 
-    return NC_NOERR;
+    /* Free the shared metadata tree. */
+    return nc4_nc4f_list_del(h5);
 }
 
 /**

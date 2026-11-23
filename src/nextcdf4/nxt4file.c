@@ -89,6 +89,71 @@ nx4_close_group_hdf(NC_GRP_INFO_T *grp)
 }
 
 /**
+ * @brief Release attribute data and variable fill values that
+ * netcdf-c's teardown cannot reclaim.
+ *
+ * `nc4_file_list_del()` reclaims every `att->data` and
+ * `var->fill_value` through `NC_reclaim_data()`, which routes any
+ * type id above `NC_MAX_ATOMIC_TYPE` to `nc4_find_type()`. The NEP
+ * extended atomic types (`NC_FLOAT16` through the ids below
+ * `NC_FIRSTUSERTYPEID`) are not registered user types, so the lookup
+ * fails and the recursive teardown aborts early, leaking the whole
+ * group/var/att tree. Their payloads are flat `malloc`'d blocks — no
+ * nested allocations — so they are released here directly and the
+ * attribute's type id is rewritten to `NC_BYTE` so upstream's
+ * reclaim pass skips it.
+ *
+ * Must run after all attribute/fill metadata has been materialized
+ * to HDF5 and immediately before `nc4_file_list_del()`.
+ *
+ * @param grp Root group to scrub; recurses into children.
+ */
+void
+nx4_scrub_extended_atomic_data(NC_GRP_INFO_T *grp)
+{
+    size_t i, j;
+
+    if (!grp)
+        return;
+    for (i = 0; i < ncindexsize(grp->att); i++) {
+        NC_ATT_INFO_T *att = (NC_ATT_INFO_T *)ncindexith(grp->att, i);
+        if (att && att->nc_typeid > NC_MAX_ATOMIC_TYPE &&
+            att->nc_typeid < NC_FIRSTUSERTYPEID) {
+            free(att->data);
+            att->data = NULL;
+            att->len = 0;
+            att->dirty = 0;
+            att->nc_typeid = NC_BYTE;
+        }
+    }
+    for (i = 0; i < ncindexsize(grp->vars); i++) {
+        NC_VAR_INFO_T *var = (NC_VAR_INFO_T *)ncindexith(grp->vars, i);
+        if (!var)
+            continue;
+        for (j = 0; j < ncindexsize(var->att); j++) {
+            NC_ATT_INFO_T *att = (NC_ATT_INFO_T *)ncindexith(var->att, j);
+            if (att && att->nc_typeid > NC_MAX_ATOMIC_TYPE &&
+                att->nc_typeid < NC_FIRSTUSERTYPEID) {
+                free(att->data);
+                att->data = NULL;
+                att->len = 0;
+                att->dirty = 0;
+                att->nc_typeid = NC_BYTE;
+            }
+        }
+        if (var->fill_value && var->type_info &&
+            var->type_info->hdr.id > NC_MAX_ATOMIC_TYPE &&
+            var->type_info->hdr.id < NC_FIRSTUSERTYPEID) {
+            free(var->fill_value);
+            var->fill_value = NULL;
+        }
+    }
+    for (i = 0; i < ncindexsize(grp->children); i++)
+        nx4_scrub_extended_atomic_data(
+            (NC_GRP_INFO_T *)ncindexith(grp->children, i));
+}
+
+/**
  * @brief Close a `NEXTCDF4_FILE_INFO_T`'s HDF5 handles and free it.
  *
  * Companion to NEXTCDF4_add_file(): closes the root group and the
@@ -418,6 +483,7 @@ NEXTCDF4_close(int ncid, void *parameters)
     if (!file->no_write && H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0)
         close_ret = NC_EHDFERR;
     ret = NEXTCDF4_free_file(file);
+    nx4_scrub_extended_atomic_data(h5->root_grp);
     nc4_file_list_del(ncid);
     return close_ret ? close_ret : ret;
 }

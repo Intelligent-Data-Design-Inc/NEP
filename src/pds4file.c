@@ -2083,7 +2083,7 @@ NC_PDS4_close(int ncid, void *ignore)
     /* Get PDS4-specific info. */
     pds4_file = (NC_PDS4_FILE_INFO_T *)h5->format_file_info;
     if (!pds4_file)
-        return NC_NOERR;
+        return nc4_nc4f_list_del(h5);
 
 #ifdef HAVE_PDS4
     /* Free the parsed XML document. */
@@ -2099,7 +2099,8 @@ NC_PDS4_close(int ncid, void *ignore)
     free(pds4_file);
     h5->format_file_info = NULL;
 
-    return NC_NOERR;
+    /* Free the shared metadata tree. */
+    return nc4_nc4f_list_del(h5);
 }
 
 /**
@@ -2130,7 +2131,7 @@ NC_PDS4_abort(int ncid)
     /* Get PDS4-specific info. */
     pds4_file = (NC_PDS4_FILE_INFO_T *)h5->format_file_info;
     if (!pds4_file)
-        return NC_NOERR;
+        return nc4_nc4f_list_del(h5);
 
 #ifdef HAVE_PDS4
     if (pds4_file->doc)
@@ -2144,7 +2145,8 @@ NC_PDS4_abort(int ncid)
     free(pds4_file);
     h5->format_file_info = NULL;
 
-    return NC_NOERR;
+    /* Free the shared metadata tree. */
+    return nc4_nc4f_list_del(h5);
 }
 
 /**

@@ -1039,7 +1039,8 @@ NC_PDB_close(int ncid, void *ignore)
     pdb_free_file_info(pdb_file);
     h5->format_file_info = NULL;
 
-    return NC_NOERR;
+    /* Free the shared metadata tree. */
+    return nc4_nc4f_list_del(h5);
 }
 
 /**
@@ -1067,7 +1068,8 @@ NC_PDB_abort(int ncid)
     pdb_free_file_info(pdb_file);
     h5->format_file_info = NULL;
 
-    return NC_NOERR;
+    /* Free the shared metadata tree. */
+    return nc4_nc4f_list_del(h5);
 }
 
 /**

@@ -98,8 +98,10 @@ NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
 fail:
     if (fapl >= 0)
         H5Pclose(fapl);
-    if (h5)
+    if (h5) {
         nx4_close_group_hdf(h5->root_grp);
+        nx4_scrub_extended_atomic_data(h5->root_grp);
+    }
     NEXTCDF4_free_file(file);
     nc4_file_list_del(ncid);
     return ret;

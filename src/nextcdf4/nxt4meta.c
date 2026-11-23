@@ -784,6 +784,16 @@ nx4_att_list_del(NCindex *list, NC_ATT_INFO_T *att)
             a->hdr.id = (int)i;
     }
     ncindexrebuild(list);
+    if (att->nc_typeid > NC_MAX_ATOMIC_TYPE &&
+        att->nc_typeid < NC_FIRSTUSERTYPEID) {
+        /* nc4_att_free() reclaims through NC_reclaim_data(), which
+         * cannot resolve the NEP extended atomic ids — free the flat
+         * payload here so its error path drops the record only. */
+        free(att->data);
+        att->data = NULL;
+        att->len = 0;
+        att->nc_typeid = NC_BYTE;
+    }
     nc4_att_free(att);
     return NC_NOERR;
 }
@@ -1337,9 +1347,9 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
             if (var->dim[i]->unlimited)
                 n_unlim++;
         if (n_unlim > 1)
-            return NC_EINVAL;
+            { ret = NC_EINVAL; goto fail; }
         if (n_unlim == 1 && ndims > 0 && !var->dim[0]->unlimited)
-            return NC_EINVAL;
+            { ret = NC_EINVAL; goto fail; }
     }
 
     /* -1 marks "storage not specified": the dataset is created
@@ -1459,8 +1469,12 @@ fail:
         if (vinfo && vinfo->hdf_dataset >= 0)
             H5Dclose(vinfo->hdf_dataset);
     } H5E_END_TRY;
-    if (var)
+    if (var) {
+        /* var_free() does not know about the HDF5 filter list —
+         * release it before the record is deleted. */
+        NC4_hdf5_filter_freelist(var);
         nc4_var_list_del(grp, var);
+    }
     free(vinfo);
     if (hdf_type >= 0)
         H5Tclose(hdf_type);
