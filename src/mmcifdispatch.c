@@ -9,7 +9,7 @@
 
 #include "config.h"
 #include <stdlib.h>
-#include "mmcifdispatch.h"
+#include "mmcifinternal.h"
 #include "nc4dispatch.h"
 #include "hdf5dispatch.h"
 #include "netcdf_filter.h"

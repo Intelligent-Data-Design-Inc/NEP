@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "nep_nc4.h"
-#include "fitsdispatch.h"
+#include "fitsinternal.h"
 
 /* Include CFITSIO header if available */
 #ifdef HAVE_FITS

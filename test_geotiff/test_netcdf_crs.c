@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "geotiffdispatch.h"
+#include "src/geotiffinternal.h"
 
 #define NASA_DATA_DIR "./"
 

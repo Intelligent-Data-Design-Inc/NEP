@@ -24,7 +24,7 @@
 #include <netcdf.h>
 
 #ifdef HAVE_CDF
-#include "cdfdispatch.h"
+#include "src/cdfinternal.h"
 
 #define TEST_FILE "tst_cdf_simple.cdf"
 

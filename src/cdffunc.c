@@ -9,7 +9,7 @@
 
 #include "config.h"
 #include "nep_nc4.h"
-#include "cdfdispatch.h"
+#include "cdfinternal.h"
 
 
 /* Define ELOG macro if not already defined (when ELOGGING is disabled) */

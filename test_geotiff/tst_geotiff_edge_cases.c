@@ -20,7 +20,7 @@
 #include <netcdf.h>
 
 #ifdef HAVE_GEOTIFF
-#include "geotiffdispatch.h"
+#include "src/geotiffinternal.h"
 #endif
 
 #define FILE_SMALL "MCDWD_L3_F1C_NRT.A2025353.h00v02.061.tif"

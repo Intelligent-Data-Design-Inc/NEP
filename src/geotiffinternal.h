@@ -1,0 +1,132 @@
+/**
+ * @file geotiffinternal.h
+ * @brief Private state and shared helpers for the GeoTIFF UDF backend.
+ *
+ * @author Edward Hartnett
+ * @date 2026-11-23
+ * @copyright Intelligent Data Design, Inc. All rights reserved.
+ */
+#ifndef GEOTIFFINTERNAL_H
+#define GEOTIFFINTERNAL_H
+
+#include "config.h"
+#include "ncdispatch.h"
+#include "nc4internal.h"
+#include "geotiffdispatch.h"
+
+#ifdef HAVE_GEOTIFF
+#include <geotiff.h>
+#include <geo_normalize.h>
+#endif
+
+/** TIFF magic numbers for format detection */
+#define TIFF_MAGIC_LE 0x4949  /* Little-endian "II" */
+#define TIFF_MAGIC_BE 0x4D4D  /* Big-endian "MM" */
+
+/** TIFF version numbers */
+#define TIFF_VERSION_CLASSIC 42
+#define TIFF_VERSION_BIGTIFF 43
+
+/** Minimum TIFF header size for validation */
+#define TIFF_HEADER_SIZE 8
+
+typedef struct NC_VAR_GEOTIFF_INFO
+{
+    int band_num;
+    int geotiff_data_type;
+    double *coord_data; /* non-NULL for coordinate variables (lat/lon/x/y) */
+    size_t coord_len;   /* length of coord_data array */
+} NC_VAR_GEOTIFF_INFO_T;
+
+/** CRS coordinate system types */
+#define NC_GEOTIFF_CRS_UNKNOWN 0
+#define NC_GEOTIFF_CRS_GEOGRAPHIC 1
+#define NC_GEOTIFF_CRS_PROJECTED 2
+
+/** CRS parameter storage structure */
+typedef struct nc_geotiff_crs_info
+{
+    int crs_type; /* geographic or projected */
+    int epsg_code;
+    int ct_projection; /* GTIFDefn.CTProjection value (projected CRS only) */
+    int raster_pixel_is_point; /* 1 if GTRasterTypeGeoKey=RasterPixelIsPoint, 0 if area */
+    char crs_name[NC_MAX_NAME + 1];
+    double semi_major_axis;
+    double inverse_flattening;
+    double false_easting;
+    double false_northing;
+    double scale_factor;
+    double central_meridian;
+    double latitude_of_origin;
+    double standard_parallel_1; /* first standard parallel (LCC, Albers) */
+    double standard_parallel_2; /* second standard parallel (LCC 2SP, Albers) */
+} NC_GEOTIFF_CRS_INFO_T;
+
+typedef struct NC_GEOTIFF_FILE_INFO
+{
+    void *tiff_handle;
+    void *gtif_handle;
+    char *path;
+    int is_little_endian;
+    int is_tiled;
+    uint32_t tile_width;
+    uint32_t tile_height;
+    uint32_t rows_per_strip;
+    uint16_t planar_config;
+    uint32_t image_width;
+    uint32_t image_height;
+    uint16_t samples_per_pixel;
+    NC_GEOTIFF_CRS_INFO_T crs_info; /* CRS metadata */
+} NC_GEOTIFF_FILE_INFO_T;
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+    extern int
+    NC_GEOTIFF_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
+                    void *parameters, const NC_Dispatch *, int);
+
+    extern int
+    NC_GEOTIFF_abort(int ncid);
+
+    extern int
+    NC_GEOTIFF_close(int ncid, void *ignore);
+
+    extern int
+    NC_GEOTIFF_inq_format(int ncid, int *formatp);
+
+    extern int
+    NC_GEOTIFF_inq_format_extended(int ncid, int *formatp, int *modep);
+
+    extern int
+    NC_GEOTIFF_get_vara(int ncid, int varid, const size_t *start, const size_t *count,
+                        void *value, nc_type);
+
+#define GEOTIFF_INIT_OK() (NC_GEOTIFF_initialize() != NULL)
+#define GEOTIFF_INIT_AND_ASSIGN(ret) do { \
+        NC_Dispatch *_d = NC_GEOTIFF_initialize(); \
+        (ret) = (_d != NULL) ? NC_NOERR : NC_ENOTNC; \
+    } while(0)
+
+    extern int
+    NC_GEOTIFF_detect_format(const char *path, int *is_geotiff);
+
+    extern int
+    NC_GEOTIFF_extract_metadata(NC_FILE_INFO_T *h5, NC_GEOTIFF_FILE_INFO_T *geotiff_info);
+
+#ifdef HAVE_GEOTIFF
+    extern int
+    extract_crs_parameters(GTIF *gtif, NC_GEOTIFF_CRS_INFO_T *crs_info);
+
+    extern int
+    validate_crs_completeness(const NC_GEOTIFF_CRS_INFO_T *crs_info);
+#endif
+
+    extern const NC_Dispatch *GEOTIFF_dispatch_table;
+
+#if defined(__cplusplus)
+}
+#endif
+
+#endif /* GEOTIFFINTERNAL_H */

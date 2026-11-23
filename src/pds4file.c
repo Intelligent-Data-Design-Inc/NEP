@@ -66,7 +66,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "nep_nc4.h"
-#include "pds4dispatch.h"
+#include "pds4internal.h"
 
 /* Include libxml2 headers if available */
 #ifdef HAVE_PDS4

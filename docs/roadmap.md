@@ -247,6 +247,15 @@ Plan: [docs/plan/v4.3.0-sprint1S-ci-and-docs.md](plan/v4.3.0-sprint1S-ci-and-doc
 
 Plan: [docs/plan/v4.3.0-sprint1T-example-programs.md](plan/v4.3.0-sprint1T-example-programs.md)
 
+#### Sprint 1U - Fix Issue 389
+- Split all eight format dispatch headers the #378 way: six installed (`grib2`, `fits`, `pds4`, `dicom`, `pdb`, `mmcif`) plus uninstalled `cdfdispatch.h`/`geotiffdispatch.h`, which share the `config.h`/`ncdispatch.h` defect.
+- Installed headers keep only `NC_FORMATX_NC_<FMT>` (with the `NC_FORMATX_UDFn` fallbacks), `NC_<FMT>_initialize`, `NC_<FMT>_finalize`; includes limited to `<netcdf.h>`, `<netcdf_dispatch.h>`, `nep.h`.
+- New `src/<fmt>internal.h` per backend holds the state structs, dispatch prototypes, `*_dispatch_table`, `*_INIT_*` macros and third-party includes; backend `.c` files and `test_cdf/`/`test_geotiff/` repoint to them.
+- Verification: build, ctest, warning-free docs, plus a manual install-prefix compile probe per installed header; close #389. No Spack/conda or CI changes.
+- Out of scope (Sprint 2): tag, release notes, Spack/conda version bumps; installing cdf/geotiff headers stays out entirely.
+
+Plan: [docs/plan/v4.3.0-sprint1U-fix-issue-389.md](plan/v4.3.0-sprint1U-fix-issue-389.md)
+
 #### Sprint 2 - 
 - Tag v4.3.0 and write `docs/releases/v4.3.0.md` (HDF5 detection change, CMake 3.19 minimum, conda GeoTIFF, Sprint 1A NEXTCDF-4 bfloat16 examples and `NEP_ZSTD_PLUGIN_DIR`, Sprint 1B typed small-float I/O and the `nc_*_bfloat16` functions, #376, Sprint 1C optimized benchmark results, the bfloat16 GDAS sample and `bfloat16_io_perf`, the #382 contiguous-layout fix, the fix for untyped `nc_put_var`/`nc_get_var`/`var1`/`vars` failing with `NC_EBADTYPE` on NEXTCDF-4, and Sprint 1K generic HDF5 filter support (`nc_def_var_filter`, szip/bzip2/zstd plugins, missing-plugin `NC_ENOFILTER`), and Sprint 1L reference types (`NC_REF_OBJECT`/`NC_REF_REGION` removed — a breaking API change — replaced by `NC_STD_REF`/`H5T_STD_REF` and the `nc_ref_*`/`nc_deref_*` API).
 - Spack: add `version("4.3.0")` with its sha256; update spack/spack-packages#5557 in place per `docs/spack.md` "Updating the upstream PR".
