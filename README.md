@@ -87,17 +87,9 @@ how it works internally.
 
 ### Example Programs
 
-NEP includes over 26 C and Fortran example programs, organized by topic. They are companion code for *[The NetCDF Developer's Handbook: The Authoritative Guide to Writing High-Performance Programs for Scientific Data Management, Second Edition](https://www.amazon.com/NetCDF-Developers-Handbook-Authoritative-High-Performance/dp/B0H7Q49MPS/)*.
+NEP's example programs exercise NEP features: NEXTCDF-4 small-float and conversion demos (`examples/nextcdf4/`), disk-bound performance benchmarks (`examples/performance/`), UDF reader examples (`examples/dicom/`, `examples/pdb/`), and optional Python UDF visualizations (`examples/viz/`).
 
-| Category | Examples |
-|---|---|
-| **Classic NetCDF** | Quickstart, 2D arrays, coord vars, format variants, unlimited dims |
-| **NetCDF-4** | Compression, chunking, groups, compound/enum types, multiple unlimited dims |
-| **NcZarr** | Local store create/read/write, chunking, deflate compression |
-| **Performance** | Chunk cache tuning, chunking strategy comparison, standard NetCDF compression examples |
-| **Parallel I/O** | MPI-based parallel write and read |
-
-Both C and Fortran versions provided for Classic, NetCDF-4, and NcZarr categories.
+The generic NetCDF teaching examples — classic NetCDF, NetCDF-4, NcZarr, OPeNDAP, parallel I/O, and all Fortran versions — moved to the [NetCDF Developer's Handbook](https://github.com/captainkirk99/NetCDF_Developers_Handbook) repository in v4.3.0, where they are maintained as companion code for the book.
 
 ### Earth Observation Examples
 
@@ -211,7 +203,7 @@ no longer build filters in NEP and produce a migration warning.
 #### Fortran
 
 `-DNEP_ENABLE_FORTRAN` (default ON): enables Fortran format-reader tests
-in `ftest/` and Fortran examples in `examples/f_*/`. NEP no longer
+in `ftest/`. NEP no longer
 installs `nepf` or `nep.mod`. Requires NetCDF-Fortran and a Fortran compiler.
 When combined with `-DNEP_ENABLE_NEXTCDF4=ON` it also builds and installs
 the `nep_nextcdf4` module and `libnepnextcdf4f` (`NEP::nepnextcdf4f`),
@@ -240,7 +232,7 @@ All format readers are independent — any combination can be enabled simultaneo
 
 - **`-DNEP_BUILD_EXAMPLES`** (default OFF): builds all example programs and registers them as tests.
 - **`-DNEP_ENABLE_BENCHMARKS`** (default OFF): runs general NetCDF performance benchmarks in `examples/performance/`.
-- **`-DNEP_ENABLE_PARALLEL_TESTS`** (default OFF): builds `examples/parallelIO/` and runs tests via `mpiexec -n 4`. Requires MPI and NetCDF-C with `NC_HAS_PARALLEL4`.
+- **`-DNEP_ENABLE_PARALLEL_TESTS`** (default OFF): builds the parallel test programs and runs tests via `mpiexec -n 4`. Requires MPI and NetCDF-C with `NC_HAS_PARALLEL4`.
 
 #### Documentation
 

@@ -29,7 +29,7 @@ See **[NEXTCDF-4](nextcdf4.md)** — selection flags, compatibility modes, suppo
 
 ### Example Programs
 
-Over 55 C and Fortran programs covering classic NetCDF, NetCDF-4, NcZarr, OPeNDAP remote access, performance tuning, and parallel I/O. Companion code for *[The NetCDF Developer's Handbook, Second Edition](https://www.amazon.com/dp/B0H7Q1Z75L)*.
+Example programs exercising NEP features: NEXTCDF-4 small-float I/O and conversion benchmarks, disk-bound performance benchmarks, and UDF reader examples. The generic NetCDF teaching examples (C and Fortran) moved to the [NetCDF Developer's Handbook](https://github.com/captainkirk99/NetCDF_Developers_Handbook) repository, companion code for *[The NetCDF Developer's Handbook, Second Edition](https://www.amazon.com/dp/B0H7Q1Z75L)*.
 
 See **[Example Programs](examples.md)** — complete program listing by category.
 

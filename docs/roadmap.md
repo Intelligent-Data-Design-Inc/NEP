@@ -237,6 +237,15 @@ Plan: [docs/plan/v4.3.0-sprint1R-fortran-wrappers.md](plan/v4.3.0-sprint1R-fortr
 
 Plan: [docs/plan/v4.3.0-sprint1S-ci-and-docs.md](plan/v4.3.0-sprint1S-ci-and-docs.md)
 
+#### Sprint 1T - Example Programs
+- Both book repos verified on GitHub: `captainkirk99/NetCDF_Developers_Handbook` holds all eight moved example dirs (`docs/nep-handoff.md` lists every file); `Earth_Observation_in_Practice` holds the mission examples removed in v4.1.0 Sprint 3.
+- Delete `examples/{classic,netcdf-4,nczarr,opendap,parallelIO,f_classic,f_netcdf-4}` plus `generate_all_cdl.sh` and all `expected_output/` files except `README.md`, `cache_tuning_expected.cdl`, and the four `chunking_performance_*_expected.cdl` files.
+- Keep `examples/performance/` (NEP holds the authoritative Sprint 1C-1E `perf_disk.h` benchmark sources; the book repo's copies are older); move `netcdf-4/chunking_performance.c` into it. Delete dead `lossless.c`/`quantize.c` (LZ4/BZIP2 API moved to nep-compress in v4.2.0) and their artifacts.
+- Remove `NEP_ENABLE_OPENDAP_EXAMPLES` (emit `NEP_HAS_OPENDAP 0`); keep `NEP_ENABLE_BENCHMARKS`, `NEP_ENABLE_PARALLEL_TESTS`, `HAVE_NCZARR` for non-example users.
+- Delete `docs/ch3-fill-values.md` and `docs/background/NetCDF_Developers_Handbook_1_10.{md,sdi}`; rewrite `README.md`, `docs/examples.md`, `prd.md`, `prfaq.md`, `design.md`, `mainpage.md`, `NEP_abstract.md`, `examples/README.md`, `nep_skill.md`, `.devin/skills/nep-examples.md`, `.devin/workflows/edit.md` to point at the handbook repo.
+- No Spack/conda recipe changes; remaining dirs: `nextcdf4/`, `dicom/`, `pdb/`, `viz/`, `performance/`.
+
+Plan: [docs/plan/v4.3.0-sprint1T-example-programs.md](plan/v4.3.0-sprint1T-example-programs.md)
 
 #### Sprint 2 - 
 - Tag v4.3.0 and write `docs/releases/v4.3.0.md` (HDF5 detection change, CMake 3.19 minimum, conda GeoTIFF, Sprint 1A NEXTCDF-4 bfloat16 examples and `NEP_ZSTD_PLUGIN_DIR`, Sprint 1B typed small-float I/O and the `nc_*_bfloat16` functions, #376, Sprint 1C optimized benchmark results, the bfloat16 GDAS sample and `bfloat16_io_perf`, the #382 contiguous-layout fix, the fix for untyped `nc_put_var`/`nc_get_var`/`var1`/`vars` failing with `NC_EBADTYPE` on NEXTCDF-4, and Sprint 1K generic HDF5 filter support (`nc_def_var_filter`, szip/bzip2/zstd plugins, missing-plugin `NC_ENOFILTER`), and Sprint 1L reference types (`NC_REF_OBJECT`/`NC_REF_REGION` removed — a breaking API change — replaced by `NC_STD_REF`/`H5T_STD_REF` and the `nc_ref_*`/`nc_deref_*` API).
@@ -244,6 +253,7 @@ Plan: [docs/plan/v4.3.0-sprint1S-ci-and-docs.md](plan/v4.3.0-sprint1S-ci-and-doc
 - Conda (#374 part 2): if #34309 is still open, regenerate the staged copy for 4.3.0, push it to `nep-3.0.0` and update the PR body; if merged, make the GeoTIFF change on the feedstock and drop the staged lint/micromamba steps. Move the `conda.yml` lint step to the 4.3.0 tarball and set `context.version` to `4.3.1.dev0`.
 - Update the README "Conda Installation", `docs/prd.md` section 5.5, `docs/prfaq.md` and the `docs/conda-plan.md` Status table for GeoTIFF in 4.3.0.
 - Document the deferrals in the release notes: `nextcopy`/`nextdump` (NEXTCDF-4 Phase 4 tools) and all NEXTCDF-4 parallel I/O move to a future release.
+- Release notes also cover the Sprint 1T example removal: generic netCDF examples deleted (now maintained in `captainkirk99/NetCDF_Developers_Handbook`), `NEP_ENABLE_OPENDAP_EXAMPLES` removed, `examples/performance/` retained.
 - Close #374 (#372 was closed 2026-11-21 — Sprint 1 work landed).
 
 

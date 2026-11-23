@@ -1,53 +1,47 @@
 # NEP Example Programs
 
-NEP includes over 55 C and Fortran example programs covering classic NetCDF, NetCDF-4, NcZarr, OPeNDAP remote access, performance tuning, and parallel I/O.
+NEP's example programs exercise NEP features: the NEXTCDF-4 backend, the UDF format readers, and the disk-bound performance benchmarks.
 
-They are companion code for *[The NetCDF Developer's Handbook: The Authoritative Guide to Writing High-Performance Programs for Scientific Data Management, Second Edition](https://www.amazon.com/dp/B0H7Q1Z75L)*.
+The generic NetCDF teaching examples — classic NetCDF, NetCDF-4, NcZarr, OPeNDAP remote access, parallel I/O, and all Fortran versions — moved to the [NetCDF Developer's Handbook](https://github.com/captainkirk99/NetCDF_Developers_Handbook) repository in v4.3.0, where they are maintained as companion code for *[The NetCDF Developer's Handbook: The Authoritative Guide to Writing High-Performance Programs for Scientific Data Management, Second Edition](https://www.amazon.com/dp/B0H7Q1Z75L)*.
 
 See `examples/README.md` for build instructions and usage details.
 
-## Classic NetCDF (`examples/classic/`, `examples/f_classic/`)
+## NEXTCDF-4 (`examples/nextcdf4/`)
 
-Both C and Fortran versions provided for all programs.
+Built when NEXTCDF-4 is enabled (`-DNEP_ENABLE_NEXTCDF4=ON`).
 
-- `quickstart.c` / `f_quickstart.f90` — Minimal introduction; the simplest starting point
-- `simple_2D.c` / `f_simple_2D.f90` — Basic 2D arrays with dimensions and variables
-- `coord_vars.c` / `f_coord_vars.f90` — Coordinate variables and named dimensions
-- `coord.c` / `f_coord.f90` — Multi-dimensional coordinate systems
-- `dump_classic_metadata.c` / `f_dump_classic_metadata.f90` — Reading and printing all metadata
-- `size_limits.c` / `f_size_limits.f90` — Classic format size limits and 64-bit offset format
-- `unlimited_dim.c` / `f_unlimited_dim.f90` — Unlimited dimensions and record variables
-- `var4d.c` / `f_var4d.f90` — 4-dimensional variables
+- `bfloat16.c` — Store real GDAS temperature data as `NC_BFLOAT16` with the `nc_*_bfloat16()` functions
+- `float16.c` — Store real GDAS temperature data as `NC_FLOAT16` with the `nc_*_float16()` functions
+- `make_bfloat16_sample.c` / `make_float16_sample.c` — Convert the GDAS sample to NEXTCDF-4 small-float files (driven by `make_*_sample.sh`)
+- `bfloat16_perf.c` / `float16_perf.c` — float32 vs 16-bit float size and I/O benchmarks, CSV output
+- `bfloat16_io_perf.c` / `float16_io_perf.c` — Write/read benchmarks with data already in 16-bit floats (no conversion)
+- `conversion_perf.c` — Standard numeric conversion and quantized writes benchmark, CSV output
+- `plot_*.py` — Plot scripts for the benchmark CSVs
 
-## NetCDF-4 (`examples/netcdf-4/`, `examples/f_netcdf-4/`)
+## Performance Benchmarks (`examples/performance/`)
 
-Both C and Fortran versions provided for all programs.
+C only. Benchmarks run as tests with `-DNEP_ENABLE_BENCHMARKS=ON` (CMake).
+All benchmark numbers are disk-bound: write time includes `fsync`, and
+each read starts with the file dropped from the page cache (see
+`examples/perf_disk.h`). Reference results are measured with
+`-DCMAKE_BUILD_TYPE=RelWithDebInfo` (-O2).
 
-- `simple_nc4.c` / `f_simple_nc4.f90` — NetCDF-4 file creation basics
-- `format_variants.c` / `f_format_variants.f90` — Classic, 64-bit, CDF-5, and NetCDF-4 formats
-- `compression.c` / `f_compression.f90` — Deflate and shuffle compression filters
-- `chunking_performance.c` / `f_chunking_performance.f90` — Chunking strategies and performance impact
-- `multi_unlimited.c` / `f_multi_unlimited.f90` — Multiple independent unlimited dimensions
-- `user_types.c` / `f_user_types.f90` — Compound and enum user-defined types
-- `groups.c` / `f_groups.f90` — Hierarchical groups and dimension visibility
-- `dump_nc4_metadata.c` / `f_dump_nc4_metadata.f90` — Reading and printing NetCDF-4 metadata
+- `cache_tuning.c` — Chunk cache size and slots effect on read performance
+- `chunking.c` — Row-optimized, column-optimized, and balanced chunk shape comparison
+- `chunking_performance.c` — Chunking strategies across contiguous, time-optimized, spatial-optimized, and balanced layouts (moved from `examples/netcdf-4/` in v4.3.0)
+- `deflate.c` — Deflate compression levels 1–9 speed and ratio benchmarking
+- `zstandard.c` — Zstandard (ZSTD) compression benchmarking
+- `szip.c` — SZIP compression benchmarking (built only when an SZIP library is found)
+- `endianness.c` — Byte order effects on I/O performance
+- `fill_values.c` — Fill value storage and read performance
 
-## NcZarr (`examples/nczarr/`)
+LZ4/BZIP2-specific benchmark programs, CSVs and plotters are maintained by
+[nep-compress](https://github.com/captainkirk99/nep-compress).
 
-Both C and Fortran versions provided for all programs.
+## UDF Reader Examples (`examples/dicom/`, `examples/pdb/`)
 
-- `nczarr_simple.c` / `f_nczarr_simple.f90` — Local NcZarr create/read/write with `file://...#mode=nczarr` URLs
-- `nczarr_chunking.c` / `f_nczarr_chunking.f90` — Explicit chunk shape with `nc_def_var_chunking()`
-- `nczarr_compression.c` / `f_nczarr_compression.f90` — Deflate + shuffle compression in NcZarr stores
-- `nczarr_enhanced.c` / `f_nczarr_enhanced.f90` — Hierarchical groups and multiple unlimited dimensions
-
-## OPeNDAP Remote Access (`examples/opendap/`)
-
-Both C and Fortran versions provided for all programs.
-
-- `opendap_simple.c` / `f_opendap_simple.f90` — Open and read a remote dataset via OPeNDAP URL
-- `opendap_subset.c` / `f_opendap_subset.f90` — Read a hyperslab from a remote variable
-- `opendap_constraint.c` / `f_opendap_constraint.f90` — Apply constraint expressions to filter remote data
+- `dicom/dicom_read.c` — Read a DICOM file through the NEP DICOM UDF handler (built when `-DNEP_ENABLE_DICOM=ON`)
+- `pdb/pdb_read.c` — Read a PDB file through the NEP PDB UDF handler (built when `-DNEP_ENABLE_PDB=ON`)
 
 ## Visualization Examples (`examples/viz/`)
 
@@ -58,31 +52,3 @@ Enable visualizations with `-DNEP_ENABLE_VIZ_EXAMPLES=ON` for CMake or `--enable
 Tests use the generated build-tree `.ncrc`: `NCRCENV_RC` selects the file, `NETCDF_RC` points to its directory, and `LD_LIBRARY_PATH` includes the NEP UDF libraries. Generated PNGs and `<basename>_metadata.txt` files remain in the visualization build directory and are neither installed nor written to the source tree. Each plot is grayscale, no caption appears inside its PNG, figures are limited to 8.0 by 6.1 inches at 150 DPI, and metadata contains ordered non-empty `title`, `caption`, and `alt_text` fields; captions are limited to 75 words.
 
 See `examples/viz/README.md` for setup, build, test, and direct-execution instructions.
-
-## Performance and Compression Benchmarking (`examples/performance/`)
-
-C only. General benchmarks run with `-DNEP_ENABLE_BENCHMARKS=ON` (CMake).
-All benchmark numbers are disk-bound: write time includes `fsync`, and
-each read starts with the file dropped from the page cache. Reference
-results are measured with `-DCMAKE_BUILD_TYPE=RelWithDebInfo` (-O2).
-
-- `cache_tuning.c` — Chunk cache size and slots effect on read performance
-- `chunking.c` — Row-optimized, column-optimized, and balanced chunk shape comparison
-- `deflate.c` — Deflate compression levels 1–9 speed and ratio benchmarking
-- `zstandard.c` — Zstandard (ZSTD) compression benchmarking
-- `szip.c` — SZIP compression benchmarking
-- `endianness.c` — Byte order effects on I/O performance
-- `fill_values.c` — Fill value storage and read performance
-
-LZ4/BZIP2-specific benchmark programs, CSVs and plotters are maintained by
-[nep-compress](https://github.com/captainkirk99/nep-compress).
-The mixed-filter `lossless.c` and `quantize.c` sources remain in NEP but are
-not built or run until a future release adds nep-compress as a dependency;
-their committed results predate the disk-bound timing change.
-Zstandard, zlib/DEFLATE and SZIP examples continue to use NetCDF-C/HDF5.
-
-## Parallel I/O (`examples/parallelIO/`)
-
-Built only when parallel tests are enabled (`--enable-parallel-tests` / `-DENABLE_PARALLEL_TESTS=ON`).
-
-- `square16_par.c` / `f_square16_par.f90` — MPI-based parallel NetCDF-4 write and read

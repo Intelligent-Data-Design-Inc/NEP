@@ -403,91 +403,47 @@ group: thermal_neutron_map.img {
 
 # NetCDF Example Programs
 
-NEP includes C and Fortran examples for classic netCDF, NetCDF-4, NcZarr, OPeNDAP, and parallel I/O. These programs are companion code for *The NetCDF Developer's Handbook: The Authoritative Guide to Writing High-Performance Programs for Scientific Data Management, Second Edition*. Performance benchmarks compare compression filters, chunking strategies, and cache tuning. All examples build and run as tests.
+NEP's example programs exercise NEP features: the NEXTCDF-4 backend, the UDF format readers, and disk-bound performance benchmarks. The generic NetCDF teaching examples (classic netCDF, NetCDF-4, NcZarr, OPeNDAP, parallel I/O, and all Fortran versions) moved to the [NetCDF Developer's Handbook](https://github.com/captainkirk99/NetCDF_Developers_Handbook) repository in v4.3.0, where they are maintained as companion code for *The NetCDF Developer's Handbook: The Authoritative Guide to Writing High-Performance Programs for Scientific Data Management, Second Edition*. All remaining examples build and run as tests.
 
-## Classic NetCDF Examples
+## NEXTCDF-4 Examples
 
-The classic examples show common netCDF usage with the classic netCDF data model - that is, the orginal netCDF data model.
+The NEXTCDF-4 examples demonstrate the NEP backend's small-float types and conversion paths.
 
-| Example | C File | Fortran File | Description |
-|---|---|---|---|
-| Simple 2D Array | `simple_2D.c` | `f_simple_2D.f90` | Creates and writes a basic 2D array. |
-| Coordinate Variables | `coord_vars.c` | `f_coord_vars.f90` | Defines and uses coordinate variables. |
-| Format Variants | `format_variants.c` | `f_format_variants.f90` | Demonstrates classic, 64-bit offset, and CDF-5 formats. |
-| Size Limits | `size_limits.c` | `f_size_limits.f90` | Shows size and dimension limits. |
-| Unlimited Dimension | `unlimited_dim.c` | `f_unlimited_dim.f90` | Uses an unlimited dimension for time series. |
-| 4D Variable | `var4d.c` | `f_var4d.f90` | Creates and writes a 4D variable. |
-| Quickstart | `quickstart.c` | `f_quickstart.f90` | Minimal getting-started example. |
-| Dump Metadata | `dump_classic_metadata.c` | `f_dump_classic_metadata.f90` | Prints classic-file metadata. |
+| Example | C File | Description |
+|---|---|---|
+| Bfloat16 I/O | `bfloat16.c` | Store GDAS temperature data as `NC_BFLOAT16`. |
+| Float16 I/O | `float16.c` | Store GDAS temperature data as `NC_FLOAT16`. |
+| Sample generators | `make_bfloat16_sample.c`, `make_float16_sample.c` | Convert the GDAS sample to small-float files. |
+| Benchmarks | `bfloat16_perf.c`, `bfloat16_io_perf.c`, `float16_perf.c`, `float16_io_perf.c`, `conversion_perf.c` | Size and I/O benchmarks with CSV output. |
 
-## NetCDF-4 Examples
+## UDF Reader Examples
 
-The netCDF-4 examples all display aspects of the enhanced data mode, introduced with netcdf-c-4.0 in 2008.
-
-| Example | C File | Fortran File | Description |
-|---|---|---|---|
-| Simple NetCDF-4 | `simple_nc4.c` | `f_simple_nc4.f90` | Basic NetCDF-4 file creation. |
-| Compression | `compression.c` | `f_compression.f90` | Deflate and shuffle compression. |
-| Chunking Performance | `chunking_performance.c` | `f_chunking_performance.f90` | Chunk shape selection and performance. |
-| Multiple Unlimited Dims | `multi_unlimited.c` | `f_multi_unlimited.f90` | Multiple unlimited dimensions. |
-| User-defined Types | `user_types.c` | `f_user_types.f90` | Compound and enum types. |
-| Groups | `groups.c` | `f_groups.f90` | NetCDF-4 hierarchical groups. |
-| Format Variants | `format_variants.c` | `f_format_variants.f90` | NetCDF-4 format variants. |
-| Dump Metadata | `dump_nc4_metadata.c` | `f_dump_nc4_metadata.f90` | Prints NetCDF-4 metadata. |
-
-## NcZarr Examples
-
-The NcZarr examples demonstrate using the netCDF API to read and wrire Zarr archives. For these examples a local store (i.e. on the test machine, not the cloud).
-
-| Example | C File | Fortran File | Description |
-|---|---|---|---|
-| Simple NcZarr | `nczarr_simple.c` | `f_nczarr_simple.f90` | Create, write, and read a local NcZarr dataset. |
-| Chunking | `nczarr_chunking.c` | `f_nczarr_chunking.f90` | Explicit chunk shape selection. |
-| Compression | `nczarr_compression.c` | `f_nczarr_compression.f90` | Deflate + shuffle on a chunked variable. |
-| Enhanced Model | `nczarr_enhanced.c` | `f_nczarr_enhanced.f90` | Groups and unlimited dimensions in NcZarr. |
-
-## OPeNDAP Examples
-
-The OPeNDAP examples demonstrate remote access to data on servers. Data files on OPeNDAP servers can be opened as if they were local files. NASA uses OPeNDAP extensively to distribute Earth observation data to the science community.
-
-| Example | C File | Fortran File | Description |
-|---|---|---|---|
-| Simple OPeNDAP | `opendap_simple.c` | `f_opendap_simple.f90` | Basic remote data access. |
-| Subsetting | `opendap_subset.c` | `f_opendap_subset.f90` | Reading a subset of a remote dataset. |
-| Constraint Expression | `opendap_constraint.c` | `f_opendap_constraint.f90` | Using constraint expressions. |
-
-## Parallel I/O Examples
-
-The parallel I/O examples demonstrate how to write netCDF programs that run on 4 processors, decomposing a data arrray between the processors.
-
-| Example | C File | Fortran File | Description |
-|---|---|---|---|
-| Square 16 Parallel | `square16_par.c` | `f_square16_par.f90` | Collective parallel write/read with MPI. |
+| Example | C File | Description |
+|---|---|---|
+| DICOM | `dicom/dicom_read.c` | Read a DICOM file via the NEP UDF handler. |
+| PDB | `pdb/pdb_read.c` | Read a PDB file via the NEP UDF handler. |
 
 ## Performance Benchmarks
 
-Performance example demonstrate the way the choices in cacha, chunking, and compression settings impact data reading and writing.
+Performance examples demonstrate the way the choices in cache, chunking, and compression settings impact data reading and writing. All numbers are disk-bound: write time includes `fsync`, and each read starts with the file dropped from the page cache.
 
 | Example | C File | Description |
 |---|---|---|
 | Cache Tuning | `cache_tuning.c` | HDF5 chunk cache configuration. |
 | Chunking | `chunking.c` | Chunk shape effects on read patterns. |
+| Chunking Performance | `chunking_performance.c` | Chunking strategies across four layouts. |
 | Deflate | `deflate.c` | zlib levels 0–9 with/without shuffle. |
 | Fill Values | `fill_values.c` | Fill mode ON vs OFF overhead. |
 | Endianness | `endianness.c` | Byte-order performance effects. |
-| Lossless Comparison | `lossless.c` | Compare available lossless filters. |
-| Quantize + Compress | `quantize.c` | Quantization paired with compression. |
 | Zstandard | `zstandard.c` | Zstandard level sweep. |
 | SZIP | `szip.c` | SZIP coding method sweep. |
-| LZ4 | `lz4.c` | LZ4 level sweep. |
-| BZIP2 | `bzip2.c` | BZIP2 level sweep. |
 
 # Summary
 
 NEP extends netCDF-4 with:
 * High-speed and high-ratio compression filters
 * Transparent read access to major scientific data formats (without requiring changes to existing netCDF applications)
-* Comprehensive netCDF example programs in C/Fortran, demonstrating advanced lossy and lossless compression, ncZarr cloud format, and OPeNDAP remote data access.
+* Example programs exercising NEP features (NEXTCDF-4, UDF readers, disk-bound benchmarks); generic netCDF teaching examples live in the NetCDF Developer's Handbook repository.
 
 # References
 

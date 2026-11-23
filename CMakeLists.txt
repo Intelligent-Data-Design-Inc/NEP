@@ -183,9 +183,6 @@ option(NEP_ENABLE_BENCHMARKS "Enable performance benchmark programs (slow, not f
 # test/data/netCDF-4/gdas_sfc_sample.nc in the NEXTCDF-4 bfloat16 example tests
 set(NEP_ZSTD_PLUGIN_DIR "" CACHE PATH "Directory holding one HDF5 zstd (32015) plugin for the bfloat16 example tests")
 
-# OPeNDAP examples (v1.10.0) - default OFF; requires network access
-option(NEP_ENABLE_OPENDAP_EXAMPLES "Enable OPeNDAP remote data access examples (requires network)" OFF)
-
 if(NOT DOCS_ONLY)
     # CDF library detection (v1.3.0)
     if(NEP_ENABLE_CDF)
@@ -417,7 +414,6 @@ endif()
 
 message(STATUS "Performance benchmarks: ${NEP_ENABLE_BENCHMARKS}")
 message(STATUS "zstd plugin dir for bfloat16 examples: ${NEP_ZSTD_PLUGIN_DIR}")
-message(STATUS "OPeNDAP examples: ${NEP_ENABLE_OPENDAP_EXAMPLES}")
 message(STATUS "Visualization examples: ${NEP_ENABLE_VIZ_EXAMPLES}")
 message(STATUS "PDBx/mmCIF reader: ${NEP_ENABLE_MMCIF}")
 
@@ -546,11 +542,8 @@ if(NOT DOCS_ONLY)
     else()
         set(NEP_HAS_VIZ_EXAMPLES 0)
     endif()
-    if(NEP_ENABLE_OPENDAP_EXAMPLES)
-        set(NEP_HAS_OPENDAP 1)
-    else()
-        set(NEP_HAS_OPENDAP 0)
-    endif()
+    # OPeNDAP examples were removed in v4.3.0; keep emitting the macro.
+    set(NEP_HAS_OPENDAP 0)
     if(NEP_ENABLE_LOGGING)
         set(NEP_HAS_LOGGING 1)
     else()

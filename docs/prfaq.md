@@ -83,16 +83,14 @@ zstd plugins — but does not ship filter-specific convenience APIs.
 All features integrate seamlessly with the standard NetCDF API.
 
 #### Q: Does NEP provide example programs to help me learn?
-**A:** Yes! NEP includes comprehensive example programs in both C and Fortran, updated for v2.1.0 as companion code for *The NetCDF Developer's Handbook: The Authoritative Guide to Writing High-Performance Programs for Scientific Data Management, Second Edition*:
-- **Classic NetCDF examples**: Basic 2D arrays, coordinate variables, format variants, size limits, unlimited dimensions, 4D variables
-- **NetCDF-4 examples**: NetCDF-4 files, compression, chunking, multiple unlimited dimensions, user-defined types
-- **NcZarr examples**: Local NcZarr stores, chunking, compression, enhanced data model with hierarchical groups
-- **OPeNDAP examples**: Remote data access with constraint expressions and timing instrumentation
-- **Parallel I/O examples**: MPI collective I/O with domain decomposition (C and Fortran)
-- **Performance examples**: General NetCDF benchmarks (`NEP_ENABLE_BENCHMARKS`); LZ4/BZIP2 benchmarks moved to nep-compress
-- **Dual language support**: All examples available in both C and Fortran
+**A:** Yes! NEP's example programs exercise NEP features and run as tests:
+- **NEXTCDF-4 examples**: float16/bfloat16 I/O, sample generators, and conversion benchmarks (`examples/nextcdf4/`)
+- **Performance examples**: Disk-bound NetCDF benchmarks (`examples/performance/`, `NEP_ENABLE_BENCHMARKS`); LZ4/BZIP2 benchmarks moved to nep-compress
+- **UDF reader examples**: DICOM and PDB readers (`examples/dicom/`, `examples/pdb/`)
 - **Built and tested**: Examples build with NEP and run as tests
 - **Location**: All examples in the `examples/` directory with detailed README
+
+The generic NetCDF teaching examples (classic NetCDF, NetCDF-4, NcZarr, OPeNDAP, parallel I/O, and all Fortran versions) moved to the [NetCDF Developer's Handbook](https://github.com/captainkirk99/NetCDF_Developers_Handbook) repository in v4.3.0, where they remain companion code for *The NetCDF Developer's Handbook, Second Edition*.
 
 #### Q: Does NEP provide visualization examples?
 **A:** Yes. Optional Python examples in `examples/viz/` open enabled FITS, CDF, GeoTIFF, GRIB2, and PDS4 UDF files directly through `netCDF4.Dataset` and create static grayscale PNG plots with companion metadata files. Enable them with `-DNEP_ENABLE_VIZ_EXAMPLES=ON` or `--enable-viz-examples`. Their source-root `.venv` must build `netCDF4` from source against the same NetCDF-C library as NEP; bundled-libnetcdf wheels cannot load the NEP UDF handlers. Tests use the build-tree `.ncrc` configuration and validate output metadata, grayscale pixels, and publication size limits. The plots and metadata remain in the build tree and are not installed.
@@ -213,7 +211,7 @@ nc_get_vara_float(grpid, varid, start, count, data);
 - LZ4/BZIP2 compression performance benchmarks are maintained by nep-compress.
 
 #### Q: Does NEP support parallel I/O?
-**A:** NEP has MPI tests/examples using upstream NetCDF. The experimental NEXTCDF-4 backend does **not** support parallel I/O in v4.3.0; it is deferred to a future release. NEXTCDF-4 rejects parallel create/open flags and returns `NC_ENOTNC4` for `nc_var_par_access`. Memory-image files, SWMR and sharing modes are also unsupported; memory/sharing flags are rejected rather than silently ignored.
+**A:** NEP has MPI test programs using upstream NetCDF (`NEP_ENABLE_PARALLEL_TESTS`); the parallel I/O example programs moved to the NetCDF Developer's Handbook repository in v4.3.0. The experimental NEXTCDF-4 backend does **not** support parallel I/O in v4.3.0; it is deferred to a future release. NEXTCDF-4 rejects parallel create/open flags and returns `NC_ENOTNC4` for `nc_var_par_access`. Memory-image files, SWMR and sharing modes are also unsupported; memory/sharing flags are rejected rather than silently ignored.
 
 #### Q: Can I control NEXTCDF-4 fill, cache settings and group names?
 **A:** Yes, starting with v4.3.0 Sprint 1O. `nc_set_fill` sets the session default for newly defined eligible variables; existing variables and explicit per-variable overrides stay unchanged, and reopen resets the default to `NC_FILL`. `nc_set_var_chunk_cache` applies actual HDF5 cache settings even in read-only/data mode; overrides last only for the session, and `nc_get_var_chunk_cache` reports effective chunked settings. Group creation/rename work in native and `NC_NETCDF4_MODEL` modes, preserving descendants and data; classic-model groups remain unsupported. See [NEXTCDF-4](nextcdf4.md) for validation, fill exclusions and cache details.
@@ -303,7 +301,7 @@ All formats accessible through the standard NetCDF API.
 **A:** For compression-heavy workflows, pair NEP with nep-compress — its LZ4 plugin suits real-time/low-latency processing and BZIP2 suits archival storage. NEP's own contribution is direct format access and the NEXTCDF-4 backend.
 
 #### Q: How does NEP benefit HPC environments?
-**A:** NEP supports scientific format access and parallel I/O examples. For fast LZ4 compression use nep-compress alongside NEP.
+**A:** NEP supports scientific format access and parallel I/O test programs. For fast LZ4 compression use nep-compress alongside NEP.
 
 ---
 
