@@ -85,6 +85,14 @@ See [docs/nextcdf4.md](docs/nextcdf4.md) for the full backend reference
 and [docs/nextcdf4_architecture.md](docs/nextcdf4_architecture.md) for
 how it works internally.
 
+### Companion Book
+
+<a href="https://www.amazon.com/Earth-Observation-Practice-Mission-Mission/dp/B0HJRZ9F7L/">
+  <img src="docs/images/EO_in_practice_cover.png" alt="Cover of Earth Observation in Practice" width="240">
+</a>
+
+The companion book, [*Earth Observation in Practice: A Mission-by-Mission Guide to Reading Satellite Data with NetCDF and Python*](https://www.amazon.com/Earth-Observation-Practice-Mission-Mission/dp/B0HJRZ9F7L/), provides additional background and worked examples. These external resources are informational and are not build-time, run-time, test-time, or packaging dependencies of NEP.
+
 ---
 
 ## Compression
