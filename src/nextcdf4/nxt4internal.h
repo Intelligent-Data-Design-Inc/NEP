@@ -116,6 +116,13 @@ typedef struct NEXTCDF4_FILE_INFO
     int define_mode;    /**< Nonzero while the file is in define mode. */
     int netcdf4_model;  /**< Nonzero for `NC_NETCDF4_MODEL` compatibility mode. */
     int backend_marked; /**< Nonzero when the NEXTCDF-4 backend marker is present. */
+    int created_by_us;  /**< Nonzero when this session created the file;
+                         * only such files get a fresh `_NCProperties`
+                         * stamp — an opened file keeps whatever
+                         * provenance it already carried. */
+    char *ncproperties; /**< Owned `_NCProperties` value: built at create,
+                         * read from the file at open, or NULL when the
+                         * file has none. */
 } NEXTCDF4_FILE_INFO_T;
 
 /** @brief NEXTCDF-4-private state hung off
@@ -178,6 +185,17 @@ int NEXTCDF4_get_file(int ncid, NC_FILE_INFO_T **h5p,
 /** Close HDF5 identifiers and free per-file state.
  */
 int NEXTCDF4_free_file(NEXTCDF4_FILE_INFO_T *file);
+/** Build the `_NCProperties` value for a newly created file. */
+int nx4_build_ncproperties(char **out);
+/** Read an existing `_NCProperties` attribute into file state. */
+int nx4_read_ncproperties(NEXTCDF4_FILE_INFO_T *file);
+/** Write `_NCProperties`/`_nc3_strict` to a file created this session. */
+int nx4_write_provenance(NEXTCDF4_FILE_INFO_T *file);
+/** Answer a name lookup for a stored or virtual provenance attribute. */
+int nx4_get_att_special(NEXTCDF4_FILE_INFO_T *file, const char *name,
+                        nc_type *xtypep, nc_type mem_type, size_t *lenp,
+                        int *attnump, void *data);
+
 /** Write NEXTCDF-4 provenance and compatibility markers.
  */
 int NEXTCDF4_write_markers(NEXTCDF4_FILE_INFO_T *file);
@@ -367,6 +385,10 @@ int NEXTCDF4_put_att(int ncid, int varid, const char *name, nc_type xtype,
  */
 int NEXTCDF4_inq_att(int ncid, int varid, const char *name,
                      nc_type *xtypep, size_t *lenp);
+
+/** Learn an attribute's index by name.
+ */
+int NEXTCDF4_inq_attid(int ncid, int varid, const char *name, int *attnump);
 
 /** Get an attribute from the root group or a variable.
  */

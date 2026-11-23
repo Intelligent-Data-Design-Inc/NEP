@@ -213,12 +213,12 @@ Plan: [docs/plan/v4.3.0-sprint1O-fill-mode-cache-control-renaming-groups.md](pla
 Plan: [docs/plan/v4.3.0-sprint1P-nc-string.md](plan/v4.3.0-sprint1P-nc-string.md)
 
 #### Sprint 1Q - Provenance Attributes (_NCProperties/_IsNetcdf4/_SuperblockVersion)
-Write the standard hidden attributes upstream netcdf-c produces (`docs/nextcdf4_status_v4_3_0.md` gap 11):
+- New `src/nextcdf4/nxt4provenance.c`: deferred `_NCProperties` write at `_enddef`/`nc_sync`/`nc_close` (never overwriting an existing stamp) as `version=2,netcdf=...,hdf5=...,nextcdf4=4.3.0`, plus `_nc3_strict`=1 on `NC_CLASSIC_MODEL` files — upstream storage parity.
+- `_IsNetcdf4`/`_SuperblockVersion` stay virtual: synthesized in `inq_att`/`inq_attid`/`get_att` on `NC_GLOBAL` name lookups, mirroring `nc4_get_att_special` (`NC_EATTMETA` attnum, `NC_INT`/len 1, memtype conversion).
+- Foreign files without `_NCProperties` are left unstamped; `_Format` needs no backend work (ncdump synthesizes it). New `tst_nextcdf4_provenance` under `nextcdf4_controls`; no packaging changes.
+- Out of scope: Fortran (1R), `nextcopy`/`nextdump`, parallel/SWMR/in-memory files, user-injected property keys, remaining nc_test4 ports, release notes (Sprint 2).
 
-- Write `_NCProperties` (`version=2,netcdf=...,hdf5=...`) and `_SuperblockVersion` on every file; `_IsNetcdf4` where upstream writes it.
-- Parse and preserve them on open; they are already filtered from user-visible attribute lists.
-- Decide the `_Format`/`_nc3_strict` behavior for `NC_CLASSIC_MODEL` files.
-- Goal: `h5dump`/`ncdump` and third-party tools treat NEXTCDF-4 files like upstream NetCDF-4 files.
+Plan: [docs/plan/v4.3.0-sprint1Q-provenance-attributes.md](plan/v4.3.0-sprint1Q-provenance-attributes.md)
 
 #### Sprint 1R - Fortran Wrappers
 Expose the NEXTCDF-4 C APIs through the Fortran binding (plan goal: "same release" as the C API):

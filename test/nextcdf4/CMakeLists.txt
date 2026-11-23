@@ -10,7 +10,7 @@ if(HAVE_NEXTCDF4)
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/string
         LABELS nextcdf4_strings
         ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
-    foreach(control IN ITEMS fill_mode cache)
+    foreach(control IN ITEMS fill_mode cache provenance)
         set(target tst_nextcdf4_${control})
         add_executable(${target} ${target}.c)
         target_link_libraries(${target} PRIVATE ncnextcdf4 ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})

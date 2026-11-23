@@ -182,6 +182,7 @@ NEXTCDF4_free_file(NEXTCDF4_FILE_INFO_T *file)
         ELOG((3, "%s: hdfid=%ld nobj=%d ret=%d", __func__, (long)file->hdfid, nobj, ret));
     }
     free(file->path);
+    free(file->ncproperties);
     free(file);
     return ret;
 }
@@ -446,6 +447,8 @@ NEXTCDF4_sync(int ncid)
         return ret;
     if (file->no_write)
         return NC_NOERR;
+    if ((ret = nx4_write_provenance(file)))
+        return ret;
     return H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0 ? NC_EHDFERR : NC_NOERR;
 }
 
@@ -481,8 +484,12 @@ NEXTCDF4_close(int ncid, void *parameters)
     }
     nx4_close_group_hdf(h5->root_grp);
     h5->format_file_info = NULL;
-    if (!file->no_write && H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0)
-        close_ret = NC_EHDFERR;
+    if (!file->no_write) {
+        if ((ret = nx4_write_provenance(file)))
+            close_ret = ret;
+        if (H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0)
+            close_ret = NC_EHDFERR;
+    }
     ret = NEXTCDF4_free_file(file);
     nx4_scrub_extended_atomic_data(h5->root_grp);
     nc4_file_list_del(ncid);
@@ -663,6 +670,10 @@ NEXTCDF4__enddef(int ncid, size_t h_minfree, size_t v_align,
     if ((ret = NEXTCDF4_write_types(h5)))
         return ret;
     if ((ret = commit_group_vars(h5, file, h5->root_grp)))
+        return ret;
+    /* Upstream writes provenance inside the same deferred-metadata
+     * pass: _NCProperties and _nc3_strict land here, not at create. */
+    if ((ret = nx4_write_provenance(file)))
         return ret;
     if (H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0)
         return NC_EHDFERR;

@@ -61,7 +61,7 @@ NEXTCDF-4's private structs are declared in
 
 | Struct | Hangs off | Holds |
 | ------ | --------- | ----- |
-| `NEXTCDF4_FILE_INFO_T` | `NC_FILE_INFO_T` | `hdfid` (the HDF5 file), `rootid`, `path`, `mode`, `no_write`, `define_mode`, `netcdf4_model`, `backend_marked` |
+| `NEXTCDF4_FILE_INFO_T` | `NC_FILE_INFO_T` | `hdfid` (the HDF5 file), `rootid`, `path`, `mode`, `no_write`, `define_mode`, `netcdf4_model`, `backend_marked`, `created_by_us`, `ncproperties` |
 | `NEXTCDF4_GRP_INFO_T` | `NC_GRP_INFO_T` | open `hid_t` for the HDF5 group |
 | `NEXTCDF4_DIM_INFO_T` | `NC_DIM_INFO_T` | `hid_t` of the dimension-scale dataset |
 | `NEXTCDF4_VAR_INFO_T` | `NC_VAR_INFO_T` | `hid_t` of the variable dataset plus `flags` (e.g. `NC_HDF5_VAR_FILTER_MISSING`); the filter pipeline itself lives on the shared `NC_VAR_INFO_T::filters` list |
@@ -93,6 +93,39 @@ with `CLASS = "DIMENSION_SCALE"` and attached to the variable datasets
 that use them. `_Netcdf4Coordinates` records a variable's dimids so
 open can map ids fast; dimension-scale matching is the fallback for
 files written without it.
+
+## Provenance attributes
+
+`nxt4provenance.c` reproduces upstream's provenance surface so
+third-party tools cannot tell a NEXTCDF-4 file from an upstream
+NetCDF-4 file:
+
+- `_NCProperties` is built at create
+  (`version=2,netcdf=<libvers>,hdf5=<libvers>,nextcdf4=<NEP_VERSION>`)
+  and stored on the root group at `_enddef`/`nc_sync`/`nc_close` —
+  upstream's deferred-write point — as a fixed-length ASCII string of
+  `strlen` bytes with `H5T_STR_NULLTERM` padding. `_nc3_strict` = 1 is
+  stored alongside it for `NC_CLASSIC_MODEL` files. Neither is ever
+  overwritten, and only `created_by_us` files are stamped: an updated
+  file keeps its original stamp, and a stamp-less foreign file stays
+  unstamped.
+- `_IsNetcdf4` and `_SuperblockVersion` are never stored.
+  `NEXTCDF4_inq_att`/`NEXTCDF4_inq_attid`/`NEXTCDF4_get_att`
+  intercept those names (plus `_NCProperties`, answered from the
+  in-memory `file->ncproperties`) on `NC_GLOBAL` lookups and call
+  `nx4_get_att_special`, mirroring upstream's `nc4_get_att_special`:
+  `NC_INT`/len 1, integer-memtype conversion, `NC_EATTMETA` for attnum
+  inquiries, `NC_ENOTATT` when the file has no `_NCProperties`. The
+  names never appear in `nc_inq_natts`/`nc_inq_attname` results —
+  upstream's `NAMEONLYFLAG` semantics.
+- `_IsNetcdf4`'s value follows upstream's `NC4_isnetcdf4`: 1 when
+  `_nc3_strict` or `_NCProperties` exists at root (or the file was
+  created this session), else an `H5Ovisit` walk that requires at
+  least two objects carrying NetCDF-4 marker attributes.
+  `_SuperblockVersion` reads the FCPL `super` field via
+  `H5Pget_version` — the equivalent of upstream's exported
+  `NC4_hdf5get_superblock`, reimplemented because upstream's walker
+  depends on upstream-private struct layouts.
 
 ## Metadata lifecycle
 

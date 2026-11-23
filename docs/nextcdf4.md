@@ -188,6 +188,17 @@ NEXTCDF-4 stores NetCDF dimensions as HDF5 dimension scales and attaches them to
 
 These attributes are filtered from user-visible attribute lists.
 
+NEXTCDF-4 also writes the upstream provenance attributes so `h5dump`, `ncdump -s` and third-party tools treat its files exactly like upstream NetCDF-4 files:
+
+| Attribute | Storage | Content |
+|-----------|---------|---------|
+| `_NCProperties` | stored on root group | `version=2,netcdf=<netcdf-c version>,hdf5=<HDF5 version>,nextcdf4=<NEP version>` — upstream's shape plus a `nextcdf4` key |
+| `_nc3_strict` | stored on root group | `1` (int), `NC_CLASSIC_MODEL` files only |
+| `_IsNetcdf4` | virtual | `1` when the file carries netCDF-4 markers; synthesized on name lookup |
+| `_SuperblockVersion` | virtual | the HDF5 FCPL superblock version; synthesized on name lookup |
+
+Like upstream, `_NCProperties`/`_nc3_strict` are written at `_enddef`/`nc_sync`/`nc_close`, only for files NEXTCDF-4 created, and never overwrite an existing stamp — an updated file keeps its original creator's provenance, and a file that never had a stamp stays unstamped. `_IsNetcdf4` and `_SuperblockVersion` are never stored: `nc_inq_att`/`nc_get_att` answer them by name on the global attribute list (`NC_INT`, length 1), `nc_inq_attid` returns `NC_EATTMETA`, and none of the names appear in `nc_inq_natts`/`nc_inq_attname`. `_Format` is synthesized by tools from `nc_inq_format` (`NC_FORMAT_NETCDF4`), not stored. All of these names remain reserved — `nc_put_att`/`nc_rename_att`/`nc_del_att` reject them.
+
 ## Filters
 
 NEXTCDF-4 supports the full NetCDF-4 filter model on non-scalar variables. Filters are stored in the shared `NC_VAR_INFO_T::filters` list — the same structure upstream netcdf-c uses — and are applied to the HDF5 dataset creation property list in pipeline order.

@@ -703,11 +703,11 @@ Implemented in v4.3.0 Sprint 1K. NEXTCDF-4 keeps the filter pipeline on the shar
 
 ### Provenance / NCProperties (analogous to `libhdf5/nc4info.c`)
 
-- `nxt4provenance.c`:
-  - `NC4_new_provenance`, `NC4_clear_provenance`, `NC4_free_provenance`
-  - `NC4_write_provenance`, `NC4_read_provenance`
-  - `NC4_write_ncproperties`, `NC4_read_ncproperties`
-  - `NEXTCDF4_build_propstring`, `NEXTCDF4_parse_provenance`, `NEXTCDF4_properties_getversion`
+- `nxt4provenance.c` — implemented in v4.3.0 Sprint 1Q:
+  - `nx4_build_ncproperties`, `nx4_read_ncproperties`, `nx4_write_provenance`
+  - `nx4_get_att_special` (virtual `_IsNetcdf4`/`_SuperblockVersion` and
+    in-memory `_NCProperties` name lookups, intercepting in
+    `NEXTCDF4_inq_att`/`NEXTCDF4_inq_attid`/`NEXTCDF4_get_att`)
 
 ### In-memory images and debugging (optional/adapted)
 

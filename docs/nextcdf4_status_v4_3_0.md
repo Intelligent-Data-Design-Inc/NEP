@@ -32,7 +32,12 @@ lines across 11 C files plus `nxt4internal.h`/`nxt4err.h`).
 - Hidden markers `_Nextcdf4Backend`, `_Nextcdf4Model`, `_Netcdf4Dimid`,
   `_Nextcdf4Varid`, `_Netcdf4Coordinates`; reserved-name filtering covers
   upstream's `_NCProperties`, `_IsNetcdf4`, `_SuperblockVersion`, `_Format`,
-  `_nc3_strict` as well.
+  `_nc3_strict` as well. Sprint 1Q writes `_NCProperties`
+  (`version=2,netcdf=...,hdf5=...,nextcdf4=...`) and `_nc3_strict` on
+  classic-model files with upstream storage parity, deferred to
+  `_enddef`/`nc_sync`/`nc_close` and never overwriting an existing stamp;
+  `_IsNetcdf4`/`_SuperblockVersion` are virtual attributes synthesized on
+  `NC_GLOBAL` name lookups like upstream's `nc4_get_att_special`.
 - `.ncrc` autoload via `NETCDF.UDF9.LIBRARY`/`NETCDF.UDF9.INIT`;
   `nc_inq_format` reports `NC_FORMAT_NETCDF4`, `nc_inq_format_extended`
   reports `NC_FORMATX_UDF9` plus effective mode.
@@ -161,7 +166,7 @@ Probed with a small program linked against `build/src/libncnextcdf4.so`
 | 8 | ~~**Small-float coordinate variables** — the design banned them but nothing enforces it.~~ Done in Sprint 1L1: allowed and documented; `tst_nextcdf4_var` covers bf16/f16 coord vars. | #380 |
 | 9 | **Conversion reads take an extra full-buffer pass** (performance, not correctness). | #386 |
 | 10 | ~~**Mode flags not validated**~~ — fixed in Sprint 1O: create/open reject `NC_DISKLESS`, `NC_INMEMORY`, `NC_MPIIO`/`NC_MPIPOSIX`, `NC_SHARE`, `NC_PERSIST` and `NC_MMAP` with `NC_EINVAL` before side effects. Upstream may preempt invalid combinations before dispatch. | `tst_nextcdf4_file`: missing-file and sentinel-preservation checks; memory opens use `nc_open_mem` to supply the image upstream requires |
-| 11 | **No provenance attributes written** — upstream writes `_NCProperties`, `_IsNetcdf4`, `_SuperblockVersion`; NEXTCDF-4 filters them on read but never writes them (planned `nxt4provenance.c` doesn't exist). | `nxt4meta.c` reserved list |
+| 11 | ~~**No provenance attributes written**~~ — fixed in Sprint 1Q: `nxt4provenance.c` stores `_NCProperties` and `_nc3_strict` with upstream's deferred-write/no-overwrite semantics and synthesizes `_IsNetcdf4`/`_SuperblockVersion` on name lookups; `tst_nextcdf4_provenance` covers stored-byte and API-level parity. | Sprint 1Q |
 | 12 | **`nc_inq_var_all` filter outputs never populated** (`idp`/`nparamsp`/`params` always empty) — noted in code as matching upstream's shared helper. | `nxt4meta.c` `NEXTCDF4_inq_var_all` |
 | 13 | ~~**`nc_put_att` on `_FillValue` rejected**~~ — fixed in Sprint 1L2: `_FillValue` is exempted from the reserved-att rule and validated upstream-style (len 1 → `NC_EINVAL`, type mismatch → `NC_EBADTYPE`, after data write → `NC_ELATEFILL`), mirrored into `var->fill_value`, and written to the DCPL (default `NC_FILL_*` when unset, so unwritten elements read back as fill). | Sprint 1L2 |
 | 14 | ~~**Missing argument validation → crash instead of `NC_EINVAL`**~~ — fixed in Sprint 1L2: NULL `name`/`dimidsp` guards return `NC_EINVAL` before `NC_check_name`/`nc4_find_dim`. | Sprint 1L2 |
@@ -220,9 +225,8 @@ Sprint 1 (deferred when v4.1.0 shipped docs+logging instead):
   plus `tst_nextcdf4_string`, under `nextcdf4_strings`. Other string,
   fill and mixed-feature ports remain future suite expansion; this is
   not full upstream-suite completion.
-- **Provenance/`_NCProperties`** (`nxt4provenance.c` in the plan's source
-  layout) and **in-memory image files** (`nxt4image.c`, optional) — not
-  implemented.
+- **In-memory image files** (`nxt4image.c`, optional) — not implemented.
+  (Provenance landed in Sprint 1Q: `nxt4provenance.c`.)
 - **SWMR** — listed as an open question; not implemented.
 - **CI coverage** — benchmarks are not run in CI. NEXTCDF-4 tests run
   in the `nextcdf4` job (build, full CTest, docs) and, since Sprint
@@ -292,8 +296,9 @@ Owned by v4.3.0 Sprints 1L1–1R (see `docs/roadmap.md`), ordered by severity.
 10. `nc_set_fill`/`nc_rename_grp`/per-var chunk cache — implemented in
     Sprint 1O, including model-mode groups and effective live cache settings.
     Parallel I/O remains deferred beyond v4.3.0; Sprint 2 owns release notes.
-11. Provenance attributes — write `_NCProperties`/`_IsNetcdf4`/
-    `_SuperblockVersion` like upstream (Sprint 1Q).
+11. ~~Provenance attributes~~ — done in Sprint 1Q: `_NCProperties` and
+    `_nc3_strict` stored like upstream; `_IsNetcdf4`/
+    `_SuperblockVersion` synthesized on name lookups.
 
 **Release-quality work:**
 

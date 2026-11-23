@@ -2925,12 +2925,13 @@ NEXTCDF4_inq_att(int ncid, int varid, const char *name, nc_type *xtypep,
     NCindex *list;
     hid_t loc;
     NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
     NC_GRP_INFO_T *grp;
     NC_VAR_INFO_T *var = NULL;
     NC_ATT_INFO_T *att;
     int ret;
 
-    if ((ret = NEXTCDF4_get_file(ncid, &h5, NULL)))
+    if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
         return ret;
     if (varid == NC_GLOBAL) {
         if ((ret = nc4_find_nc4_grp(ncid, &grp)))
@@ -2942,6 +2943,14 @@ NEXTCDF4_inq_att(int ncid, int varid, const char *name, nc_type *xtypep,
         if (!var)
             return NC_ENOTVAR;
     }
+    /* Provenance attributes answer to name lookups on the global
+     * attribute list even though they never appear in it (upstream's
+     * NAMEONLYFLAG semantics). */
+    if (!var && (!strcmp(name, "_NCProperties") ||
+                 !strcmp(name, "_IsNetcdf4") ||
+                 !strcmp(name, "_SuperblockVersion")))
+        return nx4_get_att_special(file, name, xtypep, NC_NAT, lenp,
+                                   NULL, NULL);
     if ((ret = get_att_context(grp, var, &list, &loc)))
         return ret;
     if (!(att = find_att(list, name)))
@@ -2950,6 +2959,62 @@ NEXTCDF4_inq_att(int ncid, int varid, const char *name, nc_type *xtypep,
         *xtypep = att->nc_typeid;
     if (lenp)
         *lenp = att->len;
+    return NC_NOERR;
+}
+
+/**
+ * @brief Learn an attribute's index by name — the `nc_inq_attid()`
+ * dispatch entry.
+ *
+ * The shared `NC4_inq_attid` cannot intercept the provenance names,
+ * which live outside the attribute index; this entry answers them
+ * with upstream's `NC_EATTMETA` (virtual attributes have no index)
+ * and otherwise returns the attribute's position in the index.
+ *
+ * @param ncid NetCDF file identifier.
+ * @param varid Variable id or `NC_GLOBAL`.
+ * @param name Attribute name.
+ * @param attnump Destination for the attribute index.
+ * @return `NC_NOERR` on success, `NC_EATTMETA` for a provenance name,
+ * `NC_ENOTATT` when the attribute does not exist, or a NetCDF error
+ * code.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+NEXTCDF4_inq_attid(int ncid, int varid, const char *name, int *attnump)
+{
+    NCindex *list;
+    hid_t loc;
+    NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
+    NC_GRP_INFO_T *grp;
+    NC_VAR_INFO_T *var = NULL;
+    NC_ATT_INFO_T *att;
+    int ret;
+
+    if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
+        return ret;
+    if (varid == NC_GLOBAL) {
+        if ((ret = nc4_find_nc4_grp(ncid, &grp)))
+            return ret;
+        var = NULL;
+    } else {
+        if ((ret = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var)))
+            return ret;
+        if (!var)
+            return NC_ENOTVAR;
+    }
+    if (!var && (!strcmp(name, "_NCProperties") ||
+                 !strcmp(name, "_IsNetcdf4") ||
+                 !strcmp(name, "_SuperblockVersion")))
+        return nx4_get_att_special(file, name, NULL, NC_NAT, NULL,
+                                   attnump, NULL);
+    if ((ret = get_att_context(grp, var, &list, &loc)))
+        return ret;
+    if (!(att = find_att(list, name)))
+        return NC_ENOTATT;
+    if (attnump)
+        *attnump = (int)att->hdr.id;
     return NC_NOERR;
 }
 
@@ -2977,13 +3042,14 @@ NEXTCDF4_get_att(int ncid, int varid, const char *name, void *value,
     NCindex *list;
     hid_t loc;
     NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
     NC_GRP_INFO_T *grp;
     NC_VAR_INFO_T *var = NULL;
     NC_ATT_INFO_T *att;
     int range_error;
     int ret;
 
-    if ((ret = NEXTCDF4_get_file(ncid, &h5, NULL)))
+    if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
         return ret;
     if (varid == NC_GLOBAL) {
         if ((ret = nc4_find_nc4_grp(ncid, &grp)))
@@ -2995,6 +3061,13 @@ NEXTCDF4_get_att(int ncid, int varid, const char *name, void *value,
         if (!var)
             return NC_ENOTVAR;
     }
+    /* Virtual/stored provenance attributes answer to name lookups
+     * without living in the attribute index. */
+    if (!var && (!strcmp(name, "_NCProperties") ||
+                 !strcmp(name, "_IsNetcdf4") ||
+                 !strcmp(name, "_SuperblockVersion")))
+        return nx4_get_att_special(file, name, NULL, memtype, NULL,
+                                   NULL, value);
     if ((ret = get_att_context(grp, var, &list, &loc)))
         return ret;
 

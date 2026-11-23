@@ -156,6 +156,12 @@ NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
         EBAIL2(NC_EHDFERR);
     if ((ret = NEXTCDF4_write_markers(file)))
         EBAIL(ret);
+    /* The _NCProperties string is built now so name lookups answer
+     * during this session; the attribute itself is deferred to
+     * _enddef/sync/close like upstream. */
+    file->created_by_us = 1;
+    if ((ret = nx4_build_ncproperties(&file->ncproperties)))
+        EBAIL(ret);
     if (H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0)
         EBAIL2(NC_EHDFERR);
     if (h5->root_grp->format_grp_info)

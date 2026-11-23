@@ -50,7 +50,7 @@ static const NC_Dispatch NEXTCDF4_dispatcher = {
     NC4_inq_unlimdim,
     NEXTCDF4_rename_dim,
     NEXTCDF4_inq_att,
-    NC4_inq_attid,
+    NEXTCDF4_inq_attid,
     NC4_inq_attname,
     NEXTCDF4_rename_att,
     NEXTCDF4_del_att,
