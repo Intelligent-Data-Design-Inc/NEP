@@ -36,7 +36,6 @@ test_groups(void)
     char name[NC_MAX_NAME + 1];
     char full[NC_MAX_NAME * 4 + 1];
     int parentid;
-    int rootid;
     size_t len;
 
     unlink(FILE_NAME);

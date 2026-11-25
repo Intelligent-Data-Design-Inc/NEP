@@ -52,7 +52,6 @@ test_vlen_int_unlim(void)
     int buf1[] = {30};
     int buf2[] = {40, 50, 60};
     size_t start, count;
-    size_t i;
 
     write_data[0].len = 2; write_data[0].p = buf0;
     write_data[1].len = 1; write_data[1].p = buf1;
@@ -147,7 +146,7 @@ test_vlen_2d_unlim_first(void)
     int b3[] = {5, 6, 7};
     int b4[] = {8};
     int b5[] = {9, 10};
-    size_t total, i;
+    size_t total;
     size_t dimlen_u, dimlen_b;
     int ndims, dimids_r[NC_MAX_VAR_DIMS];
 

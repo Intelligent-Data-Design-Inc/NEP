@@ -40,7 +40,7 @@
  * NEP_NC_TEST4_MODEL unset, empty or "native", and
  * NC_NEXTCDF4 | NC_NETCDF4_MODEL for "netcdf4". Any other value is an
  * error so tests fail loudly instead of silently selecting a mode. */
-static int
+static inline int
 nep_nc_test4_create_mode(void)
 {
     const char *mode = getenv("NEP_NC_TEST4_MODEL");

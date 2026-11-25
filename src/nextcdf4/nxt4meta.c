@@ -3651,7 +3651,6 @@ NEXTCDF4_rename_var(int ncid, int varid, const char *name)
     NEXTCDF4_VAR_INFO_T *vinfo = NULL;
     NEXTCDF4_GRP_INFO_T *ginfo;
     NC_DIM_INFO_T *dim;
-    NEXTCDF4_DIM_INFO_T *dinfo;
     hid_t hdf_grp = -1;
     char *oldname;
     int ret;

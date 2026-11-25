@@ -506,7 +506,6 @@ static int
 commit_hdf_type(NC_GRP_INFO_T *grp, NC_TYPE_INFO_T *type, hid_t hdf)
 {
     NEXTCDF4_GRP_INFO_T *ginfo = grp->format_grp_info;
-    NEXTCDF4_TYPE_INFO_T *tinfo;
     hid_t commit_loc;
     int ret;
 

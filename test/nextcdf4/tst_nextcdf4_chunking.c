@@ -296,7 +296,6 @@ test_reopen(void)
     int fletcher32_in;
     int no_fill_in;
     int endian_in;
-    int mode_in, nsd_in;
     float fill_value = -999.0f;
     float fill_in;
     float data[10], data_in[10];

@@ -8,6 +8,8 @@ Always use the directory name `build` for local builds. If a `build` directory a
 
 The development netcdf-c installation needs `PKG_CONFIG_PATH=/usr/local/netcdf-c/lib/pkgconfig` when CMake regenerates the existing build. Run `cmake --build build --parallel 8`, `ctest --test-dir build --output-on-failure` and `cmake --build build --target docs` (zero warnings). Focused NEXTCDF-4 controls use `ctest --test-dir build -L nextcdf4_controls --output-on-failure`; all these tests also run in the existing normal/sanitizer CI full suites. Ed explicitly permits deleting `/fast/ed/NEP/build` whenever needed; it is always temporary. Ask before deleting any other existing build tree.
 
+For MPI CI parity, configure a fresh build with `-DCMAKE_C_FLAGS="-Wall -Werror"` (and `-DCMAKE_Fortran_FLAGS="-Wall -Werror"` when Fortran is enabled). The parallel workflow treats unused declarations as build failures; a default local build does not catch them.
+
 ## Local MPI Dependencies
 
 Parallel HDF5 2.1.1 is installed in `/home/ed/local/hdf5-2.1.1_mpi`; NetCDF-C main is installed in `/home/ed/local/netcdf-c_mpi`. Both use `/usr/bin/mpicc` (Open MPI). Select these together with `HDF5_DIR=/home/ed/local/hdf5-2.1.1_mpi/cmake` and `PKG_CONFIG_PATH=/home/ed/local/netcdf-c_mpi/lib/pkgconfig`. For isolated upstream dependency tests, use `NCRCENV_RC=/dev/null` to avoid stale user UDF autoload entries and `OMPI_MCA_rmaps_base_oversubscribe=1` for tests requesting 16 ranks on this machine.

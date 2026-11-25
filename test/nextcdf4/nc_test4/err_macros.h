@@ -44,7 +44,7 @@ static int total_err = 0, err = 0;
         goto error;                                                     \
     } while (0)
 
-static int ERR_report(int stat, const char* file, int line)
+static inline int ERR_report(int stat, const char* file, int line)
 {
     fflush(stdout);
     fprintf(stderr, "Sorry! Unexpected result, %s, line: %d; status=%d\n",

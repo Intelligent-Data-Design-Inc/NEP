@@ -196,7 +196,8 @@ run_roundtrip(const char *fname, int cmode)
 {
     int ncid, dimid, varid, ret;
     nc_type enumid, opaqueid, pointid, obsid;
-    size_t start[1], count[1], stride[1];
+    size_t start[1], count[1];
+    ptrdiff_t stride[1];
     struct obs out[ND];
 
     if ((ret = nc_create(fname, NC_NEXTCDF4 | NC_CLOBBER | cmode, &ncid)))

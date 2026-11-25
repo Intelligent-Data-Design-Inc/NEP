@@ -58,15 +58,6 @@ bf16_is_nan(uint16_t b)
     return (b & 0x7f80) == 0x7f80 && (b & 0x007f);
 }
 
-static float
-f32_from_bits(uint32_t u)
-{
-    float v;
-
-    memcpy(&v, &u, sizeof(v));
-    return v;
-}
-
 static uint32_t
 f32_bits(float v)
 {
