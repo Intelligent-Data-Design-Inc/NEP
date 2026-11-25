@@ -12,6 +12,220 @@
 #include "nxt4internal.h"
 
 /**
+ * @brief Check the complete tree for schema excluded from SWMR writer sessions.
+ * @param grp Root of the subtree to validate.
+ * @return NC_NOERR, or NC_ENOTBUILT for user types or dynamic/reference variables.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+static int
+swmr_schema(NC_GRP_INFO_T *grp)
+{
+    int ret;
+    if (ncindexsize(grp->type))
+        return NC_ENOTBUILT;
+    for (size_t i = 0; i < ncindexsize(grp->vars); i++) {
+        NC_VAR_INFO_T *var = (NC_VAR_INFO_T *)ncindexith(grp->vars, i);
+        if (var && (var->type_info->hdr.id == NC_STRING ||
+                    var->type_info->hdr.id == NC_STD_REF ||
+                    var->type_info->hdr.id >= NC_FIRSTUSERTYPEID))
+            return NC_ENOTBUILT;
+    }
+    for (size_t i = 0; i < ncindexsize(grp->children); i++) {
+        NC_GRP_INFO_T *child = (NC_GRP_INFO_T *)ncindexith(grp->children, i);
+        if (child && (ret = swmr_schema(child)))
+            return ret;
+    }
+    return NC_NOERR;
+}
+
+/**
+ * @brief Preflight native serial SWMR without changing definitions or file bounds.
+ * @param h5 Shared NetCDF file metadata.
+ * @param file NEXTCDF-4 session state.
+ * @return NC_NOERR, NC_EPERM, NC_EINVAL, NC_ENOTBUILT or NC_EHDFERR.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+nx4_swmr_validate(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file)
+{
+    H5F_info2_t info;
+    hid_t fapl, driver;
+    unsigned long features = 0;
+    int ret;
+
+    if (file->no_write || file->swmr_active)
+        return NC_EPERM;
+    if (file->netcdf4_model || (file->mode & NC_CLASSIC_MODEL) ||
+        (h5->cmode & NC_CLASSIC_MODEL))
+        return NC_EINVAL;
+#ifdef HAVE_NEXTCDF4_PARALLEL
+    if (file->parallel)
+        return NC_EINVAL;
+#endif
+    htri_t strict = H5Aexists(file->rootid, "_nc3_strict");
+    if (strict < 0)
+        return NC_EHDFERR;
+    if (strict > 0)
+        return NC_EINVAL;
+    if ((ret = swmr_schema(h5->root_grp)))
+        return ret;
+    if (H5Fget_info2(file->hdfid, &info) < 0)
+        return NC_EHDFERR;
+    if (info.super.version != 3)
+        return NC_EINVAL;
+    if ((fapl = H5Fget_access_plist(file->hdfid)) < 0)
+        return NC_EHDFERR;
+    driver = H5Pget_driver(fapl);
+    ret = driver < 0 || H5FDdriver_query(driver, &features) < 0 ? NC_EHDFERR : NC_NOERR;
+    H5Pclose(fapl);
+    if (ret)
+        return ret;
+    return features & H5FD_FEAT_SUPPORTS_SWMR_IO ? NC_NOERR : NC_EINVAL;
+}
+
+/**
+ * @brief Activate a committed session without recursively entering enddef.
+ * @param h5 Shared NetCDF file metadata in data mode.
+ * @param file NEXTCDF-4 session state.
+ * @return NC_NOERR or a validation/HDF5 error; active stays false on failure.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+nx4_swmr_activate(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file)
+{
+    int ret;
+    if (file->swmr_active)
+        return NC_NOERR;
+    if ((ret = nx4_swmr_validate(h5, file)))
+        return ret;
+    if (file->define_mode)
+        return NC_EINDEFINE;
+    if ((ret = nx4_write_provenance(file)))
+        return ret;
+    if (H5Fset_libver_bounds(file->hdfid, H5F_LIBVER_LATEST, H5F_LIBVER_LATEST) < 0 ||
+        H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0 ||
+        H5Fstart_swmr_write(file->hdfid) < 0)
+        return NC_EHDFERR;
+    file->swmr_active = file->swmr_requested = 1;
+    file->mode |= NC_SWMR_WRITE;
+    return NC_NOERR;
+}
+
+/**
+ * @brief Flush variable datasets or dimension scales throughout a group tree.
+ * @param grp Subtree to flush, in metadata index order.
+ * @param scales Nonzero selects scales, zero selects variables.
+ * @return NC_NOERR or NC_EHDFERR. Alias handles are deliberately not closed.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+static int
+swmr_flush_group(NC_GRP_INFO_T *grp, int scales)
+{
+    int ret;
+    NCindex *list = scales ? grp->dim : grp->vars;
+    for (size_t i = 0; i < ncindexsize(list); i++) {
+        hid_t dataset = -1;
+        if (scales) {
+            NC_DIM_INFO_T *dim = (NC_DIM_INFO_T *)ncindexith(list, i);
+            NEXTCDF4_DIM_INFO_T *info = dim ? dim->format_dim_info : NULL;
+            if (info) dataset = info->hdf_dataset;
+        } else {
+            NC_VAR_INFO_T *var = (NC_VAR_INFO_T *)ncindexith(list, i);
+            NEXTCDF4_VAR_INFO_T *info = var ? var->format_var_info : NULL;
+            if (info) dataset = info->hdf_dataset;
+        }
+        if (dataset >= 0 && H5Dflush(dataset) < 0)
+            return NC_EHDFERR;
+    }
+    for (size_t i = 0; i < ncindexsize(grp->children); i++) {
+        NC_GRP_INFO_T *child = (NC_GRP_INFO_T *)ncindexith(grp->children, i);
+        if (child && (ret = swmr_flush_group(child, scales)))
+            return ret;
+    }
+    return NC_NOERR;
+}
+
+/**
+ * @brief Publish all variable data before flushing dimension scales and the file.
+ * @param h5 Shared NetCDF metadata.
+ * @param file Active writable SWMR file.
+ * @return NC_NOERR or NC_EHDFERR; publication is not transactional.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+nx4_swmr_flush(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file)
+{
+    int ret;
+    if ((ret = swmr_flush_group(h5->root_grp, 0)) ||
+        (ret = swmr_flush_group(h5->root_grp, 1)))
+        return ret;
+    return H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0 ? NC_EHDFERR : NC_NOERR;
+}
+
+/**
+ * @brief Resolve public SWMR IDs without casting another backend's private state.
+ * @param ncid File or group ID.
+ * @param h5p Destination for shared metadata.
+ * @param filep Destination for NEXTCDF-4 state.
+ * @return NC_NOERR, NC_EBADID or NC_ENOTNC4.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+static int
+swmr_file(int ncid, NC_FILE_INFO_T **h5p, NEXTCDF4_FILE_INFO_T **filep)
+{
+    NC *nc;
+    int ret;
+    if ((ret = NC_check_id(ncid, &nc)))
+        return ret;
+    if (nc->dispatch != NEXTCDF4_dispatch_table)
+        return NC_ENOTNC4;
+    return NEXTCDF4_get_file(ncid, h5p, filep);
+}
+
+/**
+ * @brief Start the writer session described by nc_start_swmr_write() in nep.h.
+ * See nep.h for parameter, return-value and lifecycle documentation.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+nc_start_swmr_write(int ncid)
+{
+    NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
+    int ret;
+    if ((ret = swmr_file(ncid, &h5, &file)))
+        return ret;
+    if (file->swmr_active)
+        return NC_NOERR;
+    if ((ret = nx4_swmr_validate(h5, file)))
+        return ret;
+    file->swmr_requested = 1;
+    if (file->define_mode)
+        return NEXTCDF4__enddef(ncid, 0, 0, 0, 0);
+    return nx4_swmr_activate(h5, file);
+}
+
+/**
+ * @brief Publish a writer session as specified by nc_swmr_flush() in nep.h.
+ * See nep.h for parameter, return-value and publication documentation.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+nc_swmr_flush(int ncid)
+{
+    NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
+    int ret;
+    if ((ret = swmr_file(ncid, &h5, &file)))
+        return ret;
+    if (file->no_write)
+        return NC_EPERM;
+    if (!file->swmr_active)
+        return NC_EINVAL;
+    return nx4_swmr_flush(h5, file);
+}
+
+/**
  * @brief Recursively close the HDF5 objects belonging to a group.
  *
  * At close time every open `hid_t` under a group must be released:
@@ -233,6 +447,7 @@ NEXTCDF4_add_file(int ncid, const char *path, int mode,
     file->hdfid = -1;
     file->rootid = -1;
     file->mode = mode;
+    file->swmr_requested = !!(mode & NC_SWMR_WRITE);
     file->no_write = !(mode & NC_WRITE);
     file->define_mode = 1;
     file->netcdf4_model = !!(mode & NC_NETCDF4_MODEL);
@@ -455,6 +670,8 @@ NEXTCDF4_sync(int ncid)
 
     if ((ret = NEXTCDF4_get_file(ncid, NULL, &file)))
         return ret;
+    if (file->swmr_active)
+        return nc_swmr_flush(ncid);
     if (file->no_write)
         return NC_NOERR;
     if ((ret = nx4_write_provenance(file)))
@@ -488,13 +705,17 @@ NEXTCDF4_close(int ncid, void *parameters)
     (void)parameters;
     if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
         return ret;
+    if (!file->swmr_active)
+        file->swmr_requested = 0;
     if (file->define_mode) {
         if ((ret = NEXTCDF4__enddef(ncid, 0, 0, 0, 0)))
             return ret;
     }
+    if (file->swmr_active)
+        close_ret = nx4_swmr_flush(h5, file);
     nx4_close_group_hdf(h5->root_grp);
     h5->format_file_info = NULL;
-    if (!file->no_write) {
+    if (!file->no_write && !file->swmr_active) {
         if ((ret = nx4_write_provenance(file)))
             close_ret = ret;
         if (H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0)
@@ -673,10 +894,12 @@ NEXTCDF4__enddef(int ncid, size_t h_minfree, size_t v_align,
 
     if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
         return ret;
-    if (file->no_write)
+    if (file->no_write || file->swmr_active)
         return NC_EPERM;
     if (!file->define_mode)
         return NC_EINVAL;
+    if (file->swmr_requested && (ret = nx4_swmr_validate(h5, file)))
+        return ret;
     if ((ret = NEXTCDF4_write_types(h5)))
         return ret;
     if ((ret = commit_group_vars(h5, file, h5->root_grp)))
@@ -689,7 +912,7 @@ NEXTCDF4__enddef(int ncid, size_t h_minfree, size_t v_align,
         return NC_EHDFERR;
     file->define_mode = 0;
     h5->flags &= ~NC_INDEF;
-    return NC_NOERR;
+    return file->swmr_requested ? nx4_swmr_activate(h5, file) : NC_NOERR;
 }
 
 /**
@@ -713,7 +936,7 @@ NEXTCDF4_redef(int ncid)
 
     if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
         return ret;
-    if (file->no_write)
+    if (file->no_write || file->swmr_active)
         return NC_EPERM;
     if (file->define_mode)
         return (file->mode & NC_CLASSIC_MODEL) ? NC_EINDEFINE :
@@ -755,7 +978,7 @@ NEXTCDF4_set_fill(int ncid, int fillmode, int *old_modep)
 
     if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
         return ret;
-    if (file->no_write)
+    if (file->no_write || file->swmr_active)
         return NC_EPERM;
     if (fillmode != NC_FILL && fillmode != NC_NOFILL)
         return NC_EINVAL;

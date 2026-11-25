@@ -654,6 +654,55 @@ extern "C" {
      */
     int nc_ref_free(nc_std_ref_t *ref);
 
+    /**
+     * @brief Start a single-writer/multiple-reader session on a native NEXTCDF-4 file.
+     *
+     * Link libncnextcdf4 and enable NEP_HAS_NEXTCDF4. A file or subgroup ncid
+     * addresses the whole file. Pending definitions are committed before HDF5
+     * SWMR activation; calling again on an active writer is a no-op. Only serial
+     * native files with superblock v3 and a SWMR-capable driver are supported.
+     * Variables must have fixed-size atomic types (including NEP small floats,
+     * complex and bitfield types), not NC_STRING, NC_STD_REF or user types.
+     * Declared user types, even unused ones, are excluded. All schema and
+     * attributes freeze at activation; in-bounds writes and unlimited growth
+     * remain allowed. This is session state, not a persistent mode marker.
+     *
+     * Alternatively request NC_SWMR_WRITE at create/open: creates defer start
+     * until enddef (including automatic enddef on write); writable opens start
+     * after metadata loading. Closing an inactive requested file never starts
+     * SWMR. Failed activation may leave ordinary definitions committed; it
+     * does not roll them back and leaves the session inactive and closable.
+     *
+     * @param ncid Open file or group identifier.
+     * @return NC_NOERR on success; NC_EBADID for an invalid identifier;
+     * NC_ENOTNC4 for another backend; NC_EPERM for read-only access;
+     * NC_EINVAL for compatibility/MPI sessions, old superblocks or unsupported
+     * drivers; NC_ENOTBUILT for excluded schema; NC_EHDFERR for HDF5 failures;
+     * or an error propagated while committing pending metadata.
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_start_swmr_write(int ncid);
+
+    /**
+     * @brief Publish all datasets and dimension scales of an active SWMR writer.
+     *
+     * Link libncnextcdf4. Flushes each dataset and then the file; nc_sync on
+     * an active writer uses the same path. This is reader visibility, not an
+     * atomic multi-variable timestep, rollback or power-loss durability
+     * guarantee. HDF5 may also flush opportunistically before this call.
+     * Readers must open with HDF5 SWMR read access and refresh datasets;
+     * NEP reader refresh support is not supplied by this writer interface.
+     * Does not enter define mode or activate an inactive session.
+     *
+     * @param ncid Open file or group identifier; the entire file is flushed.
+     * @return NC_NOERR on success; NC_EBADID for an invalid identifier;
+     * NC_ENOTNC4 for another backend; NC_EPERM for read-only access;
+     * NC_EINVAL for an inactive writer; NC_EHDFERR for a flush failure.
+     * Partial publication on error is not rolled back.
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_swmr_flush(int ncid);
+
 #if defined(__cplusplus)
 }
 #endif
@@ -723,6 +772,11 @@ extern "C" {
 
 /** Request NetCDF-4-model compatibility from the NEXTCDF-4 backend */
 #define NC_NETCDF4_MODEL 0x04000000
+
+/** Request a native serial NEXTCDF-4 SWMR writer session at create/open.
+ * Creates defer activation to enddef; opens require NC_WRITE. This is a
+ * NEP-only flag, not an upstream NetCDF mode. See nc_start_swmr_write(). */
+#define NC_SWMR_WRITE 0x08000000
 
 /** @} */
 

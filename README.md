@@ -168,6 +168,14 @@ NEP must use the same HDF5 as NetCDF-C. Configure stops if the
 `libhdf5.so` version that `libnetcdf.so` needs differs from the HDF5
 that CMake found; set `HDF5_ROOT` to NetCDF-C's HDF5 to fix it.
 
+Native serial NEXTCDF-4 writers can publish to live HDF5 SWMR readers with
+`NC_SWMR_WRITE` at create/open or `nc_start_swmr_write(ncid)`, then
+`nc_swmr_flush(ncid)` (also active-writer `nc_sync`). Link `libncnextcdf4`.
+Only fixed-size atomic variables are supported; schema/attributes freeze after
+activation. No compatibility modes or MPI-IO SWMR, atomic-timestep or power-loss
+durability guarantee. NEP reader refresh remains deferred. See
+[SWMR writer sessions](docs/nextcdf4.md#swmr-writer-sessions).
+
 ### Configuration Options
 
 #### Quick Reference

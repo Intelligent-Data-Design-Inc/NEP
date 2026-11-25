@@ -244,7 +244,31 @@ when mirrored into `var->fill_value`.
 
 `nx4_var_dapl` maps netCDF bytes/slots/float-preemption to HDF5 slots/bytes/double-preemption. Dataset creation and deferred rebuild use it; loaded variable handles are reopened with global NetCDF defaults. `nx4_reopen_var_cache` finds owned variable/scale aliases by object token, allocates its path/property lists before mutation, flushes writable files, closes all aliases, then reopens with the requested DAPL. On failure it attempts to restore the old access properties; no datasets or dimension attachments are recreated. Getters query live chunked DAPLs; pending/nonchunked variables retain their requests. Existing full-suite normal and sanitizer CI covers the `nextcdf4_controls` focused tests.
 
-`NEXTCDF4_rename_grp` validates normalized names and parent variable/group/type collisions, moves the HDF5 link, updates the parent child index and flushes. Open descendant IDs and object identities remain valid, and full-name inquiry derives new paths from the metadata tree. Native and NetCDF-4-model groups are supported; classic mode remains root-only. Unsupported memory, sharing and parallel flags are rejected by `NEXTCDF4_check_mode` before filesystem side effects; image files and SWMR remain deferred. Optional MPI-IO sessions use the Sprint 1V1 file plumbing and Sprint 1V2 per-variable access described below.
+`NEXTCDF4_rename_grp` validates normalized names and parent variable/group/type collisions, moves the HDF5 link, updates the parent child index and flushes. Open descendant IDs and object identities remain valid, and full-name inquiry derives new paths from the metadata tree. Native and NetCDF-4-model groups are supported; classic mode remains root-only. Unsupported memory, sharing and parallel flags are rejected by `NEXTCDF4_check_mode` before filesystem side effects; image files remain deferred. Native serial SWMR writers use `NC_SWMR_WRITE` or `nc_start_swmr_write`; NEP reader refresh remains Sprint 1V5. Optional MPI-IO sessions use the Sprint 1V1 file plumbing and Sprint 1V2 per-variable access described below.
+
+## SWMR writer lifecycle
+
+`NEXTCDF4_FILE_INFO_T.swmr_requested` records deferred activation and
+`swmr_active` records successful `H5Fstart_swmr_write`. Flagged creates activate
+only after enddef materializes the schema; flagged writable opens activate after
+metadata load. Explicit `nc_start_swmr_write` preflights and commits definitions,
+then uses the same activation helper. `nx4_swmr_validate` checks native serial
+state, actual superblock v3, SWMR VFD capability and the complete schema tree:
+no declared user types or string/reference/user-defined variables. Open attributes
+and committed datatypes cannot survive HDF5 activation; the restricted schema
+avoids adding a committed-type handle lifecycle. An inactive requested session
+closes as an ordinary file, never activating solely to close.
+
+Active sessions cannot re-enter define mode or mutate schema/attributes. The
+common write-define guard and direct type/group/reference mutator guards return
+`NC_EPERM`; committed dataset setters return `NC_ELATEDEF`. Variable data I/O and
+cache-alias reopen remain available without creating objects. Provenance is
+materialized before activation and is not rewritten by active sync/close.
+`nx4_swmr_flush` walks variable datasets, then dimension scales, then calls
+`H5Fflush`; alias handles stay owned and may safely be flushed twice. Public
+`nc_swmr_flush`, active `nc_sync` and close share this path. No writer refresh,
+record transaction or physical durability guarantee is introduced. See
+[NEXTCDF-4](nextcdf4.md) for the public writer contract and deferred reader support.
 
 ## Parallel variable transfers
 

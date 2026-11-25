@@ -65,6 +65,10 @@ NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
         return NC_EINVAL;
     if ((ret = NEXTCDF4_check_mode(mode)))
         return ret;
+    if ((mode & NC_SWMR_WRITE) &&
+        (!(mode & NC_WRITE) || parameters ||
+         (mode & (NC_CLASSIC_MODEL | NC_NETCDF4_MODEL))))
+        return NC_EINVAL;
 #ifndef HAVE_NEXTCDF4_PARALLEL
     /* A non-NULL parameters pointer means nc_open_par was called;
      * without parallel support that is unanswerable. NC_INMEMORY also
@@ -132,6 +136,8 @@ NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
         goto fail;
     h5->root_grp->atts_read = 0;
     if ((ret = NEXTCDF4_load_metadata(file, h5)))
+        goto fail;
+    if (file->swmr_requested && (ret = nx4_swmr_activate(h5, file)))
         goto fail;
     return NC_NOERR;
 

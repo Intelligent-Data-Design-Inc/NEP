@@ -58,6 +58,15 @@ main(int argc, char **argv)
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
+    int rejected;
+    if (nc_start_swmr_write(ncid) != NC_EINVAL ||
+        nc_swmr_flush(ncid) != NC_EINVAL ||
+        nc_create_par(FILE_NAME, NC_NEXTCDF4 | NC_NETCDF4 | NC_SWMR_WRITE,
+                      MPI_COMM_WORLD, MPI_INFO_NULL, &rejected) != NC_EINVAL ||
+        nc_open_par(FILE_NAME, NC_NEXTCDF4 | NC_WRITE | NC_SWMR_WRITE,
+                    MPI_COMM_WORLD, MPI_INFO_NULL, &rejected) != NC_EINVAL)
+        MPI_Abort(MPI_COMM_WORLD, 1);
+
     /* Each rank writes its rank number at its own index; the default
      * transfer mode is independent I/O. */
     start = (size_t)rank;

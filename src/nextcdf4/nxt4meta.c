@@ -373,7 +373,7 @@ free_name_list(char **names, size_t n)
 int
 NEXTCDF4_check_write_define(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file)
 {
-    if (file->no_write)
+    if (file->no_write || file->swmr_active)
         return NC_EPERM;
     if (!file->define_mode) {
         /* Metadata calls in data mode silently re-enter define mode,
@@ -2256,6 +2256,8 @@ nx4_find_var_for_write(int ncid, int varid, NC_FILE_INFO_T **h5,
      * illegal outside it. */
     if ((*file)->no_write)
         return NC_EPERM;
+    if ((*file)->swmr_active)
+        return NC_ELATEDEF;
     if (!(*file)->define_mode)
         return NC_ENOTINDEFINE;
     /* Dataset creation properties are immutable once the dataset

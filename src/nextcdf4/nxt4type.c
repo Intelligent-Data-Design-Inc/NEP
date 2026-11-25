@@ -44,7 +44,7 @@ check_type_write(NEXTCDF4_FILE_INFO_T *file, NC_GRP_INFO_T *grp)
     (void)grp;
     if (!file)
         return NC_EBADID;
-    if (file->no_write)
+    if (file->no_write || file->swmr_active)
         return NC_EPERM;
     if (!file->define_mode)
         return NC_ENOTINDEFINE;
@@ -869,7 +869,7 @@ NEXTCDF4_insert_array_compound(int ncid, nc_type typeid, const char *name,
 
     if ((ret = get_grp_and_file(ncid, &h5, &grp, &file)))
         return ret;
-    if (file->no_write)
+    if (file->no_write || file->swmr_active)
         return NC_EPERM;
     if (!file->define_mode)
         return NC_ENOTINDEFINE;
@@ -1365,7 +1365,7 @@ NEXTCDF4_insert_enum(int ncid, nc_type typeid, const char *name, const void *val
 
     if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
         return ret;
-    if (file->no_write)
+    if (file->no_write || file->swmr_active)
         return NC_EPERM;
     if (!file->define_mode)
         return NC_ENOTINDEFINE;

@@ -305,7 +305,7 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
     unsigned char dummy = 0;
     int ndims, i, extend = 0, ret = NC_NOERR, range_error = 0;
     void *converted = NULL, *io_data = data;
-    nc_type xtype, io_type;
+    nc_type xtype = NC_NAT, io_type;
     int converting, dynamic = 0, read_started = 0;
     char **string_write = NULL;
     size_t xtype_size;

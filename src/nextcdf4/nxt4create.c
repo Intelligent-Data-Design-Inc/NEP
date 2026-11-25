@@ -103,6 +103,9 @@ NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
         return ret;
     if ((ret = valid_create_mode(cmode)))
         return ret;
+    if ((cmode & NC_SWMR_WRITE) &&
+        (parameters || (cmode & (NC_CLASSIC_MODEL | NC_NETCDF4_MODEL))))
+        return NC_EINVAL;
 #ifndef HAVE_NEXTCDF4_PARALLEL
     /* A non-NULL parameters pointer means nc_create_par was called;
      * without parallel support that is unanswerable. NC_INMEMORY also

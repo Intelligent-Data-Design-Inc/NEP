@@ -10,6 +10,8 @@ The development netcdf-c installation needs `PKG_CONFIG_PATH=/usr/local/netcdf-c
 
 For MPI CI parity, configure a fresh build with `-DCMAKE_C_FLAGS="-Wall -Werror"` (and `-DCMAKE_Fortran_FLAGS="-Wall -Werror"` when Fortran is enabled). The parallel workflow treats unused declarations as build failures; a default local build does not catch them.
 
+Focused SWMR writer verification uses `ctest --test-dir build -L nextcdf4_swmr --output-on-failure --no-tests=error`. Its raw-HDF5 reader helper is a separate executable launched by the writer test; build both targets (or the full build) before running it. These tests run in existing normal/sanitizer full suites, including serial sessions with a parallel-built HDF5 library.
+
 ## Local MPI Dependencies
 
 Parallel HDF5 2.1.1 is installed in `/home/ed/local/hdf5-2.1.1_mpi`; NetCDF-C main is installed in `/home/ed/local/netcdf-c_mpi`. Both use `/usr/bin/mpicc` (Open MPI). Select these together with `HDF5_DIR=/home/ed/local/hdf5-2.1.1_mpi/cmake` and `PKG_CONFIG_PATH=/home/ed/local/netcdf-c_mpi/lib/pkgconfig`. For isolated upstream dependency tests, use `NCRCENV_RC=/dev/null` to avoid stale user UDF autoload entries and `OMPI_MCA_rmaps_base_oversubscribe=1` for tests requesting 16 ranks on this machine.

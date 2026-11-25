@@ -72,6 +72,8 @@ ref_file(int ncid, NC_FILE_INFO_T **h5p, NEXTCDF4_FILE_INFO_T **filep)
 static int
 ref_check_native(NEXTCDF4_FILE_INFO_T *file)
 {
+    if (file->swmr_active)
+        return NC_EPERM;
     if (file->netcdf4_model || (file->mode & NC_CLASSIC_MODEL))
         return NC_ENOTNC4;
     return NC_NOERR;

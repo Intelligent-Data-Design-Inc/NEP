@@ -319,12 +319,16 @@ Plan: [docs/plan/v4.3.0-sprint1V2-collective-independent-data-access.md](plan/v4
 Plan: [docs/plan/v4.3.0-sprint1V3-parallel-coverage-interchange.md](plan/v4.3.0-sprint1V3-parallel-coverage-interchange.md)
 
 #### Sprint 1V4 - SWMR Writer Support
-- SWMR write mode at `nc_create`/`nc_open` via `H5Fstart_swmr_write`; files created with `H5F_LIBVER_LATEST` bounds already satisfy the superblock requirement.
-- Writer-side durability: `nc_swmr_flush`-style API wrapping dataset refresh/flush (`H5Dflush`/`H5Fflush`) semantics so appended timesteps become visible to readers; validate unlimited-dim append ordering.
-- Restrict or document unsupported SWMR features (no new groups/types/vars after SWMR start, filter limitations) with clear error codes.
-- Tests: writer appends while reader polls; data visibility and integrity checks.
+- Both `NC_SWMR_WRITE` on create/open and `nc_start_swmr_write(int ncid)`; creates activate after schema commitment at enddef, writable opens after metadata load.
+- Native serial sessions only; fixed-size atomic variables (including small floats/complex/bitfields), no declared user types or string/reference variables; schema and attributes freeze at activation.
+- `nc_swmr_flush(int ncid)` and active-writer `nc_sync` publish all datasets/scales via `H5Dflush`/`H5Fflush`; no atomic-timestep or power-loss-durability guarantee.
+- Separate-process raw-HDF5 reader verifies live appends and built-in filters in existing normal/sanitizer suites; update API/architecture/status docs. No Spack/conda changes.
+- Out of scope: NEP readers/refresh and multi-reader coverage (1V5), MPI-IO SWMR, compatibility modes, dynamic/user/reference types and Fortran SWMR (future work), release notes/publication (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1V4-swmr-writer-support.md](plan/v4.3.0-sprint1V4-swmr-writer-support.md)
 
 #### Sprint 1V5 - SWMR Reader Support and Documentation
+- Sprint 1V4 handoff: implement NEP reader open/refresh, logical dimension-cache refresh, multi-reader/close-order tests and the expanded usage guide; use `H5Fopen(..., H5F_ACC_RDONLY | H5F_ACC_SWMR_READ, ...)`, not the nonexistent `H5Fstart_swmr_read` mentioned below.
 - SWMR read mode at `nc_open` via `H5Fstart_swmr_read`; reader-side `nc_swmr_refresh` API wrapping `H5Drefresh` so readers see newly appended records and updated metadata.
 - Metadata visibility rules for readers (dim lengths, attribute updates) matching SWMR guarantees; graceful handling of reads mid-append.
 - End-to-end tests: single-writer/multiple-reader processes, unlimited-dim growth visibility, reopen and close-ordering cases; run in normal and sanitizer CI.

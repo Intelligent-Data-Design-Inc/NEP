@@ -460,7 +460,7 @@ NEXTCDF4_rename_grp(int grpid, const char *name)
     if ((ret = NEXTCDF4_get_file(grpid, &h5, &file)) ||
         (ret = get_grp_from_ncid(grpid, &h5, &grp)))
         return ret;
-    if (file->no_write)
+    if (file->no_write || file->swmr_active)
         return NC_EPERM;
     if (file->mode & NC_CLASSIC_MODEL)
         return NC_ENOTNC4;
