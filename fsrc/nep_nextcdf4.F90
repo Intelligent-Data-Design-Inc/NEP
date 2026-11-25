@@ -143,7 +143,7 @@ contains
         n = 0
         exit
       endif
-      if (n > huge(n)/2/edges(i)) return
+      if (n > huge(n)/(2*edges(i))) return
       n = n*edges(i)
     enddo
     status = nf90_echar
