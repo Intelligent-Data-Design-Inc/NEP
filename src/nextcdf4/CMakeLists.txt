@@ -20,6 +20,9 @@ target_include_directories(ncnextcdf4 PRIVATE
     ${HDF5_INCLUDE_DIRS}
 )
 target_link_libraries(ncnextcdf4 PRIVATE ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES} m PUBLIC nep)
+if(HAVE_NEXTCDF4_PARALLEL)
+    target_link_libraries(ncnextcdf4 PRIVATE MPI::MPI_C)
+endif()
 set_target_properties(ncnextcdf4 PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/src"
     VERSION ${PROJECT_VERSION}

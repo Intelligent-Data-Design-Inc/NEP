@@ -30,11 +30,17 @@
  * @param mode NetCDF open-mode flags (`NC_WRITE` selects read/write).
  * @param basepe Base processing element; currently ignored.
  * @param chunksizehintp Chunk-size hint; currently ignored.
- * @param parameters Optional dispatch parameters; currently ignored.
+ * @param parameters Non-NULL when the user called `nc_open_par()`:
+ * points at an NX4_MPI_INFO carrying the MPI communicator and info
+ * handle. `nc_open_par()` imposes no extra mode flag beyond
+ * `NC_NEXTCDF4`.
  * @param dispatch Dispatch table selected by netcdf-c.
  * @param ncid NetCDF file identifier allocated by netcdf-c.
  * @return `NC_NOERR` on success, `NC_ENOTNC` if @p path is missing or
- * not HDF5, `NC_EINVAL` for a bad path, or another NetCDF error code.
+ * not HDF5, `NC_EINVAL` for a bad path, `NC_ENOPAR` for a parallel
+ * request when NEXTCDF-4 was built without parallel support,
+ * `NC_EPARINIT` when the MPI-IO driver cannot be set, or another
+ * NetCDF error code.
  */
 int
 NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
@@ -48,7 +54,6 @@ NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
 
     (void)basepe;
     (void)chunksizehintp;
-    (void)parameters;
     (void)dispatch;
 
     ELOG((2, "%s: path %s mode 0x%x ncid %d", __func__, path ? path : "", mode, ncid));
@@ -60,6 +65,13 @@ NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
         return NC_EINVAL;
     if ((ret = NEXTCDF4_check_mode(mode)))
         return ret;
+#ifndef HAVE_NEXTCDF4_PARALLEL
+    /* A non-NULL parameters pointer means nc_open_par was called;
+     * without parallel support that is unanswerable. NC_INMEMORY also
+     * uses parameters, but check_mode already rejected it above. */
+    if (parameters)
+        return NC_ENOPAR;
+#endif
     if (access(path, F_OK) != 0)
         return NC_ENOTNC;
     H5E_BEGIN_TRY {
@@ -78,6 +90,30 @@ NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     if ((ret = nc4_find_grp_h5(ncid, NULL, &h5)))
         goto fail;
     file->define_mode = 0;
+#ifdef HAVE_NEXTCDF4_PARALLEL
+    /* Parallel open: switch the FAPL to the MPI-IO driver, request
+     * collective metadata operations, and keep owned duplicates of the
+     * communicator and info until close, as upstream's nc4_open_file
+     * does. */
+    if (parameters) {
+        NX4_MPI_INFO *mpi = (NX4_MPI_INFO *)parameters;
+        if (H5Pset_fapl_mpio(fapl, mpi->comm, mpi->info) < 0)
+            EBAIL2(NC_EPARINIT);
+        if (H5Pset_all_coll_metadata_ops(fapl, 1) < 0 ||
+            H5Pset_coll_metadata_write(fapl, 1) < 0)
+            EBAIL2(NC_EHDFERR);
+        if (MPI_Comm_dup(mpi->comm, &file->comm) != MPI_SUCCESS)
+            EBAIL(NC_EMPI);
+        file->comm_duped = 1;
+        if (mpi->info != MPI_INFO_NULL) {
+            if (MPI_Info_dup(mpi->info, &file->info) != MPI_SUCCESS)
+                EBAIL(NC_EMPI);
+            file->info_duped = 1;
+        } else
+            file->info = MPI_INFO_NULL;
+        file->parallel = 1;
+    }
+#endif
     flags = (mode & NC_WRITE) ? H5F_ACC_RDWR : H5F_ACC_RDONLY;
     H5E_BEGIN_TRY {
         file->hdfid = H5Fopen(path, flags, fapl);

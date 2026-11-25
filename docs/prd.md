@@ -46,7 +46,7 @@ Native and `NC_NETCDF4_MODEL` files support standalone and recursively nested st
 - File-level `nc_set_fill` starts at `NC_FILL` per open session and affects only subsequently defined eligible atomic variables. Preserve existing variable settings, explicit `nc_def_var_fill` overrides and dynamic user-type/reference fill safety; reject read-only changes. File-default changes do not recreate datasets or persist a hidden attribute.
 - Per-variable cache setters apply actual HDF5 DAPL settings, including on already-open datasets and coordinate-scale aliases, with no data loss or storage recreation. Getters report effective chunked settings; nonchunked variables report stored requests. Allow read-only/data-mode tuning, zero bytes/slots and finite preemption in [0,1]; reset overrides to global defaults on reopen.
 - Support populated group creation/rename in native and `NC_NETCDF4_MODEL`, preserving IDs, descendants and upstream interchange. Flush renames, validate normalized names and parent namespace collisions, reject root/read-only/classic-model rename, and keep descendant path inquiry accurate.
-- Reject unsupported create/open flags before filesystem changes: `NC_DISKLESS`, `NC_INMEMORY`, `NC_MPIIO`/`NC_MPIPOSIX`, `NC_SHARE`, `NC_PERSIST`, `NC_MMAP` return backend `NC_EINVAL`; upstream may preempt invalid combinations. All NEXTCDF-4 parallel I/O moves beyond v4.3.0; `nc_var_par_access` remains `NC_ENOTNC4`. General NEP MPI tests use upstream NetCDF and are not NEXTCDF-4 support. Image files and SWMR remain deferred.
+- Reject unsupported create/open flags before filesystem changes: `NC_DISKLESS`, `NC_INMEMORY`, `NC_MPIIO`/`NC_MPIPOSIX`, `NC_SHARE`, `NC_PERSIST`, `NC_MMAP` return backend `NC_EINVAL`; upstream may preempt invalid combinations. File-level NEXTCDF-4 parallel I/O landed in Sprint 1V1 (`NEP_ENABLE_NEXTCDF4_PARALLEL`, `nc_create_par`/`nc_open_par`); `nc_var_par_access` remains `NC_ENOTNC4`. General NEP MPI tests use upstream NetCDF and are not NEXTCDF-4 support. Image files and SWMR remain deferred.
 - Focused control regressions run in existing normal and sanitizer full-suite CI; keep all CTest tests passing and documentation warning-free. New upstream ports and string support remain outside Sprint 1O. No packaging-contract change.
 
 ## 2. Core Architecture
@@ -319,6 +319,7 @@ Parallel I/O support enables NEP to build and run test programs with MPI for hig
 
 **CMake:**
 - `NEP_ENABLE_PARALLEL_TESTS=ON/OFF` - Enable parallel I/O test programs (default: OFF)
+- `NEP_ENABLE_NEXTCDF4_PARALLEL=ON/OFF` - Enable NEXTCDF-4 MPI-IO file access via `nc_create_par`/`nc_open_par` (default: OFF; requires `NEP_ENABLE_NEXTCDF4`, MPI, parallel HDF5 and `NC_HAS_PARALLEL4`; reports `NEP_HAS_NEXTCDF4_PARALLEL` in `nep_meta.h`)
 - `MPIEXEC_EXECUTABLE=PATH` - Specify path to mpiexec/mpirun
 
 ### 9.3 Dependencies
@@ -690,7 +691,7 @@ cmake -B build -DNEP_ENABLE_NEXTCDF4=ON
 - Conversion engines can produce different exceptional output values; `NC_ERANGE` reports completed conversion, not transactional rejection (#381).
 - Object and region reference types round-trip as opaque tokens.
 - Fortran bindings are limited to the `nep_nextcdf4` module (initialization, constants, float16/bfloat16 I/O); general enhanced-type value wrappers are deferred.
-- Tools (`nextcopy`, `nextdump`), parallel I/O, memory-image files and SWMR are deferred beyond v4.3.0.
+- Tools (`nextcopy`, `nextdump`), per-variable collective/independent parallel access (`nc_var_par_access` → `NC_ENOTNC4`), memory-image files and SWMR are deferred beyond v4.3.0. File-level parallel I/O via `nc_create_par`/`nc_open_par` (with `NC_NEXTCDF4|NC_NETCDF4` at create) works when built with `NEP_ENABLE_NEXTCDF4_PARALLEL`.
 
 ---
 

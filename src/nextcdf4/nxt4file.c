@@ -181,6 +181,16 @@ NEXTCDF4_free_file(NEXTCDF4_FILE_INFO_T *file)
         int nobj = H5Fget_obj_count(file->hdfid, H5F_OBJ_ALL);
         ELOG((3, "%s: hdfid=%ld nobj=%d ret=%d", __func__, (long)file->hdfid, nobj, ret));
     }
+#ifdef HAVE_NEXTCDF4_PARALLEL
+    /* The MPI handles outlive the HDF5 file: H5Fclose completes all
+     * pending MPI-IO before the communicator may be released. */
+    if (file->parallel) {
+        if (file->comm_duped && MPI_Comm_free(&file->comm) != MPI_SUCCESS)
+            ret = NC_EMPI;
+        if (file->info_duped && MPI_Info_free(&file->info) != MPI_SUCCESS)
+            ret = NC_EMPI;
+    }
+#endif
     free(file->path);
     free(file->ncproperties);
     free(file);

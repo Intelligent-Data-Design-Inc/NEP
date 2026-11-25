@@ -188,6 +188,7 @@ that CMake found; set `HDF5_ROOT` to NetCDF-C's HDF5 to fix it.
 | `-DNEP_ENABLE_BENCHMARKS` | OFF | Performance benchmark examples |
 | `-DNEP_ZSTD_PLUGIN_DIR` | (empty) | Directory with one HDF5 zstd plugin; enables the NEXTCDF-4 bfloat16 example tests |
 | `-DNEP_ENABLE_PARALLEL_TESTS` | OFF | MPI parallel I/O tests |
+| `-DNEP_ENABLE_NEXTCDF4_PARALLEL` | OFF | NEXTCDF-4 MPI-IO file access (`nc_create_par`/`nc_open_par`); requires MPI, parallel HDF5, `NC_HAS_PARALLEL4` |
 | `-DNEP_BUILD_DOCUMENTATION` | ON | Doxygen API docs |
 
 #### Compression

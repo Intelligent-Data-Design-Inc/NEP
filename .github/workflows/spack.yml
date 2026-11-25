@@ -63,6 +63,7 @@ jobs:
           spack repo add spack/repos/spack_repo/nep
           spack spec nep@4.2.0 ^netcdf-c@main
           spack spec nep@main+docs+parallel ^netcdf-c@main+mpi ^mpich
+          spack spec nep@main+nextcdf4+parallel ^netcdf-c@main+mpi ^hdf5@2.1.1+mpi ^mpich
           spack spec nep@main+fortran+nextcdf4 ^netcdf-c@main~mpi
           spack spec nep@main~fortran+nextcdf4 ^netcdf-c@main~mpi
 

@@ -89,7 +89,24 @@ NEXTCDF-4 availability is advertised at compile time through `nep_meta.h`:
 
 NEXTCDF-4 is a serial disk-file backend in v4.3.0. Its create/open entries reject `NC_DISKLESS`, `NC_INMEMORY`, `NC_MPIIO`/`NC_MPIPOSIX` (aliases), `NC_SHARE`, `NC_PERSIST` and `NC_MMAP` with `NC_EINVAL`, before creating, clobbering or opening a file. NetCDF-C may reject incompatible flag combinations before backend dispatch. Use NetCDF-C's memory APIs when testing memory requests: passing `NC_INMEMORY` directly to ordinary `nc_open` without an image parameter can assert inside upstream model inference before NEXTCDF-4 is reached.
 
-All NEXTCDF-4 parallel I/O is deferred beyond v4.3.0; `nc_var_par_access` still returns `NC_ENOTNC4`. NEP's general MPI tests exercise upstream NetCDF, not NEXTCDF-4 parallel support. In-memory image files and SWMR are also unsupported.
+## Parallel I/O
+
+NEXTCDF-4 supports MPI-IO file access through the upstream parallel entry points when built with `-DNEP_ENABLE_NEXTCDF4_PARALLEL=ON` (default OFF). The option requires an MPI C compiler, an MPI-enabled HDF5 (`HDF5_IS_PARALLEL`), and a NetCDF-C built with parallel support (`NC_HAS_PARALLEL4`); a missing piece is a configure-time `FATAL_ERROR`. Availability is reported as `NEP_HAS_NEXTCDF4_PARALLEL` in `nep_meta.h`. The parallel ctest label is `nextcdf4_parallel`, gated on `NEP_ENABLE_PARALLEL_TESTS`.
+
+```c
+/* Create is collective over comm; upstream nc_create_par requires
+ * NC_NETCDF4 in the mode flags, so OR it with NC_NEXTCDF4. The UDF
+ * flag still selects the NEXTCDF-4 dispatcher. */
+nc_create_par(path, NC_NEXTCDF4 | NC_NETCDF4, comm, info, &ncid);
+
+/* Open needs only NC_NEXTCDF4 (plus optional NC_WRITE). */
+nc_open_par(path, NC_NEXTCDF4, comm, info, &ncid);
+nc_open_par(path, NC_NEXTCDF4 | NC_WRITE, comm, info, &ncid);
+```
+
+The communicator and info handle arrive in the dispatch `parameters` pointer, are duplicated into file state (freed at `nc_close`), and configure the MPI-IO virtual file driver (`H5Pset_fapl_mpio`) plus collective metadata operations (`H5Pset_all_coll_metadata_ops`, `H5Pset_coll_metadata_write`) on the file access property list — the same semantics as upstream's built-in NetCDF-4/HDF5 backend. Consequently all ranks in the communicator must make identical define-mode calls (`nc_def_dim`, `nc_def_var`, `nc_put_att`, `nc_enddef`, `nc_redef`, `nc_sync`, `nc_close`); metadata operations are collective.
+
+Data transfers run under HDF5's default independent-access mode in this release; `nc_var_par_access` still returns `NC_ENOTNC4`, so each rank must write/read disjoint selections or rely on independent-mode correctness. When NEP is built without parallel support, `nc_create_par`/`nc_open_par` on a NEXTCDF-4 file return `NC_ENOPAR` from the backend. The deprecated `NC_MPIIO`/`NC_MPIPOSIX` mode flags remain rejected with `NC_EINVAL`; `NC_PAR` is not the interface. In-memory image files and SWMR are also unsupported.
 
 ## Diagnostics and Logging
 

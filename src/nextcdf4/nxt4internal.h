@@ -15,6 +15,20 @@
 #include "nextcdf4dispatch.h"
 #include "nxt4err.h"
 
+#ifdef HAVE_NEXTCDF4_PARALLEL
+#include <mpi.h>
+/** @brief MPI comm/info passed to `nc_create_par()`/`nc_open_par()`.
+ *
+ * ABI-identical to netcdf-c's internal `NC_MPI_INFO`
+ * (`include/ncdispatch.h`), which is not installed; libdispatch hands
+ * a pointer to this layout in the create/open `parameters` argument. */
+typedef struct NX4_MPI_INFO
+{
+    MPI_Comm comm;
+    MPI_Info info;
+} NX4_MPI_INFO;
+#endif /* HAVE_NEXTCDF4_PARALLEL */
+
 /** @brief Validate unsupported create/open flags; return NC_EINVAL if present. */
 int NEXTCDF4_check_mode(int mode);
 /** @brief Set the session fill default for subsequently defined variables. */
@@ -123,6 +137,16 @@ typedef struct NEXTCDF4_FILE_INFO
     char *ncproperties; /**< Owned `_NCProperties` value: built at create,
                          * read from the file at open, or NULL when the
                          * file has none. */
+#ifdef HAVE_NEXTCDF4_PARALLEL
+    int parallel;       /**< Nonzero when the file uses the MPI-IO driver. */
+    MPI_Comm comm;      /**< Owned duplicate of the caller's communicator;
+                         * freed by NEXTCDF4_free_file(). */
+    MPI_Info info;      /**< Owned duplicate of the caller's info handle
+                         * (or `MPI_INFO_NULL`); freed by
+                         * NEXTCDF4_free_file() when duplicated. */
+    int comm_duped;     /**< Nonzero when `comm` holds a duplicate to free. */
+    int info_duped;     /**< Nonzero when `info` holds a duplicate to free. */
+#endif /* HAVE_NEXTCDF4_PARALLEL */
 } NEXTCDF4_FILE_INFO_T;
 
 /** @brief NEXTCDF-4-private state hung off

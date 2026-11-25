@@ -260,4 +260,21 @@ if(HAVE_NEXTCDF4)
     endforeach()
     set_tests_properties(tst_nextcdf4_group tst_nextcdf4_rename
         tst_nextcdf4_file tst_nextcdf4_open PROPERTIES LABELS nextcdf4_controls)
+
+    # NEXTCDF-4 parallel I/O (v4.3.0 Sprint 1V1): an MPI program run by
+    # mpiexec; NEP_ENABLE_PARALLEL_TESTS supplies MPIEXEC_EXECUTABLE.
+    if(HAVE_PARALLEL_TESTS AND HAVE_NEXTCDF4_PARALLEL)
+        add_executable(tst_nextcdf4_parallel tst_nextcdf4_parallel.c)
+        target_link_libraries(tst_nextcdf4_parallel PRIVATE ncnextcdf4
+            ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES} MPI::MPI_C)
+        target_include_directories(tst_nextcdf4_parallel PRIVATE
+            ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+        file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/parallel)
+        add_test(NAME tst_nextcdf4_parallel
+            COMMAND ${MPIEXEC_EXECUTABLE} -n 4 $<TARGET_FILE:tst_nextcdf4_parallel>)
+        set_tests_properties(tst_nextcdf4_parallel PROPERTIES
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/parallel
+            LABELS nextcdf4_parallel
+            ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+    endif()
 endif()

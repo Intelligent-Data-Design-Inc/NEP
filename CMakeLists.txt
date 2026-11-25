@@ -166,6 +166,13 @@ option(NEP_ENABLE_MMCIF "Enable PDBx/mmCIF reader support" OFF)
 
 # NEXTCDF-4 backend (v4.0.0) - default OFF while the backend is under development
 option(NEP_ENABLE_NEXTCDF4 "Enable the NEXTCDF-4 UDF backend" OFF)
+
+# NEXTCDF-4 parallel I/O (v4.3.0 Sprint 1V1) - MPI-IO file access via
+# nc_create_par/nc_open_par; requires MPI, parallel HDF5 and parallel NetCDF-C.
+option(NEP_ENABLE_NEXTCDF4_PARALLEL "Enable NEXTCDF-4 parallel I/O via MPI-IO" OFF)
+if(NEP_ENABLE_NEXTCDF4_PARALLEL AND NOT NEP_ENABLE_NEXTCDF4)
+    message(FATAL_ERROR "NEP_ENABLE_NEXTCDF4_PARALLEL requires NEP_ENABLE_NEXTCDF4=ON")
+endif()
 if(DEFINED NEP_INTERNAL_CONVERT)
     message(FATAL_ERROR "NEP_INTERNAL_CONVERT was removed in v4.3.0: internal conversion is now the permanent NEXTCDF-4 engine")
 endif()
@@ -352,6 +359,28 @@ int main(void){ return 0; }" NETCDF_UDF64)
         endif()
         set(HAVE_NEXTCDF4 TRUE)
         message(STATUS "NEXTCDF-4 backend: enabled")
+
+        # NEXTCDF-4 parallel I/O (v4.3.0 Sprint 1V1): the backend
+        # consumes the MPI comm/info that nc_create_par/nc_open_par pass
+        # in the dispatch parameters pointer, so it needs MPI headers
+        # and a parallel HDF5 underneath a parallel NetCDF-C.
+        if(NEP_ENABLE_NEXTCDF4_PARALLEL)
+            find_package(MPI REQUIRED C)
+            if(NOT HDF5_PARALLEL)
+                message(FATAL_ERROR "NEP_ENABLE_NEXTCDF4_PARALLEL requires an MPI-enabled HDF5 (HDF5_IS_PARALLEL is not set for ${HDF5_VERSION})")
+            endif()
+            include(CheckSymbolExists)
+            set(_saved_cmake_required_includes "${CMAKE_REQUIRED_INCLUDES}")
+            set(CMAKE_REQUIRED_INCLUDES "${NETCDF_INCLUDE_DIRS}")
+            check_symbol_exists(NC_HAS_PARALLEL4 "netcdf_meta.h" HAVE_PARALLEL_NETCDF)
+            set(CMAKE_REQUIRED_INCLUDES "${_saved_cmake_required_includes}")
+            unset(_saved_cmake_required_includes)
+            if(NOT HAVE_PARALLEL_NETCDF)
+                message(FATAL_ERROR "NEP_ENABLE_NEXTCDF4_PARALLEL requires NetCDF-C built with parallel support (NC_HAS_PARALLEL4 not found in ${NETCDF_INCLUDE_DIRS})")
+            endif()
+            set(HAVE_NEXTCDF4_PARALLEL 1)
+            message(STATUS "NEXTCDF-4 parallel I/O: enabled")
+        endif()
     endif()
 
     # Parallel I/O test support (v1.9.0)
@@ -531,6 +560,11 @@ if(NOT DOCS_ONLY)
         set(NEP_HAS_PARALLEL 1)
     else()
         set(NEP_HAS_PARALLEL 0)
+    endif()
+    if(HAVE_NEXTCDF4_PARALLEL)
+        set(NEP_HAS_NEXTCDF4_PARALLEL 1)
+    else()
+        set(NEP_HAS_NEXTCDF4_PARALLEL 0)
     endif()
     if(NEP_ENABLE_BENCHMARKS)
         set(NEP_HAS_BENCHMARKS 1)
