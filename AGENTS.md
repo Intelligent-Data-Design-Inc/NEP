@@ -12,6 +12,8 @@ The development netcdf-c installation needs `PKG_CONFIG_PATH=/usr/local/netcdf-c
 
 Parallel HDF5 2.1.1 is installed in `/home/ed/local/hdf5-2.1.1_mpi`; NetCDF-C main is installed in `/home/ed/local/netcdf-c_mpi`. Both use `/usr/bin/mpicc` (Open MPI). Select these together with `HDF5_DIR=/home/ed/local/hdf5-2.1.1_mpi/cmake` and `PKG_CONFIG_PATH=/home/ed/local/netcdf-c_mpi/lib/pkgconfig`. For isolated upstream dependency tests, use `NCRCENV_RC=/dev/null` to avoid stale user UDF autoload entries and `OMPI_MCA_rmaps_base_oversubscribe=1` for tests requesting 16 ranks on this machine.
 
+For NEXTCDF-4 MPI verification, configure with `-DNEP_ENABLE_NEXTCDF4=ON -DNEP_ENABLE_NEXTCDF4_PARALLEL=ON -DNEP_ENABLE_PARALLEL_TESTS=ON -DCMAKE_C_COMPILER=/usr/bin/mpicc`. Export the MPI `PKG_CONFIG_PATH` above during configuration and rebuilds and include both MPI dependency `lib` directories in `LD_LIBRARY_PATH`. Run `ctest --test-dir build -L nextcdf4_parallel --output-on-failure`; `OMPI_MCA_rmaps_base_oversubscribe=1` also makes the four-rank tests independent of available slots. The tests use 180-second CTest timeouts.
+
 ## Conda
 
 - The conda recipe lives in `conda/recipe/`; the staged-recipes copy

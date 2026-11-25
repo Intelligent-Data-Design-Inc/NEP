@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "nxt4internal.h"
+#include "nclist.h"
 
 /**
  * @brief Map a netCDF atomic type to the HDF5 datatype describing the
@@ -205,6 +206,48 @@ check_memtype(nc_type xtype, nc_type memtype)
 }
 
 /**
+ * @brief Select a variable's session-only parallel transfer mode.
+ *
+ * All ranks must select the same mode and follow the same collective call
+ * sequence. Filtered variables cannot use independent transfers. This does
+ * not change storage or enter define mode, and works on read-only sessions.
+ *
+ * @param ncid File or group identifier.
+ * @param varid Group-local variable identifier.
+ * @param par_access NC_COLLECTIVE or NC_INDEPENDENT.
+ * @return NC_NOERR on success, NC_ENOPAR for a serial session/build,
+ * NC_EINVAL for an invalid mode or independent filtered access, or the
+ * identifier lookup error.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+NEXTCDF4_var_par_access(int ncid, int varid, int par_access)
+{
+#ifdef HAVE_NEXTCDF4_PARALLEL
+    NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
+    NC_GRP_INFO_T *grp;
+    NC_VAR_INFO_T *var;
+    int ret;
+
+    if (par_access != NC_INDEPENDENT && par_access != NC_COLLECTIVE)
+        return NC_EINVAL;
+    if ((ret = NEXTCDF4_get_file(ncid, &h5, &file))) return ret;
+    if (!file->parallel) return NC_ENOPAR;
+    if ((ret = nc4_find_grp_h5_var(ncid, varid, &h5, &grp, &var))) return ret;
+    if (par_access == NC_INDEPENDENT && nclistlength((NClist *)var->filters))
+        return NC_EINVAL;
+    ((NEXTCDF4_VAR_INFO_T *)var->format_var_info)->parallel_access = par_access;
+    return NC_NOERR;
+#else
+    (void)ncid;
+    (void)varid;
+    (void)par_access;
+    return NC_ENOPAR;
+#endif
+}
+
+/**
  * @brief Common hyperslab I/O behind the `nc_get/put_vara` and
  * `nc_get/put_vars` dispatch entries.
  *
@@ -220,6 +263,13 @@ check_memtype(nc_type xtype, nc_type memtype)
  * the I/O still completes — the engine records the range error and
  * the function returns `NC_ERANGE` after the data lands.
  *
+ * Parallel sessions use an owned MPI transfer list. Collective empty/fill-only
+ * selections still enter HDF5 with none-selected spaces. Unlimited writes
+ * negotiate extents across the file communicator; independent growth fails
+ * before mutation. The caller supplies matching collective order and valid
+ * rank-local arguments. Dynamic/reference transfers remain serial-only.
+ *
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
  * @param ncid NetCDF file identifier.
  * @param varid Variable identifier.
  * @param startp Hyperslab start indices.
@@ -250,8 +300,10 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
     hsize_t rcount[NC_MAX_VAR_DIMS];
     hsize_t memory_dims[NC_MAX_VAR_DIMS], origin[NC_MAX_VAR_DIMS] = {0};
     hsize_t total = 1;
-    int provide_fill = 0, no_read = 0;
-    int ndims, i, extend = 0, ret, range_error = 0;
+    int provide_fill = 0, no_read = 0, collective = 0, parallel = 0, empty = 0;
+    hid_t dxpl = H5P_DEFAULT;
+    unsigned char dummy = 0;
+    int ndims, i, extend = 0, ret = NC_NOERR, range_error = 0;
     void *converted = NULL, *io_data = data;
     nc_type xtype, io_type;
     int converting, dynamic = 0, read_started = 0;
@@ -269,6 +321,16 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
      * its metadata readable but rejects all data I/O. */
     if (vinfo->flags & NC_HDF5_VAR_FILTER_MISSING) return NC_ENOFILTER;
     if (writing && file->no_write) return NC_EPERM;
+#ifdef HAVE_NEXTCDF4_PARALLEL
+    parallel = file->parallel;
+    collective = parallel && vinfo->parallel_access == NC_COLLECTIVE;
+    if (parallel && (var->type_info->hdr.id == NC_STRING ||
+                     var->type_info->hdr.id == NC_STD_REF ||
+                     (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID && var->type_info->varsized)))
+        return NC_ENOTBUILT;
+    if (parallel && !collective && nclistlength((NClist *)var->filters))
+        return NC_EINVAL;
+#endif
     /* Upstream leaves define mode automatically when a write arrives;
      * nc_close does the same below. Reads in define mode keep NEP's
      * NC_EINDEFINE rule. The auto-enddef must run before the dataset
@@ -300,6 +362,8 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
     if (!ndims) goto prepare;
     if (!startp || !countp) { ret = NC_EINVAL; goto done; }
     if (H5Sget_simple_extent_dims(fspace, dims, NULL) < 0) { ret = NC_EHDFERR; goto done; }
+    for (i = 0; i < ndims; i++)
+        if (!countp[i]) empty = 1;
     for (i = 0; i < ndims; i++) {
         size_t last;
         if (stridep && stridep[i] <= 0) { ret = NC_ESTRIDE; goto done; }
@@ -311,7 +375,10 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
         if (countp[i] - 1 > (SIZE_MAX - startp[i]) / (size_t)stride[i]) { ret = NC_EEDGE; goto done; }
         last = startp[i] + (countp[i] - 1) * (size_t)stride[i];
         if (last == SIZE_MAX) { ret = NC_EEDGE; goto done; }
-        if (last >= dims[i]) {
+        if ((size_t)(hsize_t)last != last || (hsize_t)last == H5S_UNLIMITED) {
+            ret = NC_EEDGE; goto done;
+        }
+        if (!empty && last >= dims[i]) {
             if (!var->dim[i]->unlimited) { ret = NC_EEDGE; goto done; }
             if (writing) {
                 newdims[i] = (hsize_t)last + 1; extend = 1;
@@ -332,15 +399,42 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
         if (total && countp[i] > SIZE_MAX / total) { ret = NC_EINVAL; goto done; }
         total *= countp[i];
     }
-    if (!total) { ret = NC_NOERR; goto done; }
+    if (!total && !collective) { ret = NC_NOERR; goto done; }
+#ifdef HAVE_NEXTCDF4_PARALLEL
+    if (writing && collective) {
+        int unlimited = 0;
+        unsigned long long extents[NC_MAX_VAR_DIMS];
+        for (i = 0; i < ndims; i++) {
+            unlimited |= var->dim[i]->unlimited;
+            extents[i] = (unsigned long long)newdims[i];
+            if ((hsize_t)extents[i] != newdims[i]) { ret = NC_EEDGE; goto done; }
+        }
+        if (unlimited) {
+            if (MPI_Allreduce(MPI_IN_PLACE, extents, ndims, MPI_UNSIGNED_LONG_LONG,
+                              MPI_MAX, file->comm) != MPI_SUCCESS) {
+                ret = NC_EMPI; goto done;
+            }
+            extend = 0;
+            for (i = 0; i < ndims; i++) {
+                newdims[i] = (hsize_t)extents[i];
+                if ((unsigned long long)newdims[i] != extents[i] ||
+                    (unsigned long long)(size_t)extents[i] != extents[i]) {
+                    ret = NC_EEDGE; goto done;
+                }
+                if (newdims[i] > dims[i]) extend = 1;
+            }
+        }
+    }
+#endif
+    if (parallel && !collective && extend) { ret = NC_ECANTEXTEND; goto done; }
 prepare:
-    if (!data) { ret = NC_EINVAL; goto done; }
+    if (total && !data) { ret = NC_EINVAL; goto done; }
     xtype = (nc_type)var->type_info->hdr.id;
     converting = memtype != xtype || (writing && var->quantize_mode != NC_NOQUANTIZE);
     io_type = converting ? xtype : memtype;
     if ((ret = nx4_type_size(grp, xtype, &xtype_size))) goto done;
     if (total > SIZE_MAX / xtype_size) { ret = NC_EINVAL; goto done; }
-    if (converting) {
+    if (converting && total) {
         /* A dry-run call with no buffers lets the engine report
          * NC_EBADTYPE etc. before the (possibly large) scratch buffer
          * is allocated; the real call fills `converted` on writes or
@@ -407,6 +501,14 @@ prepare:
             string_write[k] = ((char **)data)[k] ? ((char **)data)[k] : "";
         io_data = string_write;
     }
+#ifdef HAVE_NEXTCDF4_PARALLEL
+    if (parallel) {
+        if ((dxpl = H5Pcreate(H5P_DATASET_XFER)) < 0) { ret = NC_EHDFERR; goto done; }
+        if (H5Pset_dxpl_mpio(dxpl, collective ? H5FD_MPIO_COLLECTIVE : H5FD_MPIO_INDEPENDENT) < 0) {
+            ret = NC_EPARINIT; goto done;
+        }
+    }
+#endif
     if (extend) {
         if (H5Dset_extent(vinfo->hdf_dataset, newdims) < 0) { ret = NC_EHDFERR; goto done; }
         H5Sclose(fspace);
@@ -437,21 +539,26 @@ prepare:
     }
     mspace = ndims ? H5Screate_simple(ndims, memory_dims, NULL) : H5Screate(H5S_SCALAR);
     if (mspace < 0) { ret = NC_EHDFERR; goto done; }
-    if (ndims && !no_read &&
+    if ((!total || no_read) &&
+        (H5Sselect_none(fspace) < 0 || H5Sselect_none(mspace) < 0)) {
+        ret = NC_EHDFERR; goto done;
+    }
+    if (!total) io_data = &dummy;
+    if (ndims && total && !no_read &&
         (H5Sselect_hyperslab(fspace, H5S_SELECT_SET, start, stride, count, NULL) < 0 ||
          H5Sselect_hyperslab(mspace, H5S_SELECT_SET, origin, NULL, count, NULL) < 0)) {
         ret = NC_EHDFERR; goto done;
     }
     if (writing) {
         ret = H5Dwrite(vinfo->hdf_dataset, mtype, ndims ? mspace : H5S_ALL,
-                       fspace, H5P_DEFAULT, io_data) < 0 ? NC_EHDFERR : NC_NOERR;
+                       fspace, dxpl, io_data) < 0 ? NC_EHDFERR : NC_NOERR;
         if (!ret)
             var->written_to = 1;
     }
     else {
-        if (!no_read) {
+        if (!no_read || collective) {
             ret = H5Dread(vinfo->hdf_dataset, mtype, ndims ? mspace : H5S_ALL,
-                          fspace, H5P_DEFAULT, io_data) < 0 ? NC_EHDFERR : NC_NOERR;
+                          fspace, dxpl, io_data) < 0 ? NC_EHDFERR : NC_NOERR;
             /* A failed read of a variable-sized type (strings, vlens
              * and compounds containing them) is reclaimed at done,
              * including values copied while supplying fill. */
@@ -489,7 +596,7 @@ prepare:
             }
             free(zero_fill);
         }
-        if (!ret && converting)
+        if (!ret && converting && total)
             ret = nx4_convert_type(converted, data, xtype, memtype, (size_t)total,
                                     &range_error, NULL, 0, NC_NOQUANTIZE, 0, 1);
     }
@@ -507,6 +614,7 @@ done:
                 break;
             }
     }
+    if (dxpl > 0) H5Pclose(dxpl);
     free(string_write);
     free(converted);
     if (mspace >= 0) H5Sclose(mspace);

@@ -160,6 +160,8 @@ jobs:
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
           export OMPI_ALLOW_RUN_AS_ROOT=1
           export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+          export OMPI_MCA_rmaps_base_oversubscribe=1
+          ctest --test-dir "$GITHUB_WORKSPACE/build" -L nextcdf4_parallel --output-on-failure
           ctest --verbose
 
       # --- Summary ---

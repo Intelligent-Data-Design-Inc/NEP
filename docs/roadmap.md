@@ -299,12 +299,17 @@ Plan: [docs/plan/v4.3.0-sprint1U-fix-issue-389.md](plan/v4.3.0-sprint1U-fix-issu
 Plan: [docs/plan/v4.3.0-sprint1V1-parallel-io-foundation.md](plan/v4.3.0-sprint1V1-parallel-io-foundation.md)
 
 #### Sprint 1V2 - Collective and Independent Data Access
-- Implement `nc_var_par_access` (`NC_COLLECTIVE`/`NC_INDEPENDENT`), replacing the `NC_ENOTNC4` stub, via `H5Pset_dxpl_mpio` transfer property on the dataset transfer property list.
-- Per-variable access mode matching upstream semantics; default independent, collective opt-in per variable.
-- Parallel I/O correctness tests: multi-rank hyperslab writes/reads, unlimited-dim append from multiple ranks, fill regions, and reopen verification against serial reads.
-- Document parallel semantics, restrictions (small floats, references, filters under parallel I/O), and HDF5/MPICH dependency requirements.
+- Implement `nc_var_par_access` with session-only per-variable state and `H5Pset_dxpl_mpio`; default independent, filters defined in parallel force collective, independent filtered access rejected.
+- Collective-safe empty/fill-only selections and communicator-wide unlimited-extent negotiation; independent growth returns `NC_ECANTEXTEND`. Preserve serial behavior and the upstream collective caller contract (no general error consensus).
+- Support fixed-size types including small floats and fixed-size user types; explicitly reject parallel dynamic/string/reference variable I/O with `NC_ENOTBUILT`.
+- Four-rank correctness tests in existing Open MPI CI: mode switches, striding, unequal appends, fill, built-in filters and serial NEXTCDF-4 reopen; repair foundation-test handle/cleanup bugs and add timeouts.
+- Update API/architecture/status docs; no new CMake option, dependency floor, installed file or Spack/conda recipe change.
+- Out of scope: upstream ports/interchange/benchmarks, MPICH and external-plugin coverage (1V3); dynamic/reference parallel support and MPI sanitizer expansion (future work), SWMR (1V4–1V5), release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1V2-collective-independent-data-access.md](plan/v4.3.0-sprint1V2-collective-independent-data-access.md)
 
 #### Sprint 1V3 - Parallel I/O Coverage and Interchange
+- Carry over from 1V2: add MPICH coverage and an external-filter-plugin parallel test matrix; 1V2 certifies the existing Open MPI stack and built-in filters only.
 - Port a selection of upstream `nc_test4` parallel tests (`tst_parallel*`) to NEXTCDF-4 using existing shims; run in a new parallel CI job.
 - Interchange verification: files written collectively by NEXTCDF-4 readable by upstream parallel netcdf-c and vice versa.
 - Performance smoke benchmarks (disk-bound, `perf_disk.h`-style) for collective write/read on multi-rank configs; committed reference artifacts.

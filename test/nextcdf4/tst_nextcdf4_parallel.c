@@ -43,7 +43,8 @@ main(int argc, char **argv)
     /* Collective create: nc_create_par requires NC_NETCDF4 in the
      * mode (upstream rejects other creates without PnetCDF); the UDF
      * flag still selects the NEXTCDF-4 dispatcher. */
-    unlink(FILE_NAME);
+    if (!rank) unlink(FILE_NAME);
+    MPI_Barrier(MPI_COMM_WORLD);
     ret = nc_create_par(FILE_NAME, NC_NEXTCDF4 | NC_NETCDF4 | NC_CLOBBER,
                         MPI_COMM_WORLD, MPI_INFO_NULL, &ncid);
     if (ret != NC_NOERR) {
@@ -95,6 +96,9 @@ main(int argc, char **argv)
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
 
+    if (nc_close(ncid))
+        MPI_Abort(MPI_COMM_WORLD, 1);
+
     /* Read/write reopen: each rank multiplies its slot by 10, syncs,
      * and verifies on a second open in the same session. */
     ret = nc_open_par(FILE_NAME, NC_NEXTCDF4 | NC_WRITE,
@@ -143,7 +147,9 @@ main(int argc, char **argv)
 
     if (!rank)
         printf("OK: NEXTCDF-4 parallel create/open with %d ranks\n", nprocs);
-    unlink(FILE_NAME);
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (!rank) unlink(FILE_NAME);
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
     return 0;
 }

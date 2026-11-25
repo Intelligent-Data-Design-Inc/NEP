@@ -231,6 +231,15 @@ All format readers are independent — any combination can be enabled simultaneo
 - **`-DNEP_ENABLE_BENCHMARKS`** (default OFF): runs general NetCDF performance benchmarks in `examples/performance/`.
 - **`-DNEP_ENABLE_PARALLEL_TESTS`** (default OFF): builds the parallel test programs and runs tests via `mpiexec -n 4`. Requires MPI and NetCDF-C with `NC_HAS_PARALLEL4`.
 
+NEXTCDF-4 MPI-IO additionally requires `-DNEP_ENABLE_NEXTCDF4_PARALLEL=ON`,
+parallel HDF5 2.1.1+ and parallel NetCDF-C with 64-slot UDF support. Create
+with `NC_NEXTCDF4|NC_NETCDF4`, open with `NC_NEXTCDF4`, and use
+`nc_var_par_access` for per-variable collective/independent selection.
+Unlimited growth and filtered I/O require collective access. Parallel
+variable transfers support fixed-size types; strings, dynamic user types
+and references return `NC_ENOTBUILT`. See [Parallel I/O](docs/nextcdf4.md#parallel-io)
+for empty-rank participation, reopen rules and the tested Open MPI stack.
+
 #### Documentation
 
 `-DNEP_BUILD_DOCUMENTATION` (default ON): generates Doxygen API documentation from C and Fortran sources, published to GitHub Pages. Requires Doxygen and Graphviz.

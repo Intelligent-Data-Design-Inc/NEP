@@ -117,6 +117,10 @@ NEXTCDF4_def_var_filter(int ncid, int varid, unsigned int id,
         return ret;
 
     ((NEXTCDF4_VAR_INFO_T *)var->format_var_info)->dcpl_dirty = 1;
+#ifdef HAVE_NEXTCDF4_PARALLEL
+    if (file->parallel)
+        ((NEXTCDF4_VAR_INFO_T *)var->format_var_info)->parallel_access = NC_COLLECTIVE;
+#endif
     return NC_NOERR;
 }
 
@@ -174,6 +178,10 @@ NEXTCDF4_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
 
     var->storage = NC_CHUNKED;
     ((NEXTCDF4_VAR_INFO_T *)var->format_var_info)->dcpl_dirty = 1;
+#ifdef HAVE_NEXTCDF4_PARALLEL
+    if (file->parallel)
+        ((NEXTCDF4_VAR_INFO_T *)var->format_var_info)->parallel_access = NC_COLLECTIVE;
+#endif
     return NC_NOERR;
 }
 
@@ -212,6 +220,10 @@ NEXTCDF4_def_var_fletcher32(int ncid, int varid, int fletcher32)
         return ret;
     var->storage = NC_CHUNKED;
     ((NEXTCDF4_VAR_INFO_T *)var->format_var_info)->dcpl_dirty = 1;
+#ifdef HAVE_NEXTCDF4_PARALLEL
+    if (file->parallel)
+        ((NEXTCDF4_VAR_INFO_T *)var->format_var_info)->parallel_access = NC_COLLECTIVE;
+#endif
     return NC_NOERR;
 }
 

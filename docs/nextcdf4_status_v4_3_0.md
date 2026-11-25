@@ -145,7 +145,7 @@ lines across 12 C files plus `nxt4internal.h`/`nxt4err.h`).
 | API | Dispatch entry | Return |
 |-----|---------------|--------|
 | `nc_get_varm`/`nc_put_varm` | `NEXTCDF4_get_varm`/`put_varm` (`nxt4io.c`) | `NC_ENOTBUILT` — deliberate; mapped I/O is deprecated upstream |
-| `nc_var_par_access` | `NC_NOTNC4_var_par_access` stub | `NC_ENOTNC4` — collective/independent selection deferred to Sprint 1V2 |
+| `nc_var_par_access` | `NEXTCDF4_var_par_access` | Session-only per-variable collective/independent selection (Sprint 1V2); serial sessions return `NC_ENOPAR`; filtered independent access returns `NC_EINVAL` |
 
 Sprint 1O replaced the fill/cache/group-rename stubs: `nc_set_fill` controls a definition-time session default, cache setters/getters use real HDF5 DAPLs including live coordinate-alias reopen, and group creation/rename work in native and `NC_NETCDF4_MODEL` modes. See [NEXTCDF-4 controls](nextcdf4.md). Focused `tst_nextcdf4_fill_mode`/`tst_nextcdf4_cache` plus extended file/rename tests cover these paths in normal/sanitizer full CTest. Subgroup-only upstream files are accepted and descendant full paths are no longer truncated at `NC_MAX_NAME`.
 
@@ -278,10 +278,11 @@ groups.
 
 - `nextcopy`/`nextdump` tools (Phase 4); `nccopy`/`ncdump` remain the
   tools for these files.
-- `nc_var_par_access` collective/independent selection (`NC_ENOTNC4`,
-  Sprint 1V2 — file-level parallel I/O via `nc_create_par`/`nc_open_par`
-  landed in Sprint 1V1 under `NEP_ENABLE_NEXTCDF4_PARALLEL`), SWMR,
-  in-memory image files (`nxt4image.c`), mapped I/O
+- Parallel dynamic/string/reference variable data I/O (`NC_ENOTBUILT`);
+  fixed-size collective/independent access landed in Sprint 1V2 under
+  `NEP_ENABLE_NEXTCDF4_PARALLEL`. Preferences reset at reopen; filtered I/O
+  and unlimited growth require collective access, including empty ranks.
+- SWMR, in-memory image files (`nxt4image.c`), mapped I/O
   (`get_varm`/`put_varm`, deprecated upstream).
 - `NC_STD_REF` inside user-defined type graphs; fixed-length HDF5
   strings wider than one byte.
@@ -350,9 +351,9 @@ Owned by v4.3.0 Sprints 1L1–1R (see `docs/roadmap.md`), ordered by severity.
 10. `nc_set_fill`/`nc_rename_grp`/per-var chunk cache — implemented in
     Sprint 1O, including model-mode groups and effective live cache settings.
     Parallel file access via `nc_create_par`/`nc_open_par` landed in
-    Sprint 1V1; per-variable collective/independent selection, upstream
-    ports and SWMR remain with Sprints 1V2–1V5. Sprint 2 owns release
-    notes.
+    Sprint 1V1; per-variable fixed-size collective/independent selection
+    landed in Sprint 1V2. Upstream ports and SWMR remain with Sprints
+    1V3–1V5. Sprint 2 owns release notes.
 11. ~~Provenance attributes~~ — done in Sprint 1Q: `_NCProperties` and
     `_nc3_strict` stored like upstream; `_IsNetcdf4`/
     `_SuperblockVersion` synthesized on name lookups.

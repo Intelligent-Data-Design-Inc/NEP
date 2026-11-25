@@ -1612,6 +1612,7 @@ NEXTCDF4_def_var(int ncid, const char *name, nc_type xtype, int ndims,
         ret = NC_ENOMEM;
         goto fail;
     }
+    vinfo->parallel_access = 0;
     var->format_var_info = vinfo;
     if (xtype < NC_FIRSTUSERTYPEID && xtype != NC_STRING && xtype != NC_STD_REF)
         var->no_fill = h5->fill_mode == NC_NOFILL;
@@ -4435,6 +4436,7 @@ load_one_var(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
         ret = NC_ENOMEM;
         goto done;
     }
+    vinfo->parallel_access = 0;
     var->format_var_info = vinfo;
     (void)varid;
     vinfo->hdf_dataset = dset;

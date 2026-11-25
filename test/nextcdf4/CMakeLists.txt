@@ -274,6 +274,20 @@ if(HAVE_NEXTCDF4)
             COMMAND ${MPIEXEC_EXECUTABLE} -n 4 $<TARGET_FILE:tst_nextcdf4_parallel>)
         set_tests_properties(tst_nextcdf4_parallel PROPERTIES
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/parallel
+            PROCESSORS 4 TIMEOUT 180
+            LABELS nextcdf4_parallel
+            ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+        add_executable(tst_nextcdf4_parallel_access tst_nextcdf4_parallel_access.c)
+        target_link_libraries(tst_nextcdf4_parallel_access PRIVATE ncnextcdf4
+            ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES} MPI::MPI_C)
+        target_include_directories(tst_nextcdf4_parallel_access PRIVATE
+            ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+        file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/parallel_access)
+        add_test(NAME tst_nextcdf4_parallel_access
+            COMMAND ${MPIEXEC_EXECUTABLE} -n 4 $<TARGET_FILE:tst_nextcdf4_parallel_access>)
+        set_tests_properties(tst_nextcdf4_parallel_access PROPERTIES
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/parallel_access
+            PROCESSORS 4 TIMEOUT 180
             LABELS nextcdf4_parallel
             ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
     endif()

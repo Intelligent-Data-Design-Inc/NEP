@@ -66,7 +66,7 @@ static const NC_Dispatch NEXTCDF4_dispatcher = {
     NEXTCDF4_get_varm,
     NEXTCDF4_put_varm,
     NEXTCDF4_inq_var_all,
-    NC_NOTNC4_var_par_access,
+    NEXTCDF4_var_par_access,
     NEXTCDF4_def_var_fill,
     NC4_show_metadata,
     NC4_inq_unlimdims,

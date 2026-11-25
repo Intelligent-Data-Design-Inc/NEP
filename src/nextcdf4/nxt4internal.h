@@ -17,6 +17,7 @@
 
 #ifdef HAVE_NEXTCDF4_PARALLEL
 #include <mpi.h>
+#include <netcdf_par.h>
 /** @brief MPI comm/info passed to `nc_create_par()`/`nc_open_par()`.
  *
  * ABI-identical to netcdf-c's internal `NC_MPI_INFO`
@@ -31,6 +32,7 @@ typedef struct NX4_MPI_INFO
 
 /** @brief Validate unsupported create/open flags; return NC_EINVAL if present. */
 int NEXTCDF4_check_mode(int mode);
+int NEXTCDF4_var_par_access(int ncid, int varid, int par_access);
 /** @brief Set the session fill default for subsequently defined variables. */
 int NEXTCDF4_set_fill(int ncid, int fillmode, int *old_modep);
 /** @brief Rename a non-root enhanced-model group and flush its link. */
@@ -175,6 +177,8 @@ typedef struct NEXTCDF4_DIM_INFO
 typedef struct NEXTCDF4_VAR_INFO
 {
     hid_t hdf_dataset;  /**< HDF5 variable dataset identifier. */
+    int parallel_access; /**< Session-only transfer preference: independent (0)
+                          * or collective (1); not stored in the file. */
     int flags;          /**< Bitmask; bit `NC_HDF5_VAR_FILTER_MISSING` (from
                          * `hdf5internal.h`) is set when a mandatory filter
                          * plugin was missing at open and the variable's
