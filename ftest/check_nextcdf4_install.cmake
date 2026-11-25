@@ -13,6 +13,15 @@ foreach(artifact "${LIBDIR}/libnepnextcdf4f.so" "${INCLUDEDIR}/nep/nep_nextcdf4.
     endif()
 endforeach()
 set(ENV{LD_LIBRARY_PATH} "${prefix}/${LIBDIR}:${DEPENDENCY_LIBS}")
+# The consumer's NEPConfig.cmake locates netcdf-fortran through
+# pkg_check_modules; make the dependency prefixes' .pc files visible.
+foreach(dep_prefix IN LISTS DEPENDENCY_PREFIXES)
+    if(ENV{PKG_CONFIG_PATH})
+        set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${dep_prefix}/lib/pkgconfig")
+    else()
+        set(ENV{PKG_CONFIG_PATH} "${dep_prefix}/lib/pkgconfig")
+    endif()
+endforeach()
 set(ENV{NETCDF_RC} "${consumer_build}")
 set(ENV{NCRCENV_RC} "${consumer_build}/empty.ncrc")
 file(MAKE_DIRECTORY "${consumer_build}")
