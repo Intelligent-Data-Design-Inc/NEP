@@ -160,7 +160,12 @@ jobs:
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-install/lib:$GITHUB_WORKSPACE/netcdf-c-install/lib:$GITHUB_WORKSPACE/netcdf-fortran-install/lib:$LD_LIBRARY_PATH"
           export OMPI_ALLOW_RUN_AS_ROOT=1
           export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+          # Open MPI 5 launches through an external PRRTE, whose mapping
+          # parameter is rmaps_default_mapping_policy=:oversubscribe;
+          # export both spellings so either generation of the runner's
+          # Open MPI oversubscribes the four-rank tests.
           export OMPI_MCA_rmaps_base_oversubscribe=1
+          export PRTE_MCA_rmaps_default_mapping_policy=:oversubscribe
           ctest --test-dir "$GITHUB_WORKSPACE/build" -L nextcdf4_parallel --output-on-failure
           ctest --verbose
 
