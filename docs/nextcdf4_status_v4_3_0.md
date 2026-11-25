@@ -280,8 +280,10 @@ groups.
   tools for these files.
 - Parallel dynamic/string/reference variable data I/O (`NC_ENOTBUILT`);
   fixed-size collective/independent access landed in Sprint 1V2 under
-  `NEP_ENABLE_NEXTCDF4_PARALLEL`. Preferences reset at reopen; filtered I/O
-  and unlimited growth require collective access, including empty ranks.
+  `NEP_ENABLE_NEXTCDF4_PARALLEL`. Preferences reset at reopen; filtered
+  writes and unlimited growth require collective access, including empty
+  ranks; independent filtered reads are permitted (HDF5 parallel filter
+  rule, Sprint 1V3).
 - SWMR, in-memory image files (`nxt4image.c`), mapped I/O
   (`get_varm`/`put_varm`, deprecated upstream).
 - `NC_STD_REF` inside user-defined type graphs; fixed-length HDF5
@@ -352,8 +354,15 @@ Owned by v4.3.0 Sprints 1L1–1R (see `docs/roadmap.md`), ordered by severity.
     Sprint 1O, including model-mode groups and effective live cache settings.
     Parallel file access via `nc_create_par`/`nc_open_par` landed in
     Sprint 1V1; per-variable fixed-size collective/independent selection
-    landed in Sprint 1V2. Upstream ports and SWMR remain with Sprints
-    1V3–1V5. Sprint 2 owns release notes.
+    landed in Sprint 1V2. Sprint 1V3 ported the eight upstream
+    `nc_test4` parallel tests (each in native and `NC_NETCDF4_MODEL`
+    mode), proved interchange both directions, added the MPICH CI stack,
+    covered external zstd/bzip2 plugins in parallel, and added the
+    `parallel_perf` disk-bound benchmark. Quantize mode is now persisted
+    via the upstream `_Quantize*` dataset attributes, so
+    `nc_inq_var_quantize` works after reopen and upstream interchange
+    sees the setting. SWMR remains with Sprints 1V4–1V5. Sprint 2 owns
+    release notes.
 11. ~~Provenance attributes~~ — done in Sprint 1Q: `_NCProperties` and
     `_nc3_strict` stored like upstream; `_IsNetcdf4`/
     `_SuperblockVersion` synthesized on name lookups.

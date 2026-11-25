@@ -328,7 +328,9 @@ var_io(int ncid, int varid, const size_t *startp, const size_t *countp,
                      var->type_info->hdr.id == NC_STD_REF ||
                      (var->type_info->hdr.id >= NC_FIRSTUSERTYPEID && var->type_info->varsized)))
         return NC_ENOTBUILT;
-    if (parallel && !collective && nclistlength((NClist *)var->filters))
+    /* HDF5 requires collective access for filtered writes; filtered
+     * reads are permitted independently. */
+    if (parallel && writing && !collective && nclistlength((NClist *)var->filters))
         return NC_EINVAL;
 #endif
     /* Upstream leaves define mode automatically when a write arrives;

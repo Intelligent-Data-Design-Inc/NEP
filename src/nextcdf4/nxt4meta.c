@@ -40,6 +40,7 @@ static int nx4_rewrite_atts(hid_t loc, NCindex *list, NC_GRP_INFO_T *grp);
 static int nx4_reattach_dim(NC_GRP_INFO_T *grp, NC_DIM_INFO_T *dim,
                             hid_t old_dset, hid_t new_dset,
                             NC_VAR_INFO_T *skip);
+static int nx4_write_quantize_att(hid_t dataset, const NC_VAR_INFO_T *var);
 
 /**
  * @brief Build an owned access-property list from a variable's session settings.
@@ -865,6 +866,43 @@ done:
     if (space >= 0)
         H5Sclose(space);
     return ret;
+}
+
+/**
+ * @brief Persist a variable's quantize setting as the upstream
+ * `_Quantize*` attribute.
+ *
+ * Upstream stores the mode in the attribute name and the NSD/NSB as a
+ * one-element integer attribute on the variable's dataset
+ * (libhdf5/nc4hdf.c write_quantize_att), so this writes the identical
+ * object — no-op for `NC_NOQUANTIZE`.
+ *
+ * @param dataset Open HDF5 dataset for the variable.
+ * @param var Variable holding `quantize_mode` and `nsd`.
+ * @return `NC_NOERR` on success, `NC_EINVAL` for an unknown mode, or
+ * `NC_EHDFERR`.
+ */
+static int
+nx4_write_quantize_att(hid_t dataset, const NC_VAR_INFO_T *var)
+{
+    const char *name;
+
+    switch (var->quantize_mode) {
+    case NC_QUANTIZE_BITGROOM:
+        name = NC_QUANTIZE_BITGROOM_ATT_NAME;
+        break;
+    case NC_QUANTIZE_GRANULARBR:
+        name = NC_QUANTIZE_GRANULARBR_ATT_NAME;
+        break;
+    case NC_QUANTIZE_BITROUND:
+        name = NC_QUANTIZE_BITROUND_ATT_NAME;
+        break;
+    case NC_NOQUANTIZE:
+        return NC_NOERR;
+    default:
+        return NC_EINVAL;
+    }
+    return write_int_array_att(dataset, name, &var->nsd, 1);
 }
 
 /**
@@ -2163,6 +2201,11 @@ nx4_create_var_dataset(NC_VAR_INFO_T *var, NC_FILE_INFO_T *h5,
     if ((ret = nx4_rewrite_atts(vinfo->hdf_dataset, var->att, grp)))
         goto fail;
 
+    /* Persist the quantize setting as the upstream `_Quantize*`
+     * attribute (also after a dirty rebuild, which dropped it). */
+    if ((ret = nx4_write_quantize_att(vinfo->hdf_dataset, var)))
+        goto fail;
+
     H5Pclose(dapl);
     H5Tclose(hdf_type);
     H5Sclose(space);
@@ -2407,10 +2450,12 @@ NEXTCDF4_def_var_quantize(int ncid, int varid, int quantize_mode, int nsd)
     NEXTCDF4_FILE_INFO_T *file;
     NC_GRP_INFO_T *grp;
     NC_VAR_INFO_T *var;
+    NEXTCDF4_VAR_INFO_T *vinfo;
     int ret;
 
     if ((ret = nx4_find_var_for_write(ncid, varid, &h5, &file, &grp, &var)))
         return ret;
+    vinfo = (NEXTCDF4_VAR_INFO_T *)var->format_var_info;
     if (quantize_mode != NC_NOQUANTIZE &&
         quantize_mode != NC_QUANTIZE_BITGROOM &&
         quantize_mode != NC_QUANTIZE_GRANULARBR &&
@@ -2421,6 +2466,14 @@ NEXTCDF4_def_var_quantize(int ncid, int varid, int quantize_mode, int nsd)
 
     var->quantize_mode = quantize_mode;
     var->nsd = nsd;
+    /* The dataset exists already for atomic-typed variables (user-typed
+     * variables defer it to `_enddef`, where nx4_create_var_dataset()
+     * writes this attribute instead). Persist the setting as the
+     * upstream `_Quantize*` attribute so `nc_inq_var_quantize()` sees it
+     * after reopen and upstream netcdf-c learns the mode too. */
+    if (vinfo->hdf_dataset >= 0 &&
+        (ret = nx4_write_quantize_att(vinfo->hdf_dataset, var)))
+        return ret;
     return NC_NOERR;
 }
 
@@ -4666,6 +4719,40 @@ nx4_fill_from_att(NC_VAR_INFO_T *var)
 }
 
 /**
+ * @brief Restore a variable's quantize setting from its `_Quantize*`
+ * attribute.
+ *
+ * Upstream persists quantize as a one-element integer attribute whose
+ * name encodes the mode; the attribute loads as a normal user-visible
+ * attribute, so this mirrors the value into `var->quantize_mode` and
+ * `var->nsd` for `nc_inq_var_quantize()` and write-time quantization.
+ *
+ * @param var Variable whose attribute index was just populated.
+ * @return `NC_NOERR` always; missing or malformed attributes leave the
+ * defaults alone.
+ */
+static int
+nx4_quantize_from_att(NC_VAR_INFO_T *var)
+{
+    static const struct { const char *name; int mode; } qatts[] = {
+        {NC_QUANTIZE_BITGROOM_ATT_NAME, NC_QUANTIZE_BITGROOM},
+        {NC_QUANTIZE_GRANULARBR_ATT_NAME, NC_QUANTIZE_GRANULARBR},
+        {NC_QUANTIZE_BITROUND_ATT_NAME, NC_QUANTIZE_BITROUND},
+    };
+    size_t i;
+
+    for (i = 0; i < sizeof(qatts) / sizeof(qatts[0]); i++) {
+        NC_ATT_INFO_T *att = find_att(var->att, qatts[i].name);
+        if (att && att->data && att->len >= 1 && att->nc_typeid == NC_INT) {
+            var->quantize_mode = qatts[i].mode;
+            var->nsd = ((const int *)att->data)[0];
+            return NC_NOERR;
+        }
+    }
+    return NC_NOERR;
+}
+
+/**
  * @brief Load all of a group's variables and their attributes.
  *
  * Collects candidates with find_var_cb(), then loads in stored-varid
@@ -4732,7 +4819,8 @@ load_variables(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
                 free(vl.varids);
                 return ad.error ? ad.error : NC_EHDFERR;
             }
-            if ((ret = nx4_fill_from_att(lvar))) {
+            if ((ret = nx4_fill_from_att(lvar)) ||
+                (ret = nx4_quantize_from_att(lvar))) {
                 free_name_list(vl.names, vl.count);
                 free(vl.varids);
                 return ret;
@@ -4764,7 +4852,8 @@ load_variables(NEXTCDF4_FILE_INFO_T *file, NC_FILE_INFO_T *h5,
                         free(vl.varids);
                         return ad.error ? ad.error : NC_EHDFERR;
                     }
-                    if ((ret = nx4_fill_from_att(lvar))) {
+                    if ((ret = nx4_fill_from_att(lvar)) ||
+                        (ret = nx4_quantize_from_att(lvar))) {
                         free_name_list(vl.names, vl.count);
                         free(vl.varids);
                         return ret;

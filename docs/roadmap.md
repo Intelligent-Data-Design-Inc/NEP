@@ -309,11 +309,14 @@ Plan: [docs/plan/v4.3.0-sprint1V1-parallel-io-foundation.md](plan/v4.3.0-sprint1
 Plan: [docs/plan/v4.3.0-sprint1V2-collective-independent-data-access.md](plan/v4.3.0-sprint1V2-collective-independent-data-access.md)
 
 #### Sprint 1V3 - Parallel I/O Coverage and Interchange
-- Carry over from 1V2: add MPICH coverage and an external-filter-plugin parallel test matrix; 1V2 certifies the existing Open MPI stack and built-in filters only.
-- Port a selection of upstream `nc_test4` parallel tests (`tst_parallel*`) to NEXTCDF-4 using existing shims; run in a new parallel CI job.
-- Interchange verification: files written collectively by NEXTCDF-4 readable by upstream parallel netcdf-c and vice versa.
-- Performance smoke benchmarks (disk-bound, `perf_disk.h`-style) for collective write/read on multi-rank configs; committed reference artifacts.
-- Update status doc, `prd.md`, `prfaq.md`, `design.md` with parallel support scope and remaining exclusions (SWMR still deferred).
+- Port all eight upstream parallel tests (`tst_parallel`, `tst_parallel3`-`6`, `tst_parallel_zlib`, `tst_parallel_compress`, `tst_quantize_par`) via the `nc_test4` shims, run in native and `NC_NETCDF4_MODEL` modes under `nextcdf4_parallel`; `tst_parallel5` adapted to public chunk-cache API, big-file cases kept.
+- Bidirectional interchange test: NEXTCDF-4-written files read through the upstream dispatcher and upstream-written files read through NEXTCDF-4, parallel and serial opens.
+- New `ci-parallel-mpich.yml`: MPICH-built dependency stack, `nextcdf4_parallel` label only. Plugin matrix: zstd (required) + bzip2 (gated) via `HDF5_PLUGIN_PATH`/`NEP_ZSTD_PLUGIN_DIR`.
+- New `examples/nextcdf4/parallel_perf.c` under `NEP_ENABLE_BENCHMARKS`: 4-rank disk-bound collective write/read, committed CSV/machine/plot artifacts.
+- Update parallel scope in `nextcdf4.md`, status doc, `prd.md`, `prfaq.md`, `design.md`; no Spack/conda changes.
+- Out of scope: SWMR (1V4–1V5), parallel dynamic/string/`NC_STD_REF` I/O, Fortran parallel wrappers, upstream reading native-only types, MPI sanitizers, release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1V3-parallel-coverage-interchange.md](plan/v4.3.0-sprint1V3-parallel-coverage-interchange.md)
 
 #### Sprint 1V4 - SWMR Writer Support
 - SWMR write mode at `nc_create`/`nc_open` via `H5Fstart_swmr_write`; files created with `H5F_LIBVER_LATEST` bounds already satisfy the superblock requirement.

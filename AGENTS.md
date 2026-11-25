@@ -16,6 +16,10 @@ Parallel HDF5 2.1.1 is installed in `/home/ed/local/hdf5-2.1.1_mpi`; NetCDF-C ma
 
 For NEXTCDF-4 MPI verification, configure with `-DNEP_ENABLE_NEXTCDF4=ON -DNEP_ENABLE_NEXTCDF4_PARALLEL=ON -DNEP_ENABLE_PARALLEL_TESTS=ON -DCMAKE_C_COMPILER=/usr/bin/mpicc`. Export the MPI `PKG_CONFIG_PATH` above during configuration and rebuilds and include both MPI dependency `lib` directories in `LD_LIBRARY_PATH`. Run `ctest --test-dir build -L nextcdf4_parallel --output-on-failure`; `OMPI_MCA_rmaps_base_oversubscribe=1` also makes the four-rank tests independent of available slots. The tests use 180-second CTest timeouts.
 
+## MPICH Coverage
+
+`.github/workflows/ci-parallel-mpich.yml` runs the `nextcdf4_parallel` label against a separate MPICH stack (MPICH + parallel HDF5 2.1.1 + NetCDF-C main), cached under `hdf5-mpich-install`/`netcdf-c-mpich-install` prefixes so it never mixes with the Open MPI stack. A local MPICH verification needs the same three-piece stack built with `mpicc.mpich` — `/home/ed/local/netcdf-c_mpich` is a NetCDF-C 4.8.2-development install with the old 10-slot UDF scheme and cannot host NEXTCDF-4. Configure as for Open MPI but with `-DCMAKE_C_COMPILER=mpicc.mpich` (add to `PATH` via `/usr/bin`) and the MPICH-stack `PKG_CONFIG_PATH`/`LD_LIBRARY_PATH`; no oversubscribe variable is needed.
+
 ## Conda
 
 - The conda recipe lives in `conda/recipe/`; the staged-recipes copy

@@ -1,0 +1,15 @@
+Run date: 2026-11-25 16:23 UTC
+NEP: 4.3.0 (9fe381e-dirty)
+CPU: Intel(R) Core(TM) i7-6800K CPU @ 3.40GHz
+Cores: 12
+OS: Linux 6.8.0-137-generic
+MPI: mpiexec (OpenRTE) 4.1.6
+Ranks: 4 (mpiexec -n 4)
+Storage: ext4 (local disk)
+Timing: write includes fsync; reads after posix_fadvise(DONTNEED); max across ranks (MPI_Wtime)
+Compiler: gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+Build type: -O2 (equivalent to RelWithDebInfo flags)
+7e66a2e48de7e6967c3c0248cfaf5aa1ba330d03f06b9cce78286f7c6e833213  parallel_perf
+bca254cff5b2523f4a22b83d071d4e4fe58ddd6224fb4afaeaf01a86fdd16af5  /fast/ed/NEP/build/src/libncnextcdf4.so
+NetCDF-C: netCDF 4.10.2-development (/home/ed/local/netcdf-c_mpi/lib/libnetcdf.so)
+HDF5: /home/ed/local/hdf5-2.1.1_mpi/lib/libhdf5.so (parallel)

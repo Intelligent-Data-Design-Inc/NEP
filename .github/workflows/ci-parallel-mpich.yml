@@ -1,0 +1,149 @@
+# GitHub Actions CI workflow for NEXTCDF-4 parallel tests under MPICH.
+#
+# ci-parallel.yml certifies the Open MPI stack; this job adds MPI
+# implementation coverage by building a separate cached dependency
+# stack — MPICH + parallel HDF5 2.1.1 + NetCDF-C main — and running
+# only the `nextcdf4_parallel` CTest label (the port matrix, the
+# interchange test and the external-plugin test), keeping the extra
+# runtime bounded.
+#
+# Edward Hartnett, Intelligent Data Design, Inc., May 2026
+name: ci_parallel_mpich
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  NETCDF_SHA: 5baa62e6966d3e505b895574dafbd531a4aed360
+
+jobs:
+  parallel-mpich:
+    name: MPICH Build (CMake)
+    runs-on: ubuntu-latest
+    env:
+      LD_LIBRARY_PATH: ${{ github.workspace }}/hdf5-mpich-install/lib:${{ github.workspace }}/netcdf-c-mpich-install/lib:$LD_LIBRARY_PATH
+      PKG_CONFIG_PATH: ${{ github.workspace }}/netcdf-c-mpich-install/lib/pkgconfig:${{ github.workspace }}/hdf5-mpich-install/lib/pkgconfig
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install base dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake make wget zlib1g-dev pkg-config libxml2-dev libzstd-dev
+
+      - name: Install MPICH
+        run: |
+          sudo apt-get install -y mpich libmpich-dev
+
+      - name: Show MPI compiler versions
+        run: |
+          echo "=== MPI compiler versions ==="
+          mpicc.mpich --version
+          mpichversion
+
+      # The MPICH stack uses separate cache keys and install prefixes
+      # from ci-parallel.yml so the two MPI implementations never mix.
+
+      - name: Cache HDF5 parallel install (MPICH)
+        id: cache-hdf5
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/hdf5-mpich-install
+          key: hdf5-2.1.1-parallel-mpich-${{ runner.os }}-refresh-2
+
+      - name: Download and build HDF5 2.1.1 (parallel, MPICH)
+        if: steps.cache-hdf5.outputs.cache-hit != 'true'
+        run: |
+          wget -q https://github.com/HDFGroup/hdf5/archive/refs/tags/2.1.1.tar.gz -O hdf5-2.1.1.tar.gz
+          tar -xzf hdf5-2.1.1.tar.gz
+          cd hdf5-2.1.1
+          mkdir build && cd build
+          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-mpich-install \
+                -DCMAKE_C_COMPILER=mpicc.mpich \
+                -DBUILD_SHARED_LIBS=ON \
+                -DBUILD_TESTING=OFF \
+                -DHDF5_ENABLE_ZLIB_SUPPORT=ON \
+                -DHDF5_ENABLE_PARALLEL=ON \
+                ..
+          make -j$(nproc)
+          make install
+
+      - name: Cache NetCDF-C parallel install (MPICH)
+        id: cache-netcdf-c
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/netcdf-c-mpich-install
+          key: netcdf-c-main-${{ env.NETCDF_SHA }}-hdf5-2.1.1-parallel-mpich-${{ runner.os }}-1
+
+      - name: Download and build NetCDF-C main (parallel, MPICH)
+        if: steps.cache-netcdf-c.outputs.cache-hit != 'true'
+        run: |
+          wget -q "https://github.com/Unidata/netcdf-c/archive/$NETCDF_SHA.tar.gz" -O netcdf-c.tar.gz
+          tar -xzf netcdf-c.tar.gz
+          cmake -S "netcdf-c-$NETCDF_SHA" -B "netcdf-c-$NETCDF_SHA/build" \
+            -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/netcdf-c-mpich-install \
+            -DCMAKE_INSTALL_LIBDIR=lib \
+            -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-mpich-install" \
+            -DCMAKE_C_COMPILER=mpicc.mpich \
+            -DBUILD_SHARED_LIBS=ON \
+            -DNETCDF_ENABLE_HDF5=ON \
+            -DNETCDF_ENABLE_DAP=OFF \
+            -DNETCDF_ENABLE_NCZARR=OFF \
+            -DNETCDF_ENABLE_BYTERANGE=OFF \
+            -DNETCDF_ENABLE_TESTS=OFF \
+            -DNETCDF_ENABLE_EXAMPLES=OFF \
+            -DNETCDF_ENABLE_PLUGINS=ON \
+            -DNETCDF_ENABLE_PARALLEL4=ON
+          cmake --build "netcdf-c-$NETCDF_SHA/build" --parallel $(nproc)
+          cmake --install "netcdf-c-$NETCDF_SHA/build"
+
+      # --- CMake build with MPICH compilers ---
+
+      - name: Configure with CMake (MPICH)
+        run: |
+          mkdir -p build
+          cd build
+          export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/netcdf-c-mpich-install/lib/pkgconfig:$GITHUB_WORKSPACE/hdf5-mpich-install/lib/pkgconfig:${PKG_CONFIG_PATH}"
+          cmake .. \
+            -DCMAKE_C_COMPILER=mpicc.mpich \
+            -DCMAKE_C_FLAGS="-Wall -Werror" \
+            -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/hdf5-mpich-install;$GITHUB_WORKSPACE/netcdf-c-mpich-install" \
+            -DNEP_ENABLE_FORTRAN=OFF \
+            -DNEP_ENABLE_PARALLEL_TESTS=ON \
+            -DNEP_ENABLE_NEXTCDF4=ON \
+            -DNEP_ENABLE_NEXTCDF4_PARALLEL=ON \
+            -DNEP_ENABLE_GRIB2=OFF \
+            -DNEP_ENABLE_CDF=OFF \
+            -DNEP_ENABLE_GEOTIFF=OFF \
+            -DNEP_ENABLE_FITS=OFF \
+            -DNEP_BUILD_DOCUMENTATION=OFF \
+            -DNEP_BUILD_EXAMPLES=ON \
+            -DBUILD_TESTING=ON
+
+      - name: Build (CMake)
+        working-directory: build
+        run: |
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-mpich-install/lib:$GITHUB_WORKSPACE/netcdf-c-mpich-install/lib:$LD_LIBRARY_PATH"
+          make -j$(nproc)
+
+      # Bounded coverage: only the NEXTCDF-4 parallel label — the eight
+      # ported upstream tests in both modes, the 1V1/1V2 semantics
+      # tests, the interchange test and the plugin test.
+      - name: Test (CMake)
+        working-directory: build
+        run: |
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/hdf5-mpich-install/lib:$GITHUB_WORKSPACE/netcdf-c-mpich-install/lib:$LD_LIBRARY_PATH"
+          ctest --test-dir "$GITHUB_WORKSPACE/build" -L nextcdf4_parallel --output-on-failure
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "=== MPI Parallel Build Summary ==="
+          echo "MPI:          mpich"
+          echo "Build System: CMake"
+          echo "C compiler:   $(mpicc.mpich --version 2>&1 | head -1)"

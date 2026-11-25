@@ -4,8 +4,9 @@
 
    NEP shim providing the nc_tests.h defines used by the ported
    nc_test4 tests, so the ports can stay near-verbatim. TEST_PNETCDF is
-   deliberately not defined: NEXTCDF-4 has no parallel I/O, so upstream
-   parallel test sections compile out.
+   deliberately not defined: NEXTCDF-4 does parallel I/O through the
+   HDF5 MPI-IO path only, so upstream PnetCDF test sections compile
+   out.
 
    Author: Edward Hartnett, Intelligent Data Design, Inc.
 */
@@ -52,6 +53,27 @@ nep_nc_test4_create_mode(void)
     fprintf(stderr, "nep_nc_test4_create_mode: bad NEP_NC_TEST4_MODEL "
             "'%s' (want 'native' or 'netcdf4')\n", mode);
     exit(2);
+}
+
+/* Sprint 1V3 parallel create-mode selector for the ported
+ * tst_parallel* tests: like nep_nc_test4_create_mode() but always ORs
+ * in NC_NETCDF4, because upstream nc_create_par() rejects
+ * non-NC_NETCDF4 create modes when netcdf-c is built without
+ * PnetCDF. */
+static inline int
+nep_nc_test4_par_create_mode(void)
+{
+    return nep_nc_test4_create_mode() | NC_NETCDF4;
+}
+
+/* Sprint 1V3 parallel open-mode selector: NEXTCDF-4 dispatch is
+ * selected by the NC_NEXTCDF4 flag at open; the compatibility model
+ * comes from the file marker, not a flag. Combine with
+ * NC_NOWRITE/NC_WRITE as upstream combines bare mode flags. */
+static inline int
+nep_nc_test4_par_open_mode(void)
+{
+    return NC_NEXTCDF4;
 }
 
 #endif /* _NC_TESTS_H */

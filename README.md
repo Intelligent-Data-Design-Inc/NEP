@@ -235,10 +235,13 @@ NEXTCDF-4 MPI-IO additionally requires `-DNEP_ENABLE_NEXTCDF4_PARALLEL=ON`,
 parallel HDF5 2.1.1+ and parallel NetCDF-C with 64-slot UDF support. Create
 with `NC_NEXTCDF4|NC_NETCDF4`, open with `NC_NEXTCDF4`, and use
 `nc_var_par_access` for per-variable collective/independent selection.
-Unlimited growth and filtered I/O require collective access. Parallel
-variable transfers support fixed-size types; strings, dynamic user types
-and references return `NC_ENOTBUILT`. See [Parallel I/O](docs/nextcdf4.md#parallel-io)
-for empty-rank participation, reopen rules and the tested Open MPI stack.
+Unlimited growth and filtered writes require collective access (independent
+filtered reads are permitted). Parallel variable transfers support
+fixed-size types; strings, dynamic user types and references return
+`NC_ENOTBUILT`. Both Open MPI and MPICH stacks run the `nextcdf4_parallel`
+label in CI (upstream `nc_test4` ports, interchange and external-plugin
+tests). See [Parallel I/O](docs/nextcdf4.md#parallel-io)
+for empty-rank participation and reopen rules.
 
 #### Documentation
 

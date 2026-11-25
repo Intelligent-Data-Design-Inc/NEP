@@ -193,11 +193,18 @@ filters(void)
     CHECK(nc_close(ncid));
     CHECK(nc_open_par("filters.nc", NC_NEXTCDF4, MPI_COMM_WORLD, MPI_INFO_NULL, &ncid));
     for (int i = 0; i < 5; i++) {
-        EXPECT(nc_get_vara_int(ncid, vars[i], &start, &count, &got), NC_EINVAL);
+        /* Independent reads of a filtered variable are permitted; only
+         * filtered writes require collective access (HDF5 parallel
+         * filter rule). */
+        EXPECT(nc_put_vara_int(ncid, vars[i], &start, &count,
+                               count ? &value : NULL), NC_EPERM);
+        count = 1;
+        CHECK(nc_get_vara_int(ncid, vars[i], &start, &count, &got));
+        ASSERT(got == (rank == 3 ? NC_FILL_INT : value));
+        got = -1;
         CHECK(nc_var_par_access(ncid, vars[i], NC_COLLECTIVE));
         CHECK(nc_inq_var_filter_ids(ncid, vars[i], &nfilters, NULL));
         ASSERT(nfilters == (size_t)(i == 3 ? 2 : 1));
-        count = 1;
         CHECK(nc_get_vara_int(ncid, vars[i], &start, &count, &got));
         ASSERT(got == (rank == 3 ? NC_FILL_INT : value));
     }

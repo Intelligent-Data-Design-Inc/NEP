@@ -290,5 +290,60 @@ if(HAVE_NEXTCDF4)
             PROCESSORS 4 TIMEOUT 180
             LABELS nextcdf4_parallel
             ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+
+        # Ported upstream nc_test4 parallel tests (v4.3.0 Sprint 1V3),
+        # plus the dedicated interchange and external-plugin tests.
+        # Each runs twice — native and NC_NETCDF4_MODEL, selected by
+        # NEP_NC_TEST4_MODEL via nep_nc_test4_par_create_mode() in the
+        # nc_tests.h shim — from a per-test working directory so mpiexec
+        # runs never collide on upstream file names.
+        foreach(_nxt4_par tst_parallel tst_parallel3 tst_parallel4
+                tst_parallel5 tst_parallel6 tst_parallel_zlib
+                tst_parallel_compress tst_quantize_par
+                tst_nextcdf4_interchange)
+            add_executable(${_nxt4_par} nc_test4/${_nxt4_par}.c)
+            target_link_libraries(${_nxt4_par} PRIVATE ncnextcdf4
+                ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES} MPI::MPI_C)
+            target_include_directories(${_nxt4_par} PRIVATE
+                ${CMAKE_CURRENT_SOURCE_DIR}/nc_test4
+                ${CMAKE_SOURCE_DIR}/src/nextcdf4
+                ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+            foreach(_nxt4_mode native netcdf4_model)
+                file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${_nxt4_par}_work/${_nxt4_mode})
+                add_test(NAME ${_nxt4_par}_${_nxt4_mode}
+                    COMMAND ${MPIEXEC_EXECUTABLE} -n 4 $<TARGET_FILE:${_nxt4_par}>
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${_nxt4_par}_work/${_nxt4_mode})
+                if(_nxt4_mode STREQUAL native)
+                    set(_nxt4_selector native)
+                else()
+                    set(_nxt4_selector netcdf4)
+                endif()
+                set_tests_properties(${_nxt4_par}_${_nxt4_mode} PROPERTIES
+                    PROCESSORS 4 TIMEOUT 180
+                    LABELS nextcdf4_parallel
+                    ENVIRONMENT "NEP_NC_TEST4_MODEL=${_nxt4_selector};NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+            endforeach()
+        endforeach()
+
+        # The external-plugin parallel test runs only when a plugin
+        # directory is configured; zstd must be present there (bzip2 is
+        # runtime-gated inside the test).
+        if(NEP_ZSTD_PLUGIN_DIR AND IS_DIRECTORY "${NEP_ZSTD_PLUGIN_DIR}")
+            add_executable(tst_nextcdf4_parallel_plugin nc_test4/tst_nextcdf4_parallel_plugin.c)
+            target_link_libraries(tst_nextcdf4_parallel_plugin PRIVATE ncnextcdf4
+                ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES} MPI::MPI_C)
+            target_include_directories(tst_nextcdf4_parallel_plugin PRIVATE
+                ${CMAKE_CURRENT_SOURCE_DIR}/nc_test4
+                ${CMAKE_SOURCE_DIR}/src/nextcdf4
+                ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+            file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/parallel_plugin)
+            add_test(NAME tst_nextcdf4_parallel_plugin
+                COMMAND ${MPIEXEC_EXECUTABLE} -n 4 $<TARGET_FILE:tst_nextcdf4_parallel_plugin>)
+            set_tests_properties(tst_nextcdf4_parallel_plugin PROPERTIES
+                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/parallel_plugin
+                PROCESSORS 4 TIMEOUT 180
+                LABELS nextcdf4_parallel
+                ENVIRONMENT "HDF5_PLUGIN_PATH=${NEP_ZSTD_PLUGIN_DIR};NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+        endif()
     endif()
 endif()
