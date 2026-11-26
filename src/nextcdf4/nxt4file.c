@@ -12,6 +12,383 @@
 #include "nxt4internal.h"
 
 /**
+ * @brief Check the complete tree for schema excluded from SWMR writer sessions.
+ * @param grp Root of the subtree to validate.
+ * @return NC_NOERR, or NC_ENOTBUILT for user types or dynamic/reference variables.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+static int
+swmr_schema(NC_GRP_INFO_T *grp)
+{
+    int ret;
+    if (ncindexsize(grp->type))
+        return NC_ENOTBUILT;
+    for (size_t i = 0; i < ncindexsize(grp->vars); i++) {
+        NC_VAR_INFO_T *var = (NC_VAR_INFO_T *)ncindexith(grp->vars, i);
+        if (var && (var->type_info->hdr.id == NC_STRING ||
+                    var->type_info->hdr.id == NC_STD_REF ||
+                    var->type_info->hdr.id >= NC_FIRSTUSERTYPEID))
+            return NC_ENOTBUILT;
+    }
+    for (size_t i = 0; i < ncindexsize(grp->children); i++) {
+        NC_GRP_INFO_T *child = (NC_GRP_INFO_T *)ncindexith(grp->children, i);
+        if (child && (ret = swmr_schema(child)))
+            return ret;
+    }
+    return NC_NOERR;
+}
+
+/**
+ * @brief Preflight native serial SWMR without changing definitions or file bounds.
+ * @param h5 Shared NetCDF file metadata.
+ * @param file NEXTCDF-4 session state.
+ * @return NC_NOERR, NC_EPERM, NC_EINVAL, NC_ENOTBUILT or NC_EHDFERR.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+nx4_swmr_validate(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file)
+{
+    H5F_info2_t info;
+    hid_t fapl, driver;
+    unsigned long features = 0;
+    int ret;
+
+    if (file->no_write || file->swmr_active)
+        return NC_EPERM;
+    if (file->netcdf4_model || (file->mode & NC_CLASSIC_MODEL) ||
+        (h5->cmode & NC_CLASSIC_MODEL))
+        return NC_EINVAL;
+#ifdef HAVE_NEXTCDF4_PARALLEL
+    if (file->parallel)
+        return NC_EINVAL;
+#endif
+    htri_t strict = H5Aexists(file->rootid, "_nc3_strict");
+    if (strict < 0)
+        return NC_EHDFERR;
+    if (strict > 0)
+        return NC_EINVAL;
+    if ((ret = swmr_schema(h5->root_grp)))
+        return ret;
+    if (H5Fget_info2(file->hdfid, &info) < 0)
+        return NC_EHDFERR;
+    if (info.super.version != 3)
+        return NC_EINVAL;
+    if ((fapl = H5Fget_access_plist(file->hdfid)) < 0)
+        return NC_EHDFERR;
+    driver = H5Pget_driver(fapl);
+    ret = driver < 0 || H5FDdriver_query(driver, &features) < 0 ? NC_EHDFERR : NC_NOERR;
+    H5Pclose(fapl);
+    if (ret)
+        return ret;
+    return features & H5FD_FEAT_SUPPORTS_SWMR_IO ? NC_NOERR : NC_EINVAL;
+}
+
+/**
+ * @brief Activate a committed session without recursively entering enddef.
+ * @param h5 Shared NetCDF file metadata in data mode.
+ * @param file NEXTCDF-4 session state.
+ * @return NC_NOERR or a validation/HDF5 error; active stays false on failure.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+nx4_swmr_activate(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file)
+{
+    int ret;
+    if (file->swmr_active)
+        return NC_NOERR;
+    if ((ret = nx4_swmr_validate(h5, file)))
+        return ret;
+    if (file->define_mode)
+        return NC_EINDEFINE;
+    if ((ret = nx4_write_provenance(file)))
+        return ret;
+    if (H5Fset_libver_bounds(file->hdfid, H5F_LIBVER_LATEST, H5F_LIBVER_LATEST) < 0 ||
+        H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0 ||
+        H5Fstart_swmr_write(file->hdfid) < 0)
+        return NC_EHDFERR;
+    file->swmr_active = file->swmr_requested = 1;
+    file->mode |= NC_SWMR_WRITE;
+    return NC_NOERR;
+}
+
+/**
+ * @brief Flush variable datasets or dimension scales throughout a group tree.
+ * @param grp Subtree to flush, in metadata index order.
+ * @param scales Nonzero selects scales, zero selects variables.
+ * @return NC_NOERR or NC_EHDFERR. Alias handles are deliberately not closed.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+static int
+swmr_flush_group(NC_GRP_INFO_T *grp, int scales)
+{
+    int ret;
+    NCindex *list = scales ? grp->dim : grp->vars;
+    for (size_t i = 0; i < ncindexsize(list); i++) {
+        hid_t dataset = -1;
+        if (scales) {
+            NC_DIM_INFO_T *dim = (NC_DIM_INFO_T *)ncindexith(list, i);
+            NEXTCDF4_DIM_INFO_T *info = dim ? dim->format_dim_info : NULL;
+            if (info) dataset = info->hdf_dataset;
+        } else {
+            NC_VAR_INFO_T *var = (NC_VAR_INFO_T *)ncindexith(list, i);
+            NEXTCDF4_VAR_INFO_T *info = var ? var->format_var_info : NULL;
+            if (info) dataset = info->hdf_dataset;
+        }
+        if (dataset >= 0 && H5Dflush(dataset) < 0)
+            return NC_EHDFERR;
+    }
+    for (size_t i = 0; i < ncindexsize(grp->children); i++) {
+        NC_GRP_INFO_T *child = (NC_GRP_INFO_T *)ncindexith(grp->children, i);
+        if (child && (ret = swmr_flush_group(child, scales)))
+            return ret;
+    }
+    return NC_NOERR;
+}
+
+/**
+ * @brief Publish all variable data before flushing dimension scales and the file.
+ * @param h5 Shared NetCDF metadata.
+ * @param file Active writable SWMR file.
+ * @return NC_NOERR or NC_EHDFERR; publication is not transactional.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+nx4_swmr_flush(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file)
+{
+    int ret;
+    if ((ret = swmr_flush_group(h5->root_grp, 0)) ||
+        (ret = swmr_flush_group(h5->root_grp, 1)))
+        return ret;
+    return H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0 ? NC_EHDFERR : NC_NOERR;
+}
+
+/**
+ * @brief Resolve public SWMR IDs without casting another backend's private state.
+ *
+ * Shared ncid validation for nc_start_swmr_write(), nc_swmr_flush() and
+ * nc_swmr_refresh(). NC_check_id accepts a file or group ncid; the
+ * dispatch-table comparison then proves the file really is NEXTCDF-4
+ * before any NEXTCDF4_FILE_INFO_T fields are dereferenced, so ids
+ * belonging to upstream netcdf-4 or another UDF get a clean NC_ENOTNC4
+ * instead of a bad cast.
+ *
+ * @param ncid File or group ID.
+ * @param h5p Destination for shared metadata.
+ * @param filep Destination for NEXTCDF-4 state.
+ * @return NC_NOERR, NC_EBADID or NC_ENOTNC4.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+static int
+swmr_file(int ncid, NC_FILE_INFO_T **h5p, NEXTCDF4_FILE_INFO_T **filep)
+{
+    NC *nc;
+    int ret;
+    if ((ret = NC_check_id(ncid, &nc)))
+        return ret;
+    if (nc->dispatch != NEXTCDF4_dispatch_table)
+        return NC_ENOTNC4;
+    return NEXTCDF4_get_file(ncid, h5p, filep);
+}
+
+/**
+ * @brief Start the writer session described by nc_start_swmr_write() in nep.h.
+ * See nep.h for parameter, return-value and lifecycle documentation.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+nc_start_swmr_write(int ncid)
+{
+    NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
+    int ret;
+    if ((ret = swmr_file(ncid, &h5, &file)))
+        return ret;
+    if (file->swmr_active)
+        return NC_NOERR;
+    if ((ret = nx4_swmr_validate(h5, file)))
+        return ret;
+    file->swmr_requested = 1;
+    if (file->define_mode)
+        return NEXTCDF4__enddef(ncid, 0, 0, 0, 0);
+    return nx4_swmr_activate(h5, file);
+}
+
+/**
+ * @brief Publish a writer session as specified by nc_swmr_flush() in nep.h.
+ * See nep.h for parameter, return-value and publication documentation.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+nc_swmr_flush(int ncid)
+{
+    NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
+    int ret;
+    if ((ret = swmr_file(ncid, &h5, &file)))
+        return ret;
+    if (file->no_write)
+        return NC_EPERM;
+    if (!file->swmr_active)
+        return NC_EINVAL;
+    return nx4_swmr_flush(h5, file);
+}
+
+/**
+ * @brief Refresh variable datasets or dimension scales throughout a group tree.
+ *
+ * Mirrors swmr_flush_group on the reader side, and is called twice by
+ * nx4_swmr_refresh(): once with @p scales zero for the variable index,
+ * once nonzero for the dimension index. Variable datasets get a bare
+ * H5Drefresh, which brings the handle's view of extent and raw data up
+ * to the writer's last publication. Dimension-scale datasets are
+ * additionally polled for their current extent, which is reloaded into
+ * the cached `dim->len` that nc_inq_dimlen() reports — the metadata
+ * tree is otherwise untouched, since a SWMR writer cannot create new
+ * objects. Read paths reacquire the dataspace per call, so no further
+ * per-variable state needs resetting here.
+ *
+ * @param grp Subtree to refresh, in metadata index order.
+ * @param scales Nonzero selects scales, zero selects variables.
+ * @return NC_NOERR or NC_EHDFERR.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+static int
+swmr_refresh_group(NC_GRP_INFO_T *grp, int scales)
+{
+    int ret;
+    NCindex *list = scales ? grp->dim : grp->vars;
+    for (size_t i = 0; i < ncindexsize(list); i++) {
+        hid_t dataset = -1;
+        NC_DIM_INFO_T *dim = NULL;
+        if (scales) {
+            dim = (NC_DIM_INFO_T *)ncindexith(list, i);
+            NEXTCDF4_DIM_INFO_T *info = dim ? dim->format_dim_info : NULL;
+            if (info) dataset = info->hdf_dataset;
+        } else {
+            NC_VAR_INFO_T *var = (NC_VAR_INFO_T *)ncindexith(list, i);
+            NEXTCDF4_VAR_INFO_T *info = var ? var->format_var_info : NULL;
+            if (info) dataset = info->hdf_dataset;
+        }
+        if (dataset >= 0) {
+            hid_t space = -1;
+            hsize_t dims[NC_MAX_VAR_DIMS];
+            if (H5Drefresh(dataset) < 0)
+                return NC_EHDFERR;
+            if (dim) {
+                /* A SWMR scale is one-dimensional; reload the cached
+                 * length so inquiries see the writer's growth. */
+                if ((space = H5Dget_space(dataset)) < 0)
+                    return NC_EHDFERR;
+                if (H5Sget_simple_extent_dims(space, dims, NULL) < 0 ||
+                    H5Sclose(space) < 0)
+                    return NC_EHDFERR;
+                dim->len = (size_t)dims[0];
+            }
+        }
+    }
+    for (size_t i = 0; i < ncindexsize(grp->children); i++) {
+        NC_GRP_INFO_T *child = (NC_GRP_INFO_T *)ncindexith(grp->children, i);
+        if (child && (ret = swmr_refresh_group(child, scales)))
+            return ret;
+    }
+    return NC_NOERR;
+}
+
+/**
+ * @brief Collapse coordinate-variable alias handles to a single dataset id.
+ *
+ * Two open handles to the same HDF5 object defeat SWMR data visibility
+ * in a reader: reads through either handle stay frozen at the open-time
+ * snapshot even after H5Drefresh. A coordinate variable holds such a
+ * pair — the dimension's scale handle and the variable's own handle —
+ * so a reader keeps only the variable's handle and points the
+ * dimension record at it. The surviving handle must be closed only
+ * once; nx4_close_group_hdf() already tolerates an identifier that was
+ * closed twice.
+ *
+ * @param grp Subtree to walk, in metadata index order.
+ * @return NC_NOERR or NC_EHDFERR.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+nx4_swmr_read_aliases(NC_GRP_INFO_T *grp)
+{
+    for (size_t i = 0; i < ncindexsize(grp->vars); i++) {
+        NC_VAR_INFO_T *var = (NC_VAR_INFO_T *)ncindexith(grp->vars, i);
+        NEXTCDF4_VAR_INFO_T *vinfo;
+        NEXTCDF4_DIM_INFO_T *dinfo;
+        if (!var || var->ndims != 1 || !var->dim || !var->dim[0] ||
+            var->dim[0]->container != grp ||
+            strcmp(var->hdr.name, var->dim[0]->hdr.name))
+            continue;
+        vinfo = var->format_var_info;
+        dinfo = var->dim[0]->format_dim_info;
+        if (vinfo && dinfo && vinfo->hdf_dataset >= 0 &&
+            dinfo->hdf_dataset >= 0 &&
+            dinfo->hdf_dataset != vinfo->hdf_dataset) {
+            if (H5Dclose(dinfo->hdf_dataset) < 0)
+                return NC_EHDFERR;
+            dinfo->hdf_dataset = vinfo->hdf_dataset;
+        }
+    }
+    for (size_t i = 0; i < ncindexsize(grp->children); i++) {
+        NC_GRP_INFO_T *child = (NC_GRP_INFO_T *)ncindexith(grp->children, i);
+        int ret;
+        if (child && (ret = nx4_swmr_read_aliases(child)))
+            return ret;
+    }
+    return NC_NOERR;
+}
+
+/**
+ * @brief Refresh all variable data before reloading dimension-scale extents.
+ *
+ * Whole-file reader refresh behind nc_swmr_refresh(). The order matters:
+ * a coordinate variable's scale is refreshed through the variable's own
+ * dataset handle after the alias collapse, so variables are refreshed
+ * first and the scale pass only needs to recover extents. Re-running
+ * nx4_swmr_read_aliases() first is defensive — a session cache tuning
+ * call (nx4_reopen_var_cache) closes and reopens the alias pair, which
+ * would silently restore the poisonous duplicate handles.
+ *
+ * @param h5 Shared NetCDF metadata.
+ * @param file Read-only SWMR reader file.
+ * @return NC_NOERR or NC_EHDFERR.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+nx4_swmr_refresh(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file)
+{
+    int ret;
+    (void)file;
+    /* Re-collapse in case an intervening cache-tune reopened aliases. */
+    if ((ret = nx4_swmr_read_aliases(h5->root_grp)))
+        return ret;
+    if ((ret = swmr_refresh_group(h5->root_grp, 0)) ||
+        (ret = swmr_refresh_group(h5->root_grp, 1)))
+        return ret;
+    return NC_NOERR;
+}
+
+/**
+ * @brief Refresh a reader session as specified by nc_swmr_refresh() in nep.h.
+ * See nep.h for parameter, return-value and visibility documentation.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+nc_swmr_refresh(int ncid)
+{
+    NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
+    int ret;
+    if ((ret = swmr_file(ncid, &h5, &file)))
+        return ret;
+    if (!file->swmr_read)
+        return NC_EINVAL;
+    return nx4_swmr_refresh(h5, file);
+}
+
+/**
  * @brief Recursively close the HDF5 objects belonging to a group.
  *
  * At close time every open `hid_t` under a group must be released:
@@ -181,6 +558,16 @@ NEXTCDF4_free_file(NEXTCDF4_FILE_INFO_T *file)
         int nobj = H5Fget_obj_count(file->hdfid, H5F_OBJ_ALL);
         ELOG((3, "%s: hdfid=%ld nobj=%d ret=%d", __func__, (long)file->hdfid, nobj, ret));
     }
+#ifdef HAVE_NEXTCDF4_PARALLEL
+    /* The MPI handles outlive the HDF5 file: H5Fclose completes all
+     * pending MPI-IO before the communicator may be released. */
+    if (file->parallel) {
+        if (file->comm_duped && MPI_Comm_free(&file->comm) != MPI_SUCCESS)
+            ret = NC_EMPI;
+        if (file->info_duped && MPI_Info_free(&file->info) != MPI_SUCCESS)
+            ret = NC_EMPI;
+    }
+#endif
     free(file->path);
     free(file->ncproperties);
     free(file);
@@ -223,6 +610,8 @@ NEXTCDF4_add_file(int ncid, const char *path, int mode,
     file->hdfid = -1;
     file->rootid = -1;
     file->mode = mode;
+    file->swmr_requested = !!(mode & NC_SWMR_WRITE);
+    file->swmr_read = !!(mode & NC_SWMR_READ);
     file->no_write = !(mode & NC_WRITE);
     file->define_mode = 1;
     file->netcdf4_model = !!(mode & NC_NETCDF4_MODEL);
@@ -445,6 +834,8 @@ NEXTCDF4_sync(int ncid)
 
     if ((ret = NEXTCDF4_get_file(ncid, NULL, &file)))
         return ret;
+    if (file->swmr_active)
+        return nc_swmr_flush(ncid);
     if (file->no_write)
         return NC_NOERR;
     if ((ret = nx4_write_provenance(file)))
@@ -478,13 +869,17 @@ NEXTCDF4_close(int ncid, void *parameters)
     (void)parameters;
     if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
         return ret;
+    if (!file->swmr_active)
+        file->swmr_requested = 0;
     if (file->define_mode) {
         if ((ret = NEXTCDF4__enddef(ncid, 0, 0, 0, 0)))
             return ret;
     }
+    if (file->swmr_active)
+        close_ret = nx4_swmr_flush(h5, file);
     nx4_close_group_hdf(h5->root_grp);
     h5->format_file_info = NULL;
-    if (!file->no_write) {
+    if (!file->no_write && !file->swmr_active) {
         if ((ret = nx4_write_provenance(file)))
             close_ret = ret;
         if (H5Fflush(file->hdfid, H5F_SCOPE_GLOBAL) < 0)
@@ -663,10 +1058,12 @@ NEXTCDF4__enddef(int ncid, size_t h_minfree, size_t v_align,
 
     if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
         return ret;
-    if (file->no_write)
+    if (file->no_write || file->swmr_active)
         return NC_EPERM;
     if (!file->define_mode)
         return NC_EINVAL;
+    if (file->swmr_requested && (ret = nx4_swmr_validate(h5, file)))
+        return ret;
     if ((ret = NEXTCDF4_write_types(h5)))
         return ret;
     if ((ret = commit_group_vars(h5, file, h5->root_grp)))
@@ -679,7 +1076,7 @@ NEXTCDF4__enddef(int ncid, size_t h_minfree, size_t v_align,
         return NC_EHDFERR;
     file->define_mode = 0;
     h5->flags &= ~NC_INDEF;
-    return NC_NOERR;
+    return file->swmr_requested ? nx4_swmr_activate(h5, file) : NC_NOERR;
 }
 
 /**
@@ -703,7 +1100,7 @@ NEXTCDF4_redef(int ncid)
 
     if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
         return ret;
-    if (file->no_write)
+    if (file->no_write || file->swmr_active)
         return NC_EPERM;
     if (file->define_mode)
         return (file->mode & NC_CLASSIC_MODEL) ? NC_EINDEFINE :
@@ -745,7 +1142,7 @@ NEXTCDF4_set_fill(int ncid, int fillmode, int *old_modep)
 
     if ((ret = NEXTCDF4_get_file(ncid, &h5, &file)))
         return ret;
-    if (file->no_write)
+    if (file->no_write || file->swmr_active)
         return NC_EPERM;
     if (fillmode != NC_FILL && fillmode != NC_NOFILL)
         return NC_EINVAL;

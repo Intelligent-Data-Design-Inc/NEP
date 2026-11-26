@@ -46,15 +46,6 @@ f16_is_nan(uint16_t h)
     return (h & 0x7c00) == 0x7c00 && (h & 0x03ff);
 }
 
-static uint32_t
-f32_bits(float v)
-{
-    uint32_t u;
-
-    memcpy(&u, &v, sizeof(u));
-    return u;
-}
-
 /* The 12-value float read-back case shared by test 1 and test 6. */
 static int
 check_ok_var(int ncid, int varid, const char *tag)

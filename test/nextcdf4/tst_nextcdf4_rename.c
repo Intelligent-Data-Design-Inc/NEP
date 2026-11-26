@@ -252,7 +252,7 @@ test_rename_shared_dim(void)
 static int
 test_rename_var(void)
 {
-    int ncid, dimid, varid;
+    int ncid, varid;
     int varid2;
 
     if (create_file_with_dim_and_var())

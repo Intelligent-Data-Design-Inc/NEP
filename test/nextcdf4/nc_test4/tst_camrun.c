@@ -681,13 +681,13 @@ get_mem_used2(int *mem_used)
    snprintf(buf, 30, "/proc/%u/statm", (unsigned)getpid());
    if ((pf = fopen(buf, "r")))
    {
-      (void)fscanf(pf, "%u %u %u %u %u %u", &size, &resident, &share,
+      int fields = fscanf(pf, "%u %u %u %u %u %u", &size, &resident, &share,
 	     &text, &lib, &data);
-      *mem_used = (int)(data * page_size) / MEGABYTE;
+      *mem_used = fields == 6 ? (int)(data * page_size) / MEGABYTE : -1;
+      fclose(pf);
    }
    else
       *mem_used = -1;
-  fclose(pf);
 }
 
 int

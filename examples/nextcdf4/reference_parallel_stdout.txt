@@ -1,0 +1,3 @@
+ranks,storage,slab_rows,cols,uncompressed_bytes,file_bytes,write_s,read_s,write_MBps,read_MBps
+4,contiguous,512,1536,12582912,12592895,0.038292,0.010806,328.604,1164.440
+4,deflate1,512,1536,12582912,12592895,0.039674,0.009450,317.158,1331.546

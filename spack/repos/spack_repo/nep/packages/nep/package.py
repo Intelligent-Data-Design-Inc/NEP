@@ -108,6 +108,15 @@ class Nep(CMakePackage):
             self.define_from_variant("NEP_BUILD_EXAMPLES", "examples"),
             self.define_from_variant("NEP_ENABLE_BENCHMARKS", "benchmarks"),
         ]
+        # NEP_ENABLE_NEXTCDF4_PARALLEL exists from 4.3.0; +nextcdf4+parallel
+        # already concretizes ^hdf5@2.1.1:+hl+mpi and ^netcdf-c+mpi.
+        if self.spec.satisfies("@4.3.0:") or self.spec.satisfies("@main"):
+            args.append(
+                self.define(
+                    "NEP_ENABLE_NEXTCDF4_PARALLEL",
+                    self.spec.satisfies("+nextcdf4+parallel"),
+                )
+            )
         if self.spec.satisfies("@:4.2.0"):
             # NEP 4.2.0 asks for HDF5 1.14, which HDF5 2.x CMake config
             # files reject, so use the spec's HDF5 compiler wrapper

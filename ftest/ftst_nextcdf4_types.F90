@@ -4,7 +4,7 @@ program ftst_nextcdf4_types
   use netcdf
   use nep_nextcdf4
   implicit none
-  integer :: n,dim,v,t,e,mode,i,status,values(16), d2, coord, ud
+  integer :: n,dim,v,t,e,mode,i,status,values(16), coord, ud
   integer(c_int16_t) :: one(1),readback(1)
   character(len=3) :: text
   character(len=32) :: typename

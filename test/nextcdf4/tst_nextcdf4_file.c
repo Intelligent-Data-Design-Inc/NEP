@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <hdf5.h>
 #include <netcdf.h>
+#include <netcdf_meta.h>
 #include "nep.h"
 #include "nextcdf4dispatch.h"
 #include "nxt4internal.h"
@@ -174,6 +175,10 @@ main(void)
     }
     ret = nc_create(FILE_NAME, NC_NEXTCDF4 | NC_CLOBBER, &ncid);
     closed_ncid = ncid;
+#if NC_HAS_PARALLEL
+    if (!ret && NEXTCDF4_var_par_access(ncid, 0, 1) != NC_ENOPAR)
+        return 1;
+#endif
     if (ret != NC_NOERR || check_empty(ncid) || nc_close(ncid) != NC_NOERR) {
         fprintf(stderr, "native create/close failed: %s\n", nc_strerror(ret));
         return 1;

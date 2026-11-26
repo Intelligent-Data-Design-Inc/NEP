@@ -654,6 +654,117 @@ extern "C" {
      */
     int nc_ref_free(nc_std_ref_t *ref);
 
+    /**
+     * @brief Start a single-writer/multiple-reader session on a native NEXTCDF-4 file.
+     *
+     * SWMR (Single Writer / Multiple Reader) is an HDF5 concurrency mode:
+     * one process holds a file open for writing while any number of other
+     * processes hold the same file open read-only and watch the data grow,
+     * without file locks or re-opening. The writer calls nc_swmr_flush()
+     * (or nc_sync()) to publish what it has written; each reader calls
+     * nc_swmr_refresh() to make the newly published records visible. NEP
+     * exposes this through libncnextcdf4 on NEXTCDF-4 (HDF5) files only.
+     * This function is the writer-side entry point; readers never call
+     * it — they open with NC_SWMR_READ instead.
+     *
+     * Link libncnextcdf4 and enable NEP_HAS_NEXTCDF4. A file or subgroup ncid
+     * addresses the whole file. Pending definitions are committed before HDF5
+     * SWMR activation; calling again on an active writer is a no-op. Only serial
+     * native files with superblock v3 and a SWMR-capable driver are supported.
+     * Variables must have fixed-size atomic types (including NEP small floats,
+     * complex and bitfield types), not NC_STRING, NC_STD_REF or user types.
+     * Declared user types, even unused ones, are excluded. All schema and
+     * attributes freeze at activation; in-bounds writes and unlimited growth
+     * remain allowed. This is session state, not a persistent mode marker.
+     *
+     * Alternatively request NC_SWMR_WRITE at create/open: creates defer start
+     * until enddef (including automatic enddef on write); writable opens start
+     * after metadata loading. Closing an inactive requested file never starts
+     * SWMR. Failed activation may leave ordinary definitions committed; it
+     * does not roll them back and leaves the session inactive and closable.
+     *
+     * @param ncid Open file or group identifier.
+     * @return NC_NOERR on success; NC_EBADID for an invalid identifier;
+     * NC_ENOTNC4 for another backend; NC_EPERM for read-only access;
+     * NC_EINVAL for compatibility/MPI sessions, old superblocks or unsupported
+     * drivers; NC_ENOTBUILT for excluded schema; NC_EHDFERR for HDF5 failures;
+     * or an error propagated while committing pending metadata.
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_start_swmr_write(int ncid);
+
+    /**
+     * @brief Publish all datasets and dimension scales of an active SWMR writer.
+     *
+     * This is the writer's half of the SWMR handshake. In a SWMR session
+     * data written by the writer is not automatically visible to readers:
+     * it sits in the writer's HDF5 caches until the writer publishes it.
+     * nc_swmr_flush() flushes every variable dataset and every
+     * dimension-scale dataset, then flushes the file, which is what makes
+     * the appended records readable by SWMR readers after their next
+     * nc_swmr_refresh(). nc_sync() on an active writer performs the same
+     * publication, so applications may use either call as their publish
+     * boundary.
+     *
+     * Link libncnextcdf4. Publication is reader visibility, not an
+     * atomic multi-variable timestep, rollback or power-loss durability
+     * guarantee. HDF5 may also flush opportunistically before this call.
+     * Readers must open with NC_SWMR_READ and call nc_swmr_refresh() to
+     * observe published data. Does not enter define mode or activate an
+     * inactive session.
+     *
+     * @param ncid Open file or group identifier; the entire file is flushed.
+     * @return NC_NOERR on success; NC_EBADID for an invalid identifier;
+     * NC_ENOTNC4 for another backend; NC_EPERM for read-only access;
+     * NC_EINVAL for an inactive writer; NC_EHDFERR for a flush failure.
+     * Partial publication on error is not rolled back.
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_swmr_flush(int ncid);
+
+    /**
+     * @brief Refresh a NEXTCDF-4 SWMR reader session so newly published
+     * data becomes visible.
+     *
+     * This is the reader's half of the SWMR handshake. A SWMR reader
+     * holds the file open with HDF5 SWMR read access; its datasets and
+     * dimension extents are snapshots that do not change on their own.
+     * After the writer publishes new records with nc_swmr_flush() or
+     * nc_sync(), the reader calls nc_swmr_refresh() once and then reads
+     * the new data with the ordinary nc_inq_dimlen()/nc_get_vara() calls.
+     * A typical reader loop is: wait for the application's own publish
+     * signal, call nc_swmr_refresh(), call nc_inq_dimlen() for the
+     * current record count, then read the new records. Any number of
+     * readers may do this independently, and readers may open before or
+     * after the writer starts SWMR writing and may close in either order.
+     *
+     * Link libncnextcdf4. Requires a file opened read-only with
+     * NC_NEXTCDF4|NC_SWMR_READ; a file or subgroup ncid addresses the
+     * whole file. Every open variable dataset and dimension-scale
+     * dataset is refreshed through H5Drefresh, then the cached length
+     * of each dimension is reloaded from its scale dataset's current
+     * extent. Calling when nothing new was published is a cheap no-op,
+     * so it is safe to call on every iteration of a polling loop.
+     *
+     * Refresh is not a re-open: the SWMR writer contract freezes the
+     * schema and attributes at activation, so variables, dimensions,
+     * attributes or types added afterwards are never expected and are
+     * not discovered — reopen the file to see such changes. Reads
+     * mid-append are well defined at the dataset level, but whether a
+     * multi-variable logical record is complete is an application
+     * concern; a common protocol is for the writer to update a scalar
+     * marker variable last, after the record data, and for readers to
+     * check the marker after refreshing. Calling this on an ordinary
+     * read-only, writable or writer session returns NC_EINVAL.
+     *
+     * @param ncid Open file or group identifier of a SWMR reader session.
+     * @return NC_NOERR on success; NC_EBADID for an invalid identifier;
+     * NC_ENOTNC4 for another backend; NC_EINVAL when the session was not
+     * opened with NC_SWMR_READ; NC_EHDFERR on an HDF5 refresh failure.
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_swmr_refresh(int ncid);
+
 #if defined(__cplusplus)
 }
 #endif
@@ -723,6 +834,37 @@ extern "C" {
 
 /** Request NetCDF-4-model compatibility from the NEXTCDF-4 backend */
 #define NC_NETCDF4_MODEL 0x04000000
+
+/** Request a native serial NEXTCDF-4 SWMR writer session at create/open.
+ *
+ * SWMR (Single Writer / Multiple Reader) lets one process write a file
+ * while other processes read it concurrently. Passing this flag in the
+ * cmode of nc_create() or the mode of nc_open(NC_WRITE) asks the backend
+ * to start HDF5 SWMR writing automatically: creates defer activation
+ * until enddef commits the schema, writable opens activate after
+ * metadata load. Equivalent to calling nc_start_swmr_write() after an
+ * ordinary open. Requires a native NEXTCDF-4 file on a superblock-v3,
+ * SWMR-capable driver; rejected on MPI sessions and compatibility
+ * modes. Once active, the schema and attributes are frozen and the
+ * writer publishes data with nc_swmr_flush() or nc_sync(). This is a
+ * NEP-only flag, not an upstream NetCDF mode. */
+#define NC_SWMR_WRITE 0x08000000
+
+/** Request a native serial NEXTCDF-4 SWMR reader session at open.
+ *
+ * Read-only flag combined with NC_NEXTCDF4 in the mode of nc_open().
+ * The file is opened with HDF5 SWMR read access so it can coexist with
+ * a live writer and observe records the writer publishes. Any file the
+ * HDF5 layer accepts for SWMR reading may be opened: a live writer's
+ * file, a quiescent file after the writer closed, or a file never
+ * written in SWMR mode — provided its superblock is v3, which includes
+ * NC_NETCDF4_MODEL files. After opening, the reader polls
+ * nc_swmr_refresh() and reads with the ordinary inquiry/data calls;
+ * multiple independent readers are supported. Rejected at nc_create,
+ * and at open when combined with NC_WRITE, NC_SWMR_WRITE,
+ * NC_CLASSIC_MODEL or MPI parameters. This is a NEP-only flag, not an
+ * upstream NetCDF mode. See nc_swmr_refresh(). */
+#define NC_SWMR_READ 0x10000000
 
 /** @} */
 

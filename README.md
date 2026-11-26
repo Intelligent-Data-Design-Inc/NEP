@@ -168,6 +168,15 @@ NEP must use the same HDF5 as NetCDF-C. Configure stops if the
 `libhdf5.so` version that `libnetcdf.so` needs differs from the HDF5
 that CMake found; set `HDF5_ROOT` to NetCDF-C's HDF5 to fix it.
 
+Native serial NEXTCDF-4 writers can publish to live HDF5 SWMR readers with
+`NC_SWMR_WRITE` at create/open or `nc_start_swmr_write(ncid)`, then
+`nc_swmr_flush(ncid)` (also active-writer `nc_sync`). Link `libncnextcdf4`.
+Only fixed-size atomic variables are supported; schema/attributes freeze after
+activation. No compatibility modes or MPI-IO SWMR, atomic-timestep or power-loss
+durability guarantee. Readers open with `NC_NEXTCDF4|NC_SWMR_READ` and call
+`nc_swmr_refresh(ncid)` to see published appends and grown dimensions. See
+[SWMR sessions](docs/nextcdf4.md#swmr-writer-and-reader-sessions).
+
 ### Configuration Options
 
 #### Quick Reference
@@ -188,6 +197,7 @@ that CMake found; set `HDF5_ROOT` to NetCDF-C's HDF5 to fix it.
 | `-DNEP_ENABLE_BENCHMARKS` | OFF | Performance benchmark examples |
 | `-DNEP_ZSTD_PLUGIN_DIR` | (empty) | Directory with one HDF5 zstd plugin; enables the NEXTCDF-4 bfloat16 example tests |
 | `-DNEP_ENABLE_PARALLEL_TESTS` | OFF | MPI parallel I/O tests |
+| `-DNEP_ENABLE_NEXTCDF4_PARALLEL` | OFF | NEXTCDF-4 MPI-IO file access (`nc_create_par`/`nc_open_par`); requires MPI, parallel HDF5, `NC_HAS_PARALLEL4` |
 | `-DNEP_BUILD_DOCUMENTATION` | ON | Doxygen API docs |
 
 #### Compression
@@ -229,6 +239,18 @@ All format readers are independent — any combination can be enabled simultaneo
 - **`-DNEP_BUILD_EXAMPLES`** (default OFF): builds all example programs and registers them as tests.
 - **`-DNEP_ENABLE_BENCHMARKS`** (default OFF): runs general NetCDF performance benchmarks in `examples/performance/`.
 - **`-DNEP_ENABLE_PARALLEL_TESTS`** (default OFF): builds the parallel test programs and runs tests via `mpiexec -n 4`. Requires MPI and NetCDF-C with `NC_HAS_PARALLEL4`.
+
+NEXTCDF-4 MPI-IO additionally requires `-DNEP_ENABLE_NEXTCDF4_PARALLEL=ON`,
+parallel HDF5 2.1.1+ and parallel NetCDF-C with 64-slot UDF support. Create
+with `NC_NEXTCDF4|NC_NETCDF4`, open with `NC_NEXTCDF4`, and use
+`nc_var_par_access` for per-variable collective/independent selection.
+Unlimited growth and filtered writes require collective access (independent
+filtered reads are permitted). Parallel variable transfers support
+fixed-size types; strings, dynamic user types and references return
+`NC_ENOTBUILT`. Both Open MPI and MPICH stacks run the `nextcdf4_parallel`
+label in CI (upstream `nc_test4` ports, interchange and external-plugin
+tests). See [Parallel I/O](docs/nextcdf4.md#parallel-io)
+for empty-rank participation and reopen rules.
 
 #### Documentation
 

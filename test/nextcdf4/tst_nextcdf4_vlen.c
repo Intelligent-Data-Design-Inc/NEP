@@ -43,8 +43,6 @@ static const int mileage2[1] = {42};
 static const double depths1[2] = {1.5, -2.5};
 static const struct point track0[2] = {{1, 0.5f}, {2, 1.5f}};
 static const struct point track3[1] = {{-9, 99.0f}};
-static const int nest_a[2] = {7, 8};
-static const int nest_b[3] = {9, 10, 11};
 
 /* Deep-compare two nc_vlen_t of int. */
 static int
@@ -142,7 +140,7 @@ write_roundtrip(const char *fname, int cmode)
     int ovarid;
     nc_type cmpid, vint, vdbl, vcmp, vnest, recid;
     nc_vlen_t in[NV];
-    nc_vlen_t din[2], cin[NV], nin[NV], rin[1];
+    nc_vlen_t din[2], cin[NV], nin[NV];
     nc_vlen_t inner_a[2], inner_b[1];
     struct rec rin_data;
     size_t start[1], count[1];
@@ -261,7 +259,6 @@ write_roundtrip(const char *fname, int cmode)
         rin_data.past[0].p = p0;
         rin_data.past[1].len = 2;
         rin_data.past[1].p = p1;
-        rin[0] = rin_data.vals;
         /* Write the full rec through a compound buffer. */
         start[0] = 0;
         count[0] = 1;

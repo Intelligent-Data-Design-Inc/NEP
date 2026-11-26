@@ -21,7 +21,10 @@
 /* Err is used to keep track of errors within each set of tests,
  * total_err is the number of errors in the entire test program, which
  * generally consists of several sets of tests. */
-static int total_err = 0, err = 0;
+/* NEP port note: marked unused because some ported programs keep
+ * their own error counters and never touch these. */
+static int total_err __attribute__((unused)) = 0,
+           err __attribute__((unused)) = 0;
 
 /* This macro prints an error message with line number and name of
  * test program. */
@@ -44,7 +47,7 @@ static int total_err = 0, err = 0;
         goto error;                                                     \
     } while (0)
 
-static int ERR_report(int stat, const char* file, int line)
+static inline int ERR_report(int stat, const char* file, int line)
 {
     fflush(stdout);
     fprintf(stderr, "Sorry! Unexpected result, %s, line: %d; status=%d\n",

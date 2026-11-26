@@ -1,5 +1,38 @@
 # NEP Development Roadmap
 
+### V4.4.0 - Virtual Datasets and In-Memory I/O
+
+#### Sprint 1 - Virtual Dataset Definition
+- New API `nc_def_var_virtual` (or `nc_set_var_virtual`) mapping a variable's chunks onto source datasets in other HDF5/NEXTCDF-4 files via `H5Pset_virtual` on the DCPL; support filename, source dataset path, and source/target hyperslab selection per mapping.
+- Virtual variables appear as ordinary variables to readers; writes follow HDF5 VDS semantics (reject write-through mappings where HDF5 does).
+- Unlimited-dim support so a virtual timeseries grows as new granule files are added (VDS unlimited mapping with print/printf-style filename patterns).
+- Native mode only initially; define `NC_NETCDF4_MODEL`/`NC_CLASSIC_MODEL` behavior (reject or pass through to upstream-readable VDS).
+
+#### Sprint 2 - Virtual Dataset I/O, Mosaics, and Interchange
+- Read path: `get_vara`/`get_vars` on virtual variables transparently reading source files, including missing-source-file behavior (HDF5 fills with fill value) and partial-unavailable granules.
+- Mosaic use cases tested: daily granules → one timeseries, tiled spatial products → one field, mixed-chunk sources.
+- Interchange verification: VDS files readable by upstream netcdf-c (linked HDF5 1.10+ supports VDS reads); document VDS's HDF5-level nature.
+- Examples in `examples/nextcdf4/` (granule mosaic), disk-bound benchmark comparing VDS mosaic vs physical copy; docs in `nextcdf4.md`, `prd.md`, `prfaq.md`, `design.md`.
+
+#### Sprint 3 - In-Memory and Diskless Files
+- Accept `NC_DISKLESS` and `NC_INMEMORY` at `nc_create`/`nc_open` (removing the Sprint 1O rejections) using the HDF5 core driver (`H5Pset_fapl_core`) and `H5LTopen_file_image`/`H5Fget_file_image` for memory-image open and file-image extraction.
+- `nc_open_mem`/`nc_open_memio`-compatible behavior where upstream exposes it; document buffer ownership, persistence (`H5Pset_file_image` copy semantics), and size growth limits.
+- Persist-on-close path: diskless file written to backing pathname at `nc_close` matching upstream `NC_DISKLESS|NC_WRITE` semantics.
+- Tests: in-memory create/define/write/read/close cycles, `nc_open_mem` reopen of extracted images, image round-trips through byte buffers.
+
+#### Sprint 4 - Memory-Mapped and Read-Optimized Open
+- Accept `NC_MMAP` at `nc_open` using an mmap-capable VFD where HDF5 supports it (or document and reject cleanly where it does not), for read-only access without buffer-copy overhead on large files.
+- Read-only enforcement, shared-file safety, and page-cache behavior documented; `NC_MMAP|NC_WRITE` rejected.
+- Disk-bound benchmarks comparing mmap vs standard open on cold-cache reads; committed reference artifacts.
+- Tests and docs (`nextcdf4.md`, status doc, `prd.md`/`prfaq.md`); no packaging changes.
+
+#### Sprint 5 - Direct Chunk Access
+- New expert API `nc_get_var_chunk`/`nc_put_var_chunk` wrapping `H5Dread_chunk`/`H5Dwrite_chunk`: read and write raw stored chunk bytes by chunk-grid index, bypassing the filter pipeline; caller manages compressed bytes and buffer ownership.
+- Size-query mode (NULL buffer returns stored byte count and `filter_mask`) and `nc_inq_var_chunk_info`-style inquiry mirroring `H5Dget_chunk_info` (chunk size, filter mask, storage offset).
+- Index validation against the dataset chunk grid; chunked-only — contiguous variables rejected (`NC_ENOTCHUNKED`); document that `nc_put_var_chunk` supplies post-filter bytes including fletcher32 and corrupt input corrupts data.
+- Works on `NC_NETCDF4_MODEL` files too (no on-disk format change); rejected in `NC_CLASSIC_MODEL` since classic mode forbids chunking.
+- Tests covering deflate/shuffle/missing-plugin chunks, verbatim chunk copy between files, and index errors; example comparing direct-chunk copy vs decompress/recompress; docs in `nextcdf4.md`, `prd.md`, `prfaq.md`.
+
 ### V4.3.0 - NEXTCDF4 Development
 
 #### Sprint 1 - Fix Issues 372 and 374
@@ -255,6 +288,54 @@ Plan: [docs/plan/v4.3.0-sprint1T-example-programs.md](plan/v4.3.0-sprint1T-examp
 - Out of scope (Sprint 2): tag, release notes, Spack/conda version bumps; installing cdf/geotiff headers stays out entirely.
 
 Plan: [docs/plan/v4.3.0-sprint1U-fix-issue-389.md](plan/v4.3.0-sprint1U-fix-issue-389.md)
+
+#### Sprint 1V1 - Parallel I/O Foundation (MPI-IO File Access)
+- `nc_create_par` requires `NC_NEXTCDF4|NC_NETCDF4` (upstream rejects non-`NC_NETCDF4` creates without PnetCDF); `nc_open_par` takes bare `NC_NEXTCDF4`. Comm/info arrive via dispatch `parameters` (private `NX4_MPI_INFO`, ABI twin of upstream's internal `NC_MPI_INFO`), are `MPI_Comm_dup`/`MPI_Info_dup`'d into file state, and configure `H5Pset_fapl_mpio` + collective metadata ops on the FAPL.
+- New `NEP_ENABLE_NEXTCDF4_PARALLEL` option (FATAL_ERROR without MPI C, parallel HDF5, `NC_HAS_PARALLEL4`); emits `NEP_HAS_NEXTCDF4_PARALLEL`. `parameters != NULL` without the feature → `NC_ENOPAR`; deprecated `NC_MPIIO`/`NC_PAR` flags stay rejected; `ncnextcdf4` links `MPI::MPI_C`.
+- New `tst_nextcdf4_parallel` via `mpiexec -n 4` under label `nextcdf4_parallel`, gated on `NEP_ENABLE_PARALLEL_TESTS`; `ci-parallel.yml` switches its netcdf-c to `main` (64-slot) and enables NEXTCDF-4 + the option.
+- Spack: no new variant — `+nextcdf4+parallel @4.3.0:` passes `NEP_ENABLE_NEXTCDF4_PARALLEL`; docs (`nextcdf4.md`, `prfaq.md` parallel answer, `prd.md`, `design.md`, README, status doc) updated.
+- Out of scope: `nc_var_par_access`/collective vs independent transfers (1V2), upstream `tst_parallel*` ports/interchange/benchmarks (1V3), SWMR (1V4-1V5), VDS/in-memory/mmap (v4.4.0), Fortran parallel wrappers, pnetcdf, release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1V1-parallel-io-foundation.md](plan/v4.3.0-sprint1V1-parallel-io-foundation.md)
+
+#### Sprint 1V2 - Collective and Independent Data Access
+- Implement `nc_var_par_access` with session-only per-variable state and `H5Pset_dxpl_mpio`; default independent, filters defined in parallel force collective, independent filtered access rejected.
+- Collective-safe empty/fill-only selections and communicator-wide unlimited-extent negotiation; independent growth returns `NC_ECANTEXTEND`. Preserve serial behavior and the upstream collective caller contract (no general error consensus).
+- Support fixed-size types including small floats and fixed-size user types; explicitly reject parallel dynamic/string/reference variable I/O with `NC_ENOTBUILT`.
+- Four-rank correctness tests in existing Open MPI CI: mode switches, striding, unequal appends, fill, built-in filters and serial NEXTCDF-4 reopen; repair foundation-test handle/cleanup bugs and add timeouts.
+- Update API/architecture/status docs; no new CMake option, dependency floor, installed file or Spack/conda recipe change.
+- Out of scope: upstream ports/interchange/benchmarks, MPICH and external-plugin coverage (1V3); dynamic/reference parallel support and MPI sanitizer expansion (future work), SWMR (1V4–1V5), release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1V2-collective-independent-data-access.md](plan/v4.3.0-sprint1V2-collective-independent-data-access.md)
+
+#### Sprint 1V3 - Parallel I/O Coverage and Interchange
+- Port all eight upstream parallel tests (`tst_parallel`, `tst_parallel3`-`6`, `tst_parallel_zlib`, `tst_parallel_compress`, `tst_quantize_par`) via the `nc_test4` shims, run in native and `NC_NETCDF4_MODEL` modes under `nextcdf4_parallel`; `tst_parallel5` adapted to public chunk-cache API, big-file cases kept.
+- Bidirectional interchange test: NEXTCDF-4-written files read through the upstream dispatcher and upstream-written files read through NEXTCDF-4, parallel and serial opens.
+- New `ci-parallel-mpich.yml`: MPICH-built dependency stack, `nextcdf4_parallel` label only. Plugin matrix: zstd (required) + bzip2 (gated) via `HDF5_PLUGIN_PATH`/`NEP_ZSTD_PLUGIN_DIR`.
+- New `examples/nextcdf4/parallel_perf.c` under `NEP_ENABLE_BENCHMARKS`: 4-rank disk-bound collective write/read, committed CSV/machine/plot artifacts.
+- Update parallel scope in `nextcdf4.md`, status doc, `prd.md`, `prfaq.md`, `design.md`; no Spack/conda changes.
+- Out of scope: SWMR (1V4–1V5), parallel dynamic/string/`NC_STD_REF` I/O, Fortran parallel wrappers, upstream reading native-only types, MPI sanitizers, release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1V3-parallel-coverage-interchange.md](plan/v4.3.0-sprint1V3-parallel-coverage-interchange.md)
+
+#### Sprint 1V4 - SWMR Writer Support
+- Both `NC_SWMR_WRITE` on create/open and `nc_start_swmr_write(int ncid)`; creates activate after schema commitment at enddef, writable opens after metadata load.
+- Native serial sessions only; fixed-size atomic variables (including small floats/complex/bitfields), no declared user types or string/reference variables; schema and attributes freeze at activation.
+- `nc_swmr_flush(int ncid)` and active-writer `nc_sync` publish all datasets/scales via `H5Dflush`/`H5Fflush`; no atomic-timestep or power-loss-durability guarantee.
+- Separate-process raw-HDF5 reader verifies live appends and built-in filters in existing normal/sanitizer suites; update API/architecture/status docs. No Spack/conda changes.
+- Out of scope: NEP readers/refresh and multi-reader coverage (1V5), MPI-IO SWMR, compatibility modes, dynamic/user/reference types and Fortran SWMR (future work), release notes/publication (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1V4-swmr-writer-support.md](plan/v4.3.0-sprint1V4-swmr-writer-support.md)
+
+#### Sprint 1V5 - SWMR Reader Support and Documentation
+- New `NC_SWMR_READ` flag (`0x10000000`, bit 28) at `nc_open` opens with `H5F_ACC_RDONLY | H5F_ACC_SWMR_READ` (no `H5Fstart_swmr_read` exists); read-only, serial, create/`NC_WRITE`/`NC_SWMR_WRITE`/classic/MPI rejected.
+- Accepts any file HDF5 accepts for SWMR read, including `NC_NETCDF4_MODEL` files whose superblock is v3 (checked via `H5Fget_info2`); no libver upgrade.
+- `int nc_swmr_refresh(int ncid)` `H5Drefresh`es every variable and dim-scale dataset then reloads extents into cached `dim->len`; whole-file like `nc_swmr_flush`, refresh is not a re-open (frozen-schema contract).
+- Extend `tst_nextcdf4_swmr` with a new NEP-API reader helper `tst_nextcdf4_swmr_nep_reader`, two-reader and close-ordering cases under `nextcdf4_swmr`; mode/rejection coverage in open tests; normal+sanitizer CI.
+- SWMR usage guide (writer+reader) in `docs/nextcdf4.md`, plus architecture/status/`prfaq`/`prd`/`design`/README updates. No Spack/conda changes.
+- Out of scope: MPI-IO SWMR, schema evolution for readers, per-var/implicit refresh, dynamic/user/ref/string SWMR data, Fortran SWMR, release notes (Sprint 2), VDS/in-memory/mmap (v4.4.0).
+
+Plan: [docs/plan/v4.3.0-sprint1V5-swmr-reader.md](plan/v4.3.0-sprint1V5-swmr-reader.md)
 
 #### Sprint 2 - 
 - Tag v4.3.0 and write `docs/releases/v4.3.0.md` (HDF5 detection change, CMake 3.19 minimum, conda GeoTIFF, Sprint 1A NEXTCDF-4 bfloat16 examples and `NEP_ZSTD_PLUGIN_DIR`, Sprint 1B typed small-float I/O and the `nc_*_bfloat16` functions, #376, Sprint 1C optimized benchmark results, the bfloat16 GDAS sample and `bfloat16_io_perf`, the #382 contiguous-layout fix, the fix for untyped `nc_put_var`/`nc_get_var`/`var1`/`vars` failing with `NC_EBADTYPE` on NEXTCDF-4, and Sprint 1K generic HDF5 filter support (`nc_def_var_filter`, szip/bzip2/zstd plugins, missing-plugin `NC_ENOFILTER`), and Sprint 1L reference types (`NC_REF_OBJECT`/`NC_REF_REGION` removed — a breaking API change — replaced by `NC_STD_REF`/`H5T_STD_REF` and the `nc_ref_*`/`nc_deref_*` API).

@@ -56,12 +56,18 @@ valid_create_mode(int mode)
  * @param initialsz Requested initial file size; currently ignored.
  * @param basepe Base processing element; currently ignored.
  * @param chunksizehintp Chunk-size hint; currently ignored.
- * @param parameters Optional dispatch parameters; currently ignored.
+ * @param parameters Non-NULL when the user called `nc_create_par()`:
+ * points at an NX4_MPI_INFO carrying the MPI communicator and info
+ * handle. `nc_create_par()` also requires `NC_NETCDF4` in the mode
+ * flags (upstream rejects other creates without PnetCDF), so parallel
+ * creates pass `NC_NEXTCDF4|NC_NETCDF4`.
  * @param dispatch Dispatch table selected by netcdf-c.
  * @param ncid NetCDF file identifier allocated by netcdf-c.
  * @return `NC_NOERR` on success, `NC_EINVAL` for bad mode flags,
  * `NC_ENOTBUILT` when HDF5 is too old, `NC_EEXIST` for a
- * `NC_NOCLOBBER` collision, or another NetCDF error code.
+ * `NC_NOCLOBBER` collision, `NC_ENOPAR` for a parallel request when
+ * NEXTCDF-4 was built without parallel support, `NC_EPARINIT` when the
+ * MPI-IO driver cannot be set, or another NetCDF error code.
  */
 int
 NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
@@ -83,7 +89,6 @@ NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
     (void)initialsz;
     (void)basepe;
     (void)chunksizehintp;
-    (void)parameters;
     (void)dispatch;
 
     ELOG((2, "%s: path %s mode 0x%x ncid %d", __func__, path ? path : "", cmode, ncid));
@@ -98,6 +103,19 @@ NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
         return ret;
     if ((ret = valid_create_mode(cmode)))
         return ret;
+    if ((cmode & NC_SWMR_WRITE) &&
+        (parameters || (cmode & (NC_CLASSIC_MODEL | NC_NETCDF4_MODEL))))
+        return NC_EINVAL;
+    /* SWMR reading is an open-time mode; it makes no sense at create. */
+    if (cmode & NC_SWMR_READ)
+        return NC_EINVAL;
+#ifndef HAVE_NEXTCDF4_PARALLEL
+    /* A non-NULL parameters pointer means nc_create_par was called;
+     * without parallel support that is unanswerable. NC_INMEMORY also
+     * uses parameters, but check_mode already rejected it above. */
+    if (parameters)
+        return NC_ENOPAR;
+#endif
     if (H5get_libversion(&major, &minor, &release) < 0)
         return NC_EHDFERR;
     if (major < 2 || (major == 2 && minor < 1) || (major == 2 && minor == 1 && release < 1))
@@ -125,6 +143,31 @@ NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
     bound = file->netcdf4_model ? H5F_LIBVER_V110 : H5F_LIBVER_LATEST;
     if (H5Pset_libver_bounds(fapl, bound, bound) < 0)
         EBAIL2(NC_EHDFERR);
+#ifdef HAVE_NEXTCDF4_PARALLEL
+    /* Parallel create: switch the FAPL to the MPI-IO driver, request
+     * collective metadata operations, and keep owned duplicates of the
+     * communicator and info until close, as upstream's nc4_create_file
+     * does. All ranks in the communicator must make identical
+     * define-mode calls from here on. */
+    if (parameters) {
+        NX4_MPI_INFO *mpi = (NX4_MPI_INFO *)parameters;
+        if (H5Pset_fapl_mpio(fapl, mpi->comm, mpi->info) < 0)
+            EBAIL2(NC_EPARINIT);
+        if (H5Pset_all_coll_metadata_ops(fapl, 1) < 0 ||
+            H5Pset_coll_metadata_write(fapl, 1) < 0)
+            EBAIL2(NC_EHDFERR);
+        if (MPI_Comm_dup(mpi->comm, &file->comm) != MPI_SUCCESS)
+            EBAIL(NC_EMPI);
+        file->comm_duped = 1;
+        if (mpi->info != MPI_INFO_NULL) {
+            if (MPI_Info_dup(mpi->info, &file->info) != MPI_SUCCESS)
+                EBAIL(NC_EMPI);
+            file->info_duped = 1;
+        } else
+            file->info = MPI_INFO_NULL;
+        file->parallel = 1;
+    }
+#endif
     flags = (cmode & NC_NOCLOBBER) ? H5F_ACC_EXCL : H5F_ACC_TRUNC;
     /* Track link and attribute creation order on the root group, as
      * upstream does: nc_inq_attname() returns creation order, and

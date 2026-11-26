@@ -15,8 +15,24 @@
 #include "nextcdf4dispatch.h"
 #include "nxt4err.h"
 
+#ifdef HAVE_NEXTCDF4_PARALLEL
+#include <mpi.h>
+#include <netcdf_par.h>
+/** @brief MPI comm/info passed to `nc_create_par()`/`nc_open_par()`.
+ *
+ * ABI-identical to netcdf-c's internal `NC_MPI_INFO`
+ * (`include/ncdispatch.h`), which is not installed; libdispatch hands
+ * a pointer to this layout in the create/open `parameters` argument. */
+typedef struct NX4_MPI_INFO
+{
+    MPI_Comm comm;
+    MPI_Info info;
+} NX4_MPI_INFO;
+#endif /* HAVE_NEXTCDF4_PARALLEL */
+
 /** @brief Validate unsupported create/open flags; return NC_EINVAL if present. */
 int NEXTCDF4_check_mode(int mode);
+int NEXTCDF4_var_par_access(int ncid, int varid, int par_access);
 /** @brief Set the session fill default for subsequently defined variables. */
 int NEXTCDF4_set_fill(int ncid, int fillmode, int *old_modep);
 /** @brief Rename a non-root enhanced-model group and flush its link. */
@@ -114,6 +130,11 @@ typedef struct NEXTCDF4_FILE_INFO
     int mode;           /**< Effective NetCDF create/open mode. */
     int no_write;       /**< Nonzero when the HDF5 file is read-only. */
     int define_mode;    /**< Nonzero while the file is in define mode. */
+    int swmr_requested; /**< Session requests activation after schema commitment. */
+    int swmr_active;    /**< HDF5 SWMR writing successfully started this session. */
+    int swmr_read;      /**< Read-only session opened with H5F_ACC_SWMR_READ
+                             (NC_SWMR_READ); gates nc_swmr_refresh(). Mutually
+                             exclusive with swmr_requested/swmr_active. */
     int netcdf4_model;  /**< Nonzero for `NC_NETCDF4_MODEL` compatibility mode. */
     int backend_marked; /**< Nonzero when the NEXTCDF-4 backend marker is present. */
     int created_by_us;  /**< Nonzero when this session created the file;
@@ -123,7 +144,23 @@ typedef struct NEXTCDF4_FILE_INFO
     char *ncproperties; /**< Owned `_NCProperties` value: built at create,
                          * read from the file at open, or NULL when the
                          * file has none. */
+#ifdef HAVE_NEXTCDF4_PARALLEL
+    int parallel;       /**< Nonzero when the file uses the MPI-IO driver. */
+    MPI_Comm comm;      /**< Owned duplicate of the caller's communicator;
+                         * freed by NEXTCDF4_free_file(). */
+    MPI_Info info;      /**< Owned duplicate of the caller's info handle
+                         * (or `MPI_INFO_NULL`); freed by
+                         * NEXTCDF4_free_file() when duplicated. */
+    int comm_duped;     /**< Nonzero when `comm` holds a duplicate to free. */
+    int info_duped;     /**< Nonzero when `info` holds a duplicate to free. */
+#endif /* HAVE_NEXTCDF4_PARALLEL */
 } NEXTCDF4_FILE_INFO_T;
+
+int nx4_swmr_validate(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file);
+int nx4_swmr_activate(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file);
+int nx4_swmr_flush(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file);
+int nx4_swmr_refresh(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file);
+int nx4_swmr_read_aliases(NC_GRP_INFO_T *grp);
 
 /** @brief NEXTCDF-4-private state hung off
  * `NC_GRP_INFO_T::format_grp_info`: the group's open HDF5 handle. */
@@ -151,6 +188,8 @@ typedef struct NEXTCDF4_DIM_INFO
 typedef struct NEXTCDF4_VAR_INFO
 {
     hid_t hdf_dataset;  /**< HDF5 variable dataset identifier. */
+    int parallel_access; /**< Session-only transfer preference: independent (0)
+                          * or collective (1); not stored in the file. */
     int flags;          /**< Bitmask; bit `NC_HDF5_VAR_FILTER_MISSING` (from
                          * `hdf5internal.h`) is set when a mandatory filter
                          * plugin was missing at open and the variable's

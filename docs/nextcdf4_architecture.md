@@ -43,9 +43,9 @@ fills that table three ways:
   delegate to the library's own `NC4_*` functions (`NC4_inq`,
   `NC4_inq_dimid`, `NC4_inq_att*`, `NC4_inq_varids`, ...), which work
   on the shared `NC_*_INFO_T` metadata structures.
-- **Stubs** — unsupported operations such as parallel variable access
-  retain `NC_NOTNC4_*`; fill, cache, group rename and filter availability
-  use NEXTCDF-4 implementations.
+- **Stubs** — unsupported operations such as mapped `varm` I/O return
+  `NC_ENOTBUILT`; parallel variable access, fill, cache, group rename and
+  filter availability use NEXTCDF-4 implementations.
 
 The struct has no designated initializers, so table entries appear in
 exact positional order.
@@ -244,7 +244,63 @@ when mirrored into `var->fill_value`.
 
 `nx4_var_dapl` maps netCDF bytes/slots/float-preemption to HDF5 slots/bytes/double-preemption. Dataset creation and deferred rebuild use it; loaded variable handles are reopened with global NetCDF defaults. `nx4_reopen_var_cache` finds owned variable/scale aliases by object token, allocates its path/property lists before mutation, flushes writable files, closes all aliases, then reopens with the requested DAPL. On failure it attempts to restore the old access properties; no datasets or dimension attachments are recreated. Getters query live chunked DAPLs; pending/nonchunked variables retain their requests. Existing full-suite normal and sanitizer CI covers the `nextcdf4_controls` focused tests.
 
-`NEXTCDF4_rename_grp` validates normalized names and parent variable/group/type collisions, moves the HDF5 link, updates the parent child index and flushes. Open descendant IDs and object identities remain valid, and full-name inquiry derives new paths from the metadata tree. Native and NetCDF-4-model groups are supported; classic mode remains root-only. Unsupported memory, sharing and parallel flags are rejected by `NEXTCDF4_check_mode` before filesystem side effects; parallel access, image files and SWMR remain deferred beyond v4.3.0.
+`NEXTCDF4_rename_grp` validates normalized names and parent variable/group/type collisions, moves the HDF5 link, updates the parent child index and flushes. Open descendant IDs and object identities remain valid, and full-name inquiry derives new paths from the metadata tree. Native and NetCDF-4-model groups are supported; classic mode remains root-only. Unsupported memory, sharing and parallel flags are rejected by `NEXTCDF4_check_mode` before filesystem side effects; image files remain deferred. Native serial SWMR writers use `NC_SWMR_WRITE` or `nc_start_swmr_write`; readers open with `NC_SWMR_READ` and call `nc_swmr_refresh`. Optional MPI-IO sessions use the Sprint 1V1 file plumbing and Sprint 1V2 per-variable access described below.
+
+## SWMR writer lifecycle
+
+`NEXTCDF4_FILE_INFO_T.swmr_requested` records deferred activation and
+`swmr_active` records successful `H5Fstart_swmr_write`. Flagged creates activate
+only after enddef materializes the schema; flagged writable opens activate after
+metadata load. Explicit `nc_start_swmr_write` preflights and commits definitions,
+then uses the same activation helper. `nx4_swmr_validate` checks native serial
+state, actual superblock v3, SWMR VFD capability and the complete schema tree:
+no declared user types or string/reference/user-defined variables. Open attributes
+and committed datatypes cannot survive HDF5 activation; the restricted schema
+avoids adding a committed-type handle lifecycle. An inactive requested session
+closes as an ordinary file, never activating solely to close.
+
+Active sessions cannot re-enter define mode or mutate schema/attributes. The
+common write-define guard and direct type/group/reference mutator guards return
+`NC_EPERM`; committed dataset setters return `NC_ELATEDEF`. Variable data I/O and
+cache-alias reopen remain available without creating objects. Provenance is
+materialized before activation and is not rewritten by active sync/close.
+`nx4_swmr_flush` walks variable datasets, then dimension scales, then calls
+`H5Fflush`; alias handles stay owned and may safely be flushed twice. Public
+`nc_swmr_flush`, active `nc_sync` and close share this path. No writer refresh,
+record transaction or physical durability guarantee is introduced. See
+[NEXTCDF-4](nextcdf4.md) for the public writer contract.
+
+## SWMR reader lifecycle
+
+`NEXTCDF4_FILE_INFO_T.swmr_read` records a session opened read-only with
+`NC_NEXTCDF4 | NC_SWMR_READ`: the open selects `H5F_ACC_RDONLY |
+H5F_ACC_SWMR_READ`, loads markers and metadata normally, then requires the
+actual superblock to be v3 (`NC_NETCDF4_MODEL` files qualify when they carry
+one). Write/compat/classic/MPI combinations are rejected, as is the flag at
+create.
+
+`nc_swmr_refresh` runs `nx4_swmr_refresh`, which `H5Drefresh`es every variable
+dataset then every dimension-scale dataset, reloading each scale's current
+extent into the cached `dim->len` that `nc_inq_dimlen` reports. Read paths
+already reacquire dataspaces per call, so refreshed handles return current
+data. One measured HDF5 constraint drives `nx4_swmr_read_aliases`: two open
+handles to the same object defeat SWMR visibility (reads stay at the
+open-time snapshot even after `H5Drefresh`), so each coordinate variable's
+scale/variable handle pair is collapsed at open — and idempotently inside
+refresh — to the variable's own handle; the duplicate close is safe because
+`nx4_close_group_hdf` tolerates a twice-closed identifier. Refresh is not a
+re-open: no new metadata is discovered, matching the writer's frozen-schema
+contract. Readers and writers may close in either order; multiple
+simultaneous readers are covered by `tst_nextcdf4_swmr` under
+`nextcdf4_swmr`.
+
+## Parallel variable transfers
+
+`NEXTCDF4_var_par_access` records an independent/collective preference in `NEXTCDF4_VAR_INFO_T.parallel_access`, not in file metadata. It is initialized independent at definition/open and preserved by dataset rebuilds and cache-handle reopens. Filter setters force collective in parallel sessions; independent filtered access is rejected. Reopened filtered variables require explicit collective selection.
+
+`var_io` owns a per-call DXPL configured by `H5Pset_dxpl_mpio`, closes it on every exit, and keeps serial transfers unchanged. Empty or fill-only collective ranks use none-selected memory/file spaces rather than skipping HDF5. Collective unlimited writes reduce proposed extents with `MPI_MAX` over the file's owned communicator, extend the variable and dimension scales consistently and preserve longer shared dimensions. Independent extension returns `NC_ECANTEXTEND` before mutation.
+
+Fixed-size standard/user types and NEP small floats use the existing native-memory conversion engine; parallel dynamic/string/reference variable transfers return `NC_ENOTBUILT` before automatic enddef or mutation. Completed conversion range warnings stay rank-local and do not skip a collective call. The API requires valid arguments and matching collective order rather than providing a general rank-local failure-consensus layer. HDF5 may fall back internally from requested collective I/O; no physical MPI algorithm is guaranteed. Four-rank Open MPI tests cover the contract under `nextcdf4_parallel`; no new build option or packaging requirement is introduced.
 
 ## Filters
 

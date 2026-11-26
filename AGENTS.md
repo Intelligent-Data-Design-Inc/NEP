@@ -6,7 +6,21 @@ Always use the directory name `build` for local builds. If a `build` directory a
 
 ## Local Verification
 
-The development netcdf-c installation needs `PKG_CONFIG_PATH=/usr/local/netcdf-c/lib/pkgconfig` when CMake regenerates the existing build. Run `cmake --build build --parallel 8`, `ctest --test-dir build --output-on-failure` and `cmake --build build --target docs` (zero warnings). Focused NEXTCDF-4 controls use `ctest --test-dir build -L nextcdf4_controls --output-on-failure`; all these tests also run in the existing normal/sanitizer CI full suites. Ask before deleting an existing build tree.
+The development netcdf-c installation needs `PKG_CONFIG_PATH=/usr/local/netcdf-c/lib/pkgconfig` when CMake regenerates the existing build. Run `cmake --build build --parallel 8`, `ctest --test-dir build --output-on-failure` and `cmake --build build --target docs` (zero warnings). Focused NEXTCDF-4 controls use `ctest --test-dir build -L nextcdf4_controls --output-on-failure`; all these tests also run in the existing normal/sanitizer CI full suites. Ed explicitly permits deleting `/fast/ed/NEP/build` whenever needed; it is always temporary. Ask before deleting any other existing build tree.
+
+For MPI CI parity, configure a fresh build with `-DCMAKE_C_FLAGS="-Wall -Werror"` (and `-DCMAKE_Fortran_FLAGS="-Wall -Werror"` when Fortran is enabled). The parallel workflow treats unused declarations as build failures; a default local build does not catch them.
+
+Focused SWMR writer verification uses `ctest --test-dir build -L nextcdf4_swmr --output-on-failure --no-tests=error`. Its raw-HDF5 reader helper is a separate executable launched by the writer test; build both targets (or the full build) before running it. These tests run in existing normal/sanitizer full suites, including serial sessions with a parallel-built HDF5 library.
+
+## Local MPI Dependencies
+
+Parallel HDF5 2.1.1 is installed in `/home/ed/local/hdf5-2.1.1_mpi`; NetCDF-C main is installed in `/home/ed/local/netcdf-c_mpi`. Both use `/usr/bin/mpicc` (Open MPI). Select these together with `HDF5_DIR=/home/ed/local/hdf5-2.1.1_mpi/cmake` and `PKG_CONFIG_PATH=/home/ed/local/netcdf-c_mpi/lib/pkgconfig`. For isolated upstream dependency tests, use `NCRCENV_RC=/dev/null` to avoid stale user UDF autoload entries and `OMPI_MCA_rmaps_base_oversubscribe=1` for tests requesting 16 ranks on this machine.
+
+For NEXTCDF-4 MPI verification, configure with `-DNEP_ENABLE_NEXTCDF4=ON -DNEP_ENABLE_NEXTCDF4_PARALLEL=ON -DNEP_ENABLE_PARALLEL_TESTS=ON -DCMAKE_C_COMPILER=/usr/bin/mpicc`. Export the MPI `PKG_CONFIG_PATH` above during configuration and rebuilds and include both MPI dependency `lib` directories in `LD_LIBRARY_PATH`. Run `ctest --test-dir build -L nextcdf4_parallel --output-on-failure`; `OMPI_MCA_rmaps_base_oversubscribe=1` also makes the four-rank tests independent of available slots. The tests use 180-second CTest timeouts.
+
+## MPICH Coverage
+
+`.github/workflows/ci-parallel-mpich.yml` runs the `nextcdf4_parallel` label against a separate MPICH stack (MPICH + parallel HDF5 2.1.1 + NetCDF-C main), cached under `hdf5-mpich-install`/`netcdf-c-mpich-install` prefixes so it never mixes with the Open MPI stack. A local MPICH verification needs the same three-piece stack built with `mpicc.mpich` — `/home/ed/local/netcdf-c_mpich` is a NetCDF-C 4.8.2-development install with the old 10-slot UDF scheme and cannot host NEXTCDF-4. Configure as for Open MPI but with `-DCMAKE_C_COMPILER=mpicc.mpich` (add to `PATH` via `/usr/bin`) and the MPICH-stack `PKG_CONFIG_PATH`/`LD_LIBRARY_PATH`; no oversubscribe variable is needed.
 
 ## Conda
 

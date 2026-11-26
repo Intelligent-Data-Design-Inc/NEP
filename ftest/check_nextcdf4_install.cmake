@@ -13,12 +13,27 @@ foreach(artifact "${LIBDIR}/libnepnextcdf4f.so" "${INCLUDEDIR}/nep/nep_nextcdf4.
     endif()
 endforeach()
 set(ENV{LD_LIBRARY_PATH} "${prefix}/${LIBDIR}:${DEPENDENCY_LIBS}")
+# The consumer's NEPConfig.cmake locates netcdf-fortran through
+# pkg_check_modules; make the dependency prefixes' .pc files visible.
+foreach(dep_prefix IN LISTS DEPENDENCY_PREFIXES)
+    if(ENV{PKG_CONFIG_PATH})
+        set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${dep_prefix}/lib/pkgconfig")
+    else()
+        set(ENV{PKG_CONFIG_PATH} "${dep_prefix}/lib/pkgconfig")
+    endif()
+endforeach()
 set(ENV{NETCDF_RC} "${consumer_build}")
 set(ENV{NCRCENV_RC} "${consumer_build}/empty.ncrc")
 file(MAKE_DIRECTORY "${consumer_build}")
 file(WRITE "${consumer_build}/empty.ncrc" "")
+# The semicolons must be escaped so the -D value survives argument
+# splitting in execute_process as a single list value.
+set(prefix_path "${prefix}")
+foreach(dep_prefix IN LISTS DEPENDENCY_PREFIXES)
+    string(APPEND prefix_path "\\;${dep_prefix}")
+endforeach()
 run("${CMAKE_COMMAND}" -S "${SOURCE}/ftest/installed_nextcdf4" -B "${consumer_build}"
-    "-DCMAKE_Fortran_COMPILER=${FC}" "-DCMAKE_PREFIX_PATH=${prefix};${DEPENDENCY_PREFIXES}"
+    "-DCMAKE_Fortran_COMPILER=${FC}" "-DCMAKE_PREFIX_PATH=${prefix_path}"
     "-DNEP_DIR=${prefix}/${LIBDIR}/cmake/NEP")
 run("${CMAKE_COMMAND}" --build "${consumer_build}")
 run("${CMAKE_CTEST_COMMAND}" --test-dir "${consumer_build}" --output-on-failure)
