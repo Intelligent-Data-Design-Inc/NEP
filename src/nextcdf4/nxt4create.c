@@ -106,6 +106,9 @@ NEXTCDF4_create(const char *path, int cmode, size_t initialsz, int basepe,
     if ((cmode & NC_SWMR_WRITE) &&
         (parameters || (cmode & (NC_CLASSIC_MODEL | NC_NETCDF4_MODEL))))
         return NC_EINVAL;
+    /* SWMR reading is an open-time mode; it makes no sense at create. */
+    if (cmode & NC_SWMR_READ)
+        return NC_EINVAL;
 #ifndef HAVE_NEXTCDF4_PARALLEL
     /* A non-NULL parameters pointer means nc_create_par was called;
      * without parallel support that is unanswerable. NC_INMEMORY also

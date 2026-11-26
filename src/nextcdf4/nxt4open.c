@@ -69,6 +69,15 @@ NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
         (!(mode & NC_WRITE) || parameters ||
          (mode & (NC_CLASSIC_MODEL | NC_NETCDF4_MODEL))))
         return NC_EINVAL;
+    /* A SWMR reader is strictly read-only and serial: the flag pairs
+     * with the writer's NC_SWMR_WRITE, so combining them, requesting
+     * write access, a classic model or MPI parameters is invalid. A
+     * NC_NETCDF4_MODEL file is acceptable here; whether it can actually
+     * be SWMR-read is decided by its superblock version below. */
+    if ((mode & NC_SWMR_READ) &&
+        (parameters ||
+         (mode & (NC_WRITE | NC_SWMR_WRITE | NC_CLASSIC_MODEL))))
+        return NC_EINVAL;
 #ifndef HAVE_NEXTCDF4_PARALLEL
     /* A non-NULL parameters pointer means nc_open_par was called;
      * without parallel support that is unanswerable. NC_INMEMORY also
@@ -119,6 +128,12 @@ NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     }
 #endif
     flags = (mode & NC_WRITE) ? H5F_ACC_RDWR : H5F_ACC_RDONLY;
+    /* SWMR reading is selected purely at H5Fopen: read-only access plus
+     * H5F_ACC_SWMR_READ. HDF5 has no H5Fstart_swmr_read counterpart to
+     * H5Fstart_swmr_write; nothing further is required to arm the
+     * session, though the superblock version is verified below. */
+    if (mode & NC_SWMR_READ)
+        flags |= H5F_ACC_SWMR_READ;
     H5E_BEGIN_TRY {
         file->hdfid = H5Fopen(path, flags, fapl);
     } H5E_END_TRY;
@@ -137,6 +152,25 @@ NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     h5->root_grp->atts_read = 0;
     if ((ret = NEXTCDF4_load_metadata(file, h5)))
         goto fail;
+    /* SWMR read requires a v3 superblock; older files (most
+     * NC_NETCDF4_MODEL files included) are rejected without any
+     * upgrade attempt. */
+    if (file->swmr_read) {
+        H5F_info2_t finfo;
+        if (H5Fget_info2(file->hdfid, &finfo) < 0) {
+            ret = NC_EHDFERR;
+            goto fail;
+        }
+        if (finfo.super.version != 3) {
+            ret = NC_EINVAL;
+            goto fail;
+        }
+        /* Coordinate variables carry two handles to one dataset; in a
+         * SWMR reader the duplicate poisons data visibility, so each
+         * pair is collapsed to the variable's own handle. */
+        if ((ret = nx4_swmr_read_aliases(h5->root_grp)))
+            goto fail;
+    }
     if (file->swmr_requested && (ret = nx4_swmr_activate(h5, file)))
         goto fail;
     return NC_NOERR;

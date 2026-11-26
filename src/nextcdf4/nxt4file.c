@@ -164,6 +164,14 @@ nx4_swmr_flush(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file)
 
 /**
  * @brief Resolve public SWMR IDs without casting another backend's private state.
+ *
+ * Shared ncid validation for nc_start_swmr_write(), nc_swmr_flush() and
+ * nc_swmr_refresh(). NC_check_id accepts a file or group ncid; the
+ * dispatch-table comparison then proves the file really is NEXTCDF-4
+ * before any NEXTCDF4_FILE_INFO_T fields are dereferenced, so ids
+ * belonging to upstream netcdf-4 or another UDF get a clean NC_ENOTNC4
+ * instead of a bad cast.
+ *
  * @param ncid File or group ID.
  * @param h5p Destination for shared metadata.
  * @param filep Destination for NEXTCDF-4 state.
@@ -223,6 +231,161 @@ nc_swmr_flush(int ncid)
     if (!file->swmr_active)
         return NC_EINVAL;
     return nx4_swmr_flush(h5, file);
+}
+
+/**
+ * @brief Refresh variable datasets or dimension scales throughout a group tree.
+ *
+ * Mirrors swmr_flush_group on the reader side, and is called twice by
+ * nx4_swmr_refresh(): once with @p scales zero for the variable index,
+ * once nonzero for the dimension index. Variable datasets get a bare
+ * H5Drefresh, which brings the handle's view of extent and raw data up
+ * to the writer's last publication. Dimension-scale datasets are
+ * additionally polled for their current extent, which is reloaded into
+ * the cached `dim->len` that nc_inq_dimlen() reports — the metadata
+ * tree is otherwise untouched, since a SWMR writer cannot create new
+ * objects. Read paths reacquire the dataspace per call, so no further
+ * per-variable state needs resetting here.
+ *
+ * @param grp Subtree to refresh, in metadata index order.
+ * @param scales Nonzero selects scales, zero selects variables.
+ * @return NC_NOERR or NC_EHDFERR.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+static int
+swmr_refresh_group(NC_GRP_INFO_T *grp, int scales)
+{
+    int ret;
+    NCindex *list = scales ? grp->dim : grp->vars;
+    for (size_t i = 0; i < ncindexsize(list); i++) {
+        hid_t dataset = -1;
+        NC_DIM_INFO_T *dim = NULL;
+        if (scales) {
+            dim = (NC_DIM_INFO_T *)ncindexith(list, i);
+            NEXTCDF4_DIM_INFO_T *info = dim ? dim->format_dim_info : NULL;
+            if (info) dataset = info->hdf_dataset;
+        } else {
+            NC_VAR_INFO_T *var = (NC_VAR_INFO_T *)ncindexith(list, i);
+            NEXTCDF4_VAR_INFO_T *info = var ? var->format_var_info : NULL;
+            if (info) dataset = info->hdf_dataset;
+        }
+        if (dataset >= 0) {
+            hid_t space = -1;
+            hsize_t dims[NC_MAX_VAR_DIMS];
+            if (H5Drefresh(dataset) < 0)
+                return NC_EHDFERR;
+            if (dim) {
+                /* A SWMR scale is one-dimensional; reload the cached
+                 * length so inquiries see the writer's growth. */
+                if ((space = H5Dget_space(dataset)) < 0)
+                    return NC_EHDFERR;
+                if (H5Sget_simple_extent_dims(space, dims, NULL) < 0 ||
+                    H5Sclose(space) < 0)
+                    return NC_EHDFERR;
+                dim->len = (size_t)dims[0];
+            }
+        }
+    }
+    for (size_t i = 0; i < ncindexsize(grp->children); i++) {
+        NC_GRP_INFO_T *child = (NC_GRP_INFO_T *)ncindexith(grp->children, i);
+        if (child && (ret = swmr_refresh_group(child, scales)))
+            return ret;
+    }
+    return NC_NOERR;
+}
+
+/**
+ * @brief Collapse coordinate-variable alias handles to a single dataset id.
+ *
+ * Two open handles to the same HDF5 object defeat SWMR data visibility
+ * in a reader: reads through either handle stay frozen at the open-time
+ * snapshot even after H5Drefresh. A coordinate variable holds such a
+ * pair — the dimension's scale handle and the variable's own handle —
+ * so a reader keeps only the variable's handle and points the
+ * dimension record at it. The surviving handle must be closed only
+ * once; nx4_close_group_hdf() already tolerates an identifier that was
+ * closed twice.
+ *
+ * @param grp Subtree to walk, in metadata index order.
+ * @return NC_NOERR or NC_EHDFERR.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+nx4_swmr_read_aliases(NC_GRP_INFO_T *grp)
+{
+    for (size_t i = 0; i < ncindexsize(grp->vars); i++) {
+        NC_VAR_INFO_T *var = (NC_VAR_INFO_T *)ncindexith(grp->vars, i);
+        NEXTCDF4_VAR_INFO_T *vinfo;
+        NEXTCDF4_DIM_INFO_T *dinfo;
+        if (!var || var->ndims != 1 || !var->dim || !var->dim[0] ||
+            var->dim[0]->container != grp ||
+            strcmp(var->hdr.name, var->dim[0]->hdr.name))
+            continue;
+        vinfo = var->format_var_info;
+        dinfo = var->dim[0]->format_dim_info;
+        if (vinfo && dinfo && vinfo->hdf_dataset >= 0 &&
+            dinfo->hdf_dataset >= 0 &&
+            dinfo->hdf_dataset != vinfo->hdf_dataset) {
+            if (H5Dclose(dinfo->hdf_dataset) < 0)
+                return NC_EHDFERR;
+            dinfo->hdf_dataset = vinfo->hdf_dataset;
+        }
+    }
+    for (size_t i = 0; i < ncindexsize(grp->children); i++) {
+        NC_GRP_INFO_T *child = (NC_GRP_INFO_T *)ncindexith(grp->children, i);
+        int ret;
+        if (child && (ret = nx4_swmr_read_aliases(child)))
+            return ret;
+    }
+    return NC_NOERR;
+}
+
+/**
+ * @brief Refresh all variable data before reloading dimension-scale extents.
+ *
+ * Whole-file reader refresh behind nc_swmr_refresh(). The order matters:
+ * a coordinate variable's scale is refreshed through the variable's own
+ * dataset handle after the alias collapse, so variables are refreshed
+ * first and the scale pass only needs to recover extents. Re-running
+ * nx4_swmr_read_aliases() first is defensive — a session cache tuning
+ * call (nx4_reopen_var_cache) closes and reopens the alias pair, which
+ * would silently restore the poisonous duplicate handles.
+ *
+ * @param h5 Shared NetCDF metadata.
+ * @param file Read-only SWMR reader file.
+ * @return NC_NOERR or NC_EHDFERR.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+nx4_swmr_refresh(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file)
+{
+    int ret;
+    (void)file;
+    /* Re-collapse in case an intervening cache-tune reopened aliases. */
+    if ((ret = nx4_swmr_read_aliases(h5->root_grp)))
+        return ret;
+    if ((ret = swmr_refresh_group(h5->root_grp, 0)) ||
+        (ret = swmr_refresh_group(h5->root_grp, 1)))
+        return ret;
+    return NC_NOERR;
+}
+
+/**
+ * @brief Refresh a reader session as specified by nc_swmr_refresh() in nep.h.
+ * See nep.h for parameter, return-value and visibility documentation.
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+nc_swmr_refresh(int ncid)
+{
+    NC_FILE_INFO_T *h5;
+    NEXTCDF4_FILE_INFO_T *file;
+    int ret;
+    if ((ret = swmr_file(ncid, &h5, &file)))
+        return ret;
+    if (!file->swmr_read)
+        return NC_EINVAL;
+    return nx4_swmr_refresh(h5, file);
 }
 
 /**
@@ -448,6 +611,7 @@ NEXTCDF4_add_file(int ncid, const char *path, int mode,
     file->rootid = -1;
     file->mode = mode;
     file->swmr_requested = !!(mode & NC_SWMR_WRITE);
+    file->swmr_read = !!(mode & NC_SWMR_READ);
     file->no_write = !(mode & NC_WRITE);
     file->define_mode = 1;
     file->netcdf4_model = !!(mode & NC_NETCDF4_MODEL);

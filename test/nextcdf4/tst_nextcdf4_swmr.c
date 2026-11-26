@@ -30,9 +30,11 @@ controls(void)
 
     EXPECT(nc_start_swmr_write(-1), NC_EBADID);
     EXPECT(nc_swmr_flush(-1), NC_EBADID);
+    EXPECT(nc_swmr_refresh(-1), NC_EBADID);
     CHECK(nc_create("classic.nc", NC_CLOBBER, &ncid));
     EXPECT(nc_start_swmr_write(ncid), NC_ENOTNC4);
     EXPECT(nc_swmr_flush(ncid), NC_ENOTNC4);
+    EXPECT(nc_swmr_refresh(ncid), NC_ENOTNC4);
     CHECK(nc_close(ncid));
     for (int i = 0; i < 2; i++) {
         int model = i ? NC_NETCDF4_MODEL : NC_CLASSIC_MODEL;
@@ -69,6 +71,8 @@ controls(void)
         CHECK(nc_open("old.h5", NC_NEXTCDF4 | NC_WRITE, &ncid));
         EXPECT(nc_start_swmr_write(ncid), NC_EINVAL);
         CHECK(nc_close(ncid));
+        /* A pre-v3-superblock file cannot be a SWMR reader either. */
+        EXPECT(nc_open("old.h5", NC_NEXTCDF4 | NC_SWMR_READ, &ncid), NC_EINVAL);
     }
     CHECK(nc_create("control.nc", NC_NEXTCDF4, &ncid));
     CHECK(nc_def_dim(ncid, "t", NC_UNLIMITED, &dim));
@@ -80,6 +84,7 @@ controls(void)
     CHECK(nc_start_swmr_write(ncid));
     CHECK(nc_inq_format_extended(ncid, &format, &mode));
     REQUIRE(mode & NC_SWMR_WRITE);
+    EXPECT(nc_swmr_refresh(ncid), NC_EINVAL);
     EXPECT(nc_redef(ncid), NC_EPERM);
     EXPECT(nc_def_dim(ncid, "bad", 1, &other), NC_EPERM);
     EXPECT(nc_def_var(ncid, "bad", NC_INT, 0, NULL, &other), NC_EPERM);
@@ -135,6 +140,32 @@ controls(void)
     CHECK(nc_put_var_int(ncid, var, &value));
     EXPECT(nc_redef(ncid), NC_EPERM);
     CHECK(nc_close(ncid));
+    /* Reader-side flag and refresh rejections. */
+    EXPECT(nc_create("reader.nc", NC_NEXTCDF4 | NC_SWMR_READ, &ncid), NC_EINVAL);
+    EXPECT(nc_open("control.nc", NC_NEXTCDF4 | NC_SWMR_READ | NC_WRITE, &ncid), NC_EINVAL);
+    EXPECT(nc_open("control.nc", NC_NEXTCDF4 | NC_SWMR_READ | NC_SWMR_WRITE, &ncid), NC_EINVAL);
+    EXPECT(nc_open("control.nc", NC_NEXTCDF4 | NC_SWMR_READ | NC_CLASSIC_MODEL, &ncid), NC_EINVAL);
+    /* model.nc is NC_NETCDF4_MODEL but HDF5 2.1.1 gives it a v3
+     * superblock, so a SWMR reader is accepted (decision 3c). */
+    CHECK(nc_open("model.nc", NC_NEXTCDF4 | NC_SWMR_READ, &ncid));
+    CHECK(nc_swmr_refresh(ncid));
+    CHECK(nc_close(ncid));
+    /* An ordinary read-only session is not a refreshable SWMR session. */
+    CHECK(nc_open("control.nc", NC_NEXTCDF4, &ncid));
+    EXPECT(nc_swmr_refresh(ncid), NC_EINVAL);
+    CHECK(nc_close(ncid));
+    /* A quiescent v3 file accepts a SWMR reader; it sees final data. */
+    CHECK(nc_open("control.nc", NC_NEXTCDF4 | NC_SWMR_READ, &ncid));
+    CHECK(nc_inq_format_extended(ncid, &format, &mode));
+    REQUIRE(mode & NC_SWMR_READ);
+    CHECK(nc_swmr_refresh(ncid));
+    EXPECT(nc_swmr_flush(ncid), NC_EPERM);
+    EXPECT(nc_start_swmr_write(ncid), NC_EPERM);
+    CHECK(nc_inq_dimlen(ncid, dim, &length));
+    REQUIRE(length == 1);
+    CHECK(nc_get_var1_int(ncid, var, &zero, &other));
+    REQUIRE(other == value);
+    CHECK(nc_close(ncid));
     return 0;
 }
 
@@ -181,6 +212,27 @@ reply(int fd, char expected)
     return poll(&pfd, 1, 30000) == 1 && read(fd, &value, 1) == 1 && value == expected;
 }
 
+static pid_t
+launch(const char *reader, const char *file, int commands[2], int replies[2])
+{
+    pid_t child;
+    if (pipe(commands) || pipe(replies))
+        return -1;
+    child = fork();
+    if (child == 0) {
+        if (dup2(commands[0], STDIN_FILENO) < 0 || dup2(replies[1], STDOUT_FILENO) < 0)
+            _exit(127);
+        close(commands[0]); close(commands[1]); close(replies[0]); close(replies[1]);
+        execl(reader, reader, file, (char *)NULL);
+        _exit(127);
+    }
+    if (child > 0) {
+        close(commands[0]); commands[0] = -1;
+        close(replies[1]); replies[1] = -1;
+    }
+    return child;
+}
+
 static int
 wait_reader(pid_t child, int *status)
 {
@@ -225,20 +277,9 @@ visibility(const char *reader)
     TRY(nc_def_var_deflate(group, vars[2], 1, 1, 1));
     TRY(nc_def_var_fletcher32(ncid, vars[3], 1));
     TRY(nc_enddef(ncid));
-    if (pipe(commands) || pipe(replies))
-        goto done;
-    child = fork();
-    if (child == 0) {
-        if (dup2(commands[0], STDIN_FILENO) < 0 || dup2(replies[1], STDOUT_FILENO) < 0)
-            _exit(127);
-        close(commands[0]); close(commands[1]); close(replies[0]); close(replies[1]);
-        execl(reader, reader, "stream.nc", (char *)NULL);
-        _exit(127);
-    }
+    child = launch(reader, "stream.nc", commands, replies);
     if (child < 0)
         goto done;
-    close(commands[0]); commands[0] = -1;
-    close(replies[1]); replies[1] = -1;
     if (!reply(replies[0], 'R'))
         goto done;
     for (int round = 1; round <= 3; round++) {
@@ -290,14 +331,118 @@ done:
     return ret;
 }
 
+/* Single writer, two simultaneous NEP-API readers, plus both close
+ * orders: reader 2 quits mid-stream and reader 1 outlives the writer's
+ * close. argv reader is tst_nextcdf4_swmr_nep_reader. */
+static int
+nep_readers(const char *reader)
+{
+    int ncid = -1, time, record, vars[4], coord, group, shorter;
+    int ret = 1, status;
+    size_t chunk = 2;
+    struct {
+        pid_t pid;
+        int cmd[2];
+        int rep[2];
+    } r[2] = {{-1, {-1, -1}, {-1, -1}}, {-1, {-1, -1}, {-1, -1}}};
+    TRY(nc_create("stream_nep.nc", NC_NEXTCDF4 | NC_SWMR_WRITE, &ncid));
+    TRY(nc_def_dim(ncid, "time", NC_UNLIMITED, &time));
+    TRY(nc_def_dim(ncid, "record", NC_UNLIMITED, &record));
+    TRY(nc_def_var(ncid, "time", NC_INT, 1, &time, &coord));
+    TRY(nc_def_var(ncid, "v0", NC_INT, 1, &time, &vars[0]));
+    TRY(nc_def_var(ncid, "v1", NC_FLOAT16, 1, &time, &vars[1]));
+    TRY(nc_def_grp(ncid, "g", &group));
+    TRY(nc_def_var(group, "v2", NC_FLOAT, 1, &time, &vars[2]));
+    TRY(nc_def_var(ncid, "v3", NC_INT, 1, &record, &vars[3]));
+    TRY(nc_def_var(ncid, "shorter", NC_INT, 1, &time, &shorter));
+    int fill = -99;
+    TRY(nc_def_var_fill(ncid, shorter, 0, &fill));
+    for (int i = 0; i < 4; i++)
+        TRY(nc_def_var_chunking(i == 2 ? group : ncid, vars[i], NC_CHUNKED, &chunk));
+    TRY(nc_def_var_deflate(ncid, vars[1], 0, 1, 1));
+    TRY(nc_def_var_deflate(group, vars[2], 1, 1, 1));
+    TRY(nc_def_var_fletcher32(ncid, vars[3], 1));
+    TRY(nc_enddef(ncid));
+    for (int i = 0; i < 2; i++) {
+        r[i].pid = launch(reader, "stream_nep.nc", r[i].cmd, r[i].rep);
+        if (r[i].pid < 0)
+            goto done;
+    }
+    if (!reply(r[0].rep[0], 'R') || !reply(r[1].rep[0], 'R'))
+        goto done;
+    for (int round = 1; round <= 4; round++) {
+        size_t start = (size_t)round - 1, count = 1;
+        float value = (float)round;
+        int nreaders = round < 4 ? 2 : 1;
+        TRY(nc_put_vara_int(ncid, coord, &start, &count, &round));
+        for (int i = 0; i < 4; i++)
+            TRY(nc_put_vars_float(i == 2 ? group : ncid, vars[i], &start, &count,
+                                  (ptrdiff_t[]){1}, &value));
+        if (round == 1)
+            TRY(nc_put_vara_int(ncid, shorter, &start, &count, &round));
+        TRY(round % 2 ? nc_swmr_flush(ncid) : nc_sync(ncid));
+        for (int i = 0; i < nreaders; i++) {
+            char command = (char)('0' + round);
+            if (write(r[i].cmd[1], &command, 1) != 1 || !reply(r[i].rep[0], 'A'))
+                goto done;
+        }
+        /* After round 3 reader 2 quits first: the writer keeps going. */
+        if (round == 3) {
+            if (write(r[1].cmd[1], "Q", 1) != 1 ||
+                !wait_reader(r[1].pid, &status))
+                goto done;
+            r[1].pid = -1;
+            if (!WIFEXITED(status) || WEXITSTATUS(status))
+                goto done;
+        }
+    }
+    /* The writer closes while reader 1 is still open. */
+    TRY(nc_close(ncid));
+    ncid = -1;
+    if (write(r[0].cmd[1], "Q", 1) != 1 || !wait_reader(r[0].pid, &status))
+        goto done;
+    r[0].pid = -1;
+    if (!WIFEXITED(status) || WEXITSTATUS(status))
+        goto done;
+    /* An ordinary open sees the four published rounds. */
+    TRY(nc_open("stream_nep.nc", NC_NEXTCDF4, &ncid));
+    {
+        size_t length;
+        TRY(nc_inq_dimid(ncid, "time", &time));
+        TRY(nc_inq_dimlen(ncid, time, &length));
+        if (length != 4)
+            goto done;
+    }
+    TRY(nc_close(ncid));
+    ncid = -1;
+    ret = 0;
+done:
+    for (int i = 0; i < 2; i++) {
+        if (r[i].pid > 0) {
+            kill(r[i].pid, SIGKILL);
+            waitpid(r[i].pid, &status, 0);
+        }
+        for (int j = 0; j < 2; j++) {
+            if (r[i].cmd[j] >= 0) close(r[i].cmd[j]);
+            if (r[i].rep[j] >= 0) close(r[i].rep[j]);
+        }
+    }
+    if (ncid >= 0 && nc_close(ncid))
+        ret = 1;
+    if (ret)
+        fprintf(stderr, "NEP SWMR reader test failed\n");
+    return ret;
+}
+
 int
 main(int argc, char **argv)
 {
-    REQUIRE(argc == 2);
+    REQUIRE(argc == 3);
     signal(SIGPIPE, SIG_IGN);
     REQUIRE(NC_NEXTCDF4_initialize());
     CHECK(nep_set_log_level(-1));
-    if (controls() || atomic_types() || visibility(argv[1]))
+    if (controls() || atomic_types() || visibility(argv[1]) ||
+        nep_readers(argv[2]))
         return 1;
     puts("SWMR writer tests passed");
     return 0;

@@ -233,7 +233,7 @@ Sprint 1 (deferred when v4.1.0 shipped docs+logging instead):
   not full upstream-suite completion.
 - **In-memory image files** (`nxt4image.c`, optional) — not implemented.
   (Provenance landed in Sprint 1Q: `nxt4provenance.c`.)
-- **SWMR** — native serial writers implemented in Sprint 1V4: `NC_SWMR_WRITE` or `nc_start_swmr_write`, whole-file `nc_swmr_flush`/active `nc_sync`, fixed-size atomic variables, frozen schema/attributes. No declared user types, strings/reference variables, compatibility modes or MPI-IO sessions. A separate raw-HDF5 reader verifies live publication in normal/sanitizer full suites; NEP reader refresh remains Sprint 1V5.
+- **SWMR** — native serial writers and readers implemented in Sprints 1V4–1V5: `NC_SWMR_WRITE` or `nc_start_swmr_write`, whole-file `nc_swmr_flush`/active `nc_sync`, fixed-size atomic variables, frozen schema/attributes. No declared user types, strings/reference variables, writer compatibility modes or MPI-IO sessions. Readers open with `NC_SWMR_READ` and call `nc_swmr_refresh` to see published appends and grown dimension lengths; model-mode files qualify when their superblock is v3. Separate-process raw-HDF5 and NEP readers verify live publication, multi-reader and close ordering in normal/sanitizer full suites.
 - **CI coverage** — benchmarks are not run in CI. NEXTCDF-4 tests run
   in the `nextcdf4` job (build, full CTest, docs) and, since Sprint
   1N3, in a dedicated `nextcdf4-sanitizers` job that builds
@@ -284,8 +284,9 @@ groups.
   writes and unlimited growth require collective access, including empty
   ranks; independent filtered reads are permitted (HDF5 parallel filter
   rule, Sprint 1V3).
-- SWMR on MPI-IO/compatibility modes or with dynamic/user/reference types;
-  native writer support landed in 1V4, NEP reader refresh remains 1V5.
+- SWMR on MPI-IO or with dynamic/user/reference types, and schema changes
+  visible to readers; native writer support landed in 1V4, NEP reader
+  open/refresh in 1V5.
 - In-memory image files (`nxt4image.c`), mapped I/O
   (`get_varm`/`put_varm`, deprecated upstream).
 - `NC_STD_REF` inside user-defined type graphs; fixed-length HDF5

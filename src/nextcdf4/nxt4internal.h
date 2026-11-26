@@ -132,6 +132,9 @@ typedef struct NEXTCDF4_FILE_INFO
     int define_mode;    /**< Nonzero while the file is in define mode. */
     int swmr_requested; /**< Session requests activation after schema commitment. */
     int swmr_active;    /**< HDF5 SWMR writing successfully started this session. */
+    int swmr_read;      /**< Read-only session opened with H5F_ACC_SWMR_READ
+                             (NC_SWMR_READ); gates nc_swmr_refresh(). Mutually
+                             exclusive with swmr_requested/swmr_active. */
     int netcdf4_model;  /**< Nonzero for `NC_NETCDF4_MODEL` compatibility mode. */
     int backend_marked; /**< Nonzero when the NEXTCDF-4 backend marker is present. */
     int created_by_us;  /**< Nonzero when this session created the file;
@@ -156,6 +159,8 @@ typedef struct NEXTCDF4_FILE_INFO
 int nx4_swmr_validate(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file);
 int nx4_swmr_activate(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file);
 int nx4_swmr_flush(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file);
+int nx4_swmr_refresh(NC_FILE_INFO_T *h5, NEXTCDF4_FILE_INFO_T *file);
+int nx4_swmr_read_aliases(NC_GRP_INFO_T *grp);
 
 /** @brief NEXTCDF-4-private state hung off
  * `NC_GRP_INFO_T::format_grp_info`: the group's open HDF5 handle. */

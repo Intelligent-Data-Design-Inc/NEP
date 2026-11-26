@@ -328,11 +328,14 @@ Plan: [docs/plan/v4.3.0-sprint1V3-parallel-coverage-interchange.md](plan/v4.3.0-
 Plan: [docs/plan/v4.3.0-sprint1V4-swmr-writer-support.md](plan/v4.3.0-sprint1V4-swmr-writer-support.md)
 
 #### Sprint 1V5 - SWMR Reader Support and Documentation
-- Sprint 1V4 handoff: implement NEP reader open/refresh, logical dimension-cache refresh, multi-reader/close-order tests and the expanded usage guide; use `H5Fopen(..., H5F_ACC_RDONLY | H5F_ACC_SWMR_READ, ...)`, not the nonexistent `H5Fstart_swmr_read` mentioned below.
-- SWMR read mode at `nc_open` via `H5Fstart_swmr_read`; reader-side `nc_swmr_refresh` API wrapping `H5Drefresh` so readers see newly appended records and updated metadata.
-- Metadata visibility rules for readers (dim lengths, attribute updates) matching SWMR guarantees; graceful handling of reads mid-append.
-- End-to-end tests: single-writer/multiple-reader processes, unlimited-dim growth visibility, reopen and close-ordering cases; run in normal and sanitizer CI.
-- Documentation: SWMR usage guide in `docs/nextcdf4.md`, status doc, `prd.md`/`prfaq.md` updates noting parallel+SWMR interaction limits.
+- New `NC_SWMR_READ` flag (`0x10000000`, bit 28) at `nc_open` opens with `H5F_ACC_RDONLY | H5F_ACC_SWMR_READ` (no `H5Fstart_swmr_read` exists); read-only, serial, create/`NC_WRITE`/`NC_SWMR_WRITE`/classic/MPI rejected.
+- Accepts any file HDF5 accepts for SWMR read, including `NC_NETCDF4_MODEL` files whose superblock is v3 (checked via `H5Fget_info2`); no libver upgrade.
+- `int nc_swmr_refresh(int ncid)` `H5Drefresh`es every variable and dim-scale dataset then reloads extents into cached `dim->len`; whole-file like `nc_swmr_flush`, refresh is not a re-open (frozen-schema contract).
+- Extend `tst_nextcdf4_swmr` with a new NEP-API reader helper `tst_nextcdf4_swmr_nep_reader`, two-reader and close-ordering cases under `nextcdf4_swmr`; mode/rejection coverage in open tests; normal+sanitizer CI.
+- SWMR usage guide (writer+reader) in `docs/nextcdf4.md`, plus architecture/status/`prfaq`/`prd`/`design`/README updates. No Spack/conda changes.
+- Out of scope: MPI-IO SWMR, schema evolution for readers, per-var/implicit refresh, dynamic/user/ref/string SWMR data, Fortran SWMR, release notes (Sprint 2), VDS/in-memory/mmap (v4.4.0).
+
+Plan: [docs/plan/v4.3.0-sprint1V5-swmr-reader.md](plan/v4.3.0-sprint1V5-swmr-reader.md)
 
 #### Sprint 2 - 
 - Tag v4.3.0 and write `docs/releases/v4.3.0.md` (HDF5 detection change, CMake 3.19 minimum, conda GeoTIFF, Sprint 1A NEXTCDF-4 bfloat16 examples and `NEP_ZSTD_PLUGIN_DIR`, Sprint 1B typed small-float I/O and the `nc_*_bfloat16` functions, #376, Sprint 1C optimized benchmark results, the bfloat16 GDAS sample and `bfloat16_io_perf`, the #382 contiguous-layout fix, the fix for untyped `nc_put_var`/`nc_get_var`/`var1`/`vars` failing with `NC_EBADTYPE` on NEXTCDF-4, and Sprint 1K generic HDF5 filter support (`nc_def_var_filter`, szip/bzip2/zstd plugins, missing-plugin `NC_ENOFILTER`), and Sprint 1L reference types (`NC_REF_OBJECT`/`NC_REF_REGION` removed — a breaking API change — replaced by `NC_STD_REF`/`H5T_STD_REF` and the `nc_ref_*`/`nc_deref_*` API).

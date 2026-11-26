@@ -8,8 +8,12 @@ if(HAVE_NEXTCDF4)
     add_dependencies(tst_nextcdf4_swmr tst_nextcdf4_swmr_reader)
     target_link_libraries(tst_nextcdf4_swmr_reader PRIVATE ${NEP_HDF5_LIBRARIES})
     target_include_directories(tst_nextcdf4_swmr_reader PRIVATE ${HDF5_INCLUDE_DIRS})
+    add_executable(tst_nextcdf4_swmr_nep_reader tst_nextcdf4_swmr_nep_reader.c)
+    add_dependencies(tst_nextcdf4_swmr tst_nextcdf4_swmr_nep_reader)
+    target_link_libraries(tst_nextcdf4_swmr_nep_reader PRIVATE ncnextcdf4 ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
+    target_include_directories(tst_nextcdf4_swmr_nep_reader PRIVATE ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/swmr)
-    add_test(NAME tst_nextcdf4_swmr COMMAND tst_nextcdf4_swmr $<TARGET_FILE:tst_nextcdf4_swmr_reader>)
+    add_test(NAME tst_nextcdf4_swmr COMMAND tst_nextcdf4_swmr $<TARGET_FILE:tst_nextcdf4_swmr_reader> $<TARGET_FILE:tst_nextcdf4_swmr_nep_reader>)
     set_tests_properties(tst_nextcdf4_swmr PROPERTIES
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/swmr
         LABELS nextcdf4_swmr TIMEOUT 180

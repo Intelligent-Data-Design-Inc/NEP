@@ -244,7 +244,7 @@ when mirrored into `var->fill_value`.
 
 `nx4_var_dapl` maps netCDF bytes/slots/float-preemption to HDF5 slots/bytes/double-preemption. Dataset creation and deferred rebuild use it; loaded variable handles are reopened with global NetCDF defaults. `nx4_reopen_var_cache` finds owned variable/scale aliases by object token, allocates its path/property lists before mutation, flushes writable files, closes all aliases, then reopens with the requested DAPL. On failure it attempts to restore the old access properties; no datasets or dimension attachments are recreated. Getters query live chunked DAPLs; pending/nonchunked variables retain their requests. Existing full-suite normal and sanitizer CI covers the `nextcdf4_controls` focused tests.
 
-`NEXTCDF4_rename_grp` validates normalized names and parent variable/group/type collisions, moves the HDF5 link, updates the parent child index and flushes. Open descendant IDs and object identities remain valid, and full-name inquiry derives new paths from the metadata tree. Native and NetCDF-4-model groups are supported; classic mode remains root-only. Unsupported memory, sharing and parallel flags are rejected by `NEXTCDF4_check_mode` before filesystem side effects; image files remain deferred. Native serial SWMR writers use `NC_SWMR_WRITE` or `nc_start_swmr_write`; NEP reader refresh remains Sprint 1V5. Optional MPI-IO sessions use the Sprint 1V1 file plumbing and Sprint 1V2 per-variable access described below.
+`NEXTCDF4_rename_grp` validates normalized names and parent variable/group/type collisions, moves the HDF5 link, updates the parent child index and flushes. Open descendant IDs and object identities remain valid, and full-name inquiry derives new paths from the metadata tree. Native and NetCDF-4-model groups are supported; classic mode remains root-only. Unsupported memory, sharing and parallel flags are rejected by `NEXTCDF4_check_mode` before filesystem side effects; image files remain deferred. Native serial SWMR writers use `NC_SWMR_WRITE` or `nc_start_swmr_write`; readers open with `NC_SWMR_READ` and call `nc_swmr_refresh`. Optional MPI-IO sessions use the Sprint 1V1 file plumbing and Sprint 1V2 per-variable access described below.
 
 ## SWMR writer lifecycle
 
@@ -268,7 +268,31 @@ materialized before activation and is not rewritten by active sync/close.
 `H5Fflush`; alias handles stay owned and may safely be flushed twice. Public
 `nc_swmr_flush`, active `nc_sync` and close share this path. No writer refresh,
 record transaction or physical durability guarantee is introduced. See
-[NEXTCDF-4](nextcdf4.md) for the public writer contract and deferred reader support.
+[NEXTCDF-4](nextcdf4.md) for the public writer contract.
+
+## SWMR reader lifecycle
+
+`NEXTCDF4_FILE_INFO_T.swmr_read` records a session opened read-only with
+`NC_NEXTCDF4 | NC_SWMR_READ`: the open selects `H5F_ACC_RDONLY |
+H5F_ACC_SWMR_READ`, loads markers and metadata normally, then requires the
+actual superblock to be v3 (`NC_NETCDF4_MODEL` files qualify when they carry
+one). Write/compat/classic/MPI combinations are rejected, as is the flag at
+create.
+
+`nc_swmr_refresh` runs `nx4_swmr_refresh`, which `H5Drefresh`es every variable
+dataset then every dimension-scale dataset, reloading each scale's current
+extent into the cached `dim->len` that `nc_inq_dimlen` reports. Read paths
+already reacquire dataspaces per call, so refreshed handles return current
+data. One measured HDF5 constraint drives `nx4_swmr_read_aliases`: two open
+handles to the same object defeat SWMR visibility (reads stay at the
+open-time snapshot even after `H5Drefresh`), so each coordinate variable's
+scale/variable handle pair is collapsed at open — and idempotently inside
+refresh — to the variable's own handle; the duplicate close is safe because
+`nx4_close_group_hdf` tolerates a twice-closed identifier. Refresh is not a
+re-open: no new metadata is discovered, matching the writer's frozen-schema
+contract. Readers and writers may close in either order; multiple
+simultaneous readers are covered by `tst_nextcdf4_swmr` under
+`nextcdf4_swmr`.
 
 ## Parallel variable transfers
 

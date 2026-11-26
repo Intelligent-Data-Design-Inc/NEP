@@ -46,7 +46,7 @@ Native and `NC_NETCDF4_MODEL` files support standalone and recursively nested st
 - File-level `nc_set_fill` starts at `NC_FILL` per open session and affects only subsequently defined eligible atomic variables. Preserve existing variable settings, explicit `nc_def_var_fill` overrides and dynamic user-type/reference fill safety; reject read-only changes. File-default changes do not recreate datasets or persist a hidden attribute.
 - Per-variable cache setters apply actual HDF5 DAPL settings, including on already-open datasets and coordinate-scale aliases, with no data loss or storage recreation. Getters report effective chunked settings; nonchunked variables report stored requests. Allow read-only/data-mode tuning, zero bytes/slots and finite preemption in [0,1]; reset overrides to global defaults on reopen.
 - Support populated group creation/rename in native and `NC_NETCDF4_MODEL`, preserving IDs, descendants and upstream interchange. Flush renames, validate normalized names and parent namespace collisions, reject root/read-only/classic-model rename, and keep descendant path inquiry accurate.
-- Reject unsupported create/open flags before filesystem changes: `NC_DISKLESS`, `NC_INMEMORY`, `NC_MPIIO`/`NC_MPIPOSIX`, `NC_SHARE`, `NC_PERSIST`, `NC_MMAP` return backend `NC_EINVAL`; upstream may preempt invalid combinations. File-level NEXTCDF-4 parallel I/O landed in Sprint 1V1 (`NEP_ENABLE_NEXTCDF4_PARALLEL`, `nc_create_par`/`nc_open_par`); Sprint 1V2 adds `nc_var_par_access`, collective-safe empty selections and negotiated unlimited growth for fixed-size data; Sprint 1V3 ports the upstream `nc_test4` parallel tests (both native and `NC_NETCDF4_MODEL` mode), verifies interchange with upstream NetCDF-C in both directions, covers external zstd/bzip2 filter plugins in parallel via `HDF5_PLUGIN_PATH`, adds a dedicated MPICH CI job (`ci-parallel-mpich.yml`) alongside Open MPI, and adds the disk-bound `parallel_perf` benchmark with committed reference artifacts; parallel dynamic/string/reference variable transfers return `NC_ENOTBUILT`. General NEP MPI tests use upstream NetCDF and are not NEXTCDF-4 support. Image files remain deferred. Native serial SWMR writers are supported as specified below; NEP reader refresh remains Sprint 1V5.
+- Reject unsupported create/open flags before filesystem changes: `NC_DISKLESS`, `NC_INMEMORY`, `NC_MPIIO`/`NC_MPIPOSIX`, `NC_SHARE`, `NC_PERSIST`, `NC_MMAP` return backend `NC_EINVAL`; upstream may preempt invalid combinations. File-level NEXTCDF-4 parallel I/O landed in Sprint 1V1 (`NEP_ENABLE_NEXTCDF4_PARALLEL`, `nc_create_par`/`nc_open_par`); Sprint 1V2 adds `nc_var_par_access`, collective-safe empty selections and negotiated unlimited growth for fixed-size data; Sprint 1V3 ports the upstream `nc_test4` parallel tests (both native and `NC_NETCDF4_MODEL` mode), verifies interchange with upstream NetCDF-C in both directions, covers external zstd/bzip2 filter plugins in parallel via `HDF5_PLUGIN_PATH`, adds a dedicated MPICH CI job (`ci-parallel-mpich.yml`) alongside Open MPI, and adds the disk-bound `parallel_perf` benchmark with committed reference artifacts; parallel dynamic/string/reference variable transfers return `NC_ENOTBUILT`. General NEP MPI tests use upstream NetCDF and are not NEXTCDF-4 support. Image files remain deferred. Native serial SWMR writers and readers are supported as specified below.
 - Focused control regressions run in existing normal and sanitizer full-suite CI; keep all CTest tests passing and documentation warning-free. New upstream ports and string support remain outside Sprint 1O. No packaging-contract change.
 
 ## NEXTCDF-4 SWMR writer requirements (v4.3.0 Sprint 1V4)
@@ -62,9 +62,21 @@ user types. Freeze schema and attributes once active while preserving ordinary
 data/conversion and session-cache operations. `nc_swmr_flush(int ncid)`, active
 `nc_sync` and close publish the entire file via dataset/scale/file flushes; no
 atomic-record, rollback or power-loss durability promise. Separate-process
-raw-HDF5-reader tests run in existing normal/sanitizer/coverage full suites;
-NEP reader refresh/multi-reader coverage remains Sprint 1V5. No build-option,
-dependency or package-layout change. See [NEXTCDF-4](nextcdf4.md).
+raw-HDF5-reader tests run in existing normal/sanitizer/coverage full suites.
+No build-option, dependency or package-layout change. See
+[NEXTCDF-4](nextcdf4.md).
+
+## NEXTCDF-4 SWMR reader requirements (v4.3.0 Sprint 1V5)
+
+Provide `NC_SWMR_READ` for `nc_open` and `nc_swmr_refresh(int ncid)` in
+`libncnextcdf4`, declared with full API documentation in installed `nep.h`.
+Open read-only with HDF5 SWMR reader flags, requiring a superblock v3 file —
+native and `NC_NETCDF4_MODEL` both qualify. Reject `NC_WRITE`, classic model,
+create-mode use and MPI/parallel sessions. Refresh calls `H5Drefresh` on all
+variable and dimension-scale datasets and updates cached `nc_inq_dimlen`
+lengths. Support multiple independent readers and either close order.
+Separate-process NEP-reader tests run in existing normal/sanitizer/coverage
+full suites. No build-option, dependency or package-layout change.
 
 ## 2. Core Architecture
 
@@ -708,7 +720,7 @@ cmake -B build -DNEP_ENABLE_NEXTCDF4=ON
 - Conversion engines can produce different exceptional output values; `NC_ERANGE` reports completed conversion, not transactional rejection (#381).
 - Object and region reference types round-trip as opaque tokens.
 - Fortran bindings are limited to the `nep_nextcdf4` module (initialization, constants, float16/bfloat16 I/O); general enhanced-type value wrappers are deferred.
-- Tools (`nextcopy`, `nextdump`), memory-image files remain deferred. Native serial SWMR writers are supported; NEP reader refresh remains Sprint 1V5. With `NEP_ENABLE_NEXTCDF4_PARALLEL`, `nc_create_par`/`nc_open_par` and `nc_var_par_access` support fixed-size parallel data I/O. Preferences start/reset independent, filters defined in parallel force collective mode, and reopened filtered variables need explicit collective selection before filtered writes (independent filtered reads are allowed, matching upstream's HDF5 rule). Collective calls include empty ranks; collective unlimited growth negotiates maximum extents, while independent growth returns `NC_ECANTEXTEND`. Dynamic/string/reference variable transfers return `NC_ENOTBUILT`; serial enhanced-type support is unchanged. Preserve rank-local completed-I/O `NC_ERANGE`, matching collective call order and existing build/packaging contracts. Four-rank correctness tests run in the Open MPI parallel CI job and the dedicated MPICH `ci-parallel-mpich` job; the `nextcdf4_parallel` label includes the eight ported upstream `nc_test4` parallel tests in both native and `NC_NETCDF4_MODEL` modes, a bidirectional interchange test, and an external-plugin (zstd, bzip2 when installed) parallel test via `HDF5_PLUGIN_PATH`. A disk-bound four-rank collective benchmark (`examples/nextcdf4/parallel_perf.c`, `NEP_ENABLE_BENCHMARKS`) ships committed reference artifacts.
+- Tools (`nextcopy`, `nextdump`), memory-image files remain deferred. Native serial SWMR writers and readers are supported (`NC_SWMR_WRITE`/`nc_start_swmr_write`/`nc_swmr_flush`; `NC_SWMR_READ`/`nc_swmr_refresh`). With `NEP_ENABLE_NEXTCDF4_PARALLEL`, `nc_create_par`/`nc_open_par` and `nc_var_par_access` support fixed-size parallel data I/O. Preferences start/reset independent, filters defined in parallel force collective mode, and reopened filtered variables need explicit collective selection before filtered writes (independent filtered reads are allowed, matching upstream's HDF5 rule). Collective calls include empty ranks; collective unlimited growth negotiates maximum extents, while independent growth returns `NC_ECANTEXTEND`. Dynamic/string/reference variable transfers return `NC_ENOTBUILT`; serial enhanced-type support is unchanged. Preserve rank-local completed-I/O `NC_ERANGE`, matching collective call order and existing build/packaging contracts. Four-rank correctness tests run in the Open MPI parallel CI job and the dedicated MPICH `ci-parallel-mpich` job; the `nextcdf4_parallel` label includes the eight ported upstream `nc_test4` parallel tests in both native and `NC_NETCDF4_MODEL` modes, a bidirectional interchange test, and an external-plugin (zstd, bzip2 when installed) parallel test via `HDF5_PLUGIN_PATH`. A disk-bound four-rank collective benchmark (`examples/nextcdf4/parallel_perf.c`, `NEP_ENABLE_BENCHMARKS`) ships committed reference artifacts.
 
 ---
 

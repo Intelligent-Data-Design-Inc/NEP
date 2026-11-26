@@ -116,11 +116,11 @@ Parallel variable transfers support fixed-size standard types, enum/opaque/recur
 
 NEP requests a collective HDF5 DXPL, but HDF5 may internally choose independent I/O; the API does not promise a particular physical MPI algorithm. The tested local/CI stack uses Open MPI, parallel HDF5 2.1.1 and parallel NetCDF-C with 64-slot UDF support; `.github/workflows/ci-parallel-mpich.yml` additionally runs the `nextcdf4_parallel` label on a separate cached MPICH + parallel HDF5 2.1.1 + NetCDF-C main stack, so both MPI implementations are covered. MPICH is an alternative MPI implementation, not an additional dependency. The focused four-rank CTest programs have 180-second timeouts; run `ctest --test-dir build -L nextcdf4_parallel --output-on-failure` with `NEP_ENABLE_PARALLEL_TESTS=ON`.
 
-Upstream `nc_test4` parallel tests are ported near-verbatim in `test/nextcdf4/nc_test4/` (`tst_parallel`, `tst_parallel3`-`6`, `tst_parallel_zlib`, `tst_parallel_compress`, `tst_quantize_par`); every port runs in both native `NC_NEXTCDF4` and `NC_NEXTCDF4 | NC_NETCDF4_MODEL` mode. `tst_nextcdf4_interchange` verifies interchange in both directions: NEXTCDF-4 opens unmarked upstream NetCDF-4 files, and upstream NetCDF-C reads NEXTCDF-4 `NC_NETCDF4_MODEL` files. A disk-bound four-rank collective write+read benchmark lives at `examples/nextcdf4/parallel_perf.c` (under `NEP_ENABLE_BENCHMARKS`), with committed reference results in `reference_parallel_*.csv`/`reference_parallel_machine.txt`. SWMR is a separate serial writer interface described below; it cannot be combined with MPI-IO.
+Upstream `nc_test4` parallel tests are ported near-verbatim in `test/nextcdf4/nc_test4/` (`tst_parallel`, `tst_parallel3`-`6`, `tst_parallel_zlib`, `tst_parallel_compress`, `tst_quantize_par`); every port runs in both native `NC_NEXTCDF4` and `NC_NEXTCDF4 | NC_NETCDF4_MODEL` mode. `tst_nextcdf4_interchange` verifies interchange in both directions: NEXTCDF-4 opens unmarked upstream NetCDF-4 files, and upstream NetCDF-C reads NEXTCDF-4 `NC_NETCDF4_MODEL` files. A disk-bound four-rank collective write+read benchmark lives at `examples/nextcdf4/parallel_perf.c` (under `NEP_ENABLE_BENCHMARKS`), with committed reference results in `reference_parallel_*.csv`/`reference_parallel_machine.txt`. SWMR is a separate serial writer/reader interface described below; it cannot be combined with MPI-IO.
 
-When NEP is built without parallel support, `nc_create_par`/`nc_open_par` on a NEXTCDF-4 file return `NC_ENOPAR` from the backend. Deprecated `NC_MPIIO`/`NC_MPIPOSIX` mode flags remain rejected with `NC_EINVAL`; `NC_PAR` is not the interface. In-memory image files remain unsupported. Native serial SWMR writer sessions are supported as described below; NEP reader refresh remains deferred.
+When NEP is built without parallel support, `nc_create_par`/`nc_open_par` on a NEXTCDF-4 file return `NC_ENOPAR` from the backend. Deprecated `NC_MPIIO`/`NC_MPIPOSIX` mode flags remain rejected with `NC_EINVAL`; `NC_PAR` is not the interface. In-memory image files remain unsupported. Native serial SWMR writer and reader sessions are supported as described below.
 
-## SWMR writer sessions
+## SWMR writer and reader sessions
 
 Native NEXTCDF-4 supports a single serial writer publishing data to independent
 HDF5 SWMR readers. This is distinct from MPI-IO: a parallel-built HDF5 library
@@ -201,12 +201,59 @@ protocol for records spanning variables. A partial flush failure returns
 `NC_EHDFERR` without rollback. The filesystem must provide the consistency semantics
 required by HDF5 SWMR; do not disable file locking to bypass errors.
 
-The NEP reader open/refresh API remains Sprint 1V5. Independent HDF5 readers open
-with `H5F_ACC_RDONLY | H5F_ACC_SWMR_READ`, then use `H5Drefresh` and reacquire
-dataspaces; there is no `H5Fstart_swmr_read` function. Writers never refresh their
-datasets. `tst_nextcdf4_swmr` launches a separately executed raw-HDF5 reader with
-bounded pipe handshakes; it runs under the `nextcdf4_swmr` label in existing normal,
-sanitizer and coverage full-suite CI.
+NEP readers open with `NC_SWMR_READ` (`0x10000000`), a read-only flag combined
+with `NC_NEXTCDF4` at `nc_open`. The file opens through HDF5's
+`H5F_ACC_RDONLY | H5F_ACC_SWMR_READ` access (there is no `H5Fstart_swmr_read`
+function); combining it with `NC_WRITE`, `NC_SWMR_WRITE`, `NC_CLASSIC_MODEL`,
+deprecated mode flags or MPI parameters returns `NC_EINVAL`, and passing it to
+`nc_create` is invalid. Any file HDF5 accepts for SWMR read opens: a live
+writer's file, a quiescent file after the writer closed, or a file that was
+never SWMR-written — including `NC_NETCDF4_MODEL` files whose actual
+superblock is v3. Pre-v3 superblock files return `NC_EINVAL` and are never
+upgraded.
+
+`nc_swmr_refresh(int ncid)` refreshes every variable dataset and every
+dimension-scale dataset through `H5Drefresh`, then reloads each dimension's
+cached length from its scale dataset's current extent, so records the writer
+appended and published with `nc_swmr_flush()`/`nc_sync()` become visible
+through ordinary `nc_inq_dimlen()` and `nc_get_vara()` calls. Calling it on an
+ordinary read-only, writable or writer session returns `NC_EINVAL`;
+`nc_swmr_flush` on a reader session returns `NC_EPERM`. The effective mode
+reported by `nc_inq_format_extended()` carries `NC_SWMR_READ`.
+
+Refresh is not a re-open: because the writer froze its schema and attributes
+at activation, new variables, dimensions, attributes or types are never
+expected and are never discovered mid-session — reopen to see such changes.
+Reads mid-append are well defined at the dataset level, but a logical record
+spanning several variables still needs an application completion protocol.
+One implementation detail: HDF5 currently requires a single open handle per
+object for correct SWMR reads, so the backend collapses each coordinate
+variable's scale/variable handle pair when the reader session opens.
+
+```c
+/* Reader: watch the records published by the writer above. */
+int rncid, rdim, rvar;
+if (!NC_NEXTCDF4_initialize()) return 1;
+CHECK(nc_open("stream.nc", NC_NEXTCDF4 | NC_SWMR_READ, &rncid));
+CHECK(nc_inq_dimid(rncid, "time", &rdim));
+CHECK(nc_inq_varid(rncid, "temperature", &rvar));
+for (;;) {
+    size_t len = 0, start = 0;
+    float values[16] = {0};
+    /* Wait for the application-level publish signal, then refresh. */
+    CHECK(nc_swmr_refresh(rncid));
+    CHECK(nc_inq_dimlen(rncid, rdim, &len));
+    CHECK(nc_get_vara_float(rncid, rvar, &start, &len, values));
+    /* len records are now readable; exit on the app's own protocol. */
+}
+CHECK(nc_close(rncid));
+```
+
+`tst_nextcdf4_swmr` launches a separately executed raw-HDF5 reader and a NEP
+reader (`tst_nextcdf4_swmr_nep_reader`) with bounded pipe handshakes,
+including two simultaneous readers and both writer/reader close orders; it
+runs under the `nextcdf4_swmr` label in existing normal, sanitizer and
+coverage full-suite CI.
 
 ## Diagnostics and Logging
 

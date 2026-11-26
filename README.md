@@ -173,8 +173,9 @@ Native serial NEXTCDF-4 writers can publish to live HDF5 SWMR readers with
 `nc_swmr_flush(ncid)` (also active-writer `nc_sync`). Link `libncnextcdf4`.
 Only fixed-size atomic variables are supported; schema/attributes freeze after
 activation. No compatibility modes or MPI-IO SWMR, atomic-timestep or power-loss
-durability guarantee. NEP reader refresh remains deferred. See
-[SWMR writer sessions](docs/nextcdf4.md#swmr-writer-sessions).
+durability guarantee. Readers open with `NC_NEXTCDF4|NC_SWMR_READ` and call
+`nc_swmr_refresh(ncid)` to see published appends and grown dimensions. See
+[SWMR sessions](docs/nextcdf4.md#swmr-writer-and-reader-sessions).
 
 ### Configuration Options
 
