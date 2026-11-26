@@ -1,7 +1,7 @@
 # CMakeLists.txt for NEXTCDF-4 examples
 # Edward Hartnett, Intelligent Data Design, Inc.
 
-foreach(_target bfloat16 bfloat16_perf bfloat16_io_perf make_bfloat16_sample float16 float16_perf float16_io_perf make_float16_sample conversion_perf)
+foreach(_target bfloat16 bfloat16_perf bfloat16_io_perf make_bfloat16_sample float16 float16_perf float16_io_perf make_float16_sample fun_float16 conversion_perf)
     add_executable(${_target} ${_target}.c)
     target_include_directories(${_target} PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_BINARY_DIR}/include ${CMAKE_SOURCE_DIR}/examples ${NETCDF_INCLUDE_DIRS})
     target_link_libraries(${_target} PRIVATE nep ${NETCDF_LIBRARIES} m)

@@ -58,7 +58,7 @@ Benchmarks run as tests only with `-DNEP_ENABLE_BENCHMARKS=ON`. LZ4/BZIP2 benchm
 
 ### Format Reader Examples (C)
 - **dicom_read.c** (`dicom/`) - Opens a DICOM image via `NC_DICOM_initialize()`/`NC_UDF6`, prints metadata, and reads a slice of pixel data. Built when `-DNEP_ENABLE_DICOM=ON`.
-- **pdb_read.c** (`pdb/`) - Opens a legacy PDB structure via `NC_PDB_initialize()`/`NC_UDF7`, prints metadata, and reads a slice of atom coordinates. Built when `-DNEP_ENABLE_PDB=ON` (default).
+- **pdb_read.c** (`pdb/`) - Opens a legacy PDB structure via `NC_PDB_initialize()`/`NC_UDF7`, prints metadata, and reads a slice of atom coordinates. Built when `-DNEP_ENABLE_PDB=ON` (default OFF).
 
 ### Visualization Examples (Python)
 Located in `viz/` (built when `-DNEP_ENABLE_VIZ_EXAMPLES=ON`): open enabled NEP UDF files through `netCDF4.Dataset` and write static grayscale PNG plots with companion metadata files. See `viz/README.md`.

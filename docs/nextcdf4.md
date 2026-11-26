@@ -267,6 +267,8 @@ NEXTCDF-4 uses the distinct `ELOG(())` macro, patterned after netcdf-c's `LOG(()
 #endif
 ```
 
+The default runtime verbosity is `-1`, which suppresses all NEP logging even when logging support is compiled in. Set `NEP_LOG_LEVEL=-1` to explicitly select this silent mode; `NEP_LOG_LEVEL=0` enables errors only.
+
 To control diagnostics:
 
 - Set the `NEP_LOG_LEVEL` environment variable before opening a file. The NEXTCDF-4 initialization reads this variable and applies it with `nep_set_log_level()`.

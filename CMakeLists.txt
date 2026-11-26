@@ -38,7 +38,7 @@ option(NEP_BUILD_DOCUMENTATION "Build documentation with Doxygen" ON)
 option(BUILD_TESTING "Build tests" ON)
 
 # Examples option - disabled by default in CMake due to complex HDF5 linking (v1.5.1)
-option(NEP_BUILD_EXAMPLES "Build example programs" OFF)
+option(NEP_BUILD_EXAMPLES "Build example programs" ON)
 option(NEP_ENABLE_VIZ_EXAMPLES "Enable Python visualization examples" OFF)
 
 # Set compiler flags based on DEBUG option
@@ -159,7 +159,7 @@ option(NEP_ENABLE_DICOM "Enable DICOM reader support via libdicom" OFF)
 
 # Legacy PDB reader support (v3.3.0) - default ON now that the read-only
 # dispatch layer is implemented and tested.
-option(NEP_ENABLE_PDB "Enable legacy PDB reader support" ON)
+option(NEP_ENABLE_PDB "Enable legacy PDB reader support" OFF)
 
 # PDBx/mmCIF reader support (v3.4.0) - default OFF; enable with -DNEP_ENABLE_MMCIF=ON
 option(NEP_ENABLE_MMCIF "Enable PDBx/mmCIF reader support" OFF)

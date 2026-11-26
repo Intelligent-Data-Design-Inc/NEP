@@ -141,7 +141,7 @@ NC_NEXTCDF4_initialize(void)
         const char *env = getenv("NEP_LOG_LEVEL");
         if (env) {
             int level = atoi(env);
-            if (level >= 0)
+            if (level >= -1)
                 nep_set_log_level(level);
         }
     }

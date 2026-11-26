@@ -190,7 +190,7 @@ durability guarantee. Readers open with `NC_NEXTCDF4|NC_SWMR_READ` and call
 | `-DNEP_ENABLE_CDF` | **OFF** | NASA CDF UDF handler (UDF4) |
 | `-DNEP_ENABLE_PDS4` | **OFF** | NASA/ESA PDS4 UDF handler (UDF5) |
 | `-DNEP_ENABLE_DICOM` | **OFF** | DICOM UDF handler (UDF6) |
-| `-DNEP_ENABLE_PDB` | ON | Legacy PDB UDF handler (UDF7) |
+| `-DNEP_ENABLE_PDB` | **OFF** | Legacy PDB UDF handler (UDF7) |
 | `-DNEP_ENABLE_MMCIF` | **OFF** | PDBx/mmCIF UDF handler (UDF8) |
 | `-DNEP_ENABLE_NEXTCDF4` | **OFF** | NEXTCDF-4 backend (UDF9) |
 | `-DNEP_BUILD_EXAMPLES` | ON | Example programs |
@@ -217,7 +217,7 @@ which requires NetCDF-Fortran >= 4.6.2.
 
 #### Format Readers
 
-All format readers are independent — any combination can be enabled simultaneously. Legacy PDB defaults to **ON**; the rest default to **OFF**.
+All format readers are independent — any combination can be enabled simultaneously. All format readers default to **OFF**.
 
 | Format | CMake Option | UDF Slot | Dependencies |
 |--------|--------------|----------|--------------|
@@ -236,7 +236,7 @@ All format readers are independent — any combination can be enabled simultaneo
 
 #### Examples and Benchmarks
 
-- **`-DNEP_BUILD_EXAMPLES`** (default OFF): builds all example programs and registers them as tests.
+- **`-DNEP_BUILD_EXAMPLES`** (default ON): builds all example programs and registers them as tests.
 - **`-DNEP_ENABLE_BENCHMARKS`** (default OFF): runs general NetCDF performance benchmarks in `examples/performance/`.
 - **`-DNEP_ENABLE_PARALLEL_TESTS`** (default OFF): builds the parallel test programs and runs tests via `mpiexec -n 4`. Requires MPI and NetCDF-C with `NC_HAS_PARALLEL4`.
 
