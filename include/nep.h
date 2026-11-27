@@ -104,6 +104,12 @@ typedef struct nc_std_ref_s {
 /** Reference target kind: a NetCDF user-defined type (HDF5 committed
  *  datatype). */
 #define NC_REF_OBJ_TYPE 3
+/** Resolved object kind reported by nc_ref_resolve() and
+ *  nc_ref_open_remote() when the stored path carried a `#attname`
+ *  suffix: an attribute on the resolved owner. (Distinct from
+ *  NC_STD_REF_ATTR, which shares its numeric value with
+ *  NC_REF_OBJ_TYPE.) */
+#define NC_REF_OBJ_ATT  4
 
 /** @def NEP_HAVE_NATIVE_BFLOAT16
  *  1 when nc_bfloat16_t is the compiler's `__bf16` type, 0 when it is
@@ -404,15 +410,6 @@ extern "C" {
      * @brief Create an HDF5 object reference to a variable, group, or
      * user-defined type in a NEXTCDF-4 file.
      *
-     * @param ncid NetCDF file ID (NEXTCDF-4, native mode).
-     * @param obj_type `NC_REF_OBJ_VAR`: @p objid is a varid in group
-     * @p ncid. `NC_REF_OBJ_GRP`: @p objid is a group ncid (@p ncid is
-     * ignored). `NC_REF_OBJ_TYPE`: @p objid is a typeid in group @p ncid.
-     * @param objid Object identifier, interpreted per @p obj_type.
-     * @param ref Receives the opaque reference token.
-     * @return NC_NOERR on success; NC_ENOTNC4 for a non-NEXTCDF-4 file
-     * or a compatibility mode; NC_EINVAL for a bad @p obj_type or
-     * target; NC_EHDFERR on HDF5 failure.
      * @author Edward Hartnett, Intelligent Data Design, Inc.
      */
     int nc_ref_object(int ncid, int obj_type, int objid, nc_std_ref_t *ref);
@@ -420,18 +417,6 @@ extern "C" {
     /**
      * @brief Resolve an object reference token back to NetCDF ids.
      *
-     * @param ncid NetCDF file ID (NEXTCDF-4).
-     * @param ref Reference token created for this file.
-     * @param obj_typep Receives `NC_REF_OBJ_VAR`, `NC_REF_OBJ_GRP`, or
-     * `NC_REF_OBJ_TYPE`; may be NULL.
-     * @param grpidp For a variable or type, the containing group's
-     * ncid; for a group, the group ncid itself. May be NULL.
-     * @param idp For a variable the varid, a group the group ncid, or
-     * a type the typeid. May be NULL.
-     * @return NC_NOERR on success; NC_ENOTNC4 for a non-NEXTCDF-4 file
-     * or a token pointing into an external file; NC_EINVAL for a
-     * non-object token or a target that no longer exists;
-     * NC_EHDFERR on HDF5 failure.
      * @author Edward Hartnett, Intelligent Data Design, Inc.
      */
     int nc_deref_object(int ncid, const nc_std_ref_t *ref, int *obj_typep,
@@ -441,16 +426,6 @@ extern "C" {
      * @brief Create a dataset region reference to a strided hyperslab
      * of a variable in a NEXTCDF-4 file.
      *
-     * @param ncid NetCDF file ID (NEXTCDF-4, native mode).
-     * @param varid Variable ID.
-     * @param startp Start index in each dimension (rank elements).
-     * @param countp Edge count in each dimension (rank elements).
-     * @param stridep Stride in each dimension, or NULL for unit
-     * stride.
-     * @param ref Receives the opaque reference token.
-     * @return NC_NOERR on success; NC_ENOTNC4 for a non-NEXTCDF-4 file
-     * or a compatibility mode; NC_EINVAL for bad arguments;
-     * NC_EHDFERR on HDF5 failure.
      * @author Edward Hartnett, Intelligent Data Design, Inc.
      */
     int nc_ref_region(int ncid, int varid, const size_t *startp,
@@ -461,22 +436,6 @@ extern "C" {
      * @brief Resolve a dataset region reference token back to its
      * variable and selection.
      *
-     * @param ncid NetCDF file ID (NEXTCDF-4).
-     * @param ref Reference token created for this file.
-     * @param grpidp Containing group's ncid; may be NULL.
-     * @param varidp Variable ID; may be NULL.
-     * @param ndimsp Variable rank; may be NULL.
-     * @param startp Receives the selection start (rank elements); may
-     * be NULL.
-     * @param countp Receives the selection count (rank elements); may
-     * be NULL.
-     * @param stridep Receives the selection stride (rank elements);
-     * may be NULL.
-     * @return NC_NOERR on success; NC_ENOTNC4 for a non-NEXTCDF-4 file
-     * or a token pointing into an external file; NC_EINVAL for a
-     * non-region token, a missing target, or a selection that is not
-     * a regular strided hyperslab with unit blocks; NC_EHDFERR on
-     * HDF5 failure.
      * @author Edward Hartnett, Intelligent Data Design, Inc.
      */
     int nc_deref_region(int ncid, const nc_std_ref_t *ref, int *grpidp,
@@ -487,17 +446,6 @@ extern "C" {
      * @brief Create an HDF5 attribute reference to an attribute on a
      * variable, group, or committed datatype in a NEXTCDF-4 file.
      *
-     * @param ncid NetCDF file ID (NEXTCDF-4, native mode).
-     * @param obj_type `NC_REF_OBJ_VAR`, `NC_REF_OBJ_GRP`, or
-     * `NC_REF_OBJ_TYPE`, dispatched exactly as in nc_ref_object().
-     * `NC_REF_OBJ_GRP` covers the attributes the NetCDF API attaches
-     * to `NC_GLOBAL`.
-     * @param objid Object identifier, interpreted per @p obj_type.
-     * @param att_name Name of an existing attribute on the object.
-     * @param ref Receives the opaque reference token.
-     * @return NC_NOERR on success; NC_ENOTNC4 for a non-NEXTCDF-4 file
-     * or a compatibility mode; NC_EINVAL for a bad @p obj_type,
-     * target, or missing attribute; NC_EHDFERR on HDF5 failure.
      * @author Edward Hartnett, Intelligent Data Design, Inc.
      */
     int nc_ref_attr(int ncid, int obj_type, int objid,
@@ -507,20 +455,6 @@ extern "C" {
      * @brief Resolve an attribute reference token back to its owner
      * and attribute name.
      *
-     * @param ncid NetCDF file ID (NEXTCDF-4).
-     * @param ref Reference token created for this file.
-     * @param obj_typep Receives `NC_REF_OBJ_VAR`, `NC_REF_OBJ_GRP`, or
-     * `NC_REF_OBJ_TYPE` for the attribute-bearing object; may be NULL.
-     * @param grpidp Containing group's ncid (or the group itself for
-     * `NC_REF_OBJ_GRP`); may be NULL.
-     * @param idp The varid, group ncid, or typeid of the owner; may be
-     * NULL.
-     * @param att_name Receives the attribute name; must be a caller
-     * buffer of at least `NC_MAX_NAME + 1` bytes, or NULL.
-     * @return NC_NOERR on success; NC_ENOTNC4 for a non-NEXTCDF-4 file
-     * or a token pointing into an external file; NC_EINVAL for a
-     * non-attribute token or a missing target; NC_EHDFERR on HDF5
-     * failure.
      * @author Edward Hartnett, Intelligent Data Design, Inc.
      */
     int nc_deref_attr(int ncid, const nc_std_ref_t *ref, int *obj_typep,
@@ -534,14 +468,13 @@ extern "C" {
      * cross-file reference. @p ncid is validated like nc_ref_object()
      * but is otherwise unused.
      *
-     * @param ncid NetCDF file ID (NEXTCDF-4, native mode).
-     * @param filename Path of the HDF5 file holding the target object.
-     * @param path HDF5 path of the target object in @p filename (for
-     * example `"grp/dset"` or `"/grp/dset"`).
-     * @param ref Receives the opaque reference token.
-     * @return NC_NOERR on success; NC_ENOTNC4 for a non-NEXTCDF-4 file
-     * or a compatibility mode; NC_EINVAL for bad arguments;
-     * NC_EHDFERR on HDF5 failure.
+     * @p filename must be an absolute filesystem path: a stored
+     * relative name would be reinterpreted against whatever working
+     * directory a later reader happens to have. The target file must
+     * also be writable by the application — HDF5 may reopen persisted
+     * external references read-write, so a read-only target can be
+     * referenced but never dereferenced.
+     *
      * @author Edward Hartnett, Intelligent Data Design, Inc.
      */
     int nc_ref_object_ext(int ncid, const char *filename, const char *path,
@@ -552,20 +485,10 @@ extern "C" {
      * file.
      *
      * Like nc_ref_region(), but the target is the variable named by
-     * @p path in @p filename.
+     * @p path in @p filename. @p filename must be an absolute
+     * filesystem path and the target file must be writable by the
+     * application, as for nc_ref_object_ext().
      *
-     * @param ncid NetCDF file ID (NEXTCDF-4, native mode).
-     * @param filename Path of the HDF5 file holding the target
-     * dataset.
-     * @param path HDF5 path of the target dataset in @p filename.
-     * @param startp Start index in each dimension.
-     * @param countp Edge count in each dimension.
-     * @param stridep Stride in each dimension, or NULL for unit
-     * stride.
-     * @param ref Receives the opaque reference token.
-     * @return NC_NOERR on success; NC_ENOTNC4 for a non-NEXTCDF-4 file
-     * or a compatibility mode; NC_EINVAL for bad arguments;
-     * NC_EHDFERR on HDF5 failure.
      * @author Edward Hartnett, Intelligent Data Design, Inc.
      */
     int nc_ref_region_ext(int ncid, const char *filename, const char *path,
@@ -577,28 +500,45 @@ extern "C" {
      *
      * Like nc_ref_attr(), but the target is the attribute @p att_name
      * on the object named by @p path in @p filename. @p path may name
-     * any attribute-bearing object kind.
+     * any attribute-bearing object kind. @p filename must be an
+     * absolute filesystem path and the target file must be writable by
+     * the application, as for nc_ref_object_ext().
      *
-     * @param ncid NetCDF file ID (NEXTCDF-4, native mode).
-     * @param filename Path of the HDF5 file holding the target object.
-     * @param path HDF5 path of the target object in @p filename.
-     * @param att_name Name of an attribute on the target object.
-     * @param ref Receives the opaque reference token.
-     * @return NC_NOERR on success; NC_ENOTNC4 for a non-NEXTCDF-4 file
-     * or a compatibility mode; NC_EINVAL for bad arguments;
-     * NC_EHDFERR on HDF5 failure.
      * @author Edward Hartnett, Intelligent Data Design, Inc.
      */
     int nc_ref_attr_ext(int ncid, const char *filename, const char *path,
                         const char *att_name, nc_std_ref_t *ref);
 
     /**
+     * @brief Open the external file a reference token points into.
+     *
+     * The token records an absolute filename for its target file; this
+     * function opens that file as a new NEXTCDF-4 session and returns
+     * its NetCDF file ID. Pass the returned ncid to nc_deref_object(),
+     * nc_deref_region(), or nc_deref_attr() to resolve the token; the
+     * IDs those calls return belong to the target session and remain
+     * valid until it is closed.
+     *
+     * The caller owns the returned session: close it with nc_close().
+     * Each call returns an independent session, even for tokens into
+     * the same file. Token lifetime is independent — release @p ref
+     * with nc_ref_free() when done; freeing the token does not close
+     * the target session, and closing the target session does not
+     * affect the token.
+     *
+     * The target file must be writable by the application: HDF5 may
+     * reopen persisted external references read-write, so the session
+     * is opened with NC_WRITE even when only reads are intended.
+     * Dereferencing never intentionally modifies target contents.
+     *
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_ref_open_target(int ncid, const nc_std_ref_t *ref,
+                           int *target_ncidp);
+
+    /**
      * @brief Report the kind of a reference token.
      *
-     * @param ref Reference token.
-     * @param ref_typep Receives `NC_STD_REF_OBJECT`,
-     * `NC_STD_REF_REGION`, or `NC_STD_REF_ATTR`.
-     * @return NC_NOERR on success; NC_EINVAL for bad arguments.
      * @author Edward Hartnett, Intelligent Data Design, Inc.
      */
     int nc_ref_get_type(const nc_std_ref_t *ref, int *ref_typep);
@@ -609,12 +549,6 @@ extern "C" {
      * Returns the name of the file the token points into, which
      * differs from the containing file only for external references.
      *
-     * @param ref Reference token.
-     * @param name Destination buffer of @p size bytes.
-     * @param size Buffer size in bytes, including room for the null
-     * terminator.
-     * @return NC_NOERR on success; NC_EINVAL for bad arguments;
-     * NC_EINVAL when @p size is too small.
      * @author Edward Hartnett, Intelligent Data Design, Inc.
      */
     int nc_ref_get_file_name(const nc_std_ref_t *ref, char *name, size_t size);
@@ -626,12 +560,6 @@ extern "C" {
      * carries the attribute; use nc_deref_attr() for the attribute
      * name itself.
      *
-     * @param ref Reference token.
-     * @param name Destination buffer of @p size bytes.
-     * @param size Buffer size in bytes, including room for the null
-     * terminator.
-     * @return NC_NOERR on success; NC_EINVAL for bad arguments;
-     * NC_EINVAL when @p size is too small.
      * @author Edward Hartnett, Intelligent Data Design, Inc.
      */
     int nc_ref_get_obj_name(const nc_std_ref_t *ref, char *name, size_t size);
@@ -647,12 +575,110 @@ extern "C" {
      * a dataset or attribute may also be passed here. Releasing an
      * uninitialized or already-released token is safe.
      *
-     * @param ref Reference token.
-     * @return NC_NOERR on success; NC_EINVAL for a NULL argument;
-     * NC_EHDFERR on HDF5 failure.
      * @author Edward Hartnett, Intelligent Data Design, Inc.
      */
     int nc_ref_free(nc_std_ref_t *ref);
+
+    /**
+     * @brief Open a remote reference target and resolve its object path.
+     *
+     * Remote references are a stored convention, not an HDF5 token:
+     * the application keeps a URL and an object path as strings (for
+     * example in parallel NC_STRING variables or attributes), and this
+     * function resolves one pair. The URL is opened with
+     * `nc_open(url, NC_NOWRITE, ...)` — no NC_NEXTCDF4 flag — so any
+     * remote-capable dispatch in the installed NetCDF-C may answer:
+     * DAP2, DAP4, or NCZarr file/byte-range stores. (s3:// URLs
+     * additionally require NetCDF-C built with NC_HAS_S3.) The
+     * returned session is an ordinary upstream NetCDF file ID, not a
+     * NEXTCDF-4 session.
+     *
+     * @p path follows the nc_ref_resolve() grammar: a leading `/`,
+     * `/`-separated group components, a final component naming a
+     * variable, group, or committed datatype, and an optional
+     * `#attname` suffix selecting an attribute of that object.
+     *
+     * On success the caller owns @p target_ncidp and must close it
+     * with nc_close(); each call returns an independent session. The
+     * IDs reported through @p kindp/@p objidp belong to that session
+     * and die with it. If the open succeeds but @p path fails to
+     * resolve, the session is closed, @p target_ncidp is set to -1 and
+     * the resolution error is returned. Remote access is read-only.
+     *
+     * Requires NEP built with `NEP_ENABLE_REMOTE_REFS` (see
+     * NEP_HAS_REMOTE_REFS in `nep_meta.h`).
+     *
+     * @param ncid NetCDF file ID (NEXTCDF-4) of the file holding the
+     * reference; provides context only.
+     * @param url URL the installed NetCDF-C can open remotely.
+     * @param path Object path inside the remote dataset (see
+     * nc_ref_resolve()).
+     * @param target_ncidp Receives the remote session's NetCDF file
+     * ID; set to -1 on failure.
+     * @param kindp Receives `NC_REF_OBJ_VAR`, `NC_REF_OBJ_GRP`,
+     * `NC_REF_OBJ_TYPE`, or `NC_REF_OBJ_ATT` when @p path carried a
+     * `#attname` suffix.
+     * @param objidp Receives the resolved ID: a varid, group ncid,
+     * typeid, or — for `NC_REF_OBJ_ATT` — the attribute owner's
+     * varid, group ncid or typeid.
+     * @param att_name Buffer receiving the attribute name when @p path
+     * carried a `#attname` suffix; may be NULL otherwise.
+     * @param att_name_size Size of @p att_name in bytes.
+     * @return `NC_NOERR` on success; `NC_ENOTBUILT` when built without
+     * `NEP_ENABLE_REMOTE_REFS`; `NC_ENOTNC4` for a non-NEXTCDF-4
+     * @p ncid; `NC_EINVAL` for bad arguments or malformed @p path;
+     * otherwise the `nc_open`/inquiry error for an unreachable URL or
+     * missing object.
+     *
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_ref_open_remote(int ncid, const char *url, const char *path,
+                           int *target_ncidp, int *kindp, int *objidp,
+                           char *att_name, size_t att_name_size);
+
+    /**
+     * @brief Resolve an object path on an already-open remote session.
+     *
+     * Maps a stored object path to NetCDF IDs on @p ncid, which is
+     * typically a session returned by nc_ref_open_remote() but may be
+     * any open NetCDF file ID. Use it to resolve several stored paths
+     * against one remote session without paying a remote open per
+     * reference.
+     *
+     * @p path grammar: a leading `/`, `/`-separated group components,
+     * and a final component naming a variable, group or committed
+     * datatype. An optional `#attname` suffix selects an attribute of
+     * the named object. `/` alone resolves to the root group.
+     * Resolution precedence for the final component is variable, then
+     * group, then committed type.
+     *
+     * When @p path carries no `#` suffix, @p kindp receives
+     * `NC_REF_OBJ_VAR`, `NC_REF_OBJ_GRP` or `NC_REF_OBJ_TYPE` and
+     * @p objidp the varid, group ncid or typeid. With a `#attname`
+     * suffix, @p kindp receives `NC_REF_OBJ_ATT`, @p att_name the
+     * attribute name and @p objidp the owner's varid, group ncid or
+     * typeid. Attribute existence is verified with nc_inq_attid() for
+     * variable and group owners; attributes on committed-datatype
+     * owners are not verifiable through the NetCDF API and the name is
+     * returned unchecked.
+     *
+     * @param ncid Open NetCDF file ID to resolve against.
+     * @param path Object path (see above).
+     * @param kindp Receives the resolved kind (see above).
+     * @param objidp Receives the resolved ID (see above).
+     * @param att_name Buffer receiving the attribute name, or NULL
+     * when @p path carries no `#` suffix.
+     * @param att_name_size Size of @p att_name in bytes.
+     * @return `NC_NOERR` on success; `NC_ENOTBUILT` when built without
+     * `NEP_ENABLE_REMOTE_REFS`; `NC_EINVAL` for bad arguments or
+     * malformed @p path; `NC_ENOTVAR` when the final component names
+     * no variable, group or type; `NC_ENOTATT` for a missing
+     * attribute; other inquiry errors propagate.
+     *
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_ref_resolve(int ncid, const char *path, int *kindp,
+                       int *objidp, char *att_name, size_t att_name_size);
 
     /**
      * @brief Start a single-writer/multiple-reader session on a native NEXTCDF-4 file.

@@ -26,7 +26,7 @@
 #define NEP_TURN_OFF_LOGGING -1
 
 /** Default logging level for NEP builds with logging enabled. */
-#define NEP_DEFAULT_LOG_LEVEL 4
+#define NEP_DEFAULT_LOG_LEVEL -1
 
 #ifdef NEP_LOGGING
 

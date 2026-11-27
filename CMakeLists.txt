@@ -38,7 +38,7 @@ option(NEP_BUILD_DOCUMENTATION "Build documentation with Doxygen" ON)
 option(BUILD_TESTING "Build tests" ON)
 
 # Examples option - disabled by default in CMake due to complex HDF5 linking (v1.5.1)
-option(NEP_BUILD_EXAMPLES "Build example programs" OFF)
+option(NEP_BUILD_EXAMPLES "Build example programs" ON)
 option(NEP_ENABLE_VIZ_EXAMPLES "Enable Python visualization examples" OFF)
 
 # Set compiler flags based on DEBUG option
@@ -159,7 +159,7 @@ option(NEP_ENABLE_DICOM "Enable DICOM reader support via libdicom" OFF)
 
 # Legacy PDB reader support (v3.3.0) - default ON now that the read-only
 # dispatch layer is implemented and tested.
-option(NEP_ENABLE_PDB "Enable legacy PDB reader support" ON)
+option(NEP_ENABLE_PDB "Enable legacy PDB reader support" OFF)
 
 # PDBx/mmCIF reader support (v3.4.0) - default OFF; enable with -DNEP_ENABLE_MMCIF=ON
 option(NEP_ENABLE_MMCIF "Enable PDBx/mmCIF reader support" OFF)
@@ -172,6 +172,13 @@ option(NEP_ENABLE_NEXTCDF4 "Enable the NEXTCDF-4 UDF backend" OFF)
 option(NEP_ENABLE_NEXTCDF4_PARALLEL "Enable NEXTCDF-4 parallel I/O via MPI-IO" OFF)
 if(NEP_ENABLE_NEXTCDF4_PARALLEL AND NOT NEP_ENABLE_NEXTCDF4)
     message(FATAL_ERROR "NEP_ENABLE_NEXTCDF4_PARALLEL requires NEP_ENABLE_NEXTCDF4=ON")
+endif()
+
+# NEXTCDF-4 remote references (v4.3.0 Sprint 1V7) - resolve stored
+# (URL, object path) references through NetCDF DAP/NCZarr dispatch.
+option(NEP_ENABLE_REMOTE_REFS "Enable remote (URL) reference resolution via NetCDF DAP/NCZarr dispatch" OFF)
+if(NEP_ENABLE_REMOTE_REFS AND NOT NEP_ENABLE_NEXTCDF4)
+    message(FATAL_ERROR "NEP_ENABLE_REMOTE_REFS requires NEP_ENABLE_NEXTCDF4=ON")
 endif()
 if(DEFINED NEP_INTERNAL_CONVERT)
     message(FATAL_ERROR "NEP_INTERNAL_CONVERT was removed in v4.3.0: internal conversion is now the permanent NEXTCDF-4 engine")
@@ -381,6 +388,28 @@ int main(void){ return 0; }" NETCDF_UDF64)
             set(HAVE_NEXTCDF4_PARALLEL 1)
             message(STATUS "NEXTCDF-4 parallel I/O: enabled")
         endif()
+
+        # NEXTCDF-4 remote references (v4.3.0 Sprint 1V7): the remote
+        # open delegates to nc_open(), so the installed NetCDF-C must
+        # have at least one remote-capable dispatch — DAP2, DAP4, or
+        # NCZarr byte-range.
+        if(NEP_ENABLE_REMOTE_REFS)
+            include(CheckCSourceCompiles)
+            set(_saved_cmake_required_includes "${CMAKE_REQUIRED_INCLUDES}")
+            set(CMAKE_REQUIRED_INCLUDES "${NETCDF_INCLUDE_DIRS}")
+            check_c_source_compiles("#include <netcdf_meta.h>
+#if !NC_HAS_DAP2 && !NC_HAS_DAP4 && !NC_HAS_BYTERANGE
+#error NEP_ENABLE_REMOTE_REFS requires NetCDF-C with DAP or byte-range support
+#endif
+int main(void){ return 0; }" NETCDF_HAS_REMOTE_DISPATCH)
+            set(CMAKE_REQUIRED_INCLUDES "${_saved_cmake_required_includes}")
+            unset(_saved_cmake_required_includes)
+            if(NOT NETCDF_HAS_REMOTE_DISPATCH)
+                message(FATAL_ERROR "NEP_ENABLE_REMOTE_REFS requires NetCDF-C built with DAP2, DAP4 or byte-range (NCZarr remote) support")
+            endif()
+            set(HAVE_REMOTE_REFS 1)
+            message(STATUS "NEXTCDF-4 remote references: enabled")
+        endif()
     endif()
 
     # Parallel I/O test support (v1.9.0)
@@ -565,6 +594,11 @@ if(NOT DOCS_ONLY)
         set(NEP_HAS_NEXTCDF4_PARALLEL 1)
     else()
         set(NEP_HAS_NEXTCDF4_PARALLEL 0)
+    endif()
+    if(HAVE_REMOTE_REFS)
+        set(NEP_HAS_REMOTE_REFS 1)
+    else()
+        set(NEP_HAS_REMOTE_REFS 0)
     endif()
     if(NEP_ENABLE_BENCHMARKS)
         set(NEP_HAS_BENCHMARKS 1)

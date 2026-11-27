@@ -78,6 +78,61 @@ lengths. Support multiple independent readers and either close order.
 Separate-process NEP-reader tests run in existing normal/sanitizer/coverage
 full suites. No build-option, dependency or package-layout change.
 
+## NEXTCDF-4 external reference requirements (v4.3.0 Sprint 1V6)
+
+Provide `nc_ref_open_target(int ncid, const nc_std_ref_t *ref,
+int *target_ncidp)` in `libncnextcdf4`, declared with full API documentation
+in installed `nep.h`. It opens the file an external token points into as a
+caller-owned NEXTCDF-4 session (`NC_NEXTCDF4|NC_WRITE`); each call returns an
+independent session even for tokens into the same file, and token lifetime
+(`nc_ref_free`) is independent of the session's. The existing `nc_deref_*`
+calls resolve variables, groups, committed datatypes and attributes against
+the returned session, rejecting a session that is not the token's target
+file with `NC_EINVAL`. Datatype-attribute references return the owner
+`typeid` and attribute name only; their values are read through the raw HDF5
+API. Stored filenames must be absolute (relative → `NC_EINVAL`) and the
+target must be writable by the application, because HDF5 2.1.1 reopens
+external tokens read-write. Preserve the `H5T_STD_REF` on-disk format and
+resolve by HDF5 reference identity, not the stored path. Errors: in-file
+token → `NC_EINVAL`; a target that is not NEXTCDF-4-readable → `NC_ENOTNC4`;
+any failure leaves `*target_ncidp` at `-1`. While tokens live, HDF5 holds
+the target file open internally, so a plain `nc_open` on it may fail until
+`nc_ref_free`. Covered by `tst_nextcdf4_ref_external` under the
+`nextcdf4_ref` label in existing full suites. No build-option, dependency or
+package-layout change. Out of scope: read-only targets, relative/portable
+filenames and relocation, legacy reference datatypes, nested references,
+irregular selections, and parallel/SWMR/Fortran reference access. See
+[references](refs.md).
+
+## NEXTCDF-4 remote reference requirements (v4.3.0 Sprint 1V7)
+
+Provide `nc_ref_open_remote(int ncid, const char *url, const char *path,
+int *target_ncidp, int *kindp, int *objidp, char *att_name,
+size_t att_name_size)` and `nc_ref_resolve(int ncid, const char *path,
+int *kindp, int *objidp, char *att_name, size_t att_name_size)` in
+`libncnextcdf4`, declared with full API documentation in installed
+`nep.h`. Remote references are a stored `(URL, object path)` string
+convention — no HDF5 token and no reserved attribute names.
+`nc_ref_open_remote` opens the URL with `nc_open(NC_NOWRITE)` so any
+remote-capable NetCDF-C dispatch answers (DAP2, DAP4, NCZarr
+file/byte-range; `s3://` requires `NC_HAS_S3`), resolves the path, and
+returns a caller-owned upstream session per call; resolution failure
+closes the session and leaves `*target_ncidp` -1. `nc_ref_resolve`
+maps additional paths on the same session: `/`-separated group path,
+leaf resolved as variable, then group, then committed type, optional
+`#attname` suffix reported as `NC_REF_OBJ_ATT` with the attribute name
+(variable/group owner attributes verified; type-owner attributes are
+unverifiable and returned unchecked). All access is read-only; no
+constraint expressions, subsetting, caching or writes. The feature is
+gated on `NEP_ENABLE_REMOTE_REFS` (requires NEXTCDF-4 and NetCDF-C
+with `NC_HAS_DAP2`, `NC_HAS_DAP4` or `NC_HAS_BYTERANGE`), emits
+`NEP_HAS_REMOTE_REFS`, and returns `NC_ENOTBUILT` when off. Covered by
+`tst_nextcdf4_remote_ref` under the `nextcdf4_ref` label — CI runs the
+storage and `NC_ENOTBUILT` paths; live URLs only via the
+`NEP_REMOTE_TEST_URL`/`NEP_REMOTE_TEST_PATH` environment variables,
+never in CI. Spack gains a `+remoterefs` variant gated `@4.3.0:` with
+`depends_on("netcdf-c+dap")`. See [references](refs.md).
+
 ## 2. Core Architecture
 
 ### 2.1 NetCDF User Defined Format (UDF) System
@@ -708,7 +763,7 @@ cmake -B build -DNEP_ENABLE_NEXTCDF4=ON
 - Format-selection flag: `NC_NEXTCDF4`.
 - Model flag: `NC_NETCDF4_MODEL`.
 - New atomic `nc_type` constants: `NC_FLOAT16`, `NC_BFLOAT16`, `NC_FLOAT8_E4M3`, `NC_FLOAT8_E5M2`, `NC_FLOAT6_E2M3`, `NC_FLOAT6_E3M2`, `NC_FLOAT4_E2M1`, `NC_COMPLEX`, `NC_DOUBLECOMPLEX`, `NC_BITFIELD8`, `NC_BITFIELD16`, `NC_BITFIELD32`, `NC_BITFIELD64`, and `NC_STD_REF`.
-- Reference functions: `nc_ref_object`, `nc_ref_region`, `nc_ref_attr` (plus `nc_ref_*_ext` external-file variants), `nc_deref_object`, `nc_deref_region`, `nc_deref_attr`, `nc_ref_get_type`, `nc_ref_get_file_name`, `nc_ref_get_obj_name`, and `nc_ref_free`.
+- Reference functions: `nc_ref_object`, `nc_ref_region`, `nc_ref_attr` (plus `nc_ref_*_ext` external-file variants), `nc_deref_object`, `nc_deref_region`, `nc_deref_attr`, `nc_ref_open_target`, `nc_ref_get_type`, `nc_ref_get_file_name`, `nc_ref_get_obj_name`, and `nc_ref_free`; plus remote-reference functions `nc_ref_open_remote` and `nc_ref_resolve` (gated on `NEP_ENABLE_REMOTE_REFS`).
 - bfloat16 I/O functions: `nc_get_var_bfloat16`, `nc_put_var_bfloat16`, `nc_get_var1_bfloat16`, `nc_put_var1_bfloat16`, `nc_get_vara_bfloat16`, `nc_put_vara_bfloat16`, `nc_get_vars_bfloat16`, `nc_put_vars_bfloat16`, and the `nc_bfloat16_t` memory type.
 - float16 I/O functions: `nc_get_var_float16`, `nc_put_var_float16`, `nc_get_var1_float16`, `nc_put_var1_float16`, `nc_get_vara_float16`, `nc_put_vara_float16`, `nc_get_vars_float16`, `nc_put_vars_float16`, and the `nc_float16_t` memory type (`_Float16` where the compiler supports it, `NEP_HAVE_NATIVE_FLOAT16`).
 
@@ -718,7 +773,7 @@ cmake -B build -DNEP_ENABLE_NEXTCDF4=ON
 - `nc_put_varm`/`nc_get_varm` are not implemented.
 - Typed calls on FP8/FP6/FP4 variables, and integer/text/string typed calls on any small float, return `NC_EBADTYPE` (`NC_ECHAR` for text).
 - Conversion engines can produce different exceptional output values; `NC_ERANGE` reports completed conversion, not transactional rejection (#381).
-- Object and region reference types round-trip as opaque tokens.
+- Object, region, and attribute references round-trip as opaque tokens; external-file targets resolve only through `nc_ref_open_target` (absolute, writable targets) and cannot be followed implicitly by `nc_deref_*`.
 - Fortran bindings are limited to the `nep_nextcdf4` module (initialization, constants, float16/bfloat16 I/O); general enhanced-type value wrappers are deferred.
 - Tools (`nextcopy`, `nextdump`), memory-image files remain deferred. Native serial SWMR writers and readers are supported (`NC_SWMR_WRITE`/`nc_start_swmr_write`/`nc_swmr_flush`; `NC_SWMR_READ`/`nc_swmr_refresh`). With `NEP_ENABLE_NEXTCDF4_PARALLEL`, `nc_create_par`/`nc_open_par` and `nc_var_par_access` support fixed-size parallel data I/O. Preferences start/reset independent, filters defined in parallel force collective mode, and reopened filtered variables need explicit collective selection before filtered writes (independent filtered reads are allowed, matching upstream's HDF5 rule). Collective calls include empty ranks; collective unlimited growth negotiates maximum extents, while independent growth returns `NC_ECANTEXTEND`. Dynamic/string/reference variable transfers return `NC_ENOTBUILT`; serial enhanced-type support is unchanged. Preserve rank-local completed-I/O `NC_ERANGE`, matching collective call order and existing build/packaging contracts. Four-rank correctness tests run in the Open MPI parallel CI job and the dedicated MPICH `ci-parallel-mpich` job; the `nextcdf4_parallel` label includes the eight ported upstream `nc_test4` parallel tests in both native and `NC_NETCDF4_MODEL` modes, a bidirectional interchange test, and an external-plugin (zstd, bzip2 when installed) parallel test via `HDF5_PLUGIN_PATH`. A disk-bound four-rank collective benchmark (`examples/nextcdf4/parallel_perf.c`, `NEP_ENABLE_BENCHMARKS`) ships committed reference artifacts.
 

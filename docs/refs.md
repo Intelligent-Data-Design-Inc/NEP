@@ -107,10 +107,13 @@ existing attribute on the object (`NC_EINVAL` otherwise).
 ## Dereferencing references
 
 Dereference functions resolve a token back to NetCDF ids in the file
-identified by `ncid`. They accept any NEXTCDF4 mode, return `NC_EINVAL`
-when the token kind does not match the function or the target no
-longer exists, and return `NC_ENOTNC4` when the token points into an
-external file.
+identified by `ncid`. They accept any NEXTCDF4 mode and return
+`NC_EINVAL` when the token kind does not match the function, the
+session is not the file the token points into, or the target no longer
+exists. For a token pointing into another file, pass the session
+returned by `nc_ref_open_target` as `ncid` (see below); the ids it
+returns belong to that target session and remain valid until it is
+closed.
 
 ```c
 int nc_deref_object(int ncid, const nc_std_ref_t *ref, int *obj_typep,
@@ -140,7 +143,10 @@ int nc_deref_attr(int ncid, const nc_std_ref_t *ref, int *obj_typep,
 
 Returns the attribute-bearing object's kind and ids as in
 `nc_deref_object`, plus the attribute name in `att_name`, which must
-be a caller buffer of at least `NC_MAX_NAME + 1` bytes.
+be a caller buffer of at least `NC_MAX_NAME + 1` bytes. For
+`NC_REF_OBJ_TYPE` owners the attribute value is read through the HDF5
+API (`H5Aopen`/`H5Aread`, or `H5Ropen_attr` on the token), since the
+NetCDF API has no datatype-attribute calls.
 
 ## External references — pointing into other files
 
@@ -164,13 +170,108 @@ int nc_ref_attr_ext(int ncid, const char *filename, const char *path,
 `nc_ref_attr_ext` covers the same owner set as `nc_ref_attr`. The
 resulting token records `filename` and HDF5 resolves it at open time.
 
-`nc_deref_*` returns `NC_ENOTNC4` for external tokens — NetCDF ids are
-meaningless across files. To resolve an external target, get its file
-name and object path with `nc_ref_get_file_name`/`nc_ref_get_obj_name`
-and `nc_open` that file, or dereference the token with raw HDF5
-(`H5Ropen_object`, `H5Ropen_region`, `H5Ropen_attr`), which opens the
-external file automatically. Region selections in external files are
-recoverable only through `H5Ropen_region`.
+Two requirements apply to `filename`:
+
+- **It must be an absolute filesystem path.** Relative names are
+  rejected with `NC_EINVAL`, because a stored relative name would be
+  reinterpreted against whatever working directory a later reader
+  happens to have. There is no relocation: moving the target file
+  breaks references to its old path.
+- **The target file must be writable by the application.** HDF5 2.1.1
+  reopens persisted external references with read-write intent even
+  when only reads are planned, so creation opens the target
+  read-write as well. Dereferencing never intentionally modifies
+  target contents, but a read-only open is not promised.
+
+### Dereferencing external tokens
+
+```c
+int nc_ref_open_target(int ncid, const nc_std_ref_t *ref,
+                       int *target_ncidp);
+```
+
+`nc_ref_open_target` opens the file an external token points into as a
+new NEXTCDF-4 session (`NC_NEXTCDF4|NC_WRITE`) and returns its NetCDF
+file ID. The caller owns the returned session and closes it with
+`nc_close`; each call returns an independent session even for tokens
+into the same file. Pass the returned `target_ncid` to
+`nc_deref_object`, `nc_deref_region`, or `nc_deref_attr` to resolve
+the token — the returned group, variable and type IDs belong to the
+target session and remain valid until it is closed. Token lifetime is
+separate: `nc_ref_free` the token when done; freeing it does not close
+the target session, and closing the session does not affect the token.
+
+Errors: `NC_EINVAL` for an in-file token, a stored filename that is
+not absolute, or a deref session that is not the token's target;
+`NC_ENOTNC4` when the target is not a NEXTCDF-4-readable NetCDF-4
+file; `NC_EPERM`-family errors when the target cannot be opened
+read-write; `nc_open`'s codes (for example `NC_ENOTNC`) for a missing
+or unreadable target. On failure `*target_ncidp` is `-1`.
+
+One HDF5 caveat: while any token references a target file, HDF5 holds
+that file open internally with its default file-access properties. A
+plain `nc_open` on the same file can therefore fail with an HDF error
+until the tokens are released with `nc_ref_free` — sessions obtained
+through `nc_ref_open_target` use a compatible open mode and are not
+affected.
+
+## Remote references — pointing into datasets on other servers
+
+Remote references are *not* `NC_STD_REF` tokens — HDF5 tokens store
+filesystem filenames and cannot name a remote resource. A remote
+reference is a stored convention of two strings, a **URL** and an
+**object path**, carried in `NC_STRING` variables or attributes. No
+names are reserved: any parallel pair of string holders works — for
+example an `NC_STRING` variable `ref_url` whose values are URLs and a
+sibling `ref_path` of the same shape holding object paths, or two
+`NC_STRING` attributes.
+
+The remote session is opened with `nc_open(url, NC_NOWRITE, ...)` —
+an ordinary upstream NetCDF file ID, not a NEXTCDF-4 session — so any
+remote-capable dispatch in the installed NetCDF-C answers: DAP2, DAP4,
+or NCZarr `file://`/byte-range (`https://...#mode=bytes`) stores.
+`s3://` URLs require NetCDF-C built with `NC_HAS_S3` and are untested.
+Remote access is read-only; there is no constraint-expression or
+subsetting API beyond the stored object path.
+
+```c
+int nc_ref_open_remote(int ncid, const char *url, const char *path,
+                       int *target_ncidp, int *kindp, int *objidp,
+                       char *att_name, size_t att_name_size);
+int nc_ref_resolve(int ncid, const char *path, int *kindp,
+                   int *objidp, char *att_name, size_t att_name_size);
+```
+
+`nc_ref_open_remote` validates `ncid` as a NEXTCDF-4 file (context
+only), opens `url`, and resolves `path` in one call, returning a
+caller-owned session the caller must `nc_close`. Each call returns an
+independent session. If the open succeeds but the path fails to
+resolve, the session is closed and `*target_ncidp` is -1.
+`nc_ref_resolve` resolves additional paths on the same session without
+paying another remote open.
+
+The path grammar is a leading `/`, `/`-separated group components,
+and a final component naming a variable, group, or committed datatype,
+with an optional `#attname` suffix selecting an attribute of that
+object. `/` alone resolves to the root group. The final component
+resolves as variable, then group, then committed type. `kindp`
+receives `NC_REF_OBJ_VAR`, `NC_REF_OBJ_GRP`, `NC_REF_OBJ_TYPE`, or
+`NC_REF_OBJ_ATT` for a `#attname` path (then `att_name` receives the
+attribute name and `objidp` the owner's ID). Attribute existence is
+verified for variable and group owners; committed-datatype attributes
+are returned unchecked because the NetCDF API cannot inquire them.
+
+The feature requires building NEP with `NEP_ENABLE_REMOTE_REFS=ON`
+(reported as `NEP_HAS_REMOTE_REFS` in `nep_meta.h`), which needs
+NEXTCDF-4 and a NetCDF-C with `NC_HAS_DAP2`, `NC_HAS_DAP4` or
+`NC_HAS_BYTERANGE`. Without it both functions return `NC_ENOTBUILT`.
+
+Errors: `NC_EINVAL` for bad arguments or malformed paths,
+`NC_ENOTVAR` for an unresolvable object, `NC_ENOTATT` for a missing
+attribute, `NC_ENOTBUILT` when the feature is off, and the propagated
+`nc_open`/inquiry error for unreachable or non-NetCDF endpoints.
+
+See `examples/nextcdf4/remote_refs.c` for a complete program.
 
 ## Inspecting tokens
 
@@ -215,8 +316,8 @@ safe.
   existing reference.
 - The NetCDF API cannot delete variables or groups, so in-file
   references cannot dangle through `nc_*` calls. An external reference
-  fails to resolve when its target file is moved or deleted; any
-  `nc_deref_*` call on it then reports `NC_ENOTNC4`, and a raw-HDF5
+  fails to resolve when its target file is moved or deleted;
+  `nc_ref_open_target` then reports the `nc_open` error and a raw-HDF5
   `H5Ropen_*` fails.
 - Extending an unlimited dimension does not invalidate a region
   reference whose stored selection remains within the variable's
@@ -254,17 +355,26 @@ nc_ref_free(&ref);
 nc_close(ncid);
 ```
 
-External variant:
+External variant (absolute filename required):
 
 ```c
 /* Point at variable "data" in another file. */
-nc_ref_object_ext(ncid, "other.nc", "/data", &ref);
+nc_ref_object_ext(ncid, "/data/other.nc", "/data", &ref);
 nc_put_vara(ncid, refid, one, count, &ref);
+nc_ref_free(&ref);   /* releases the token's pin on other.nc */
+nc_close(ncid);
 
-/* Where does it point? */
-char fname[NC_MAX_NAME + 1], oname[NC_MAX_NAME + 1];
-nc_ref_get_file_name(&ref, fname, sizeof(fname));   /* "other.nc" */
-nc_ref_get_obj_name(&ref, oname, sizeof(oname));    /* "/data" */
-/* nc_deref_object() on this token returns NC_ENOTNC4. */
+/* Later: read the token back and follow it into the other file. */
+nc_open("refs.nc", NC_NEXTCDF4 | NC_NOWRITE, &ncid);
+nc_inq_varid(ncid, "refs", &refid);
+nc_get_vara(ncid, refid, one, count, &ref);
+
+int tnc;
+nc_ref_open_target(ncid, &ref, &tnc);      /* caller-owned session */
+nc_deref_object(tnc, &ref, &obj_type, &grpid, &id);
+nc_get_var_int(tnc, id, values);           /* read through the target */
+
 nc_ref_free(&ref);
+nc_close(tnc);                             /* close the target session */
+nc_close(ncid);
 ```

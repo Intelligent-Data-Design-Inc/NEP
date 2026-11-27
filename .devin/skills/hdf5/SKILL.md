@@ -189,7 +189,7 @@ Gotchas specific to `H5R_ref_t`:
 
 NEXTCDF-4 exposes `H5T_STD_REF` as the opaque NetCDF type `NC_STD_REF` (30) with the byte-compatible token type `nc_std_ref_t` (`NC_STD_REF_SIZE` = 64), and ships a full create/dereference API (`nc_ref_object`, `nc_ref_region`, `nc_ref_attr`, `nc_ref_*_ext`, `nc_deref_*`, `nc_ref_get_*`, `nc_ref_free`) — see `docs/refs.md` and `src/nextcdf4/nxt4ref.c`.
 
-- `NC_STD_REF` variables and attributes store the 64-byte tokens; `nc_deref_*` resolve in-file targets and return `NC_ENOTNC4` for external-file targets.
+- `NC_STD_REF` variables and attributes store the 64-byte tokens; `nc_deref_*` resolve in-file targets. For external targets, `nc_ref_open_target` opens the stored absolute filename as a caller-owned session and `nc_deref_*` resolve against it. HDF5 2.1.1 reopens persisted external tokens read-write with a default FAPL: targets must be writable, and target sessions use a matching (non-`H5F_CLOSE_STRONG`) close degree via the private `NX4_CLOSE_WEAK` mode bit.
 - Region references are limited to regular strided hyperslabs (`start`/`count`/`stride`); irregular selections fail `nc_deref_region` with `NC_EINVAL`.
 
 ### Restrictions

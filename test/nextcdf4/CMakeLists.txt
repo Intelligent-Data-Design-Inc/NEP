@@ -179,6 +179,26 @@ if(HAVE_NEXTCDF4)
     target_include_directories(tst_nextcdf4_ref PRIVATE ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
     add_test(NAME tst_nextcdf4_ref COMMAND tst_nextcdf4_ref)
     set_tests_properties(tst_nextcdf4_ref PROPERTIES
+        LABELS nextcdf4_ref
+        ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+
+    add_executable(tst_nextcdf4_ref_external tst_nextcdf4_ref_external.c)
+    target_link_libraries(tst_nextcdf4_ref_external PRIVATE ncnextcdf4 ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
+    target_include_directories(tst_nextcdf4_ref_external PRIVATE ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/refext)
+    add_executable(tst_nextcdf4_remote_ref tst_nextcdf4_remote_ref.c)
+    target_link_libraries(tst_nextcdf4_remote_ref PRIVATE ncnextcdf4 ${NETCDF_LIBRARIES} ${NEP_HDF5_LIBRARIES})
+    target_include_directories(tst_nextcdf4_remote_ref PRIVATE ${CMAKE_SOURCE_DIR}/src/nextcdf4 ${NETCDF_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/remote_ref)
+    add_test(NAME tst_nextcdf4_remote_ref COMMAND tst_nextcdf4_remote_ref)
+    set_tests_properties(tst_nextcdf4_remote_ref PROPERTIES
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/remote_ref
+        LABELS nextcdf4_ref
+        ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
+    add_test(NAME tst_nextcdf4_ref_external COMMAND tst_nextcdf4_ref_external)
+    set_tests_properties(tst_nextcdf4_ref_external PROPERTIES
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/refext
+        LABELS nextcdf4_ref
         ENVIRONMENT "NCRCENV_RC=${CMAKE_BINARY_DIR}/.ncrc;NETCDF_RC=${CMAKE_BINARY_DIR};LD_LIBRARY_PATH=${_nep_test_ld_path}:$ENV{LD_LIBRARY_PATH}")
 
     add_executable(tst_nextcdf4_vlen tst_nextcdf4_vlen.c)

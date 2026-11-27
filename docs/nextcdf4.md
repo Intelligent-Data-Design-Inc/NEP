@@ -267,6 +267,8 @@ NEXTCDF-4 uses the distinct `ELOG(())` macro, patterned after netcdf-c's `LOG(()
 #endif
 ```
 
+The default runtime verbosity is `-1`, which suppresses all NEP logging even when logging support is compiled in. Set `NEP_LOG_LEVEL=-1` to explicitly select this silent mode; `NEP_LOG_LEVEL=0` enables errors only.
+
 To control diagnostics:
 
 - Set the `NEP_LOG_LEVEL` environment variable before opening a file. The NEXTCDF-4 initialization reads this variable and applies it with `nep_set_log_level()`.
@@ -478,11 +480,19 @@ nc_ref_attr(ncid, NC_REF_OBJ_VAR, varid, "units", &att);
 Tokens hold an open reference to their file — release them with
 `nc_ref_free()` before closing the file.
 
+Remote references are a separate mechanism: a stored `(URL, object
+path)` string convention resolved by `nc_ref_open_remote()` and
+`nc_ref_resolve()` through `nc_open()` — DAP2, DAP4 or NCZarr
+byte-range dispatch, returning an ordinary upstream session ncid.
+They require building with `NEP_ENABLE_REMOTE_REFS=ON` and a
+remote-capable NetCDF-C; otherwise the functions return
+`NC_ENOTBUILT`. See [refs.md](refs.md#remote-references--pointing-into-datasets-on-other-servers).
+
 ## Known Limitations
 
 - `NC_NEXTCDF4` must be passed explicitly; there is no magic-number dispatch for HDF5 files.
 - `nc_put_varm` and `nc_get_varm` are not implemented in NEXTCDF-4 because the mapped I/O API is deprecated.
-- `nc_deref_*` functions do not follow references into external files (`NC_ENOTNC4`); use `nc_ref_get_file_name`/`nc_ref_get_obj_name` to resolve them, or raw HDF5.
+- External references require an absolute target filename and a writable target file (HDF5 may reopen it read-write); open the target with `nc_ref_open_target` and dereference against the returned session — see [refs.md](refs.md).
 - Reference-typed variables cannot be nested inside compound types.
 - Small floating-point types (`NC_FLOAT16`, `NC_BFLOAT16`, FP8/FP6/FP4) and `NC_STD_REF` may be coordinate variables in native mode; the dimension-scale dataset carries the variable's dtype, and ordering/comparison semantics of non-IEEE encodings are the caller's concern.
 - Small floating-point types (`NC_FLOAT6_E2M3`, `NC_FLOAT4_E2M1`) have no default fill value because their value spaces are too small for a useful sentinel.

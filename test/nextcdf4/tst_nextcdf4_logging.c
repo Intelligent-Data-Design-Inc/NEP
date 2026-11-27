@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <netcdf.h>
 #include "nep.h"
+#include "nep_logging.h"
 #include "nextcdf4dispatch.h"
 
 /** NEXTCDF-4 file created by the test. */
@@ -110,6 +111,20 @@ main(void)
     unlink(LOG_FILE);
     unlink(BAD_FILE);
 
+    if (unsetenv("NEP_LOG_LEVEL") != 0)
+        return 1;
+    oldfd = dup(STDERR_FILENO);
+    if (!freopen(LOG_FILE, "w", stderr)) {
+        restore_stderr(oldfd);
+        return 1;
+    }
+    ELOG((0, "Default logging must be silent"));
+    restore_stderr(oldfd);
+    if (read_log(LOG_FILE, buf, sizeof(buf)) != 0) {
+        fprintf(stderr, "Unexpected default log output\n");
+        return 1;
+    }
+
     /* Phase 1: enable logging and create/close a NEXTCDF-4 file. */
     oldfd = dup(STDERR_FILENO);
     if (!freopen(LOG_FILE, "w", stderr)) {
@@ -156,7 +171,13 @@ main(void)
         return 1;
     }
 
-    nep_set_log_level(-1);
+    nep_set_log_level(4);
+    if (setenv("NEP_LOG_LEVEL", "-1", 1) != 0 ||
+        !NC_NEXTCDF4_initialize() || unsetenv("NEP_LOG_LEVEL") != 0) {
+        restore_stderr(oldfd);
+        return 1;
+    }
+    ELOG((0, "Environment level -1 must suppress errors too"));
 
     if (nc_open(FILE_NAME, NC_NEXTCDF4 | NC_NOWRITE, &ncid) != NC_NOERR) {
         restore_stderr(oldfd);

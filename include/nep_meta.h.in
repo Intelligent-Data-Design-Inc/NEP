@@ -50,6 +50,7 @@
 #define NEP_HAS_MMCIF        @NEP_HAS_MMCIF@ /*!< PDBx/mmCIF UDF support. */
 #define NEP_HAS_NEXTCDF4     @NEP_HAS_NEXTCDF4@ /*!< NEXTCDF-4 UDF backend support. */
 #define NEP_HAS_NEXTCDF4_PARALLEL @NEP_HAS_NEXTCDF4_PARALLEL@ /*!< NEXTCDF-4 parallel I/O support. */
+#define NEP_HAS_REMOTE_REFS @NEP_HAS_REMOTE_REFS@ /*!< NEXTCDF-4 remote (URL) reference resolution support. */
 
 #define NEP_HAS_NCZARR       @NEP_HAS_NCZARR@ /*!< NcZarr support. */
 #define NEP_HAS_PARALLEL     @NEP_HAS_PARALLEL@ /*!< Parallel I/O support. */

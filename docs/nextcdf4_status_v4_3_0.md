@@ -131,6 +131,14 @@ lines across 12 C files plus `nxt4internal.h`/`nxt4err.h`).
   avoid read-only missing-chunk vlen-heap writes in HDF5 2.1.1, trading
   sparse storage for safe fills. `NC_STD_REF` inside type graphs and
   fixed-length HDF5 strings wider than one byte remain unsupported.
+- Remote references (Sprint 1V7, `NEP_ENABLE_REMOTE_REFS` →
+  `NEP_HAS_REMOTE_REFS`): stored `(URL, object path)` `NC_STRING`
+  convention — no HDF5 token — resolved by
+  `nc_ref_open_remote`/`nc_ref_resolve` (`nxt4remoteref.c`) through
+  `nc_open`, answering DAP2/DAP4/NCZarr byte-range URLs and returning a
+  caller-owned upstream session; `NC_ENOTBUILT` when the option is off.
+  `tst_nextcdf4_remote_ref` under `nextcdf4_ref`; live URLs only via
+  `NEP_REMOTE_TEST_URL`/`NEP_REMOTE_TEST_PATH`, never in CI.
 - `nc_*_bfloat16` / `nc_*_float16` typed APIs in `libnep`
   (`src/nep_bfloat16.c`, `src/nep_float16.c`).
 
