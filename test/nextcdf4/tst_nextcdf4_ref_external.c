@@ -123,7 +123,7 @@ test_object_ext(void)
     int ncid, refid, tnc, tnc2, varid, g1, g2;
     size_t start[1] = {0}, count[1] = {3};
     nc_std_ref_t ref_var, ref_grp, ref_type;
-    char abs_t[1024], cwd[1024], name[NC_MAX_NAME + 1];
+    char abs_t[2048], cwd[1024], name[NC_MAX_NAME + 1];
     int obj_type, gid, id, data[4];
     int t1;
 
@@ -139,7 +139,6 @@ test_object_ext(void)
      * reopen below. */
     {
         nc_std_ref_t toks[3];
-        int i;
 
         toks[0] = ref_var;
         toks[1] = ref_grp;
@@ -239,7 +238,7 @@ test_region_ext(void)
     size_t s_in[1], c_in[1];
     ptrdiff_t st_in[1];
     int vals[2];
-    char abs_t[1024];
+    char abs_t[2048];
 
     if (target_path(abs_t, sizeof(abs_t)))
         return 1;
@@ -288,7 +287,7 @@ test_attr_ext(void)
     int ncid, refid, tnc, g1, typeid;
     nc_std_ref_t ref_var, ref_grp, ref_type;
     int obj_type, gid, id, v;
-    char aname[NC_MAX_NAME + 1], abs_t[1024];
+    char aname[NC_MAX_NAME + 1], abs_t[2048];
     hid_t att;
 
     if (target_path(abs_t, sizeof(abs_t)))
@@ -377,7 +376,7 @@ test_failures(void)
 {
     int ncid, refid, tnc, varid, dimid;
     nc_std_ref_t ref, ext_ref;
-    char abs_t[1024];
+    char abs_t[2048];
 
     if (target_path(abs_t, sizeof(abs_t)))
         return 1;

@@ -356,7 +356,7 @@ test_external_ref(void)
     int ival = 7;
     nc_std_ref_t ref_obj, ref_reg, ref_att;
     size_t rs[1] = {0}, rc[1] = {2};
-    char fname[1024], oname[1024], abs_other[1024], cwd[1024];
+    char fname[1024], oname[1024], abs_other[2048], cwd[1024];
     int rk;
     hid_t obj;
 
