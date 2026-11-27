@@ -763,7 +763,7 @@ cmake -B build -DNEP_ENABLE_NEXTCDF4=ON
 - Format-selection flag: `NC_NEXTCDF4`.
 - Model flag: `NC_NETCDF4_MODEL`.
 - New atomic `nc_type` constants: `NC_FLOAT16`, `NC_BFLOAT16`, `NC_FLOAT8_E4M3`, `NC_FLOAT8_E5M2`, `NC_FLOAT6_E2M3`, `NC_FLOAT6_E3M2`, `NC_FLOAT4_E2M1`, `NC_COMPLEX`, `NC_DOUBLECOMPLEX`, `NC_BITFIELD8`, `NC_BITFIELD16`, `NC_BITFIELD32`, `NC_BITFIELD64`, and `NC_STD_REF`.
-- Reference functions: `nc_ref_object`, `nc_ref_region`, `nc_ref_attr` (plus `nc_ref_*_ext` external-file variants), `nc_deref_object`, `nc_deref_region`, `nc_deref_attr`, `nc_ref_open_target`, `nc_ref_get_type`, `nc_ref_get_file_name`, `nc_ref_get_obj_name`, and `nc_ref_free`.
+- Reference functions: `nc_ref_object`, `nc_ref_region`, `nc_ref_attr` (plus `nc_ref_*_ext` external-file variants), `nc_deref_object`, `nc_deref_region`, `nc_deref_attr`, `nc_ref_open_target`, `nc_ref_get_type`, `nc_ref_get_file_name`, `nc_ref_get_obj_name`, and `nc_ref_free`; plus remote-reference functions `nc_ref_open_remote` and `nc_ref_resolve` (gated on `NEP_ENABLE_REMOTE_REFS`).
 - bfloat16 I/O functions: `nc_get_var_bfloat16`, `nc_put_var_bfloat16`, `nc_get_var1_bfloat16`, `nc_put_var1_bfloat16`, `nc_get_vara_bfloat16`, `nc_put_vara_bfloat16`, `nc_get_vars_bfloat16`, `nc_put_vars_bfloat16`, and the `nc_bfloat16_t` memory type.
 - float16 I/O functions: `nc_get_var_float16`, `nc_put_var_float16`, `nc_get_var1_float16`, `nc_put_var1_float16`, `nc_get_vara_float16`, `nc_put_vara_float16`, `nc_get_vars_float16`, `nc_put_vars_float16`, and the `nc_float16_t` memory type (`_Float16` where the compiler supports it, `NEP_HAVE_NATIVE_FLOAT16`).
 

@@ -75,6 +75,13 @@ selected at run time with `NC_NEXTCDF4`). It is **experimental** in v4.3.0.
   with a `nc_ref_*`/`nc_deref_*` API.
 - Compatibility modes write files readable by upstream netCDF-c:
   `NC_NETCDF4_MODEL` (Superblock v1) and `NC_CLASSIC_MODEL`.
+- Remote references (`-DNEP_ENABLE_REMOTE_REFS=ON`): a stored
+  `(URL, object path)` string convention resolved by
+  `nc_ref_open_remote`/`nc_ref_resolve` through `nc_open` — OPeNDAP
+  (DAP2/DAP4) and NCZarr `file://`/byte-range datasets become reachable
+  from `NC_STRING` variables/attributes in a NEXTCDF-4 file (requires a
+  remote-capable NetCDF-C; read-only). See
+  [docs/refs.md](docs/refs.md).
 - Built on the latest HDF5: Superblock v3 in native mode, requiring
   HDF5 2.1.1 and netcdf-c with the 64-slot UDF scheme.
 - An optional Fortran module `nep_nextcdf4` provides mode/type
@@ -198,6 +205,7 @@ durability guarantee. Readers open with `NC_NEXTCDF4|NC_SWMR_READ` and call
 | `-DNEP_ZSTD_PLUGIN_DIR` | (empty) | Directory with one HDF5 zstd plugin; enables the NEXTCDF-4 bfloat16 example tests |
 | `-DNEP_ENABLE_PARALLEL_TESTS` | OFF | MPI parallel I/O tests |
 | `-DNEP_ENABLE_NEXTCDF4_PARALLEL` | OFF | NEXTCDF-4 MPI-IO file access (`nc_create_par`/`nc_open_par`); requires MPI, parallel HDF5, `NC_HAS_PARALLEL4` |
+| `-DNEP_ENABLE_REMOTE_REFS` | OFF | NEXTCDF-4 remote references (`nc_ref_open_remote`/`nc_ref_resolve`); requires `NEP_ENABLE_NEXTCDF4` and NetCDF-C with DAP2, DAP4 or byte-range/NCZarr support |
 | `-DNEP_BUILD_DOCUMENTATION` | ON | Doxygen API docs |
 
 #### Compression
@@ -292,6 +300,7 @@ legacy PDB support is enabled by default. Compression requires nep-compress.
 | `pdb` | ON | Legacy PDB reader — protein structures (no external library required) |
 | `mmcif` | OFF | PDBx/mmCIF reader — macromolecular structures (no external library required) |
 | `nextcdf4` | OFF | NEXTCDF-4 UDF backend (requires HDF5 2.1.1+) |
+| `remoterefs` | OFF | NEXTCDF-4 remote references over OPeNDAP/NCZarr (requires `+nextcdf4` and `netcdf-c+dap`, `nep@4.3.0:`) |
 | `parallel` | OFF | Parallel I/O tests (requires MPI, HDF5+mpi, netcdf-c+mpi) |
 | `examples` | OFF | Example programs |
 | `benchmarks` | OFF | Performance benchmark programs |

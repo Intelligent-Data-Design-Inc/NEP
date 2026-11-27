@@ -46,6 +46,13 @@ community can try the new features and provide feedback.
   `nc_deref_*` calls resolve variables, groups, committed datatypes and
   attributes against it. Resolution is by HDF5 object identity, so renames
   never break a reference.
+- Remote references: a stored `(URL, object path)` convention lets
+  `NC_STRING` variables/attributes point into datasets on other servers.
+  `nc_ref_open_remote()`/`nc_ref_resolve()` resolve them through
+  `nc_open()`, so any remote-capable NetCDF-C dispatch answers — OPeNDAP
+  (DAP2/DAP4) and NCZarr `file://`/byte-range stores — returning an
+  ordinary read-only upstream session. Optional, via
+  `-DNEP_ENABLE_REMOTE_REFS=ON`.
 - SWMR: a serial single-writer/multiple-reader interface for
   streaming/publishing use cases. Writers opt in with `NC_SWMR_WRITE` or
   `nc_start_swmr_write()` and publish appended records with
@@ -102,6 +109,10 @@ format has never had:
 - HDF5 object, region, and attribute references as a first-class netCDF
   type — including dereferenceable references into external files via
   nc_ref_open_target(), so datasets can link across file boundaries.
+- Remote references into datasets on other servers: a stored
+  (URL, object path) convention resolved over OPeNDAP (DAP2/DAP4) and
+  NCZarr byte-range access — NetCDF files that link to remote data
+  without copying it.
 - SWMR (single-writer/multiple-reader) streaming for live data
   publication: one writer appends and flushes, independent readers
   refresh to see new records without reopening.
