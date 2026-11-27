@@ -95,10 +95,15 @@ NEXTCDF4_open(const char *path, int mode, int basepe, size_t *chunksizehintp,
     if ((fapl = H5Pcreate(H5P_FILE_ACCESS)) < 0)
         EBAIL2(NC_EHDFERR);
     /* H5F_CLOSE_STRONG makes H5Fclose flush and invalidate every open
-     * object in the file, which keeps the close path simple. */
-    if (H5Pset_fclose_degree(fapl, H5F_CLOSE_STRONG) < 0)
+     * object in the file, which keeps the close path simple.
+     * NX4_CLOSE_WEAK skips this: sessions opened by
+     * nc_ref_open_target() must match the default close degree used
+     * by HDF5's internal reopen of external reference tokens. */
+    if (!(mode & NX4_CLOSE_WEAK) &&
+        H5Pset_fclose_degree(fapl, H5F_CLOSE_STRONG) < 0)
         EBAIL2(NC_EHDFERR);
-    if ((ret = NEXTCDF4_add_file(ncid, path, mode, &file)))
+    if ((ret = NEXTCDF4_add_file(ncid, path, mode & ~NX4_CLOSE_WEAK,
+                                 &file)))
         return ret;
     if ((ret = nc4_find_grp_h5(ncid, NULL, &h5)))
         goto fail;

@@ -29,13 +29,31 @@ _Static_assert(sizeof(nc_std_ref_t) == sizeof(H5R_ref_t),
                "nc_std_ref_t must match H5R_ref_t");
 
 /**
- * @brief Resolve an ncid to NEXTCDF-4 file state, rejecting any file
- * that is not a NEXTCDF-4 file.
+ * @brief Map a public ncid to the internal file state, rejecting any
+ * file not opened through the NEXTCDF-4 backend.
+ *
+ * Every public reference function takes an opaque integer NetCDF file
+ * ID. This helper turns it into the two structures the reference code
+ * works on:
+ *
+ * - `NC_FILE_INFO_T` — the generic netCDF-4 in-memory metadata tree
+ *   (group/variable/type indexes) that obj_ids() walks to map an
+ *   opened HDF5 object back to a NetCDF group ncid, varid, or typeid.
+ * - `NEXTCDF4_FILE_INFO_T` — the backend's per-file state holding the
+ *   HDF5 handles (`hdfid`, `rootid`), open mode, and SWMR flags.
+ *
+ * The ncid is rejected with `NC_ENOTNC4` when it belongs to another
+ * dispatch backend (an upstream NetCDF-4 or NetCDF-3 file, another NEP
+ * UDF handler, etc.): the dispatch-table pointer must be
+ * `NEXTCDF4_dispatch_table` and `format_file_info` must be present, so
+ * a foreign file fails cleanly instead of being dereferenced as
+ * garbage.
  *
  * @param ncid NetCDF file ID.
  * @param h5p Destination for `NC_FILE_INFO_T`, or NULL.
  * @param filep Destination for `NEXTCDF4_FILE_INFO_T`, or NULL.
- * @return `NC_NOERR` or `NC_ENOTNC4`.
+ * @return `NC_NOERR` on success, `NC_ENOTNC4` for a non-NEXTCDF-4
+ * file, or the underlying lookup error.
  *
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
@@ -363,7 +381,15 @@ obj_loc(int ncid, int obj_type, int objid, hid_t *locp, hid_t *objp,
  * The object is identified by an `NC_REF_OBJ_*` kind and an id
  * interpreted per kind; the token is written to @p ref.
  *
- * See nep.h for parameter and return-value documentation.
+ * @param ncid NetCDF file ID (NEXTCDF-4, native mode).
+ * @param obj_type `NC_REF_OBJ_VAR`: @p objid is a varid in group
+ * @p ncid. `NC_REF_OBJ_GRP`: @p objid is a group ncid (@p ncid is
+ * ignored). `NC_REF_OBJ_TYPE`: @p objid is a typeid in group @p ncid.
+ * @param objid Object identifier, interpreted per @p obj_type.
+ * @param ref Receives the opaque reference token.
+ * @return `NC_NOERR` on success; `NC_ENOTNC4` for a non-NEXTCDF-4 file
+ * or a compatibility mode; `NC_EINVAL` for a bad @p obj_type or
+ * target; `NC_EHDFERR` on HDF5 failure.
  *
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
@@ -393,31 +419,57 @@ nc_ref_object(int ncid, int obj_type, int objid, nc_std_ref_t *ref)
 }
 
 /**
- * @brief Shared dereference preamble: token-kind and external-target
- * checks.
+ * @brief Shared dereference preamble: token-kind check.
  *
- * @param file NEXTCDF-4 file state.
+ * Whether @p ref points into this file or an external one is decided
+ * later by ref_same_file() on the opened object — the token kind is
+ * the only thing checked here.
+ *
  * @param ref Reference token.
  * @param expected Required `NC_STD_REF_*` kind value.
- * @return `NC_NOERR`, `NC_EINVAL` for a mismatched token kind, or `NC_ENOTNC4` for an external target.
+ * @return `NC_NOERR` or `NC_EINVAL` for a mismatched token kind.
  *
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
 static int
-deref_check(NEXTCDF4_FILE_INFO_T *file, const H5R_ref_t *ref,
-            int expected)
+deref_check(const H5R_ref_t *ref, int expected)
 {
-    int ext, kind;
+    int kind;
 
     if (nc_ref_get_type((const nc_std_ref_t *)ref, &kind) ||
         kind != expected)
         return NC_EINVAL;
-    {
-        int ret = ref_is_external(file, ref, &ext);
-        if (ret)
-            return ret;
-    }
-    return ext ? NC_ENOTNC4 : NC_NOERR;
+    return NC_NOERR;
+}
+
+/**
+ * @brief Report whether an HDF5 object opened through a reference
+ * token lives in the same physical file as @p file.
+ *
+ * `H5Ropen_*` resolves an external token by reopening its target file
+ * internally, so the opened object's file identity — not a stored or
+ * reported file name — decides whether the session the caller passed
+ * is the token's target. `H5O_info2_t.fileno` is constant across
+ * multiple opens of the same file, which also makes the check immune
+ * to relative-versus-absolute spelling of the session's path.
+ *
+ * @param file NEXTCDF-4 file state of the session being dereferenced.
+ * @param obj Open HDF5 object identifier from `H5Ropen_*`.
+ * @param samep Destination; nonzero when the object belongs to this file.
+ * @return `NC_NOERR` or `NC_EHDFERR`.
+ *
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+static int
+ref_same_file(NEXTCDF4_FILE_INFO_T *file, hid_t obj, int *samep)
+{
+    H5O_info2_t oinfo, rinfo;
+
+    if (H5Oget_info3(obj, &oinfo, H5O_INFO_BASIC) < 0 ||
+        H5Oget_info3(file->rootid, &rinfo, H5O_INFO_BASIC) < 0)
+        return NC_EHDFERR;
+    *samep = (oinfo.fileno == rinfo.fileno);
+    return NC_NOERR;
 }
 
 /**
@@ -425,8 +477,22 @@ deref_check(NEXTCDF4_FILE_INFO_T *file, const H5R_ref_t *ref,
  *
  * Reports the target kind (`NC_REF_OBJ_VAR`, `NC_REF_OBJ_GRP`, or
  * `NC_REF_OBJ_TYPE`), the containing group ncid, and the object id.
+ * For an external token, @p ncid is the target session returned by
+ * nc_ref_open_target() and the returned IDs belong to it.
  *
- * See nep.h for parameter and return-value documentation.
+ * @param ncid NetCDF file ID (NEXTCDF-4); for an external token, the
+ * session returned by nc_ref_open_target().
+ * @param ref Reference token.
+ * @param obj_typep Receives `NC_REF_OBJ_VAR`, `NC_REF_OBJ_GRP`, or
+ * `NC_REF_OBJ_TYPE`; may be NULL.
+ * @param grpidp For a variable or type, the containing group's ncid;
+ * for a group, the group ncid itself. May be NULL.
+ * @param idp For a variable the varid, a group the group ncid, or a
+ * type the typeid. May be NULL.
+ * @return `NC_NOERR` on success; `NC_ENOTNC4` for a non-NEXTCDF-4
+ * file; `NC_EINVAL` for a non-object token, a session that is not the
+ * token's target file, or a target that no longer exists;
+ * `NC_EHDFERR` on HDF5 failure.
  *
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
@@ -446,11 +512,23 @@ nc_deref_object(int ncid, const nc_std_ref_t *ref, int *obj_typep,
         return NC_EINVAL;
     if ((ret = ref_file(ncid, &h5, &file)))
         return ret;
-    if ((ret = deref_check(file, (const H5R_ref_t *)ref, NC_STD_REF_OBJECT)))
+    if ((ret = deref_check((const H5R_ref_t *)ref, NC_STD_REF_OBJECT)))
         return ret;
+    /* H5Ropen_object resolves the token: for an external reference it
+     * reopens the target file internally and returns the object there. */
     if ((obj = H5Ropen_object((H5R_ref_t *)ref, H5P_DEFAULT, H5P_DEFAULT)) < 0)
         return NC_EINVAL;
-    ret = obj_ids(h5, obj, &obj_type, &grpid, &id);
+    /* The session must be the file the object actually lives in — the
+     * containing file for an in-file token, or the target session from
+     * nc_ref_open_target() for an external one. */
+    {
+        int same = 0;
+        ret = ref_same_file(file, obj, &same);
+        if (!ret && !same)
+            ret = NC_EINVAL;
+    }
+    if (!ret)
+        ret = obj_ids(h5, obj, &obj_type, &grpid, &id);
     H5Oclose(obj);
     if (ret)
         return ret;
@@ -470,7 +548,15 @@ nc_deref_object(int ncid, const nc_std_ref_t *ref, int *obj_typep,
  * Only regular strided hyperslabs (`start`/`count`/`stride`) are
  * supported; irregular selections are rejected.
  *
- * See nep.h for parameter and return-value documentation.
+ * @param ncid NetCDF file ID (NEXTCDF-4, native mode).
+ * @param varid Variable ID.
+ * @param startp Start index in each dimension (rank elements).
+ * @param countp Edge count in each dimension (rank elements).
+ * @param stridep Stride in each dimension, or NULL for unit stride.
+ * @param ref Receives the opaque reference token.
+ * @return `NC_NOERR` on success; `NC_ENOTNC4` for a non-NEXTCDF-4 file
+ * or a compatibility mode; `NC_EINVAL` for bad arguments;
+ * `NC_EHDFERR` on HDF5 failure.
  *
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
@@ -550,9 +636,26 @@ fail:
  * variable and selection.
  *
  * Recovers the target variable and the stored `start`/`count`/`stride`
- * arrays.
+ * arrays. For an external token, @p ncid is the target session
+ * returned by nc_ref_open_target().
  *
- * See nep.h for parameter and return-value documentation.
+ * @param ncid NetCDF file ID (NEXTCDF-4); for an external token, the
+ * session returned by nc_ref_open_target().
+ * @param ref Reference token.
+ * @param grpidp Containing group's ncid; may be NULL.
+ * @param varidp Variable ID; may be NULL.
+ * @param ndimsp Variable rank; may be NULL.
+ * @param startp Receives the selection start (rank elements); may be
+ * NULL.
+ * @param countp Receives the selection count (rank elements); may be
+ * NULL.
+ * @param stridep Receives the selection stride (rank elements); may
+ * be NULL.
+ * @return `NC_NOERR` on success; `NC_ENOTNC4` for a non-NEXTCDF-4
+ * file; `NC_EINVAL` for a non-region token, a session that is not the
+ * token's target file, a missing target, or a selection that is not a
+ * regular strided hyperslab with unit blocks; `NC_EHDFERR` on HDF5
+ * failure.
  *
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
@@ -576,8 +679,11 @@ nc_deref_region(int ncid, const nc_std_ref_t *ref, int *grpidp,
         return NC_EINVAL;
     if ((ret = ref_file(ncid, &h5, &file)))
         return ret;
-    if ((ret = deref_check(file, (const H5R_ref_t *)ref, NC_STD_REF_REGION)))
+    if ((ret = deref_check((const H5R_ref_t *)ref, NC_STD_REF_REGION)))
         return ret;
+    /* H5Ropen_region reopens the token's target file internally and
+     * returns the stored dataspace selection; H5Ropen_object then
+     * yields the dataset the region belongs to. */
     if ((space = H5Ropen_region((H5R_ref_t *)ref, H5P_DEFAULT,
                                 H5P_DEFAULT)) < 0)
         return NC_EINVAL;
@@ -585,6 +691,14 @@ nc_deref_region(int ncid, const nc_std_ref_t *ref, int *grpidp,
                               H5P_DEFAULT)) < 0) {
         ret = NC_EINVAL;
         goto fail;
+    }
+    /* Reject a session that is not the token's target file. */
+    {
+        int same = 0;
+        if ((ret = ref_same_file(file, obj, &same)) || !same) {
+            ret = ret ? ret : NC_EINVAL;
+            goto fail;
+        }
     }
     if ((ret = obj_ids(h5, obj, &obj_type, &grpid, &varid)))
         goto fail;
@@ -647,7 +761,17 @@ fail:
  * `obj_type`/`objid` are dispatched exactly as in nc_ref_object(),
  * so every attribute-bearing object kind is covered.
  *
- * See nep.h for parameter and return-value documentation.
+ * @param ncid NetCDF file ID (NEXTCDF-4, native mode).
+ * @param obj_type `NC_REF_OBJ_VAR`, `NC_REF_OBJ_GRP`, or
+ * `NC_REF_OBJ_TYPE`, dispatched exactly as in nc_ref_object().
+ * `NC_REF_OBJ_GRP` covers the attributes the NetCDF API attaches to
+ * `NC_GLOBAL`.
+ * @param objid Object identifier, interpreted per @p obj_type.
+ * @param att_name Name of an existing attribute on the object.
+ * @param ref Receives the opaque reference token.
+ * @return `NC_NOERR` on success; `NC_ENOTNC4` for a non-NEXTCDF-4 file
+ * or a compatibility mode; `NC_EINVAL` for a bad @p obj_type, target,
+ * or missing attribute; `NC_EHDFERR` on HDF5 failure.
  *
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
@@ -689,9 +813,25 @@ fail:
  * object and attribute name.
  *
  * Reports the owner kind and ids as nc_deref_object() does, plus
- * the attribute name.
+ * the attribute name. For an external token, @p ncid is the target
+ * session returned by nc_ref_open_target().
  *
- * See nep.h for parameter and return-value documentation.
+ * @param ncid NetCDF file ID (NEXTCDF-4); for an external token, the
+ * session returned by nc_ref_open_target().
+ * @param ref Reference token.
+ * @param obj_typep Receives `NC_REF_OBJ_VAR`, `NC_REF_OBJ_GRP`, or
+ * `NC_REF_OBJ_TYPE` for the attribute-bearing object; may be NULL.
+ * @param grpidp Containing group's ncid (or the group itself for
+ * `NC_REF_OBJ_GRP`); may be NULL.
+ * @param idp The varid, group ncid, or typeid of the owner; may be
+ * NULL. For `NC_REF_OBJ_TYPE` owners the attribute value is read
+ * through the HDF5 API (H5Aopen/H5Aread), not the NetCDF API.
+ * @param att_name Receives the attribute name; must be a caller
+ * buffer of at least `NC_MAX_NAME + 1` bytes, or NULL.
+ * @return `NC_NOERR` on success; `NC_ENOTNC4` for a non-NEXTCDF-4
+ * file; `NC_EINVAL` for a non-attribute token, a session that is not
+ * the token's target file, or a missing target; `NC_EHDFERR` on HDF5
+ * failure.
  *
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
@@ -711,14 +851,24 @@ nc_deref_attr(int ncid, const nc_std_ref_t *ref, int *obj_typep,
         return NC_EINVAL;
     if ((ret = ref_file(ncid, &h5, &file)))
         return ret;
-    if ((ret = deref_check(file, (const H5R_ref_t *)ref, NC_STD_REF_ATTR)))
+    if ((ret = deref_check((const H5R_ref_t *)ref, NC_STD_REF_ATTR)))
         return ret;
+    /* H5Ropen_attr reopens the token's target file internally and
+     * opens the stored attribute; H5Ropen_object yields its owner. */
     if ((att = H5Ropen_attr((H5R_ref_t *)ref, H5P_DEFAULT, H5P_DEFAULT)) < 0)
         return NC_EINVAL;
     if ((obj = H5Ropen_object((H5R_ref_t *)ref, H5P_DEFAULT,
                               H5P_DEFAULT)) < 0) {
         ret = NC_EINVAL;
         goto fail;
+    }
+    /* Reject a session that is not the token's target file. */
+    {
+        int same = 0;
+        if ((ret = ref_same_file(file, obj, &same)) || !same) {
+            ret = ret ? ret : NC_EINVAL;
+            goto fail;
+        }
     }
     if ((ret = obj_ids(h5, obj, &obj_type, &grpid, &id)))
         goto fail;
@@ -752,15 +902,22 @@ fail:
  * file read-write through raw HDF5.
  *
  * The token is created against the target object in @p filename;
- * HDF5 records the target file name inside it. @p path must be an
- * absolute HDF5 object path.
+ * HDF5 records the target file name inside it. @p filename must be an
+ * absolute filesystem path: a relative name would be reinterpreted
+ * against whatever working directory a later reader happens to have,
+ * so it is rejected outright. The target is opened read-write because
+ * HDF5 2.1.1 reopens persisted external references with
+ * `H5F_ACC_RDWR`; a target that cannot be opened read-write now would
+ * be undereferenceable later. @p path must be an absolute HDF5 object
+ * path.
  *
  * @param ncid NetCDF file ID (NEXTCDF-4); only used to reject
  * non-NEXTCDF-4 and compatibility-mode files.
- * @param filename Path of the file holding the target.
+ * @param filename Absolute path of the file holding the target.
  * @param path Absolute object path inside @p filename.
  * @param efp Destination for the open HDF5 file identifier; caller closes.
- * @return `NC_NOERR` on success, or an error code.
+ * @return `NC_NOERR` on success, `NC_EINVAL` for a missing or relative
+ * @p filename, or another error code.
  *
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
@@ -771,13 +928,13 @@ ext_open(int ncid, const char *filename, const char *path, hid_t *efp)
     hid_t ef;
     int ret;
 
-    if (!filename || !path)
+    if (!filename || !path || filename[0] != '/')
         return NC_EINVAL;
     if ((ret = ref_file(ncid, NULL, &file)))
         return ret;
     if ((ret = ref_check_native(file)))
         return ret;
-    if ((ef = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT)) < 0)
+    if ((ef = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT)) < 0)
         return NC_EHDFERR;
     *efp = ef;
     return NC_NOERR;
@@ -789,7 +946,18 @@ ext_open(int ncid, const char *filename, const char *path, hid_t *efp)
  * The token records @p filename so `H5Ropen_*` and the `nc_ref_get_*`
  * inspectors can resolve the external target.
  *
- * See nep.h for parameter and return-value documentation.
+ * @param ncid NetCDF file ID (NEXTCDF-4, native mode); validated but
+ * otherwise unused.
+ * @param filename Absolute filesystem path of the HDF5 file holding
+ * the target object; relative names are rejected because a stored
+ * relative path would be reinterpreted against the reader's working
+ * directory. The target must be writable by the application.
+ * @param path HDF5 path of the target object in @p filename (for
+ * example `"grp/dset"` or `"/grp/dset"`).
+ * @param ref Receives the opaque reference token.
+ * @return `NC_NOERR` on success; `NC_ENOTNC4` for a non-NEXTCDF-4 file
+ * or a compatibility mode; `NC_EINVAL` for bad arguments, including a
+ * relative @p filename; `NC_EHDFERR` on HDF5 failure.
  *
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
@@ -819,7 +987,17 @@ nc_ref_object_ext(int ncid, const char *filename, const char *path,
  *
  * The selection uses `start`/`count`/`stride` like nc_ref_region().
  *
- * See nep.h for parameter and return-value documentation.
+ * @param ncid NetCDF file ID (NEXTCDF-4, native mode).
+ * @param filename Absolute filesystem path of the HDF5 file holding
+ * the target dataset; the target must be writable by the application.
+ * @param path HDF5 path of the target dataset in @p filename.
+ * @param startp Start index in each dimension.
+ * @param countp Edge count in each dimension.
+ * @param stridep Stride in each dimension, or NULL for unit stride.
+ * @param ref Receives the opaque reference token.
+ * @return `NC_NOERR` on success; `NC_ENOTNC4` for a non-NEXTCDF-4 file
+ * or a compatibility mode; `NC_EINVAL` for bad arguments, including a
+ * relative @p filename; `NC_EHDFERR` on HDF5 failure.
  *
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
@@ -890,7 +1068,16 @@ fail:
  *
  * The attribute is named on the object at @p path in @p filename.
  *
- * See nep.h for parameter and return-value documentation.
+ * @param ncid NetCDF file ID (NEXTCDF-4, native mode).
+ * @param filename Absolute filesystem path of the HDF5 file holding
+ * the target object; the target must be writable by the application.
+ * @param path HDF5 path of the target object in @p filename; may name
+ * any attribute-bearing object kind.
+ * @param att_name Name of an attribute on the target object.
+ * @param ref Receives the opaque reference token.
+ * @return `NC_NOERR` on success; `NC_ENOTNC4` for a non-NEXTCDF-4 file
+ * or a compatibility mode; `NC_EINVAL` for bad arguments, including a
+ * relative @p filename; `NC_EHDFERR` on HDF5 failure.
  *
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
@@ -917,12 +1104,84 @@ nc_ref_attr_ext(int ncid, const char *filename, const char *path,
 }
 
 /**
+ * @brief Open the external file a reference token points into.
+ *
+ * Extracts the stored absolute filename and opens it through
+ * `nc_open()` with `NC_NEXTCDF4|NC_WRITE`. The returned ncid is a
+ * normal caller-owned session: pass it to `nc_deref_*` to resolve
+ * the token, and close it with `nc_close()`. Each call returns an
+ * independent session. The IDs the `nc_deref_*` calls return belong
+ * to that target session and remain valid until it is closed; token
+ * lifetime (`nc_ref_free`) is independent of target-session lifetime.
+ * The target must be writable: HDF5 may reopen persisted external
+ * references read-write, so the session is opened with `NC_WRITE`
+ * even when only reads are intended.
+ *
+ * @param ncid NetCDF file ID (NEXTCDF-4) of the file the token was
+ * created in or read from.
+ * @param ref Reference token pointing into another file.
+ * @param target_ncidp Receives the NetCDF file ID of the opened
+ * target file; set to -1 on failure.
+ * @return `NC_NOERR` on success; `NC_ENOTNC4` for a non-NEXTCDF-4
+ * containing file or a target that is not a NEXTCDF-4-readable
+ * NetCDF-4 file; `NC_EINVAL` for bad arguments, a token that does not
+ * point into another file, or a stored filename that is not absolute;
+ * `NC_EPERM` when the target cannot be opened read-write; `nc_open`'s
+ * codes for a missing or unreadable target; `NC_EHDFERR` on HDF5
+ * failure.
+ *
+ * @author Edward Hartnett, Intelligent Data Design, Inc.
+ */
+int
+nc_ref_open_target(int ncid, const nc_std_ref_t *ref, int *target_ncidp)
+{
+    NEXTCDF4_FILE_INFO_T *file = NULL;
+    char rname[2048];
+    ssize_t n;
+    int ext = 0, kind = 0;
+    int ret;
+
+    ELOG((2, "%s: ncid %d", __func__, ncid));
+
+    if (!ref || !target_ncidp)
+        return NC_EINVAL;
+    *target_ncidp = -1;
+    if ((ret = ref_file(ncid, NULL, &file)))
+        return ret;
+    /* Only tokens with a recognizable kind can name a target file. */
+    if (nc_ref_get_type(ref, &kind))
+        return NC_EINVAL;
+    /* An in-file token records the containing file's own name, so it
+     * has no external target to open. */
+    if ((ret = ref_is_external(file, (const H5R_ref_t *)ref, &ext)))
+        return ret;
+    if (!ext)
+        return NC_EINVAL;
+    /* The stored filename must be absolute; a relative name would
+     * resolve against the reader's working directory. */
+    if ((n = H5Rget_file_name((const H5R_ref_t *)ref, rname,
+                              sizeof(rname))) < 0)
+        return NC_EHDFERR;
+    if (n <= 0 || n >= (ssize_t)sizeof(rname) || rname[0] != '/')
+        return NC_EINVAL;
+    /* NX4_CLOSE_WEAK: the token's internal reopen of the target uses a
+     * default FAPL, so the session must use the matching close degree
+     * or H5Fopen fails with "file close degree doesn't match". */
+    return nc_open(rname, NC_NEXTCDF4 | NC_WRITE | NX4_CLOSE_WEAK,
+                   target_ncidp);
+}
+
+/**
  * @brief Report the kind of a reference token.
  *
  * Returns `NC_STD_REF_OBJECT`, `NC_STD_REF_REGION`, or
  * `NC_STD_REF_ATTR`.
  *
- * See nep.h for parameter and return-value documentation.
+ * @param ref Reference token.
+ * @param ref_typep Receives `NC_STD_REF_OBJECT`, `NC_STD_REF_REGION`,
+ * or `NC_STD_REF_ATTR`.
+ * @return `NC_NOERR` on success; `NC_EINVAL` for bad arguments or an
+ * unrecognized token kind.
  *
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
@@ -947,7 +1206,12 @@ nc_ref_get_type(const nc_std_ref_t *ref, int *ref_typep)
  *
  * Differs from the containing file only for external references.
  *
- * See nep.h for parameter and return-value documentation.
+ * @param ref Reference token.
+ * @param name Destination buffer of @p size bytes.
+ * @param size Buffer size in bytes, including room for the null
+ * terminator.
+ * @return `NC_NOERR` on success; `NC_EINVAL` for bad arguments or
+ * when @p size is too small; `NC_EHDFERR` on HDF5 failure.
  *
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
@@ -967,9 +1231,15 @@ nc_ref_get_file_name(const nc_std_ref_t *ref, char *name, size_t size)
  * @brief Copy the object path stored in a reference token.
  *
  * For an attribute reference this is the path of the object that
- * carries the attribute.
+ * carries the attribute; use nc_deref_attr() for the attribute name
+ * itself.
  *
- * See nep.h for parameter and return-value documentation.
+ * @param ref Reference token.
+ * @param name Destination buffer of @p size bytes.
+ * @param size Buffer size in bytes, including room for the null
+ * terminator.
+ * @return `NC_NOERR` on success; `NC_EINVAL` for bad arguments or
+ * when @p size is too small; `NC_EHDFERR` on HDF5 failure.
  *
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
@@ -989,9 +1259,16 @@ nc_ref_get_obj_name(const nc_std_ref_t *ref, char *name, size_t size)
 /**
  * @brief Release the resources held by a reference token.
  *
- * Wraps `H5Rdestroy()`; safe on uninitialized tokens.
+ * Wraps `H5Rdestroy()`; safe on uninitialized tokens. A token holds a
+ * reference to the file it was created in — until it is released the
+ * file cannot fully close. Call this on every token obtained from
+ * nc_ref_object(), nc_ref_region(), nc_ref_attr(), or the
+ * `nc_ref_*_ext()` variants, and on tokens read back from a dataset
+ * or attribute, when it is no longer needed.
  *
- * See nep.h for parameter and return-value documentation.
+ * @param ref Reference token.
+ * @return `NC_NOERR` on success; `NC_EINVAL` for a NULL argument;
+ * `NC_EHDFERR` on HDF5 failure.
  *
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */

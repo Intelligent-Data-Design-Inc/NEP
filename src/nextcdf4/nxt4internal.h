@@ -30,6 +30,15 @@ typedef struct NX4_MPI_INFO
 } NX4_MPI_INFO;
 #endif /* HAVE_NEXTCDF4_PARALLEL */
 
+/** @brief Private open-mode bit for `nc_ref_open_target()`: open the
+ * HDF5 file with the default FAPL close degree instead of
+ * H5F_CLOSE_STRONG. HDF5's internal reopen of an external reference
+ * token pins the target file with a default FAPL, so a session that
+ * must coexist with such tokens has to use the matching close degree
+ * or H5Fopen fails with "file close degree doesn't match". Never set
+ * by user code; stripped before the mode is recorded. */
+#define NX4_CLOSE_WEAK 0x40000000
+
 /** @brief Validate unsupported create/open flags; return NC_EINVAL if present. */
 int NEXTCDF4_check_mode(int mode);
 int NEXTCDF4_var_par_access(int ncid, int varid, int par_access);

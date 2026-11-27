@@ -484,7 +484,7 @@ Tokens hold an open reference to their file — release them with
 
 - `NC_NEXTCDF4` must be passed explicitly; there is no magic-number dispatch for HDF5 files.
 - `nc_put_varm` and `nc_get_varm` are not implemented in NEXTCDF-4 because the mapped I/O API is deprecated.
-- `nc_deref_*` functions do not follow references into external files (`NC_ENOTNC4`); use `nc_ref_get_file_name`/`nc_ref_get_obj_name` to resolve them, or raw HDF5.
+- External references require an absolute target filename and a writable target file (HDF5 may reopen it read-write); open the target with `nc_ref_open_target` and dereference against the returned session — see [refs.md](refs.md).
 - Reference-typed variables cannot be nested inside compound types.
 - Small floating-point types (`NC_FLOAT16`, `NC_BFLOAT16`, FP8/FP6/FP4) and `NC_STD_REF` may be coordinate variables in native mode; the dimension-scale dataset carries the variable's dtype, and ordering/comparison semantics of non-IEEE encodings are the caller's concern.
 - Small floating-point types (`NC_FLOAT6_E2M3`, `NC_FLOAT4_E2M1`) have no default fill value because their value spaces are too small for a useful sentinel.

@@ -345,7 +345,9 @@ test_std_ref_att(void)
     return 0;
 }
 
-/* References can point into another file. */
+/* References can point into another file; absolute target filename
+ * required. Full cross-file dereference coverage lives in
+ * tst_nextcdf4_ref_external. */
 static int
 test_external_ref(void)
 {
@@ -354,13 +356,24 @@ test_external_ref(void)
     int ival = 7;
     nc_std_ref_t ref_obj, ref_reg, ref_att;
     size_t rs[1] = {0}, rc[1] = {2};
-    char fname[1024], oname[1024];
+    char fname[1024], oname[1024], abs_other[1024], cwd[1024];
     int rk;
     hid_t obj;
 
+    if (!getcwd(cwd, sizeof(cwd)))
+        return 1;
+    snprintf(abs_other, sizeof(abs_other), "%s/%s", cwd, OTHER_NAME);
+
+    /* Relative target filenames are rejected. */
+    unlink(OTHER_NAME);
+    CHECK(nc_create(FILE_NAME, NC_NEXTCDF4 | NC_CLOBBER, &ncid));
+    EXPECT(nc_ref_object_ext(ncid, OTHER_NAME, "/ext_data", &ref_obj),
+           NC_EINVAL);
+    CHECK(nc_close(ncid));
+    unlink(FILE_NAME);
+
     /* Second file holding the external targets. The variable
      * attribute can only be written once the dataset exists. */
-    unlink(OTHER_NAME);
     CHECK(nc_create(OTHER_NAME, NC_NEXTCDF4 | NC_CLOBBER, &ncid));
     CHECK(nc_def_dim(ncid, "y", 4, &dimid));
     CHECK(nc_def_var(ncid, "ext_data", NC_INT, 1, &dimid, &varid));
@@ -372,10 +385,10 @@ test_external_ref(void)
 
     if (make_file(&ncid, &dimid, &varid, &refid))
         return 1;
-    CHECK(nc_ref_object_ext(ncid, OTHER_NAME, "/ext_data", &ref_obj));
-    CHECK(nc_ref_region_ext(ncid, OTHER_NAME, "/ext_data", rs, rc,
+    CHECK(nc_ref_object_ext(ncid, abs_other, "/ext_data", &ref_obj));
+    CHECK(nc_ref_region_ext(ncid, abs_other, "/ext_data", rs, rc,
                             NULL, &ref_reg));
-    CHECK(nc_ref_attr_ext(ncid, OTHER_NAME, "/ext_data", "ext_att",
+    CHECK(nc_ref_attr_ext(ncid, abs_other, "/ext_data", "ext_att",
                           &ref_att));
 
     /* Token kinds and stored names. */
@@ -383,7 +396,7 @@ test_external_ref(void)
     if (rk != NC_STD_REF_OBJECT)
         return 1;
     CHECK(nc_ref_get_file_name(&ref_obj, fname, sizeof(fname)));
-    if (strcmp(fname, OTHER_NAME))
+    if (strcmp(fname, abs_other))
         return 1;
     CHECK(nc_ref_get_obj_name(&ref_obj, oname, sizeof(oname)));
     if (strcmp(oname, "/ext_data"))
@@ -395,13 +408,13 @@ test_external_ref(void)
     if (rk != NC_STD_REF_ATTR)
         return 1;
 
-    /* NetCDF dereference is out of scope cross-file. */
+    /* The containing file's ncid is not the token's target. */
     EXPECT(nc_deref_object(ncid, &ref_obj, NULL, NULL, NULL),
-           NC_ENOTNC4);
+           NC_EINVAL);
     EXPECT(nc_deref_region(ncid, &ref_reg, NULL, NULL, NULL, NULL,
-                         NULL, NULL), NC_ENOTNC4);
+                         NULL, NULL), NC_EINVAL);
     EXPECT(nc_deref_attr(ncid, &ref_att, NULL, NULL, NULL, NULL),
-           NC_ENOTNC4);
+           NC_EINVAL);
     CHECK(nc_ref_free(&ref_reg));
     CHECK(nc_ref_free(&ref_att));
 
@@ -414,10 +427,10 @@ test_external_ref(void)
     memset(&ref_obj, 0, sizeof(ref_obj));
     CHECK(nc_get_vara(ncid, refid, start, count, &ref_obj));
     CHECK(nc_ref_get_file_name(&ref_obj, fname, sizeof(fname)));
-    if (strcmp(fname, OTHER_NAME))
+    if (strcmp(fname, abs_other))
         return 1;
     EXPECT(nc_deref_object(ncid, &ref_obj, NULL, NULL, NULL),
-           NC_ENOTNC4);
+           NC_EINVAL);
 
     /* Raw HDF5 can still follow the cross-file reference. */
     obj = H5Ropen_object((H5R_ref_t *)&ref_obj, H5P_DEFAULT, H5P_DEFAULT);

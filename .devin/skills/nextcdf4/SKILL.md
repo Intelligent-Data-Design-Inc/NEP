@@ -94,7 +94,7 @@ Standard `NC_BYTE`…`NC_UINT64`, `NC_FLOAT`, `NC_DOUBLE`, `NC_CHAR`, `NC_STRING
 
 Small floats and bitfields move as raw bit patterns through untyped calls; `NC_FLOAT16`/`NC_BFLOAT16` additionally support typed float/double calls via HDF5 conversion (see `docs/NEXTCDF4_float16.md`). Typed calls on FP8/FP6/FP4 vars, and text/integer calls on small floats, return `NC_EBADTYPE`.
 
-Reference APIs (`nc_ref_object`, `nc_ref_region`, `nc_ref_attr`, `nc_deref_*`, `nc_ref_*_ext`, `nc_ref_get_*`, `nc_ref_free`) are declared in `nep.h` and implemented in `src/nextcdf4/nxt4ref.c`; `nc_std_ref_t` tokens round-trip through `NC_STD_REF` variables and attributes. See `docs/refs.md`.
+Reference APIs (`nc_ref_object`, `nc_ref_region`, `nc_ref_attr`, `nc_deref_*`, `nc_ref_*_ext`, `nc_ref_open_target`, `nc_ref_get_*`, `nc_ref_free`) are declared in `nep.h` and implemented in `src/nextcdf4/nxt4ref.c`; `nc_std_ref_t` tokens round-trip through `NC_STD_REF` variables and attributes. External targets need absolute filenames and writable files; `nc_ref_open_target` returns a caller-owned session opened with the private `NX4_CLOSE_WEAK` mode bit (matching HDF5's default-FAPL internal reopen), and `nc_deref_*` verify the opened object's `H5O_info2_t.fileno` matches the session file. See `docs/refs.md`.
 
 ## Coding Conventions
 
@@ -132,7 +132,7 @@ Doxygen file headers with `@file`, `@brief`, `@author Edward Hartnett`, `@date`,
 ## Known Limitations
 
 - `nc_put_varm`/`nc_get_varm` not implemented (mapped I/O deprecated).
-- Reference-typed vars cannot be coordinate variables or nested in compounds; `nc_deref_*` do not follow external-file references (`NC_ENOTNC4`); tokens must be released with `nc_ref_free()` before `nc_close()`.
+- Reference-typed vars cannot be nested in compounds; external references use `nc_ref_open_target` + `nc_deref_*` on the returned session (absolute filename, writable target); tokens must be released with `nc_ref_free()` before `nc_close()`.
 - `NC_FLOAT6_E2M3`/`NC_FLOAT4_E2M1` have no default fill value.
 - `NC_BFLOAT16` fill values work (`nc_def_var_fill` and `_FillValue` attributes store raw bf16 bits in the DCPL, survive reopen, and appear via `nc_inq_att`); fixed in Sprint 1M (#377).
 - NEXTCDF-4 does not return `NC_ERANGE` for out-of-range conversions (issue #381).
