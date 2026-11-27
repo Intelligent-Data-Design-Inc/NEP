@@ -480,6 +480,14 @@ nc_ref_attr(ncid, NC_REF_OBJ_VAR, varid, "units", &att);
 Tokens hold an open reference to their file — release them with
 `nc_ref_free()` before closing the file.
 
+Remote references are a separate mechanism: a stored `(URL, object
+path)` string convention resolved by `nc_ref_open_remote()` and
+`nc_ref_resolve()` through `nc_open()` — DAP2, DAP4 or NCZarr
+byte-range dispatch, returning an ordinary upstream session ncid.
+They require building with `NEP_ENABLE_REMOTE_REFS=ON` and a
+remote-capable NetCDF-C; otherwise the functions return
+`NC_ENOTBUILT`. See [refs.md](refs.md#remote-references--pointing-into-datasets-on-other-servers).
+
 ## Known Limitations
 
 - `NC_NEXTCDF4` must be passed explicitly; there is no magic-number dispatch for HDF5 files.

@@ -345,6 +345,29 @@ Plan: [docs/plan/v4.3.0-sprint1V5-swmr-reader.md](plan/v4.3.0-sprint1V5-swmr-rea
 
 Plan: [docs/plan/v4.3.0-sprint1V6-external-reference-dereferencing.md](plan/v4.3.0-sprint1V6-external-reference-dereferencing.md)
 
+#### Sprint 1V7 - Remote References (OPeNDAP and NCZarr)
+- Stored `(URL, object path)` convention in `NC_STRING` variables/attributes (no reserved names) plus a combined API in `nep.h`: `nc_ref_open_remote` opens any URL `nc_open` resolves, resolves the path, and returns a caller-owned session plus the object IDs; `nc_ref_resolve` resolves further paths on the same session. Remote sessions are ordinary upstream NetCDF IDs — no HDF5 token.
+- Any URL `nc_open` accepts: DAP2, DAP4, and NCZarr `file://`/byte-range stores; `s3://` only if the netcdf-c has `NC_HAS_S3` (untested). Read-only; no constraint expressions.
+- New `NEP_ENABLE_REMOTE_REFS` option (requires NEXTCDF-4; compile-check `NC_HAS_DAP2||NC_HAS_DAP4||NC_HAS_BYTERANGE`) emitting `NEP_HAS_REMOTE_REFS`; functions return `NC_ENOTBUILT` when off. Spack gains a `+remoterefs` variant `@4.3.0:` with `netcdf-c+dap`.
+- `tst_nextcdf4_remote_ref` under `nextcdf4_ref` runs in CI asserting `NC_ENOTBUILT` (CI deps are DAP/NCZarr-OFF); live URL coverage only via `NEP_REMOTE_TEST_URL`/`NEP_REMOTE_TEST_PATH` env vars, local verification never in CI. New `examples/nextcdf4/remote_refs.c`.
+- Update `docs/refs.md`, `nextcdf4.md`, `design.md`, `prd.md`, `prfaq.md`, `nep.h` Doxygen, and the opendap/nextcdf4 skills.
+- Out of scope: `NC_STD_REF` tokens for remote data (impossible — tokens store filenames), `s3://`/ROS3/other object stores, write access, caching, constraint/subsetting APIs, Fortran wrappers, CI DAP/NCZarr dependency changes, release notes (Sprint 2).
+
+Plan: [docs/plan/v4.3.0-sprint1V7-remote-references.md](plan/v4.3.0-sprint1V7-remote-references.md)
+
+#### Sprint 1V8 - Cleanup and Docs
+- Create include/nextcdf4/nextcdf4.h and move nextcdf4 definitions from nep.h.
+- Modify nextcdf4 programs to include nextcdf4.h.
+- In the README, prd, design, and netcdf4_announcement, lead with the following features:
+  - Backward compatible and interoperable with netCDF-4.
+  - Provides 16-bit float types.
+  - Single Write Multiple Read (SWMR) capablity.
+  - Correct renaming in all cases.
+  - Support for HDF5 reference type, including references to contents of other files.
+  - Full support for all netCDF-4 features and data.
+  - (Any others?)
+
+
 #### Sprint 2 - 
 - Tag v4.3.0 and write `docs/releases/v4.3.0.md` (HDF5 detection change, CMake 3.19 minimum, conda GeoTIFF, Sprint 1A NEXTCDF-4 bfloat16 examples and `NEP_ZSTD_PLUGIN_DIR`, Sprint 1B typed small-float I/O and the `nc_*_bfloat16` functions, #376, Sprint 1C optimized benchmark results, the bfloat16 GDAS sample and `bfloat16_io_perf`, the #382 contiguous-layout fix, the fix for untyped `nc_put_var`/`nc_get_var`/`var1`/`vars` failing with `NC_EBADTYPE` on NEXTCDF-4, and Sprint 1K generic HDF5 filter support (`nc_def_var_filter`, szip/bzip2/zstd plugins, missing-plugin `NC_ENOFILTER`), and Sprint 1L reference types (`NC_REF_OBJECT`/`NC_REF_REGION` removed — a breaking API change — replaced by `NC_STD_REF`/`H5T_STD_REF` and the `nc_ref_*`/`nc_deref_*` API).
 - Spack: add `version("4.3.0")` with its sha256; update spack/spack-packages#5557 in place per `docs/spack.md` "Updating the upstream PR".

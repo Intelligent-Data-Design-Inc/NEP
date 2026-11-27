@@ -215,6 +215,64 @@ until the tokens are released with `nc_ref_free` — sessions obtained
 through `nc_ref_open_target` use a compatible open mode and are not
 affected.
 
+## Remote references — pointing into datasets on other servers
+
+Remote references are *not* `NC_STD_REF` tokens — HDF5 tokens store
+filesystem filenames and cannot name a remote resource. A remote
+reference is a stored convention of two strings, a **URL** and an
+**object path**, carried in `NC_STRING` variables or attributes. No
+names are reserved: any parallel pair of string holders works — for
+example an `NC_STRING` variable `ref_url` whose values are URLs and a
+sibling `ref_path` of the same shape holding object paths, or two
+`NC_STRING` attributes.
+
+The remote session is opened with `nc_open(url, NC_NOWRITE, ...)` —
+an ordinary upstream NetCDF file ID, not a NEXTCDF-4 session — so any
+remote-capable dispatch in the installed NetCDF-C answers: DAP2, DAP4,
+or NCZarr `file://`/byte-range (`https://...#mode=bytes`) stores.
+`s3://` URLs require NetCDF-C built with `NC_HAS_S3` and are untested.
+Remote access is read-only; there is no constraint-expression or
+subsetting API beyond the stored object path.
+
+```c
+int nc_ref_open_remote(int ncid, const char *url, const char *path,
+                       int *target_ncidp, int *kindp, int *objidp,
+                       char *att_name, size_t att_name_size);
+int nc_ref_resolve(int ncid, const char *path, int *kindp,
+                   int *objidp, char *att_name, size_t att_name_size);
+```
+
+`nc_ref_open_remote` validates `ncid` as a NEXTCDF-4 file (context
+only), opens `url`, and resolves `path` in one call, returning a
+caller-owned session the caller must `nc_close`. Each call returns an
+independent session. If the open succeeds but the path fails to
+resolve, the session is closed and `*target_ncidp` is -1.
+`nc_ref_resolve` resolves additional paths on the same session without
+paying another remote open.
+
+The path grammar is a leading `/`, `/`-separated group components,
+and a final component naming a variable, group, or committed datatype,
+with an optional `#attname` suffix selecting an attribute of that
+object. `/` alone resolves to the root group. The final component
+resolves as variable, then group, then committed type. `kindp`
+receives `NC_REF_OBJ_VAR`, `NC_REF_OBJ_GRP`, `NC_REF_OBJ_TYPE`, or
+`NC_REF_OBJ_ATT` for a `#attname` path (then `att_name` receives the
+attribute name and `objidp` the owner's ID). Attribute existence is
+verified for variable and group owners; committed-datatype attributes
+are returned unchecked because the NetCDF API cannot inquire them.
+
+The feature requires building NEP with `NEP_ENABLE_REMOTE_REFS=ON`
+(reported as `NEP_HAS_REMOTE_REFS` in `nep_meta.h`), which needs
+NEXTCDF-4 and a NetCDF-C with `NC_HAS_DAP2`, `NC_HAS_DAP4` or
+`NC_HAS_BYTERANGE`. Without it both functions return `NC_ENOTBUILT`.
+
+Errors: `NC_EINVAL` for bad arguments or malformed paths,
+`NC_ENOTVAR` for an unresolvable object, `NC_ENOTATT` for a missing
+attribute, `NC_ENOTBUILT` when the feature is off, and the propagated
+`nc_open`/inquiry error for unreachable or non-NetCDF endpoints.
+
+See `examples/nextcdf4/remote_refs.c` for a complete program.
+
 ## Inspecting tokens
 
 ```c

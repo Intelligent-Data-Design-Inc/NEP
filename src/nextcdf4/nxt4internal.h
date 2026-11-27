@@ -230,6 +230,11 @@ int NEXTCDF4_add_file(int ncid, const char *path, int mode,
  */
 int NEXTCDF4_get_file(int ncid, NC_FILE_INFO_T **h5p,
                       NEXTCDF4_FILE_INFO_T **filep);
+/** Map a public ncid to internal file state, rejecting non-NEXTCDF-4
+ * files with NC_ENOTNC4 (shared by nxt4ref.c and nxt4remoteref.c).
+ */
+int nx4_ref_file(int ncid, NC_FILE_INFO_T **h5p,
+                 NEXTCDF4_FILE_INFO_T **filep);
 /** Close HDF5 identifiers and free per-file state.
  */
 int NEXTCDF4_free_file(NEXTCDF4_FILE_INFO_T *file);

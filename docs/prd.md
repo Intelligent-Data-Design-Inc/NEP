@@ -104,6 +104,35 @@ filenames and relocation, legacy reference datatypes, nested references,
 irregular selections, and parallel/SWMR/Fortran reference access. See
 [references](refs.md).
 
+## NEXTCDF-4 remote reference requirements (v4.3.0 Sprint 1V7)
+
+Provide `nc_ref_open_remote(int ncid, const char *url, const char *path,
+int *target_ncidp, int *kindp, int *objidp, char *att_name,
+size_t att_name_size)` and `nc_ref_resolve(int ncid, const char *path,
+int *kindp, int *objidp, char *att_name, size_t att_name_size)` in
+`libncnextcdf4`, declared with full API documentation in installed
+`nep.h`. Remote references are a stored `(URL, object path)` string
+convention — no HDF5 token and no reserved attribute names.
+`nc_ref_open_remote` opens the URL with `nc_open(NC_NOWRITE)` so any
+remote-capable NetCDF-C dispatch answers (DAP2, DAP4, NCZarr
+file/byte-range; `s3://` requires `NC_HAS_S3`), resolves the path, and
+returns a caller-owned upstream session per call; resolution failure
+closes the session and leaves `*target_ncidp` -1. `nc_ref_resolve`
+maps additional paths on the same session: `/`-separated group path,
+leaf resolved as variable, then group, then committed type, optional
+`#attname` suffix reported as `NC_REF_OBJ_ATT` with the attribute name
+(variable/group owner attributes verified; type-owner attributes are
+unverifiable and returned unchecked). All access is read-only; no
+constraint expressions, subsetting, caching or writes. The feature is
+gated on `NEP_ENABLE_REMOTE_REFS` (requires NEXTCDF-4 and NetCDF-C
+with `NC_HAS_DAP2`, `NC_HAS_DAP4` or `NC_HAS_BYTERANGE`), emits
+`NEP_HAS_REMOTE_REFS`, and returns `NC_ENOTBUILT` when off. Covered by
+`tst_nextcdf4_remote_ref` under the `nextcdf4_ref` label — CI runs the
+storage and `NC_ENOTBUILT` paths; live URLs only via the
+`NEP_REMOTE_TEST_URL`/`NEP_REMOTE_TEST_PATH` environment variables,
+never in CI. Spack gains a `+remoterefs` variant gated `@4.3.0:` with
+`depends_on("netcdf-c+dap")`. See [references](refs.md).
+
 ## 2. Core Architecture
 
 ### 2.1 NetCDF User Defined Format (UDF) System

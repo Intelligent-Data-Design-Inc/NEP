@@ -109,6 +109,9 @@ There is no magic-number dispatch for NEXTCDF-4 because HDF5 files are already o
 #### Q: What new atomic types does NEXTCDF-4 support?
 **A:** NEXTCDF-4 adds small floating-point types (`NC_FLOAT16`, `NC_BFLOAT16`, `NC_FLOAT8_E4M3`, `NC_FLOAT8_E5M2`, `NC_FLOAT6_E2M3`, `NC_FLOAT6_E3M2`, `NC_FLOAT4_E2M1`), complex numbers (`NC_COMPLEX`, `NC_DOUBLECOMPLEX`), bitfields (`NC_BITFIELD8/16/32/64`), and HDF5 references (`NC_STD_REF`, covering object, region, and attribute targets). These types require native NEXTCDF-4 mode and are not available in `NC_NETCDF4_MODEL` compatibility mode.
 
+#### Q: Can NEXTCDF-4 files reference remote (OPeNDAP/NCZarr) datasets?
+**A:** Yes, when NEP is built with `-DNEP_ENABLE_REMOTE_REFS=ON` against a remote-capable NetCDF-C (DAP2, DAP4 or byte-range/NCZarr). A remote reference is a stored `(URL, object path)` string pair — no HDF5 token is involved. `nc_ref_open_remote` opens the URL with `nc_open` and resolves the path in one call, returning a caller-owned read-only session; `nc_ref_resolve` resolves further paths on that session. Without the option the functions return `NC_ENOTBUILT`. See [references](refs.md).
+
 #### Q: Can NEXTCDF-4 files be read by upstream netcdf-c?
 **A:** Files created with the `NC_NETCDF4_MODEL` compatibility flag are written with HDF5 Superblock v1 and can be read by upstream netcdf-c linked against HDF5 1.10.x or later. Native NEXTCDF-4 files use HDF5 Superblock v3 and require HDF5 1.14.x or later; whether upstream netcdf-c can read them depends on the HDF5 version it was built with.
 

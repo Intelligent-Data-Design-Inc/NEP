@@ -133,6 +133,7 @@ Doxygen file headers with `@file`, `@brief`, `@author Edward Hartnett`, `@date`,
 
 - `nc_put_varm`/`nc_get_varm` not implemented (mapped I/O deprecated).
 - Reference-typed vars cannot be nested in compounds; external references use `nc_ref_open_target` + `nc_deref_*` on the returned session (absolute filename, writable target); tokens must be released with `nc_ref_free()` before `nc_close()`.
+- Remote references are strings, not tokens: a stored `(URL, object path)` pair resolved by `nc_ref_open_remote`/`nc_ref_resolve` (`nxt4remoteref.c`). The remote session is an ordinary upstream ncid (DAP/NCZarr dispatch, read-only) — do not pass it to NEXTCDF-4-only APIs. Requires `NEP_ENABLE_REMOTE_REFS` (`NEP_HAS_REMOTE_REFS`); functions return `NC_ENOTBUILT` when off. Resolved attribute kind is `NC_REF_OBJ_ATT` (4), not `NC_STD_REF_ATTR` (3, collides with `NC_REF_OBJ_TYPE`).
 - `NC_FLOAT6_E2M3`/`NC_FLOAT4_E2M1` have no default fill value.
 - `NC_BFLOAT16` fill values work (`nc_def_var_fill` and `_FillValue` attributes store raw bf16 bits in the DCPL, survive reopen, and appear via `nc_inq_att`); fixed in Sprint 1M (#377).
 - NEXTCDF-4 does not return `NC_ERANGE` for out-of-range conversions (issue #381).

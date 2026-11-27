@@ -57,8 +57,8 @@ _Static_assert(sizeof(nc_std_ref_t) == sizeof(H5R_ref_t),
  *
  * @author Edward Hartnett, Intelligent Data Design, Inc.
  */
-static int
-ref_file(int ncid, NC_FILE_INFO_T **h5p, NEXTCDF4_FILE_INFO_T **filep)
+int
+nx4_ref_file(int ncid, NC_FILE_INFO_T **h5p, NEXTCDF4_FILE_INFO_T **filep)
 {
     NC *nc = NULL;
     NC_FILE_INFO_T *h5 = NULL;
@@ -406,7 +406,7 @@ nc_ref_object(int ncid, int obj_type, int objid, nc_std_ref_t *ref)
 
     if (!ref)
         return NC_EINVAL;
-    if ((ret = ref_file(ncid, NULL, &file)))
+    if ((ret = nx4_ref_file(ncid, NULL, &file)))
         return ret;
     if ((ret = ref_check_native(file)))
         return ret;
@@ -510,7 +510,7 @@ nc_deref_object(int ncid, const nc_std_ref_t *ref, int *obj_typep,
 
     if (!ref)
         return NC_EINVAL;
-    if ((ret = ref_file(ncid, &h5, &file)))
+    if ((ret = nx4_ref_file(ncid, &h5, &file)))
         return ret;
     if ((ret = deref_check((const H5R_ref_t *)ref, NC_STD_REF_OBJECT)))
         return ret;
@@ -581,7 +581,7 @@ nc_ref_region(int ncid, int varid, const size_t *startp,
 
     if (!ref || !startp || !countp)
         return NC_EINVAL;
-    if ((ret = ref_file(ncid, &h5, &file)))
+    if ((ret = nx4_ref_file(ncid, &h5, &file)))
         return ret;
     if ((ret = ref_check_native(file)))
         return ret;
@@ -677,7 +677,7 @@ nc_deref_region(int ncid, const nc_std_ref_t *ref, int *grpidp,
 
     if (!ref)
         return NC_EINVAL;
-    if ((ret = ref_file(ncid, &h5, &file)))
+    if ((ret = nx4_ref_file(ncid, &h5, &file)))
         return ret;
     if ((ret = deref_check((const H5R_ref_t *)ref, NC_STD_REF_REGION)))
         return ret;
@@ -789,7 +789,7 @@ nc_ref_attr(int ncid, int obj_type, int objid, const char *att_name,
 
     if (!ref || !att_name)
         return NC_EINVAL;
-    if ((ret = ref_file(ncid, NULL, &file)))
+    if ((ret = nx4_ref_file(ncid, NULL, &file)))
         return ret;
     if ((ret = ref_check_native(file)))
         return ret;
@@ -849,7 +849,7 @@ nc_deref_attr(int ncid, const nc_std_ref_t *ref, int *obj_typep,
 
     if (!ref)
         return NC_EINVAL;
-    if ((ret = ref_file(ncid, &h5, &file)))
+    if ((ret = nx4_ref_file(ncid, &h5, &file)))
         return ret;
     if ((ret = deref_check((const H5R_ref_t *)ref, NC_STD_REF_ATTR)))
         return ret;
@@ -930,7 +930,7 @@ ext_open(int ncid, const char *filename, const char *path, hid_t *efp)
 
     if (!filename || !path || filename[0] != '/')
         return NC_EINVAL;
-    if ((ret = ref_file(ncid, NULL, &file)))
+    if ((ret = nx4_ref_file(ncid, NULL, &file)))
         return ret;
     if ((ret = ref_check_native(file)))
         return ret;
@@ -1146,7 +1146,7 @@ nc_ref_open_target(int ncid, const nc_std_ref_t *ref, int *target_ncidp)
     if (!ref || !target_ncidp)
         return NC_EINVAL;
     *target_ncidp = -1;
-    if ((ret = ref_file(ncid, NULL, &file)))
+    if ((ret = nx4_ref_file(ncid, NULL, &file)))
         return ret;
     /* Only tokens with a recognizable kind can name a target file. */
     if (nc_ref_get_type(ref, &kind))

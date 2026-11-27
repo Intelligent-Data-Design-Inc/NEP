@@ -104,6 +104,12 @@ typedef struct nc_std_ref_s {
 /** Reference target kind: a NetCDF user-defined type (HDF5 committed
  *  datatype). */
 #define NC_REF_OBJ_TYPE 3
+/** Resolved object kind reported by nc_ref_resolve() and
+ *  nc_ref_open_remote() when the stored path carried a `#attname`
+ *  suffix: an attribute on the resolved owner. (Distinct from
+ *  NC_STD_REF_ATTR, which shares its numeric value with
+ *  NC_REF_OBJ_TYPE.) */
+#define NC_REF_OBJ_ATT  4
 
 /** @def NEP_HAVE_NATIVE_BFLOAT16
  *  1 when nc_bfloat16_t is the compiler's `__bf16` type, 0 when it is
@@ -572,6 +578,107 @@ extern "C" {
      * @author Edward Hartnett, Intelligent Data Design, Inc.
      */
     int nc_ref_free(nc_std_ref_t *ref);
+
+    /**
+     * @brief Open a remote reference target and resolve its object path.
+     *
+     * Remote references are a stored convention, not an HDF5 token:
+     * the application keeps a URL and an object path as strings (for
+     * example in parallel NC_STRING variables or attributes), and this
+     * function resolves one pair. The URL is opened with
+     * `nc_open(url, NC_NOWRITE, ...)` — no NC_NEXTCDF4 flag — so any
+     * remote-capable dispatch in the installed NetCDF-C may answer:
+     * DAP2, DAP4, or NCZarr file/byte-range stores. (s3:// URLs
+     * additionally require NetCDF-C built with NC_HAS_S3.) The
+     * returned session is an ordinary upstream NetCDF file ID, not a
+     * NEXTCDF-4 session.
+     *
+     * @p path follows the nc_ref_resolve() grammar: a leading `/`,
+     * `/`-separated group components, a final component naming a
+     * variable, group, or committed datatype, and an optional
+     * `#attname` suffix selecting an attribute of that object.
+     *
+     * On success the caller owns @p target_ncidp and must close it
+     * with nc_close(); each call returns an independent session. The
+     * IDs reported through @p kindp/@p objidp belong to that session
+     * and die with it. If the open succeeds but @p path fails to
+     * resolve, the session is closed, @p target_ncidp is set to -1 and
+     * the resolution error is returned. Remote access is read-only.
+     *
+     * Requires NEP built with `NEP_ENABLE_REMOTE_REFS` (see
+     * NEP_HAS_REMOTE_REFS in `nep_meta.h`).
+     *
+     * @param ncid NetCDF file ID (NEXTCDF-4) of the file holding the
+     * reference; provides context only.
+     * @param url URL the installed NetCDF-C can open remotely.
+     * @param path Object path inside the remote dataset (see
+     * nc_ref_resolve()).
+     * @param target_ncidp Receives the remote session's NetCDF file
+     * ID; set to -1 on failure.
+     * @param kindp Receives `NC_REF_OBJ_VAR`, `NC_REF_OBJ_GRP`,
+     * `NC_REF_OBJ_TYPE`, or `NC_REF_OBJ_ATT` when @p path carried a
+     * `#attname` suffix.
+     * @param objidp Receives the resolved ID: a varid, group ncid,
+     * typeid, or — for `NC_REF_OBJ_ATT` — the attribute owner's
+     * varid, group ncid or typeid.
+     * @param att_name Buffer receiving the attribute name when @p path
+     * carried a `#attname` suffix; may be NULL otherwise.
+     * @param att_name_size Size of @p att_name in bytes.
+     * @return `NC_NOERR` on success; `NC_ENOTBUILT` when built without
+     * `NEP_ENABLE_REMOTE_REFS`; `NC_ENOTNC4` for a non-NEXTCDF-4
+     * @p ncid; `NC_EINVAL` for bad arguments or malformed @p path;
+     * otherwise the `nc_open`/inquiry error for an unreachable URL or
+     * missing object.
+     *
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_ref_open_remote(int ncid, const char *url, const char *path,
+                           int *target_ncidp, int *kindp, int *objidp,
+                           char *att_name, size_t att_name_size);
+
+    /**
+     * @brief Resolve an object path on an already-open remote session.
+     *
+     * Maps a stored object path to NetCDF IDs on @p ncid, which is
+     * typically a session returned by nc_ref_open_remote() but may be
+     * any open NetCDF file ID. Use it to resolve several stored paths
+     * against one remote session without paying a remote open per
+     * reference.
+     *
+     * @p path grammar: a leading `/`, `/`-separated group components,
+     * and a final component naming a variable, group or committed
+     * datatype. An optional `#attname` suffix selects an attribute of
+     * the named object. `/` alone resolves to the root group.
+     * Resolution precedence for the final component is variable, then
+     * group, then committed type.
+     *
+     * When @p path carries no `#` suffix, @p kindp receives
+     * `NC_REF_OBJ_VAR`, `NC_REF_OBJ_GRP` or `NC_REF_OBJ_TYPE` and
+     * @p objidp the varid, group ncid or typeid. With a `#attname`
+     * suffix, @p kindp receives `NC_REF_OBJ_ATT`, @p att_name the
+     * attribute name and @p objidp the owner's varid, group ncid or
+     * typeid. Attribute existence is verified with nc_inq_attid() for
+     * variable and group owners; attributes on committed-datatype
+     * owners are not verifiable through the NetCDF API and the name is
+     * returned unchecked.
+     *
+     * @param ncid Open NetCDF file ID to resolve against.
+     * @param path Object path (see above).
+     * @param kindp Receives the resolved kind (see above).
+     * @param objidp Receives the resolved ID (see above).
+     * @param att_name Buffer receiving the attribute name, or NULL
+     * when @p path carries no `#` suffix.
+     * @param att_name_size Size of @p att_name in bytes.
+     * @return `NC_NOERR` on success; `NC_ENOTBUILT` when built without
+     * `NEP_ENABLE_REMOTE_REFS`; `NC_EINVAL` for bad arguments or
+     * malformed @p path; `NC_ENOTVAR` when the final component names
+     * no variable, group or type; `NC_ENOTATT` for a missing
+     * attribute; other inquiry errors propagate.
+     *
+     * @author Edward Hartnett, Intelligent Data Design, Inc.
+     */
+    int nc_ref_resolve(int ncid, const char *path, int *kindp,
+                       int *objidp, char *att_name, size_t att_name_size);
 
     /**
      * @brief Start a single-writer/multiple-reader session on a native NEXTCDF-4 file.

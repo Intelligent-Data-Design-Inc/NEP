@@ -367,6 +367,19 @@ http://server/dataset.nc?var&var>100
 - Lists: `{val1,val2,val3}` (OR operation)
 - Structure fields: `structure.field`
 
+## NEP Remote References
+
+NEP's NEXTCDF-4 backend can store and resolve remote references: a
+`(URL, object path)` string convention in `NC_STRING` variables or
+attributes, resolved by `nc_ref_open_remote()` (open via `nc_open` +
+resolve in one call, returning a caller-owned read-only session) and
+`nc_ref_resolve()` (further paths on the same session). Any URL
+`nc_open` accepts works — DAP2, DAP4, and NCZarr `file://`/byte-range
+stores — not only OPeNDAP. Constraint expressions are out of scope.
+Requires `NEP_ENABLE_REMOTE_REFS` (check `NC_HAS_DAP2`/`NC_HAS_DAP4`/
+`NC_HAS_BYTERANGE` in `netcdf_meta.h`); returns `NC_ENOTBUILT` when
+off. See `docs/refs.md` and `src/nextcdf4/nxt4remoteref.c`.
+
 ## Additional Resources
 
 See [references/PROTOCOL.md](references/PROTOCOL.md) for DAP2 and DAP4 protocol details.

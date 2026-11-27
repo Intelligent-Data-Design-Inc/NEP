@@ -50,6 +50,12 @@ class Nep(CMakePackage):
     )
     variant("nextcdf4", default=False, description="Enable the NEXTCDF-4 UDF backend")
     variant(
+        "remoterefs",
+        default=False,
+        description="Enable remote (DAP/NCZarr URL) reference resolution",
+        when="@4.3.0:",
+    )
+    variant(
         "parallel",
         default=False,
         description="Enable parallel I/O tests (requires MPI-enabled HDF5 and netcdf-c)",
@@ -72,6 +78,11 @@ class Nep(CMakePackage):
     # headers use different UDF flag values and abort in
     # NC_reclaim_data for slots >= 2.
     depends_on("netcdf-c@4.10.2:", when="+nextcdf4 @4.3.0:", type=("build", "link"))
+    # Remote references delegate the remote open to nc_open(); any
+    # remote-capable netcdf-c dispatch satisfies them — DAP is the
+    # primary use case, netcdf-c+nczarr also works.
+    depends_on("netcdf-c+dap", when="+remoterefs", type=("build", "link"))
+    conflicts("+remoterefs", when="~nextcdf4", msg="+remoterefs requires +nextcdf4")
     depends_on("netcdf-fortran", when="+fortran", type=("build", "link"))
     depends_on("netcdf-fortran@4.6.2:", when="@4.3.0: +fortran +nextcdf4", type=("build", "link"))
     depends_on("netcdf-fortran@4.6.2:", when="@main +fortran +nextcdf4", type=("build", "link"))
@@ -115,6 +126,13 @@ class Nep(CMakePackage):
                 self.define(
                     "NEP_ENABLE_NEXTCDF4_PARALLEL",
                     self.spec.satisfies("+nextcdf4+parallel"),
+                )
+            )
+            # NEP_ENABLE_REMOTE_REFS exists from 4.3.0.
+            args.append(
+                self.define(
+                    "NEP_ENABLE_REMOTE_REFS",
+                    self.spec.satisfies("+remoterefs"),
                 )
             )
         if self.spec.satisfies("@:4.2.0"):

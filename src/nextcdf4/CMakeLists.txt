@@ -8,6 +8,7 @@ add_library(ncnextcdf4 SHARED
     nxt4provenance.c
     nxt4io.c
     nxt4ref.c
+    nxt4remoteref.c
     nxt4convert.c
     nxt4group.c
     nxt4type.c
