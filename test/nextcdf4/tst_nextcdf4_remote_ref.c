@@ -48,7 +48,6 @@ main(void)
     int ncid, dimid, url_var, path_var;
     int target_ncid, kind, objid;
     char att_name[NC_MAX_NAME + 1];
-    const char *url, *path;
 
     printf("*** Testing remote reference storage and resolution.\n");
 
@@ -120,11 +119,10 @@ main(void)
         return 1;
 
     /* Live remote resolution: opt-in via environment, skipped in CI. */
-    url = getenv("NEP_REMOTE_TEST_URL");
+    const char *url = getenv("NEP_REMOTE_TEST_URL");
     if (url) {
         int ncid2, kind2, objid2;
-
-        path = getenv("NEP_REMOTE_TEST_PATH");
+        const char *path = getenv("NEP_REMOTE_TEST_PATH");
         if (!path)
             path = "/";
         printf("*** Testing live remote resolution of %s %s...\n",
